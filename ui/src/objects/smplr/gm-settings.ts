@@ -52,7 +52,20 @@ export const GM_SETTINGS_SCHEMA: SettingsSchema = [
     options: DRUM_MACHINE_INSTRUMENTS,
     default: GM_DEFAULT_SETTINGS.drumInstrument,
     description: 'Used for channel 10 percussion when Source is Soundfont and Kit is not Custom.',
-    visibleWhen: { key: 'source', equals: 'soundfont' }
+    visibleWhen: {
+      all: [
+        {
+          key: 'source',
+          equals: 'soundfont'
+        },
+        {
+          not: {
+            key: 'kit',
+            equals: 'Custom'
+          }
+        }
+      ]
+    }
   },
   {
     key: 'url',

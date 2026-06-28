@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SmplrInstrument, SmplrModule } from './descriptors';
+import { isSettingsFieldVisible } from '$lib/settings/visibility';
 import { SMPLR_OBJECT_TYPES, getSmplrDescriptor, smplrDescriptors } from './descriptors';
 import { GM_SETTINGS_SCHEMA } from './gm-settings';
 import {
@@ -46,6 +47,27 @@ describe('smplr descriptors', () => {
       'FatBoy'
     );
     expect(gmKitField?.type === 'select' ? gmKitField.options : []).toContain('FatBoy');
+  });
+
+  it('hides the GM drum instrument setting for custom soundfont kits', () => {
+    const drumInstrumentField = GM_SETTINGS_SCHEMA.find((field) => field.key === 'drumInstrument');
+    expect(drumInstrumentField).toBeDefined();
+
+    expect(
+      isSettingsFieldVisible(
+        GM_SETTINGS_SCHEMA,
+        { source: 'soundfont', kit: 'MusyngKite' },
+        drumInstrumentField!
+      )
+    ).toBe(true);
+
+    expect(
+      isSettingsFieldVisible(
+        GM_SETTINGS_SCHEMA,
+        { source: 'soundfont', kit: 'Custom' },
+        drumInstrumentField!
+      )
+    ).toBe(false);
   });
 
   it('passes built-in soundfont kits through to smplr', async () => {

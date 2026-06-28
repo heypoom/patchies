@@ -42,6 +42,7 @@
 
   let messageContext: MessageContext | null = null;
   let runtimeNode: GmAudioNode | null = null;
+  let disposed = false;
   let showSettings = $state(false);
   let status = $state<GmRuntimeStatus>({ state: 'idle' });
   let monitor = $state<GmMonitorSnapshot>({ channels: createInitialMonitorChannels() });
@@ -59,15 +60,18 @@
     });
   }
 
-  async function updateSetting(key: string, value: unknown) {
-    const nextSettings = { ...settings, [key]: value };
-    persistSettings(nextSettings);
+  async function applySettings(nextSettings: Record<string, unknown>) {
     await audioService.send(node.id, 'settings', nextSettings);
+    persistSettings(nextSettings);
   }
 
-  function revertSettings() {
-    persistSettings(GM_DEFAULT_SETTINGS);
-    audioService.send(node.id, 'settings', GM_DEFAULT_SETTINGS);
+  async function updateSetting(key: string, value: unknown) {
+    const nextSettings = { ...settings, [key]: value };
+    await applySettings(nextSettings);
+  }
+
+  async function revertSettings() {
+    await applySettings(GM_DEFAULT_SETTINGS);
   }
 
   function createInitialMonitorChannels(): GmMonitorSnapshot['channels'] {
@@ -82,6 +86,7 @@
   }
 
   onMount(async () => {
+    disposed = false;
     messageContext = new MessageContext(node.id);
     messageContext.queue.addCallback(handleMessage);
 
@@ -90,22 +95,38 @@
     }
 
     await audioService.createNode(node.id, 'gm~', []);
+
+    if (disposed) {
+      audioService.removeNodeById(node.id);
+      return;
+    }
+
     runtimeNode = audioService.getNodeById(node.id) as GmAudioNode | null;
 
     if (runtimeNode) {
       runtimeNode.onStatusChange = (nextStatus) => {
         status = nextStatus;
       };
+
       runtimeNode.onMonitorChange = (snapshot) => {
         monitor = snapshot;
       };
     }
 
-    await audioService.send(node.id, 'settings', settings);
+    audioService.send(node.id, 'settings', settings);
+
+    if (disposed) {
+      audioService.removeNodeById(node.id);
+      return;
+    }
+
     monitor = runtimeNode?.getMonitorSnapshot() ?? monitor;
   });
 
   onDestroy(() => {
+    disposed = true;
+    runtimeNode = null;
+
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();
     audioService.removeNodeById(node.id);

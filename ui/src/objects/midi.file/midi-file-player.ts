@@ -310,7 +310,9 @@ const isChannelMessage = (message: MidiFileOutputMessage): message is MidiFileCh
 const noteKey = (channel: number, note: number): string => `${channel}:${note}`;
 
 function getProgramStateAt(file: ParsedMidiFile, seconds: number): MidiFileProgramState[] {
-  const programsByChannel = new Map<number, number>();
+  const programsByChannel = new Map<number, number>(
+    getUsedChannels(file).map((channel) => [channel, 0])
+  );
 
   for (const event of file.events) {
     if (event.seconds > seconds) continue;
@@ -326,15 +328,35 @@ function getProgramStateAt(file: ParsedMidiFile, seconds: number): MidiFileProgr
 
 function getUniqueProgramStates(file: ParsedMidiFile): MidiFileProgramState[] {
   const programs = new Map<string, MidiFileProgramState>();
+  const channelsWithProgramChanges = new Set<number>();
 
   for (const event of file.events) {
     if (event.message.type !== 'programChange') continue;
 
     const { channel, program } = event.message;
+    channelsWithProgramChanges.add(channel);
     programs.set(`${channel}:${program}`, { channel, program });
+  }
+
+  for (const channel of getUsedChannels(file)) {
+    if (!channelsWithProgramChanges.has(channel)) {
+      programs.set(`${channel}:0`, { channel, program: 0 });
+    }
   }
 
   return Array.from(programs.values()).sort(
     (left, right) => left.channel - right.channel || left.program - right.program
   );
+}
+
+function getUsedChannels(file: ParsedMidiFile): number[] {
+  const channels = new Set<number>();
+
+  for (const event of file.events) {
+    if (isChannelMessage(event.message)) {
+      channels.add(event.message.channel);
+    }
+  }
+
+  return Array.from(channels).sort((left, right) => left - right);
 }

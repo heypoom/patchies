@@ -1,5 +1,6 @@
 import type { AudioNodeGroup, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { match } from 'ts-pattern';
 import { normalizeSmplrMessage, type SmplrCommand } from './messages';
 import type { SmplrInstrument, SmplrModule } from './descriptors';
 import {
@@ -178,66 +179,62 @@ export class GmAudioNode implements AudioNodeV2 {
   }
 
   private async applyCommand(command: SmplrCommand, channel: number): Promise<void> {
-    switch (command.type) {
-      case 'start': {
+    await match(command)
+      .with({ type: 'start' }, async (startCommand) => {
         const instrument = await this.ensureChannelInstrument(channel);
-        if (!instrument) break;
+        if (!instrument) return;
 
-        instrument.start(command.event);
-        this.addActiveNote(channel, command.event.note);
+        instrument.start(startCommand.event);
+        this.addActiveNote(channel, startCommand.event.note);
         this.updateMonitorChannel(channel, {
           activeNotes: this.getActiveNoteCount(channel),
-          lastNote: command.event.note,
-          lastVelocity: command.event.velocity
+          lastNote: startCommand.event.note,
+          lastVelocity: startCommand.event.velocity
         });
-        break;
-      }
-      case 'stop': {
+      })
+      .with({ type: 'stop' }, (stopCommand) => {
         const loaded = this.channels.get(channel);
-        loaded?.instrument.stop(command.target);
-        this.removeActiveNote(channel, command.target.stopId);
+        loaded?.instrument.stop(stopCommand.target);
+        this.removeActiveNote(channel, stopCommand.target.stopId);
         this.updateMonitorChannel(channel, {
           activeNotes: this.getActiveNoteCount(channel),
-          lastNote: command.target.stopId
+          lastNote: stopCommand.target.stopId
         });
-        break;
-      }
-      case 'stopAll':
-        this.stopAll(command.time);
+      })
+      .with({ type: 'stopAll' }, (stopAllCommand) => {
+        this.stopAll(stopAllCommand.time);
         this.clearActiveNotes();
-        break;
-      case 'cc': {
+      })
+      .with({ type: 'cc' }, (ccCommand) => {
         const loaded = this.channels.get(channel);
-        loaded?.instrument.setCC(command.control, command.value);
-        this.updateMonitorChannel(channel, { lastControl: command.control });
-        break;
-      }
-      case 'program':
+        loaded?.instrument.setCC(ccCommand.control, ccCommand.value);
+        this.updateMonitorChannel(channel, { lastControl: ccCommand.control });
+      })
+      .with({ type: 'program' }, (programCommand) => {
         this.programChannels.add(channel);
-        this.addPreloadRequest(channel, command.program);
-        setChannelProgram(this.channelState, channel, command.program);
+        this.addPreloadRequest(channel, programCommand.program);
+        setChannelProgram(this.channelState, channel, programCommand.program);
         this.updateMonitorChannel(channel, {
-          program: command.program,
-          instrumentName: this.getMonitorInstrumentName(channel, command.program),
+          program: programCommand.program,
+          instrumentName: this.getMonitorInstrumentName(channel, programCommand.program),
           status: this.channels.has(channel) ? 'ready' : 'idle',
           error: undefined
         });
-        if (this.isCustomSoundfont()) break;
+        if (this.isCustomSoundfont()) return;
 
         this.activeNotes.delete(channel);
         this.updateMonitorChannel(channel, { activeNotes: 0 });
         this.channels.delete(channel);
         void this.ensureChannelInstrument(channel);
-        break;
-      case 'volume':
-        this.settings.volume = command.value;
+      })
+      .with({ type: 'volume' }, (volumeCommand) => {
+        this.settings.volume = volumeCommand.value;
         this.applyLiveSettings();
-        break;
-      case 'ignored':
-      case 'detune':
-      case 'reverse':
-        break;
-    }
+      })
+      .with({ type: 'ignored' }, () => {})
+      .with({ type: 'detune' }, () => {})
+      .with({ type: 'reverse' }, () => {})
+      .exhaustive();
   }
 
   private async ensureChannelInstrument(channel: number): Promise<SmplrInstrument | null> {
@@ -252,6 +249,7 @@ export class GmAudioNode implements AudioNodeV2 {
     if (!instrument) return null;
 
     this.channels.set(channel, { key, instrument });
+    this.onStatusChange?.({ state: 'ready', activeChannels: this.channels.size });
     return instrument;
   }
 
@@ -377,7 +375,6 @@ export class GmAudioNode implements AudioNodeV2 {
           error: undefined
         });
       }
-      this.onStatusChange?.({ state: 'ready', activeChannels: this.channels.size });
       return instrument;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -674,7 +671,7 @@ function readString(value: unknown, fallback: string): string {
 }
 
 function normalizeProgram(value: number): number {
-  return Math.max(0, Math.round(value));
+  return Math.max(0, Math.min(127, Math.round(value)));
 }
 
 function preloadRequestKey(channel: number, program: number): string {

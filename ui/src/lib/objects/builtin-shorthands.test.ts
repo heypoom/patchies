@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BUILTIN_OBJECT_SHORTHANDS } from './builtin-shorthands';
+import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
+
+vi.mock('$lib/nodes/node-types', () => ({ nodeNames: [] }));
 
 function findShorthand(name: string) {
   return BUILTIN_OBJECT_SHORTHANDS.find((s) => s.names.includes(name))!;
@@ -45,11 +48,10 @@ describe('slider/knob shorthand parsing', () => {
   });
 
   it('transforms gm~ into the dedicated visual node', () => {
-    const { transform } = findShorthand('gm~');
-    const result = transform('gm~', 'gm~');
+    const result = ObjectShorthandRegistry.getInstance().tryTransform('gm~');
 
-    expect(result.nodeType).toBe('gm~');
-    expect(result.data).toMatchObject({
+    expect(result?.nodeType).toBe('gm~');
+    expect(result?.data).toMatchObject({
       settings: expect.objectContaining({
         source: 'soundfont',
         kit: 'MusyngKite'

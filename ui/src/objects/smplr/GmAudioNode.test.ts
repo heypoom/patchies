@@ -317,4 +317,48 @@ describe('GmAudioNode', () => {
       velocity: 90
     });
   });
+
+  it('reports the loaded channel in ready status active channel count', async () => {
+    const module = {
+      Soundfont: () => createInstrument()
+    } as unknown as SmplrModule;
+    const statuses: Array<Parameters<NonNullable<GmAudioNode['onStatusChange']>>[0]> = [];
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 100, velocity: 100 }]);
+    node.onStatusChange = (status) => statuses.push(status);
+    await node.send('message', { type: 'noteOn', note: 60, velocity: 90, channel: 1 });
+
+    expect(statuses).toContainEqual({ state: 'ready', activeChannels: 1 });
+  });
+
+  it('clamps loaded program metadata to the MIDI program range', async () => {
+    const soundfontCalls: Array<Record<string, unknown>> = [];
+    const module = {
+      Soundfont: (_context: AudioContext, options: Record<string, unknown>) => {
+        soundfontCalls.push(options);
+        return createInstrument();
+      }
+    } as unknown as SmplrModule;
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 100, velocity: 100 }]);
+    await node.send('message', {
+      type: 'loaded',
+      fileName: 'song.mid',
+      durationSeconds: 1,
+      trackCount: 1,
+      ppq: 480,
+      programs: [{ channel: 2, program: 200 }],
+      preloadPrograms: []
+    });
+
+    expect(soundfontCalls[0]).toMatchObject({ instrument: 'gunshot' });
+    expect(node.getMonitorSnapshot().channels[1]).toMatchObject({
+      channel: 2,
+      program: 127,
+      instrumentName: 'gunshot',
+      status: 'ready'
+    });
+  });
 });

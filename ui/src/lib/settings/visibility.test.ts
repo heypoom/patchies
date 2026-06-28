@@ -74,4 +74,23 @@ describe('settings field visibility', () => {
       )
     ).toBe(false);
   });
+
+  it('supports negated dependency values', () => {
+    const negatedConditionSchema: SettingsSchema = [
+      ...schema,
+      {
+        key: 'drumInstrument',
+        label: 'Drum Instrument',
+        type: 'string',
+        visibleWhen: { not: { key: 'kit', equals: 'Custom' } }
+      }
+    ];
+
+    expect(
+      isSettingsFieldVisible(negatedConditionSchema, { kit: 'Built In' }, negatedConditionSchema[2])
+    ).toBe(true);
+    expect(
+      isSettingsFieldVisible(negatedConditionSchema, { kit: 'Custom' }, negatedConditionSchema[2])
+    ).toBe(false);
+  });
 });

@@ -69,6 +69,12 @@ describe('MidiFilePlayer', () => {
           message: { type: 'noteOn', note: 60, velocity: 100, channel: 1 }
         },
         {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'noteOn', note: 60, velocity: 100, channel: 1 }
+        },
+        {
           seconds: 0.5,
           ticks: 240,
           track: 0,
@@ -135,6 +141,12 @@ describe('MidiFilePlayer', () => {
           seconds: 0,
           ticks: 0,
           track: 0,
+          message: { type: 'noteOn', note: 60, velocity: 100, channel: 1 }
+        },
+        {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
           message: { type: 'programChange', program: 40, channel: 2 }
         },
         {
@@ -164,10 +176,12 @@ describe('MidiFilePlayer', () => {
       expect.objectContaining({
         type: 'loaded',
         programs: [
+          { channel: 1, program: 0 },
           { channel: 2, program: 40 },
           { channel: 4, program: 60 }
         ],
         preloadPrograms: [
+          { channel: 1, program: 0 },
           { channel: 2, program: 12 },
           { channel: 2, program: 40 },
           { channel: 4, program: 60 }

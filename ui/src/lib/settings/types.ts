@@ -7,6 +7,9 @@ export type SettingsVisibilityCondition =
     }
   | {
       all: SettingsVisibilityCondition[];
+    }
+  | {
+      not: SettingsVisibilityCondition;
     };
 
 interface SettingsFieldBase {

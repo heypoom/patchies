@@ -31,6 +31,10 @@ function isVisibilityConditionMet(
     return condition.all.every((child) => isVisibilityConditionMet(schema, values, child));
   }
 
+  if ('not' in condition) {
+    return !isVisibilityConditionMet(schema, values, condition.not);
+  }
+
   return settingsValueEquals(
     getSettingsFieldValue(schema, values, condition.key),
     condition.equals

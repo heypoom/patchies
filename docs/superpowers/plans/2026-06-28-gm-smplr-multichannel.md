@@ -6,11 +6,11 @@
 
 **Architecture:** `gm~` is a dedicated Audio V2 node and Svelte wrapper, separate from descriptor-driven single-instrument smplr nodes. It keeps per-channel program state, lazy-loads one smplr instrument per active channel/program, and routes note/CC/stop messages by 1-based MIDI channel.
 
-**Tech Stack:** SvelteKit 5, TypeScript, Audio V2, smplr `Soundfont`/`Soundfont2`, `soundfont2`, Vitest.
+**Tech Stack:** SvelteKit + Svelte 5, TypeScript, Audio V2, smplr `Soundfont`/`Soundfont2`, `soundfont2`, Vitest.
 
 ---
 
-### Task 1: Channel Routing Helpers
+## Task 1: Channel Routing Helpers
 
 **Files:**
 - Create: `ui/src/objects/smplr/gm-channel-state.ts`
@@ -34,7 +34,7 @@ Run: `cd ui && bun run test:unit src/objects/smplr/gm-channel-state.test.ts`
 
 Expected: PASS.
 
-### Task 2: GM Audio Runtime
+## Task 2: GM Audio Runtime
 
 **Files:**
 - Create: `ui/src/objects/smplr/GmAudioNode.ts`
@@ -64,7 +64,7 @@ Run: `cd ui && bun run test:unit src/objects/smplr/GmAudioNode.test.ts src/objec
 
 Expected: PASS.
 
-### Task 3: Svelte Node And Registration
+## Task 3: Svelte Node And Registration
 
 **Files:**
 - Create: `ui/src/objects/smplr/GmNode.svelte`
@@ -85,7 +85,7 @@ Run: `cd ui && bun run generate:schemas`
 
 Expected: generated schema includes `gm~`.
 
-### Task 4: Docs And AI Metadata
+## Task 4: Docs And AI Metadata
 
 **Files:**
 - Create: `ui/static/content/objects/gm~.md`
@@ -102,11 +102,11 @@ patches, while `soundfont~` remains a single-instrument object.
 
 Add `gm~` to object lists and map it to the smplr prompt.
 
-### Task 5: Final Verification
+## Task 5: Final Verification
 
 - [ ] **Step 1: Run focused tests**
 
-Run: `cd ui && bun run test:unit src/objects/smplr src/lib/settings/options.test.ts src/lib/settings/visibility.test.ts`
+Run: `cd ui && bun run test:unit src/objects/smplr`
 
 Expected: PASS.
 
