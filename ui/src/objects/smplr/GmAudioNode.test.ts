@@ -167,11 +167,17 @@ describe('GmAudioNode', () => {
   });
 
   it('preloads channel instruments from midi.file loaded program metadata', async () => {
+    const instruments = new Map<string, SmplrInstrument>();
     const soundfont = vi.fn((_context: AudioContext, options: Record<string, unknown>) =>
       createInstrument(String(options.instrument))
     );
     const module = { Soundfont: soundfont } as unknown as SmplrModule;
     const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+    soundfont.mockImplementation((_context: AudioContext, options: Record<string, unknown>) => {
+      const instrument = createInstrument(String(options.instrument));
+      instruments.set(String(options.instrument), instrument);
+      return instrument;
+    });
 
     await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 100, velocity: 100 }]);
     await node.send('message', {
@@ -180,11 +186,30 @@ describe('GmAudioNode', () => {
       durationSeconds: 1,
       trackCount: 1,
       ppq: 480,
-      programs: [{ channel: 2, program: 40 }]
+      programs: [{ channel: 2, program: 40 }],
+      preloadPrograms: [
+        { channel: 2, program: 40 },
+        { channel: 2, program: 12 },
+        { channel: 4, program: 60 }
+      ]
     });
     await node.send('message', { type: 'noteOn', note: 64, velocity: 90, channel: 2 });
+    await node.send('message', { type: 'programChange', program: 12, channel: 2 });
+    await node.send('message', { type: 'noteOn', note: 65, velocity: 90, channel: 2 });
 
-    expect(soundfont).toHaveBeenCalledTimes(1);
-    expect(soundfont.mock.calls[0]?.[1]).toMatchObject({ instrument: 'violin' });
+    expect(soundfont).toHaveBeenCalledTimes(3);
+    expect(soundfont.mock.calls.map((call) => call[1].instrument)).toEqual([
+      'violin',
+      'marimba',
+      'french_horn'
+    ]);
+    expect(instruments.get('violin')?.start).toHaveBeenCalledWith({
+      note: 64,
+      velocity: 90
+    });
+    expect(instruments.get('marimba')?.start).toHaveBeenCalledWith({
+      note: 65,
+      velocity: 90
+    });
   });
 });

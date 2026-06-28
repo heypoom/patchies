@@ -210,8 +210,10 @@ Message behavior:
   `noteOn`, `noteOff`, and `controlChange` messages route to that channel's
   current instrument. Missing channels default to channel `1`.
 - `midi.file` `loaded` metadata may include the file's explicit initial
-  per-channel program state. `gm~` uses that metadata to preload channel
-  instruments before playback without treating it as audible playback.
+  per-channel program state plus all unique channel/program pairs in the file.
+  `gm~` uses that metadata to preload channel instruments before playback
+  without treating it as audible playback or changing the current channel
+  program.
 - `setGain` maps to `instrument.output.volume` using smplr's MIDI-scale volume
   convention where possible.
 - `setDetune` calls `instrument.setDetune(value)`.

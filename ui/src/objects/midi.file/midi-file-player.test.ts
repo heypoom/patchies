@@ -125,7 +125,7 @@ describe('MidiFilePlayer', () => {
     reportingPlayer.destroy();
   });
 
-  it('includes explicit initial program state in loaded metadata', () => {
+  it('includes initial and preload program state in loaded metadata', () => {
     const send = vi.fn();
     const player = new MidiFilePlayer({ send });
     const programFile: ParsedMidiFile = {
@@ -144,6 +144,12 @@ describe('MidiFilePlayer', () => {
           message: { type: 'programChange', program: 12, channel: 2 }
         },
         {
+          seconds: 0.75,
+          ticks: 360,
+          track: 0,
+          message: { type: 'programChange', program: 12, channel: 2 }
+        },
+        {
           seconds: 0,
           ticks: 0,
           track: 0,
@@ -158,6 +164,11 @@ describe('MidiFilePlayer', () => {
       expect.objectContaining({
         type: 'loaded',
         programs: [
+          { channel: 2, program: 40 },
+          { channel: 4, program: 60 }
+        ],
+        preloadPrograms: [
+          { channel: 2, program: 12 },
           { channel: 2, program: 40 },
           { channel: 4, program: 60 }
         ]

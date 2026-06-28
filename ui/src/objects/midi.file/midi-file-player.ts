@@ -15,6 +15,7 @@ export type MidiFileMetaMessage =
       trackCount: number;
       ppq: number;
       programs: MidiFileProgramState[];
+      preloadPrograms: MidiFileProgramState[];
     }
   | { type: 'position'; seconds: number; progress: number }
   | { type: 'ended' }
@@ -99,7 +100,8 @@ export class MidiFilePlayer {
       durationSeconds: file.durationSeconds,
       trackCount: file.trackCount,
       ppq: file.ppq,
-      programs: getProgramStateAt(file, 0)
+      programs: getProgramStateAt(file, 0),
+      preloadPrograms: getUniqueProgramStates(file)
     });
 
     this.sendPosition();
@@ -320,4 +322,19 @@ function getProgramStateAt(file: ParsedMidiFile, seconds: number): MidiFileProgr
   return Array.from(programsByChannel.entries())
     .sort(([leftChannel], [rightChannel]) => leftChannel - rightChannel)
     .map(([channel, program]) => ({ channel, program }));
+}
+
+function getUniqueProgramStates(file: ParsedMidiFile): MidiFileProgramState[] {
+  const programs = new Map<string, MidiFileProgramState>();
+
+  for (const event of file.events) {
+    if (event.message.type !== 'programChange') continue;
+
+    const { channel, program } = event.message;
+    programs.set(`${channel}:${program}`, { channel, program });
+  }
+
+  return Array.from(programs.values()).sort(
+    (left, right) => left.channel - right.channel || left.program - right.program
+  );
 }

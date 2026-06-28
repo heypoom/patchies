@@ -19,9 +19,10 @@ Outputs standard Patchies MIDI messages such as `noteOn`, `noteOff`, `controlCha
 `programChange`, and `pitchBend`. Meta/status messages use the same outlet and can be
 distinguished by their `type`.
 
-The `loaded` message includes explicit initial channel programs when the MIDI file
-contains `programChange` events at the start. `gm~` uses this to preload sampled
-instruments before playback begins.
+The `loaded` message includes explicit initial channel programs and all unique
+channel/program pairs in the file. `gm~` uses this to preload sampled
+instruments before playback begins, including instruments needed by mid-file
+program changes.
 
 ## Settings
 

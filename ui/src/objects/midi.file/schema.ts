@@ -44,6 +44,12 @@ const Loaded = Type.Object({
       channel: Type.Number(),
       program: Type.Number()
     })
+  ),
+  preloadPrograms: Type.Array(
+    Type.Object({
+      channel: Type.Number(),
+      program: Type.Number()
+    })
   )
 });
 

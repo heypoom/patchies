@@ -53,6 +53,16 @@ type LoadedChannel = {
   instrument: SmplrInstrument;
 };
 
+type ProgramRequest = {
+  channel: number;
+  program: number;
+};
+
+type LoadedProgramMetadata = {
+  programs: ProgramRequest[];
+  preloadPrograms: ProgramRequest[];
+};
+
 export class GmAudioNode implements AudioNodeV2 {
   static type = 'gm~';
   static group: AudioNodeGroup = 'processors';
@@ -74,9 +84,11 @@ export class GmAudioNode implements AudioNodeV2 {
   private settings: GmSettings = {};
   private channelState = createGmChannelState();
   private channels = new Map<number, LoadedChannel>();
-  private loads = new Map<number, Promise<LoadedChannel | null>>();
+  private instrumentCache = new Map<string, SmplrInstrument>();
+  private loads = new Map<string, Promise<SmplrInstrument | null>>();
   private activeNotes = new Map<number, Set<string>>();
   private programChannels = new Set<number>();
+  private preloadRequests = new Map<string, ProgramRequest>();
   private monitorChannels = createInitialMonitorChannels();
   private soundfont2Names: string[] = [];
   private loadToken = 0;
@@ -107,9 +119,9 @@ export class GmAudioNode implements AudioNodeV2 {
 
     if (key !== 'message') return;
 
-    const programSnapshot = readLoadedProgramSnapshot(message);
-    if (programSnapshot) {
-      await this.applyProgramSnapshot(programSnapshot);
+    const programMetadata = readLoadedProgramMetadata(message);
+    if (programMetadata) {
+      await this.applyLoadedProgramMetadata(programMetadata);
       return;
     }
 
@@ -146,7 +158,7 @@ export class GmAudioNode implements AudioNodeV2 {
       this.soundfont2Names = [];
       this.disposeAllChannels();
       this.resetMonitorChannels();
-      void this.preloadProgramChannels([...this.programChannels]);
+      void this.preloadProgramRequests([...this.preloadRequests.values()]);
     } else {
       this.applyLiveSettings();
     }
@@ -192,6 +204,7 @@ export class GmAudioNode implements AudioNodeV2 {
       }
       case 'program':
         this.programChannels.add(channel);
+        this.addPreloadRequest(channel, command.program);
         setChannelProgram(this.channelState, channel, command.program);
         this.updateMonitorChannel(channel, {
           program: command.program,
@@ -203,7 +216,7 @@ export class GmAudioNode implements AudioNodeV2 {
 
         this.activeNotes.delete(channel);
         this.updateMonitorChannel(channel, { activeNotes: 0 });
-        this.disposeChannel(channel);
+        this.channels.delete(channel);
         void this.ensureChannelInstrument(channel);
         break;
       case 'volume':
@@ -219,40 +232,55 @@ export class GmAudioNode implements AudioNodeV2 {
 
   private async ensureChannelInstrument(channel: number): Promise<SmplrInstrument | null> {
     const program = getChannelProgram(this.channelState, channel);
+    const loaded = this.channels.get(channel);
+    const key = this.getProgramKey(channel, program);
+
+    if (!key) return null;
+    if (loaded?.key === key) return loaded.instrument;
+
+    const instrument = await this.ensureProgramInstrument(channel, program, true);
+    if (!instrument) return null;
+
+    this.channels.set(channel, { key, instrument });
+    return instrument;
+  }
+
+  private async ensureProgramInstrument(
+    channel: number,
+    program: number,
+    updateMonitor: boolean
+  ): Promise<SmplrInstrument | null> {
     const source = readSource(this.settings.source);
     const instrumentName = resolveGmProgramInstrument(source, program, this.soundfont2Names);
     if (!instrumentName && source === 'soundfont') return null;
 
     const key = this.getChannelKey(channel, program, instrumentName);
-    const loaded = this.channels.get(channel);
-    if (loaded?.key === key) return loaded.instrument;
+    const cached = this.instrumentCache.get(key);
+    if (cached) return cached;
 
-    const existingLoad = this.loads.get(channel);
+    const existingLoad = this.loads.get(key);
     if (existingLoad) {
-      const loadedChannel = await existingLoad;
-      return loadedChannel?.instrument ?? null;
+      return await existingLoad;
     }
 
-    const load = this.loadChannelInstrument(channel, program, key);
-    this.loads.set(channel, load);
+    const load = this.loadProgramInstrument(channel, program, key, updateMonitor);
+    this.loads.set(key, load);
     try {
-      const loadedChannel = await load;
-      return loadedChannel?.instrument ?? null;
+      return await load;
     } finally {
-      if (this.loads.get(channel) === load) this.loads.delete(channel);
+      if (this.loads.get(key) === load) this.loads.delete(key);
     }
   }
 
-  private async applyProgramSnapshot(
-    programs: Array<{ channel: number; program: number }>
-  ): Promise<void> {
-    const preloadChannels: number[] = [];
+  private async applyLoadedProgramMetadata(metadata: LoadedProgramMetadata): Promise<void> {
+    const activeRequests: ProgramRequest[] = [];
 
-    for (const { channel: rawChannel, program: rawProgram } of programs) {
+    for (const { channel: rawChannel, program: rawProgram } of metadata.programs) {
       const channel = normalizeMidiChannel(rawChannel);
       const program = normalizeProgram(rawProgram);
 
       this.programChannels.add(channel);
+      this.addPreloadRequest(channel, program);
       setChannelProgram(this.channelState, channel, program);
       this.updateMonitorChannel(channel, {
         program,
@@ -260,29 +288,61 @@ export class GmAudioNode implements AudioNodeV2 {
         status: this.channels.has(channel) ? 'ready' : 'idle',
         error: undefined
       });
-      preloadChannels.push(channel);
+      activeRequests.push({ channel, program });
     }
 
-    await this.preloadProgramChannels(preloadChannels);
+    for (const { channel, program } of metadata.preloadPrograms) {
+      this.addPreloadRequest(channel, program);
+    }
+
+    await Promise.all([
+      ...activeRequests.map(({ channel }) => this.ensureChannelInstrument(channel)),
+      this.preloadProgramRequests(metadata.preloadPrograms)
+    ]);
   }
 
-  private async preloadProgramChannels(channels: number[]): Promise<void> {
-    await Promise.all(channels.map((channel) => this.ensureChannelInstrument(channel)));
+  private async preloadProgramRequests(requests: ProgramRequest[]): Promise<void> {
+    const unique = new Map<string, ProgramRequest>();
+    for (const { channel, program } of requests) {
+      const normalized = {
+        channel: normalizeMidiChannel(channel),
+        program: normalizeProgram(program)
+      };
+      unique.set(preloadRequestKey(normalized.channel, normalized.program), normalized);
+    }
+
+    await Promise.all(
+      Array.from(unique.values()).map(({ channel, program }) =>
+        this.ensureProgramInstrument(channel, program, false)
+      )
+    );
   }
 
-  private async loadChannelInstrument(
+  private addPreloadRequest(channel: number, program: number): void {
+    const normalizedChannel = normalizeMidiChannel(channel);
+    const normalizedProgram = normalizeProgram(program);
+    this.preloadRequests.set(preloadRequestKey(normalizedChannel, normalizedProgram), {
+      channel: normalizedChannel,
+      program: normalizedProgram
+    });
+  }
+
+  private async loadProgramInstrument(
     channel: number,
     program: number,
-    key: string
-  ): Promise<LoadedChannel | null> {
+    key: string,
+    updateMonitor: boolean
+  ): Promise<SmplrInstrument | null> {
     const token = this.loadToken;
-    this.onStatusChange?.({ state: 'loading', channel, program });
-    this.updateMonitorChannel(channel, {
-      program,
-      instrumentName: this.getMonitorInstrumentName(program),
-      status: 'loading',
-      error: undefined
-    });
+    if (updateMonitor) {
+      this.onStatusChange?.({ state: 'loading', channel, program });
+      this.updateMonitorChannel(channel, {
+        program,
+        instrumentName: this.getMonitorInstrumentName(program),
+        status: 'loading',
+        error: undefined
+      });
+    }
 
     try {
       const module = await this.loadSmplrModule();
@@ -297,23 +357,21 @@ export class GmAudioNode implements AudioNodeV2 {
         return null;
       }
 
-      const oldChannel = this.channels.get(channel);
-      if (oldChannel?.instrument !== instrument) disposeInstrument(oldChannel?.instrument);
-
       this.applyLiveSettingsTo(instrument);
+      this.instrumentCache.set(key, instrument);
 
-      const loaded = { key, instrument };
-      this.channels.set(channel, loaded);
-      this.updateMonitorChannel(channel, {
-        instrumentName: this.getMonitorInstrumentName(program),
-        status: 'ready',
-        error: undefined
-      });
+      if (updateMonitor) {
+        this.updateMonitorChannel(channel, {
+          instrumentName: this.getMonitorInstrumentName(program),
+          status: 'ready',
+          error: undefined
+        });
+      }
       this.onStatusChange?.({ state: 'ready', activeChannels: this.channels.size });
-      return loaded;
+      return instrument;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (token === this.loadToken) {
+      if (token === this.loadToken && updateMonitor) {
         this.onStatusChange?.({
           state: 'error',
           message
@@ -388,6 +446,14 @@ export class GmAudioNode implements AudioNodeV2 {
       readString(this.settings.instrumentUrl, ''),
       readString(this.settings.url, '')
     ].join(':');
+  }
+
+  private getProgramKey(channel: number, program: number): string | null {
+    const source = readSource(this.settings.source);
+    const instrumentName = resolveGmProgramInstrument(source, program, this.soundfont2Names);
+    if (!instrumentName && source === 'soundfont') return null;
+
+    return this.getChannelKey(channel, program, instrumentName);
   }
 
   private isCustomSoundfont(): boolean {
@@ -477,19 +543,12 @@ export class GmAudioNode implements AudioNodeV2 {
     this.onMonitorChange?.(this.getMonitorSnapshot());
   }
 
-  private disposeChannel(channel: number): void {
-    const loaded = this.channels.get(channel);
-    if (!loaded) return;
-
-    disposeInstrument(loaded.instrument);
-    this.channels.delete(channel);
-  }
-
   private disposeAllChannels(): void {
-    for (const { instrument } of this.channels.values()) {
+    for (const instrument of this.instrumentCache.values()) {
       disposeInstrument(instrument);
     }
     this.channels.clear();
+    this.instrumentCache.clear();
     this.loads.clear();
   }
 }
@@ -514,15 +573,27 @@ function readMessageChannel(message: unknown): number {
   return normalizeMidiChannel((message as Record<string, unknown>).channel);
 }
 
-function readLoadedProgramSnapshot(
-  message: unknown
-): Array<{ channel: number; program: number }> | null {
+function readLoadedProgramMetadata(message: unknown): LoadedProgramMetadata | null {
   if (typeof message !== 'object' || message === null) return null;
 
   const record = message as Record<string, unknown>;
-  if (record.type !== 'loaded' || !Array.isArray(record.programs)) return null;
+  if (record.type !== 'loaded') return null;
 
-  return record.programs.flatMap((program): Array<{ channel: number; program: number }> => {
+  const programs = readProgramRequests(record.programs);
+  const preloadPrograms = readProgramRequests(record.preloadPrograms);
+
+  if (programs.length === 0 && preloadPrograms.length === 0) return null;
+
+  return {
+    programs,
+    preloadPrograms: preloadPrograms.length > 0 ? preloadPrograms : programs
+  };
+}
+
+function readProgramRequests(value: unknown): ProgramRequest[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((program): ProgramRequest[] => {
     if (typeof program !== 'object' || program === null) return [];
 
     const { channel, program: programNumber } = program as Record<string, unknown>;
@@ -547,6 +618,10 @@ function readString(value: unknown, fallback: string): string {
 
 function normalizeProgram(value: number): number {
   return Math.max(0, Math.round(value));
+}
+
+function preloadRequestKey(channel: number, program: number): string {
+  return `${channel}:${program}`;
 }
 
 function readNumber(value: unknown, fallback: number): number {
