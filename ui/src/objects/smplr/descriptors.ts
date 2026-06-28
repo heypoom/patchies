@@ -90,7 +90,7 @@ const commonSettings: SettingsSchema = [
 
 const soundfontInstruments = [...GENERAL_MIDI_SOUNDFONT_PROGRAMS];
 const SOUNDFONT_CUSTOM_KIT = 'Custom';
-const soundfontKits = ['MusyngKite', 'FluidR3_GM', SOUNDFONT_CUSTOM_KIT];
+export const SOUNDFONT_KITS = ['MusyngKite', 'FluidR3_GM', 'FatBoy', SOUNDFONT_CUSTOM_KIT];
 const electricPianos = ['CP80', 'PianetT', 'WurlitzerEP200', 'TX81Z'];
 export const DRUM_MACHINE_INSTRUMENTS = [
   'TR-808',
@@ -185,7 +185,7 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
         searchPlaceholder: 'Search General MIDI instruments...',
         emptyMessage: 'No instrument found.'
       },
-      { key: 'kit', label: 'Kit', type: 'select', options: soundfontKits, default: 'MusyngKite' },
+      { key: 'kit', label: 'Kit', type: 'select', options: SOUNDFONT_KITS, default: 'MusyngKite' },
       {
         key: 'instrumentUrl',
         label: 'Instrument URL',

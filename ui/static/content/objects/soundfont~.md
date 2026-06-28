@@ -13,6 +13,8 @@ program changes separate per MIDI channel.
 Open the settings panel to choose the General MIDI instrument, Soundfont kit,
 volume, velocity, pan, default note, detune, and reverse playback.
 
+Built-in kits include `MusyngKite`, `FluidR3_GM`, and `FatBoy`.
+
 Choose `Custom` as the kit to reveal `Instrument URL` and load a MIDI.js
 soundfont file from a URL. Custom URLs use smplr's `instrumentUrl` option, so
 the built-in kit and General MIDI instrument setting are ignored while a custom

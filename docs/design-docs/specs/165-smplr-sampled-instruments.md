@@ -273,18 +273,18 @@ Common fields:
 
 Descriptor-specific fields:
 
-| Object        | Fields                                                                               |
-| ------------- | ------------------------------------------------------------------------------------ |
-| `soundfont~`  | `instrument`, `kit`, `instrumentUrl` when `kit` is `Custom`, `loadLoopData`          |
-| `soundfont2~` | `url`, `instrument`                                                                  |
-| `gm~`         | `source`, `kit`, `instrumentUrl` when `kit` is `Custom`, `url`, `volume`, `velocity` |
-| `piano~`      | `decayTime`; later `notesToLoad` if needed                                           |
-| `epiano~`     | `instrument`                                                                         |
-| `drums~`      | `instrument`                                                                         |
-| `mallet~`     | `instrument`                                                                         |
-| `mellotron~`  | `instrument`                                                                         |
-| `versilian~`  | `instrument`                                                                         |
-| `smolken~`    | `instrument`                                                                         |
+| Object        | Fields                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------ |
+| `soundfont~`  | `instrument`, `kit`, `instrumentUrl` when `kit` is `Custom`, `loadLoopData`                            |
+| `soundfont2~` | `url`, `instrument`                                                                                    |
+| `gm~`         | `source`, `kit`, `drumInstrument`, `instrumentUrl` when `kit` is `Custom`, `url`, `volume`, `velocity` |
+| `piano~`      | `decayTime`; later `notesToLoad` if needed                                                             |
+| `epiano~`     | `instrument`                                                                                           |
+| `drums~`      | `instrument`                                                                                           |
+| `mallet~`     | `instrument`                                                                                           |
+| `mellotron~`  | `instrument`                                                                                           |
+| `versilian~`  | `instrument`                                                                                           |
+| `smolken~`    | `instrument`                                                                                           |
 
 Settings listed in `reloadsOnSettings` recreate/reload the smplr instrument.
 Live settings such as volume, detune, reverse, and pan should update the current
@@ -298,6 +298,12 @@ changes use the existing settings persistence/update flow.
 
 `programChange` maps to a new instrument selection when the descriptor can
 provide a stable ordered program list.
+
+Built-in MIDI.js soundfont kits are `MusyngKite`, `FluidR3_GM`, and `FatBoy`.
+FatBoy is generated from [FatBoy.sf2](https://fatboy.site/) and distributed
+under the [Creative Commons Attribution Share-Alike 3.0
+license](https://creativecommons.org/licenses/by-sa/3.0/). It uses the same
+General MIDI instrument names as the other MIDI.js kits.
 
 Required v1 mappings:
 

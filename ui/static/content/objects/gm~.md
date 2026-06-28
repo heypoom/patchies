@@ -27,6 +27,8 @@ by mid-file program changes.
 - **Volume** sets the mixed output volume for all loaded channels
 - **Velocity** sets the default velocity when a message omits one
 
+Built-in Soundfont kits include `MusyngKite`, `FluidR3_GM`, and `FatBoy`.
+
 ## Messages
 
 `gm~` responds to the same MIDI messages emitted by `midi.file`:

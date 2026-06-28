@@ -1,6 +1,6 @@
 import type { SettingsSchema } from '$lib/settings';
 import type { GmProgramSource } from './gm-channel-state';
-import { DRUM_MACHINE_INSTRUMENTS } from './descriptors';
+import { DRUM_MACHINE_INSTRUMENTS, SOUNDFONT_KITS } from './descriptors';
 
 export const GM_DEFAULT_SETTINGS = {
   source: 'soundfont' satisfies GmProgramSource,
@@ -27,7 +27,7 @@ export const GM_SETTINGS_SCHEMA: SettingsSchema = [
     key: 'kit',
     label: 'Soundfont Kit',
     type: 'select',
-    options: ['MusyngKite', 'FluidR3_GM', 'Custom'],
+    options: SOUNDFONT_KITS,
     default: GM_DEFAULT_SETTINGS.kit,
     visibleWhen: { key: 'source', equals: 'soundfont' }
   },

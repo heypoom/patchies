@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { SmplrInstrument, SmplrModule } from './descriptors';
 import { SMPLR_OBJECT_TYPES, getSmplrDescriptor, smplrDescriptors } from './descriptors';
+import { GM_SETTINGS_SCHEMA } from './gm-settings';
 import {
   getGeneralMidiDrumKitName,
   getGeneralMidiProgramName,
@@ -33,6 +34,18 @@ describe('smplr descriptors', () => {
     expect(getGeneralMidiProgramName(40)).toBe('violin');
     expect(descriptor.handleProgramChange?.(40, {})).toEqual({ instrument: 'violin' });
     expect(descriptor.handleProgramChange?.(40, { kit: 'Custom' })).toBeNull();
+  });
+
+  it('exposes FatBoy as a built-in MIDI.js soundfont kit', () => {
+    const soundfontKitField = getSmplrDescriptor('soundfont~').settingsSchema.find(
+      (field) => field.key === 'kit'
+    );
+    const gmKitField = GM_SETTINGS_SCHEMA.find((field) => field.key === 'kit');
+
+    expect(soundfontKitField?.type === 'select' ? soundfontKitField.options : []).toContain(
+      'FatBoy'
+    );
+    expect(gmKitField?.type === 'select' ? gmKitField.options : []).toContain('FatBoy');
   });
 
   it('passes built-in soundfont kits through to smplr', async () => {
