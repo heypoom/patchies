@@ -112,117 +112,121 @@
   });
 </script>
 
-<div class="relative w-[24rem] pt-5">
-  <StandardHandle
-    port="inlet"
-    type="message"
-    title="Channel-aware MIDI messages"
-    total={1}
-    index={0}
-    nodeId={node.id}
-  />
-
-  <div
-    class={[
-      'absolute top-0 left-0 max-w-72 truncate font-mono text-[10px] font-medium',
-      status.state === 'error' ? 'text-red-300' : 'text-zinc-400'
-    ]}
-  >
-    gm~
+<div class="relative w-[24rem]">
+  <div class="absolute -top-7 left-0 z-10 rounded-lg bg-black/60 px-2 py-1">
+    <div
+      class={[
+        'node-title-drag-handle max-w-72 truncate font-mono text-xs font-medium',
+        status.state === 'error' ? 'text-red-300' : 'text-zinc-400'
+      ]}
+    >
+      gm~
+    </div>
   </div>
 
-  <div class="absolute top-0 right-0">
+  <div class="absolute -top-7 right-0 z-10">
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
           type="button"
-          class="cursor-pointer rounded p-0.5 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+          class="node-floating-button !opacity-100"
           aria-label="Settings"
           onclick={() => (showSettings = !showSettings)}
         >
-          <Settings class="h-3.5 w-3.5" />
+          <Settings class="h-4 w-4 text-zinc-300" />
         </button>
       </Tooltip.Trigger>
       <Tooltip.Content>Settings</Tooltip.Content>
     </Tooltip.Root>
   </div>
 
-  <div
-    class={[
-      'grid grid-cols-4 overflow-hidden rounded border bg-zinc-950/70 shadow-sm',
-      node.selected ? 'border-zinc-400' : 'border-zinc-800/80'
-    ]}
-  >
-    {#each monitor.channels as channel, index (channel.channel)}
-      <div
-        class={[
-          'channel-cell relative min-w-0 overflow-hidden border-zinc-800/70 px-2 py-1.5',
-          channel.status === 'error'
-            ? 'bg-red-950/20'
-            : channel.activeNotes > 0
-              ? 'bg-zinc-900/80'
-              : 'bg-zinc-950/20'
-        ]}
-        style={`--channel-color: ${CHANNEL_COLORS[index]}`}
-      >
-        {#key channel.activity}
-          <div class="activity-pulse"></div>
-        {/key}
+  <div class="relative">
+    <StandardHandle
+      port="inlet"
+      type="message"
+      title="Channel-aware MIDI messages"
+      total={1}
+      index={0}
+      nodeId={node.id}
+    />
 
-        <div class="relative flex min-w-0 items-center gap-1.5">
-          <span
-            class={[
-              'activity-dot',
-              channel.activeNotes > 0 || channel.activity > 0 ? 'opacity-100' : 'opacity-25'
-            ]}
-          ></span>
-          <span class="font-mono text-[9px] text-zinc-600">
-            {String(channel.channel).padStart(2, '0')}
-          </span>
-          <span class="truncate font-mono text-[9px] text-zinc-700">
-            P{String(channel.program).padStart(3, '0')}
-          </span>
-          <span
-            class={[
-              'ml-auto font-mono text-[9px]',
-              channel.activeNotes > 0 ? 'text-zinc-200' : 'text-zinc-700'
-            ]}
-          >
-            {channel.activeNotes > 0 ? channel.activeNotes : ''}
-          </span>
-        </div>
-
+    <div
+      class={[
+        'grid grid-cols-4 overflow-hidden rounded border bg-zinc-950/70 shadow-sm',
+        node.selected ? 'border-zinc-400' : 'border-zinc-800/80'
+      ]}
+    >
+      {#each monitor.channels as channel, index (channel.channel)}
         <div
           class={[
-            'relative mt-1 min-w-0 truncate font-mono text-[10px]',
-            channel.activeNotes > 0 ? 'text-zinc-100' : 'text-zinc-400'
+            'channel-cell relative min-w-0 overflow-hidden border-zinc-800/70 px-2 py-1.5',
+            channel.status === 'error'
+              ? 'bg-red-950/20'
+              : channel.activeNotes > 0
+                ? 'bg-zinc-900/80'
+                : 'bg-zinc-950/20'
           ]}
+          style={`--channel-color: ${CHANNEL_COLORS[index]}`}
         >
-          {channel.instrumentName}
-        </div>
+          {#key channel.activity}
+            <div class="activity-pulse"></div>
+          {/key}
 
-        {#if channel.status !== 'ready' && channel.status !== 'idle'}
+          <div class="relative flex min-w-0 items-center gap-1.5">
+            <span
+              class={[
+                'activity-dot',
+                channel.activeNotes > 0 || channel.activity > 0 ? 'opacity-100' : 'opacity-25'
+              ]}
+            ></span>
+            <span class="font-mono text-[9px] text-zinc-600">
+              {String(channel.channel).padStart(2, '0')}
+            </span>
+            <span class="truncate font-mono text-[9px] text-zinc-700">
+              P{String(channel.program).padStart(3, '0')}
+            </span>
+            <span
+              class={[
+                'ml-auto font-mono text-[9px]',
+                channel.activeNotes > 0 ? 'text-zinc-200' : 'text-zinc-700'
+              ]}
+            >
+              {channel.activeNotes > 0 ? channel.activeNotes : ''}
+            </span>
+          </div>
+
           <div
             class={[
-              'relative mt-0.5 truncate font-mono text-[9px]',
-              channel.status === 'error' ? 'text-red-300' : 'text-amber-300'
+              'relative mt-1 min-w-0 truncate font-mono text-[10px]',
+              channel.activeNotes > 0 ? 'text-zinc-100' : 'text-zinc-400'
             ]}
           >
-            {channel.status}
+            {channel.instrumentName}
           </div>
-        {/if}
-      </div>
-    {/each}
-  </div>
 
-  <StandardHandle
-    port="outlet"
-    type="audio"
-    title="Audio output"
-    total={1}
-    index={0}
-    nodeId={node.id}
-  />
+          {#if channel.status !== 'ready' && channel.status !== 'idle'}
+            <div
+              class={[
+                'relative mt-0.5 truncate font-mono text-[9px]',
+                channel.status === 'error' ? 'text-red-300' : 'text-amber-300'
+              ]}
+            >
+              {channel.status}
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+
+    <StandardHandle
+      port="outlet"
+      type="audio"
+      title="Audio output"
+      total={1}
+      index={0}
+      nodeId={node.id}
+    />
+  </div>
 
   {#if showSettings}
     <div class="absolute top-0 left-full z-20 ml-3">
