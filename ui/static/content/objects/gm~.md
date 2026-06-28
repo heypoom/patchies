@@ -13,6 +13,9 @@ The node is also a channel monitor. Each of the 16 cells shows the current
 program, resolved instrument name, loading/error state, active note count, and
 short activity flashes for incoming MIDI.
 
+When connected to `midi.file`, `gm~` also reads the file's initial program
+metadata and preloads those channel instruments before playback starts.
+
 ## Settings
 
 - **Source** chooses between built-in Soundfont kits and a custom SoundFont2 file

@@ -165,4 +165,26 @@ describe('GmAudioNode', () => {
     });
     expect(channel?.activity).toBeGreaterThan(0);
   });
+
+  it('preloads channel instruments from midi.file loaded program metadata', async () => {
+    const soundfont = vi.fn((_context: AudioContext, options: Record<string, unknown>) =>
+      createInstrument(String(options.instrument))
+    );
+    const module = { Soundfont: soundfont } as unknown as SmplrModule;
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 100, velocity: 100 }]);
+    await node.send('message', {
+      type: 'loaded',
+      fileName: 'song.mid',
+      durationSeconds: 1,
+      trackCount: 1,
+      ppq: 480,
+      programs: [{ channel: 2, program: 40 }]
+    });
+    await node.send('message', { type: 'noteOn', note: 64, velocity: 90, channel: 2 });
+
+    expect(soundfont).toHaveBeenCalledTimes(1);
+    expect(soundfont.mock.calls[0]?.[1]).toMatchObject({ instrument: 'violin' });
+  });
 });

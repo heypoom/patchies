@@ -125,6 +125,47 @@ describe('MidiFilePlayer', () => {
     reportingPlayer.destroy();
   });
 
+  it('includes explicit initial program state in loaded metadata', () => {
+    const send = vi.fn();
+    const player = new MidiFilePlayer({ send });
+    const programFile: ParsedMidiFile = {
+      ...parsed,
+      events: [
+        {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'programChange', program: 40, channel: 2 }
+        },
+        {
+          seconds: 0.5,
+          ticks: 240,
+          track: 0,
+          message: { type: 'programChange', program: 12, channel: 2 }
+        },
+        {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'programChange', program: 60, channel: 4 }
+        }
+      ]
+    };
+
+    player.load(programFile);
+
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'loaded',
+        programs: [
+          { channel: 2, program: 40 },
+          { channel: 4, program: 60 }
+        ]
+      })
+    );
+    player.destroy();
+  });
+
   it('restarts from the beginning when played again after reaching the end', () => {
     vi.useFakeTimers();
     vi.setSystemTime(0);
