@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PadsAudioNode } from './PadsAudioNode';
 
@@ -36,6 +36,10 @@ function createFakeAudioContext(sources = [createFakeSource()], gains = [createF
 }
 
 describe('PadsAudioNode', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('schedules MIDI noteOn playback at the message audio time', () => {
     const source = createFakeSource();
     const outputGain = createFakeGain();
@@ -78,5 +82,26 @@ describe('PadsAudioNode', () => {
 
     expect(voiceGain.gain.value).toBeCloseTo(0.75);
     expect(source.start).toHaveBeenCalledWith(12.5);
+  });
+
+  it('delays visual triggers until scheduled playback time', () => {
+    vi.useFakeTimers();
+
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new PadsAudioNode('pads-1', audioContext);
+    const onTrigger = vi.fn();
+
+    node.onTrigger = onTrigger;
+    node.setBuffer(0, {} as AudioBuffer);
+    node.send('message', { type: 'noteOn', note: 36, velocity: 100, time: 0.25 });
+
+    expect(onTrigger).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(249);
+    expect(onTrigger).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(onTrigger).toHaveBeenCalledWith(0, 100);
   });
 });

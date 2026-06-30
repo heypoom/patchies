@@ -10,6 +10,7 @@ import { Type } from '@sinclair/typebox';
 interface Voice {
   source: AudioBufferSourceNode;
   gain: GainNode;
+  triggerTimer?: ReturnType<typeof setTimeout>;
 }
 
 const getNonNegativeNumber = (value: unknown): number | undefined =>
@@ -49,6 +50,7 @@ export class PadsAudioNode implements AudioNodeV2 {
   private audioContext: AudioContext;
   private buffers: (AudioBuffer | null)[] = Array(16).fill(null);
   private voices: Map<number, Voice[]> = new Map();
+  private triggerTimers = new Set<ReturnType<typeof setTimeout>>();
 
   /** Synced from node data — set by the component via $effect */
   noteOffMode: NoteOffMode = 'ignore';
@@ -112,6 +114,10 @@ export class PadsAudioNode implements AudioNodeV2 {
     for (const [padIndex] of this.voices) {
       this.stopPadVoices(padIndex);
     }
+    for (const timer of this.triggerTimers) {
+      clearTimeout(timer);
+    }
+    this.triggerTimers.clear();
     this.voices.clear();
     this.audioNode.disconnect();
   }
@@ -119,8 +125,6 @@ export class PadsAudioNode implements AudioNodeV2 {
   private triggerOn(padIndex: number, velocity: number, time?: unknown): void {
     const buffer = this.buffers[padIndex];
     if (!buffer) return;
-
-    this.onTrigger?.(padIndex, velocity);
 
     if (!this.voices.has(padIndex)) {
       this.voices.set(padIndex, []);
@@ -146,6 +150,7 @@ export class PadsAudioNode implements AudioNodeV2 {
     padVoices.push(voice);
 
     source.onended = () => {
+      this.clearTriggerTimer(voice);
       const voices = this.voices.get(padIndex);
       if (voices) {
         const idx = voices.indexOf(voice);
@@ -157,8 +162,10 @@ export class PadsAudioNode implements AudioNodeV2 {
 
     const startTime = getNonNegativeNumber(time);
     if (startTime === undefined) {
+      this.onTrigger?.(padIndex, velocity);
       source.start();
     } else {
+      this.scheduleTriggerFlash(voice, padIndex, velocity, startTime);
       source.start(startTime);
     }
   }
@@ -174,6 +181,9 @@ export class PadsAudioNode implements AudioNodeV2 {
 
     const stopTime = getNonNegativeNumber(time) ?? this.audioContext.currentTime;
     for (const voice of padVoices) {
+      if (stopTime <= this.audioContext.currentTime) {
+        this.clearTriggerTimer(voice);
+      }
       voice.gain.gain.setTargetAtTime(0, stopTime, 0.01);
       try {
         voice.source.stop(stopTime + 0.05);
@@ -185,6 +195,7 @@ export class PadsAudioNode implements AudioNodeV2 {
   }
 
   private killVoice(voice: Voice): void {
+    this.clearTriggerTimer(voice);
     try {
       voice.source.stop();
     } catch {
@@ -192,5 +203,35 @@ export class PadsAudioNode implements AudioNodeV2 {
     }
     voice.source.disconnect();
     voice.gain.disconnect();
+  }
+
+  private scheduleTriggerFlash(
+    voice: Voice,
+    padIndex: number,
+    velocity: number,
+    startTime: number
+  ): void {
+    const delayMs = Math.max(0, (startTime - this.audioContext.currentTime) * 1000);
+    if (delayMs === 0) {
+      this.onTrigger?.(padIndex, velocity);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      this.triggerTimers.delete(timer);
+      voice.triggerTimer = undefined;
+      this.onTrigger?.(padIndex, velocity);
+    }, delayMs);
+
+    voice.triggerTimer = timer;
+    this.triggerTimers.add(timer);
+  }
+
+  private clearTriggerTimer(voice: Voice): void {
+    if (!voice.triggerTimer) return;
+
+    clearTimeout(voice.triggerTimer);
+    this.triggerTimers.delete(voice.triggerTimer);
+    voice.triggerTimer = undefined;
   }
 }

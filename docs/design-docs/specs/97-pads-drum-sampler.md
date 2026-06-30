@@ -220,7 +220,12 @@ Each cell:
 
 ### Flash on Trigger
 
-The node subscribes to noteOn events from the audio node via a message callback. When pad `i` fires, `PadCell` at index `i` briefly sets an `active` CSS class (e.g., 100ms timeout).
+The node subscribes to trigger events from the audio node via a callback. When
+pad `i` fires, `PadCell` at index `i` briefly sets an `active` CSS class (e.g.,
+100ms timeout). For scheduled trigger messages with `time`, the visual flash is
+delayed until the same absolute `AudioContext.currentTime` timestamp used for
+`AudioBufferSourceNode.start(time)`, so sequencer audio-lookahead flashes stay
+in sync with playback.
 
 ---
 
