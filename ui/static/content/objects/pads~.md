@@ -22,6 +22,17 @@ MIDI noteOn/noteOff messages:
 { type: "noteOff", note: 36, velocity: 0   }  →  releases pad 1 (gated mode)
 ```
 
+For sample-accurate triggering from `sequencer` with **single outlet midi** and
+**Audio lookahead** enabled, `pads~` also accepts absolute Web Audio times:
+
+```js
+{ type: "noteOn", note: 36, velocity: 100, time: audioContextTime }
+{ type: "noteOff", note: 36, time: audioContextTime }
+```
+
+`time` is an absolute `AudioContext.currentTime` timestamp. It schedules pad
+playback and gated releases on the audio clock.
+
 ## Settings
 
 Open the settings panel (gear icon) to configure:
@@ -43,5 +54,6 @@ Samples can also be assigned programmatically:
 ## See Also
 
 - [sampler~](/docs/objects/sampler~) — single-sample player with loop points and recording
+- [sequencer](/docs/objects/sequencer) — step sequencer with audio-lookahead MIDI output
 - [soundfile~](/docs/objects/soundfile~) — audio file playback
 - [midi.in](/docs/objects/midi.in) — MIDI input source

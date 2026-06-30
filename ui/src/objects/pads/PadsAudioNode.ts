@@ -12,6 +12,9 @@ interface Voice {
   gain: GainNode;
 }
 
+const getNonNegativeNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
+
 export class PadsAudioNode implements AudioNodeV2 {
   static type = 'pads~';
   static group: AudioNodeGroup = 'processors';
@@ -74,18 +77,18 @@ export class PadsAudioNode implements AudioNodeV2 {
     if (key !== 'message') return;
 
     match(message)
-      .with(messages.noteOn, ({ note, velocity }) => {
+      .with(messages.noteOn, ({ note, velocity, time }) => {
         const padIndex = note - BASE_NOTE;
 
         if (padIndex >= 0 && padIndex < this.padCount) {
-          this.triggerOn(padIndex, velocity);
+          this.triggerOn(padIndex, velocity, time);
         }
       })
-      .with(messages.noteOff, ({ note }) => {
+      .with(messages.noteOff, ({ note, time }) => {
         const padIndex = note - BASE_NOTE;
 
         if (padIndex >= 0 && padIndex < this.padCount) {
-          this.triggerOff(padIndex);
+          this.triggerOff(padIndex, time);
         }
       })
       .with(P.number, (padIndex) => {
@@ -105,7 +108,7 @@ export class PadsAudioNode implements AudioNodeV2 {
     this.audioNode.disconnect();
   }
 
-  private triggerOn(padIndex: number, velocity: number): void {
+  private triggerOn(padIndex: number, velocity: number, time?: unknown): void {
     const buffer = this.buffers[padIndex];
     if (!buffer) return;
 
@@ -144,23 +147,28 @@ export class PadsAudioNode implements AudioNodeV2 {
       voiceGain.disconnect();
     };
 
-    source.start();
+    const startTime = getNonNegativeNumber(time);
+    if (startTime === undefined) {
+      source.start();
+    } else {
+      source.start(startTime);
+    }
   }
 
-  private triggerOff(padIndex: number): void {
+  private triggerOff(padIndex: number, time?: unknown): void {
     if (this.noteOffMode === 'ignore') return;
-    this.stopPadVoices(padIndex);
+    this.stopPadVoices(padIndex, time);
   }
 
-  private stopPadVoices(padIndex: number): void {
+  private stopPadVoices(padIndex: number, time?: unknown): void {
     const padVoices = this.voices.get(padIndex);
     if (!padVoices || padVoices.length === 0) return;
 
-    const now = this.audioContext.currentTime;
+    const stopTime = getNonNegativeNumber(time) ?? this.audioContext.currentTime;
     for (const voice of padVoices) {
-      voice.gain.gain.setTargetAtTime(0, now, 0.01);
+      voice.gain.gain.setTargetAtTime(0, stopTime, 0.01);
       try {
-        voice.source.stop(now + 0.05);
+        voice.source.stop(stopTime + 0.05);
       } catch {
         // already stopped
       }

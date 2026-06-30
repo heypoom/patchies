@@ -10,8 +10,11 @@ HANDLE IDS:
 MIDI INPUT FORMAT:
 - { type: "noteOn", note: 36, velocity: 100 } — trigger pad 1
 - { type: "noteOff", note: 36, velocity: 0 } — release pad 1 (only relevant in gated mode)
+- Optional time schedules noteOn/noteOff at an absolute AudioContext.currentTime timestamp
+- sequencer single-outlet midi + Audio lookahead emits { type: "noteOn", note, index, velocity, time }
 
 TYPICAL PATCH: midi.in → pads~ → out~
+SCHEDULED PATCH: sequencer (single outlet midi + Audio lookahead) → pads~ → out~
 
 LOAD MESSAGE (to assign a sample via message):
 - { type: "load", pad: 0, src: "user://Samples/kick.wav" }
