@@ -14,7 +14,10 @@
     createSamplerPlaybackMessage,
     type SamplerPlaybackTrigger
   } from '$lib/audio/sampler-playback-message';
-  import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
+  import type {
+    SamplerNode as SamplerNodeV2,
+    SamplerPlaybackStartEvent
+  } from '$lib/audio/v2/nodes/SamplerNode';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
   import { useNodeDataTracker } from '$lib/history';
@@ -57,6 +60,7 @@
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
   let isPlaying = $state(false);
   let playbackProgress = $state(0);
+  let activePlaybackRate = $state(1);
   let playbackInterval: ReturnType<typeof setInterval> | null = null;
   let audioBuffer = $state<AudioBuffer | null>(null);
   let showSettings = $state(false);
@@ -343,11 +347,9 @@
     if (!message) return;
 
     audioService.send(node.id, 'message', message);
-
-    startPlaybackProgressBar();
   }
 
-  function startPlaybackProgressBar() {
+  function startPlaybackProgressBar(event?: SamplerPlaybackStartEvent) {
     // Clear any existing interval to prevent zombie intervals
     if (playbackInterval) {
       clearInterval(playbackInterval);
@@ -355,7 +357,8 @@
     }
 
     isPlaying = true;
-    playbackProgress = loopStart;
+    activePlaybackRate = event?.playbackRate ?? playbackRate;
+    playbackProgress = event?.offset ?? loopStart;
 
     // Calculate the effective end point
     const effectiveEnd = loopEnd > loopStart ? loopEnd : recordingDuration;
@@ -363,7 +366,7 @@
     // Start playback progress tracking
     playbackInterval = setInterval(() => {
       // Advance playback progress based on playbackRate
-      playbackProgress += 0.1 * playbackRate;
+      playbackProgress += 0.1 * activePlaybackRate;
 
       if (loopEnabled) {
         // Loop back to start if we reach the end
@@ -504,6 +507,9 @@
 
     // Initialize with playbackRate and detune from node.data
     if (v2Node) {
+      v2Node.onPlaybackStart = startPlaybackProgressBar;
+      v2Node.onPlaybackStop = stopPlaybackProgressBar;
+
       if (node.data.gain !== undefined) {
         audioService.send(node.id, 'message', { type: 'setGain', value: node.data.gain });
       }
@@ -557,6 +563,11 @@
 
     if (isPlaying) {
       audioService.send(node.id, 'message', { type: 'stop' });
+    }
+
+    if (v2Node) {
+      v2Node.onPlaybackStart = undefined;
+      v2Node.onPlaybackStop = undefined;
     }
 
     messageContext?.queue.removeCallback(handleMessage);

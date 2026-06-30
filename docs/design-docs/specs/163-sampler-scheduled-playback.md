@@ -28,6 +28,12 @@ number // play immediately with gain multiplier
   from the sampler settings UI or with `setNoteOffMode`.
 - `time` is an absolute `AudioContext.currentTime` timestamp, matching
   scheduled messages emitted by audio-mode sequencers.
+- The sampler node's visual playback head starts from the V2 audio node's
+  playback-start callback, not from component-side message receipt. Timed
+  `bang` and MIDI `noteOn` messages therefore update the visual at the same
+  scheduled audio-clock time used by `AudioBufferSourceNode.start(time)`.
+- In held note-off mode, stopped note voices notify the UI so the visual
+  playback head can stop when the voice is stopped.
 - `offset` is the position in the sample buffer to start playback from, in
   seconds.
 - `duration` is the amount of source-buffer audio to play, in seconds.
