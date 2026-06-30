@@ -4,7 +4,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 import { BASE_NOTE, type NoteOffMode, type PadCount } from './constants';
 import { messages } from '$lib/objects/schemas';
 import { NoteOn, NoteOff } from '$lib/objects/schemas/common';
-import { LoadPad } from './schema';
+import { LoadPad, TriggerPad, padsMessages } from './schema';
 import { Type } from '@sinclair/typebox';
 
 interface Voice {
@@ -29,6 +29,7 @@ export class PadsAudioNode implements AudioNodeV2 {
       messages: [
         { schema: NoteOn, description: 'Trigger pad by MIDI note' },
         { schema: NoteOff, description: 'Release pad' },
+        { schema: TriggerPad, description: 'Trigger pad by index with scheduled velocity' },
         { schema: LoadPad, description: 'Load sample into pad slot' },
         {
           schema: Type.Number({ minimum: 0, maximum: 15 }),
@@ -89,6 +90,13 @@ export class PadsAudioNode implements AudioNodeV2 {
 
         if (padIndex >= 0 && padIndex < this.padCount) {
           this.triggerOff(padIndex, time);
+        }
+      })
+      .with(padsMessages.triggerPad, ({ index, value, time }) => {
+        const velocity = getNonNegativeNumber(value);
+
+        if (velocity !== undefined && index >= 0 && index < this.padCount) {
+          this.triggerOn(index, velocity * 127, time);
         }
       })
       .with(P.number, (padIndex) => {

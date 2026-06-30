@@ -2,7 +2,7 @@
 
 ## Overview
 
-`pads~` is a 16-pad sampler node inspired by the Akai MPC / Ableton Drum Rack. It receives MIDI noteOn/noteOff messages and plays back audio samples assigned to each pad. Pads are triggered by MIDI notes following the standard GM drum map (note 36 = pad 1). Timed MIDI messages may include `time?: number`, an absolute `AudioContext.currentTime` timestamp used for audio-clock scheduling.
+`pads~` is a 16-pad sampler node inspired by the Akai MPC / Ableton Drum Rack. It receives MIDI noteOn/noteOff messages and plays back audio samples assigned to each pad. Pads are triggered by MIDI notes following the standard GM drum map (note 36 = pad 1). Timed trigger messages may include `time?: number`, an absolute `AudioContext.currentTime` timestamp used for audio-clock scheduling. `sequencer` single-outlet audio-lookahead output can trigger `pads~` in either `index` or `midi` mode.
 
 It differs from `sampler~` in that it holds up to 16 independent samples and is optimized for fast sample assignment via drag-and-drop onto individual pads.
 
@@ -112,12 +112,19 @@ export const NoteOff = msg("noteOff", {
   time: Type.Optional(Type.Number()),
 });
 
+export const TriggerPad = msg("bang", {
+  index: Type.Number(),
+  value: Type.Number(),
+  time: Type.Optional(Type.Number()),
+});
+
 // Load a sample into a specific pad slot
 export const LoadPad = msg("load", { pad: Type.Number(), src: Type.String() });
 
 export const padsMessages = {
   noteOn: schema(NoteOn),
   noteOff: schema(NoteOff),
+  triggerPad: schema(TriggerPad),
   loadPad: schema(LoadPad),
 };
 ```
@@ -126,10 +133,10 @@ export const padsMessages = {
 
 ## Inlets & Outlets
 
-| Port   | Type    | Description                                                      |
-| ------ | ------- | ---------------------------------------------------------------- |
-| Inlet  | message | MIDI `noteOn`/`noteOff` with optional `time`, or `load` commands |
-| Outlet | signal  | Stereo audio mix of all active pad voices                        |
+| Port   | Type    | Description                                                 |
+| ------ | ------- | ----------------------------------------------------------- |
+| Inlet  | message | MIDI `noteOn`/`noteOff`, indexed `bang`, or `load` commands |
+| Outlet | signal  | Stereo audio mix of all active pad voices                   |
 
 ---
 

@@ -2668,6 +2668,15 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           },
           {
             schema: Type.Object({
+              type: Type.Literal('bang'),
+              index: Type.Number(),
+              value: Type.Number(),
+              time: Type.Optional(Type.Number())
+            }),
+            description: 'Trigger pad by index with scheduled velocity'
+          },
+          {
+            schema: Type.Object({
               type: Type.Literal('load'),
               pad: Type.Number(),
               src: Type.String()

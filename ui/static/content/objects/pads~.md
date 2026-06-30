@@ -22,16 +22,18 @@ MIDI noteOn/noteOff messages:
 { type: "noteOff", note: 36, velocity: 0   }  →  releases pad 1 (gated mode)
 ```
 
-For sample-accurate triggering from `sequencer` with **single outlet midi** and
-**Audio lookahead** enabled, `pads~` also accepts absolute Web Audio times:
+For sample-accurate triggering from `sequencer` with **single outlet** and
+**Audio lookahead** enabled, `pads~` accepts both index and MIDI-style output:
 
 ```js
+{ type: "bang", index: 0, value: 0.75, time: audioContextTime }
 { type: "noteOn", note: 36, velocity: 100, time: audioContextTime }
 { type: "noteOff", note: 36, time: audioContextTime }
 ```
 
 `time` is an absolute `AudioContext.currentTime` timestamp. It schedules pad
-playback and gated releases on the audio clock.
+playback and gated releases on the audio clock. In `bang` messages, `index` is
+the zero-based pad number and `value` is the per-trigger velocity.
 
 ## Settings
 

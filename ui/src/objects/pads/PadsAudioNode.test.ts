@@ -65,4 +65,18 @@ describe('PadsAudioNode', () => {
     expect(voiceGain.gain.setTargetAtTime).toHaveBeenCalledWith(0, 13, 0.01);
     expect(source.stop).toHaveBeenCalledWith(13.05);
   });
+
+  it('schedules single-index sequencer bang messages by pad index', () => {
+    const source = createFakeSource();
+    const outputGain = createFakeGain();
+    const voiceGain = createFakeGain();
+    const audioContext = createFakeAudioContext([source], [outputGain, voiceGain]);
+    const node = new PadsAudioNode('pads-1', audioContext);
+
+    node.setBuffer(2, {} as AudioBuffer);
+    node.send('message', { type: 'bang', index: 2, value: 0.75, time: 12.5 });
+
+    expect(voiceGain.gain.value).toBeCloseTo(0.75);
+    expect(source.start).toHaveBeenCalledWith(12.5);
+  });
 });
