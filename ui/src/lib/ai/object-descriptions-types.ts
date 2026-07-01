@@ -20,6 +20,9 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with triggering
 - pads~: 16-pad drum sampler triggered by MIDI noteOn/noteOff (GM drum map, note 36 = pad 1)
+- gm~: Multi-channel General MIDI sampled instrument for midi.file playback
+- soundfont~: General MIDI Soundfont sampled instrument driven by noteOn/noteOff/programChange messages
+- soundfont2~: Load a SoundFont2 SF2 file as a sampled MIDI instrument
 - split~: Split multi-channel audio into separate mono channels.
 - merge~: Merge multiple mono channels into a single multi-channel audio.
 
@@ -71,6 +74,13 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - chuck~: ChucK audio programming
 - csound~: Csound sound and music computing
 - bytebeat~: Bytebeat algorithmic synthesis with t-based expressions
+- piano~: Splendid Grand Piano sampled instrument driven by MIDI messages
+- epiano~: Electric piano sampled instrument driven by MIDI messages
+- drums~: Classic drum machine sampled instrument driven by MIDI messages
+- mallet~: Mallet sampled instrument driven by MIDI messages
+- mellotron~: Mellotron sampled instrument driven by MIDI messages
+- versilian~: Versilian Community Sample Library instrument driven by MIDI messages
+- smolken~: Double bass sampled instrument driven by MIDI messages
 - strudel: Strudel live coding (TidalCycles)
 - orca: Orca livecoding sequencer
 - expr~: Audio-rate mathematical expressions
@@ -202,6 +212,9 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with pitch and trigger control
 - pads~: 16-pad drum sampler (GM drum map)
+- gm~: Multi-channel sampled General MIDI instrument
+- soundfont~, soundfont2~: Single-instrument sampled MIDI instruments
+- piano~, epiano~, drums~, mallet~, mellotron~, versilian~, smolken~: Ready-to-play sampled instruments
 
 ## MIDI
 - midi.in, midi.out, midi.file: MIDI controller input/output and file playback

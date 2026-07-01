@@ -8,7 +8,15 @@ export type MidiFileChannelMessage =
   | { type: 'polyPressure'; note: number; pressure: number; channel: number };
 
 export type MidiFileMetaMessage =
-  | { type: 'loaded'; fileName: string; durationSeconds: number; trackCount: number; ppq: number }
+  | {
+      type: 'loaded';
+      fileName: string;
+      durationSeconds: number;
+      trackCount: number;
+      ppq: number;
+      programs: MidiFileProgramState[];
+      preloadPrograms: MidiFileProgramState[];
+    }
   | { type: 'position'; seconds: number; progress: number }
   | { type: 'ended' }
   | { type: 'tempo'; bpm: number; tick: number }
@@ -18,6 +26,11 @@ export type MidiFileMetaMessage =
   | { type: 'error'; message: string };
 
 export type MidiFileOutputMessage = MidiFileChannelMessage | MidiFileMetaMessage;
+
+export type MidiFileProgramState = {
+  channel: number;
+  program: number;
+};
 
 export interface ScheduledMidiFileEvent {
   seconds: number;
@@ -86,7 +99,9 @@ export class MidiFilePlayer {
       fileName: file.fileName,
       durationSeconds: file.durationSeconds,
       trackCount: file.trackCount,
-      ppq: file.ppq
+      ppq: file.ppq,
+      programs: getProgramStateAt(file, 0),
+      preloadPrograms: getUniqueProgramStates(file)
     });
 
     this.sendPosition();
@@ -293,3 +308,55 @@ const isChannelMessage = (message: MidiFileOutputMessage): message is MidiFileCh
   message.type === 'polyPressure';
 
 const noteKey = (channel: number, note: number): string => `${channel}:${note}`;
+
+function getProgramStateAt(file: ParsedMidiFile, seconds: number): MidiFileProgramState[] {
+  const programsByChannel = new Map<number, number>(
+    getUsedChannels(file).map((channel) => [channel, 0])
+  );
+
+  for (const event of file.events) {
+    if (event.seconds > seconds) continue;
+    if (event.message.type !== 'programChange') continue;
+
+    programsByChannel.set(event.message.channel, event.message.program);
+  }
+
+  return Array.from(programsByChannel.entries())
+    .sort(([leftChannel], [rightChannel]) => leftChannel - rightChannel)
+    .map(([channel, program]) => ({ channel, program }));
+}
+
+function getUniqueProgramStates(file: ParsedMidiFile): MidiFileProgramState[] {
+  const programs = new Map<string, MidiFileProgramState>();
+  const channelsWithProgramChanges = new Set<number>();
+
+  for (const event of file.events) {
+    if (event.message.type !== 'programChange') continue;
+
+    const { channel, program } = event.message;
+    channelsWithProgramChanges.add(channel);
+    programs.set(`${channel}:${program}`, { channel, program });
+  }
+
+  for (const channel of getUsedChannels(file)) {
+    if (!channelsWithProgramChanges.has(channel)) {
+      programs.set(`${channel}:0`, { channel, program: 0 });
+    }
+  }
+
+  return Array.from(programs.values()).sort(
+    (left, right) => left.channel - right.channel || left.program - right.program
+  );
+}
+
+function getUsedChannels(file: ParsedMidiFile): number[] {
+  const channels = new Set<number>();
+
+  for (const event of file.events) {
+    if (isChannelMessage(event.message)) {
+      channels.add(event.message.channel);
+    }
+  }
+
+  return Array.from(channels).sort((left, right) => left - right);
+}

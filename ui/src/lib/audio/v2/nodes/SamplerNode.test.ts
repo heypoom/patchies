@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SamplerNode } from './SamplerNode';
 
@@ -39,6 +39,10 @@ function createFakeAudioContext(sources = [createFakeSource()], gains = [createF
 }
 
 describe('SamplerNode', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('plays number messages as gain-scaled triggers', () => {
     const source = createFakeSource();
     const outputGain = createFakeGain();
@@ -151,6 +155,67 @@ describe('SamplerNode', () => {
     expect(source.playbackRate.value).toBe(2);
     expect(voiceGain.gain.value).toBeCloseTo(64 / 127);
     expect(source.start).toHaveBeenCalledWith(12.5, 0, undefined);
+  });
+
+  it('notifies playback start for MIDI noteOn messages', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+    const onPlaybackStart = vi.fn();
+
+    node.onPlaybackStart = onPlaybackStart;
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'noteOn', note: 72, velocity: 64 });
+
+    expect(onPlaybackStart).toHaveBeenCalledWith({
+      source,
+      time: 0,
+      offset: 0,
+      duration: undefined,
+      playbackRate: 2
+    });
+  });
+
+  it('delays playback start notification for scheduled bang messages', () => {
+    vi.useFakeTimers();
+
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+    const onPlaybackStart = vi.fn();
+
+    node.onPlaybackStart = onPlaybackStart;
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'bang', time: 0.25, value: 0.75 });
+
+    expect(onPlaybackStart).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(249);
+    expect(onPlaybackStart).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(onPlaybackStart).toHaveBeenCalledWith({
+      source,
+      time: 0.25,
+      offset: 0,
+      duration: undefined,
+      playbackRate: 1
+    });
+  });
+
+  it('notifies playback stop when a started held MIDI note is stopped', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+    const onPlaybackStop = vi.fn();
+
+    node.onPlaybackStop = onPlaybackStop;
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'setNoteOffMode', value: 'held' });
+    node.send('message', { type: 'noteOn', note: 60, velocity: 127 });
+    node.send('message', { type: 'noteOff', note: 60 });
+
+    expect(onPlaybackStop).toHaveBeenCalledWith({ source });
   });
 
   it('ignores noteOff in one-shot mode', () => {

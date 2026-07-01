@@ -1,11 +1,30 @@
 export type SettingsPersistence = 'none' | 'node' | 'kv';
 
+export type SettingsVisibilityCondition =
+  | {
+      key: string;
+      equals: unknown;
+    }
+  | {
+      all: SettingsVisibilityCondition[];
+    }
+  | {
+      not: SettingsVisibilityCondition;
+    };
+
 interface SettingsFieldBase {
   key: string;
   label: string;
   description?: string;
   persistence?: SettingsPersistence;
+  visibleWhen?: SettingsVisibilityCondition;
 }
+
+export type SettingsOption = {
+  label: string;
+  value: string;
+  description?: string;
+};
 
 export interface NumberField extends SettingsFieldBase {
   type: 'number';
@@ -29,7 +48,17 @@ export interface BooleanField extends SettingsFieldBase {
 export interface SelectField extends SettingsFieldBase {
   type: 'select';
   default?: string;
-  options: string[] | { label: string; value: string; description?: string }[];
+  options: string[] | SettingsOption[];
+}
+
+export interface ComboboxField extends SettingsFieldBase {
+  type: 'combobox';
+  default?: string;
+  options: string[] | SettingsOption[];
+  placeholder?: string;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  maxVisibleOptions?: number;
 }
 
 export interface ColorField extends SettingsFieldBase {
@@ -59,6 +88,7 @@ export type SettingsField =
   | StringField
   | BooleanField
   | SelectField
+  | ComboboxField
   | ColorField
   | SliderField
   | Vec2Field;

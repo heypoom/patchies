@@ -2,7 +2,7 @@
 
 ## Overview
 
-`pads~` is a 16-pad sampler node inspired by the Akai MPC / Ableton Drum Rack. It receives MIDI noteOn/noteOff messages and plays back audio samples assigned to each pad. Pads are triggered by MIDI notes following the standard GM drum map (note 36 = pad 1).
+`pads~` is a 16-pad sampler node inspired by the Akai MPC / Ableton Drum Rack. It receives MIDI noteOn/noteOff messages and plays back audio samples assigned to each pad. Pads are triggered by MIDI notes following the standard GM drum map (note 36 = pad 1). Timed trigger messages may include `time?: number`, an absolute `AudioContext.currentTime` timestamp used for audio-clock scheduling. `sequencer` single-outlet audio-lookahead output can trigger `pads~` in either `index` or `midi` mode.
 
 It differs from `sampler~` in that it holds up to 16 independent samples and is optimized for fast sample assignment via drag-and-drop onto individual pads.
 
@@ -41,29 +41,29 @@ Registration in existing files (outside the module):
 ```typescript
 // constants.ts
 
-export type PadCount = 8 | 16
-export type NoteOffMode = 'ignore' | 'stop'
+export type PadCount = 8 | 16;
+export type NoteOffMode = "ignore" | "stop";
 
 export interface PadConfig {
-  vfsPath?: string // VFS path to audio sample
-  label?: string // Display name (auto-derived from filename if omitted)
+  vfsPath?: string; // VFS path to audio sample
+  label?: string; // Display name (auto-derived from filename if omitted)
 }
 
 export interface PadsNodeData {
-  padCount: PadCount // 8 or 16 pads (default: 16)
-  pads: PadConfig[] // Always length 16; only [0..padCount-1] are active
-  maxVoices: number // Max simultaneous voices per pad (1–16, default: 4)
-  noteOffMode: NoteOffMode // 'ignore' (one-shot) | 'stop' (gated), default: 'ignore'
+  padCount: PadCount; // 8 or 16 pads (default: 16)
+  pads: PadConfig[]; // Always length 16; only [0..padCount-1] are active
+  maxVoices: number; // Max simultaneous voices per pad (1–16, default: 4)
+  noteOffMode: NoteOffMode; // 'ignore' (one-shot) | 'stop' (gated), default: 'ignore'
 }
 
-export const BASE_NOTE = 36 // MIDI note for pad 1 (GM kick)
+export const BASE_NOTE = 36; // MIDI note for pad 1 (GM kick)
 
 export const DEFAULT_PADS_NODE_DATA: PadsNodeData = {
   padCount: 16,
-  pads: Array.from({length: 16}, () => ({})),
+  pads: Array.from({ length: 16 }, () => ({})),
   maxVoices: 4,
-  noteOffMode: 'ignore',
-}
+  noteOffMode: "ignore",
+};
 ```
 
 ---
@@ -96,38 +96,47 @@ export const DEFAULT_PADS_NODE_DATA: PadsNodeData = {
 ```typescript
 // schema.ts — TypeBox schemas + ts-pattern matchers
 
-import {Type} from '@sinclair/typebox'
-import {msg, sym} from '$lib/objects/schemas/helpers'
-import {schema} from '$lib/objects/schemas/types'
+import { Type } from "@sinclair/typebox";
+import { msg, sym } from "$lib/objects/schemas/helpers";
+import { schema } from "$lib/objects/schemas/types";
 
 // Inlet: MIDI message (passed from midi.in or other sources)
-export const NoteOn = msg('noteOn', {
+export const NoteOn = msg("noteOn", {
   note: Type.Number(),
   velocity: Type.Number(),
-})
-export const NoteOff = msg('noteOff', {
+  time: Type.Optional(Type.Number()),
+});
+export const NoteOff = msg("noteOff", {
   note: Type.Number(),
   velocity: Type.Number(),
-})
+  time: Type.Optional(Type.Number()),
+});
+
+export const TriggerPad = msg("bang", {
+  index: Type.Number(),
+  value: Type.Number(),
+  time: Type.Optional(Type.Number()),
+});
 
 // Load a sample into a specific pad slot
-export const LoadPad = msg('load', {pad: Type.Number(), src: Type.String()})
+export const LoadPad = msg("load", { pad: Type.Number(), src: Type.String() });
 
 export const padsMessages = {
   noteOn: schema(NoteOn),
   noteOff: schema(NoteOff),
+  triggerPad: schema(TriggerPad),
   loadPad: schema(LoadPad),
-}
+};
 ```
 
 ---
 
 ## Inlets & Outlets
 
-| Port   | Type    | Description                                 |
-| ------ | ------- | ------------------------------------------- |
-| Inlet  | message | MIDI `noteOn`/`noteOff`, or `load` commands |
-| Outlet | signal  | Stereo audio mix of all active pad voices   |
+| Port   | Type    | Description                                                 |
+| ------ | ------- | ----------------------------------------------------------- |
+| Inlet  | message | MIDI `noteOn`/`noteOff`, indexed `bang`, or `load` commands |
+| Outlet | signal  | Stereo audio mix of all active pad voices                   |
 
 ---
 
@@ -137,20 +146,20 @@ export const padsMessages = {
 // PadsAudioNode.ts
 
 class PadsAudioNode implements AudioNodeV2 {
-  static type = 'pads~'
+  static type = "pads~";
 
   // Per-pad: loaded AudioBuffer + pool of active source nodes
-  private buffers: (AudioBuffer | null)[] = Array(16).fill(null)
-  private voices: Map<number, AudioBufferSourceNode[]> = new Map()
+  private buffers: (AudioBuffer | null)[] = Array(16).fill(null);
+  private voices: Map<number, AudioBufferSourceNode[]> = new Map();
 
   // Shared output gain → outlet
-  private outputGain: GainNode
+  private outputGain: GainNode;
 
   async loadPad(
     padIndex: number,
     vfsPath: string,
     ctx: AudioContext,
-  ): Promise<void>
+  ): Promise<void>;
   // Fetches audio via VFS, decodes, stores in buffers[padIndex]
 
   triggerOn(
@@ -158,19 +167,19 @@ class PadsAudioNode implements AudioNodeV2 {
     velocity: number,
     ctx: AudioContext,
     maxVoices: number,
-  ): void
+  ): void;
   // 1. If buffers[padIndex] is null, return (no sample loaded)
   // 2. Get current voices for pad; if length >= maxVoices, stop oldest
   // 3. Create AudioBufferSourceNode, set buffer, set playbackRate=1
   // 4. Connect: source → outputGain
-  // 5. source.start(); track in voices map
+  // 5. source.start(time) when a scheduled time is present; track in voices map
   // 6. source.onended: remove from voices map
 
-  triggerOff(padIndex: number): void
+  triggerOff(padIndex: number, time?: number): void;
   // If noteOffMode === 'stop': ramp gain of all active voices for pad
-  // to 0 over 10ms, then stop. Otherwise no-op.
+  // to 0 over 10ms at the scheduled time, then stop. Otherwise no-op.
 
-  send(message: unknown): void
+  send(message: unknown): void;
   // match(message)
   //   .with(padsMessages.noteOn, ({ note, velocity }) => {
   //     const padIndex = note - BASE_NOTE;
@@ -211,7 +220,12 @@ Each cell:
 
 ### Flash on Trigger
 
-The node subscribes to noteOn events from the audio node via a message callback. When pad `i` fires, `PadCell` at index `i` briefly sets an `active` CSS class (e.g., 100ms timeout).
+The node subscribes to trigger events from the audio node via a callback. When
+pad `i` fires, `PadCell` at index `i` briefly sets an `active` CSS class (e.g.,
+100ms timeout). For scheduled trigger messages with `time`, the visual flash is
+delayed until the same absolute `AudioContext.currentTime` timestamp used for
+`AudioBufferSourceNode.start(time)`, so sequencer audio-lookahead flashes stay
+in sync with playback.
 
 ---
 

@@ -340,6 +340,15 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
         data: url ? { _initialUrl: url } : {}
       };
     }
+  },
+  {
+    names: ['gm~'],
+    nodeType: 'gm~',
+    description: 'Multi-channel General MIDI sampled instrument',
+    transform: () => ({
+      nodeType: 'gm~',
+      data: getDefaultNodeData('gm~')
+    })
   }
 ];
 

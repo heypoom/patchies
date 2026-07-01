@@ -368,6 +368,7 @@
 
   onMount(async () => {
     const audioNode = await audioService.createNode(node.id, 'scope~', []);
+
     if (audioNode && audioNode instanceof ScopeAudioNode) {
       scopeNode = audioNode;
 

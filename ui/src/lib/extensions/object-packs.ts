@@ -162,6 +162,34 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['midi.in', 'midi.out', 'midi.file', 'webmidilink', 'mtof']
   },
   {
+    id: 'audio-samples',
+    name: 'Samplers & Tables',
+    description: 'Samplers, sample-backed instruments, tables and delay lines',
+    icon: 'FileHeadphone',
+    objects: [
+      'pads~',
+      'sampler~',
+      'gm~',
+      'soundfont~',
+      'soundfont2~',
+      'piano~',
+      'epiano~',
+      'drums~',
+      'mallet~',
+      'mellotron~',
+      'versilian~',
+      'smolken~',
+      'table',
+      'tabwrite~',
+      'tabread~',
+      'tabread4~',
+      'tabosc4~',
+      'delwrite~',
+      'delread~',
+      'delread4~'
+    ]
+  },
+  {
     id: 'networking',
     name: 'Networking',
     description: 'External communication and I/O',
@@ -287,24 +315,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'threshold~',
       'env~',
       'samplerate~'
-    ]
-  },
-  {
-    id: 'audio-samples',
-    name: 'Buffers & Tables',
-    description: 'Samples, tables and delay lines',
-    icon: 'FileHeadphone',
-    objects: [
-      'pads~',
-      'sampler~',
-      'table',
-      'tabwrite~',
-      'tabread~',
-      'tabread4~',
-      'tabosc4~',
-      'delwrite~',
-      'delread~',
-      'delread4~'
     ]
   },
   {

@@ -2,13 +2,18 @@ import type { Edge, Node } from '@xyflow/svelte';
 import { describe, expect, test, vi } from 'vitest';
 
 vi.mock('$lib/history', () => ({
-  AddNodeCommand: class {},
+  AddNodeCommand: class {
+    constructor(
+      public node: Node,
+      public canvasAccessors: unknown
+    ) {}
+  },
   BatchCommand: class {},
   DeleteEdgesCommand: class {},
   DeleteNodesCommand: class {}
 }));
 
-vi.mock('$lib/nodes/node-types', () => ({ nodeTypes: {} }));
+vi.mock('$lib/nodes/node-types', () => ({ nodeTypes: { 'gm~': {} } }));
 vi.mock('$lib/presets/presets', () => ({ PRESETS: {} }));
 vi.mock('$lib/objects/parse-object-param', () => ({ parseObjectParamFromString: vi.fn() }));
 vi.mock('$lib/registry/AudioRegistry', () => ({
@@ -51,6 +56,27 @@ function createContext() {
 }
 
 describe('NodeOperationsService', () => {
+  test('creates gm~ as a dedicated visual node type', () => {
+    const { ctx } = createContext();
+    const service = new NodeOperationsService(
+      ctx as unknown as ConstructorParameters<typeof NodeOperationsService>[0]
+    );
+
+    service.createNodeFromName('gm~', { x: 10, y: 20 });
+
+    expect(ctx.historyManager.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        node: expect.objectContaining({
+          id: 'gm~-1',
+          type: 'gm~'
+        })
+      })
+    );
+    expect(ctx.historyManager.execute.mock.calls[0][0].node.data).toMatchObject({
+      settings: expect.objectContaining({ source: 'soundfont' })
+    });
+  });
+
   test('creates new group nodes with explicit top-level dimensions', () => {
     const { ctx, getNodes } = createContext();
     const service = new NodeOperationsService(
