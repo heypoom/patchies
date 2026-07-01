@@ -16,6 +16,11 @@ interface Voice {
 const getNonNegativeNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 
+export const getPadBangVelocity = (value: unknown): number | undefined => {
+  const normalizedValue = getNonNegativeNumber(value);
+  return normalizedValue === undefined ? undefined : normalizedValue * 127;
+};
+
 export class PadsAudioNode implements AudioNodeV2 {
   static type = 'pads~';
   static group: AudioNodeGroup = 'processors';
@@ -95,10 +100,10 @@ export class PadsAudioNode implements AudioNodeV2 {
         }
       })
       .with(padsMessages.triggerPad, ({ index, value, time }) => {
-        const velocity = getNonNegativeNumber(value);
+        const velocity = getPadBangVelocity(value);
 
         if (velocity !== undefined && index >= 0 && index < this.padCount) {
-          this.triggerOn(index, velocity * 127, time);
+          this.triggerOn(index, velocity, time);
         }
       })
       .with(P.number, (padIndex) => {

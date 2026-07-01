@@ -332,13 +332,71 @@ describe('GmAudioNode', () => {
     expect(statuses).toContainEqual({ state: 'ready', activeChannels: 1 });
   });
 
-  it('clamps loaded program metadata to the MIDI program range', async () => {
-    const soundfontCalls: Array<Record<string, unknown>> = [];
+  it('clamps program changes before updating channel state and monitor', async () => {
+    const instrument = createInstrument();
+    const module = {
+      Soundfont: () => instrument
+    } as unknown as SmplrModule;
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 100, velocity: 100 }]);
+    await node.send('message', { type: 'programChange', program: 200, channel: 2 });
+    await node.send('message', { type: 'noteOn', note: 64, velocity: 90, channel: 2 });
+
+    expect(instrument.start).toHaveBeenCalledWith({ note: 64, velocity: 90 });
+    expect(node.getMonitorSnapshot().channels[1]).toMatchObject({
+      channel: 2,
+      program: 127,
+      instrumentName: 'gunshot',
+      status: 'ready'
+    });
+  });
+
+  it('refreshes monitor and live settings when promoting a preloaded cached instrument', async () => {
+    const instruments = new Map<string, SmplrInstrument>();
     const module = {
       Soundfont: (_context: AudioContext, options: Record<string, unknown>) => {
-        soundfontCalls.push(options);
-        return createInstrument();
+        const instrument = createInstrument();
+        instruments.set(String(options.instrument), instrument);
+        return instrument;
       }
+    } as unknown as SmplrModule;
+    const snapshots: Array<ReturnType<GmAudioNode['getMonitorSnapshot']>> = [];
+    const statuses: Array<Parameters<NonNullable<GmAudioNode['onStatusChange']>>[0]> = [];
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+    node.onMonitorChange = (snapshot) => snapshots.push(snapshot);
+    node.onStatusChange = (status) => statuses.push(status);
+
+    await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 10, velocity: 100 }]);
+    await node.send('message', {
+      type: 'loaded',
+      fileName: 'song.mid',
+      durationSeconds: 1,
+      trackCount: 1,
+      ppq: 480,
+      programs: [],
+      preloadPrograms: [{ channel: 2, program: 40 }]
+    });
+    await node.send('settings', { source: 'soundfont', kit: 'MusyngKite', volume: 64 });
+    await node.send('message', { type: 'programChange', program: 40, channel: 2 });
+    await node.send('message', { type: 'noteOn', note: 64, velocity: 90, channel: 2 });
+
+    expect(instruments.get('violin')?.output.volume).toBe(64);
+    expect(statuses).toContainEqual({ state: 'ready', activeChannels: 1 });
+    expect(snapshots.at(-1)?.channels[1]).toMatchObject({
+      channel: 2,
+      program: 40,
+      instrumentName: 'violin',
+      status: 'ready',
+      activeNotes: 1,
+      lastNote: 64
+    });
+  });
+
+  it('clamps loaded program metadata to the MIDI program range', async () => {
+    const instrument = createInstrument();
+    const module = {
+      Soundfont: () => instrument
     } as unknown as SmplrModule;
     const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
 
@@ -353,7 +411,9 @@ describe('GmAudioNode', () => {
       preloadPrograms: []
     });
 
-    expect(soundfontCalls[0]).toMatchObject({ instrument: 'gunshot' });
+    await node.send('message', { type: 'noteOn', note: 64, velocity: 90, channel: 2 });
+
+    expect(instrument.start).toHaveBeenCalledWith({ note: 64, velocity: 90 });
     expect(node.getMonitorSnapshot().channels[1]).toMatchObject({
       channel: 2,
       program: 127,

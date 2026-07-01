@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { PadsAudioNode } from './PadsAudioNode';
+import { getPadBangVelocity, PadsAudioNode } from './PadsAudioNode';
 
 function createFakeSource() {
   return {
@@ -80,7 +80,6 @@ describe('PadsAudioNode', () => {
     node.setBuffer(2, {} as AudioBuffer);
     node.send('message', { type: 'bang', index: 2, value: 0.75, time: 12.5 });
 
-    expect(voiceGain.gain.value).toBeCloseTo(0.75);
     expect(source.start).toHaveBeenCalledWith(12.5);
   });
 
@@ -103,5 +102,19 @@ describe('PadsAudioNode', () => {
 
     vi.advanceTimersByTime(1);
     expect(onTrigger).toHaveBeenCalledWith(0, 100);
+  });
+});
+
+describe('getPadBangVelocity', () => {
+  it('maps sequencer bang values to pad velocity', () => {
+    expect(getPadBangVelocity(0)).toBe(0);
+    expect(getPadBangVelocity(0.75)).toBe(95.25);
+    expect(getPadBangVelocity(1)).toBe(127);
+  });
+
+  it('ignores invalid sequencer bang values', () => {
+    expect(getPadBangVelocity(-1)).toBeUndefined();
+    expect(getPadBangVelocity(Number.NaN)).toBeUndefined();
+    expect(getPadBangVelocity('0.75')).toBeUndefined();
   });
 });

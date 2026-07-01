@@ -211,12 +211,13 @@ export class GmAudioNode implements AudioNodeV2 {
         this.updateMonitorChannel(channel, { lastControl: ccCommand.control });
       })
       .with({ type: 'program' }, (programCommand) => {
+        const program = normalizeProgram(programCommand.program);
         this.programChannels.add(channel);
-        this.addPreloadRequest(channel, programCommand.program);
-        setChannelProgram(this.channelState, channel, programCommand.program);
+        this.addPreloadRequest(channel, program);
+        setChannelProgram(this.channelState, channel, program);
         this.updateMonitorChannel(channel, {
-          program: programCommand.program,
-          instrumentName: this.getMonitorInstrumentName(channel, programCommand.program),
+          program,
+          instrumentName: this.getMonitorInstrumentName(channel, program),
           status: this.channels.has(channel) ? 'ready' : 'idle',
           error: undefined
         });
@@ -249,6 +250,13 @@ export class GmAudioNode implements AudioNodeV2 {
     if (!instrument) return null;
 
     this.channels.set(channel, { key, instrument });
+    this.applyLiveSettingsTo(instrument);
+    this.updateMonitorChannel(channel, {
+      program,
+      instrumentName: this.getMonitorInstrumentName(channel, program),
+      status: 'ready',
+      error: undefined
+    });
     this.onStatusChange?.({ state: 'ready', activeChannels: this.channels.size });
     return instrument;
   }
