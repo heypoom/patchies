@@ -55,6 +55,21 @@ describe('sampler playback progress tracking', () => {
     expect(result.shouldStopPlayback).toBe(true);
   });
 
+  it('wraps an active voice to loop start when looping past its end', () => {
+    let voices = new Map<AudioBufferSourceNode, SamplerPlaybackProgressVoice>();
+    voices = addVoice(voices, sourceA, 0.95, 1);
+
+    const result = advanceSamplerPlaybackProgress(voices, {
+      loopEnabled: true,
+      loopStart: 0.25,
+      stepSeconds: 0.1
+    });
+
+    expect(result.shouldStopPlayback).toBe(false);
+    expect(result.voices.size).toBe(1);
+    expect(result.voices.get(sourceA)?.progress).toBe(0.25);
+  });
+
   it('treats event duration as relative to the playback offset', () => {
     let voices = new Map<AudioBufferSourceNode, SamplerPlaybackProgressVoice>();
     voices = addSamplerPlaybackProgressVoice(voices, {
