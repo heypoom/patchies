@@ -12,10 +12,21 @@ import {
   disableAllPresetPacks,
   enabledPackIds,
   enabledPresetPackIds,
+  enableAllPresetPacks,
   enableAllExtensionPacks
 } from './extensions.store';
 
 describe('extensions store', () => {
+  it('leaves the Greggman bytebeat archive disabled when enabling all preset packs', () => {
+    disableAllPresetPacks();
+
+    enableAllPresetPacks();
+
+    expect(get(enabledPresetPackIds)).toEqual(
+      BUILT_IN_PRESET_PACKS.filter((pack) => pack.id !== 'greggman-bytebeat').map((pack) => pack.id)
+    );
+  });
+
   it('enables every object pack and lightweight preset packs for workshop setup', () => {
     disableAllPacks();
     disableAllPresetPacks();

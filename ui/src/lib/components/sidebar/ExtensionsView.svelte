@@ -6,6 +6,7 @@
   import {
     BUILT_IN_PACKS,
     BUILT_IN_PRESET_PACKS,
+    BULK_ENABLE_PRESET_PACK_IDS,
     enabledPackIds,
     enabledPresetPackIds,
     enabledPrimaryObjects,
@@ -62,7 +63,7 @@
   const enabledCount = $derived($enabledPrimaryObjects.size);
   const allObjectPacksEnabled = $derived($enabledPackIds.length === BUILT_IN_PACKS.length);
   const allPresetPacksEnabled = $derived(
-    $enabledPresetPackIds.length === BUILT_IN_PRESET_PACKS.length
+    BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
 </script>
 
