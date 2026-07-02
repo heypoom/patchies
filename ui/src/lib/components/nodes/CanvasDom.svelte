@@ -15,7 +15,7 @@
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { profiler } from '$lib/profiler';
@@ -419,6 +419,13 @@
             updateNodeInternals(nodeId);
           },
           setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
+          setPrimaryButton: (primaryButton: PrimaryButton) => {
+            eventBus.dispatch({
+              type: 'nodePrimaryButtonUpdate',
+              nodeId,
+              primaryButton
+            });
+          },
           onKeyDown: (callback: (event: KeyboardEvent) => void) => {
             keyboardCallbacks.onKeyDown = callback;
           },

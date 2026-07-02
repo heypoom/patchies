@@ -151,6 +151,10 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'setS')).not.toContain('setSize');
   });
 
+  it('shows setPrimaryButton completions for canvas.dom nodes', () => {
+    expect(getCompletionLabels('canvas.dom', 'setP')).toContain('setPrimaryButton');
+  });
+
   it('shows showAudioInput completions only for simple DSP audio nodes', () => {
     expect(getCompletionLabels('tone~', 'show')).toContain('showAudioInput');
     expect(getCompletionLabels('sonic~', 'show')).toContain('showAudioInput');
