@@ -7,8 +7,8 @@
   import { AudioOutputNode, type AudioOutputSettings } from '$lib/audio/v2/nodes/AudioOutputNode';
   import {
     audioOutputDevices,
-    enumerateAudioDevices,
-    hasEnumeratedDevices
+    enumerateAudioOutputDevices,
+    hasEnumeratedOutputDevices
   } from '../../../stores/audio-devices.store';
   import { useNodeDataTracker } from '$lib/history';
   import { editorFontFamily } from '../../../stores/editor.store';
@@ -44,8 +44,8 @@
 
   onMount(async () => {
     // Only enumerate devices if browser supports device selection
-    if (supportsDeviceSelection && !$hasEnumeratedDevices) {
-      await enumerateAudioDevices();
+    if (supportsDeviceSelection && !$hasEnumeratedOutputDevices) {
+      await enumerateAudioOutputDevices();
     }
 
     const node = await audioService.createNode(nodeId, 'out~');
@@ -133,7 +133,7 @@
   </div>
 
   {#if showSettings}
-    <div class="absolute left-20">
+    <div class="absolute left-full ml-2 w-56">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
           <X class="h-4 w-4 text-zinc-300" />
@@ -142,7 +142,7 @@
 
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class="nodrag ml-2 w-56 rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl"
+        class="nodrag w-full rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl"
         onkeydown={handleKeydown}
       >
         <div class="space-y-3">

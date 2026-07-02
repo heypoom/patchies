@@ -10,6 +10,31 @@ export const audioInputDevices = writable<AudioDevice[]>([]);
 export const audioOutputDevices = writable<AudioDevice[]>([]);
 
 export const hasEnumeratedDevices = writable(false);
+export const hasEnumeratedOutputDevices = writable(false);
+
+function updateAudioDeviceStores(devices: MediaDeviceInfo[]): void {
+  const inputs: AudioDevice[] = [];
+  const outputs: AudioDevice[] = [];
+
+  for (const device of devices) {
+    if (device.kind === 'audioinput') {
+      inputs.push({
+        id: device.deviceId,
+        name: device.label || `Microphone ${inputs.length + 1}`,
+        kind: 'audioinput'
+      });
+    } else if (device.kind === 'audiooutput') {
+      outputs.push({
+        id: device.deviceId,
+        name: device.label || `Speaker ${outputs.length + 1}`,
+        kind: 'audiooutput'
+      });
+    }
+  }
+
+  audioInputDevices.set(inputs);
+  audioOutputDevices.set(outputs);
+}
 
 /** Enumerate audio devices and populate stores */
 export async function enumerateAudioDevices(): Promise<void> {
@@ -29,18 +54,22 @@ export async function enumerateAudioDevices(): Promise<void> {
     stream.getTracks().forEach((track) => track.stop());
 
     const devices = await navigator.mediaDevices.enumerateDevices();
+    updateAudioDeviceStores(devices);
+    hasEnumeratedDevices.set(true);
+    hasEnumeratedOutputDevices.set(true);
+  } catch (error) {
+    console.error('Failed to enumerate audio devices:', error);
+  }
+}
 
-    const inputs: AudioDevice[] = [];
+/** Enumerate output devices without requesting microphone permission */
+export async function enumerateAudioOutputDevices(): Promise<void> {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
     const outputs: AudioDevice[] = [];
 
     for (const device of devices) {
-      if (device.kind === 'audioinput') {
-        inputs.push({
-          id: device.deviceId,
-          name: device.label || `Microphone ${inputs.length + 1}`,
-          kind: 'audioinput'
-        });
-      } else if (device.kind === 'audiooutput') {
+      if (device.kind === 'audiooutput') {
         outputs.push({
           id: device.deviceId,
           name: device.label || `Speaker ${outputs.length + 1}`,
@@ -49,11 +78,10 @@ export async function enumerateAudioDevices(): Promise<void> {
       }
     }
 
-    audioInputDevices.set(inputs);
     audioOutputDevices.set(outputs);
-    hasEnumeratedDevices.set(true);
+    hasEnumeratedOutputDevices.set(true);
   } catch (error) {
-    console.error('Failed to enumerate audio devices:', error);
+    console.error('Failed to enumerate audio output devices:', error);
   }
 }
 
@@ -76,6 +104,10 @@ export function getDefaultOutputDeviceId(): string {
 // Listen for device changes
 if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
   navigator.mediaDevices.addEventListener('devicechange', () => {
-    enumerateAudioDevices();
+    if (get(hasEnumeratedDevices)) {
+      enumerateAudioDevices();
+    } else if (get(hasEnumeratedOutputDevices)) {
+      enumerateAudioOutputDevices();
+    }
   });
 }
