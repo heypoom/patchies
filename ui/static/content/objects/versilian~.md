@@ -8,6 +8,14 @@ Versilian collection. Connect the audio outlet to `out~`.
 Choose the Versilian instrument in the settings panel, then adjust volume,
 velocity, pan, default note, detune, and reverse playback.
 
+## Attribution
+
+Samples are from the
+[Versilian Community Sample Library](https://github.com/sgossner/VCSL) by
+Versilian Studios LLC. VCSL is a CC0 general-purpose sample library built as a
+broader expansion of the VSCO 2 CE sample set. The sounds are public domain and
+can be used freely, including in commercial work.
+
 ## Messages
 
 ```text
