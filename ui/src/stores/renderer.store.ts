@@ -1,6 +1,7 @@
 import { derived, writable } from 'svelte/store';
 import { DEFAULT_OUTPUT_SIZE, DEFAULT_PREVIEW_SIZE } from '$lib/canvas/constants';
 import {
+  DEFAULT_PREVIEW_BACKGROUND_COLOR,
   parsePreviewBackgroundColor,
   type PreviewBackgroundColor
 } from '$lib/rendering/preview-background';
@@ -89,7 +90,7 @@ showCookStats.subscribe((enabled) => {
 });
 
 function loadPreviewBackgroundColor(): PreviewBackgroundColor {
-  if (typeof localStorage === 'undefined') return 'transparent';
+  if (typeof localStorage === 'undefined') return DEFAULT_PREVIEW_BACKGROUND_COLOR;
 
   return parsePreviewBackgroundColor(localStorage.getItem(PREVIEW_BACKGROUND_STORAGE_KEY));
 }

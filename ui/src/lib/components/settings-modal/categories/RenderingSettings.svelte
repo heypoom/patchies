@@ -12,7 +12,10 @@
   } from '../../../../stores/renderer.store';
   import { useWebCodecs, showVideoStats } from '../../../../stores/video.store';
   import { outputTarget, type OutputTarget } from '../../../../stores/canvas.store';
-  import type { PreviewBackgroundColor } from '$lib/rendering/preview-background';
+  import {
+    DEFAULT_PREVIEW_BACKGROUND_COLOR,
+    type PreviewBackgroundColor
+  } from '$lib/rendering/preview-background';
   import { match } from 'ts-pattern';
 
   const fpsCapOptions = [
@@ -40,7 +43,7 @@
 
   function getCustomPreviewBackgroundColor(color: PreviewBackgroundColor): `#${string}` {
     return match(color)
-      .with('transparent', () => '#09090b' as `#${string}`)
+      .with('transparent', () => DEFAULT_PREVIEW_BACKGROUND_COLOR)
       .otherwise((hex) => hex as `#${string}`);
   }
 

@@ -7,7 +7,8 @@ describe('preview background color', () => {
     expect(parsePreviewBackgroundColor('#0a0b0c')).toBe('#0a0b0c');
   });
 
-  it('falls back to transparent for invalid stored values', () => {
-    expect(parsePreviewBackgroundColor('nope')).toBe('transparent');
+  it('falls back to black for missing or invalid stored values', () => {
+    expect(parsePreviewBackgroundColor(null)).toBe('#000000');
+    expect(parsePreviewBackgroundColor('nope')).toBe('#000000');
   });
 });
