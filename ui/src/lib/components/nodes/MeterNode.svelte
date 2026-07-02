@@ -4,7 +4,10 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { MeterAudioNode } from '$lib/audio/v2/nodes/MeterAudioNode';
   import { useEdges } from '@xyflow/svelte';
-  import { checkAudioConnections } from '$lib/composables/checkHandleConnections';
+  import {
+    checkAudioConnections,
+    getAudioInletConnectionKey
+  } from '$lib/composables/checkHandleConnections';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import {
     amplitudeToMeterPosition,
@@ -27,9 +30,11 @@
 
   const edges = useEdges();
   const connections = $derived(checkAudioConnections(edges.current, node.id));
+  const audioInletConnectionKey = $derived(getAudioInletConnectionKey(edges.current, node.id));
 
   // Meter state
   let meterChannels = $state<MeterChannelState[]>([{ level: 0, peak: 0, peakHoldTime: 0 }]);
+  let previousAudioInletConnectionKey: string | null = null;
 
   // Configuration
   const smoothing = $derived(node.data.smoothing ?? 0.8);
@@ -129,6 +134,26 @@
       ctx.fillRect(canvasWidth - TICK_WIDTH, CANVAS_HEIGHT - y, TICK_WIDTH, 1);
     }
   }
+
+  $effect(() => {
+    const connectionKey = audioInletConnectionKey;
+
+    if (previousAudioInletConnectionKey === null) {
+      previousAudioInletConnectionKey = connectionKey;
+      return;
+    }
+
+    if (connectionKey === previousAudioInletConnectionKey) return;
+
+    meterChannels = [{ level: 0, peak: 0, peakHoldTime: 0 }];
+
+    const audioNodeById = audioService.getNodeById(node.id);
+    if (audioNodeById instanceof MeterAudioNode) {
+      audioNodeById.latestLevels = [0];
+    }
+
+    previousAudioInletConnectionKey = connectionKey;
+  });
 
   onMount(() => {
     audioService.createNode(node.id, 'meter~');

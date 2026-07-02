@@ -28,6 +28,15 @@ export const checkAudioConnections = (edges: Edge[], nodeId: string) => ({
   hasOutlet: edges.some((e) => e.source === nodeId && e.sourceHandle?.startsWith('audio-out'))
 });
 
+export const getAudioInletConnectionKey = (edges: Edge[], nodeId: string): string =>
+  edges
+    .filter((edge) => edge.target === nodeId && edge.targetHandle?.startsWith('audio-in'))
+    .map(
+      (edge) => `${edge.id}:${edge.source}:${edge.sourceHandle ?? ''}:${edge.targetHandle ?? ''}`
+    )
+    .sort()
+    .join('|');
+
 /**
  * Build a set of qualified handle IDs that are connected to audio sources.
  * Used for O(1) lookup in StandardHandle to determine inlet color.
