@@ -8,6 +8,8 @@ import { revokeObjectUrls } from '$lib/vfs';
 import { profiler } from '$lib/profiler';
 import type { SettingsAPI } from '$lib/settings';
 import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwarding';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { PrimaryButton } from '$lib/eventbus/events';
 
 interface P5SketchConfig {
   code: string;
@@ -469,7 +471,14 @@ export class P5Manager {
         hideExitButton: config.hideExitButton,
         setMouseForwarding: config.setMouseForwarding,
         expandSurface: config.expandSurface,
-        collapseSurface: config.collapseSurface
+        collapseSurface: config.collapseSurface,
+        setPrimaryButton: (primaryButton: PrimaryButton) => {
+          PatchiesEventBus.getInstance().dispatch({
+            type: 'nodePrimaryButtonUpdate',
+            nodeId: this.nodeId,
+            primaryButton
+          });
+        }
       }
     });
   }
