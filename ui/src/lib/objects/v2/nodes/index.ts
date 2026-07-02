@@ -3,8 +3,19 @@
  */
 
 import { AdsrObject } from './AdsrObject';
-import { ClipObject } from './ClipObject';
 import { BeatObject } from './BeatObject';
+import {
+  AndObject,
+  EqualObject,
+  GreaterThanObject,
+  GreaterThanOrEqualObject,
+  LessThanObject,
+  LessThanOrEqualObject,
+  NotEqualObject,
+  NotObject,
+  OrObject
+} from './BooleanOperatorObject';
+import { ClipObject } from './ClipObject';
 import { DebounceObject } from './DebounceObject';
 import { DelayObject } from './DelayObject';
 import { FloatObject } from './FloatObject';
@@ -49,6 +60,15 @@ export const TEXT_OBJECTS = [
   SubtractObject,
   MultiplyObject,
   DivideObject,
+  AndObject,
+  OrObject,
+  NotObject,
+  EqualObject,
+  NotEqualObject,
+  LessThanObject,
+  LessThanOrEqualObject,
+  GreaterThanObject,
+  GreaterThanOrEqualObject,
   PackObject,
   PatchbayObject,
   SelectObject,

@@ -5,6 +5,7 @@ import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 import { match, P } from 'ts-pattern';
 import { Bang } from '$lib/objects/schemas/common';
+import { isTruthyControlValue } from '../truthiness';
 
 /**
  * SpigotObject acts as a gate that allows or blocks messages.
@@ -63,10 +64,10 @@ export class SpigotObject implements TextObjectV2 {
         ctx.setParam('control', value);
       })
       .with(['control', P.number], ([, value]) => {
-        ctx.setParam('control', value > 0);
+        ctx.setParam('control', isTruthyControlValue(value));
       })
       .with(['control', P.string], ([, value]) => {
-        ctx.setParam('control', value.length > 0);
+        ctx.setParam('control', isTruthyControlValue(value));
       })
       .with(['control', P.any], () => {
         ctx.setParam('control', false);
