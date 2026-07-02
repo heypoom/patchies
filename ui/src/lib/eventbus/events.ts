@@ -24,6 +24,7 @@ export type PatchiesEvent =
   | InsertPresetToCanvasEvent
   | InsertSampleToCanvasEvent
   | RequestSaveSelectedAsPresetEvent
+  | RequestSaveNodeAsPresetEvent
   | WorkerSendMessageEvent
   | WorkerCallbackRegisteredEvent
   | WorkerFlashEvent
@@ -241,6 +242,15 @@ export interface InsertPresetToCanvasEvent {
  */
 export interface RequestSaveSelectedAsPresetEvent {
   type: 'requestSaveSelectedAsPreset';
+}
+
+/**
+ * Request to save a specific node as a preset.
+ * Dispatched from node-local menus and handled by FlowCanvasInner.
+ */
+export interface RequestSaveNodeAsPresetEvent {
+  type: 'requestSaveNodeAsPreset';
+  nodeId: string;
 }
 
 // Worker node events - for JavaScript execution in dedicated Web Workers

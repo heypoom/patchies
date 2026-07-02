@@ -170,6 +170,12 @@
     isSidebarOpen.set(true);
   }
 
+  function handleSaveAsPreset() {
+    if (!nodeId) return;
+
+    PatchiesEventBus.getInstance().dispatch({ type: 'requestSaveNodeAsPreset', nodeId });
+  }
+
   function handleRun(code?: string) {
     onrun?.(code);
     measureContainerWidth();
@@ -442,6 +448,7 @@
                 {isExpanded}
                 onBgOutputToggle={handleBgOutputToggle}
                 onPlaybackToggle={handlePlaybackToggle}
+                onSaveAsPreset={nodeId ? handleSaveAsPreset : undefined}
                 onOpenHelp={handleOpenHelp}
                 {extraMenuItems}
                 {displayExtraMenuItems}
@@ -537,6 +544,7 @@
       {isExpanded}
       onBgOutputToggle={handleBgOutputToggle}
       onPlaybackToggle={handlePlaybackToggle}
+      onSaveAsPreset={nodeId ? handleSaveAsPreset : undefined}
       onOpenHelp={handleOpenHelp}
       {extraMenuItems}
       {displayExtraMenuItems}

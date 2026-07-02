@@ -926,6 +926,7 @@
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.addEventListener('insertSampleToCanvas', handleInsertSample);
     eventBus.addEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
+    eventBus.addEventListener('requestSaveNodeAsPreset', handleRequestSaveNodeAsPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.addEventListener('scatterNodes', handleScatterNodes);
@@ -960,6 +961,7 @@
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.removeEventListener('insertSampleToCanvas', handleInsertSample);
     eventBus.removeEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
+    eventBus.removeEventListener('requestSaveNodeAsPreset', handleRequestSaveNodeAsPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.removeEventListener('scatterNodes', handleScatterNodes);
@@ -1104,11 +1106,21 @@
   // Handle request to save selected node as preset (from sidebar, etc.)
   function handleRequestSaveSelectedAsPreset() {
     if (selectedNodeIds.length === 1) {
-      const node = nodes.find((n) => n.id === selectedNodeIds[0]);
-      if (node) {
-        nodeToSaveAsPreset = node;
-        showSavePresetDialog = true;
-      }
+      openSavePresetDialogForNode(selectedNodeIds[0]);
+    }
+  }
+
+  const handleRequestSaveNodeAsPreset = (event: {
+    type: 'requestSaveNodeAsPreset';
+    nodeId: string;
+  }) => openSavePresetDialogForNode(event.nodeId);
+
+  function openSavePresetDialogForNode(nodeId: string) {
+    const node = nodes.find((n) => n.id === nodeId);
+
+    if (node) {
+      nodeToSaveAsPreset = node;
+      showSavePresetDialog = true;
     }
   }
 

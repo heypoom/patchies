@@ -1,4 +1,5 @@
 import {
+  Bookmark,
   CircleHelp,
   Code,
   Eye,
@@ -40,6 +41,7 @@ export interface ObjectPreviewMenuProps {
   isExpanded?: boolean;
   onBgOutputToggle?: () => void;
   onPlaybackToggle?: () => void;
+  onSaveAsPreset?: () => void;
   onOpenHelp: () => void;
   extraMenuItems?: ExtraMenuItem[];
   displayExtraMenuItems?: ExtraMenuItem[];
@@ -83,6 +85,7 @@ export function getObjectPreviewMenuGroups({
   isExpanded = false,
   onBgOutputToggle,
   onPlaybackToggle,
+  onSaveAsPreset,
   onOpenHelp,
   extraMenuItems,
   displayExtraMenuItems
@@ -181,6 +184,16 @@ export function getObjectPreviewMenuGroups({
   }
 
   const helpActions: ObjectPreviewMenuAction[] = [
+    ...(onSaveAsPreset
+      ? [
+          {
+            id: 'save-as-preset',
+            label: 'Save preset',
+            icon: Bookmark,
+            onclick: () => onSaveAsPreset()
+          }
+        ]
+      : []),
     {
       id: 'help',
       label: 'Help',

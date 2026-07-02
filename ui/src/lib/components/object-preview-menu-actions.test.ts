@@ -52,4 +52,21 @@ describe('object preview menu actions', () => {
 
     expect(resetCamera).toHaveBeenCalledTimes(1);
   });
+
+  it('places save as preset immediately before help without a divider when available', () => {
+    const saveAsPreset = vi.fn();
+    const openHelp = vi.fn();
+
+    const groups = getObjectPreviewMenuGroups({
+      onOpenHelp: openHelp,
+      onSaveAsPreset: saveAsPreset
+    });
+
+    expect(groups.at(-1)?.actions.map((action) => action.label)).toEqual(['Save preset', 'Help']);
+
+    groups.at(-1)?.actions[0]?.onclick({} as MouseEvent);
+
+    expect(saveAsPreset).toHaveBeenCalledTimes(1);
+    expect(openHelp).not.toHaveBeenCalled();
+  });
 });

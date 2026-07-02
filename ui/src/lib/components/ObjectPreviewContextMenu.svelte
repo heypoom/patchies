@@ -24,6 +24,7 @@
     isExpanded = false,
     onBgOutputToggle,
     onPlaybackToggle,
+    onSaveAsPreset,
     onOpenHelp,
     extraMenuItems,
     displayExtraMenuItems
@@ -48,6 +49,7 @@
       isExpanded,
       onBgOutputToggle,
       onPlaybackToggle,
+      onSaveAsPreset,
       onOpenHelp,
       extraMenuItems,
       displayExtraMenuItems
