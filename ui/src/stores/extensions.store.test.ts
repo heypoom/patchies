@@ -16,13 +16,15 @@ import {
 } from './extensions.store';
 
 describe('extensions store', () => {
-  it('enables every object and preset pack for workshop setup', () => {
+  it('enables every object pack and lightweight preset packs for workshop setup', () => {
     disableAllPacks();
     disableAllPresetPacks();
 
     enableAllExtensionPacks();
 
     expect(get(enabledPackIds)).toEqual(BUILT_IN_PACKS.map((pack) => pack.id));
-    expect(get(enabledPresetPackIds)).toEqual(BUILT_IN_PRESET_PACKS.map((pack) => pack.id));
+    expect(get(enabledPresetPackIds)).toEqual(
+      BUILT_IN_PRESET_PACKS.filter((pack) => pack.id !== 'greggman-bytebeat').map((pack) => pack.id)
+    );
   });
 });

@@ -150,6 +150,7 @@ export function isPackEnabled(packId: string, enabledIds: string[]): boolean {
 const PRESET_STORAGE_KEY = 'patchies:enabled-preset-packs';
 const DEFAULT_ENABLED_PRESET_PACKS = ['starters'];
 const LOCKED_PRESET_PACKS = ['starters']; // Always enabled, cannot be disabled
+const BULK_ENABLE_EXCLUDED_PRESET_PACKS = new Set(['greggman-bytebeat']);
 
 function getInitialEnabledPresetPacks(): string[] {
   if (typeof localStorage === 'undefined') return DEFAULT_ENABLED_PRESET_PACKS;
@@ -238,7 +239,11 @@ export function enableAllPresetPacks(): void {
  */
 export function enableAllExtensionPacks(): void {
   enableAllPacks();
-  enableAllPresetPacks();
+  enabledPresetPackIds.set(
+    BUILT_IN_PRESET_PACKS.filter((pack) => !BULK_ENABLE_EXCLUDED_PRESET_PACKS.has(pack.id)).map(
+      (pack) => pack.id
+    )
+  );
 }
 
 /**
