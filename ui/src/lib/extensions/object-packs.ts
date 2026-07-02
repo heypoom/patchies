@@ -67,6 +67,15 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       '-',
       '*',
       '/',
+      '&&',
+      '||',
+      '!',
+      '==',
+      '!=',
+      '<',
+      '<=',
+      '>',
+      '>=',
       'scale',
       'clip'
     ]

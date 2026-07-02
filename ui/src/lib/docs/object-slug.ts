@@ -4,6 +4,15 @@ const TYPE_TO_SLUG: Record<string, string> = {
   '-': 'sub',
   '*': 'mul',
   '/': 'div',
+  '&&': 'and',
+  '||': 'or',
+  '!': 'not',
+  '==': 'eq',
+  '!=': 'neq',
+  '<': 'lt',
+  '<=': 'lte',
+  '>': 'gt',
+  '>=': 'gte',
   '/~': 'div~'
 };
 

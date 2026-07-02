@@ -8,6 +8,15 @@ describe('object slug helpers', () => {
     ['-', 'sub'],
     ['*', 'mul'],
     ['/', 'div'],
+    ['&&', 'and'],
+    ['||', 'or'],
+    ['!', 'not'],
+    ['==', 'eq'],
+    ['!=', 'neq'],
+    ['<', 'lt'],
+    ['<=', 'lte'],
+    ['>', 'gt'],
+    ['>=', 'gte'],
     ['/~', 'div~']
   ])('maps %s to URL-safe slug %s and back', (type, slug) => {
     expect(objectTypeToSlug(type)).toBe(slug);
