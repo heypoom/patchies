@@ -16,7 +16,7 @@
 
   type SmplrLayoutDescriptor = Pick<
     SmplrInstrumentDescriptor,
-    'title' | 'defaultSettings' | 'settingsSchema' | 'getDisplayName'
+    'title' | 'defaultSettings' | 'settingsSchema' | 'getDisplayName' | 'getInstrumentNames'
   > & {
     type: string;
   };
@@ -96,8 +96,6 @@
     descriptor: SmplrLayoutDescriptor,
     settings: Record<string, unknown>
   ): SettingsSchema {
-    if (descriptor.type !== 'soundfont2~') return descriptor.settingsSchema;
-
     const instrumentNames = Array.isArray(settings.instrumentNames)
       ? settings.instrumentNames.filter((name): name is string => typeof name === 'string')
       : [];
@@ -116,19 +114,48 @@
             type: 'combobox' as const,
             options: instrumentNames,
             default: instrumentNames[0] ?? '',
-            searchPlaceholder: 'Search SF2 instruments...',
+            searchPlaceholder:
+              descriptor.type === 'soundfont2~'
+                ? 'Search SF2 instruments...'
+                : 'Search instruments...',
             emptyMessage: 'No instrument found.'
           }
         : field
     );
   }
 
+  async function loadInstrumentCatalog(
+    settings: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    if (!descriptor.getInstrumentNames) return settings;
+
+    try {
+      const module = await import('smplr');
+      const instrumentNames = await descriptor.getInstrumentNames(module);
+      if (instrumentNames.length === 0) return settings;
+
+      const currentInstrument =
+        typeof settings.instrument === 'string' ? settings.instrument : undefined;
+      const instrument =
+        currentInstrument && instrumentNames.includes(currentInstrument)
+          ? currentInstrument
+          : instrumentNames[0];
+
+      return { ...settings, instrument, instrumentNames };
+    } catch (error) {
+      console.warn(`Failed to load ${descriptor.type} instrument catalog`, error);
+      return settings;
+    }
+  }
+
   onMount(async () => {
     messageContext = new MessageContext(node.id);
     messageContext.queue.addCallback(handleMessage);
 
-    if (!node.data.settings || !node.data.settingsSchema) {
-      persistSettings(settings);
+    const initialSettings = await loadInstrumentCatalog(settings);
+
+    if (!node.data.settings || !node.data.settingsSchema || initialSettings !== settings) {
+      persistSettings(initialSettings);
     }
 
     await audioService.createNode(node.id, descriptor.type, []);
@@ -152,7 +179,7 @@
       };
     }
 
-    audioService.send(node.id, 'settings', settings);
+    audioService.send(node.id, 'settings', initialSettings);
   });
 
   onDestroy(() => {

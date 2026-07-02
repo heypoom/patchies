@@ -49,6 +49,23 @@ describe('smplr descriptors', () => {
     expect(gmKitField?.type === 'select' ? gmKitField.options : []).toContain('FatBoy');
   });
 
+  it('loads versilian instrument names from smplr instead of a stale hardcoded path', async () => {
+    const descriptor = getSmplrDescriptor('versilian~');
+    const names = ['Electrophones/TX81Z - FM Piano', 'Idiophones/Struck Idiophones/Marimba'];
+
+    expect(descriptor.defaultSettings.instrument).toBe(names[0]);
+    expect(descriptor.settingsSchema[0]).toMatchObject({
+      key: 'instrument',
+      type: 'combobox',
+      options: [names[0]]
+    });
+    await expect(
+      descriptor.getInstrumentNames?.({
+        getVersilianInstruments: async () => names
+      } as SmplrModule)
+    ).resolves.toEqual(names);
+  });
+
   it('hides the GM drum instrument setting for custom soundfont kits', () => {
     const drumInstrumentField = GM_SETTINGS_SCHEMA.find((field) => field.key === 'drumInstrument');
     expect(drumInstrumentField).toBeDefined();

@@ -65,6 +65,7 @@ export type SmplrInstrumentDescriptor = {
     settings: Record<string, unknown>;
     onLoadProgress: (progress: SmplrLoadStatus) => void;
   }): Promise<SmplrInstrument>;
+  getInstrumentNames?: (module: SmplrModule) => Promise<string[]>;
   handleProgramChange?: (
     program: number,
     settings: Record<string, unknown>
@@ -132,6 +133,7 @@ const mellotrons = [
   'TRON VIOLA'
 ];
 const smolkenNames = ['Pizzicato', 'Arco', 'Switched'];
+const versilianDefaultInstrument = 'Electrophones/TX81Z - FM Piano';
 
 function commonOptions(
   destination: AudioNode,
@@ -357,9 +359,11 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
   'versilian~': selectableInstrumentDescriptor(
     'versilian~',
     'Versilian Community Sample Library instrument',
-    ['Strings/Violin/Violin - Arco'],
-    'Strings/Violin/Violin - Arco',
-    (module, context, options) => module.Versilian(context, options)
+    [versilianDefaultInstrument],
+    versilianDefaultInstrument,
+    (module, context, options) => module.Versilian(context, options),
+    '60',
+    (module) => module.getVersilianInstruments()
   ),
   'smolken~': selectableInstrumentDescriptor(
     'smolken~',
@@ -384,7 +388,8 @@ function selectableInstrumentDescriptor(
     context: AudioContext,
     options: SelectableInstrumentOptions
   ) => SmplrInstrument,
-  defaultBangNote: number | string = '60'
+  defaultBangNote: number | string = '60',
+  getInstrumentNames?: (module: SmplrModule) => Promise<string[]>
 ): SmplrInstrumentDescriptor {
   return descriptor({
     type,
@@ -414,6 +419,7 @@ function selectableInstrumentDescriptor(
     ],
     reloadsOnSettings: ['instrument'],
     getDisplayName: (settings) => stringSetting(settings.instrument, defaultInstrument),
+    getInstrumentNames,
     loadInstrument: async ({ module, context, destination, settings, onLoadProgress }) => {
       const instrument = factory(module, context, {
         ...commonOptions(destination, settings, onLoadProgress),
