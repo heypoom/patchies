@@ -8,8 +8,8 @@ not
 ```
 
 Send `bang` to re-emit using the previous input value.
-Numbers behave like `Boolean(number)` in JavaScript, so `0` outputs `true` and
-non-zero numbers output `false`.
+For number inputs, `!` first applies JavaScript-style boolean conversion (`0` is false,
+non-zero is true), then inverts that result.
 
 ## See Also
 

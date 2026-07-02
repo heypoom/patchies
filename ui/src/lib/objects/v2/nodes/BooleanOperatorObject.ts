@@ -49,12 +49,6 @@ const booleanOperatorOutlets: ObjectOutlet[] = [
   { name: 'out', type: 'bool', description: 'Boolean result output' }
 ];
 
-function toNumber(value: unknown): number {
-  const number = Number(value);
-
-  return Number.isFinite(number) ? number : 0;
-}
-
 abstract class BinaryBooleanOperatorObject implements TextObjectV2 {
   static inlets = binaryOperatorInlets;
   static outlets = booleanOperatorOutlets;
@@ -175,7 +169,7 @@ export class LessThanObject extends BinaryBooleanOperatorObject {
   static description = 'Output true when the left number is less than the right number';
   static tags = ['logic', 'boolean', 'less-than', 'conditional', 'control'];
 
-  protected operate = (value: unknown, operand: unknown) => toNumber(value) < toNumber(operand);
+  protected operate = (value: unknown, operand: unknown) => Number(value) < Number(operand);
 }
 
 export class LessThanOrEqualObject extends BinaryBooleanOperatorObject {
@@ -184,7 +178,7 @@ export class LessThanOrEqualObject extends BinaryBooleanOperatorObject {
   static description = 'Output true when the left number is less than or equal to the right number';
   static tags = ['logic', 'boolean', 'less-than-or-equal', 'conditional', 'control'];
 
-  protected operate = (value: unknown, operand: unknown) => toNumber(value) <= toNumber(operand);
+  protected operate = (value: unknown, operand: unknown) => Number(value) <= Number(operand);
 }
 
 export class GreaterThanObject extends BinaryBooleanOperatorObject {
@@ -193,7 +187,7 @@ export class GreaterThanObject extends BinaryBooleanOperatorObject {
   static description = 'Output true when the left number is greater than the right number';
   static tags = ['logic', 'boolean', 'greater-than', 'conditional', 'control'];
 
-  protected operate = (value: unknown, operand: unknown) => toNumber(value) > toNumber(operand);
+  protected operate = (value: unknown, operand: unknown) => Number(value) > Number(operand);
 }
 
 export class GreaterThanOrEqualObject extends BinaryBooleanOperatorObject {
@@ -203,5 +197,5 @@ export class GreaterThanOrEqualObject extends BinaryBooleanOperatorObject {
     'Output true when the left number is greater than or equal to the right number';
   static tags = ['logic', 'boolean', 'greater-than-or-equal', 'conditional', 'control'];
 
-  protected operate = (value: unknown, operand: unknown) => toNumber(value) >= toNumber(operand);
+  protected operate = (value: unknown, operand: unknown) => Number(value) >= Number(operand);
 }

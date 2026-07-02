@@ -52,4 +52,16 @@ describe('SpigotObject', () => {
       { data: 'positive opens', options: undefined }
     ]);
   });
+
+  it('uses string control truthiness to open or close the gate', () => {
+    const { object, sent, values } = createSpigot();
+
+    object.onMessage?.('', meta('control'));
+    object.onMessage?.('empty string blocks', meta('data'));
+    object.onMessage?.('open', meta('control'));
+    object.onMessage?.('non-empty string opens', meta('data'));
+
+    expect(values.control).toBe(true);
+    expect(sent).toEqual([{ data: 'non-empty string opens', options: undefined }]);
+  });
 });

@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   AndObject,
   EqualObject,
+  GreaterThanOrEqualObject,
   GreaterThanObject,
+  LessThanObject,
   LessThanOrEqualObject,
   NotEqualObject,
   NotObject,
@@ -60,6 +62,17 @@ describe('BooleanOperatorObject', () => {
       { data: true, options: undefined },
       { data: false, options: undefined }
     ]);
+  });
+
+  it('uses native number semantics for invalid and infinite comparison values', () => {
+    const invalid = createBooleanOperator(LessThanObject, [0]);
+    const infinity = createBooleanOperator(GreaterThanOrEqualObject, [Number.MAX_VALUE]);
+
+    invalid.object.onMessage?.('not-a-number', meta('value'));
+    infinity.object.onMessage?.(Infinity, meta('value'));
+
+    expect(invalid.sent).toEqual([{ data: false, options: undefined }]);
+    expect(infinity.sent).toEqual([{ data: true, options: undefined }]);
   });
 
   it('updates binary operator operands from the cold inlet without outputting immediately', () => {
