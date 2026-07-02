@@ -46,14 +46,18 @@
   let showSettings = $state(false);
   let status = $state<GmRuntimeStatus>({ state: 'idle' });
   let monitor = $state<GmMonitorSnapshot>({ channels: createInitialMonitorChannels() });
-
-  const settings = $derived({ ...GM_DEFAULT_SETTINGS, ...(node.data.settings ?? {}) });
+  let settings = $derived<Record<string, unknown>>({
+    ...GM_DEFAULT_SETTINGS,
+    ...(node.data.settings ?? {})
+  });
 
   const handleMessage: MessageCallbackFn = (message) => {
     audioService.send(node.id, 'message', message);
   };
 
   function persistSettings(nextSettings: Record<string, unknown>) {
+    settings = nextSettings;
+
     updateNodeData(node.id, {
       settings: nextSettings,
       settingsSchema: GM_SETTINGS_SCHEMA
@@ -61,8 +65,8 @@
   }
 
   async function applySettings(nextSettings: Record<string, unknown>) {
-    await audioService.send(node.id, 'settings', nextSettings);
     persistSettings(nextSettings);
+    await audioService.send(node.id, 'settings', nextSettings);
   }
 
   async function updateSetting(key: string, value: unknown) {

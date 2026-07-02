@@ -21,15 +21,15 @@
     type: string;
   };
 
-  type SmplrLayoutRuntime = {
+  interface SmplrLayoutRuntime {
     onStatusChange?: (status: SmplrRuntimeStatus | GmRuntimeStatus) => void;
     onSettingsPatch?: (patch: Record<string, unknown>) => void;
-  };
+  }
 
-  type SmplrNodeData = {
+  interface SmplrNodeData {
     settings?: Record<string, unknown>;
     settingsSchema?: SettingsSchema;
-  };
+  }
 
   let {
     descriptor,
@@ -44,10 +44,12 @@
 
   let messageContext: MessageContext | null = null;
   let runtimeNode: SmplrLayoutRuntime | null = null;
+
   let status = $state<SmplrRuntimeStatus | GmRuntimeStatus>({ state: 'idle' });
   let showSettings = $state(false);
 
-  const settings = $derived({ ...descriptor.defaultSettings, ...(node.data.settings ?? {}) });
+  let settings = $derived({ ...descriptor.defaultSettings, ...(node.data.settings ?? {}) });
+
   const settingsSchema = $derived.by(() => createSettingsSchema(descriptor, settings));
   const instrumentName = $derived(descriptor.getDisplayName(settings));
 
@@ -60,7 +62,9 @@
       return `ch ${status.channel} program ${status.program}`;
     }
 
-    if (status.state === 'error') return status.message;
+    if (status.state === 'error') {
+      return status.message;
+    }
 
     return instrumentName;
   });
@@ -69,6 +73,8 @@
     audioService.send(node.id, 'message', message);
 
   function persistSettings(nextSettings: Record<string, unknown>) {
+    settings = nextSettings;
+
     updateNodeData(node.id, {
       settings: nextSettings,
       settingsSchema: createSettingsSchema(descriptor, nextSettings)
@@ -89,6 +95,7 @@
 
   function revertSettings() {
     persistSettings(descriptor.defaultSettings);
+
     audioService.send(node.id, 'settings', descriptor.defaultSettings);
   }
 
@@ -124,27 +131,27 @@
     );
   }
 
-  async function loadInstrumentCatalog(
-    settings: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    if (!descriptor.getInstrumentNames) return settings;
+  async function loadInstrumentCatalogPatch(): Promise<Record<string, unknown>> {
+    if (!descriptor.getInstrumentNames) return {};
 
     try {
       const module = await import('smplr');
+
       const instrumentNames = await descriptor.getInstrumentNames(module);
-      if (instrumentNames.length === 0) return settings;
+      if (instrumentNames.length === 0) return {};
 
       const currentInstrument =
         typeof settings.instrument === 'string' ? settings.instrument : undefined;
+
       const instrument =
         currentInstrument && instrumentNames.includes(currentInstrument)
           ? currentInstrument
           : instrumentNames[0];
 
-      return { ...settings, instrument, instrumentNames };
+      return { instrument, instrumentNames };
     } catch (error) {
       console.warn(`Failed to load ${descriptor.type} instrument catalog`, error);
-      return settings;
+      return {};
     }
   }
 
@@ -152,13 +159,16 @@
     messageContext = new MessageContext(node.id);
     messageContext.queue.addCallback(handleMessage);
 
-    const initialSettings = await loadInstrumentCatalog(settings);
+    const catalogPatch = await loadInstrumentCatalogPatch();
+    const initialSettings = { ...settings, ...catalogPatch };
+    const hasCatalogPatch = Object.keys(catalogPatch).length > 0;
 
-    if (!node.data.settings || !node.data.settingsSchema || initialSettings !== settings) {
+    if (!node.data.settings || !node.data.settingsSchema || hasCatalogPatch) {
       persistSettings(initialSettings);
     }
 
     await audioService.createNode(node.id, descriptor.type, []);
+
     runtimeNode = audioService.getNodeById(node.id) as SmplrLayoutRuntime | null;
 
     if (runtimeNode) {
@@ -171,9 +181,11 @@
           nextStatus.instrumentNames?.length
         ) {
           const current = node.data.settings ?? {};
+
           persistSettings({ ...current, instrumentNames: nextStatus.instrumentNames });
         }
       };
+
       runtimeNode.onSettingsPatch = (patch) => {
         applySettingsPatch(patch);
       };
@@ -185,6 +197,7 @@
   onDestroy(() => {
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();
+
     audioService.removeNodeById(node.id);
   });
 </script>
