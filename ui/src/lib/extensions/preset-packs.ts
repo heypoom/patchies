@@ -408,19 +408,19 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presetFolders: GREGGMAN_BYTEBEAT_PRESET_FOLDERS
   },
   {
-    id: 'ai-prompt-presets',
-    name: 'AI Prompt Presets',
-    description: 'Prompt templates for AI objects',
-    icon: 'Brain',
-    requiredObjects: ['ai.txt'],
-    presets: ['music-from-image.prompt']
-  },
-  {
     id: 'scripting-demos',
     name: 'Scripting Demos',
     description: 'JS scripts for control flow',
     icon: 'Code',
     requiredObjects: ['js'],
     presets: ['delay.js']
+  },
+  {
+    id: 'prompt-presets',
+    name: 'Prompt Presets',
+    description: 'Prompt templates for AI objects',
+    icon: 'Brain',
+    requiredObjects: ['ai.txt'],
+    presets: ['music-from-image.prompt']
   }
 ];
