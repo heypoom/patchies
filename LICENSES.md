@@ -74,6 +74,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | pyodide                           | ^0.28.1      | Apache-2.0             |
 | regl                              | ^2.1.1       | MIT                    |
 | shader-park-core                  | 0.2.8        | MIT                    |
+| smplr                             | ^1.0.0       | MIT                    |
 | stats.js                          | ^0.17.0      | MIT                    |
 | supersonic-scsynth                | ^0.25.5      | Tiered (MIT + GPL-3.0) |
 | tailwindcss                       | ^4.0.0       | MIT                    |
@@ -252,6 +253,17 @@ The `ngea` node uses tuning data from the [Network Gong Ensemble Archive](https:
 - **Collective**: <https://www.elekhlekha.xyz/>
 - **Instagram**: <https://www.instagram.com/elekhlekha/>
 - **License**: [CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
+
+#### Versilian Community Sample Library (VCSL)
+
+The `versilian~` node loads samples from the [Versilian Community Sample Library](https://github.com/sgossner/VCSL), a general-purpose sample library created by Versilian Studios LLC.
+
+- **Original Project**: Versilian Community Sample Library
+- **Author**: Versilian Studios LLC
+- **Repository**: <https://github.com/sgossner/VCSL>
+- **License**: [Creative Commons 0 (CC0)](https://creativecommons.org/publicdomain/zero/1.0/)
+
+VCSL is intended as a broader expansion of the VSCO 2 CE sample set. Its sounds are public domain and can be used freely, including in commercial work.
 
 #### Anupars (WASM)
 

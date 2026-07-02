@@ -38,7 +38,19 @@ const Loaded = Type.Object({
   fileName: Type.String(),
   durationSeconds: Type.Number(),
   trackCount: Type.Number(),
-  ppq: Type.Number()
+  ppq: Type.Number(),
+  programs: Type.Array(
+    Type.Object({
+      channel: Type.Number(),
+      program: Type.Number()
+    })
+  ),
+  preloadPrograms: Type.Array(
+    Type.Object({
+      channel: Type.Number(),
+      program: Type.Number()
+    })
+  )
 });
 
 const Position = Type.Object({

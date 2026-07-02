@@ -80,6 +80,14 @@ Creator of Tone.js, the framework for creating interactive music in the browser.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/tambien)
 
+### danigb
+
+**Projects:** smplr
+
+Creator of smplr, the browser-based SoundFont playback library used by Patchies sampled-instrument objects.
+
+**GitHub:** [github.com/danigb](https://github.com/danigb)
+
 ### @humanbydefinition
 
 **Projects:** textmode.js

@@ -69,6 +69,12 @@ describe('MidiFilePlayer', () => {
           message: { type: 'noteOn', note: 60, velocity: 100, channel: 1 }
         },
         {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'noteOn', note: 60, velocity: 100, channel: 1 }
+        },
+        {
           seconds: 0.5,
           ticks: 240,
           track: 0,
@@ -123,6 +129,66 @@ describe('MidiFilePlayer', () => {
 
     expect(send).toHaveBeenCalledWith({ type: 'position', seconds: 0.5, progress: 0.5 });
     reportingPlayer.destroy();
+  });
+
+  it('includes initial and preload program state in loaded metadata', () => {
+    const send = vi.fn();
+    const player = new MidiFilePlayer({ send });
+    const programFile: ParsedMidiFile = {
+      ...parsed,
+      events: [
+        {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'noteOn', note: 60, velocity: 100, channel: 1 }
+        },
+        {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'programChange', program: 40, channel: 2 }
+        },
+        {
+          seconds: 0.5,
+          ticks: 240,
+          track: 0,
+          message: { type: 'programChange', program: 12, channel: 2 }
+        },
+        {
+          seconds: 0.75,
+          ticks: 360,
+          track: 0,
+          message: { type: 'programChange', program: 12, channel: 2 }
+        },
+        {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'programChange', program: 60, channel: 4 }
+        }
+      ]
+    };
+
+    player.load(programFile);
+
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'loaded',
+        programs: [
+          { channel: 1, program: 0 },
+          { channel: 2, program: 40 },
+          { channel: 4, program: 60 }
+        ],
+        preloadPrograms: [
+          { channel: 1, program: 0 },
+          { channel: 2, program: 12 },
+          { channel: 2, program: 40 },
+          { channel: 4, program: 60 }
+        ]
+      })
+    );
+    player.destroy();
   });
 
   it('restarts from the beginning when played again after reaching the end', () => {

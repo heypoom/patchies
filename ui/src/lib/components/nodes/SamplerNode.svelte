@@ -14,7 +14,17 @@
     createSamplerPlaybackMessage,
     type SamplerPlaybackTrigger
   } from '$lib/audio/sampler-playback-message';
-  import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
+  import {
+    addSamplerPlaybackProgressVoice,
+    advanceSamplerPlaybackProgress,
+    removeSamplerPlaybackProgressVoice,
+    type SamplerPlaybackProgressVoice
+  } from '$lib/audio/sampler-playback-progress';
+  import type {
+    SamplerNode as SamplerNodeV2,
+    SamplerPlaybackStartEvent,
+    SamplerPlaybackStopEvent
+  } from '$lib/audio/v2/nodes/SamplerNode';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
   import { useNodeDataTracker } from '$lib/history';
@@ -55,7 +65,7 @@
   let v2Node: SamplerNodeV2 | null = null;
   let isRecording = $state(false);
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
-  let isPlaying = $state(false);
+  let activePlaybackVoices = $state(new Map<AudioBufferSourceNode, SamplerPlaybackProgressVoice>());
   let playbackProgress = $state(0);
   let playbackInterval: ReturnType<typeof setInterval> | null = null;
   let audioBuffer = $state<AudioBuffer | null>(null);
@@ -157,6 +167,10 @@
   const playbackRate = $derived(node.data.playbackRate || 1);
   const detune = $derived(node.data.detune || 0);
   const noteOffMode = $derived(node.data.noteOffMode ?? 'one-shot');
+
+  // Derive isPlaying from active voice count
+  const activeVoiceCount = $derived(activePlaybackVoices.size);
+  const isPlaying = $derived(activeVoiceCount > 0);
 
   // Use node dimensions if available, otherwise use defaults
   const width = $derived(node.width || 190);
@@ -343,49 +357,49 @@
     if (!message) return;
 
     audioService.send(node.id, 'message', message);
-
-    startPlaybackProgressBar();
   }
 
-  function startPlaybackProgressBar() {
-    // Clear any existing interval to prevent zombie intervals
-    if (playbackInterval) {
-      clearInterval(playbackInterval);
-      playbackInterval = null;
-    }
+  function startPlaybackProgressBar(event: SamplerPlaybackStartEvent) {
+    activePlaybackVoices = addSamplerPlaybackProgressVoice(activePlaybackVoices, {
+      event,
+      loopStart,
+      loopEnd,
+      recordingDuration
+    });
+    playbackProgress = event.offset;
 
-    isPlaying = true;
-    playbackProgress = loopStart;
+    if (!playbackInterval) {
+      playbackInterval = setInterval(() => {
+        const result = advanceSamplerPlaybackProgress(activePlaybackVoices, {
+          loopEnabled,
+          loopStart,
+          stepSeconds: 0.1
+        });
 
-    // Calculate the effective end point
-    const effectiveEnd = loopEnd > loopStart ? loopEnd : recordingDuration;
+        activePlaybackVoices = result.voices;
+        playbackProgress = result.progress;
 
-    // Start playback progress tracking
-    playbackInterval = setInterval(() => {
-      // Advance playback progress based on playbackRate
-      playbackProgress += 0.1 * playbackRate;
-
-      if (loopEnabled) {
-        // Loop back to start if we reach the end
-        if (playbackProgress >= effectiveEnd) {
-          playbackProgress = loopStart;
-        }
-      } else {
-        // Stop if we reach the end (non-looping)
-        if (playbackProgress >= effectiveEnd) {
+        if (result.shouldStopPlayback) {
           stopPlayback();
         }
-      }
-    }, 100);
+      }, 100);
+    }
   }
 
-  function stopPlaybackProgressBar() {
-    isPlaying = false;
-    playbackProgress = 0;
+  function stopPlaybackProgressBar(event?: SamplerPlaybackStopEvent) {
+    if (event) {
+      activePlaybackVoices = removeSamplerPlaybackProgressVoice(activePlaybackVoices, event.source);
+    } else {
+      activePlaybackVoices = new Map();
+    }
 
-    if (playbackInterval) {
-      clearInterval(playbackInterval);
-      playbackInterval = null;
+    if (activePlaybackVoices.size === 0) {
+      playbackProgress = 0;
+
+      if (playbackInterval) {
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+      }
     }
   }
 
@@ -504,6 +518,9 @@
 
     // Initialize with playbackRate and detune from node.data
     if (v2Node) {
+      v2Node.onPlaybackStart = startPlaybackProgressBar;
+      v2Node.onPlaybackStop = stopPlaybackProgressBar;
+
       if (node.data.gain !== undefined) {
         audioService.send(node.id, 'message', { type: 'setGain', value: node.data.gain });
       }
@@ -557,6 +574,11 @@
 
     if (isPlaying) {
       audioService.send(node.id, 'message', { type: 'stop' });
+    }
+
+    if (v2Node) {
+      v2Node.onPlaybackStart = undefined;
+      v2Node.onPlaybackStop = undefined;
     }
 
     messageContext?.queue.removeCallback(handleMessage);

@@ -26,6 +26,18 @@ type LoopMessage = {
   value?: unknown;
 };
 
+export type SamplerPlaybackStartEvent = {
+  source: AudioBufferSourceNode;
+  time: number;
+  offset: number;
+  duration?: number;
+  playbackRate: number;
+};
+
+export type SamplerPlaybackStopEvent = {
+  source: AudioBufferSourceNode;
+};
+
 const getNonNegativeNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 
@@ -61,11 +73,17 @@ export class SamplerNode implements AudioNodeV2 {
   private scheduledSources = new Set<AudioBufferSourceNode>();
   private activeSources = new Set<AudioBufferSourceNode>();
   private sourceGains = new WeakMap<AudioBufferSourceNode, GainNode>();
+  private playbackStartTimers = new WeakMap<AudioBufferSourceNode, ReturnType<typeof setTimeout>>();
+  private playbackStartTimerSet = new Set<ReturnType<typeof setTimeout>>();
+  private visuallyStartedSources = new Set<AudioBufferSourceNode>();
   private noteVoices: SamplerNoteVoiceManager;
   private loopStart: number = 0;
   private loopEnd: number = 0;
   private playbackRate: number = 1;
   private detune: number = 0;
+
+  onPlaybackStart?: (event: SamplerPlaybackStartEvent) => void;
+  onPlaybackStop?: (event: SamplerPlaybackStopEvent) => void;
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -232,6 +250,7 @@ export class SamplerNode implements AudioNodeV2 {
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       this.mediaRecorder.stop();
     }
+    this.clearPlaybackStartTimers();
     this.audioNode.disconnect();
     this.recordingDestination.disconnect();
   }
@@ -274,15 +293,24 @@ export class SamplerNode implements AudioNodeV2 {
     }
 
     newSource.onended = () => {
+      this.clearPlaybackStartTimer(newSource);
       this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
       this.activeSources.delete(newSource);
+      this.notifyPlaybackStop(newSource);
 
       if (this.sourceNode === newSource) {
         this.sourceNode = null;
       }
     };
 
+    this.schedulePlaybackStart(newSource, {
+      source: newSource,
+      time,
+      offset,
+      duration,
+      playbackRate: newSource.playbackRate.value
+    });
     newSource.start(time, offset, duration);
   }
 
@@ -363,10 +391,12 @@ export class SamplerNode implements AudioNodeV2 {
 
     // Clean up when playback ends naturally
     newSource.onended = () => {
+      this.clearPlaybackStartTimer(newSource);
       this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
       this.activeSources.delete(newSource);
       this.noteVoices.removeSource(newSource);
+      this.notifyPlaybackStop(newSource);
 
       if (this.sourceNode === newSource) {
         this.sourceNode = null;
@@ -374,6 +404,13 @@ export class SamplerNode implements AudioNodeV2 {
     };
 
     this.connectSource(newSource, gain);
+    this.schedulePlaybackStart(newSource, {
+      source: newSource,
+      time,
+      offset,
+      duration,
+      playbackRate: newSource.playbackRate.value
+    });
     newSource.start(time, offset, duration);
     return newSource;
   }
@@ -399,11 +436,13 @@ export class SamplerNode implements AudioNodeV2 {
         return;
       }
 
+      this.clearPlaybackStartTimer(source);
       source.stop();
       this.disconnectSource(source);
       this.scheduledSources.delete(source);
       this.activeSources.delete(source);
       this.noteVoices.removeSource(source);
+      this.notifyPlaybackStop(source);
     } catch {
       // Ignore errors if node already stopped
     }
@@ -436,6 +475,56 @@ export class SamplerNode implements AudioNodeV2 {
     this.scheduledSources.clear();
     this.activeSources.clear();
     this.noteVoices.clear();
+    this.clearPlaybackStartTimers();
+  }
+
+  private schedulePlaybackStart(
+    source: AudioBufferSourceNode,
+    event: SamplerPlaybackStartEvent
+  ): void {
+    const delayMs = Math.max(0, (event.time - this.audioContext.currentTime) * 1000);
+
+    if (delayMs === 0) {
+      this.notifyPlaybackStart(event);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      this.playbackStartTimers.delete(source);
+      this.playbackStartTimerSet.delete(timer);
+      this.notifyPlaybackStart(event);
+    }, delayMs);
+
+    this.playbackStartTimers.set(source, timer);
+    this.playbackStartTimerSet.add(timer);
+  }
+
+  private notifyPlaybackStart(event: SamplerPlaybackStartEvent): void {
+    this.visuallyStartedSources.add(event.source);
+    this.onPlaybackStart?.(event);
+  }
+
+  private notifyPlaybackStop(source: AudioBufferSourceNode): void {
+    if (!this.visuallyStartedSources.delete(source)) return;
+    this.onPlaybackStop?.({ source });
+  }
+
+  private clearPlaybackStartTimer(source: AudioBufferSourceNode): void {
+    const timer = this.playbackStartTimers.get(source);
+    if (!timer) return;
+
+    clearTimeout(timer);
+    this.playbackStartTimers.delete(source);
+    this.playbackStartTimerSet.delete(timer);
+  }
+
+  private clearPlaybackStartTimers(): void {
+    for (const timer of this.playbackStartTimerSet) {
+      clearTimeout(timer);
+    }
+
+    this.playbackStartTimerSet.clear();
+    this.playbackStartTimers = new WeakMap<AudioBufferSourceNode, ReturnType<typeof setTimeout>>();
   }
 
   private trimSilence(buffer: AudioBuffer, threshold = 0.01): AudioBuffer {

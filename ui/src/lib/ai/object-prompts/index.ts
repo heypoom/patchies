@@ -39,6 +39,7 @@ import { sendPrompt } from './send';
 import { sendVdoPrompt } from './send.vdo';
 import { shaderparkPrompt } from './shaderpark';
 import { samplerPrompt } from './sampler~';
+import { smplrInstrumentPrompt } from '$objects/smplr/prompt';
 import { padsPrompt } from '$objects/pads/prompt';
 import { projmapPrompt } from '$objects/projmap/prompt';
 import { sampleratePrompt } from './samplerate~';
@@ -123,6 +124,16 @@ export const objectPrompts: Record<string, string> = {
   'csound~': csoundPrompt,
   'soundfile~': soundfilePrompt,
   'sampler~': samplerPrompt,
+  'gm~': smplrInstrumentPrompt,
+  'soundfont~': smplrInstrumentPrompt,
+  'soundfont2~': smplrInstrumentPrompt,
+  'piano~': smplrInstrumentPrompt,
+  'epiano~': smplrInstrumentPrompt,
+  'drums~': smplrInstrumentPrompt,
+  'mallet~': smplrInstrumentPrompt,
+  'mellotron~': smplrInstrumentPrompt,
+  'versilian~': smplrInstrumentPrompt,
+  'smolken~': smplrInstrumentPrompt,
   'pads~': padsPrompt,
   markdown: markdownPrompt,
   object: objectPrompt,

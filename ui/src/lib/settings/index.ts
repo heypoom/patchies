@@ -4,9 +4,11 @@ export type {
   StringField,
   BooleanField,
   SelectField,
+  ComboboxField,
   ColorField,
   SliderField,
-  Vec2Field
+  Vec2Field,
+  SettingsOption
 } from './types';
 export { SettingsManager } from './SettingsManager';
 export { createSettingsAPI } from './create-settings-api';

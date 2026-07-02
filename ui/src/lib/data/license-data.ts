@@ -351,6 +351,18 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/shader-park-core'
   },
   {
+    name: 'smplr',
+    version: '^1.0.0',
+    license: 'MIT',
+    url: 'https://github.com/danigb/smplr'
+  },
+  {
+    name: 'soundfont2',
+    version: '^0.5.0',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/soundfont2'
+  },
+  {
     name: 'stats.js',
     version: '^0.17.0',
     license: 'MIT',
@@ -677,6 +689,14 @@ export const supportLinks: SupportLink[] = [
     url: 'https://github.com/sponsors/tambien',
     type: 'github',
     projects: ['Tone.js']
+  },
+  {
+    name: 'danigb',
+    description: 'Creator of smplr, a browser-based SoundFont playback library',
+    category: 'library',
+    url: 'https://github.com/danigb',
+    type: 'repo',
+    projects: ['smplr']
   },
   {
     name: '@humanbydefinition',
