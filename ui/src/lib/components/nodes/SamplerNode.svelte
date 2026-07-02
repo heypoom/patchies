@@ -14,9 +14,16 @@
     createSamplerPlaybackMessage,
     type SamplerPlaybackTrigger
   } from '$lib/audio/sampler-playback-message';
+  import {
+    addSamplerPlaybackProgressVoice,
+    advanceSamplerPlaybackProgress,
+    removeSamplerPlaybackProgressVoice,
+    type SamplerPlaybackProgressVoice
+  } from '$lib/audio/sampler-playback-progress';
   import type {
     SamplerNode as SamplerNodeV2,
-    SamplerPlaybackStartEvent
+    SamplerPlaybackStartEvent,
+    SamplerPlaybackStopEvent
   } from '$lib/audio/v2/nodes/SamplerNode';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
@@ -58,9 +65,8 @@
   let v2Node: SamplerNodeV2 | null = null;
   let isRecording = $state(false);
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
-  let activeVoiceCount = $state(0);
+  let activePlaybackVoices = $state(new Map<AudioBufferSourceNode, SamplerPlaybackProgressVoice>());
   let playbackProgress = $state(0);
-  let activePlaybackRate = $state(1);
   let playbackInterval: ReturnType<typeof setInterval> | null = null;
   let audioBuffer = $state<AudioBuffer | null>(null);
   let showSettings = $state(false);
@@ -163,6 +169,7 @@
   const noteOffMode = $derived(node.data.noteOffMode ?? 'one-shot');
 
   // Derive isPlaying from active voice count
+  const activeVoiceCount = $derived(activePlaybackVoices.size);
   const isPlaying = $derived(activeVoiceCount > 0);
 
   // Use node dimensions if available, otherwise use defaults
@@ -352,46 +359,41 @@
     audioService.send(node.id, 'message', message);
   }
 
-  function startPlaybackProgressBar(event?: SamplerPlaybackStartEvent) {
-    // Increment active voice count
-    activeVoiceCount++;
+  function startPlaybackProgressBar(event: SamplerPlaybackStartEvent) {
+    activePlaybackVoices = addSamplerPlaybackProgressVoice(activePlaybackVoices, {
+      event,
+      loopStart,
+      loopEnd,
+      recordingDuration
+    });
+    playbackProgress = event.offset;
 
-    // Only initialize interval when transitioning from 0 to 1 active voice
-    if (activeVoiceCount === 1) {
-      activePlaybackRate = event?.playbackRate ?? playbackRate;
-      playbackProgress = event?.offset ?? loopStart;
-
-      // Calculate the effective end point
-      const effectiveEnd = loopEnd > loopStart ? loopEnd : recordingDuration;
-
-      // Start playback progress tracking
+    if (!playbackInterval) {
       playbackInterval = setInterval(() => {
-        // Advance playback progress based on playbackRate
-        playbackProgress += 0.1 * activePlaybackRate;
+        const result = advanceSamplerPlaybackProgress(activePlaybackVoices, {
+          loopEnabled,
+          loopStart,
+          stepSeconds: 0.1
+        });
 
-        if (loopEnabled) {
-          // Loop back to start if we reach the end
-          if (playbackProgress >= effectiveEnd) {
-            playbackProgress = loopStart;
-          }
-        } else {
-          // Stop if we reach the end (non-looping)
-          if (playbackProgress >= effectiveEnd) {
-            stopPlayback();
-          }
+        activePlaybackVoices = result.voices;
+        playbackProgress = result.progress;
+
+        if (result.shouldStopPlayback) {
+          stopPlayback();
         }
       }, 100);
     }
   }
 
-  function stopPlaybackProgressBar() {
-    // Decrement active voice count
-    if (activeVoiceCount > 0) {
-      activeVoiceCount--;
+  function stopPlaybackProgressBar(event?: SamplerPlaybackStopEvent) {
+    if (event) {
+      activePlaybackVoices = removeSamplerPlaybackProgressVoice(activePlaybackVoices, event.source);
+    } else {
+      activePlaybackVoices = new Map();
     }
 
-    // Only stop interval and reset progress when all voices have stopped
-    if (activeVoiceCount === 0) {
+    if (activePlaybackVoices.size === 0) {
       playbackProgress = 0;
 
       if (playbackInterval) {
