@@ -354,7 +354,7 @@ export const dependencies: ProjectLicense[] = [
     name: 'smplr',
     version: '^1.0.0',
     license: 'MIT',
-    url: 'https://npmjs.com/package/smplr'
+    url: 'https://github.com/danigb/smplr'
   },
   {
     name: 'soundfont2',
@@ -689,6 +689,14 @@ export const supportLinks: SupportLink[] = [
     url: 'https://github.com/sponsors/tambien',
     type: 'github',
     projects: ['Tone.js']
+  },
+  {
+    name: 'danigb',
+    description: 'Creator of smplr, a browser-based SoundFont playback library',
+    category: 'library',
+    url: 'https://github.com/danigb',
+    type: 'repo',
+    projects: ['smplr']
   },
   {
     name: '@humanbydefinition',
