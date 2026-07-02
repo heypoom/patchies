@@ -27,6 +27,25 @@ describe('meter utils', () => {
     expect(channels.map((channel) => channel.peak)).toEqual([0.25, 0.5, 0.75]);
   });
 
+  it('keeps the highest observed channel count when input temporarily reports fewer channels', () => {
+    const previous: MeterChannelState[] = [
+      { level: 0.8, peak: 0.8, peakHoldTime: 100 },
+      { level: 0.6, peak: 0.6, peakHoldTime: 100 },
+      { level: 0.4, peak: 0.4, peakHoldTime: 100 }
+    ];
+
+    const channels = updateMeterChannels({
+      previous,
+      levels: [0],
+      smoothing: 0.5,
+      peakHold: false,
+      now: 200
+    });
+
+    expect(channels).toHaveLength(3);
+    expect(channels.map((channel) => channel.level)).toEqual([0.4, 0.3, 0.2]);
+  });
+
   it('smooths and holds peaks independently per channel', () => {
     const previous: MeterChannelState[] = [
       { level: 0.8, peak: 0.8, peakHoldTime: 100 },

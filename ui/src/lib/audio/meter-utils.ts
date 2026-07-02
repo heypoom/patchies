@@ -33,10 +33,10 @@ export function updateMeterChannels({
   now,
   peakHoldDuration = METER_PEAK_HOLD_DURATION
 }: UpdateMeterChannelsOptions): MeterChannelState[] {
-  const sourceLevels = levels.length > 0 ? levels : [0];
+  const channelCount = Math.max(1, previous.length, levels.length);
 
-  return sourceLevels.map((rawLevel, index) => {
-    const instantLevel = sanitizeMeterLevel(rawLevel);
+  return Array.from({ length: channelCount }, (_, index) => {
+    const instantLevel = sanitizeMeterLevel(levels[index] ?? 0);
     const previousChannel = previous[index] ?? { level: 0, peak: 0, peakHoldTime: 0 };
 
     const level =
