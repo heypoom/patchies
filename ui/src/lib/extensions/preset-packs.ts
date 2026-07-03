@@ -32,7 +32,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'plotter.canvas',
       'particle.canvas',
       'Drawing Surface',
-      'midi.keyboard',
+      'MIDI Keyboard',
       'fractal-tree.canvas',
       'bitmaprenderer'
     ]

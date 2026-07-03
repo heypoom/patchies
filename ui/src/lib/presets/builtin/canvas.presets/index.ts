@@ -19,7 +19,7 @@ export const CANVAS_PRESETS = {
   'XY Pad': xyPadPreset,
   'HSL Picker': hslPickerPreset,
   'RGB Picker': rgbPickerPreset,
-  'midi.keyboard': virtualMidiKeyboardPreset,
+  'MIDI Keyboard': virtualMidiKeyboardPreset,
   'scope.canvas': scopeWaveformPreset,
   'scope-xy.canvas': scopeXYPreset
 };
