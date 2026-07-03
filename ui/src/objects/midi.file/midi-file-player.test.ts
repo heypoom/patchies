@@ -191,6 +191,29 @@ describe('MidiFilePlayer', () => {
     player.destroy();
   });
 
+  it('resends loaded metadata when preloaded', () => {
+    const send = vi.fn();
+    const player = new MidiFilePlayer({ send });
+
+    player.load(parsed);
+    send.mockClear();
+    player.preload();
+
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'loaded',
+        fileName: 'notes.mid',
+        durationSeconds: 1,
+        trackCount: 1,
+        ppq: 480,
+        programs: [{ channel: 1, program: 0 }],
+        preloadPrograms: [{ channel: 1, program: 0 }]
+      })
+    );
+
+    player.destroy();
+  });
+
   it('returns all scheduled events as a flattened plain array', () => {
     const player = new MidiFilePlayer({ send: vi.fn() });
 

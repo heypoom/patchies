@@ -104,6 +104,11 @@
       return;
     }
 
+    if (isMidiFileMessageType(message, 'preload')) {
+      player.preload();
+      return;
+    }
+
     if (isMidiFileMessageType(message, 'seek')) {
       const seconds = typeof message.seconds === 'number' ? message.seconds : undefined;
       const ticks = typeof message.ticks === 'number' ? message.ticks : undefined;

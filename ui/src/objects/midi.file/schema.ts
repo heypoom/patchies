@@ -27,6 +27,10 @@ const Events = Type.Object({
   type: Type.Literal('events')
 });
 
+const Preload = Type.Object({
+  type: Type.Literal('preload')
+});
+
 const SetMidiFileConfig = Type.Object({
   type: Type.Literal('set'),
   applyTempoToTransport: Type.Optional(Type.Boolean()),
@@ -111,6 +115,7 @@ export const midiFileSchema: ObjectSchema = {
         { schema: Play, description: 'Start playback from the current position' },
         { schema: Pause, description: 'Pause playback and hold the current position' },
         { schema: Stop, description: 'Stop playback, reset position, and flush active notes' },
+        { schema: Preload, description: 'Resend loaded metadata for connected instruments' },
         { schema: Seek, description: 'Seek by seconds, beats, or ticks' },
         { schema: Loop, description: 'Toggle or set looping' },
         { schema: Events, description: 'Send all scheduled MIDI and meta events as an array' },

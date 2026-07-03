@@ -107,10 +107,21 @@ export class MidiFilePlayer {
     );
   }
 
+  preload(): void {
+    if (!this.file) return;
+
+    this.sendLoaded(this.file);
+  }
+
   load(file: ParsedMidiFile): void {
     this.stop();
     this.file = file;
 
+    this.sendLoaded(file);
+    this.sendPosition();
+  }
+
+  private sendLoaded(file: ParsedMidiFile): void {
     this.options.send({
       type: 'loaded',
       fileName: file.fileName,
@@ -120,8 +131,6 @@ export class MidiFilePlayer {
       programs: getProgramStateAt(file, 0),
       preloadPrograms: getUniqueProgramStates(file)
     });
-
-    this.sendPosition();
   }
 
   play(): void {

@@ -111,6 +111,7 @@ type MidiFileCommand =
   | { type: "play" }
   | { type: "pause" }
   | { type: "stop" }
+  | { type: "preload" }
   | { type: "seek"; seconds: number }
   | { type: "seek"; beats: number }
   | { type: "seek"; ticks: number }
@@ -132,6 +133,8 @@ Behavior:
 - `bang` and `play` start playback from the current position.
 - `pause` stops scheduling new events but preserves the current position.
 - `stop` stops playback, emits note-offs for currently active notes, and resets to `0`.
+- `preload` resends the `loaded` metadata for the current file so connected instruments can
+  preload programs after mount.
 - `seek` moves the playback cursor and emits note-offs for notes that were active before the seek.
 - `loop` toggles or sets looping.
 - `events` emits a plain array of all scheduled MIDI channel and meta events in file order, without

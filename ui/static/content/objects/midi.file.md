@@ -13,6 +13,10 @@ Play Standard MIDI files as Patchies MIDI messages.
 The node supports play, pause, stop, seek, and loop from the UI and from messages.
 Stopping always sends note-off messages for active notes so connected synths do not hang.
 
+Send `{type: 'preload'}` to resend the `loaded` message for the current file.
+This lets connected instruments such as [gm~](/docs/objects/gm~) preload channel
+programs again after a patch has mounted.
+
 ## Output
 
 Outputs standard Patchies MIDI messages such as `noteOn`, `noteOff`, `controlChange`,

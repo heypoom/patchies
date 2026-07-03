@@ -17,6 +17,9 @@ When connected to `midi.file`, `gm~` also reads the file's program metadata and
 preloads channel instruments before playback starts, including instruments used
 by mid-file program changes.
 
+If `gm~` mounts after `midi.file` has already loaded, send `{type: 'preload'}`
+to `midi.file` to resend its `loaded` metadata.
+
 ## Settings
 
 - **Source** chooses between built-in Soundfont kits and a custom SoundFont2 file

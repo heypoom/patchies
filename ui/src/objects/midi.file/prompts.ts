@@ -12,6 +12,7 @@ Messages:
 - bang or play: start playback
 - pause: pause playback
 - stop: stop and reset, flushing active notes
+- {type: 'preload'}: resend the loaded metadata so connected instruments such as gm~ can preload programs after mount
 - {type: 'seek', seconds: number}: seek in seconds
 - {type: 'loop', value: boolean}: set looping
 - {type: 'events'}: output a plain array of all scheduled MIDI and meta events; each item is flattened with seconds, ticks, track, type, and the message-specific fields
