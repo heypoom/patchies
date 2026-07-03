@@ -23,6 +23,10 @@ const Loop = Type.Object({
   value: Type.Optional(Type.Boolean())
 });
 
+const Events = Type.Object({
+  type: Type.Literal('events')
+});
+
 const SetMidiFileConfig = Type.Object({
   type: Type.Literal('set'),
   applyTempoToTransport: Type.Optional(Type.Boolean()),
@@ -109,6 +113,7 @@ export const midiFileSchema: ObjectSchema = {
         { schema: Stop, description: 'Stop playback, reset position, and flush active notes' },
         { schema: Seek, description: 'Seek by seconds, beats, or ticks' },
         { schema: Loop, description: 'Toggle or set looping' },
+        { schema: Events, description: 'Send all scheduled MIDI and meta events as an array' },
         { schema: SetMidiFileConfig, description: 'Update playback and transport settings' },
         { schema: Type.String(), description: 'Load a MIDI file from an http(s) URL or VFS path' },
         { schema: Type.Array(Type.Number()), description: 'Load raw MIDI bytes' },

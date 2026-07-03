@@ -122,6 +122,11 @@
       return;
     }
 
+    if (isMidiFileMessageType(message, 'events')) {
+      messageContext?.send(player.getEvents());
+      return;
+    }
+
     if (isMidiFileMessageType(message, 'set')) {
       for (const key of [
         'applyTempoToTransport',

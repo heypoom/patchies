@@ -14,6 +14,7 @@ Messages:
 - stop: stop and reset, flushing active notes
 - {type: 'seek', seconds: number}: seek in seconds
 - {type: 'loop', value: boolean}: set looping
+- {type: 'events'}: output a plain array of all scheduled MIDI and meta events; each item is flattened with seconds, ticks, track, type, and the message-specific fields
 - {type: 'set', applyTempoToTransport?: boolean, applyTimeSignatureToTransport?: boolean, syncTransport?: boolean, outputMetaEvents?: boolean, sendPositionEvents?: boolean}: update playback settings; position events are off by default
 - 'user://...': load an existing VFS MIDI file
 - 'https://...': load a remote MIDI file through VFS

@@ -115,6 +115,7 @@ type MidiFileCommand =
   | { type: "seek"; beats: number }
   | { type: "seek"; ticks: number }
   | { type: "loop"; value?: boolean }
+  | { type: "events" }
   | {
       type: "set";
       applyTempoToTransport?: boolean;
@@ -133,6 +134,8 @@ Behavior:
 - `stop` stops playback, emits note-offs for currently active notes, and resets to `0`.
 - `seek` moves the playback cursor and emits note-offs for notes that were active before the seek.
 - `loop` toggles or sets looping.
+- `events` emits a plain array of all scheduled MIDI channel and meta events in file order, without
+  changing playback state.
 - `set` updates persistent node settings using `useNodeDataTracker`.
 - `load` replaces the current file and resets playback. `vfsPath` and `url` loads should route
   through the VFS, while `data` loads may store inline `fileData`.
@@ -169,6 +172,53 @@ events only when `sendPositionEvents` is true, and emits parsed MIDI meta events
 { type: 'timeSignature', numerator: number, denominator: number, tick: number }
 { type: 'keySignature', key: string, tick: number }
 { type: 'trackName', name: string, track: number }
+```
+
+The `events` command emits the parsed timeline as one plain array. Each array item is flattened:
+the event timing fields live beside the standard Patchies MIDI or meta message fields, not under a
+nested `message` property.
+
+```typescript
+type ScheduledMidiFileMessage = {
+  seconds: number;
+  ticks: number;
+  track: number;
+} & MidiFileOutputMessage;
+```
+
+Example:
+
+```typescript
+[
+  { seconds: 0, ticks: 0, track: 0, type: "tempo", bpm: 120, tick: 0 },
+  {
+    seconds: 0,
+    ticks: 0,
+    track: 0,
+    type: "timeSignature",
+    numerator: 4,
+    denominator: 4,
+    tick: 0,
+  },
+  {
+    seconds: 0,
+    ticks: 0,
+    track: 1,
+    type: "noteOn",
+    note: 60,
+    velocity: 100,
+    channel: 1,
+  },
+  {
+    seconds: 1,
+    ticks: 480,
+    track: 1,
+    type: "noteOff",
+    note: 60,
+    velocity: 0,
+    channel: 1,
+  },
+];
 ```
 
 ## Timing Model

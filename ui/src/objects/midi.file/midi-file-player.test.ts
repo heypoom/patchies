@@ -191,6 +191,33 @@ describe('MidiFilePlayer', () => {
     player.destroy();
   });
 
+  it('returns all scheduled events as a flattened plain array', () => {
+    const player = new MidiFilePlayer({ send: vi.fn() });
+
+    const fileWithMeta: ParsedMidiFile = {
+      ...parsed,
+      events: [
+        {
+          seconds: 0,
+          ticks: 0,
+          track: 0,
+          message: { type: 'tempo', bpm: 120, tick: 0 }
+        },
+        ...parsed.events
+      ]
+    };
+
+    player.load(fileWithMeta);
+
+    expect(player.getEvents()).toEqual([
+      { seconds: 0, ticks: 0, track: 0, type: 'tempo', bpm: 120, tick: 0 },
+      { seconds: 0, ticks: 0, track: 0, type: 'noteOn', note: 60, velocity: 100, channel: 1 },
+      { seconds: 1, ticks: 480, track: 0, type: 'noteOff', note: 60, velocity: 0, channel: 1 }
+    ]);
+
+    player.destroy();
+  });
+
   it('restarts from the beginning when played again after reaching the end', () => {
     vi.useFakeTimers();
     vi.setSystemTime(0);

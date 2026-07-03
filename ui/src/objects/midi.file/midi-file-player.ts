@@ -39,6 +39,12 @@ export interface ScheduledMidiFileEvent {
   message: MidiFileOutputMessage;
 }
 
+export type ScheduledMidiFileMessage = MidiFileOutputMessage & {
+  seconds: number;
+  ticks: number;
+  track: number;
+};
+
 export interface ParsedMidiFile {
   fileName: string;
   ppq: number;
@@ -88,6 +94,17 @@ export class MidiFilePlayer {
 
   get loadedFile(): ParsedMidiFile | null {
     return this.file;
+  }
+
+  getEvents(): ScheduledMidiFileMessage[] {
+    return (
+      this.file?.events.map(({ seconds, ticks, track, message }) => ({
+        seconds,
+        ticks,
+        track,
+        ...message
+      })) ?? []
+    );
   }
 
   load(file: ParsedMidiFile): void {

@@ -33,6 +33,38 @@ program changes.
 - **Send position events** sends playback `position` messages
 - **Loop** restarts playback at the end
 
+## Events
+
+Send `{type: 'events'}` to output a plain array of every scheduled MIDI and meta
+event in the file. Each item is flattened with `seconds`, `ticks`, and `track`
+timing fields plus the standard Patchies MIDI message fields:
+
+```javascript
+[
+  { seconds: 0, ticks: 0, track: 0, type: 'tempo', bpm: 120, tick: 0 },
+  { seconds: 0, ticks: 0, track: 1, type: 'noteOn', note: 60, velocity: 100, channel: 1 }
+]
+```
+
+Meta events appear in the same array when the MIDI file contains them:
+
+```javascript
+[
+  { seconds: 0, ticks: 0, track: 0, type: 'tempo', bpm: 120, tick: 0 },
+  {
+    seconds: 0,
+    ticks: 0,
+    track: 0,
+    type: 'timeSignature',
+    numerator: 4,
+    denominator: 4,
+    tick: 0
+  },
+  { seconds: 0, ticks: 0, track: 0, type: 'keySignature', key: 'C', tick: 0 },
+  { seconds: 0, ticks: 0, track: 1, type: 'trackName', name: 'Piano', track: 1 }
+]
+```
+
 ## See Also
 
 - [gm~](/docs/objects/gm~) - play multi-channel MIDI files with sampled instruments
