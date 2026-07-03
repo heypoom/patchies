@@ -151,7 +151,6 @@
     min-height: 6px;
     width: 7px;
     height: 7px;
-    will-change: width, height, opacity, filter;
     transition:
       width 0.2s ease-in,
       height 0.2s ease-in,
