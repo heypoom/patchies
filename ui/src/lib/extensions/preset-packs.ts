@@ -173,7 +173,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Useful widgets made with iframes',
     icon: 'Layout',
     requiredObjects: ['iframe'],
-    presets: ['youtube.iframe']
+    presets: ['youtube.iframe', 'spessasynth.iframe']
   },
   {
     id: 'midi',
