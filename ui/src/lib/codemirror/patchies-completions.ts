@@ -142,6 +142,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setHidePorts(true)'
   },
   {
+    label: 'hideBorder',
+    type: 'function',
+    detail: '() => void',
+    info: 'Hide Patchies border, selected glow, and floating preview controls for this node',
+    apply: 'hideBorder()'
+  },
+  {
     label: 'htmlCanvas.videoOutput',
     type: 'function',
     detail: '(options?: boolean | { size: "free" }) => boolean',
@@ -470,6 +477,7 @@ const topLevelOnlyFunctions = new Set([
   'noOutput',
   'noPan',
   'noWheel',
+  'hideBorder',
   'onCleanup',
   'onKeyDown',
   'onKeyUp',
@@ -590,6 +598,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   expandSurface: ['surface', 'p5'],
   collapseSurface: ['surface', 'p5'],
   hideExitButton: ['surface', 'p5'],
+  hideBorder: ['dom', 'vue', 'p5', 'canvas.dom', 'three.dom'],
   setAudioPortCount: ['dsp~'],
   showAudioInput: ['tone~', 'sonic~', 'elem~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],

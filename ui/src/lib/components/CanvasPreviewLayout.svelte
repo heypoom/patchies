@@ -8,6 +8,7 @@
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
   import { COOK_DEBUG_RENDER_NODE_TYPES } from '../../workers/rendering/cooking/policies';
+  import { getBorderChromeClass } from './border-chrome';
 
   const COOK_DEBUG_OBJECT_TYPES = new Set<string>(COOK_DEBUG_RENDER_NODE_TYPES);
 
@@ -54,6 +55,7 @@
     showBgOutputOption = true,
     showExpandOption = true,
     showCookDebugOption = undefined,
+    hideBorder = false,
     class: className = ''
   }: {
     title: string;
@@ -98,6 +100,7 @@
     showBgOutputOption?: boolean;
     showExpandOption?: boolean;
     showCookDebugOption?: boolean;
+    hideBorder?: boolean;
     class?: string;
   } = $props();
 
@@ -108,6 +111,18 @@
   const cookStatus = useCookStatus(
     () => nodeId,
     () => cookDebugSupported && $showCookStats
+  );
+
+  const chromeClass = $derived(
+    getBorderChromeClass({
+      hasError,
+      selected,
+      hideBorder,
+      errorClass: 'border-red-500/70',
+      selectedClass: 'shadow-glow-md border-zinc-300 [&>canvas]:rounded-[7px]',
+      idleClass: 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',
+      borderlessClass: 'border-transparent shadow-none [&>canvas]:rounded-md'
+    })
   );
 
   // Build the interaction class string based on individual flags
@@ -157,15 +172,7 @@
     <div class="relative">
       <canvas
         bind:this={previewCanvas}
-        class={[
-          'rounded-md border',
-          hasError
-            ? 'border-red-500/70'
-            : selected
-              ? 'shadow-glow-md border-zinc-300 [&>canvas]:rounded-[7px]'
-              : 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',
-          interactionClass
-        ]}
+        class={['rounded-md border', chromeClass, interactionClass]}
         {tabindex}
         width={typeof width === 'number' ? width : undefined}
         height={typeof height === 'number' ? height : undefined}

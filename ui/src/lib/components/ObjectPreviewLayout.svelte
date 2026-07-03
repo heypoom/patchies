@@ -489,7 +489,7 @@
                     <button
                       class="node-floating-button"
                       aria-label="Run code (shift+enter)"
-                      onclick={handleRun}
+                      onclick={() => handleRun()}
                     >
                       <Play class="h-4 w-4 text-zinc-300" />
                     </button>
@@ -571,7 +571,10 @@
           {#if onrun}
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <button onclick={handleRun} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+                <button
+                  onclick={() => handleRun()}
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                >
                   <Play class="h-4 w-4 text-zinc-300" />
                 </button>
               </Tooltip.Trigger>

@@ -19,6 +19,7 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { getBorderChromeClass, getBorderResetDataForRun } from '$lib/components/border-chrome';
   import {
     getDomSizeResetData,
     measureDomSize,
@@ -51,6 +52,7 @@
     height?: number;
     settingsSchema?: SettingsSchema;
     settings?: Record<string, unknown>;
+    hideBorder?: boolean;
   };
 
   let {
@@ -214,6 +216,7 @@
     dragEnabled = true;
     panEnabled = true;
     wheelEnabled = true;
+    updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     const resetSize = shouldResetDomSize(data.code);
 
@@ -276,6 +279,9 @@
             dragEnabled = false;
             panEnabled = false;
             wheelEnabled = false;
+          },
+          hideBorder: () => {
+            updateNodeData(nodeId, { hideBorder: true });
           },
           tailwind: container.tailwind,
           ...extraContext({ runCode }),
@@ -352,11 +358,15 @@
       bind:this={previewContainer}
       class={[
         'overflow-hidden rounded-md',
-        lineErrors !== undefined
-          ? 'border-red-500/70'
-          : selected
-            ? 'shadow-glow-md ring ring-zinc-400'
-            : 'hover:shadow-glow-sm',
+        getBorderChromeClass({
+          hasError: lineErrors !== undefined,
+          selected,
+          hideBorder: data.hideBorder,
+          errorClass: 'border-red-500/70',
+          selectedClass: 'shadow-glow-md ring ring-zinc-400',
+          idleClass: 'hover:shadow-glow-sm',
+          borderlessClass: 'shadow-none ring-0'
+        }),
         !dragEnabled && 'nodrag',
         !panEnabled && 'nopan',
         !wheelEnabled && 'nowheel'

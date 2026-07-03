@@ -155,6 +155,16 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('canvas.dom', 'setP')).toContain('setPrimaryButton');
   });
 
+  it('shows hideBorder completions only for native UI nodes', () => {
+    expect(getCompletionLabels('dom', 'hideB')).toContain('hideBorder');
+    expect(getCompletionLabels('vue', 'hideB')).toContain('hideBorder');
+    expect(getCompletionLabels('p5', 'hideB')).toContain('hideBorder');
+    expect(getCompletionLabels('canvas.dom', 'hideB')).toContain('hideBorder');
+    expect(getCompletionLabels('three.dom', 'hideB')).toContain('hideBorder');
+    expect(getCompletionLabels('js', 'hideB')).not.toContain('hideBorder');
+    expect(getCompletionLabels('hydra', 'hideB')).not.toContain('hideBorder');
+  });
+
   it('shows showAudioInput completions only for simple DSP audio nodes', () => {
     expect(getCompletionLabels('tone~', 'show')).toContain('showAudioInput');
     expect(getCompletionLabels('sonic~', 'show')).toContain('showAudioInput');

@@ -464,6 +464,7 @@ export class P5Manager {
         noPan: config.messageContext?.noPan,
         noWheel: config.messageContext?.noWheel,
         noInteract: config.messageContext?.noInteract,
+        hideBorder: config.messageContext?.hideBorder,
         noOutput: config.messageContext?.noOutput,
         setHidePorts: config.setHidePorts,
         settings: config.settings,

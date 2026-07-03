@@ -23,6 +23,7 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { getBorderChromeClass, getBorderResetDataForRun } from '$lib/components/border-chrome';
 
   let consoleRef: VirtualConsole | null = $state(null);
 
@@ -44,6 +45,7 @@
       surfaceMode?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
+      hideBorder?: boolean;
     };
     selected: boolean;
   } = $props();
@@ -295,6 +297,7 @@
         settingsManager.clearCallbacks();
         p5Manager.shouldSendBitmap = true;
         surfaceMode.setMouseForwarding();
+        updateNodeData(nodeId, getBorderResetDataForRun(data));
 
         await p5Manager.updateCode({
           code: nextCode,
@@ -321,6 +324,9 @@
             setPortCount,
             setTitle: (title: string) => {
               updateNodeData(nodeId, { title });
+            },
+            hideBorder: () => {
+              updateNodeData(nodeId, { hideBorder: true });
             }
           },
           setHidePorts: (hide: boolean) => {
@@ -445,11 +451,15 @@
                 !enablePan && 'nopan',
                 !enableWheel && 'nowheel'
               ],
-          errorMessage
-            ? 'border-red-500 [&>canvas]:rounded-[7px]'
-            : selected
-              ? 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]'
-              : 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md'
+          getBorderChromeClass({
+            hasError: Boolean(errorMessage),
+            selected,
+            hideBorder: data.hideBorder,
+            errorClass: 'border-red-500 [&>canvas]:rounded-[7px]',
+            selectedClass: 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]',
+            idleClass: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
+            borderlessClass: 'border-transparent shadow-none [&>canvas]:rounded-md'
+          })
         ]}
         style={preloadCanvasWidth && preloadCanvasHeight
           ? `min-width: ${preloadCanvasWidth}px; min-height: ${preloadCanvasHeight}px;`

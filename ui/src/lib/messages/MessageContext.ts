@@ -59,6 +59,9 @@ export interface UserFnRunContext {
   /** Disables all interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel. */
   noInteract: () => void;
 
+  /** Hides Patchies border, selected glow, and floating preview controls for this node. */
+  hideBorder?: () => void;
+
   /** Hides the video output port in canvas/p5 nodes. */
   noOutput?: () => void;
 
