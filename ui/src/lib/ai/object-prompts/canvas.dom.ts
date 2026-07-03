@@ -8,6 +8,7 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - ctx: 2D canvas context
 - width, height, mouse: {x, y, down, buttons}
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- hideBorder() - Hide Patchies border and selected glow
 - noOutput() - Hide video output (call this when the sketch does not feed video to other nodes)
 - setCanvasSize(w, h) - Resize canvas
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)

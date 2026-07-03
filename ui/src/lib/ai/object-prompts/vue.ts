@@ -13,6 +13,7 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - htmlCanvas.glslLayer(fragmentShader): Experimental API that locally post-processes the live Vue interface with a WebGL2 GLSL ES 3 fragment shader and source sampler; use texture(source, uv), mainImage(out vec4 fragColor, in vec2 fragCoord), source, iResolution, iTime, iTimeDelta, and iFrame; supports #include directives; mutually exclusive with videoOutput and canvasLayer
 - setHidePorts(hide): Hide/show ports
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control (whole node)
+- hideBorder(): Hide Patchies border and selected glow
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 **Selective canvas interaction (CSS classes):**

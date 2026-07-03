@@ -24,6 +24,7 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { getBorderResetDataForRun } from '$lib/components/border-chrome';
 
   let {
     id: nodeId,
@@ -42,6 +43,7 @@
       paused?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
+      hideBorder?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -343,6 +345,7 @@
     panEnabled = true;
     wheelEnabled = true;
     videoOutputEnabled = true;
+    updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     // Clear keyboard callbacks when code is re-run
     keyboardCallbacks = {};
@@ -413,6 +416,9 @@
             dragEnabled = false;
             panEnabled = false;
             wheelEnabled = false;
+          },
+          hideBorder: () => {
+            updateNodeData(nodeId, { hideBorder: true });
           }
         }
       });
@@ -509,6 +515,7 @@
   settingsValues={data.settings ?? {}}
   onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
   onSettingsRevertAll={() => settingsManager.revertAll()}
+  hideBorder={data.hideBorder}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}

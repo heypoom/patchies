@@ -64,6 +64,7 @@ See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available 
 - `noOutput()` - hides video output port
 - `setHidePorts(true | false)` - hide/show all ports
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see [Canvas Interaction](/docs/canvas-interaction)
+- `hideBorder()` - hides Patchies' border and selected glow until the call is removed and the node runs again
 - `fft()` - audio analysis with low latency
 
 ## Resources
