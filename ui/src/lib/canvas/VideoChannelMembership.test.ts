@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { VideoChannelMembership } from '$objects/video/VideoChannelMembership';
+import { VideoChannelMembership } from './VideoChannelMembership';
 
 describe('VideoChannelMembership', () => {
   it('tracks senders and receivers by channel', () => {
