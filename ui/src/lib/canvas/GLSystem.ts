@@ -13,6 +13,7 @@ import {
 } from '$lib/rendering/types';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
+import type { ProjMapSurface } from '$lib/projmap/types';
 
 import * as ohash from 'ohash';
 
@@ -1143,7 +1144,7 @@ export class GLSystem {
     this.send('sendMessageToNode', { nodeId, message });
   }
 
-  updateProjectionMap(nodeId: string, surfaces: import('$lib/projmap/types').ProjMapSurface[]) {
+  updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]) {
     this.send('updateProjectionMap', { nodeId, surfaces });
   }
 

@@ -11,6 +11,7 @@ import type {
   FBOResolution
 } from '../../lib/rendering/types';
 import type { ClockCommandMessage, TransportState } from '$lib/transport/types';
+import type { ProjMapSurface } from '$lib/projmap/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
@@ -1102,7 +1103,7 @@ export class FBORenderer {
     };
   }
 
-  updateProjectionMap(nodeId: string, surfaces: import('$lib/projmap/types').ProjMapSurface[]) {
+  updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]) {
     this.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
     this.cookState.markDirty(nodeId, 'config');
   }

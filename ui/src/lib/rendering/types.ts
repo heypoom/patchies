@@ -3,6 +3,7 @@ import type { ProfilerCategory, RenderFrameStats, TimingStats } from '$lib/profi
 import type { GLUniformDef } from '../../types/uniform-config';
 import type { PrimaryButton } from '$lib/eventbus/events';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
+import type { ProjMapSurface } from '$lib/projmap/types';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
@@ -82,7 +83,7 @@ export type RenderNode = {
         resolution?: FBOResolution;
       };
     }
-  | { type: 'projmap'; data: { surfaces: import('$lib/projmap/types').ProjMapSurface[] } }
+  | { type: 'projmap'; data: { surfaces: ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'float.tex'; data: unknown }
   | { type: 'bg.out'; data: unknown }

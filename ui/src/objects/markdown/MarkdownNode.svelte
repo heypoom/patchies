@@ -154,7 +154,7 @@
 </div>
 
 <style lang="postcss" scoped>
-  @reference "../../../app.css";
+  @reference "../../app.css";
 
   .overtype-editor :global(.overtype-wrapper) {
     @apply rounded-lg;

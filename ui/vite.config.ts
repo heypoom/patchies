@@ -66,6 +66,7 @@ export default defineConfig(() => ({
     glslModulesCopy(),
     minifyExceptShaderParkCore(),
     SvelteKitPWA({
+      outDir: '.svelte-kit/output/client',
       // HOTFIX: Self-destroying SW to clean up aggressive caching issues
       // This generates a SW that unregisters itself and clears all caches
       selfDestroying: true,
