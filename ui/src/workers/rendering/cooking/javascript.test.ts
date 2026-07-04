@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectJavaScriptCookDependencies } from './javascript';
+import { detectJavaScriptCookDependencies } from '$workers/rendering/cooking/javascript';
 
 describe('detectJavaScriptCookDependencies', () => {
   it('detects no dependencies for static JavaScript code', () => {

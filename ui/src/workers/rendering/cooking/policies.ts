@@ -1,13 +1,13 @@
 import { match, P } from 'ts-pattern';
 import type { RenderGraph, RenderNode } from '$lib/rendering/types';
-import type { CookPolicy } from '../CookStateManager';
-import { createGlslCookPolicy } from './glsl';
-import { createHydraCookPolicy } from './hydra';
-import { createJavaScriptCookPolicy } from './javascript';
-import { createReglCookPolicy } from './regl';
-import { createShaderParkCookPolicy } from './shaderpark';
-import { createSwglCookPolicy } from './swgl';
-import { createTextmodeCookPolicy } from './textmode';
+import type { CookPolicy } from '$workers/rendering/CookStateManager';
+import { createGlslCookPolicy } from '$objects/glsl/cook-policy';
+import { createHydraCookPolicy } from '$objects/hydra/cook-policy';
+import { createJavaScriptCookPolicy } from '$workers/rendering/cooking/javascript';
+import { createReglCookPolicy } from '$objects/regl/cook-policy';
+import { createShaderParkCookPolicy } from '$objects/shaderpark/cook-policy';
+import { createSwglCookPolicy } from '$objects/swgl/cook-policy';
+import { createTextmodeCookPolicy } from '$objects/textmode/cook-policy';
 
 export const COOK_DEBUG_RENDER_NODE_TYPES = [
   'canvas',

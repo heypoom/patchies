@@ -1,7 +1,7 @@
 import {
   VideoChannelMembership,
   type VideoChannelRole
-} from '../../lib/video/VideoChannelMembership';
+} from '$objects/video/VideoChannelMembership';
 import type { RenderEdge } from '../../lib/rendering/types';
 
 /**

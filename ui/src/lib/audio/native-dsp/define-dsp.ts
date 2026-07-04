@@ -20,7 +20,7 @@ type SendFn = (message: unknown, outlet?: number) => void;
  * Firefox always returns 128 samples. This helper handles both cases.
  *
  * @example
- * import { defineDSP, p } from '../define-dsp';
+ * import { defineDSP, p } from '$lib/audio/native-dsp/define-dsp';
  * const frequency = p(freqParam, i);
  */
 export function p(param: Float32Array, i: number): number {

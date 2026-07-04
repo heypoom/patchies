@@ -1,7 +1,7 @@
 import { Value } from '@sinclair/typebox/value';
 import { describe, expect, it } from 'vitest';
 
-import { MidiNoteOff, MidiNoteOn } from './midi-messages';
+import { MidiNoteOff, MidiNoteOn } from '$lib/objects/schemas/midi-messages';
 
 describe('MIDI message schemas', () => {
   it('accept timed note messages', () => {

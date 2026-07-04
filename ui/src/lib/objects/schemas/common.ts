@@ -1,8 +1,8 @@
 import { Type } from '@sinclair/typebox';
 
-import { schema } from './types';
-import { sym, msg } from './helpers';
-import { MidiNoteOff, MidiNoteOn } from './midi-messages';
+import { schema } from '$lib/objects/schemas/types';
+import { sym, msg } from '$lib/objects/schemas/helpers';
+import { MidiNoteOff, MidiNoteOn } from '$lib/objects/schemas/midi-messages';
 
 /**
  * Common message schemas used across many objects.

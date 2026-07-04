@@ -1,4 +1,7 @@
-import { VideoChannelMembership, type VideoChannelRole } from '$lib/video/VideoChannelMembership';
+import {
+  VideoChannelMembership,
+  type VideoChannelRole
+} from '$objects/video/VideoChannelMembership';
 
 export type VideoChannelRegistryListener = () => void;
 

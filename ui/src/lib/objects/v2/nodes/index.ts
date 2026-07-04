@@ -2,8 +2,8 @@
  * Import and register all text object classes here.
  */
 
-import { AdsrObject } from './AdsrObject';
-import { BeatObject } from './BeatObject';
+import { AdsrObject } from '$objects/adsr/AdsrObject';
+import { BeatObject } from '$objects/beat/BeatObject';
 import {
   AndObject,
   EqualObject,
@@ -14,35 +14,40 @@ import {
   NotEqualObject,
   NotObject,
   OrObject
-} from './BooleanOperatorObject';
-import { ClipObject } from './ClipObject';
-import { DebounceObject } from './DebounceObject';
-import { DelayObject } from './DelayObject';
-import { FloatObject } from './FloatObject';
-import { IntObject } from './IntObject';
-import { KVObject } from './KVObject';
-import { LoadbangObject } from './LoadbangObject';
-import { MetroObject } from './MetroObject';
-import { MtofObject } from './MtofObject';
-import { AddObject, DivideObject, MultiplyObject, SubtractObject } from './NumericOperatorObject';
-import { PackObject } from './PackObject';
-import { PatchbayObject } from './PatchbayObject';
-import { SelectObject } from './SelectObject';
-import { ScaleObject } from './ScaleObject';
-import { SpigotObject } from './SpigotObject';
-import { ThrottleObject } from './ThrottleObject';
-import { UniqbyObject } from './UniqbyObject';
-import { WebMidiLinkObject } from './WebMidiLinkObject';
-import { SendObject } from './SendObject';
-import { RecvObject } from './RecvObject';
-import { SamplerateObject } from './SamplerateObject';
-import { UnpackObject } from './UnpackObject';
-import { StackObject } from './StackObject';
-import { QueueObject } from './QueueObject';
+} from '$objects/boolean-operators/BooleanOperatorObject';
+import { ClipObject } from '$objects/clip/ClipObject';
+import { DebounceObject } from '$objects/debounce/DebounceObject';
+import { DelayObject } from '$objects/delay/DelayObject';
+import { FloatObject } from '$objects/float/FloatObject';
+import { IntObject } from '$objects/int/IntObject';
+import { KVObject } from '$objects/kv/KVObject';
+import { LoadbangObject } from '$objects/loadbang/LoadbangObject';
+import { MetroObject } from '$objects/metro/MetroObject';
+import { MtofObject } from '$objects/mtof/MtofObject';
+import {
+  AddObject,
+  DivideObject,
+  MultiplyObject,
+  SubtractObject
+} from '$objects/numeric-operators/NumericOperatorObject';
+import { PackObject } from '$objects/pack/PackObject';
+import { PatchbayObject } from '$objects/patchbay/PatchbayObject';
+import { SelectObject } from '$objects/select/SelectObject';
+import { ScaleObject } from '$objects/scale/ScaleObject';
+import { SpigotObject } from '$objects/spigot/SpigotObject';
+import { ThrottleObject } from '$objects/throttle/ThrottleObject';
+import { UniqbyObject } from '$objects/uniqby/UniqbyObject';
+import { WebMidiLinkObject } from '$objects/web-midi-link/WebMidiLinkObject';
+import { SendObject } from '$objects/send-recv/SendObject';
+import { RecvObject } from '$objects/send-recv/RecvObject';
+import { SamplerateObject } from '$objects/samplerate/SamplerateObject';
+import { UnpackObject } from '$objects/unpack/UnpackObject';
+import { StackObject } from '$objects/stack/StackObject';
+import { QueueObject } from '$objects/queue/QueueObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
-import type { TextObjectClass } from '../interfaces/text-objects';
+import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 
 export const TEXT_OBJECTS = [
   AdsrObject,

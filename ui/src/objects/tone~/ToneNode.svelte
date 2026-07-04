@@ -1,0 +1,188 @@
+<script lang="ts">
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
+  import { AudioService } from '$lib/audio/v2/AudioService';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import SimpleDspLayout from '$objects/audio-code/SimpleDspLayout.svelte';
+  import type { ToneNode } from '$objects/tone~/ToneNode';
+  import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { SettingsManager } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
+  import {
+    getInitialSimpleDspAudioInputVisibility,
+    hasAudioInputUsage
+  } from '$lib/audio/visible-audio-inputs';
+
+  // Get node data from XY Flow - nodes receive their data as props
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: {
+    id: string;
+    data: {
+      code: string;
+      messageInletCount?: number;
+      messageOutletCount?: number;
+      showAudioInput?: boolean;
+      title?: string;
+      executeCode?: number;
+      showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
+    };
+    selected: boolean;
+  } = $props();
+
+  // Get flow utilities to update node data
+  const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  let audioService = AudioService.getInstance();
+
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
+
+  let eventBus = PatchiesEventBus.getInstance();
+  let previousExecuteCode = $state<number | undefined>(undefined);
+  let consoleRef: VirtualConsole | null = $state(null);
+  let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+
+  // Listen for console output events to capture lineErrors
+  function handleConsoleOutput(event: ConsoleOutputEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    if (event.messageType === 'error' && event.lineErrors) {
+      lineErrors = event.lineErrors;
+    }
+  }
+
+  // Watch for executeCode timestamp changes and re-run when it changes
+  $effect(() => {
+    if (data.executeCode && data.executeCode !== previousExecuteCode) {
+      previousExecuteCode = data.executeCode;
+      runTone();
+    }
+  });
+
+  const handleMessage: MessageCallbackFn = (message, meta) => {
+    match(message)
+      .with(messages.run, () => runTone())
+      .with(P.any, () => {
+        if (meta?.inlet === undefined) return;
+
+        audioService.send(nodeId, 'messageInlet', {
+          inletIndex: meta.inlet,
+          message,
+          meta
+        });
+      });
+  };
+
+  const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
+
+  function handleCodeChange(newCode: string) {
+    updateNodeData(nodeId, { code: newCode });
+
+    setTimeout(() => {
+      const toneNode = audioService.getNodeById(nodeId) as ToneNode | undefined;
+
+      if (!toneNode) return;
+
+      toneNode.onSetPortCount = (inletCount: number, outletCount: number) => {
+        updateNodeData(nodeId, {
+          messageInletCount: inletCount,
+          messageOutletCount: outletCount
+        });
+
+        updateNodeInternals(nodeId);
+      };
+
+      toneNode.onSetTitle = (title: string) => {
+        updateNodeData(nodeId, { title });
+      };
+
+      toneNode.onSetAudioInputVisible = (showAudioInput: boolean) => {
+        updateNodeData(nodeId, { showAudioInput });
+        updateNodeInternals(nodeId);
+      };
+
+      updateNodeInternals(nodeId);
+    }, 10);
+  }
+
+  function runTone() {
+    // Clear previous console output and error highlighting
+    consoleRef?.clearConsole();
+    lineErrors = undefined;
+
+    updateNodeData(nodeId, {
+      showAudioInput: hasAudioInputUsage('tone~', data.code)
+    });
+
+    updateNodeInternals(nodeId);
+    updateAudioCode(data.code);
+  }
+
+  function handleToggleConsole() {
+    updateNodeData(nodeId, { showConsole: !data.showConsole });
+  }
+
+  onMount(() => {
+    audioService.registerSettingsManager(nodeId, settingsManager);
+
+    updateNodeData(nodeId, {
+      showAudioInput: getInitialSimpleDspAudioInputVisibility(
+        'tone~',
+        data.showAudioInput,
+        data.code
+      )
+    });
+
+    audioService.createNode(nodeId, 'tone~', [null, data.code]);
+    handleCodeChange(data.code);
+    eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+  });
+
+  onDestroy(() => {
+    audioService.unregisterSettingsManager(nodeId);
+    audioService.removeNodeById(nodeId);
+
+    eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+  });
+</script>
+
+<SimpleDspLayout
+  {nodeId}
+  nodeName="tone~"
+  nodeType="tone~"
+  {data}
+  {selected}
+  onCodeChange={handleCodeChange}
+  onRun={runTone}
+  {handleMessage}
+  showConsole={data.showConsole}
+  onToggleConsole={handleToggleConsole}
+  {lineErrors}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
+>
+  {#snippet console()}
+    <VirtualConsole
+      bind:this={consoleRef}
+      {nodeId}
+      onrun={runTone}
+      placeholder="Tone.js errors will appear here."
+    />
+  {/snippet}
+</SimpleDspLayout>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash, X } from '@lucide/svelte/icons';
-  import type { ChuckShred } from '$lib/audio/v2/nodes/ChuckNode';
+  import type { ChuckShred } from '$objects/chuck~/ChuckNode';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   let {

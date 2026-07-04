@@ -1,6 +1,6 @@
 <script lang="ts">
   import { X } from '@lucide/svelte/icons';
-  import type { BytebeatType, BytebeatSyntax } from '$lib/audio/v2/nodes/BytebeatNode';
+  import type { BytebeatType, BytebeatSyntax } from '$objects/bytebeat~/BytebeatNode';
 
   const TYPE_OPTIONS: { label: string; value: BytebeatType }[] = [
     { label: 'Bytebeat', value: 'bytebeat' },

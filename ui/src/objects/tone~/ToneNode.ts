@@ -1,0 +1,308 @@
+import { type AudioNodeV2, type AudioNodeGroup } from '$lib/audio/v2/interfaces/audio-nodes';
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { createCustomConsole } from '$lib/utils/createCustomConsole';
+import { handleCodeError } from '$lib/js-runner/handleCodeError';
+import { JSRunner } from '$lib/js-runner/JSRunner';
+import { match, P } from 'ts-pattern';
+import { MessageContext } from '$lib/messages/MessageContext';
+import { TONE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { extractToneVarNames, injectAutoDispose } from '$objects/tone~/tone-auto-dispose';
+import { AudioService } from '$lib/audio/v2/AudioService';
+import { createSettingsAPI } from '$lib/settings/create-settings-api';
+
+type RecvCallback = (message: unknown, meta: unknown) => void;
+
+type OnSetPortCount = (inletCount: number, outletCount: number) => void;
+type OnSetTitle = (title: string) => void;
+type OnSetAudioInputVisible = (visible: boolean) => void;
+
+/**
+ * ToneNode implements the tone~ audio node.
+ * Executes user-defined Tone.js code for music synthesis and audio processing.
+ */
+export class ToneNode implements AudioNodeV2 {
+  static type = 'tone~';
+  static group: AudioNodeGroup = 'processors';
+  static description = 'Tone.js synthesis and audio processing node';
+
+  static inlets: ObjectInlet[] = [
+    {
+      name: 'in',
+      type: 'signal',
+      description: 'Audio signal input'
+    },
+    {
+      name: 'code',
+      type: 'string',
+      description: 'Tone.js code to execute'
+    }
+  ];
+
+  static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal', description: 'Audio output' }];
+
+  // Output gain node
+  audioNode: GainNode;
+
+  readonly nodeId: string;
+
+  private inputNode: GainNode;
+  private audioContext: AudioContext;
+  private messageContext: MessageContext;
+
+  private cleanupFn: (() => void) | null = null;
+  private recvCallback: RecvCallback | null = null;
+
+  // Auto-dispose: tracked Tone.js instances for automatic cleanup
+  private toneInstances: { dispose(): void }[] = [];
+
+  // Dynamic port counts for UI
+  private messageInletCount = 0;
+  private messageOutletCount = 0;
+
+  public onSetPortCount: OnSetPortCount = () => {};
+  public onSetTitle: OnSetTitle = () => {};
+  public onSetAudioInputVisible: OnSetAudioInputVisible = () => {};
+
+  // Custom console for routing output to VirtualConsole
+  private customConsole;
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.nodeId = nodeId;
+    this.audioContext = audioContext;
+    this.customConsole = createCustomConsole(nodeId);
+
+    // Create gain nodes immediately for connections
+    this.audioNode = audioContext.createGain();
+    this.audioNode.gain.value = 1.0;
+
+    this.inputNode = audioContext.createGain();
+    this.inputNode.gain.value = 1.0;
+
+    this.messageContext = new MessageContext(nodeId);
+  }
+
+  async create(params: unknown[]): Promise<void> {
+    const [, code] = params as [unknown, string];
+
+    if (code) {
+      await this.setCode(code);
+    }
+  }
+
+  async send(key: string, msg: unknown): Promise<void> {
+    return match([key, msg])
+      .with(['code', P.string], ([, code]) => {
+        return this.setCode(code);
+      })
+      .with(['messageInlet', P.any], ([, messageData]) => {
+        this.handleMessageInlet(messageData);
+      })
+      .otherwise(() => {
+        // Handle other message types if needed
+      });
+  }
+
+  /**
+   * Handle incoming connections - route to input node
+   */
+  connectFrom(source: AudioNodeV2): void {
+    if (source.audioNode) {
+      source.audioNode.connect(this.inputNode);
+    }
+  }
+
+  private toneContext: InstanceType<typeof import('tone').Context> | null = null;
+
+  /**
+   * Firefox doesn't implement AudioListener.forwardX/Y/Z etc. as AudioParams.
+   * Tone.js expects these to exist, so we polyfill them before initialization.
+   * We use real AudioParam instances from ConstantSourceNodes to pass instanceof checks.
+   */
+  private polyfillAudioListenerForFirefox() {
+    const listener = this.audioContext.listener;
+
+    // Check if polyfill is needed (Firefox lacks these as AudioParams)
+    if (listener.forwardX !== undefined) return;
+
+    // Create a real AudioParam by using a ConstantSourceNode
+    // This passes the `instanceof AudioParam` check that Tone.js uses
+    const createRealAudioParam = (defaultValue: number): AudioParam => {
+      const node = this.audioContext.createConstantSource();
+      node.offset.value = defaultValue;
+
+      return node.offset;
+    };
+
+    // Polyfill the missing properties with real AudioParams
+    Object.defineProperties(listener, {
+      positionX: { value: createRealAudioParam(0), configurable: true },
+      positionY: { value: createRealAudioParam(0), configurable: true },
+      positionZ: { value: createRealAudioParam(0), configurable: true },
+      forwardX: { value: createRealAudioParam(0), configurable: true },
+      forwardY: { value: createRealAudioParam(0), configurable: true },
+      forwardZ: { value: createRealAudioParam(-1), configurable: true },
+      upX: { value: createRealAudioParam(0), configurable: true },
+      upY: { value: createRealAudioParam(1), configurable: true },
+      upZ: { value: createRealAudioParam(0), configurable: true }
+    });
+  }
+
+  private async ensureTone() {
+    const Tone = await import('tone');
+
+    if (!this.toneContext) {
+      // Polyfill AudioListener for Firefox before Tone.js initializes
+      this.polyfillAudioListenerForFirefox();
+
+      this.toneContext = new Tone.Context(this.audioContext);
+      Tone.setContext(this.toneContext);
+    }
+
+    await Tone.start();
+
+    return Tone;
+  }
+
+  private async setCode(code: string): Promise<void> {
+    const Tone = await this.ensureTone();
+
+    if (!code || code.trim() === '') {
+      this.cleanup();
+      return;
+    }
+
+    try {
+      // Clean up any existing objects
+      this.cleanup();
+
+      // Reset message inlet count and recv callback for new code
+      this.messageInletCount = 0;
+      this.messageOutletCount = 0;
+      this.recvCallback = null;
+
+      const jsRunner = JSRunner.getInstance();
+
+      const processedCode = await jsRunner.preprocessCode(code, { nodeId: this.nodeId });
+      if (processedCode === null) return;
+
+      // Extract Tone variable names for auto-dispose tracking
+      const toneVarNames = extractToneVarNames(processedCode);
+      const toneInstances: { dispose(): void }[] = [];
+
+      const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
+      settingsManager?.clearCallbacks();
+
+      const extraContext: Record<string, unknown> = {
+        Tone,
+        outputNode: this.audioNode,
+        inputNode: this.inputNode,
+        showAudioInput: () => this.onSetAudioInputVisible(true),
+        ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
+      };
+
+      if (toneVarNames.length > 0) {
+        extraContext.__toneInstances = toneInstances;
+      }
+
+      // Inject auto-dispose tracking if Tone variables found
+      const codeToExecute = injectAutoDispose(processedCode, toneVarNames);
+
+      // Execute using JSRunner with Tone.js-specific extra context
+      const result = await jsRunner.executeJavaScript(this.nodeId, codeToExecute, {
+        extraContext,
+        customConsole: this.customConsole,
+        setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
+          this.messageInletCount = Math.max(0, inletCount);
+          this.messageOutletCount = Math.max(0, outletCount);
+          this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
+        },
+        setTitle: (title: string) => {
+          this.onSetTitle(title);
+        }
+      });
+
+      // Store tracked Tone instances for auto-dispose
+      this.toneInstances = toneInstances;
+
+      if (toneVarNames.length > 0) {
+        this.customConsole.log(
+          `objects: ${toneVarNames.join(', ')} (${toneInstances.length}/${toneVarNames.length})`
+        );
+      }
+
+      if (result && typeof result.cleanup === 'function') {
+        this.cleanupFn = result.cleanup;
+      }
+    } catch (error) {
+      handleCodeError(error, code, this.nodeId, this.customConsole, TONE_WRAPPER_OFFSET);
+    }
+  }
+
+  private handleMessageInlet(messageData: unknown): void {
+    if (!this.recvCallback) return;
+
+    const handleError = (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      this.customConsole.error(`Error in recv(): ${errorMessage}`);
+    };
+
+    try {
+      // Type guard to ensure messageData has the expected structure
+      if (
+        typeof messageData === 'object' &&
+        messageData !== null &&
+        'message' in messageData &&
+        'meta' in messageData
+      ) {
+        const data = messageData as { message: unknown; meta: unknown };
+        const result = this.recvCallback(data.message, data.meta) as unknown;
+
+        // Handle async callbacks that return a promise
+        if (result instanceof Promise) {
+          result.catch(handleError);
+        }
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  private cleanup() {
+    // Call any user-provided cleanup function first
+    if (this.cleanupFn) {
+      try {
+        this.cleanupFn();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.customConsole.error(`Error during cleanup: ${errorMessage}`);
+      }
+    }
+
+    // Auto-dispose tracked Tone.js instances (safety net for objects user didn't dispose)
+    if (this.toneInstances.length > 0) {
+      this.customConsole.log(`auto-disposing ${this.toneInstances.length} objects`);
+    }
+    for (const instance of this.toneInstances) {
+      try {
+        instance.dispose();
+      } catch {
+        /* already disposed or invalid */
+      }
+    }
+
+    this.toneInstances = [];
+    this.cleanupFn = null;
+  }
+
+  destroy(): void {
+    this.cleanup();
+    this.recvCallback = null;
+    this.messageContext.destroy();
+    this.audioNode.disconnect();
+    this.inputNode.disconnect();
+
+    // Clean up JSRunner context for this node
+    JSRunner.getInstance().destroy(this.nodeId);
+  }
+}

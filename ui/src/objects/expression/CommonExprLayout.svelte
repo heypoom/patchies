@@ -1,0 +1,440 @@
+<script lang="ts">
+  import { useSvelteFlow } from '@xyflow/svelte';
+  import type { Snippet } from 'svelte';
+  import hljs from 'highlight.js/lib/core';
+  import javascript from 'highlight.js/lib/languages/javascript';
+  import CodeEditor from '$lib/components/CodeEditor.svelte';
+  import { keymap } from '@codemirror/view';
+  import { EditorView } from 'codemirror';
+  import { highlightUiua } from '$lib/uiua/uiua-highlight';
+  import type { SupportedLanguage } from '$lib/codemirror/types';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay,
+    openCodeEditorOverlay
+  } from '../../stores/code-editor-layout.store';
+  import { createCommonExprEditorTarget } from '$lib/code-editor/common-expr-editor-target';
+  import { editorFontFamily } from '../../stores/editor.store';
+
+  import 'highlight.js/styles/tokyo-night-dark.css';
+
+  hljs.registerLanguage('javascript', javascript);
+
+  // Track preview element size to avoid layout shift when switching to editor
+  let previewEl: HTMLDivElement | null = $state(null);
+  let capturedSize: { width: number; height: number } | null = $state(null);
+
+  $effect(() => {
+    if (!previewEl) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        // Use borderBoxSize for full dimensions including padding/border
+        const box = entry.borderBoxSize[0];
+        if (box) {
+          capturedSize = {
+            width: box.inlineSize,
+            height: box.blockSize
+          };
+        }
+      }
+    });
+
+    observer.observe(previewEl);
+    return () => observer.disconnect();
+  });
+
+  let {
+    nodeId,
+    data,
+    selected,
+    expr = $bindable(),
+    isEditing = $bindable(),
+    placeholder = 'expr',
+    displayPrefix,
+    editorClass = 'common-expr-node-code-editor',
+    previewContainerClass = '',
+    class: className = '',
+    language = 'javascript',
+    onExpressionChange = () => {},
+    onRun = () => {},
+    exitOnRun = true,
+    runOnExit = false,
+    extraExtensions = [],
+    hasError = false,
+    allowEmptyExpr = false,
+    dataKey = 'expr',
+    nodeType = 'expr',
+    detachedEditorTitle = undefined,
+    detachedActions = undefined,
+    detachedSettings = undefined,
+    fontSize,
+    lineWrap = false,
+    children,
+    handles,
+    outlets,
+    onPreviewMouseOver,
+    onPreviewMouseOut
+  }: {
+    nodeId: string;
+    data: any;
+    selected: boolean;
+    expr: string;
+    isEditing: boolean;
+    placeholder?: string;
+    displayPrefix?: string;
+    editorClass?: string;
+    previewContainerClass?: string;
+    class?: string;
+    fontSize?: string;
+    language?: SupportedLanguage;
+    onRun?: () => void;
+    onExpressionChange?: (expr: string) => void;
+    exitOnRun?: boolean;
+    runOnExit?: boolean;
+    extraExtensions?: any[];
+    hasError?: boolean;
+    allowEmptyExpr?: boolean;
+    children?: any;
+    handles?: any;
+    outlets?: any;
+    dataKey?: string;
+    nodeType?: string;
+    detachedEditorTitle?: string;
+    detachedActions?: Snippet;
+    detachedSettings?: Snippet;
+    lineWrap?: boolean;
+    onPreviewMouseOver?: (e: MouseEvent) => void;
+    onPreviewMouseOut?: (e: MouseEvent) => void;
+  } = $props();
+
+  const { updateNodeData, deleteElements } = useSvelteFlow();
+
+  let codeEditorRef: CodeEditor | null = $state(null);
+  let originalExpr = expr; // Store original for escape functionality
+
+  const isCodeEditorDetached = $derived(
+    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === dataKey
+  );
+
+  // Escape HTML for safe display
+  function escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  let highlightedHtml = $derived.by(() => {
+    if (!expr) return '';
+
+    // Use language-specific highlighter
+    if (language === 'uiua') {
+      return highlightUiua(expr);
+    }
+
+    if (language !== 'javascript') {
+      return escapeHtml(expr);
+    }
+
+    try {
+      return hljs.highlight(expr, {
+        language: 'javascript',
+        ignoreIllegals: true
+      }).value;
+    } catch (e) {
+      return '';
+    }
+  });
+
+  function enterEditingMode() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+
+    isEditing = true;
+    originalExpr = expr;
+
+    focusEditor();
+  }
+
+  function focusEditor() {
+    setTimeout(() => {
+      const editor = document.querySelector(`.${editorClass} .cm-content`) as HTMLElement;
+      editor?.focus();
+    }, 10);
+  }
+
+  function exitEditingMode(save: boolean = true) {
+    isEditing = false;
+
+    if (runOnExit) {
+      onRun?.();
+    }
+
+    if (!save) {
+      // Restore original expression on escape
+      expr = originalExpr;
+      updateNodeData(nodeId, { expr: originalExpr });
+      onExpressionChange(originalExpr);
+
+      // If the original expression was empty, delete the node (unless empty is allowed)
+      if (!originalExpr.trim() && !allowEmptyExpr) {
+        deleteElements({ nodes: [{ id: nodeId }] });
+        return;
+      }
+    }
+
+    if (save) {
+      if (expr.trim()) {
+        const trimmedExpr = expr.trim();
+        updateNodeData(nodeId, { expr: trimmedExpr });
+        onExpressionChange(trimmedExpr);
+      } else if (!allowEmptyExpr) {
+        // If trying to save with empty expression, delete the node (unless empty is allowed)
+        deleteElements({ nodes: [{ id: nodeId }] });
+      }
+    }
+  }
+
+  function handleDoubleClick() {
+    if (!isEditing) {
+      enterEditingMode();
+    }
+  }
+
+  function handleExpressionUpdate(value: string) {
+    expr = value;
+    updateNodeData(nodeId, { expr: value });
+    onExpressionChange(value);
+  }
+
+  const containerClass = $derived.by(() => {
+    const base = hasError
+      ? '!border-red-500 object-container'
+      : selected
+        ? 'object-container-selected'
+        : 'object-container';
+
+    return className ? `${base} ${className}` : base;
+  });
+
+  export function focus() {
+    if (isEditing) {
+      focusEditor();
+    }
+  }
+
+  export function insertAtCursor(text: string) {
+    codeEditorRef?.insertAtCursor(text);
+  }
+
+  export function openExpandedEditor() {
+    openCodeEditorOverlay(
+      createCommonExprEditorTarget({
+        nodeId,
+        dataKey,
+        language,
+        nodeType,
+        title: detachedEditorTitle,
+        placeholder,
+        onchange: onExpressionChange,
+        onrun: onRun,
+        customActions: detachedActions,
+        customSettings: detachedSettings
+      })
+    );
+
+    isEditing = false;
+  }
+
+  export function closeExpandedEditor() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+  }
+</script>
+
+<div class="relative">
+  <div class="group relative">
+    <div class="flex flex-col gap-2">
+      <div class="relative">
+        {@render handles?.()}
+
+        <div class="relative">
+          {#if isEditing && !isCodeEditorDetached}
+            <div
+              class={[
+                'expr-editor-container nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
+                containerClass
+              ]}
+              style={capturedSize
+                ? `width: ${capturedSize.width}px; min-height: ${capturedSize.height}px`
+                : undefined}
+            >
+              <CodeEditor
+                bind:this={codeEditorRef}
+                value={expr}
+                onchange={handleExpressionUpdate}
+                onrun={() => {
+                  if (exitOnRun) exitEditingMode(true);
+
+                  onRun?.();
+                }}
+                {language}
+                class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}
+                {placeholder}
+                nodeType="expr"
+                extraExtensions={[
+                  keymap.of([
+                    {
+                      key: 'Escape',
+                      run: () => {
+                        exitEditingMode(false);
+                        return true;
+                      }
+                    }
+                  ]),
+                  EditorView.focusChangeEffect.of((_, focusing) => {
+                    if (!focusing) {
+                      // Delay to allow other events to process first
+                      setTimeout(() => exitEditingMode(true), 100);
+                    }
+                    return null;
+                  }),
+                  ...extraExtensions
+                ]}
+                {nodeId}
+                {dataKey}
+                {fontSize}
+                {lineWrap}
+              />
+            </div>
+          {:else}
+            <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+            <div
+              bind:this={previewEl}
+              ondblclick={handleDoubleClick}
+              onmouseover={onPreviewMouseOver}
+              onmouseout={onPreviewMouseOut}
+              class={[
+                'expr-display cursor-pointer rounded-lg border text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
+                containerClass,
+                previewContainerClass
+              ]}
+              style:--patchies-expr-preview-font-family={$editorFontFamily}
+              role="button"
+              tabindex="0"
+              onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
+            >
+              <div class="expr-preview flex items-center gap-2">
+                {#if expr || displayPrefix}
+                  <span class="flex max-w-[400px] overflow-hidden">
+                    {#if displayPrefix}
+                      <span
+                        class={[
+                          'expr-preview-display-prefix text-xs',
+                          expr ? 'mr-2 text-zinc-400' : 'text-zinc-200'
+                        ]}>{displayPrefix}</span
+                      >
+                    {/if}
+
+                    {#if expr}
+                      <code
+                        class={[
+                          'expr-preview-code text-xs',
+                          lineWrap ? 'expr-preview-code-line-wrap' : 'whitespace-pre'
+                        ]}
+                      >
+                        {@html highlightedHtml}
+                      </code>
+                    {/if}
+                  </span>
+                {/if}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        {@render outlets?.()}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  :global(.common-expr-node-code-editor .cm-content) {
+    padding: var(--patchies-common-expr-padding-y, 0.5rem)
+      var(--patchies-common-expr-padding-x, 0.75rem) !important;
+  }
+
+  .expr-display {
+    font-family: var(--patchies-expr-preview-font-family, var(--font-mono));
+    line-height: var(--patchies-common-expr-line-height, 1.4);
+    padding: var(--patchies-common-expr-padding-y, 0.5rem)
+      var(--patchies-common-expr-padding-x, 0.75rem);
+  }
+
+  .expr-preview-code {
+    font-family: inherit;
+    line-height: inherit;
+  }
+
+  .expr-preview-display-prefix {
+    line-height: inherit;
+  }
+
+  :global(.expr-editor-container .cm-editor) {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :global(.expr-editor-container .cm-scroller),
+  :global(.expr-editor-container .cm-content),
+  :global(.expr-editor-container .cm-line) {
+    line-height: var(--patchies-common-expr-line-height, 1.4);
+  }
+
+  .expr-preview-code-line-wrap {
+    white-space: break-spaces;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    flex-shrink: 1;
+  }
+
+  /* Uiua syntax highlighting for preview */
+  :global(.uiua-monadic) {
+    color: #7dcfff; /* cyan - monadic functions */
+  }
+
+  :global(.uiua-dyadic) {
+    color: #9ece6a; /* green - dyadic functions */
+  }
+
+  :global(.uiua-mod1) {
+    color: #bb9af7; /* pink/purple - 1-modifiers */
+  }
+
+  :global(.uiua-mod2) {
+    color: #e0af68; /* yellow - 2-modifiers */
+  }
+
+  :global(.uiua-number) {
+    color: #ff9e64; /* orange - numbers/constants */
+  }
+
+  :global(.uiua-string) {
+    color: #9ece6a; /* green - strings */
+  }
+
+  :global(.uiua-comment) {
+    color: #565f89; /* gray - comments */
+  }
+
+  :global(.uiua-stack) {
+    color: #c0caf5; /* light - stack ops */
+  }
+</style>

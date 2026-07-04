@@ -1,0 +1,414 @@
+<script lang="ts">
+  import { Mic, Play, Square, Table, Upload, Volume2 } from '@lucide/svelte/icons';
+  import { useSvelteFlow } from '@xyflow/svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { MessageSystem } from '$lib/messages/MessageSystem';
+  import { match } from 'ts-pattern';
+  import { soundfileMessages } from '$lib/objects/schemas';
+  import { AudioService } from '$lib/audio/v2/AudioService';
+  import type { SoundfileNode as SoundfileNodeV2 } from '$objects/soundfile~/SoundfileNode';
+  import { logger } from '$lib/utils/logger';
+  import { getObjectType } from '$lib/objects/get-type';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Dialog from '$lib/components/ui/dialog';
+  import { useVfsMedia } from '$lib/vfs';
+  import { VfsRelinkOverlay } from '$lib/vfs/components';
+
+  let node: {
+    id: string;
+    data: {
+      vfsPath?: string;
+      fileName?: string;
+      _initialUrl?: string;
+    };
+    selected: boolean;
+  } = $props();
+
+  const { updateNodeData } = useSvelteFlow();
+
+  let messageContext: MessageContext;
+  let audioService = AudioService.getInstance();
+  let messageSystem = MessageSystem.getInstance();
+  let v2Node: SoundfileNodeV2 | null = null;
+
+  // Table name dialog state
+  let showTableNameDialog = $state(false);
+  let tableNameInput = $state('');
+
+  // Use VFS media composable for file handling
+  const vfsMedia = useVfsMedia({
+    nodeId: node.id,
+    acceptMimePrefix: 'audio/',
+    onFileLoaded: handleFileLoaded,
+    updateNodeData: (data) => updateNodeData(node.id, { ...node.data, ...data }),
+    getVfsPath: () => node.data.vfsPath,
+    filePickerAccept: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
+    filePickerDescription: 'Audio Files'
+  });
+
+  const fileName = $derived(node.data.fileName || 'No file selected');
+
+  const handleMessage: MessageCallbackFn = async (message) => {
+    match(message)
+      .with(soundfileMessages.string, (url) => vfsMedia.loadFromUrl(url))
+      .with(soundfileMessages.load, ({ src }) => vfsMedia.loadFromPath(src))
+      .with(soundfileMessages.read, () => readAudioBuffer())
+      .otherwise(() => audioService.send(node.id, 'message', message));
+  };
+
+  /**
+   * Called when VFS successfully loads a file.
+   * Sets up the audio system and updates node data.
+   */
+  async function handleFileLoaded(file: File, sourceUrl?: string) {
+    // Update filename in node data
+    updateNodeData(node.id, { ...node.data, fileName: file.name });
+
+    if (sourceUrl) {
+      // For URL sources (streaming), send URL directly to audio node
+      audioService.send(node.id, 'url', sourceUrl);
+    } else {
+      // Send the file to the audio system
+      audioService.send(node.id, 'file', file);
+    }
+
+    vfsMedia.markLoaded();
+    autoReadIfConnectedToConvolver();
+  }
+
+  /**
+   * Check if this soundfile~ is already connected to a convolver~'s buffer inlet,
+   * and if so, automatically read and send the audio buffer.
+   */
+  function autoReadIfConnectedToConvolver() {
+    if (!vfsMedia.hasVfsPath) return;
+
+    // Get all edges where this node is the source
+    const connectedEdges = messageSystem.getConnectedEdgesToTargetInlet(node.id);
+
+    // Check if any edge connects to a convolver~'s buffer inlet
+    for (const { targetNodeId, inletKey } of connectedEdges) {
+      const target = audioService.getNodeById(targetNodeId);
+      if (!target || getObjectType(target) !== 'convolver~') continue;
+
+      const inlet = audioService.getInletByHandle(targetNodeId, inletKey ?? null);
+
+      if (inlet?.name === 'buffer') {
+        readAudioBuffer();
+        logger.debug('reading soundfile~ into buffer of convolver~');
+      }
+    }
+  }
+
+  async function readAudioBuffer() {
+    if (!vfsMedia.hasVfsPath) return;
+
+    try {
+      const vfsPath = node.data.vfsPath;
+      if (!vfsPath) return;
+
+      const { VirtualFilesystem } = await import('$lib/vfs');
+      const vfs = VirtualFilesystem.getInstance();
+      const fileOrBlob = await vfs.resolve(vfsPath);
+
+      const buffer = await fileOrBlob.arrayBuffer();
+      const audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
+      messageContext.send(audioBuffer);
+    } catch (err) {
+      logger.error('Failed to read audio buffer:', err);
+    }
+  }
+
+  function playFile() {
+    if (!vfsMedia.hasVfsPath) return;
+    audioService.send(node.id, 'message', { type: 'bang' });
+  }
+
+  function stopFile() {
+    if (vfsMedia.hasVfsPath) {
+      audioService.send(node.id, 'message', { type: 'stop' });
+    }
+  }
+
+  onMount(async () => {
+    messageContext = new MessageContext(node.id);
+    messageContext.queue.addCallback(handleMessage);
+
+    audioService.createNode(node.id, 'soundfile~', []);
+
+    // Get the V2 node reference from AudioService
+    v2Node = audioService.getNodeById(node.id) as SoundfileNodeV2;
+
+    if (node.data.vfsPath) {
+      // If we have a VFS path, try to load from it
+      await vfsMedia.loadFromVfsPath(node.data.vfsPath);
+    } else if (node.data._initialUrl) {
+      // Used for shorthands like "soundfile~ https://example.com/audio.mp3"
+      await vfsMedia.loadFromUrl(node.data._initialUrl);
+    }
+  });
+
+  onDestroy(() => {
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
+    audioService.removeNodeById(node.id);
+  });
+
+  const containerClass = $derived.by(() => {
+    if (vfsMedia.isDragging) return 'border-blue-400 bg-blue-50/10';
+    if (node.selected) return 'border-zinc-400 bg-zinc-800';
+    if (vfsMedia.hasVfsPath) return 'border-zinc-700 bg-zinc-900';
+
+    return 'border-dashed border-zinc-600 bg-zinc-900';
+  });
+
+  /**
+   * Open the table name dialog with an auto-derived name pre-filled.
+   */
+  function openConvertToTableDialog() {
+    if (!vfsMedia.hasVfsPath || !node.data.vfsPath) return;
+    const rawName = node.data.fileName ?? node.id;
+    tableNameInput =
+      rawName
+        .replace(/\.[^.]+$/, '') // strip extension
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .slice(0, 32) || node.id;
+    showTableNameDialog = true;
+  }
+
+  /**
+   * Convert this soundfile~ node to a table object.
+   * The table's VFS support handles decoding on mount.
+   */
+  function convertToTable() {
+    if (!vfsMedia.hasVfsPath || !node.data.vfsPath) return;
+
+    showTableNameDialog = false;
+
+    const bufferName = tableNameInput.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32) || node.id;
+
+    PatchiesEventBus.getInstance().dispatch({
+      type: 'nodeReplace',
+      nodeId: node.id,
+      newType: 'table',
+      newData: {
+        bufferName,
+        size: 0,
+        showVisual: true,
+        vfsPath: node.data.vfsPath
+      }
+    });
+  }
+
+  /**
+   * Convert this soundfile~ node to a sampler~ node, preserving the audio file.
+   */
+  async function convertToSampler() {
+    if (!vfsMedia.hasVfsPath || !node.data.vfsPath) return;
+
+    const eventBus = PatchiesEventBus.getInstance();
+
+    try {
+      const { VirtualFilesystem } = await import('$lib/vfs');
+      const vfs = VirtualFilesystem.getInstance();
+      const fileOrBlob = await vfs.resolve(node.data.vfsPath);
+
+      const buffer = await fileOrBlob.arrayBuffer();
+      const audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
+
+      // Dispatch node replace event with sampler data
+      eventBus.dispatch({
+        type: 'nodeReplace',
+        nodeId: node.id,
+        newType: 'sampler~',
+        newData: {
+          hasRecording: true,
+          duration: audioBuffer.duration,
+          loopStart: 0,
+          loopEnd: audioBuffer.duration,
+          loop: false,
+          playbackRate: 1,
+          detune: 0,
+          // Store the VFS path so sampler can load it
+          vfsPath: node.data.vfsPath
+        },
+        handleMapping: {
+          'audio-out-0': 'audio-out-audio-out',
+          'message-in': 'message-in-message-in'
+        }
+      });
+    } catch (err) {
+      logger.error('Failed to decode audio for sampler conversion:', err);
+    }
+  }
+</script>
+
+<ContextMenu.Root>
+  <ContextMenu.Trigger>
+    <div class="relative flex gap-x-3">
+      <div class="group relative">
+        <div class="flex flex-col gap-2">
+          <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+            <div></div>
+
+            {#if vfsMedia.hasVfsPath}
+              <div class="flex gap-1">
+                <button title="Play" class="node-floating-button" onclick={playFile}>
+                  <Play class="h-4 w-4 text-zinc-300" />
+                </button>
+
+                <button title="Stop" class="node-floating-button" onclick={stopFile}>
+                  <Square class="h-4 w-4 text-zinc-300" />
+                </button>
+              </div>
+            {/if}
+          </div>
+
+          <div class="relative">
+            <TypedHandle
+              port="inlet"
+              spec={{ handleType: 'message' }}
+              total={1}
+              index={0}
+              nodeId={node.id}
+            />
+
+            {#if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
+              <VfsRelinkOverlay
+                needsReselect={vfsMedia.needsReselect}
+                needsFolderRelink={vfsMedia.needsFolderRelink}
+                linkedFolderName={vfsMedia.linkedFolderName}
+                vfsPath={node.data.vfsPath}
+                width={200}
+                height={50}
+                isDragging={vfsMedia.isDragging}
+                onRequestPermission={vfsMedia.requestFilePermission}
+                onDragOver={vfsMedia.handleDragOver}
+                onDragLeave={vfsMedia.handleDragLeave}
+                onDrop={vfsMedia.handleDrop}
+              />
+            {:else}
+              <div
+                class={[
+                  'flex flex-col items-center justify-center gap-3 rounded-lg border-1',
+                  containerClass
+                ]}
+                ondragover={vfsMedia.handleDragOver}
+                ondragleave={vfsMedia.handleDragLeave}
+                ondrop={vfsMedia.handleDrop}
+                role="figure"
+              >
+                {#if vfsMedia.hasVfsPath}
+                  <div
+                    class="flex items-center justify-center gap-2 px-3 py-[7px]"
+                    ondblclick={vfsMedia.openFileDialog}
+                    role="figure"
+                  >
+                    <Volume2 class="h-4 w-4 text-zinc-500" />
+
+                    <div class="text-center font-mono">
+                      <div class="max-w-[150px] truncate text-[12px] text-zinc-300">
+                        {fileName}
+                      </div>
+                    </div>
+                  </div>
+                {:else}
+                  <div
+                    class="flex items-center justify-center gap-2 px-3 py-[7px]"
+                    ondblclick={vfsMedia.openFileDialog}
+                    role="figure"
+                  >
+                    <Upload class="h-3 w-3 text-zinc-400" />
+
+                    <div class="font-mono text-[12px] text-zinc-400">
+                      <span class="text-zinc-300">double click</span> or
+                      <span class="text-zinc-300">drop</span>
+                      sound file
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            {/if}
+
+            <TypedHandle
+              port="outlet"
+              spec={{ handleType: 'audio', handleId: '0' }}
+              title="Audio output"
+              total={1}
+              index={0}
+              nodeId={node.id}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </ContextMenu.Trigger>
+
+  <ContextMenu.Content>
+    {#if vfsMedia.hasVfsPath}
+      <ContextMenu.Item onclick={convertToSampler}>
+        <Mic class="mr-2 h-4 w-4" />
+        Convert to Sampler
+      </ContextMenu.Item>
+      <ContextMenu.Item onclick={openConvertToTableDialog}>
+        <Table class="mr-2 h-4 w-4" />
+        Convert to Table
+      </ContextMenu.Item>
+    {/if}
+  </ContextMenu.Content>
+</ContextMenu.Root>
+
+<!-- Hidden file input -->
+<input
+  bind:this={vfsMedia.fileInputRef}
+  type="file"
+  accept="audio/*"
+  onchange={vfsMedia.handleFileSelect}
+  class="hidden"
+/>
+
+<!-- Table name dialog -->
+<Dialog.Root bind:open={showTableNameDialog}>
+  <Dialog.Content class="sm:max-w-sm">
+    <Dialog.Header>
+      <Dialog.Title>Convert to Table</Dialog.Title>
+      <Dialog.Description>
+        Name the buffer. Use this name with <code class="font-mono text-zinc-300">tabread~</code>,
+        <code class="font-mono text-zinc-300">tabwrite~</code>, or
+        <code class="font-mono text-zinc-300">tabosc4~</code>.
+      </Dialog.Description>
+    </Dialog.Header>
+    <div class="py-2">
+      <!-- svelte-ignore a11y_autofocus -->
+      <input
+        class="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-200 outline-none focus:border-zinc-500"
+        placeholder="table name"
+        bind:value={tableNameInput}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') convertToTable();
+          if (e.key === 'Escape') showTableNameDialog = false;
+        }}
+        autofocus
+      />
+    </div>
+    <Dialog.Footer class="flex gap-2">
+      <button
+        onclick={() => (showTableNameDialog = false)}
+        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+      >
+        Cancel
+      </button>
+      <button
+        onclick={convertToTable}
+        disabled={!tableNameInput.trim()}
+        class="flex-1 cursor-pointer rounded bg-zinc-600 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Convert
+      </button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>

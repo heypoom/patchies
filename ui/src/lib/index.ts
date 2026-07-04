@@ -3,4 +3,4 @@
 export * from './components/ui/button';
 
 // Assembly system for VASM integration
-export * from './assembly';
+export * from '$objects/asm';

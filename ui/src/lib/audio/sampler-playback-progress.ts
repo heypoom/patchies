@@ -1,4 +1,4 @@
-import type { SamplerPlaybackStartEvent } from './v2/nodes/SamplerNode';
+import type { SamplerPlaybackStartEvent } from '$objects/sampler~/SamplerNode';
 
 export type SamplerPlaybackProgressVoice = {
   source: AudioBufferSourceNode;

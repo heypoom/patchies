@@ -31,7 +31,7 @@ import {
   ASM_DEFAULT_STEP_BY,
   ASM_DEFAULT_INLET_COUNT,
   ASM_DEFAULT_OUTLET_COUNT
-} from '$lib/assembly/constants';
+} from '$objects/asm/constants';
 import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
 import { DEFAULT_WGSL_CODE } from '$lib/webgpu/constants';
 import { DEFAULT_TRACKS } from '$lib/nodes/sequencer-constants';

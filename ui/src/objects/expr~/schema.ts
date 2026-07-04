@@ -1,0 +1,35 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+
+/**
+ * Schema for the expr~ (audio-rate expression evaluator) object.
+ */
+export const exprAudioSchema: ObjectSchema = {
+  type: 'expr~',
+  category: 'audio',
+  description: 'Audio-rate mathematical expression evaluator for DSP',
+  inlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio input (s, samples, input variables)',
+      handle: { handleType: 'audio', handleId: 0 }
+    },
+    {
+      id: 'message',
+      description: 'Control values for $1-$9 variables',
+      handle: { handleType: 'message', handleId: 1 },
+      messages: [{ schema: Type.Number(), description: 'Value for dynamic inlet variable' }]
+    }
+  ],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
+    }
+  ],
+  tags: ['audio', 'expression', 'dsp', 'math', 'synthesis'],
+  hasDynamicOutlets: true
+};

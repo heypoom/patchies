@@ -1,7 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
 
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
-import { PatchbayAudioEndpoint } from './nodes/PatchbayAudioEndpointNode';
+import { PatchbayAudioEndpoint } from '$objects/patchbay/PatchbayAudioEndpointNode';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 type PatchbayAudioIntegrationOptions = {

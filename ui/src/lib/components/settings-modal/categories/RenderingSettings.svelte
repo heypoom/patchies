@@ -43,7 +43,7 @@
 
   function getCustomPreviewBackgroundColor(color: PreviewBackgroundColor): `#${string}` {
     return match(color)
-      .with('transparent', () => DEFAULT_PREVIEW_BACKGROUND_COLOR)
+      .with('transparent', () => DEFAULT_PREVIEW_BACKGROUND_COLOR as `#${string}`)
       .otherwise((hex) => hex as `#${string}`);
   }
 

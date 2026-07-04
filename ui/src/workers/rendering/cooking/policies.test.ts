@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import { createRenderNodeCookPolicy } from './policies';
-import { COOK_TEST_UTILS } from './test-utils';
+import { COOK_TEST_UTILS } from '$workers/rendering/cooking/test-utils';
 
 const { ALWAYS, ON_DEMAND, TIME_DEPENDENT, FFT_DEPENDENT, FEEDBACK_DEPENDENT } = COOK_TEST_UTILS;
 

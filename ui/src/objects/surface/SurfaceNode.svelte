@@ -1,0 +1,811 @@
+<script lang="ts">
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import CodeEditor from '$lib/components/CodeEditor.svelte';
+  import { JSRunner } from '$lib/js-runner/JSRunner';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { match } from 'ts-pattern';
+  import { messages, SurfaceFullscreen } from '$lib/objects/schemas';
+  import { schema } from '$lib/objects/schemas/types';
+
+  const surfaceMessages = {
+    fullscreen: schema(SurfaceFullscreen)
+  };
+
+  import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import { outputSize as outputSizeStore } from '../../stores/renderer.store';
+  import { GLSystem } from '$lib/canvas/GLSystem';
+  import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
+  import {
+    SurfaceListeners,
+    type PointerEvent_,
+    type SurfaceWheelEvent_,
+    type TouchPoint
+  } from '$lib/canvas/SurfaceListeners';
+  import { shouldShowHandles } from '../../stores/ui.store';
+  import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+  import { createCustomConsole } from '$lib/utils/createCustomConsole';
+  import { handleCodeError } from '$lib/js-runner/handleCodeError';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { SurfaceMouseForwarder } from '$lib/canvas/SurfaceMouseForwarder';
+  import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwarding';
+  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
+  import { Expand, Shrink, Eraser } from '@lucide/svelte/icons';
+  import { profiler } from '$lib/profiler';
+
+  // Error reporting offset reuse (surface is structurally identical to canvas.dom)
+  const SURFACE_WRAPPER_OFFSET = CANVAS_DOM_WRAPPER_OFFSET;
+
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: {
+    id: string;
+    data: {
+      title: string;
+      code: string;
+      inletCount?: number;
+      outletCount?: number;
+      hidePorts?: boolean;
+      executeCode?: number;
+      showConsole?: boolean;
+      paused?: boolean;
+      videoOutput?: boolean;
+    };
+    selected?: boolean;
+  } = $props();
+
+  let consoleRef: VirtualConsole | null = $state(null);
+  let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+
+  const eventBus = PatchiesEventBus.getInstance();
+
+  function handleConsoleOutput(event: ConsoleOutputEvent) {
+    if (event.nodeId !== nodeId) return;
+    if (event.messageType === 'error' && event.lineErrors) {
+      lineErrors = event.lineErrors;
+    }
+  }
+
+  const customConsole = createCustomConsole(nodeId);
+  const jsRunner = JSRunner.getInstance();
+  const glSystem = GLSystem.getInstance();
+
+  // The inline preview canvas (always in the node, shown in preview mode)
+  let previewCanvas = $state<HTMLCanvasElement | undefined>();
+  let previewCtx: CanvasRenderingContext2D | null = null;
+
+  let dragEnabled = $state(false);
+  let panEnabled = $state(true);
+  let wheelEnabled = $state(true);
+  let videoOutputEnabled = $derived(data.videoOutput ?? true);
+  let editorReady = $state(false);
+  let animationFrameId: number | null = null;
+  let pausedCallback: FrameRequestCallback | null = null;
+
+  // Whether the overlay is currently fullscreen
+  let isFullscreen = $state(false);
+
+  // Which canvas is currently active (preview inline canvas OR overlay canvas)
+  let activeCanvas: HTMLCanvasElement | null = null;
+  let activeCtx: CanvasRenderingContext2D | null = null;
+
+  // Thumbnail copy loop frame id
+  let thumbnailFrameId: number | null = null;
+
+  // Draw mode: 'always' | 'interact' | 'manual'
+  type DrawMode = 'always' | 'interact' | 'manual';
+  let drawMode: DrawMode = 'always';
+
+  // User-registered callbacks
+  let pointerCallback:
+    | ((e: {
+        x: number;
+        y: number;
+        pressure: number;
+        buttons: number;
+        down: boolean;
+        type: string;
+      }) => void)
+    | null = null;
+
+  let touchCallback:
+    | ((touches: { x: number; y: number; pressure: number; id: number }[]) => void)
+    | null = null;
+
+  let keyboardCallbacks: {
+    onKeyDown?: (event: KeyboardEvent) => void;
+    onKeyUp?: (event: KeyboardEvent) => void;
+  } = {};
+
+  let keyboardListenerHandlers: {
+    keydown: (e: KeyboardEvent) => void;
+    keyup: (e: KeyboardEvent) => void;
+  } | null = null;
+
+  let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const debouncedHandleWindowResize = () => {
+    // Resize canvas immediately so the draw loop sends correctly-sized bitmaps
+    // to the GLSL renderer (which resizes its output synchronously on resize).
+    resizeCanvasToWindow();
+
+    if (resizeDebounceTimer !== null) clearTimeout(resizeDebounceTimer);
+    resizeDebounceTimer = setTimeout(() => runCode(), 150);
+  };
+
+  // Mouse state (normalized 0–1)
+  let mouse = $state({ x: 0, y: 0, down: false, buttons: 0 });
+
+  const { updateNodeData, getNodes } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+  const mouseForwarder = new SurfaceMouseForwarder(() => getNodes());
+
+  function clearCanvas() {
+    if (activeCanvas && activeCtx) {
+      activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+
+      requestSurfaceOverlayMirrorFrame();
+    }
+  }
+
+  const extraMenuItems: ExtraMenuItem[] = $derived([
+    {
+      label: isFullscreen ? 'Exit surface' : 'Expand',
+      icon: isFullscreen ? Shrink : Expand,
+      onclick: () => (isFullscreen ? exitSurface() : enterFullscreen()),
+      variant: isFullscreen ? 'danger' : 'default'
+    },
+    {
+      label: 'Clear canvas',
+      icon: Eraser,
+      onclick: clearCanvas
+    }
+  ]);
+
+  let inletCount = $derived(data.inletCount ?? 1);
+  let outletCount = $derived(data.outletCount ?? 0);
+  let previousExecuteCode = $state<number | undefined>(undefined);
+
+  // Preview = window dimensions; fullscreen = output dimensions (matching cover blit)
+  let outputWidth = $state(window.innerWidth);
+  let outputHeight = $state(window.innerHeight);
+
+  let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
+  let previewHeight = $derived(outputHeight / PREVIEW_SCALE_FACTOR);
+
+  $effect(() => {
+    if (data.executeCode && data.executeCode !== previousExecuteCode) {
+      previousExecuteCode = data.executeCode;
+
+      runCode();
+    }
+  });
+
+  // Update surface dimensions when output size changes (e.g. via Set Output Size command)
+  $effect(() => {
+    const [_outputWidth, _outputHeight] = $outputSizeStore;
+
+    if (isFullscreen) {
+      outputWidth = _outputWidth;
+      outputHeight = _outputHeight;
+
+      setTimeout(() => runCode());
+    }
+  });
+
+  const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
+    updateNodeData(nodeId, { inletCount: newInletCount, outletCount: newOutletCount });
+    updateNodeInternals(nodeId);
+  };
+
+  const setCodeAndUpdate = (newCode: string) => {
+    updateNodeData(nodeId, { code: newCode });
+    setTimeout(() => runCode());
+  };
+
+  const handleMessage: MessageCallbackFn = (message) => {
+    try {
+      match(message)
+        .with(messages.setCode, ({ value }) => setCodeAndUpdate(value))
+        .with(messages.run, () => runCode())
+        .with(messages.expand, () => enterFullscreen())
+        .with(messages.collapse, () => exitSurface())
+        .with(surfaceMessages.fullscreen, () => document.documentElement.requestFullscreen?.())
+        .otherwise(() => {});
+    } catch (error) {
+      console.error('Error handling message:', error);
+    }
+  };
+
+  // ── Pointer helpers ──────────────────────────────────────────────────────
+
+  function dispatchPointer(x: number, y: number, buttons: number, type: string) {
+    const down = buttons > 0;
+    mouse.x = x;
+    mouse.y = y;
+    mouse.buttons = buttons;
+    mouse.down = down;
+
+    const event = { x, y, pressure: 0, buttons, down, type };
+
+    if (pointerCallback) {
+      try {
+        pointerCallback(event);
+      } catch (err) {
+        handleCodeError(err, data.code, nodeId, customConsole, SURFACE_WRAPPER_OFFSET);
+      }
+    }
+
+    mouseForwarder.forward(x, y, buttons, type);
+
+    if (drawMode === 'interact') {
+      triggerDraw();
+    }
+  }
+
+  function dispatchWheel(x: number, y: number, deltaX: number, deltaY: number, deltaMode: number) {
+    mouse.x = x;
+    mouse.y = y;
+
+    mouseForwarder.forwardWheel({ x, y, deltaX, deltaY, deltaMode });
+
+    if (drawMode === 'interact') {
+      triggerDraw();
+    }
+  }
+
+  function dispatchTouch(touches: TouchPoint[]) {
+    if (!touchCallback) return;
+
+    try {
+      touchCallback(touches);
+    } catch (err) {
+      handleCodeError(err, data.code, nodeId, customConsole, SURFACE_WRAPPER_OFFSET);
+    }
+  }
+
+  function setMouseForwarding(rules?: SurfaceMouseForwardingRules) {
+    mouseForwarder.setForwardingRules(rules);
+
+    if (isFullscreen) {
+      mouseForwarder.forceHydraScope('local');
+      mouseForwarder.forceHydraScope('global');
+    }
+  }
+
+  // ── Draw mode & rAF ──────────────────────────────────────────────────────
+
+  function triggerDraw() {
+    if (drawMode !== 'manual' && drawMode !== 'interact') return;
+
+    if (pausedCallback) {
+      pausedCallback(performance.now());
+      sendBitmap();
+    }
+  }
+
+  // ── Bitmap output ────────────────────────────────────────────────────────
+
+  function requestSurfaceOverlayMirrorFrame() {
+    if (!isFullscreen || !activeCanvas) return;
+
+    glSystem.ipcSystem.requestSurfaceOverlayFrame(activeCanvas);
+  }
+
+  function sendBitmap() {
+    requestSurfaceOverlayMirrorFrame();
+
+    if (!activeCanvas) return;
+    if (!videoOutputEnabled) return;
+    if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
+
+    glSystem.setBitmapSource(nodeId, activeCanvas);
+  }
+
+  // ── Thumbnail copy ───────────────────────────────────────────────────────
+
+  function startThumbnailLoop() {
+    if (thumbnailFrameId !== null) return;
+
+    function copyFrame() {
+      if (isFullscreen || !previewCanvas || !previewCtx || !activeCanvas) {
+        thumbnailFrameId = null;
+        return;
+      }
+
+      previewCtx.drawImage(activeCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+
+      thumbnailFrameId = requestAnimationFrame(copyFrame);
+    }
+
+    thumbnailFrameId = requestAnimationFrame(copyFrame);
+  }
+
+  function stopThumbnailLoop() {
+    if (thumbnailFrameId !== null) {
+      cancelAnimationFrame(thumbnailFrameId);
+
+      thumbnailFrameId = null;
+    }
+  }
+
+  // ── Fullscreen activation ────────────────────────────────────────────────
+
+  const previewListeners = new SurfaceListeners();
+  const overlayListeners = new SurfaceListeners();
+
+  function listenerOpts() {
+    return {
+      onPointer(e: PointerEvent_) {
+        dispatchPointer(e.x, e.y, e.buttons, e.type);
+      },
+      onWheel(e: SurfaceWheelEvent_) {
+        dispatchWheel(e.x, e.y, e.deltaX, e.deltaY, e.deltaMode);
+      },
+      get onTouch() {
+        return touchCallback;
+      },
+      onLeave: () => {
+        mouse.down = false;
+        mouse.buttons = 0;
+      },
+      code: data.code,
+      nodeId,
+      customConsole,
+      wrapperOffset: SURFACE_WRAPPER_OFFSET
+    };
+  }
+
+  function enterFullscreen() {
+    if (isFullscreen) return;
+    isFullscreen = true;
+
+    const overlay = SurfaceOverlay.getInstance();
+    const nodes = getNodes().map((n) => ({ id: n.id, type: n.type }));
+    const presentation = glSystem.ipcSystem.hasConnectedOutputWindow() ? 'secondary' : 'main';
+
+    overlay.activate(nodeId, nodes, () => exitSurface(), { presentation });
+
+    glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
+
+    glSystem.ipcSystem.setOutputSurfaceInputSink({
+      pointer: (event) => dispatchPointer(event.x, event.y, event.buttons, event.type),
+      wheel: (event) =>
+        dispatchWheel(event.x, event.y, event.deltaX, event.deltaY, event.deltaMode),
+      touch: (touches) => dispatchTouch(touches),
+      leave: () => {
+        mouse.down = false;
+        mouse.buttons = 0;
+      }
+    });
+
+    mouseForwarder.refreshForwardingTargets();
+    mouseForwarder.forceHydraScope('global');
+
+    // Switch to output dimensions (overlay canvas uses object-fit: cover)
+    const [_outputWidth, _outputHeight] = glSystem.outputSize;
+    outputWidth = _outputWidth;
+    outputHeight = _outputHeight;
+
+    // Switch active canvas to overlay
+    activeCanvas = overlay.canvas;
+    activeCtx = overlay.ctx;
+
+    // Swap pointer listeners. Secondary presentation starts hidden, but the main-window toggle
+    // can reveal this same canvas for direct local interaction.
+    previewListeners.detach();
+    overlayListeners.attach(overlay.canvas, listenerOpts());
+
+    // Stop thumbnail loop while the surface draws to the overlay canvas.
+    stopThumbnailLoop();
+
+    // Attach keyboard listeners only when this window is the presentation surface.
+    if (presentation === 'main') {
+      const handleKeyDown = (e: KeyboardEvent) => keyboardCallbacks.onKeyDown?.(e);
+      const handleKeyUp = (e: KeyboardEvent) => keyboardCallbacks.onKeyUp?.(e);
+
+      keyboardListenerHandlers = { keydown: handleKeyDown, keyup: handleKeyUp };
+
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keyup', handleKeyUp);
+    }
+
+    // Re-run code with overlay canvas
+    void runCode().then(() => requestSurfaceOverlayMirrorFrame());
+  }
+
+  function exitSurface() {
+    if (!isFullscreen) return;
+    isFullscreen = false;
+
+    SurfaceOverlay.getInstance().deactivate(nodeId);
+
+    glSystem.ipcSystem.sendSurfaceOverlayState(null);
+    glSystem.ipcSystem.setOutputSurfaceInputSink(null);
+    mouseForwarder.forceHydraScope('local');
+
+    // Restore window dimensions for preview mode
+    outputWidth = window.innerWidth;
+    outputHeight = window.innerHeight;
+
+    // Remove keyboard listeners
+    if (keyboardListenerHandlers) {
+      document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
+      document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
+
+      keyboardListenerHandlers = null;
+    }
+
+    // Switch active canvas back to preview
+    if (previewCanvas) {
+      activeCanvas = previewCanvas;
+      activeCtx = previewCtx;
+    }
+
+    // Swap pointer listeners
+    overlayListeners.detach();
+
+    if (previewCanvas) {
+      previewListeners.attach(previewCanvas, listenerOpts());
+    }
+
+    // Re-run code with preview canvas
+    runCode();
+
+    // Restart thumbnail loop
+    startThumbnailLoop();
+  }
+
+  // ── Canvas setup ─────────────────────────────────────────────────────────
+
+  function setupPreviewCanvas() {
+    if (!previewCanvas) return;
+
+    previewCanvas.width = outputWidth;
+    previewCanvas.height = outputHeight;
+    previewCanvas.style.width = `${previewWidth}px`;
+    previewCanvas.style.height = `${previewHeight}px`;
+
+    previewCtx = previewCanvas.getContext('2d');
+    activeCanvas = previewCanvas;
+    activeCtx = previewCtx;
+  }
+
+  function togglePlayback() {
+    if (data.paused) {
+      updateNodeData(nodeId, { paused: false });
+
+      if (pausedCallback) {
+        animationFrameId = requestAnimationFrame((time) => {
+          pausedCallback!(time);
+          sendBitmap();
+        });
+      }
+    } else {
+      updateNodeData(nodeId, { paused: true });
+
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+
+        animationFrameId = null;
+      }
+    }
+  }
+
+  // ── Code execution ───────────────────────────────────────────────────────
+
+  async function runCode() {
+    if (!activeCanvas || !activeCtx) return;
+
+    consoleRef?.clearConsole();
+    lineErrors = undefined;
+
+    dragEnabled = false;
+    panEnabled = true;
+    wheelEnabled = true;
+
+    updateNodeData(nodeId, { videoOutput: true });
+
+    drawMode = 'always';
+    pointerCallback = null;
+    touchCallback = null;
+    keyboardCallbacks = {};
+    setMouseForwarding();
+
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+
+      animationFrameId = null;
+    }
+
+    const canvas = activeCanvas;
+    const ctx = activeCtx;
+
+    try {
+      const processedCode = await jsRunner.preprocessCode(data.code, { nodeId });
+      if (processedCode === null) return;
+
+      // Wrap code to auto-extract a draw() function (same pattern as ThreeDom).
+      // This lets users define `function draw() {}` without needing to call
+      // requestAnimationFrame(draw) themselves.
+      const codeWithWrapper = `var draw;\n${processedCode}\nreturn typeof draw === 'function' ? draw : null;`;
+
+      const userDraw = await jsRunner.executeJavaScript(nodeId, codeWithWrapper, {
+        customConsole,
+        setPortCount,
+        setTitle: (title: string) => updateNodeData(nodeId, { title }),
+        setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+        extraContext: {
+          canvas,
+          ctx,
+          get width() {
+            return outputWidth;
+          },
+          get height() {
+            return outputHeight;
+          },
+          mouse,
+
+          // Draw mode
+          setDrawMode: (mode: DrawMode) => {
+            drawMode = mode;
+          },
+          redraw: () => {
+            if (pausedCallback) {
+              pausedCallback(performance.now());
+              sendBitmap();
+            }
+          },
+
+          // Surface expansion
+          expandSurface: () => enterFullscreen(),
+          collapseSurface: () => exitSurface(),
+
+          hideExitButton: () => SurfaceOverlay.getInstance().hideBadge(),
+          setMouseForwarding,
+
+          // Browser fullscreen (separate from surface activation)
+          goFullscreen: () => document.documentElement.requestFullscreen?.(),
+          exitFullscreen: () => document.exitFullscreen?.(),
+
+          // Interaction callbacks
+          onPointer: (cb: typeof pointerCallback) => {
+            pointerCallback = cb;
+          },
+          onTouch: (cb: typeof touchCallback) => {
+            touchCallback = cb;
+          },
+          onKeyDown: (callback: (event: KeyboardEvent) => void) => {
+            keyboardCallbacks.onKeyDown = callback;
+          },
+          onKeyUp: (callback: (event: KeyboardEvent) => void) => {
+            keyboardCallbacks.onKeyUp = callback;
+          },
+
+          // Interaction flags (for the node itself)
+          noDrag: () => {
+            dragEnabled = false;
+          },
+          noPan: () => {
+            panEnabled = false;
+          },
+          noWheel: () => {
+            wheelEnabled = false;
+          },
+          noInteract: () => {
+            dragEnabled = false;
+            panEnabled = false;
+            wheelEnabled = false;
+          },
+          noOutput: () => {
+            updateNodeData(nodeId, { videoOutput: false });
+            updateNodeInternals(nodeId);
+          }
+        }
+      });
+
+      // If user defined a draw() function, register it and start the appropriate loop.
+      if (typeof userDraw === 'function') {
+        pausedCallback = userDraw;
+
+        if (drawMode === 'always' && !data.paused) {
+          const loop: FrameRequestCallback = (time) => {
+            profiler.measure(nodeId, 'draw', () => {
+              pausedCallback!(time);
+              sendBitmap();
+            });
+            animationFrameId = requestAnimationFrame(loop);
+          };
+          animationFrameId = requestAnimationFrame(loop);
+        }
+      }
+    } catch (error) {
+      handleCodeError(error, data.code, nodeId, customConsole, SURFACE_WRAPPER_OFFSET);
+    }
+  }
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────
+
+  function resizeCanvasToWindow() {
+    if (isFullscreen) {
+      // In fullscreen, match the output resolution (overlay handles CSS cover)
+      const [ow, oh] = glSystem.outputSize;
+      outputWidth = ow;
+      outputHeight = oh;
+    } else {
+      outputWidth = window.innerWidth;
+      outputHeight = window.innerHeight;
+
+      if (previewCanvas) {
+        previewCanvas.width = outputWidth;
+        previewCanvas.height = outputHeight;
+        previewCanvas.style.width = `${outputWidth / PREVIEW_SCALE_FACTOR}px`;
+        previewCanvas.style.height = `${outputHeight / PREVIEW_SCALE_FACTOR}px`;
+      }
+    }
+  }
+
+  onMount(() => {
+    const messageContext = jsRunner.getMessageContext(nodeId);
+    messageContext.queue.addCallback(handleMessage);
+    eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+
+    glSystem.upsertNode(nodeId, 'img', {});
+
+    setupPreviewCanvas();
+
+    if (previewCanvas) {
+      previewListeners.attach(previewCanvas, listenerOpts());
+    }
+
+    window.addEventListener('resize', debouncedHandleWindowResize);
+
+    setTimeout(() => {
+      runCode();
+      startThumbnailLoop();
+    }, 50);
+  });
+
+  onDestroy(() => {
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+    }
+
+    stopThumbnailLoop();
+
+    previewListeners.detach();
+    overlayListeners.detach();
+
+    window.removeEventListener('resize', debouncedHandleWindowResize);
+
+    if (resizeDebounceTimer !== null) {
+      clearTimeout(resizeDebounceTimer);
+    }
+
+    if (keyboardListenerHandlers) {
+      document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
+      document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
+
+      keyboardListenerHandlers = null;
+    }
+
+    // Deactivate overlay if this node was active
+    if (isFullscreen) {
+      SurfaceOverlay.getInstance().deactivate(nodeId);
+
+      glSystem.ipcSystem.sendSurfaceOverlayState(null);
+      glSystem.ipcSystem.setOutputSurfaceInputSink(null);
+    }
+
+    eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+    mouseForwarder.dispose();
+    glSystem?.removeNode(nodeId);
+    jsRunner.destroy(nodeId);
+  });
+
+  const handleClass = $derived.by(() => {
+    if (!data.hidePorts) return '';
+    if (!selected && $shouldShowHandles) return 'z-1 transition-opacity';
+
+    return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
+  });
+</script>
+
+<CanvasPreviewLayout
+  title={data.title ?? 'surface'}
+  objectType="surface"
+  codePlaceholder="Write your surface interaction code here..."
+  {nodeId}
+  onrun={runCode}
+  onPlaybackToggle={togglePlayback}
+  paused={data.paused}
+  showPauseButton={true}
+  showBgOutputOption={false}
+  showExpandOption={false}
+  bind:previewCanvas
+  nodrag={!dragEnabled}
+  nopan={!panEnabled}
+  nowheel={!wheelEnabled}
+  tabindex={0}
+  width={outputWidth}
+  height={outputHeight}
+  style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+  {selected}
+  {editorReady}
+  hasError={lineErrors !== undefined}
+  {extraMenuItems}
+>
+  {#snippet topHandle()}
+    {#each Array.from({ length: inletCount }), index (index)}
+      <TypedHandle
+        port="inlet"
+        spec={{ handleId: index }}
+        title={`Inlet ${index}`}
+        total={inletCount}
+        {index}
+        class={handleClass}
+        {nodeId}
+      />
+    {/each}
+  {/snippet}
+
+  {#snippet bottomHandle()}
+    {#if videoOutputEnabled}
+      <TypedHandle
+        port="outlet"
+        spec={{ handleType: 'video', handleId: '0' }}
+        title="Video output"
+        total={outletCount + 1}
+        index={0}
+        class={handleClass}
+        {nodeId}
+      />
+    {/if}
+
+    {#each Array.from({ length: outletCount }), index (index)}
+      <TypedHandle
+        port="outlet"
+        spec={{ handleId: index + (videoOutputEnabled ? 1 : 0) }}
+        title={`Outlet ${index}`}
+        total={videoOutputEnabled ? outletCount + 1 : outletCount}
+        index={index + (videoOutputEnabled ? 1 : 0)}
+        class={handleClass}
+        {nodeId}
+      />
+    {/each}
+  {/snippet}
+
+  {#snippet codeEditor()}
+    <CodeEditor
+      value={data.code}
+      language="javascript"
+      nodeType="surface"
+      placeholder="Write your surface interaction code here..."
+      class="nodrag h-64 w-full resize-none"
+      onrun={runCode}
+      onchange={(newCode) => {
+        updateNodeData(nodeId, { code: newCode });
+      }}
+      onready={() => (editorReady = true)}
+      {lineErrors}
+      {nodeId}
+    />
+  {/snippet}
+
+  {#snippet console()}
+    <div class="mt-3 w-full" class:hidden={!data.showConsole}>
+      <VirtualConsole
+        bind:this={consoleRef}
+        {nodeId}
+        placeholder="Surface errors will appear here."
+        maxHeight="200px"
+      />
+    </div>
+  {/snippet}
+</CanvasPreviewLayout>

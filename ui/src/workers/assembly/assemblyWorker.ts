@@ -1,10 +1,6 @@
 import { match } from 'ts-pattern';
 import type { MachineStatus, Effect, Message, Controller, Port, Action } from 'machine';
-import {
-  ASM_MEMORY_SIZE,
-  ASM_DEFAULT_DELAY_MS,
-  ASM_DEFAULT_STEP_BY
-} from '$lib/assembly/constants';
+import { ASM_MEMORY_SIZE, ASM_DEFAULT_DELAY_MS, ASM_DEFAULT_STEP_BY } from '$objects/asm/constants';
 
 // Define types that are serialized from Rust but not exported in TypeScript
 export interface InspectedRegister {

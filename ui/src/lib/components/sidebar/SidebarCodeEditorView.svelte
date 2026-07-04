@@ -39,7 +39,7 @@
           <Tooltip.Trigger>
             <button
               class="cursor-pointer rounded p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-              onclick={onrun}
+              onclick={() => onrun()}
               aria-label="Run code"
             >
               <Play class="h-4 w-4" />

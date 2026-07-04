@@ -1,0 +1,54 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { schema } from '$lib/objects/schemas/types';
+import { msg } from '$lib/objects/schemas/helpers';
+import { Bang, messages } from '$lib/objects/schemas/common';
+
+// Msg-specific message schemas
+const SetValue = msg('set', { value: Type.Any() });
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const msgMessages = {
+  ...messages,
+  setValue: schema(SetValue)
+};
+
+/**
+ * Schema for the msg (message box) object.
+ */
+export const msgSchema: ObjectSchema = {
+  type: 'msg',
+  category: 'interface',
+  description: 'Store and send predefined messages',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Control and placeholder values',
+      handle: { handleType: 'message', handleId: 0 },
+      messages: [
+        { schema: Bang, description: 'Output the stored message' },
+        { schema: SetValue, description: 'Set message without triggering output' },
+        { schema: Type.Any(), description: 'Store as $1 and trigger output (hot inlet)' }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'message',
+      description: 'Message output',
+      handle: { handleType: 'message' },
+      messages: [
+        { schema: Type.Any(), description: 'The stored message with placeholders replaced' }
+      ]
+    }
+  ],
+  tags: ['interface', 'message', 'trigger', 'data'],
+  handlePatterns: {
+    inlet: {
+      template: 'message-in-{index}',
+      handleType: 'message',
+      description:
+        'Indexed inlets: message-in-0 (hot, triggers output), message-in-1+ (cold, set $N placeholders)'
+    }
+  }
+};

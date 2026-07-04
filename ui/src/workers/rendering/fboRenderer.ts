@@ -58,7 +58,7 @@ import {
 } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager } from './CookStateManager';
-import { createGlslCookPolicy } from './cooking/glsl';
+import { createGlslCookPolicy } from '$objects/glsl/cook-policy';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';

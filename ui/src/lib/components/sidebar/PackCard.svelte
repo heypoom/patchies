@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronDown, Check, Lock } from '@lucide/svelte/icons';
   import { getPackIcon } from '$lib/extensions/pack-icons';
-  import * as Tooltip from '../ui/tooltip';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import type { Snippet } from 'svelte';
   import { canManuallyExpandPackContents, canTogglePack } from './pack-card-behavior';
 

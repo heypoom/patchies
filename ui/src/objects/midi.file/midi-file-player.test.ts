@@ -75,8 +75,8 @@ describe('MidiFilePlayer', () => {
           message: { type: 'noteOn', note: 60, velocity: 100, channel: 1 }
         },
         {
-          seconds: 0.5,
-          ticks: 240,
+          seconds: 0.75,
+          ticks: 360,
           track: 0,
           message: { type: 'noteOn', note: 60, velocity: 90, channel: 1 }
         },

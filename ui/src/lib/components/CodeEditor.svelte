@@ -534,7 +534,7 @@
 
       if ($useVimInEditor) {
         const { vim, Vim } = await import('@replit/codemirror-vim');
-        Vim.defineEx('write', 'w', onrun);
+        Vim.defineEx('write', 'w', () => onrun(editorView?.state.doc.toString()));
         extensions.push(drawSelection());
         extensions.push(vim({ status: false }));
       }
