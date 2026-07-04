@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createShaderParkCookPolicy } from '$objects/shaderpark/cook-policy';
+import { createShaderParkCookPolicy } from '$workers/rendering/cooking/object-policies/shaderpark';
 import { COOK_TEST_UTILS } from '$workers/rendering/cooking/test-utils';
 
 const { ON_DEMAND, TIME_DEPENDENT, MOUSE_DEPENDENT } = COOK_TEST_UTILS;

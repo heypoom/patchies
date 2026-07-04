@@ -2,8 +2,8 @@
  * MediaPipe Image Classifier worker.
  */
 
-import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
-import type { ClassifyTaskOptions, ClassifyOutput, TaskOptions } from '$objects/mediapipe/types';
+import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
+import type { ClassifyTaskOptions, ClassifyOutput, TaskOptions } from '$lib/mediapipe/types';
 import type { ImageClassifier, ImageClassifierResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URL =

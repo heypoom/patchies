@@ -4,9 +4,9 @@
  * and optionally emits raw mask data as a message.
  */
 
-import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
-import type { SegmentTaskOptions, SegmentOutput, TaskOptions } from '$objects/mediapipe/types';
-import type { WorkerOutMessage } from '$objects/mediapipe/types';
+import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
+import type { SegmentTaskOptions, SegmentOutput, TaskOptions } from '$lib/mediapipe/types';
+import type { WorkerOutMessage } from '$lib/mediapipe/types';
 import type { ImageSegmenter, ImageSegmenterResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URLS = {

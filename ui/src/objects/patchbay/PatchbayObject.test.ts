@@ -4,13 +4,13 @@ import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
 import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { MessageSystem } from '$lib/messages/MessageSystem';
-import { setPatchbayAudioRuntime } from '$lib/patchbay/patchbay-audio-runtime';
-import { setPatchbayMessageRuntime } from '$lib/patchbay/patchbay-message-runtime';
-import { setPatchbayVideoRuntime } from '$lib/patchbay/patchbay-video-runtime';
+import { setPatchbayAudioRuntime } from '$objects/patchbay/patchbay-audio-runtime';
+import { setPatchbayMessageRuntime } from '$objects/patchbay/patchbay-message-runtime';
+import { setPatchbayVideoRuntime } from '$objects/patchbay/patchbay-video-runtime';
 import { PatchbayObject } from '$objects/patchbay/PatchbayObject';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { PatchbayAudioRuntime } from '$lib/patchbay/patchbay-audio-runtime';
+import type { PatchbayAudioRuntime } from '$objects/patchbay/patchbay-audio-runtime';
 
 function createPatchbay(code: string) {
   const params = [code];

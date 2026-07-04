@@ -1,4 +1,4 @@
-import { BASE_NOTE } from '$objects/pads/constants';
+import { BASE_NOTE } from '$lib/midi/drums';
 
 export type OutletMode = 'multi' | 'single';
 export type MultiOutputMode = 'bang' | 'value';

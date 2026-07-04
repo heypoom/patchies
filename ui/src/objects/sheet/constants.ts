@@ -1,4 +1,4 @@
-import type { SheetData } from './sheet-utils';
+import type { SheetData } from '$lib/sheet/sheet-utils';
 
 export const DEFAULT_SHEET_DATA: SheetData = {
   columns: ['column 1', 'column 2'],

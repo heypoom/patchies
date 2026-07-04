@@ -2,8 +2,8 @@
  * MediaPipe Object Detector worker.
  */
 
-import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
-import type { DetectTaskOptions, DetectOutput, TaskOptions } from '$objects/mediapipe/types';
+import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
+import type { DetectTaskOptions, DetectOutput, TaskOptions } from '$lib/mediapipe/types';
 import type { ObjectDetector, ObjectDetectorResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URL =

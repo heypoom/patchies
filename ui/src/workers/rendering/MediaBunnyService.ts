@@ -7,7 +7,7 @@
 
 import { match } from 'ts-pattern';
 
-import { MediaBunnyPlayer, type VideoMetadata } from '$objects/video/MediaBunnyPlayer';
+import { MediaBunnyPlayer, type VideoMetadata } from '$lib/video/MediaBunnyPlayer';
 
 import { logger } from '$lib/utils/logger';
 

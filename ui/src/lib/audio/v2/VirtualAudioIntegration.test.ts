@@ -1,15 +1,15 @@
 import type { Edge } from '@xyflow/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PatchbayAudioIntegration } from './PatchbayAudioIntegration';
+import { VirtualAudioIntegration } from './VirtualAudioIntegration';
 
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
 
-describe('PatchbayAudioIntegration', () => {
+describe('VirtualAudioIntegration', () => {
   it('stores patchbay audio edges and notifies when they change', () => {
     const onEdgesChanged = vi.fn();
 
-    const integration = new PatchbayAudioIntegration({
+    const integration = new VirtualAudioIntegration({
       getAudioContext: () => ({ createGain: vi.fn() }) as unknown as AudioContext,
       nodesById: new Map(),
       removeNodeById: vi.fn(),
@@ -37,11 +37,17 @@ describe('PatchbayAudioIntegration', () => {
       nodesById.delete(nodeId);
     });
 
-    const integration = new PatchbayAudioIntegration({
+    const integration = new VirtualAudioIntegration({
       getAudioContext: () => ({ createGain: () => gain }) as unknown as AudioContext,
       nodesById,
       removeNodeById,
-      onEdgesChanged: vi.fn()
+      onEdgesChanged: vi.fn(),
+      createVirtualAudioNode: (nodeId) =>
+        ({
+          nodeId,
+          audioNode: gain as unknown as AudioNode,
+          destroy: disconnect
+        }) as AudioNodeV2
     });
 
     const endpointId = 'patchbay:audio-recv:Source:audio-send:Target';
@@ -75,7 +81,7 @@ describe('PatchbayAudioIntegration', () => {
     };
     const nodesById = new Map<string, AudioNodeV2>();
 
-    const integration = new PatchbayAudioIntegration({
+    const integration = new VirtualAudioIntegration({
       getAudioContext: () => ({}) as unknown as AudioContext,
       nodesById,
       removeNodeById(nodeId) {
@@ -112,7 +118,7 @@ describe('PatchbayAudioIntegration', () => {
     };
     const nodesById = new Map<string, AudioNodeV2>();
 
-    const integration = new PatchbayAudioIntegration({
+    const integration = new VirtualAudioIntegration({
       getAudioContext: () => ({}) as unknown as AudioContext,
       nodesById,
       removeNodeById(nodeId) {

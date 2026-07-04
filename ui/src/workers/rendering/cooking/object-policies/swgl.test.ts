@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createSwglCookPolicy } from '$objects/swgl/cook-policy';
+import { createSwglCookPolicy } from '$workers/rendering/cooking/object-policies/swgl';
 import { COOK_TEST_UTILS } from '$workers/rendering/cooking/test-utils';
 
 const { ON_DEMAND, TIME_DEPENDENT, FFT_DEPENDENT } = COOK_TEST_UTILS;

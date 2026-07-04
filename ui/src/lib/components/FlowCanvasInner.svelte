@@ -93,7 +93,7 @@
     VisualGroupSyncRequestedEvent
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
-  import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';

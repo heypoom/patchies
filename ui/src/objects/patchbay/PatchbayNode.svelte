@@ -27,12 +27,12 @@
     getPatchbayVirtualExpressionNameRanges,
     getPatchbayVirtualExpressionOperatorRanges,
     patchbayContextualCompletionSource
-  } from '$lib/patchbay/codemirror/patchbay.codemirror';
+  } from '$lib/codemirror/patchbay/patchbay.codemirror';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
   import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
   import { PatchbayObject } from '$objects/patchbay/PatchbayObject';
   import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
-  import { getPatchbayObjectPorts } from '$lib/patchbay/patchbay-object-ports';
+  import { getPatchbayObjectPorts } from '$objects/patchbay/patchbay-object-ports';
   import { requestFitView } from '../../stores/ui.store';
 
   import type { ObjectContext } from '$lib/objects/v2/ObjectContext';

@@ -5,7 +5,12 @@
  * frame dispatch, FPS tracking, and GPU→CPU fallback.
  */
 
-import type { TaskOptions, TaskResult, WorkerInMessage, WorkerOutMessage } from './types';
+import type {
+  TaskOptions,
+  TaskResult,
+  WorkerInMessage,
+  WorkerOutMessage
+} from '$lib/mediapipe/types';
 import {
   createDirectChannelHandler,
   type DirectChannelHandler

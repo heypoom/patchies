@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createReglCookPolicy } from '$objects/regl/cook-policy';
+import { createReglCookPolicy } from '$workers/rendering/cooking/object-policies/regl';
 import { COOK_TEST_UTILS } from '$workers/rendering/cooking/test-utils';
 
 const { ON_DEMAND, TIME_DEPENDENT, MOUSE_DEPENDENT, FFT_DEPENDENT } = COOK_TEST_UTILS;

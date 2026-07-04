@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PatchbayVideoIntegration } from './PatchbayVideoIntegration';
+import { VirtualVideoRouteIntegration } from './VirtualVideoRouteIntegration';
 import { VideoChannelRegistry } from './VideoChannelRegistry';
 
-describe('PatchbayVideoIntegration', () => {
+describe('VirtualVideoRouteIntegration', () => {
   it('registers hidden recv/send nodes and a virtual edge for channel routes', () => {
     const upsertNode = vi.fn();
     const removeNode = vi.fn();
     const onGraphChanged = vi.fn();
 
-    const integration = new PatchbayVideoIntegration({
+    const integration = new VirtualVideoRouteIntegration({
       upsertNode,
       removeNode,
       onGraphChanged
@@ -55,7 +55,7 @@ describe('PatchbayVideoIntegration', () => {
     const channel = `patchbay-video-integration-${crypto.randomUUID()}`;
     const nodeId = `recv-video-${crypto.randomUUID()}`;
 
-    const integration = new PatchbayVideoIntegration({
+    const integration = new VirtualVideoRouteIntegration({
       upsertNode: vi.fn(),
       removeNode: vi.fn(),
       onGraphChanged: vi.fn(),

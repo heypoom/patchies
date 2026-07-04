@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHydraCookPolicy } from '$objects/hydra/cook-policy';
+import { createHydraCookPolicy } from '$workers/rendering/cooking/object-policies/hydra';
 import { COOK_TEST_UTILS } from '$workers/rendering/cooking/test-utils';
 
 const { ALWAYS, ON_DEMAND, TIME_DEPENDENT, MOUSE_DEPENDENT, FFT_DEPENDENT } = COOK_TEST_UTILS;

@@ -16,7 +16,7 @@ import { hasSomeAudioNode } from '../../../stores/canvas.store';
 import { BufferBridgeService } from '$lib/audio/buffer-bridge';
 import { Transport } from '$lib/transport';
 import type { SettingsManager } from '$lib/settings';
-import { PatchbayAudioIntegration } from './PatchbayAudioIntegration';
+import { VirtualAudioIntegration } from './VirtualAudioIntegration';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -55,7 +55,7 @@ export class AudioService {
   /** Settings managers registered by Svelte components for main-thread audio nodes. */
   private settingsManagers: Map<string, SettingsManager> = new Map();
 
-  private patchbay = new PatchbayAudioIntegration({
+  private patchbay = new VirtualAudioIntegration({
     getAudioContext: () => this.getAudioContext(),
     nodesById: this.nodesById,
     removeNodeById: (nodeId) => this.removeNodeById(nodeId),

@@ -82,7 +82,7 @@ export type RenderNode = {
         resolution?: FBOResolution;
       };
     }
-  | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
+  | { type: 'projmap'; data: { surfaces: import('$lib/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'float.tex'; data: unknown }
   | { type: 'bg.out'; data: unknown }

@@ -9,7 +9,12 @@
 import { match } from 'ts-pattern';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageSystem } from '$lib/messages/MessageSystem';
-import type { MediaPipeNodeOptions, MediaPipeTask, TaskOptions, WorkerOutMessage } from './types';
+import type {
+  MediaPipeNodeOptions,
+  MediaPipeTask,
+  TaskOptions,
+  WorkerOutMessage
+} from '$lib/mediapipe/types';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';

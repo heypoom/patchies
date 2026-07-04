@@ -8,7 +8,7 @@
  * Falls back to HTMLVideoElement on Firefox.
  */
 
-import { webCodecsSupport } from '$objects/video/feature-detection';
+import { webCodecsSupport } from '$lib/video/feature-detection';
 import type {
   VideoFrameWorkerMessage,
   VideoFrameWorkerResponse

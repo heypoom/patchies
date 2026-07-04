@@ -9,13 +9,13 @@ export {
   webCodecsSupport,
   isCodecSupported,
   getWebCodecsSupportInfo
-} from '$objects/video/feature-detection';
+} from '$lib/video/feature-detection';
 export { WebCodecsCapture, type WebCodecsCaptureConfig } from '$objects/video/WebCodecsCapture';
 export {
   MediaBunnyPlayer,
   type VideoMetadata,
   type MediaBunnyPlayerConfig
-} from '$objects/video/MediaBunnyPlayer';
+} from '$lib/video/MediaBunnyPlayer';
 export {
   VideoProfiler,
   type VideoStats,

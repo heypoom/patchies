@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGlslCookPolicy } from '$objects/glsl/cook-policy';
+import { createGlslCookPolicy } from '$workers/rendering/cooking/object-policies/glsl';
 import { COOK_TEST_UTILS } from '$workers/rendering/cooking/test-utils';
 
 const { ON_DEMAND, TIME_DEPENDENT, FRAME_DEPENDENT, DATE_DEPENDENT } = COOK_TEST_UTILS;

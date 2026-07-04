@@ -2,8 +2,8 @@
  * MediaPipe Gesture Recognizer worker.
  */
 
-import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
-import type { GestureTaskOptions, GestureOutput, TaskOptions } from '$objects/mediapipe/types';
+import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
+import type { GestureTaskOptions, GestureOutput, TaskOptions } from '$lib/mediapipe/types';
 import type { GestureRecognizer, GestureRecognizerResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URL =

@@ -1,10 +1,11 @@
 import type { Edge } from '@xyflow/svelte';
 
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
-import { PatchbayAudioEndpoint } from '$objects/patchbay/PatchbayAudioEndpointNode';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
-type PatchbayAudioIntegrationOptions = {
+const VIRTUAL_AUDIO_ENDPOINT_TYPE = 'patchbay-audio-endpoint~';
+
+type VirtualAudioIntegrationOptions = {
   getAudioContext: () => AudioContext;
   nodesById: Map<string, AudioNodeV2>;
   removeNodeById: (nodeId: string) => void;
@@ -18,7 +19,7 @@ type VirtualAudioNodeSpec = {
   params: unknown[];
 };
 
-export class PatchbayAudioIntegration {
+export class VirtualAudioIntegration {
   private registry = AudioRegistry.getInstance();
 
   private edges = new Map<string, Edge>();
@@ -26,7 +27,7 @@ export class PatchbayAudioIntegration {
   private virtualAudioNodeIds = new Map<string, string>();
   private virtualAudioNodeTypes = new Map<string, string>();
 
-  constructor(private options: PatchbayAudioIntegrationOptions) {}
+  constructor(private options: VirtualAudioIntegrationOptions) {}
 
   registerEdge(routeId: string, edge: Edge): void {
     this.edges.set(routeId, edge);
@@ -100,7 +101,11 @@ export class PatchbayAudioIntegration {
   ensureEndpoint(nodeId: string): void {
     if (!this.isEndpointId(nodeId) || this.options.nodesById.has(nodeId)) return;
 
-    const endpoint = new PatchbayAudioEndpoint(nodeId, this.options.getAudioContext());
+    const endpoint =
+      this.options.createVirtualAudioNode?.(nodeId, VIRTUAL_AUDIO_ENDPOINT_TYPE) ??
+      this.createVirtualAudioNode(nodeId, VIRTUAL_AUDIO_ENDPOINT_TYPE);
+    if (!endpoint) return;
+
     this.options.nodesById.set(nodeId, endpoint);
   }
 

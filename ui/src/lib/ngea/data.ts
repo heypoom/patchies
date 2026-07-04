@@ -1013,4 +1013,4 @@ export const NGEA_TUNINGS: NgeaTuning[] = [
   }
 ];
 
-export { findTuning, getNgeaScaleIntervals } from '$objects/ngea/utils';
+export { findTuning, getNgeaScaleIntervals } from '$lib/ngea/utils';

@@ -1,5 +1,5 @@
 import { writable, derived, get } from 'svelte/store';
-import { webCodecsSupport, isFirefox, isSafari } from '$objects/video/feature-detection';
+import { webCodecsSupport, isFirefox, isSafari } from '$lib/video/feature-detection';
 
 // Video input devices
 export interface VideoDevice {

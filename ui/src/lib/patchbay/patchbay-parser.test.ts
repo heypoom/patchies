@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { analyzePatchbay } from './patchbay-parser';
+import { analyzePatchbay } from '$lib/patchbay/patchbay-parser';
 
 describe('analyzePatchbay', () => {
   it('expands message route chains into pairwise routes', () => {

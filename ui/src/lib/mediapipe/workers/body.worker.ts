@@ -2,8 +2,8 @@
  * MediaPipe Pose Landmarker worker.
  */
 
-import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
-import type { BodyTaskOptions, BodyOutput, TaskOptions } from '$objects/mediapipe/types';
+import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
+import type { BodyTaskOptions, BodyOutput, TaskOptions } from '$lib/mediapipe/types';
 import type { PoseLandmarker, PoseLandmarkerResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URLS: Record<string, string> = {

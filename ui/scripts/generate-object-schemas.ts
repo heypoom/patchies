@@ -25,7 +25,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTPUT_PATH = join(__dirname, '../src/lib/generated/object-schemas.generated.ts');
 
 // Generate schemas from node classes using existing utility
-const audioSchemas = schemasFromNodes(AUDIO_NODES, 'audio');
+const audioSchemas = schemasFromNodes(
+  AUDIO_NODES.filter((node) => node.includeInGeneratedSchemas !== false),
+  'audio'
+);
 const controlSchemas = schemasFromNodes(TEXT_OBJECTS, 'control');
 const allSchemas: Record<string, ObjectSchema> = { ...audioSchemas, ...controlSchemas };
 

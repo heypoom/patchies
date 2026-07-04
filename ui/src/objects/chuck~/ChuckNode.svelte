@@ -13,7 +13,7 @@
   import { keymap } from '@codemirror/view';
   import type { ChuckShred, ChuckNode } from '$objects/chuck~/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
-  import ChuckSettings from '$lib/components/settings/ChuckSettings.svelte';
+  import ChuckSettings from '$objects/chuck~/ChuckSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { hasChuckAdcReference } from '$lib/audio/visible-audio-inputs';
 

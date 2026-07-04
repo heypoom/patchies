@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createTextmodeCookPolicy } from '$objects/textmode/cook-policy';
+import { createTextmodeCookPolicy } from '$workers/rendering/cooking/object-policies/textmode';
 import { COOK_TEST_UTILS } from '$workers/rendering/cooking/test-utils';
 
 const { ON_DEMAND, TIME_DEPENDENT, FRAME_DEPENDENT, FFT_DEPENDENT } = COOK_TEST_UTILS;

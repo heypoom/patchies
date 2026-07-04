@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { Plus, Trash2, Shrink, Pen, MousePointer2 } from '@lucide/svelte/icons';
-  import type { ProjMapSurface } from './types';
+  import type { ProjMapSurface } from '$lib/projmap/types';
   import { WARP_CORNER_LABELS } from './constants';
   import { surfaceColor, polyPoints, toDisplay } from './utils';
 

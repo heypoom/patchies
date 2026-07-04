@@ -139,7 +139,7 @@ interface V2NodeClass {
  *
  * @example
  * ```ts
- * import { NotchNode } from '$objects/notch~/NotchNode';
+ * import { NotchNode } from '<audio node module>';
  * const schema = schemaFromNode(NotchNode, 'audio');
  * ```
  */

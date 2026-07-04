@@ -5,10 +5,10 @@ import { match } from 'ts-pattern';
 import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
 import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
-import { getPatchbayAudioRuntime } from '$lib/patchbay/patchbay-audio-runtime';
-import { getPatchbayMessageRuntime } from '$lib/patchbay/patchbay-message-runtime';
-import { getPatchbayObjectPorts } from '$lib/patchbay/patchbay-object-ports';
-import { getPatchbayVideoRuntime } from '$lib/patchbay/patchbay-video-runtime';
+import { getPatchbayAudioRuntime } from '$objects/patchbay/patchbay-audio-runtime';
+import { getPatchbayMessageRuntime } from '$objects/patchbay/patchbay-message-runtime';
+import { getPatchbayObjectPorts } from '$objects/patchbay/patchbay-object-ports';
+import { getPatchbayVideoRuntime } from '$objects/patchbay/patchbay-video-runtime';
 import {
   analyzePatchbay,
   type PatchbayDiagnostic,

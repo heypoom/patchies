@@ -3,19 +3,7 @@ import { Parser } from 'expr-eval';
 import { parseMultiOutletExpressions } from '$lib/utils/expr-parser';
 import { transformFExprExpression } from '$lib/audio/fexpr-transform';
 import { isUnmodifiableType, parseStringParamByType } from '$lib/objects/parse-object-param';
-import { AllpassNode } from '$objects/allpass~/AllpassNode';
-import { BandpassNode } from '$objects/bandpass~/BandpassNode';
-import { CompressorNode } from '$objects/compressor~/CompressorNode';
-import { DelayNodeV2 } from '$objects/delay~/DelayNode';
-import { GainNodeV2 } from '$objects/gain~/GainNode';
-import { HighpassNode } from '$objects/highpass~/HighpassNode';
-import { HighshelfNode } from '$objects/highshelf~/HighshelfNode';
-import { LowpassNode } from '$objects/lowpass~/LowpassNode';
-import { LowshelfNode } from '$objects/lowshelf~/LowshelfNode';
-import { NotchNode } from '$objects/notch~/NotchNode';
-import { OscNode } from '$objects/osc~/OscNode';
-import { PeakingNode } from '$objects/peaking~/PeakingNode';
-import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
+import { VIRTUAL_AUDIO_PROCESSOR_INLETS } from './virtual-audio-processors';
 
 export type PatchbaySection = 'message' | 'audio' | 'video';
 
@@ -211,23 +199,6 @@ const KNOWN_UNSUPPORTED_AUDIO_PROCESSOR_TYPES = new Set([
   'csound~',
   'waveshaper~'
 ]);
-
-const VIRTUAL_AUDIO_PROCESSOR_INLETS = new Map<string, ObjectInlet[]>(
-  [
-    AllpassNode,
-    BandpassNode,
-    CompressorNode,
-    DelayNodeV2,
-    GainNodeV2,
-    HighpassNode,
-    HighshelfNode,
-    LowpassNode,
-    LowshelfNode,
-    NotchNode,
-    OscNode,
-    PeakingNode
-  ].map((node) => [node.type, node.inlets ?? []])
-);
 
 const createSectionState = (): SectionState => ({
   declarations: new Map(),

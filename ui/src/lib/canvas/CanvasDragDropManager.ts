@@ -3,7 +3,7 @@ import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { VirtualFilesystem, VFS_FOLDERS } from '$lib/vfs';
 import { logger } from '$lib/utils/logger';
 import { synthdefTemplate, scSampleTemplate } from './sonic-templates';
-import { parseCsvTable } from '$objects/sheet/sheet-utils';
+import { parseCsvTable } from '$lib/sheet/sheet-utils';
 
 /**
  * Escape a string for safe embedding inside a JS string literal (single or double-quoted).

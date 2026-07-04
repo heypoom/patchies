@@ -19,7 +19,7 @@
     advanceSamplerPlaybackProgress,
     removeSamplerPlaybackProgressVoice,
     type SamplerPlaybackProgressVoice
-  } from '$lib/audio/sampler-playback-progress';
+  } from '$objects/sampler~/sampler-playback-progress';
   import type {
     SamplerNode as SamplerNodeV2,
     SamplerPlaybackStartEvent,

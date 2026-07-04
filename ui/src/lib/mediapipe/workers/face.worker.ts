@@ -5,8 +5,8 @@
  *   - 'detect': fast bounding-box detection via FaceDetector
  */
 
-import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
-import type { FaceTaskOptions, FaceOutput, TaskOptions } from '$objects/mediapipe/types';
+import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
+import type { FaceTaskOptions, FaceOutput, TaskOptions } from '$lib/mediapipe/types';
 
 const LANDMARK_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';

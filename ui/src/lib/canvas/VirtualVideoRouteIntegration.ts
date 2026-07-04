@@ -2,7 +2,7 @@ import type { RenderNode } from '$lib/rendering/types';
 import type { REdge } from '$lib/rendering/graphUtils';
 import { VideoChannelRegistry } from './VideoChannelRegistry';
 
-type PatchbayVideoIntegrationOptions = {
+type VirtualVideoRouteIntegrationOptions = {
   upsertNode: (
     id: string,
     type: RenderNode['type'],
@@ -14,12 +14,12 @@ type PatchbayVideoIntegrationOptions = {
   videoChannelRegistry?: VideoChannelRegistry;
 };
 
-export class PatchbayVideoIntegration {
+export class VirtualVideoRouteIntegration {
   private edges = new Map<string, REdge>();
   private routeNodeIds = new Map<string, { recvId: string; sendId: string }>();
   private videoChannelRegistry: VideoChannelRegistry;
 
-  constructor(private options: PatchbayVideoIntegrationOptions) {
+  constructor(private options: VirtualVideoRouteIntegrationOptions) {
     this.videoChannelRegistry = options.videoChannelRegistry ?? VideoChannelRegistry.getInstance();
   }
 

@@ -6,8 +6,8 @@ import type {
   InspectedMachine,
   MachineConfig,
   MachineSnapshot
-} from '../../workers/assembly/assemblyWorker';
-import AssemblyWorker from '../../workers/assembly/assemblyWorker?worker';
+} from './assemblyWorker';
+import AssemblyWorker from './assemblyWorker?worker';
 import { memoryRegionStore, type MemoryRegion } from '$objects/asm/memoryRegionStore';
 
 /**

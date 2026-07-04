@@ -9,7 +9,7 @@ import type {
   PatchbayObjectPortSet,
   PatchbayObjectPorts,
   PatchbaySection
-} from './patchbay-parser';
+} from '$lib/patchbay/patchbay-parser';
 import type { GLUniformDef } from '../../types/uniform-config';
 
 type MinimalNode = Pick<Node, 'id' | 'type' | 'data'>;

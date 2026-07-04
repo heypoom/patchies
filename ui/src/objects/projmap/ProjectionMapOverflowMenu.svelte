@@ -12,7 +12,7 @@
     Grid2x2,
     Pentagon
   } from '@lucide/svelte/icons';
-  import type { ProjMapSurfaceMode } from './types';
+  import type { ProjMapSurfaceMode } from '$lib/projmap/types';
 
   let {
     selected,
