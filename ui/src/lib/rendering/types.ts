@@ -1,16 +1,28 @@
 import type regl from 'regl';
 import type { ProfilerCategory, RenderFrameStats, TimingStats } from '$lib/profiler/types';
-import type { GLUniformDef } from '../../types/uniform-config';
 import type { PrimaryButton } from '$lib/eventbus/events';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
-import type { ProjMapSurface } from '$lib/projmap/types';
+import type { BackgroundOutputRenderNode } from '$objects/bg.out/render-types';
+import type { CanvasRenderNode } from '$objects/canvas/render-types';
+import type { FloatTextureRenderNode } from '$objects/float.tex/render-types';
+import type { GlslRenderNode } from '$objects/glsl/render-types';
+import type { HydraRenderNode } from '$objects/hydra/render-types';
+import type { ImageRenderNode } from '$objects/img/render-types';
+import type { ProjMapRenderNode } from '$objects/projmap/render-types';
+import type { RecvVideoRenderNode } from '$objects/recv.vdo/render-types';
+import type { ReglRenderNode } from '$objects/regl/render-types';
+import type { SendVideoRenderNode } from '$objects/send.vdo/render-types';
+import type { ShaderParkRenderNode } from '$objects/shaderpark/render-types';
+import type { SwglRenderNode } from '$objects/swgl/render-types';
+import type { TextmodeRenderNode } from '$objects/textmode/render-types';
+import type { ThreeRenderNode } from '$objects/three/render-types';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
 /** Per-node FBO resolution override. Default is full output size. */
 export type FBOResolution = number | [number, number] | string;
 
-export type ShaderParkRenderMode = 'flat' | '3d';
+export type { ShaderParkRenderMode } from '$objects/shaderpark/render-types';
 
 export type RenderNode = {
   id: string;
@@ -23,72 +35,20 @@ export type RenderNode = {
   /** Inlet indices connected via back-edges (feedback loops — reads previous frame) */
   backEdgeInlets: Set<number>;
 } & (
-  | {
-      type: 'glsl';
-      data: {
-        code: string;
-        glUniformDefs: GLUniformDef[];
-        uniformValues?: Record<string, unknown>;
-        mrtCount?: number;
-        fboFormat?: FBOFormat;
-        resolution?: FBOResolution;
-      };
-    }
-  | {
-      type: 'hydra';
-      data: {
-        code: string;
-        videoInletCount?: number;
-        videoOutletCount?: number;
-        fboFormat?: FBOFormat;
-        resolution?: FBOResolution;
-        _runRevision?: number;
-      };
-    }
-  | {
-      type: 'swgl';
-      data: { code: string; mrtCount?: number; fboFormat?: FBOFormat; resolution?: FBOResolution };
-    }
-  | { type: 'canvas'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
-  | { type: 'textmode'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
-  | {
-      type: 'three';
-      data: {
-        code: string;
-        fboFormat?: FBOFormat;
-        resolution?: FBOResolution;
-        _runRevision?: number;
-      };
-    }
-  | {
-      type: 'shaderpark';
-      data: {
-        code: string;
-        videoInletCount?: number;
-        videoOutletCount?: number;
-        shaderParkVideoUniformIndices?: number[];
-        shaderParkUniformDefs?: GLUniformDef[];
-        uniformValues?: Record<string, unknown>;
-        renderMode?: ShaderParkRenderMode;
-        fboFormat?: FBOFormat;
-        resolution?: FBOResolution;
-      };
-    }
-  | {
-      type: 'regl';
-      data: {
-        code: string;
-        videoOutletCount?: number;
-        fboFormat?: FBOFormat;
-        resolution?: FBOResolution;
-      };
-    }
-  | { type: 'projmap'; data: { surfaces: ProjMapSurface[] } }
-  | { type: 'img'; data: unknown }
-  | { type: 'float.tex'; data: unknown }
-  | { type: 'bg.out'; data: unknown }
-  | { type: 'send.vdo'; data: { channel: string; shorthand?: boolean } }
-  | { type: 'recv.vdo'; data: { channel: string; shorthand?: boolean } }
+  | GlslRenderNode
+  | HydraRenderNode
+  | SwglRenderNode
+  | CanvasRenderNode
+  | TextmodeRenderNode
+  | ThreeRenderNode
+  | ShaderParkRenderNode
+  | ReglRenderNode
+  | ProjMapRenderNode
+  | ImageRenderNode
+  | FloatTextureRenderNode
+  | BackgroundOutputRenderNode
+  | SendVideoRenderNode
+  | RecvVideoRenderNode
 );
 
 export interface RenderEdge {
