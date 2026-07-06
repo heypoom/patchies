@@ -1,4 +1,5 @@
 import type { Node } from '@xyflow/svelte';
+import { hash } from 'ohash';
 import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 import { logger } from '$lib/utils/logger';
 import type { PatchRuntimeObjectSpec } from './PatchRuntime';
@@ -133,6 +134,6 @@ export class EditorRuntimeReconciler {
   }
 
   private getRuntimeObjectSpecKey(spec: PatchRuntimeObjectSpec): string {
-    return JSON.stringify([spec.objectType, spec.params, spec.rawParams]);
+    return hash([spec.objectType, spec.params, spec.rawParams]);
   }
 }
