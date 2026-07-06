@@ -350,6 +350,7 @@
       // For typed inlets with message schemas (e.g., string inlet that also accepts bang/stop),
       // only update the displayed param when the value matches the base type.
       const hasMessages = !!inlet.messages?.length;
+
       const matchesBaseType =
         !hasMessages ||
         (inlet.type === 'string' && typeof message === 'string') ||
@@ -362,13 +363,17 @@
       if (matchesBaseType) {
         // For audio objects, suppress the audio sync since the message is already
         // being forwarded to the worklet directly via PatchRuntime below.
-        if (isAudioObject) patchRuntime?.suppressNextAudioObjectSync(nodeId);
+        if (isAudioObject) {
+          patchRuntime?.suppressNextAudioObjectSync(nodeId);
+        }
 
         updateParamByIndex(meta.inlet, message);
       }
     } else if (isSetImmediate) {
       // Update parameters for a simple `set` message.
-      if (isAudioObject) patchRuntime?.suppressNextAudioObjectSync(nodeId);
+      if (isAudioObject) {
+        patchRuntime?.suppressNextAudioObjectSync(nodeId);
+      }
 
       updateParamByIndex(meta.inlet, message.value);
     } else if (isScheduled) {
@@ -379,6 +384,7 @@
     // Route audio object messages to audio service
     if (inlet.name && isAudioObject) {
       patchRuntime?.sendAudioObjectMessage(nodeId, inlet.name, message);
+
       return;
     }
   };
@@ -421,6 +427,7 @@
 
     // Transform to the preset's node type with its data
     changeNode(flatPreset.preset.type, flatPreset.preset.data as Record<string, unknown>);
+
     return true;
   }
 
@@ -491,6 +498,7 @@
         event.preventDefault();
         exitEditingMode(true);
       }
+
       return;
     }
 

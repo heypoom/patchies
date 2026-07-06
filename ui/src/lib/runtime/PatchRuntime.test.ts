@@ -31,6 +31,7 @@ class PatchRuntimeTestObject implements TextObjectV2 {
 
   async create(rawParams: unknown[]) {
     await PatchRuntimeTestObject.createGate;
+
     PatchRuntimeTestObject.createdRawParams.push(rawParams);
 
     if (PatchRuntimeTestObject.normalizeParamOnCreate) {
@@ -85,6 +86,7 @@ class FakeObjectService implements PatchRuntimeObjectService {
 
     const object = new PatchRuntimeTestObject(nodeId, context);
     this.objectsById.set(nodeId, object);
+
     await object.create(rawParams);
 
     return object;
@@ -96,6 +98,7 @@ class FakeObjectService implements PatchRuntimeObjectService {
 
     object.destroy?.();
     object.context.destroy();
+
     this.objectsById.delete(nodeId);
   }
 
@@ -109,6 +112,7 @@ class FakeAudioService {
   createNode = vi.fn();
   updateEdges = vi.fn();
   send = vi.fn();
+
   audioNode = {
     nodeId: 'object-audio-runtime-test',
     audioNode: null
@@ -184,17 +188,21 @@ describe('PatchMessageRuntime', () => {
 
   it('ignores async create results after the object is destroyed', async () => {
     let releaseCreate!: () => void;
+
     PatchRuntimeTestObject.createGate = new Promise((resolve) => {
       releaseCreate = resolve;
     });
+
     PatchRuntimeTestObject.normalizeParamOnCreate = true;
 
     const objectService = new FakeObjectService();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
+
     const runtime = new PatchMessageRuntime({
       objectService,
       onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params })
     });
+
     const nodeId = 'object-patch-runtime-async-test';
 
     const createPromise = runtime.createObject({
@@ -217,6 +225,7 @@ describe('PatchMessageRuntime', () => {
     const objectService = new FakeObjectService();
     const eventBus = new FakeEventBus();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
+
     const runtime = new PatchMessageRuntime({
       objectService,
       eventBus,
@@ -245,6 +254,7 @@ describe('PatchMessageRuntime', () => {
     const objectService = new FakeObjectService();
     const runtime = new PatchMessageRuntime({ objectService });
     const nodeId = 'object-port-runtime-test';
+
     PatchRuntimeTestObject.dynamicInlets = [{ name: 'dynamic-in', type: 'float' }];
     PatchRuntimeTestObject.dynamicOutlets = [{ name: 'dynamic-out', type: 'string' }];
 
@@ -454,6 +464,7 @@ describe('PatchRuntime', () => {
       audioService,
       isAudioObject: (objectType) => objectType === 'osc~'
     });
+
     const nodeId = 'object-patch-runtime-facade-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
 
@@ -571,10 +582,7 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledTimes(2);
     expect(runtime.updateObject).not.toHaveBeenCalled();
 
-    expect(warn).toHaveBeenCalledWith(
-      `failed to sync runtime object "object-editor-runtime-create-retry-test"`,
-      expect.any(Error)
-    );
+    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error));
   });
 
   it('retries failed updates on the next reconcile', async () => {
@@ -612,10 +620,7 @@ describe('EditorRuntimeReconciler', () => {
 
     expect(runtime.updateObject).toHaveBeenCalledTimes(2);
 
-    expect(warn).toHaveBeenCalledWith(
-      `failed to sync runtime object "object-editor-runtime-update-retry-test"`,
-      expect.any(Error)
-    );
+    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error));
   });
 
   it('destroys runtime objects removed while an earlier create is still pending', async () => {

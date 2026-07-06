@@ -39,26 +39,26 @@ export class EditorRuntimeReconciler {
   constructor(private runtime: EditorRuntime) {}
 
   async reconcile(nodes: Node[]): Promise<void> {
-    const desiredObjectSpecs = new Map<string, PatchRuntimeObjectSpec>();
+    const nextObjectSpecs = new Map<string, PatchRuntimeObjectSpec>();
     const pendingRuntimeUpdates: Promise<void>[] = [];
 
     for (const node of nodes) {
       const spec = this.getRuntimeObjectSpec(node);
       if (!spec) continue;
 
-      desiredObjectSpecs.set(spec.id, spec);
+      nextObjectSpecs.set(spec.id, spec);
     }
 
-    this.next.ids = new Set(desiredObjectSpecs.keys());
+    this.next.ids = new Set(nextObjectSpecs.keys());
 
     this.next.specKeys = new Map(
-      [...desiredObjectSpecs].map(([nodeId, spec]) => [nodeId, this.getRuntimeObjectSpecKey(spec)])
+      [...nextObjectSpecs].map(([nodeId, spec]) => [nodeId, getRuntimeObjectSpecKey(spec)])
     );
 
     const trackedRuntimeObjectIds = new Set([...this.current.ids, ...this.next.pendingIds]);
 
     for (const nodeId of trackedRuntimeObjectIds) {
-      if (!desiredObjectSpecs.has(nodeId)) {
+      if (!nextObjectSpecs.has(nodeId)) {
         this.runtime.destroyObject(nodeId);
         this.current.ids.delete(nodeId);
         this.current.specKeys.delete(nodeId);
@@ -67,10 +67,10 @@ export class EditorRuntimeReconciler {
       }
     }
 
-    for (const spec of desiredObjectSpecs.values()) {
+    for (const spec of nextObjectSpecs.values()) {
       if (this.next.pendingIds.has(spec.id)) continue;
 
-      const specKey = this.getRuntimeObjectSpecKey(spec);
+      const specKey = getRuntimeObjectSpecKey(spec);
       const hasCommittedObject = this.current.ids.has(spec.id);
       const lastSyncedSpecKey = this.current.specKeys.get(spec.id);
 
@@ -95,21 +95,7 @@ export class EditorRuntimeReconciler {
     const objectType = typeof data?.name === 'string' ? data.name : '';
     if (!objectType || !this.runtime.canCreateObject(objectType)) return null;
 
-    const rawParams = this.getRawParams(data?.expr);
-    const expectedParams = parseObjectParamFromString(objectType, rawParams);
-    const savedParams = Array.isArray(data?.params) ? data.params : [];
-    const params = savedParams.length === expectedParams.length ? savedParams : expectedParams;
-
-    return { id: node.id, objectType, params, rawParams };
-  }
-
-  private getRawParams(expr: unknown): string[] {
-    if (typeof expr !== 'string') return [];
-
-    const trimmed = expr.trim();
-    if (!trimmed) return [];
-
-    return trimmed.split(/\s+/).slice(1);
+    return getRuntimeObjectSpecFromNode(node.id, objectType, data);
   }
 
   private async syncRuntimeObject(
@@ -132,8 +118,29 @@ export class EditorRuntimeReconciler {
       this.next.pendingIds.delete(spec.id);
     }
   }
+}
 
-  private getRuntimeObjectSpecKey(spec: PatchRuntimeObjectSpec): string {
-    return hash([spec.objectType, spec.params, spec.rawParams]);
-  }
+const getRuntimeObjectSpecKey = (spec: PatchRuntimeObjectSpec): string =>
+  hash([spec.objectType, spec.params, spec.rawParams]);
+
+function getRuntimeObjectSpecFromNode(
+  nodeId: string,
+  objectType: string,
+  data?: EditorRuntimeObjectData
+) {
+  const rawParams = getRawObjectParamsFromExpr(data?.expr);
+  const expectedParams = parseObjectParamFromString(objectType, rawParams);
+  const savedParams = Array.isArray(data?.params) ? data.params : [];
+  const params = savedParams.length === expectedParams.length ? savedParams : expectedParams;
+
+  return { id: nodeId, objectType, params, rawParams };
+}
+
+function getRawObjectParamsFromExpr(expr: unknown): string[] {
+  if (typeof expr !== 'string') return [];
+
+  const trimmed = expr.trim();
+  if (!trimmed) return [];
+
+  return trimmed.split(/\s+/).slice(1);
 }
