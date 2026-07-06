@@ -13,7 +13,7 @@
   import { overrideOutputNodeId } from '../../stores/renderer.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
-  import type { ProjMapSurface, ProjMapSurfaceMode, ProjMapPoint } from './types';
+  import type { ProjMapSurface, ProjMapSurfaceMode, ProjMapPoint } from '$lib/projmap/types';
   import { DEFAULT_PROJMAP_NODE_DATA, DEFAULT_WARP_CORNERS, WARP_CORNER_LABELS } from './constants';
   import {
     surfaceColor,

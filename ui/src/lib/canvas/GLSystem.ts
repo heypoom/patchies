@@ -13,6 +13,7 @@ import {
 } from '$lib/rendering/types';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
+import type { ProjMapSurface } from '$lib/projmap/types';
 
 import * as ohash from 'ohash';
 
@@ -30,7 +31,7 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
-import { PatchbayVideoIntegration } from './PatchbayVideoIntegration';
+import { VirtualVideoRouteIntegration } from './VirtualVideoRouteIntegration';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import type {
   RequestWorkerVideoFramesEvent,
@@ -108,7 +109,7 @@ export class GLSystem {
   private channelRegistry = MessageChannelRegistry.getInstance();
   private floatTextureUploadBuffers = new FloatTextureUploadBufferPool();
 
-  private patchbay = new PatchbayVideoIntegration({
+  private patchbay = new VirtualVideoRouteIntegration({
     upsertNode: (...args) => this.upsertNode(...args),
     removeNode: (nodeId) => this.removeNode(nodeId),
     onGraphChanged: () => {
@@ -274,7 +275,7 @@ export class GLSystem {
       }
     );
 
-    this.mediaPipeNodeSystemReady = import('$objects/mediapipe/MediaPipeNodeSystem').then(
+    this.mediaPipeNodeSystemReady = import('$lib/mediapipe/MediaPipeNodeSystem').then(
       ({ MediaPipeNodeSystem }) => {
         const instance = MediaPipeNodeSystem.getInstance();
         this.mediaPipeNodeSystem = instance;
@@ -1143,7 +1144,7 @@ export class GLSystem {
     this.send('sendMessageToNode', { nodeId, message });
   }
 
-  updateProjectionMap(nodeId: string, surfaces: import('$objects/projmap/types').ProjMapSurface[]) {
+  updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]) {
     this.send('updateProjectionMap', { nodeId, surfaces });
   }
 

@@ -23,7 +23,7 @@ Lives in the worklet module file. Handles the processor class, message protocol,
 
 ```typescript
 // src/lib/audio/native-dsp/processors/line.processor.ts
-import { defineDSP } from '../define-dsp';
+import { defineDSP } from '$lib/audio/native-dsp/define-dsp';
 
 defineDSP({
   name: 'line~',
@@ -203,7 +203,7 @@ Factory that generates an AudioNodeV2 class from a config. Handles worklet loadi
 ```typescript
 // src/lib/audio/native-dsp/nodes/line.node.ts
 import { Type } from '@sinclair/typebox';
-import { createWorkletDspNode } from '../create-worklet-dsp-node';
+import { createWorkletDspNode } from '$lib/audio/native-dsp/create-worklet-dsp-node';
 import workletUrl from '../processors/line.processor?worker&url';
 
 export const LineNode = createWorkletDspNode({
@@ -362,7 +362,7 @@ Same as existing V2 audio nodes:
 
 ```typescript
 // src/lib/audio/v2/nodes/index.ts
-import { LineNode } from '$lib/audio/native-dsp/nodes/line.node';
+import { LineNode } from '$objects/line~/native-dsp/nodes/line.node';
 
 const AUDIO_NODES = [
   // ... existing nodes
@@ -372,7 +372,7 @@ const AUDIO_NODES = [
 
 ```typescript
 // src/lib/objects/schemas/index.ts
-import { LineNode } from '$lib/audio/native-dsp/nodes/line.node';
+import { LineNode } from '$objects/line~/native-dsp/nodes/line.node';
 
 schemasFromNodes([/* ... */, LineNode], 'audio');
 ```

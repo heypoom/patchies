@@ -3,7 +3,7 @@
   import { getPresetPackDisplayItems } from '$lib/extensions/preset-pack-index';
   import type { PresetPack } from '../../../stores/extensions.store';
   import { enabledObjects, enabledPackIds, BUILT_IN_PACKS } from '../../../stores/extensions.store';
-  import * as Tooltip from '../ui/tooltip';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import PackCard from './PackCard.svelte';
 
   let {

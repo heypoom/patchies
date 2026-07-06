@@ -7,7 +7,7 @@
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { messages } from '$lib/objects/schemas/common';
-import { MediaPipeNodeSystem } from './MediaPipeNodeSystem';
+import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
 
 export function useVisionEnable(
   nodeId: string,

@@ -1,0 +1,370 @@
+<script lang="ts">
+  import { Binary, FileText, Hash, Settings, Trash, X } from '@lucide/svelte/icons';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { onMount, onDestroy } from 'svelte';
+  import { useSvelteFlow } from '@xyflow/svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { asmMemSchema } from '$objects/asm/asm-mem.schema';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
+  import { AssemblySystem } from '$objects/asm/AssemblySystem';
+  import { useNodeDataTracker } from '$lib/history';
+  import {
+    ASM_MEMORY_GRID_COLUMNS,
+    ASM_MEMORY_GRID_LIMIT,
+    ASM_MAX_CELL_VALUE
+  } from '$objects/asm/constants';
+  import type { Action } from 'machine';
+
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: {
+    id: string;
+    data: {
+      values?: number[];
+      format?: 'hex' | 'decimal';
+      rows?: number;
+    };
+    selected?: boolean;
+  } = $props();
+
+  const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
+
+  let assemblySystem = AssemblySystem.getInstance();
+  let messageContext: MessageContext;
+  let isBatch = $state(false);
+  let batchInput = $state('');
+  let showSettings = $state(false);
+
+  const values = $derived(data.values ?? []);
+  const format = $derived(data.format ?? 'hex');
+  const rows = $derived(data.rows ?? 6);
+
+  const count = $derived(Math.max(ASM_MEMORY_GRID_COLUMNS * rows, values.length));
+  const overGridLimit = $derived(count > ASM_MEMORY_GRID_LIMIT);
+  const base = $derived(format === 'hex' ? 16 : 10);
+  const FormatIcon = $derived(format === 'hex' ? Hash : Binary);
+
+  const handleMessage: MessageCallbackFn = async (message, meta) => {
+    const isMatchSimpleMessage = match(message)
+      .with(messages.bang, () => {
+        messageContext.send(values, { to: 0 });
+        return true;
+      })
+      .with(messages.reset, async () => {
+        updateNodeData(nodeId, { values: [] });
+        return true;
+      })
+      .with({ type: 'setRows', value: P.number }, async ({ value }) => {
+        updateNodeData(nodeId, { rows: value });
+        return true;
+      })
+      .otherwise(() => false);
+
+    if (isMatchSimpleMessage) return;
+
+    if (meta.source.startsWith('asm-')) {
+      const machineId = parseInt(meta.source.replace('asm-', ''));
+      if (isNaN(machineId)) return;
+
+      await match(message)
+        .with(P.union(P.array(P.number), P.number), async (v) => {
+          const body = Array.isArray(v) ? v : [v];
+          const nextValues = [...values, ...body];
+
+          updateNodeData(nodeId, { ...data, values: nextValues });
+        })
+        .with(
+          { type: 'write', address: P.number, data: P.array(P.number) },
+          async ({ address, data: writeData }) => {
+            const nextValues = [...values];
+            // Ensure the array is large enough to accommodate the write
+            const requiredLength = address + writeData.length;
+            while (nextValues.length < requiredLength) {
+              nextValues.push(0);
+            }
+
+            for (let i = 0; i < writeData.length; i++) {
+              nextValues[address + i] = writeData[i];
+            }
+
+            updateNodeData(nodeId, { ...data, values: nextValues });
+          }
+        )
+        .with({ type: 'read', address: P.number, count: P.number }, async ({ address, count }) => {
+          const memorySlice = values.slice(address, address + count);
+
+          await sendToAssembly({ type: 'Data', body: memorySlice }, machineId);
+        })
+        .otherwise(() => {});
+
+      return;
+    }
+  };
+
+  async function sendToAssembly(action: Action, machineId: number) {
+    let source = parseInt(nodeId.replace('asm.mem-', ''));
+    if (isNaN(source)) source = 0;
+
+    try {
+      if (await assemblySystem.machineExists(machineId)) {
+        await assemblySystem.sendMessage(machineId, action, source, 0);
+      }
+    } catch (error) {
+      console.error('Failed to send message to assembly system:', error);
+    }
+  }
+
+  const updateConfig = (updates: Partial<typeof data>) =>
+    updateNodeData(nodeId, { ...data, ...updates });
+
+  function setMemoryValue(address: number, value: number) {
+    if (value > ASM_MAX_CELL_VALUE) return;
+
+    const newValues = [...values];
+    newValues[address] = value;
+
+    updateNodeData(nodeId, { ...data, values: newValues });
+  }
+
+  function writeMemoryValue(value: number, index: number) {
+    if (value === undefined || value === null) return;
+
+    setMemoryValue(index, value);
+  }
+
+  function toggleFormat() {
+    const oldFormat = format;
+    const newFormat = format === 'hex' ? 'decimal' : 'hex';
+
+    updateConfig({ format: newFormat });
+    tracker.commit('format', oldFormat, newFormat);
+  }
+
+  function updateBatch() {
+    if (!isBatch) return;
+
+    const newValues = batchInput
+      .split(' ')
+      .map((s) => parseInt(s, base))
+      .filter((n) => !isNaN(n));
+
+    if (newValues.length === 0) return;
+
+    updateNodeData(nodeId, { ...data, values: newValues });
+  }
+
+  onMount(() => {
+    messageContext = new MessageContext(nodeId);
+    messageContext.queue.addCallback(handleMessage);
+
+    syncBatchInput();
+  });
+
+  onDestroy(() => {
+    messageContext?.destroy();
+  });
+
+  function syncBatchInput() {
+    if (isBatch) {
+      batchInput = values
+        .filter((v) => v)
+        .map((v) => v.toString(base))
+        .join(' ');
+    }
+  }
+
+  // Update batch input when format or values change
+  $effect(() => {
+    syncBatchInput();
+  });
+</script>
+
+<div class="relative flex gap-x-3">
+  <div class="group relative">
+    <!-- Floating header -->
+    <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+      <div class="node-floating-controls flex gap-1">
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button onclick={toggleFormat} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+              <FormatIcon class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Toggle format (hex/decimal)</Tooltip.Content>
+        </Tooltip.Root>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (isBatch = !isBatch)}
+              class={['cursor-pointer rounded p-1 hover:bg-zinc-700', isBatch && 'text-green-400']}
+            >
+              <FileText class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Toggle batch edit mode</Tooltip.Content>
+        </Tooltip.Root>
+      </div>
+
+      <div class="node-floating-controls flex gap-1">
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => updateNodeData(nodeId, { ...data, values: [] })}
+              class={['cursor-pointer rounded p-1 text-red-400 hover:bg-zinc-700']}
+            >
+              <Trash class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Clear memory (!)</Tooltip.Content>
+        </Tooltip.Root>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (showSettings = !showSettings)}
+              class={[
+                'cursor-pointer rounded p-1 hover:bg-zinc-700',
+                showSettings && 'text-blue-400'
+              ]}
+            >
+              <Settings class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Settings</Tooltip.Content>
+        </Tooltip.Root>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <div class="relative">
+        <!-- Inlet -->
+        <TypedHandle
+          port="inlet"
+          spec={asmMemSchema.inlets[0].handle!}
+          total={1}
+          index={0}
+          title="Message inlet"
+          {nodeId}
+        />
+
+        <div
+          class={[
+            'relative flex min-w-[200px] flex-col gap-2 rounded-lg border bg-zinc-900 px-3 py-3 font-mono',
+            selected ? 'border-zinc-300' : 'border-zinc-800 hover:border-zinc-700'
+          ]}
+        >
+          {#if overGridLimit && !isBatch}
+            <p class="text-xs text-red-400">
+              Values too large ({count} items)<br />Use text mode to edit.
+            </p>
+          {/if}
+
+          {#if !isBatch && !overGridLimit}
+            <div
+              class="grid w-full items-center justify-center gap-y-[2px]"
+              style="grid-template-columns: repeat({ASM_MEMORY_GRID_COLUMNS}, minmax(0, 1fr));"
+            >
+              {#each Array.from({ length: count }) as _, index}
+                {@const value = values[index]}
+                <input
+                  value={!value ? '' : value.toString(base).padStart(4, '0')}
+                  placeholder="0000"
+                  class={[
+                    'w-8 bg-transparent text-center text-[10px] uppercase outline-1 outline-none',
+                    value === 0 && 'placeholder-zinc-600',
+                    value === undefined && 'placeholder-zinc-700',
+                    value > 0 && 'text-green-400'
+                  ]}
+                  onchange={(e) => {
+                    const n = parseInt((e.target as HTMLInputElement).value, base);
+                    if (isNaN(n)) return setMemoryValue(index, 0);
+                    setMemoryValue(index, n);
+                  }}
+                  onblur={() => writeMemoryValue(value || 0, index)}
+                />
+              {/each}
+            </div>
+          {/if}
+
+          {#if isBatch}
+            <textarea
+              class="nodrag h-[100px] w-full resize-none bg-transparent font-mono text-xs text-green-400 outline-none"
+              value={batchInput}
+              onchange={(e) => (batchInput = (e.target as HTMLTextAreaElement).value)}
+              onblur={updateBatch}
+              placeholder={`Enter ${format} values separated by spaces...`}
+            ></textarea>
+          {/if}
+
+          <!-- Machine info -->
+          <div
+            class="absolute bottom-[-16px] left-0 min-w-[100px] font-mono text-[8px] text-zinc-500"
+          >
+            {values.length} bytes • {format}
+          </div>
+        </div>
+
+        <!-- Outlet -->
+        <TypedHandle
+          port="outlet"
+          spec={asmMemSchema.outlets[0].handle!}
+          total={1}
+          index={0}
+          title="Message outlet"
+          {nodeId}
+        />
+      </div>
+    </div>
+  </div>
+
+  {#if showSettings}
+    <div class="relative">
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        >
+          <X class="h-4 w-4 text-zinc-300" />
+        </button>
+      </div>
+
+      <div class="nodrag w-48 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+        <div class="space-y-3">
+          <div>
+            <label
+              class="mb-2 block text-xs font-medium text-zinc-300"
+              for="assembly-memory-rows-{nodeId}">Rows</label
+            >
+            <input
+              id="assembly-memory-rows-{nodeId}"
+              type="number"
+              min="1"
+              max="100"
+              value={rows}
+              class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 outline-none focus:border-zinc-500"
+              onchange={(e) => {
+                const value = parseInt((e.target as HTMLInputElement).value);
+
+                if (!isNaN(value) && value > 0) {
+                  const oldRows = rows;
+
+                  updateConfig({ rows: value });
+                  tracker.commit('rows', oldRows, value);
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+</div>

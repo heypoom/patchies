@@ -1,0 +1,52 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { schema } from '$lib/objects/schemas/types';
+import { msg } from '$lib/objects/schemas/helpers';
+import { Bang, Set, messages } from '$lib/objects/schemas/common';
+
+// AI text-specific message schemas
+const Generate = msg('generate', { prompt: Type.String() });
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const aiTxtMessages = {
+  ...messages,
+  generate: schema(Generate),
+  string: schema(Type.String())
+};
+
+/**
+ * Schema for the ai.txt (AI text generation) object.
+ */
+export const aiTxtSchema: ObjectSchema = {
+  type: 'ai.txt',
+  category: 'ai',
+  description: 'Generate text using AI language models (Gemini)',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Text prompts',
+      handle: { handleType: 'message' },
+      messages: [
+        { schema: Type.String(), description: 'Text prompt - sets prompt and generates' },
+        { schema: Generate, description: 'Set prompt and generate text' },
+        { schema: Set, description: 'Set prompt without generating' },
+        { schema: Bang, description: 'Generate text with current prompt' }
+      ]
+    },
+    {
+      id: 'video',
+      type: 'signal',
+      description: 'Image/video input for vision prompts',
+      handle: { handleType: 'video', handleId: '0' }
+    }
+  ],
+  outlets: [
+    {
+      id: 'message',
+      description: 'Generated text',
+      handle: { handleType: 'message' },
+      messages: [{ schema: Type.String(), description: 'Generated text response' }]
+    }
+  ],
+  tags: ['ai', 'text', 'generation', 'llm', 'gemini']
+};

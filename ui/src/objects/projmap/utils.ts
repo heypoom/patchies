@@ -1,4 +1,4 @@
-import type { ProjMapPoint, ProjMapSurface } from './types';
+import type { ProjMapPoint, ProjMapSurface } from '$lib/projmap/types';
 
 import { SURFACE_COLORS } from './constants';
 

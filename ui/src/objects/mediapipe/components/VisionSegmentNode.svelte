@@ -2,11 +2,11 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
-  import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
   import { useVisionEnable } from '$objects/mediapipe/useVisionEnable';
-  import type { SegmentTaskOptions } from '$objects/mediapipe/types';
+  import type { SegmentTaskOptions } from '$lib/mediapipe/types';
   import type { SettingsSchema } from '$lib/settings/types';
-  import type { VisionStatus } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import type { VisionStatus } from '$lib/mediapipe/MediaPipeNodeSystem';
 
   let {
     id: nodeId,

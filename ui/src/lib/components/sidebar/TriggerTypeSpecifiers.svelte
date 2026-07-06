@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { TRIGGER_TYPE_SPECS } from '$lib/objects/schemas/trigger';
+  import { TRIGGER_TYPE_SPECS } from '$lib/objects/trigger-type-specs';
 </script>
 
 <div class="mb-4">

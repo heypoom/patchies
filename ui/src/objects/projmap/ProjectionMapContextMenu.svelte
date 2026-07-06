@@ -14,7 +14,7 @@
     Grid2x2,
     Pentagon
   } from '@lucide/svelte/icons';
-  import type { ProjMapSurface } from './types';
+  import type { ProjMapSurface } from '$lib/projmap/types';
 
   let {
     surfaces,

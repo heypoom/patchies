@@ -1,5 +1,5 @@
-import { NGEA_TUNINGS } from '$objects/ngea/data';
-import { findTuning } from '$objects/ngea/utils';
+import { NGEA_TUNINGS } from '$lib/ngea/data';
+import { findTuning } from '$lib/ngea/utils';
 
 export async function prebake() {
   // Load superdough first to initialize AudioWorklets

@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { aiSettings } from '../../../stores/ai-settings.store';
 import { hasGeminiApiKey, refineSpec } from './spec-refiner';
 import type { CleanedPatch } from './patch-transformer';
 
@@ -39,6 +40,7 @@ const createSimplePatch = (): CleanedPatch => ({
 describe('hasGeminiApiKey', () => {
   beforeEach(() => {
     localStorageMock.clear();
+    aiSettings.updateSettings({ provider: 'gemini', geminiApiKey: '', openRouterApiKey: '' });
   });
 
   it('returns false when no API key is set', () => {
@@ -46,12 +48,12 @@ describe('hasGeminiApiKey', () => {
   });
 
   it('returns true when API key is set', () => {
-    localStorageMock.setItem('gemini-api-key', 'AIzaTest123');
+    aiSettings.updateSettings({ geminiApiKey: 'AIzaTest123' });
     expect(hasGeminiApiKey()).toBe(true);
   });
 
   it('returns false for empty string API key', () => {
-    localStorageMock.setItem('gemini-api-key', '');
+    aiSettings.updateSettings({ geminiApiKey: '' });
     expect(hasGeminiApiKey()).toBe(false);
   });
 });
@@ -59,6 +61,7 @@ describe('hasGeminiApiKey', () => {
 describe('refineSpec', () => {
   beforeEach(() => {
     localStorageMock.clear();
+    aiSettings.updateSettings({ provider: 'gemini', geminiApiKey: '', openRouterApiKey: '' });
   });
 
   it('throws when no API key is set', async () => {
@@ -70,7 +73,7 @@ describe('refineSpec', () => {
   });
 
   it('throws when aborted before starting', async () => {
-    localStorageMock.setItem('gemini-api-key', 'AIzaTest123');
+    aiSettings.updateSettings({ geminiApiKey: 'AIzaTest123' });
 
     const controller = new AbortController();
     controller.abort();
@@ -83,7 +86,7 @@ describe('refineSpec', () => {
   });
 
   it('accepts options for patchName and steeringPrompt', async () => {
-    localStorageMock.setItem('gemini-api-key', 'AIzaTest123');
+    aiSettings.updateSettings({ geminiApiKey: 'AIzaTest123' });
 
     // Mock the GoogleGenAI import with streaming support
     vi.mock('@google/genai', () => ({

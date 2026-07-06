@@ -1,0 +1,43 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { Bang, Start, Stop, Toggle } from '$lib/objects/schemas/common';
+
+/**
+ * Schema for the keyboard (keyboard input listener) object.
+ */
+export const keyboardSchema: ObjectSchema = {
+  type: 'keyboard',
+  category: 'interface',
+  description: 'Listen for keyboard input and output key events',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Control messages',
+      handle: { handleType: 'message' },
+      messages: [
+        { schema: Bang, description: 'Toggle listening on/off' },
+        { schema: Start, description: 'Start listening for keyboard input' },
+        { schema: Stop, description: 'Stop listening for keyboard input' },
+        { schema: Toggle, description: 'Toggle listening state' },
+        { schema: Type.String(), description: 'Set keybind (in filtered mode)' }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'message',
+      description: 'Keyboard output',
+      handle: { handleType: 'message' },
+      messages: [
+        { schema: Bang, description: 'Sent when filtered key is pressed (filtered mode)' },
+        { schema: Type.String(), description: 'Key name (all keys mode)' },
+        { schema: Type.Boolean(), description: 'Key state true/false (up/down mode)' },
+        {
+          schema: Type.Tuple([Type.String(), Type.Boolean()]),
+          description: '[key, state] tuple (all keys + up/down mode)'
+        }
+      ]
+    }
+  ],
+  tags: ['interface', 'input', 'keyboard', 'keys', 'hotkey']
+};

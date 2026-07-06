@@ -1,0 +1,58 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { schema } from '$lib/objects/schemas/types';
+import { msg } from '$lib/objects/schemas/helpers';
+import { Bang, Set, messages } from '$lib/objects/schemas/common';
+
+// AI image-specific message schemas
+const Generate = msg('generate', { prompt: Type.String() });
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const aiImgMessages = {
+  ...messages,
+  generate: schema(Generate),
+  string: schema(Type.String())
+};
+
+/**
+ * Schema for the ai.img (AI image generation) object.
+ */
+export const aiImgSchema: ObjectSchema = {
+  type: 'ai.img',
+  category: 'ai',
+  description: 'Generate images from text prompts using AI (Gemini)',
+  inlets: [
+    {
+      id: 'video',
+      type: 'signal',
+      description: 'Image input (optional, for image editing)',
+      handle: { handleType: 'video', handleId: '0' }
+    },
+    {
+      id: 'message',
+      description: 'Image prompts',
+      handle: { handleType: 'message', handleId: '1' },
+      messages: [
+        { schema: Type.String(), description: 'Text prompt - sets prompt and generates' },
+        { schema: Generate, description: 'Set prompt and generate image' },
+        { schema: Set, description: 'Set prompt without generating' },
+        { schema: Bang, description: 'Generate image with current prompt' }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'video',
+      type: 'signal',
+      description: 'Generated image output',
+      handle: { handleType: 'video', handleId: '0' }
+    },
+    {
+      id: 'message',
+      description: 'Generation complete notification',
+      handle: { handleType: 'message', handleId: '1' },
+      messages: [{ schema: Bang, description: 'Sent when image generation completes' }]
+    }
+  ],
+  tags: ['ai', 'image', 'generation', 'gemini', 'visual']
+};

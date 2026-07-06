@@ -1,5 +1,5 @@
 import { stripJavaScriptComments, stripJavaScriptStrings } from '$lib/utils/javascript-comments';
-import type { CookPolicy } from '../CookStateManager';
+import type { CookPolicy } from '$workers/rendering/CookStateManager';
 
 export interface JavaScriptCookDependencies {
   always?: boolean;

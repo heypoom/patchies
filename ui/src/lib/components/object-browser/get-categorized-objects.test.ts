@@ -40,9 +40,18 @@ describe('getCategorizedObjects', () => {
 
     expect(getObjectNamesForCategory('Transforms')).toEqual([
       '-',
+      '!',
+      '!=',
       '*',
       '/',
+      '&&',
       '+',
+      '<',
+      '<=',
+      '==',
+      '>',
+      '>=',
+      '||',
       'clip',
       'expr',
       'filter',

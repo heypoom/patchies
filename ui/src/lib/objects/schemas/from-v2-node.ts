@@ -7,8 +7,14 @@
 
 import { Type } from '@sinclair/typebox';
 import type { ObjectInlet, ObjectOutlet } from '../v2/object-metadata';
-import type { ObjectSchema, InletSchema, OutletSchema, MessageSchema, HandleSpec } from './types';
-import { sym } from './helpers';
+import type {
+  ObjectSchema,
+  InletSchema,
+  OutletSchema,
+  MessageSchema,
+  HandleSpec
+} from '$lib/objects/schemas/types';
+import { sym } from '$lib/objects/schemas/helpers';
 import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 
 /**
@@ -133,7 +139,7 @@ interface V2NodeClass {
  *
  * @example
  * ```ts
- * import { NotchNode } from '$lib/audio/v2/nodes/NotchNode';
+ * import { NotchNode } from '<audio node module>';
  * const schema = schemaFromNode(NotchNode, 'audio');
  * ```
  */

@@ -1,0 +1,1014 @@
+<script lang="ts">
+  import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { onDestroy, onMount } from 'svelte';
+  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
+  import { AudioService } from '$lib/audio/v2/AudioService';
+  import { ObjectService } from '$lib/objects/v2/ObjectService';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { match } from 'ts-pattern';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import {
+    isUnmodifiableType,
+    parseObjectParamFromString,
+    stringifyParamByType,
+    getDecimalPrecision
+  } from '$lib/objects/parse-object-param';
+  import { validateMessageToObject } from '$lib/objects/validate-object-message';
+  import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
+  import { getCombinedMetadata } from '$lib/objects/v2/get-metadata';
+  import { getObjectDescription } from '$lib/components/object-browser/get-categorized-objects';
+  import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+  import { logger } from '$lib/utils/logger';
+  import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+  import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
+  import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
+  import {
+    isAiFeaturesVisible,
+    isObjectBrowserOpen,
+    objectBrowserMode
+  } from '../../stores/ui.store';
+  import { enabledPackIds, togglePack } from '../../stores/extensions.store';
+  import { Search } from '@lucide/svelte/icons';
+  import { formatPresetLocation } from '$lib/presets/preset-utils';
+  import { objectPresetSearchIndex } from '../../stores/object-preset-search.store';
+  import {
+    getObjectAutocompleteQuery,
+    shouldSuppressObjectAutocomplete
+  } from '$lib/search/object-autocomplete-query';
+  import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
+  import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
+  import DisabledObjectSuggestionInline from '$objects/object/DisabledObjectSuggestionInline.svelte';
+  import ObjectSuggestionDropdown from '$objects/object/ObjectSuggestionDropdown.svelte';
+  import { getIconById } from '$lib/components/icons';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { useObjectDataTracker } from '$lib/history';
+  import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+  import { editorFontFamily } from '../../stores/editor.store';
+
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: {
+    id: string;
+    data: { expr: string; name: string; params: unknown[] };
+    selected: boolean;
+  } = $props();
+
+  const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
+
+  const edgesHelper = useEdges();
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  let inputElement = $state<HTMLInputElement>();
+  let nodeElement = $state<HTMLDivElement>();
+  let resultsContainer = $state<HTMLDivElement>();
+  let expr = $state(data.expr || '');
+  let isEditing = $state(!data.expr); // Start in editing mode if no name;
+  let showAutocomplete = $state(false);
+  let selectedSuggestion = $state(0);
+  let originalName = data.expr || ''; // Store original name for escape functionality
+  const isQuickAdd = !data.expr; // True if created via Quick Add (no initial name)
+  let finalNodeId = nodeId; // Tracks the final node ID after potential transformation
+
+  // Undo tracking for object data changes (only for existing nodes)
+  const objectDataTracker = useObjectDataTracker(nodeId, () => ({
+    expr: data.expr,
+    name: data.name,
+    params: data.params
+  }));
+
+  let isAutomated = $state<Record<number, boolean>>({});
+
+  // Track highest precision seen per inlet for stable display width
+  let stickyPrecision = $state<Record<number, number>>({});
+
+  // Track whether a negative value has been seen per inlet (for stable sign width)
+  let stickyNegative = $state<Record<number, boolean>>({});
+
+  // Track object instance version to trigger re-evaluation of outlets
+  let objectInstanceVersion = $state(0);
+
+  let audioService = AudioService.getInstance();
+  let objectService = ObjectService.getInstance();
+  const eventBus = PatchiesEventBus.getInstance();
+  const messageContext = new MessageContext(nodeId);
+
+  // Composable for searching disabled objects
+  const { searchDisabledObject } = useDisabledObjectSuggestion(
+    () => $enabledPackIds,
+    () => $isAiFeaturesVisible
+  );
+
+  // Get object definition for current name (if it exists)
+  const objectMeta = $derived.by(() => {
+    if (!expr || expr.trim() === '') return null;
+
+    return getCombinedMetadata(getObjectNameFromExpr(expr));
+  });
+
+  // Dynamic inlets based on object definition
+  const inlets = $derived.by(() => {
+    void objectInstanceVersion;
+
+    if (!objectMeta) return [];
+
+    const objectInstance = objectService.getObjectById(nodeId);
+
+    if (objectInstance?.getInlets) {
+      return objectInstance.getInlets();
+    }
+
+    return objectMeta.inlets || [];
+  });
+
+  // Visible inlets for rendering handles (excludes hidden inlets)
+  // Preserves original index for param mapping
+  const visibleInlets = $derived.by(() => {
+    return inlets
+      .map((inlet, originalIndex) => ({ inlet, originalIndex }))
+      .filter(({ inlet }) => !inlet.hideInlet);
+  });
+
+  // Update sticky precision and sticky sign when params change (for stable display width)
+  $effect(() => {
+    data.params.forEach((param, index) => {
+      const inlet = inlets[index];
+
+      if (typeof param === 'number') {
+        // Track negative sign stickiness for numeric inlets
+        if (param < 0 && !stickyNegative[index]) {
+          stickyNegative[index] = true;
+        }
+
+        const isFloatLike =
+          inlet?.type === 'float' || (inlet?.type === 'signal' && inlet?.acceptsFloat);
+
+        if (isFloatLike) {
+          const maxPrecision = inlet?.maxPrecision ?? 6;
+          const currentPrecision = getDecimalPrecision(param, maxPrecision);
+          const existing = stickyPrecision[index] ?? 0;
+
+          if (currentPrecision > existing) {
+            stickyPrecision[index] = currentPrecision;
+          }
+        }
+      }
+    });
+  });
+
+  // Sync AudioService when data changes externally (e.g., via undo/redo)
+  const audioSync = useAudioServiceSync(
+    () => ({ name: data.name, params: data.params }),
+    (name, params) => {
+      syncAudioService(name, params);
+      objectInstanceVersion++;
+    }
+  );
+
+  // Dynamic outlets based on object definition
+  // Supports objects with dynamic outlet count via instance getOutlets() method
+  const outlets = $derived.by((): ObjectOutlet[] => {
+    // Depend on objectInstanceVersion to re-evaluate when object is created
+    void objectInstanceVersion;
+
+    if (!objectMeta) return [];
+
+    // Check if the object instance has a getOutlets method for dynamic outlets
+    const objectInstance = objectService.getObjectById(nodeId);
+
+    if (objectInstance?.getOutlets) {
+      return objectInstance.getOutlets();
+    }
+
+    return objectMeta.outlets || [];
+  });
+
+  const filteredSuggestions = $derived.by(() => {
+    if (!isEditing) return [];
+    if (isEditingObjectArguments) return [];
+
+    const query = getObjectAutocompleteQuery(expr);
+
+    if (!query) {
+      return $objectPresetSearchIndex.getDefaultObjectSuggestions();
+    }
+
+    return $objectPresetSearchIndex.searchObjectSuggestions(query);
+  });
+
+  // Find matching disabled objects when autocomplete has no results
+  // Requires at least 3 characters to avoid noisy suggestions
+  const suggestedDisabledObject = $derived.by(() => {
+    if (!isEditing) return null;
+    if (isEditingObjectArguments) return null;
+
+    const query = getObjectAutocompleteQuery(expr);
+    if (!query) return null;
+
+    // Allow short signal operators like +~, *~, etc. but require 3 chars for general queries
+    if (query.length < 3 && !query.endsWith('~')) return null;
+
+    if (filteredSuggestions.length > 0) return null;
+
+    return searchDisabledObject(query);
+  });
+
+  const isEditingObjectArguments = $derived.by(() => {
+    const objectNames = $objectPresetSearchIndex.allSearchableItems
+      .filter((item) => item.type === 'object')
+      .map((item) => item.name);
+
+    return shouldSuppressObjectAutocomplete(expr, objectNames);
+  });
+
+  function enablePackFromSuggestion(packId: string, objectName: string) {
+    togglePack(packId);
+
+    // Set the expression and exit editing mode after pack is enabled
+    setTimeout(() => {
+      expr = objectName;
+      exitEditingMode(true);
+    }, 50);
+  }
+
+  function openPacksBrowser() {
+    $objectBrowserMode = 'packs';
+    $isObjectBrowserOpen = true;
+
+    exitEditingMode(false);
+  }
+
+  function enterEditingMode() {
+    // Capture old data for undo tracking (only for existing nodes, not Quick Add)
+    if (!isQuickAdd) {
+      objectDataTracker.capture();
+    }
+
+    // For objects with dynamic outlets, use the stored expr directly
+    // (their params configure structure, not inlet values)
+    if (hasDynamicOutlets && data.expr) {
+      expr = data.expr;
+    } else {
+      // Transform current name and parameter into editable expr
+      const paramString = data.params
+        .map((value, index) => ({ value, index }))
+        .filter(
+          ({ value, index }) =>
+            (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) &&
+            !inlets[index]?.hideTextParam &&
+            (value != null || !!inlets[index]?.formatter)
+        )
+        .map(({ value, index }) => stringifyParamByType(inlets[index], value, index))
+        .join(' ');
+
+      expr = `${data.name} ${paramString}`.trim();
+    }
+
+    isEditing = true;
+    originalName = expr;
+    showAutocomplete = true;
+
+    // Focus input on next tick
+    setTimeout(() => inputElement?.focus(), 10);
+  }
+
+  function exitEditingMode(save: boolean = true) {
+    isEditing = false;
+    showAutocomplete = false;
+    stickyPrecision = {};
+    stickyNegative = {};
+
+    if (!save) {
+      // Restore original name on escape
+      expr = originalName;
+      objectDataTracker.clear();
+
+      // If the original name was empty (Quick Add that was never confirmed), remove without history
+      if (!originalName.trim()) {
+        eventBus.dispatch({ type: 'quickAddCancelled', nodeId });
+        return;
+      }
+    }
+
+    if (save) {
+      if (expr.trim()) {
+        handleNameChange();
+
+        // For Quick Add nodes, emit event so FlowCanvasInner can record to history
+        // We use setTimeout to ensure the node transformation (if any) is complete
+        if (isQuickAdd) {
+          setTimeout(() => {
+            eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId });
+          }, 0);
+        } else {
+          // For existing nodes, commit undo tracking after data is updated
+          setTimeout(() => objectDataTracker.commitIfChanged(), 0);
+        }
+      } else {
+        // If trying to save with empty name, delete the node
+        deleteElements({ nodes: [{ id: nodeId }] });
+      }
+    }
+
+    // Restore focus to the node element after editing
+    setTimeout(() => nodeElement?.focus(), 0);
+  }
+
+  function updateParamByIndex(index: number, value: unknown) {
+    const nextParams = [...data.params];
+    nextParams[index] = value;
+    updateNodeData(nodeId, { params: nextParams });
+
+    isAutomated = { ...isAutomated, [index]: false };
+  }
+
+  const handleObjectMessage: MessageCallbackFn = (message, meta) => {
+    if (!objectMeta || meta?.inlet === undefined) return;
+
+    const inlet = inlets[meta.inlet];
+    if (!inlet) return;
+
+    const isAudioObject = hasSignalPorts(objectMeta);
+
+    // Validate message types against inlet specification
+    if (!validateMessageToObject(message, inlet)) {
+      // We already do this in `ObjectService.dispatchMessage` for text objects.
+      if (isAudioObject) {
+        logger.warn(
+          `invalid message type for audio object "${data.name}" at inlet "${inlet.name}": expected "${inlet.type}"`,
+          { message, spec: inlet }
+        );
+      }
+
+      return;
+    }
+
+    const isScheduled = isScheduledMessage(message);
+    const isSetImmediate = isScheduled && message.type === 'set' && message.time === undefined;
+
+    const isBang =
+      typeof message === 'object' &&
+      message !== null &&
+      'type' in message &&
+      message.type === 'bang';
+
+    const isAcceptsFloatSignal = inlet.type === 'signal' && inlet.acceptsFloat;
+    const shouldStoreDisplayValue = match([data.name, inlet.type])
+      .with(['pack', 'any'], () => false)
+      .otherwise(() => true);
+
+    if (
+      (!isUnmodifiableType(inlet.type) || isAcceptsFloatSignal) &&
+      !isScheduled &&
+      !isBang &&
+      shouldStoreDisplayValue
+    ) {
+      // Do not update parameter if it is a unmodifiable type or a scheduled message.
+      // For typed inlets with message schemas (e.g., string inlet that also accepts bang/stop),
+      // only update the displayed param when the value matches the base type.
+      const hasMessages = !!inlet.messages?.length;
+      const matchesBaseType =
+        !hasMessages ||
+        (inlet.type === 'string' && typeof message === 'string') ||
+        (inlet.type === 'float' && typeof message === 'number') ||
+        (inlet.type === 'int' && typeof message === 'number') ||
+        (inlet.type === 'bool' && typeof message === 'boolean') ||
+        (isAcceptsFloatSignal && typeof message === 'number') ||
+        !inlet.type;
+
+      if (matchesBaseType) {
+        // For audio objects, suppress the audio sync since the message is already
+        // being forwarded to the worklet directly via audioService.send below.
+        if (isAudioObject) audioSync.suppress();
+
+        updateParamByIndex(meta.inlet, message);
+      }
+    } else if (isSetImmediate) {
+      // Update parameters for a simple `set` message.
+      if (isAudioObject) audioSync.suppress();
+
+      updateParamByIndex(meta.inlet, message.value);
+    } else if (isScheduled) {
+      // Mark parameter as being automated.
+      isAutomated = { ...isAutomated, [meta.inlet]: true };
+    }
+
+    // Route audio object messages to audio service
+    if (inlet.name && isAudioObject) {
+      audioService.send(nodeId, inlet.name, message);
+      return;
+    }
+  };
+
+  function handleNameChange() {
+    if (tryCreatePreset()) return;
+    if (tryTransformToVisualNode()) return;
+    if (tryCreateAudioObject()) return;
+
+    tryCreatePlainObject();
+  }
+
+  function getNameAndParams() {
+    const parts = expr.trim().split(' ');
+    const name = parts[0]?.toLowerCase();
+    const rawParams = parts.slice(1);
+
+    return {
+      name,
+      rawParams,
+      params: parseObjectParamFromString(name, rawParams)
+    };
+  }
+
+  function tryCreatePlainObject() {
+    const { name, params, rawParams } = getNameAndParams();
+
+    updateNodeData(nodeId, { expr, name, params });
+
+    if (objectService.isV2ObjectType(name)) {
+      objectService.removeObjectById(nodeId);
+
+      objectService.createObject(nodeId, name, messageContext, params, rawParams).then((object) => {
+        syncObjectParamsFromInstance(object);
+        objectInstanceVersion++;
+        updateNodeInternals(nodeId);
+      });
+    }
+  }
+
+  function syncObjectParamsFromInstance(object: TextObjectV2 | null): void {
+    const objectParams = object?.context.getParams() ?? [];
+
+    const hasParamChanges =
+      objectParams.length !== data.params.length ||
+      objectParams.some((param, index) => !Object.is(param, data.params[index]));
+
+    if (hasParamChanges) {
+      updateNodeData(nodeId, { params: objectParams });
+    }
+  }
+
+  function tryCreatePreset(): boolean {
+    if (!expr.trim()) return false;
+
+    // Check if the expression exactly matches a preset name
+    const flatPreset = $objectPresetSearchIndex.getPresetByName(expr.trim());
+
+    if (!flatPreset) {
+      return false; // Not a preset
+    }
+
+    // Transform to the preset's node type with its data
+    changeNode(flatPreset.preset.type, flatPreset.preset.data as Record<string, unknown>);
+    return true;
+  }
+
+  function syncAudioService(name: string, params: unknown[]) {
+    // Suppress the useAudioServiceSync effect — this direct call already handles recreation.
+    // Without this, the $effect would detect the params change and trigger a second recreation,
+    // causing a race between two async createNode calls (zombie processor leak).
+    audioSync.suppress();
+    audioService.removeNodeById(nodeId);
+    audioService.createNode(nodeId, name, params);
+    audioService.updateEdges(getEdges());
+  }
+
+  function tryCreateAudioObject() {
+    if (!expr.trim()) return false;
+
+    const { name, params } = getNameAndParams();
+    updateNodeData(nodeId, { expr, name, params });
+
+    if (!getAudioObjectNames().includes(name)) return false;
+
+    syncAudioService(name, params);
+    objectInstanceVersion++;
+
+    return true;
+  }
+
+  const changeNode = (type: string, data: Record<string, unknown>) => {
+    const nodeNumber = parseInt(nodeId.replace('object-', ''));
+    const nextId = `${type}-${nodeNumber}`;
+
+    updateNode(nodeId, { id: nextId, type, data });
+
+    edgesHelper.update((edges) =>
+      edges.map((edge) => {
+        if (edge.source === nodeId) return { ...edge, source: nextId };
+        if (edge.target === nodeId) return { ...edge, target: nextId };
+
+        return edge;
+      })
+    );
+
+    updateNodeInternals(nextId);
+
+    // Track the final node ID for Quick Add history recording
+    finalNodeId = nextId;
+  };
+
+  function tryTransformToVisualNode() {
+    const result = ObjectShorthandRegistry.getInstance().tryTransform(expr);
+
+    if (result) {
+      changeNode(result.nodeType, result.data);
+      return true;
+    }
+
+    return false;
+  }
+
+  function handleInput() {
+    if (isEditing) {
+      // Keep autocomplete visible - template handles showing suggestions or disabled object hint
+      showAutocomplete = true;
+      selectedSuggestion = 0;
+    }
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (!isEditing) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      exitEditingMode(false);
+      return;
+    }
+
+    if (!showAutocomplete) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        exitEditingMode(true);
+      }
+      return;
+    }
+
+    match(event.key)
+      .with('ArrowDown', () => {
+        event.preventDefault();
+        selectedSuggestion = Math.min(selectedSuggestion + 1, filteredSuggestions.length - 1);
+        scrollToSelectedItem();
+      })
+      .with('ArrowUp', () => {
+        event.preventDefault();
+        selectedSuggestion = Math.max(selectedSuggestion - 1, 0);
+        scrollToSelectedItem();
+      })
+      .with('Enter', () => {
+        event.preventDefault();
+        if (filteredSuggestions[selectedSuggestion]) {
+          expr = filteredSuggestions[selectedSuggestion].name;
+          showAutocomplete = false;
+        }
+        exitEditingMode(true);
+      })
+      .with('Tab', () => {
+        event.preventDefault();
+
+        if (filteredSuggestions[selectedSuggestion]) {
+          expr = filteredSuggestions[selectedSuggestion].name;
+          showAutocomplete = false;
+        }
+      })
+      .with('Escape', () => {
+        event.preventDefault();
+        exitEditingMode(false);
+      });
+  }
+
+  function selectSuggestion(suggestion: {
+    name: string;
+    type: 'object' | 'preset';
+    priority: 'normal' | 'low';
+    description?: string;
+  }) {
+    expr = suggestion.name;
+    showAutocomplete = false;
+    exitEditingMode(true);
+
+    // Try transformation after setting the name
+    setTimeout(() => tryTransformToVisualNode(), 0);
+  }
+
+  function scrollToSelectedItem() {
+    if (!resultsContainer) return;
+
+    const selectedElement = resultsContainer.children[selectedSuggestion] as HTMLElement;
+    if (!selectedElement) return;
+
+    const containerRect = resultsContainer.getBoundingClientRect();
+    const elementRect = selectedElement.getBoundingClientRect();
+
+    // Check if element is below the visible area
+    if (elementRect.bottom > containerRect.bottom) {
+      selectedElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    }
+    // Check if element is above the visible area
+    else if (elementRect.top < containerRect.top) {
+      selectedElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  }
+
+  function handleBlur() {
+    if (!isEditing) return;
+
+    // Delay to allow clicks on suggestions
+    setTimeout(() => {
+      // If input is empty, delete the node
+      if (!expr.trim()) {
+        if (isQuickAdd) {
+          // Quick Add was never confirmed, remove without history
+          eventBus.dispatch({ type: 'quickAddCancelled', nodeId });
+        } else {
+          // Existing node being deleted, record in history
+          deleteElements({ nodes: [{ id: nodeId }] });
+        }
+      } else {
+        exitEditingMode(true);
+      }
+    }, 200);
+  }
+
+  function handleDoubleClick() {
+    if (!isEditing) {
+      enterEditingMode();
+    }
+  }
+
+  const containerClass = $derived(
+    selected
+      ? 'border-zinc-400 bg-zinc-800 shadow-glow-md'
+      : 'border-zinc-700 bg-zinc-900 hover:shadow-glow-sm'
+  );
+
+  onMount(() => {
+    if (isEditing) {
+      setTimeout(() => {
+        inputElement?.focus();
+        showAutocomplete = true;
+      }, 10);
+    }
+
+    if (getAudioObjectNames().includes(data.name)) {
+      syncAudioService(data.name, data.params);
+      objectInstanceVersion++;
+    }
+
+    // Create V2 text object if applicable
+    if (objectService.isV2ObjectType(data.name)) {
+      // Extract raw params from expr for V2 objects
+      const rawParams = (data.expr || '').trim().split(' ').slice(1);
+
+      // Use saved data.params if available (may have been updated via messages),
+      // otherwise fall back to parsing from expr.
+      // Only use saved params if they match expected inlet count to avoid type mismatches.
+      const expectedParams = parseObjectParamFromString(data.name, rawParams);
+
+      const parsedParams =
+        data.params && data.params.length === expectedParams.length ? data.params : expectedParams;
+
+      objectService
+        .createObject(nodeId, data.name, messageContext, parsedParams, rawParams)
+        .then((object) => {
+          syncObjectParamsFromInstance(object);
+
+          // Trigger re-evaluation of outlets after object is created
+          objectInstanceVersion++;
+
+          updateNodeInternals(nodeId);
+        });
+    }
+
+    messageContext.queue.addCallback(handleObjectMessage);
+
+    eventBus.addEventListener('objectParamsChanged', handleObjectParamsChanged);
+  });
+
+  onDestroy(() => {
+    audioService.removeNodeById(nodeId);
+    objectService.removeObjectById(nodeId);
+
+    eventBus.removeEventListener('objectParamsChanged', handleObjectParamsChanged);
+  });
+
+  /** Handle params changed from within an object (e.g., setStore) */
+  function handleObjectParamsChanged(event: { nodeId: string; params: unknown[] }) {
+    if (event.nodeId !== nodeId) return;
+
+    updateNodeData(nodeId, { params: event.params });
+  }
+
+  // Calculate minimum width based on port count (inlets or outlets, whichever is larger)
+  const minWidthStyle = $derived.by(() => {
+    const visibleInlets = inlets.filter((i) => !i.hideInlet).length;
+    const maxPorts = Math.max(visibleInlets, outlets.length);
+    if (maxPorts <= 2) return '';
+
+    // ~20px per port to ensure handles don't overlap
+    const minWidth = maxPorts * 20;
+
+    return `min-width: ${minWidth}px`;
+  });
+
+  // Check if this object has dynamic outlets (needs to show raw params instead of parsed)
+  const hasDynamicOutlets = $derived.by(() => {
+    void objectInstanceVersion;
+    const objectInstance = objectService.getObjectById(nodeId);
+    return !!objectInstance?.getOutlets;
+  });
+
+  // Get raw params from expr for display (used for objects with dynamic outlets)
+  const rawParamsFromExpr = $derived.by(() => {
+    const parts = (data.expr || '').trim().split(' ');
+    return parts.slice(1).join(' ');
+  });
+
+  const getInletTypeHoverClass = (inletIndex: number) => {
+    const inlet = inlets[inletIndex];
+    const type = inlet?.type;
+
+    if (isAutomated[inletIndex]) {
+      return 'hover:text-pink-500 cursor-pointer hover:underline';
+    }
+
+    if (type === 'signal' && inlet?.acceptsFloat) {
+      return 'hover:text-yellow-500 cursor-pointer hover:underline';
+    }
+
+    return match(type)
+      .with('float', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
+      .with('int', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
+      .with('string', () => 'hover:text-blue-500 cursor-pointer hover:underline')
+      .with('bool', () => 'hover:text-violet-500 cursor-pointer hover:underline')
+      .otherwise(() => 'hover:text-zinc-400');
+  };
+
+  const getInletHint = (inletIndex: number) => {
+    const inlet = inlets[inletIndex];
+    if (!inlet) return 'unknown inlet';
+
+    if (inlet.type === 'string' && inlet.options) {
+      return `${inlet.name} (${inlet.options.join(', ')})`;
+    }
+
+    return `${inlet.name} (${inlet.type})`;
+  };
+
+  const getShortInletName = (inletIndex: number) => inlets[inletIndex]?.name?.slice(0, 4) || 'auto';
+
+  const getPortType = (port: ObjectInlet | ObjectOutlet) =>
+    match(port.type)
+      .with('signal', () => 'audio' as const)
+      .with(ANALYSIS_KEY, () => ANALYSIS_KEY)
+      .otherwise(() => 'message' as const);
+
+  const selectedDescription = $derived.by(() => {
+    const current = filteredSuggestions[selectedSuggestion];
+    if (!current) return null;
+
+    if (current.type === 'preset') {
+      const flatPreset = $objectPresetSearchIndex.getPresetByName(current.name);
+      if (!flatPreset) return null;
+
+      const { preset } = flatPreset;
+      const desc = preset.description || `using ${preset.type}`;
+      const location = formatPresetLocation(flatPreset);
+
+      return `${location ? `${location} > ` : ''}${current.name}: ${desc}`;
+    }
+
+    if (current.type === 'object') {
+      // Use shorthand description if available (from registry)
+      if (current.description) {
+        return current.description;
+      }
+
+      const metadata = getCombinedMetadata(current.name);
+
+      if (metadata) {
+        return metadata.description ?? null;
+      }
+
+      // Fall back to schema/fallback descriptions
+      return getObjectDescription(current.name);
+    }
+
+    return null;
+  });
+
+  // Get dynamic icon for audio nodes that support it (e.g., oscillator waveform icons)
+  const dynamicIconComponent = $derived.by(() => {
+    // Re-evaluate when params change or when audio node is created
+    void data.params;
+    void objectInstanceVersion;
+
+    const audioNode = audioService.getNodeById(nodeId);
+    if (!audioNode?.getIcon) return null;
+
+    const iconId = audioNode.getIcon();
+    if (!iconId) return null;
+
+    return getIconById(iconId);
+  });
+
+  // Get the param index that the icon represents (to hide it from display)
+  const iconParamIndex = $derived.by(() => {
+    void data.params;
+    void objectInstanceVersion;
+
+    const audioNode = audioService.getNodeById(nodeId);
+    return audioNode?.getIconParamIndex?.() ?? null;
+  });
+</script>
+
+<div class="relative" style:--patchies-object-node-font-family={$editorFontFamily}>
+  <div class="group relative">
+    <div class="flex flex-col gap-2">
+      <div class="relative">
+        <!-- Dynamic inlets (excludes hidden inlets) -->
+        {#if visibleInlets.length > 0}
+          {#each visibleInlets as { inlet, originalIndex }, visibleIndex (originalIndex)}
+            <StandardHandle
+              port="inlet"
+              type={getPortType(inlet)}
+              id={originalIndex}
+              title={inlet.name || `Inlet ${originalIndex}`}
+              total={visibleInlets.length}
+              index={visibleIndex}
+              class="top-0"
+              {nodeId}
+              isAudioParam={inlet.isAudioParam}
+              acceptsFloat={inlet.acceptsFloat}
+              isHot={inlet.hot}
+            />
+          {/each}
+        {:else if !objectMeta}
+          <!-- Fallback generic inlet for objects without definitions -->
+          <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+        {/if}
+
+        <div class="relative">
+          {#if isEditing}
+            <!-- Editing state: show input field -->
+            <div class={['w-fit rounded-lg border', containerClass]} style={minWidthStyle}>
+              <input
+                bind:this={inputElement}
+                bind:value={expr}
+                oninput={handleInput}
+                onblur={handleBlur}
+                onkeydown={handleKeydown}
+                placeholder="<name>"
+                class="object-node-font nodrag bg-transparent px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 outline-none"
+              />
+            </div>
+
+            <!-- Autocomplete dropdown -->
+            {#if showAutocomplete && (filteredSuggestions.length > 0 || suggestedDisabledObject)}
+              <div class="nopan nodrag nowheel absolute top-full left-0 z-50 flex flex-col">
+                {#if filteredSuggestions.length > 0}
+                  <ObjectSuggestionDropdown
+                    suggestions={filteredSuggestions}
+                    bind:selectedIndex={selectedSuggestion}
+                    presetLookup={$objectPresetSearchIndex.presetLookup}
+                    description={selectedDescription}
+                    onSelect={selectSuggestion}
+                    bind:resultsContainerRef={resultsContainer}
+                  />
+                {:else if suggestedDisabledObject}
+                  <DisabledObjectSuggestionInline
+                    name={suggestedDisabledObject.name}
+                    packName={suggestedDisabledObject.packName}
+                    packIcon={suggestedDisabledObject.packIcon}
+                    onBrowsePacks={openPacksBrowser}
+                    onEnableAndAdd={() => {
+                      enablePackFromSuggestion(
+                        suggestedDisabledObject.packId,
+                        suggestedDisabledObject.name
+                      );
+                    }}
+                  />
+                {/if}
+
+                <!-- Browse objects link -->
+                <button
+                  type="button"
+                  class="object-node-font mt-1.5 flex w-fit cursor-pointer items-center gap-1 text-left text-[8px] text-zinc-500 underline-offset-2 hover:text-blue-300 hover:underline"
+                  onclick={() => ($isObjectBrowserOpen = true)}
+                  title="Discover objects by categories (Ctrl+O)"
+                >
+                  <Search class="h-2.5 w-2.5" />
+                  Browse objects
+                </button>
+              </div>
+            {/if}
+          {:else}
+            <!-- Locked state: show read-only text -->
+            <div
+              bind:this={nodeElement}
+              class={['w-full cursor-pointer rounded-lg border px-3 py-2', containerClass]}
+              style={minWidthStyle}
+              ondblclick={handleDoubleClick}
+              role="button"
+              tabindex="0"
+              onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
+            >
+              <div class="object-node-font flex items-center gap-1.5 text-xs">
+                <span class={[!getCombinedMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
+                  >{data.name}</span
+                >
+
+                {#if hasDynamicOutlets && rawParamsFromExpr}
+                  <!-- For objects with dynamic outlets, show the raw params from expr -->
+                  <span class="text-zinc-400">{rawParamsFromExpr}</span>
+                {:else}
+                  {#each data.params as param, index (index)}
+                    {#if index === iconParamIndex && dynamicIconComponent}
+                      <!-- Render icon in place of the param text -->
+                      {@const IconComponent = dynamicIconComponent}
+                      <Tooltip.Root>
+                        <Tooltip.Trigger class="flex">
+                          <div
+                            class={[
+                              'inline-flex cursor-pointer justify-end text-zinc-400 underline-offset-2',
+                              getInletTypeHoverClass(index)
+                            ]}
+                          >
+                            <IconComponent class="h-3.5 w-3.5" />
+                          </div>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>{getInletHint(index)}</p>
+                          {#if inlets[index]?.description}
+                            <p class="text-xs text-zinc-500">{inlets[index].description}</p>
+                          {/if}
+                        </Tooltip.Content>
+                      </Tooltip.Root>
+                    {:else if (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) && !inlets[index]?.hideTextParam && (param != null || inlets[index]?.formatter) && (param !== '' || inlets[index]?.formatter)}
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          <span
+                            class={[
+                              'text-zinc-400 underline-offset-2',
+                              getInletTypeHoverClass(index)
+                            ]}
+                          >
+                            {#if isAutomated[index]}
+                              {getShortInletName(index)}
+                            {:else}
+                              {stringifyParamByType(inlets[index], param, index, {
+                                stickyPrecision: stickyPrecision[index],
+                                stickyNegative: stickyNegative[index]
+                              })}
+                            {/if}
+                          </span>
+                        </Tooltip.Trigger>
+
+                        <Tooltip.Content>
+                          <p>{getInletHint(index)}</p>
+
+                          {#if inlets[index]?.description}
+                            <p class="text-xs text-zinc-500">{inlets[index].description}</p>
+                          {/if}
+
+                          {#if isAutomated[index]}
+                            <p class="text-xs text-pink-500">inlet is automated</p>
+                          {/if}
+                        </Tooltip.Content>
+                      </Tooltip.Root>
+                    {/if}
+                  {/each}
+                {/if}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Dynamic outlets -->
+        {#if outlets}
+          {#each outlets as outlet, index (index)}
+            <StandardHandle
+              port="outlet"
+              type={getPortType(outlet)}
+              id={index}
+              title={outlet.name || `Outlet ${index}`}
+              total={outlets.length}
+              {index}
+              class="bottom-0"
+              {nodeId}
+            />
+          {/each}
+        {/if}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .object-node-font {
+    font-family: var(--patchies-object-node-font-family, var(--font-mono));
+  }
+</style>

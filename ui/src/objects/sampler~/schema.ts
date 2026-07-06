@@ -1,0 +1,196 @@
+import { Type } from '@sinclair/typebox';
+
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { schema } from '$lib/objects/schemas/types';
+import { msg, sym } from '$lib/objects/schemas/helpers';
+import { Stop, LoadBySrc, NoteOn, NoteOff, messages } from '$lib/objects/schemas/common';
+
+// Sampler-specific message schemas
+const BangTrigger = msg('bang', {
+  time: Type.Optional(Type.Number()),
+  value: Type.Optional(Type.Number({ minimum: 0 })),
+  offset: Type.Optional(Type.Number()),
+  duration: Type.Optional(Type.Number())
+});
+
+const Record = sym('record');
+const End = sym('end');
+const Loop = sym('loop');
+const LoopOn = sym('loopOn');
+const LoopOff = sym('loopOff');
+
+const LoopWithPoints = msg('loop', {
+  start: Type.Number(),
+  end: Type.Number()
+});
+
+const LoopWithOptionalPoints = msg('loop', {
+  start: Type.Optional(Type.Number()),
+  end: Type.Optional(Type.Number())
+});
+
+const LoopOnWithPoints = msg('loopOn', {
+  start: Type.Number(),
+  end: Type.Number()
+});
+
+const LoopOnWithOptionalPoints = msg('loopOn', {
+  start: Type.Optional(Type.Number()),
+  end: Type.Optional(Type.Number())
+});
+
+const SetStart = msg('setStart', { value: Type.Number() });
+const SetEnd = msg('setEnd', { value: Type.Number() });
+const SetGain = msg('setGain', { value: Type.Number({ minimum: 0 }) });
+const SetPlaybackRate = msg('setPlaybackRate', { value: Type.Number() });
+const SetDetune = msg('setDetune', { value: Type.Number() });
+
+const SetNoteOffMode = msg('setNoteOffMode', {
+  value: Type.String({ enum: ['one-shot', 'held'] })
+});
+
+const Download = msg('download', { name: Type.Optional(Type.String()) });
+
+// Float32Array for direct buffer setting (from uiua node, etc.)
+const Float32ArraySamples = Type.Unsafe<Float32Array>({ type: 'Float32Array' });
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const samplerMessages = {
+  ...messages,
+  bang: schema(BangTrigger),
+  record: schema(Record),
+  end: schema(End),
+  loop: schema(Loop),
+  loopWithPoints: schema(LoopWithPoints),
+  loopWithOptionalPoints: schema(LoopWithOptionalPoints),
+  loopOn: schema(LoopOn),
+  loopOnWithPoints: schema(LoopOnWithPoints),
+  loopOnWithOptionalPoints: schema(LoopOnWithOptionalPoints),
+  loopOff: schema(LoopOff),
+  setStart: schema(SetStart),
+  setEnd: schema(SetEnd),
+  setGain: schema(SetGain),
+  setPlaybackRate: schema(SetPlaybackRate),
+  setDetune: schema(SetDetune),
+  setNoteOffMode: schema(SetNoteOffMode),
+  download: schema(Download),
+  load: schema(LoadBySrc),
+  float32Array: schema(Float32ArraySamples)
+};
+
+/**
+ * Schema for the sampler~ (audio sampler) object.
+ */
+export const samplerSchema: ObjectSchema = {
+  type: 'sampler~',
+  category: 'audio',
+  description: 'Record and playback audio with loop points and pitch control',
+  inlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio input for recording',
+      handle: { handleType: 'audio' }
+    },
+    {
+      id: 'message',
+      description: 'Control messages',
+      handle: { handleType: 'message' },
+      messages: [
+        {
+          schema: BangTrigger,
+          description: 'Trigger sample playback with optional time, value, offset, and duration'
+        },
+        {
+          schema: Type.Number({ minimum: 0 }),
+          description: 'Play the sample with gain multiplier (0 = silent, 1 = normal)'
+        },
+        {
+          schema: NoteOn,
+          description: 'Play the sample as pitched MIDI note (60 = original pitch, velocity = gain)'
+        },
+        {
+          schema: NoteOff,
+          description: 'Stop active sampler voices when Note Off mode is held'
+        },
+        {
+          schema: Stop,
+          description: 'Stop playback'
+        },
+        {
+          schema: Record,
+          description: 'Start recording audio from connected sources'
+        },
+        {
+          schema: End,
+          description: 'Stop recording'
+        },
+        {
+          schema: SetNoteOffMode,
+          description: 'Set MIDI noteOff behavior to one-shot or held'
+        },
+        {
+          schema: Loop,
+          description: 'Toggle loop and start loop playback'
+        },
+        {
+          schema: LoopWithPoints,
+          description: 'Set loop points (in seconds) and play'
+        },
+        {
+          schema: LoopOn,
+          description: 'Enable loop mode'
+        },
+        {
+          schema: LoopOnWithPoints,
+          description: 'Enable loop with specific points'
+        },
+        {
+          schema: LoopOff,
+          description: 'Disable loop mode'
+        },
+        {
+          schema: SetStart,
+          description: 'Set playback start position (seconds)'
+        },
+        {
+          schema: SetEnd,
+          description: 'Set playback end position (seconds)'
+        },
+        {
+          schema: SetGain,
+          description: 'Set built-in output gain (1.0 = normal, 2.0 = double)'
+        },
+        {
+          schema: SetPlaybackRate,
+          description: 'Set playback speed (1.0 = normal, 2.0 = double)'
+        },
+        {
+          schema: SetDetune,
+          description: 'Set pitch shift in cents (1200 = one octave)'
+        },
+        {
+          schema: Download,
+          description: 'Download buffer as WAV file. Optional name field sets filename.'
+        },
+        {
+          schema: LoadBySrc,
+          description: 'Load audio from a VFS path or URL'
+        },
+        {
+          schema: Float32ArraySamples,
+          description: 'Set buffer directly from Float32Array audio samples'
+        }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
+    }
+  ],
+  tags: ['audio', 'sampler', 'recording', 'loop', 'pitch']
+};

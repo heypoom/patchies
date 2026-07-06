@@ -56,7 +56,7 @@
     updateColumnName,
     type SheetCell,
     type SheetData
-  } from './sheet-utils';
+  } from '$lib/sheet/sheet-utils';
 
   let {
     id: nodeId,

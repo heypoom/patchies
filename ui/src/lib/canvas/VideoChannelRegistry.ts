@@ -1,4 +1,4 @@
-import { VideoChannelMembership, type VideoChannelRole } from '$lib/video/VideoChannelMembership';
+import { VideoChannelMembership, type VideoChannelRole } from '$lib/canvas/VideoChannelMembership';
 
 export type VideoChannelRegistryListener = () => void;
 

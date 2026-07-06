@@ -1,6 +1,6 @@
 import type { Message } from '$lib/messages/MessageSystem';
-import type { ObjectContext } from '../ObjectContext';
-import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
+import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 /**
  * Message metadata passed to onMessage handlers.

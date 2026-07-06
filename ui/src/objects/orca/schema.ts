@@ -1,0 +1,76 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { schema } from '$lib/objects/schemas/types';
+import { msg, sym } from '$lib/objects/schemas/helpers';
+import { Bang, Collapse, Expand, messages, Play, Set } from '$lib/objects/schemas/common';
+
+// Orca-specific message schemas
+const Stop = sym('stop');
+const SetBpm = msg('setBpm', { value: Type.Number() });
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const orcaMessages = {
+  ...messages,
+  setBpm: schema(SetBpm)
+};
+
+/**
+ * Schema for the orca (Orca livecoding sequencer) object.
+ */
+export const orcaSchema: ObjectSchema = {
+  type: 'orca',
+  category: 'audio',
+  description: 'Orca livecoding sequencer - esoteric programming language for procedural sequences',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Control messages',
+      handle: { handleType: 'message' },
+      messages: [
+        { schema: Set, description: 'Set the grid content' },
+        { schema: Bang, description: 'Toggle play/pause' },
+        { schema: Play, description: 'Start playback' },
+        { schema: Stop, description: 'Stop playback' },
+        { schema: SetBpm, description: 'Set tempo in BPM' },
+        { schema: Expand, description: 'Open the expanded editor' },
+        { schema: Collapse, description: 'Close the expanded editor' }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'message',
+      description: 'MIDI messages output',
+      handle: { handleType: 'message' },
+      messages: [
+        {
+          schema: Type.Object({
+            type: Type.Literal('noteOn'),
+            note: Type.Number(),
+            velocity: Type.Number(),
+            channel: Type.Number()
+          }),
+          description: 'MIDI note on message'
+        },
+        {
+          schema: Type.Object({
+            type: Type.Literal('noteOff'),
+            note: Type.Number(),
+            channel: Type.Number()
+          }),
+          description: 'MIDI note off message'
+        },
+        {
+          schema: Type.Object({
+            type: Type.Literal('controlChange'),
+            control: Type.Number(),
+            value: Type.Number(),
+            channel: Type.Number()
+          }),
+          description: 'MIDI control change message'
+        }
+      ]
+    }
+  ],
+  tags: ['audio', 'sequencer', 'livecoding', 'midi', 'esoteric']
+};

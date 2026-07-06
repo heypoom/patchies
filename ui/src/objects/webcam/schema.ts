@@ -1,0 +1,55 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { schema } from '$lib/objects/schemas/types';
+import { msg } from '$lib/objects/schemas/helpers';
+import { Bang, Pause, messages } from '$lib/objects/schemas/common';
+
+// Webcam-specific message schemas
+const Size = msg('size', {
+  width: Type.Number(),
+  height: Type.Number()
+});
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const webcamMessages = {
+  ...messages,
+  size: schema(Size)
+};
+
+/**
+ * Schema for the webcam (camera capture) object.
+ */
+export const webcamSchema: ObjectSchema = {
+  type: 'webcam',
+  category: 'video',
+  description: 'Capture live video from your webcam/camera',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Control messages',
+      handle: { handleType: 'message' },
+      messages: [
+        {
+          schema: Bang,
+          description: 'Start webcam capture'
+        },
+        {
+          schema: Pause,
+          description: 'Toggle pause/resume capture'
+        },
+        {
+          schema: Size,
+          description: 'Set capture resolution'
+        }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'video',
+      description: 'Video output',
+      handle: { handleType: 'video', handleId: '0' }
+    }
+  ],
+  tags: ['camera', 'capture', 'live', 'texture', 'visual']
+};

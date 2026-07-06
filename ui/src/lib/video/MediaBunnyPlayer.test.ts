@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { MediaBunnyPlayer } from './MediaBunnyPlayer';
+import { MediaBunnyPlayer } from '$lib/video/MediaBunnyPlayer';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

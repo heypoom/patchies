@@ -1,0 +1,706 @@
+<script lang="ts">
+  import {
+    Code,
+    Loader,
+    Package,
+    Pause,
+    Play,
+    Expand,
+    Settings as SettingsIcon,
+    Terminal,
+    X
+  } from '@lucide/svelte/icons';
+  import CodeBlockOverflowMenu from '$objects/code/CodeBlockOverflowMenu.svelte';
+  import { useSvelteFlow } from '@xyflow/svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import CodeEditor from '$lib/components/CodeEditor.svelte';
+  import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type {
+    ConsoleOutputEvent,
+    NodePrimaryButtonUpdateEvent,
+    PrimaryButton
+  } from '$lib/eventbus/events';
+  import type { SupportedLanguage } from '$lib/codemirror/types';
+  import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import type { SettingsSchema } from '$lib/settings';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay,
+    openCodeEditorOverlay,
+    openCodeEditorSidebar,
+    syncActiveCodeEditorTargetLineErrors,
+    syncActiveCodeEditorTargetSettings
+  } from '../../stores/code-editor-layout.store';
+  import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
+  import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
+
+  let contentContainer: HTMLDivElement | null = null;
+  let inlineConsoleRef: VirtualConsole | null = $state(null);
+  let overlayConsoleRef: VirtualConsole | null = $state(null);
+
+  // Props from parent component
+  let {
+    id: nodeId,
+    data,
+    selected,
+
+    // Execution handlers
+    onExecute,
+    onCleanup: onCleanupHandler,
+    onCodeChange,
+
+    // State from parent
+    isRunning,
+    showRunningBorder = true,
+    showRunningIndicator = true,
+    isMessageCallbackActive,
+    isTimerCallbackActive,
+
+    // Library support (js only)
+    supportsLibraries = false,
+
+    // Custom label
+    nodeLabel = 'js',
+
+    // Language for code editor
+    language = 'javascript',
+
+    // Placeholder text for code editor
+    editorPlaceholder = 'Write your code here...',
+
+    // Node type for completions
+    nodeType = 'js',
+
+    // Video inlet count (optional, for worker nodes)
+    videoInletCount = 0,
+
+    // Settings panel (optional, for JSRunner-enabled nodes)
+    settingsSchema = undefined,
+    settingsValues = {},
+    onSettingsValueChange = undefined,
+    onSettingsRevertAll = undefined
+  }: {
+    id: string;
+    data: {
+      title?: string;
+      code: string;
+      showConsole?: boolean;
+      inletCount?: number;
+      outletCount?: number;
+      libraryName?: string | null;
+      executeCode?: number;
+      consoleHeight?: number;
+      consoleWidth?: number;
+      primaryButton?: PrimaryButton;
+    };
+    selected: boolean;
+    onExecute: () => Promise<void>;
+    onCleanup: () => void;
+    onCodeChange?: (code: string) => void;
+    isRunning: boolean;
+    showRunningBorder?: boolean;
+    showRunningIndicator?: boolean;
+    isMessageCallbackActive: boolean;
+    isTimerCallbackActive: boolean;
+    supportsLibraries?: boolean;
+    nodeLabel?: string;
+    language?: SupportedLanguage;
+    editorPlaceholder?: string;
+    nodeType?: string;
+    videoInletCount?: number;
+    settingsSchema?: SettingsSchema;
+    settingsValues?: Record<string, unknown>;
+    onSettingsValueChange?: (key: string, value: unknown) => void;
+    onSettingsRevertAll?: () => void;
+  } = $props();
+
+  const { updateNodeData } = useSvelteFlow();
+
+  let isLongRunningTaskActive = $derived(isMessageCallbackActive || isTimerCallbackActive);
+  let inletCount = $derived(data.inletCount ?? 1);
+  let outletCount = $derived(data.outletCount ?? 1);
+
+  let showEditor = $state(false);
+  let showSettings = $state(false);
+  let contentWidth = $state(100);
+  let isFlashing = $state(false);
+
+  // Which button is rendered as the primary (rightmost) action.
+  // Source of truth is node.data.primaryButton — derived reactively so undo/redo
+  // and external mutations of node data flow through automatically.
+  // Set via setPrimaryButton('settings'|'code') from user code. 'run' is not
+  // a valid mode here because the entire body is already a giant Run/Stop button.
+  let primaryButton = $derived.by<PrimaryButton>(() => {
+    const v = data.primaryButton;
+    if (v === 'settings' || v === 'run' || v === 'code') return v;
+    return 'code';
+  });
+
+  // Resolved primary — falls back to 'code' if 'settings' is requested but no
+  // schema exists, or if 'run' is requested (not supported in CodeBlockBase).
+  let resolvedPrimary = $derived.by<'code' | 'settings'>(() => {
+    if (primaryButton === 'settings' && settingsSchema && settingsSchema.length > 0) {
+      return 'settings';
+    }
+
+    return 'code';
+  });
+
+  const code = $derived(data.code || '');
+  let previousExecuteCode = $state<number | undefined>(undefined);
+
+  let isCodeEditorDetached = $derived(
+    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
+  );
+
+  const detachedSettings = $derived(
+    settingsSchema && settingsSchema.length > 0
+      ? {
+          schema: settingsSchema,
+          values: settingsValues,
+          onValueChange: (key: string, value: unknown) => onSettingsValueChange?.(key, value),
+          onRevertAll: () => onSettingsRevertAll?.()
+        }
+      : undefined
+  );
+
+  $effect(() => {
+    syncActiveCodeEditorTargetSettings({
+      nodeId,
+      dataKey: 'code',
+      settings: detachedSettings
+    });
+  });
+
+  $effect(() => {
+    syncActiveCodeEditorTargetLineErrors({
+      nodeId,
+      dataKey: 'code',
+      lineErrors
+    });
+  });
+
+  // Track error line numbers for code highlighting
+  let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+  let hasError = $state(false);
+  const eventBus = PatchiesEventBus.getInstance();
+
+  // Listen for console output events to capture lineErrors
+  function handleConsoleOutput(event: ConsoleOutputEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    if (event.messageType === 'error') {
+      hasError = true;
+
+      if (event.lineErrors) {
+        lineErrors = event.lineErrors;
+      }
+    }
+  }
+
+  // Listen for setPrimaryButton() calls from user code. Writes to node data;
+  // the local `primaryButton` is $derived from data and updates automatically.
+  function handlePrimaryButtonUpdate(event: NodePrimaryButtonUpdateEvent) {
+    if (event.nodeId !== nodeId) return;
+    // Defensive whitelist (event bus is loosely typed at runtime).
+    if (
+      event.primaryButton !== 'code' &&
+      event.primaryButton !== 'settings' &&
+      event.primaryButton !== 'run'
+    )
+      return;
+    if (event.primaryButton === primaryButton) return;
+
+    updateNodeData(nodeId, { primaryButton: event.primaryButton });
+  }
+
+  // Watch for executeCode timestamp changes and re-run when it changes
+  $effect(() => {
+    if (data.executeCode && data.executeCode !== previousExecuteCode) {
+      previousExecuteCode = data.executeCode;
+
+      executeCode();
+    }
+  });
+
+  const borderColor = $derived.by(() => {
+    // Flash takes top priority
+    if (isFlashing) return 'border-zinc-300';
+
+    // Error state - show red border when there are errors
+    if (hasError && !data.showConsole) {
+      return selected ? 'border-red-500' : 'border-red-400';
+    }
+
+    // Prioritize showing emerald if there are active timers (stoppable state)
+    if (isLongRunningTaskActive && selected) return 'border-emerald-300';
+    if (isLongRunningTaskActive) return 'border-emerald-500';
+    if (showRunningBorder && isRunning && selected) return 'border-pink-300';
+    if (showRunningBorder && isRunning) return 'border-pink-500';
+    if (selected) return 'border-zinc-400';
+
+    return 'border-zinc-600';
+  });
+
+  const playOrStopIcon = $derived.by(() => {
+    if (supportsLibraries && data.libraryName) return Package;
+
+    // Prioritize showing Pause if there are active timers (so user can stop them)
+    if (isLongRunningTaskActive) return Pause;
+    if (showRunningIndicator && isRunning) return Loader;
+
+    return Play;
+  });
+  const PlayOrStopIcon = $derived(playOrStopIcon);
+
+  onMount(() => {
+    // Listen for console output events to capture lineErrors
+    eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.addEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
+
+    updateContentWidth();
+
+    // Watch for any size changes to the content container
+    const resizeObserver = new ResizeObserver(() => {
+      updateContentWidth();
+    });
+
+    if (contentContainer) {
+      resizeObserver.observe(contentContainer);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  });
+
+  onDestroy(() => {
+    eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.removeEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
+  });
+
+  async function executeCode() {
+    // Clear previous console output and error highlighting
+    clearConsole();
+
+    await onExecute();
+  }
+
+  function updateContentWidth() {
+    if (!contentContainer) return;
+
+    contentWidth = contentContainer.offsetWidth;
+  }
+
+  function toggleInlineEditor() {
+    showEditor = !showEditor;
+
+    if (showEditor) {
+      showSettings = false;
+    }
+  }
+
+  function openInlineEditor() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+
+    showEditor = true;
+    showSettings = false;
+  }
+
+  function openExpandedCodeEditor() {
+    openCodeEditorOverlay({
+      nodeId,
+      dataKey: 'code',
+      language,
+      nodeType,
+      title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+      placeholder: editorPlaceholder,
+      onrun: executeCode,
+      lineErrors,
+      settings: detachedSettings,
+      console: detachedConsole
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
+  function openSidebarCodeEditor() {
+    openCodeEditorSidebar({
+      nodeId,
+      dataKey: 'code',
+      language,
+      nodeType,
+      title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+      placeholder: editorPlaceholder,
+      onrun: executeCode,
+      lineErrors,
+      settings: detachedSettings,
+      console: detachedConsole
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
+  function handleCodeOpen(event?: MouseEvent) {
+    if (supportsLibraries && data.libraryName) {
+      openInlineEditor();
+      return;
+    }
+
+    openEditorLayout({
+      defaultLayout: $defaultEditorLayout,
+      useAlternateLayout: event?.shiftKey ?? false,
+      openInline: openInlineEditor,
+      toggleInline: toggleInlineEditor,
+      openOverlay: openExpandedCodeEditor,
+      openSidebar: openSidebarCodeEditor
+    });
+  }
+
+  function runOrStop() {
+    if (isLongRunningTaskActive) {
+      onCleanupHandler();
+    } else {
+      executeCode();
+    }
+  }
+
+  export function flash() {
+    isFlashing = true;
+    setTimeout(() => {
+      isFlashing = false;
+    }, 150);
+  }
+
+  export function clearConsole() {
+    inlineConsoleRef?.clearConsole();
+    overlayConsoleRef?.clearConsole();
+    lineErrors = undefined;
+    hasError = false;
+  }
+
+  function handleDoubleClickOnRun() {
+    if (supportsLibraries && data.libraryName) {
+      toggleInlineEditor();
+    }
+  }
+
+  function handleConsoleToggle() {
+    updateNodeData(nodeId, { showConsole: !data.showConsole });
+    setTimeout(() => updateContentWidth(), 10);
+  }
+
+  function handleSettingsToggle() {
+    showSettings = !showSettings;
+
+    if (showSettings) {
+      showEditor = false;
+    }
+  }
+
+  let minContainerWidth = $derived.by(() => {
+    const baseWidth = 70;
+    const inletWidth = 15;
+    const totalInlets = inletCount + videoInletCount;
+
+    return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(outletCount, 2)) * inletWidth;
+  });
+
+  const toggleCode = (event?: MouseEvent) => {
+    handleCodeOpen(event);
+  };
+</script>
+
+{#snippet detachedConsole()}
+  <VirtualConsole
+    bind:this={overlayConsoleRef}
+    {nodeId}
+    borderColor="border-zinc-700"
+    selected={false}
+    onClear={() => {
+      lineErrors = undefined;
+      hasError = false;
+    }}
+    onrun={executeCode}
+    showRunControls={false}
+    {isRunning}
+    {showRunningIndicator}
+    {isLongRunningTaskActive}
+    {playOrStopIcon}
+    {runOrStop}
+    initialHeight={data.consoleHeight}
+    initialWidth={data.consoleWidth}
+    onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
+    onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
+    class="shadow-xl"
+  />
+{/snippet}
+
+<div class="relative flex gap-x-3">
+  <div class="group relative">
+    <div class="flex flex-col gap-2" bind:this={contentContainer}>
+      <div
+        class="group/header absolute -top-7 left-0 z-20 flex w-full items-center justify-between"
+      >
+        <div
+          class="node-title-drag-handle z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1 text-nowrap whitespace-nowrap"
+        >
+          <div class="font-mono text-xs font-medium text-zinc-400">
+            {(supportsLibraries && data.libraryName) || data.title || nodeLabel}
+          </div>
+        </div>
+
+        <div class="node-floating-controls flex items-center sm:group-hover/header:opacity-100">
+          {#if !(supportsLibraries && data.libraryName)}
+            {#if settingsSchema && settingsSchema.length > 0}
+              <CodeBlockOverflowMenu
+                showConsole={data.showConsole ?? false}
+                {showSettings}
+                {settingsSchema}
+                onConsoleToggle={handleConsoleToggle}
+                onSettingsToggle={handleSettingsToggle}
+                onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
+              />
+            {:else}
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                    onclick={handleConsoleToggle}
+                    aria-label="Console"
+                  >
+                    <Terminal class="h-4 w-4 text-zinc-300" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Console</Tooltip.Content>
+              </Tooltip.Root>
+            {/if}
+          {/if}
+
+          {#if resolvedPrimary === 'settings'}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={handleSettingsToggle}
+                  aria-label="Settings"
+                >
+                  <SettingsIcon class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+
+              <Tooltip.Content>
+                {showSettings ? 'Hide settings' : 'Settings'}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={handleCodeOpen}
+                  aria-label="Edit code"
+                >
+                  <Code class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+
+              <Tooltip.Content>Edit code</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
+        </div>
+      </div>
+
+      <div class="relative">
+        <div>
+          {#each Array.from({ length: videoInletCount }) as _, index (index)}
+            <TypedHandle
+              port="inlet"
+              spec={{ handleType: 'video', handleId: index }}
+              title={`Video Input ${index}`}
+              total={videoInletCount + inletCount}
+              {index}
+              class="top-0"
+              {nodeId}
+            />
+          {/each}
+
+          {#each Array.from({ length: inletCount }) as _, index (index)}
+            <TypedHandle
+              port="inlet"
+              spec={{ handleId: index + videoInletCount }}
+              title={`Inlet ${index}`}
+              total={videoInletCount + inletCount}
+              index={index + videoInletCount}
+              class="top-0"
+              {nodeId}
+            />
+          {/each}
+        </div>
+
+        {#if data.showConsole && !(supportsLibraries && data.libraryName)}
+          <VirtualConsole
+            bind:this={inlineConsoleRef}
+            {nodeId}
+            {borderColor}
+            {selected}
+            onClear={() => {
+              lineErrors = undefined;
+              hasError = false;
+            }}
+            onrun={executeCode}
+            {isRunning}
+            {showRunningIndicator}
+            {isLongRunningTaskActive}
+            {playOrStopIcon}
+            {runOrStop}
+            onResize={updateContentWidth}
+            initialHeight={data.consoleHeight}
+            initialWidth={data.consoleWidth}
+            onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
+            onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
+          />
+        {:else}
+          <button
+            class={[
+              'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
+              showRunningIndicator && isRunning && !isLongRunningTaskActive
+                ? 'cursor-not-allowed'
+                : 'cursor-pointer',
+              borderColor,
+              isFlashing
+                ? 'bg-zinc-500'
+                : selected
+                  ? 'shadow-glow-md bg-zinc-800'
+                  : 'hover:shadow-glow-sm bg-zinc-900'
+            ]}
+            style={`min-width: ${minContainerWidth}px`}
+            onclick={runOrStop}
+            ondblclick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              handleDoubleClickOnRun();
+            }}
+            aria-disabled={showRunningIndicator && isRunning && !isLongRunningTaskActive}
+            aria-label={isLongRunningTaskActive ? 'Stop' : 'Run code'}
+          >
+            <div
+              class={[
+                showRunningIndicator && isRunning && !isLongRunningTaskActive
+                  ? 'animate-spin opacity-30'
+                  : ''
+              ]}
+            >
+              <PlayOrStopIcon size="16px" />
+            </div>
+          </button>
+
+          <div
+            class={[
+              'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
+              selected ? '' : 'group-hover:opacity-100'
+            ]}
+          >
+            {#if supportsLibraries && data.libraryName}
+              {#if !showEditor}
+                <div>double click to edit shared code</div>
+              {/if}
+            {:else}
+              <div>click to run</div>
+            {/if}
+          </div>
+        {/if}
+
+        <div>
+          {#each Array.from({ length: outletCount }) as _, index (index)}
+            <TypedHandle
+              port="outlet"
+              spec={{ handleId: index }}
+              title={`Outlet ${index}`}
+              total={outletCount}
+              {index}
+              class="bottom-0"
+              {nodeId}
+            />
+          {/each}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {#if showEditor && !isCodeEditorDetached}
+    <div class="absolute" style="left: {contentWidth + 10}px">
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+        {#if !(supportsLibraries && data.libraryName)}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={openExpandedCodeEditor}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                aria-label="Open expanded editor"
+              >
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+
+            <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
+          </Tooltip.Root>
+        {/if}
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (showEditor = false)}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              aria-label="Close editor"
+            >
+              <X class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>Close Editor</Tooltip.Content>
+        </Tooltip.Root>
+      </div>
+
+      <div class="min-w-72 rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+        <CodeEditor
+          value={code}
+          onchange={(newCode) => {
+            if (onCodeChange) {
+              onCodeChange(newCode);
+            }
+            updateNodeData(nodeId, { code: newCode });
+          }}
+          {language}
+          {nodeType}
+          placeholder={editorPlaceholder}
+          class="nodrag h-64 w-full min-w-72 resize-none"
+          onrun={executeCode}
+          {lineErrors}
+          {nodeId}
+        />
+      </div>
+    </div>
+  {/if}
+
+  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+    <div class="absolute top-0" style="left: {contentWidth + 10}px">
+      <ObjectSettings
+        {nodeId}
+        schema={settingsSchema}
+        values={settingsValues}
+        onValueChange={(key, value) => onSettingsValueChange?.(key, value)}
+        onRevertAll={() => onSettingsRevertAll?.()}
+        onClose={() => (showSettings = false)}
+      />
+    </div>
+  {/if}
+</div>

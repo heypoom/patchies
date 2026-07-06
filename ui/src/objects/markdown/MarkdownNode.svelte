@@ -1,0 +1,167 @@
+<script lang="ts">
+  import { NodeResizer, useSvelteFlow, useEdges } from '@xyflow/svelte';
+  import { onDestroy, onMount } from 'svelte';
+
+  // @ts-expect-error -- no typedef
+  import OverType from 'overtype';
+
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { markdownSchema } from '$objects/markdown/schema';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { match } from 'ts-pattern';
+  import { markdownMessages } from '$lib/objects/schemas';
+  import { shouldShowHandles } from '../../stores/ui.store';
+  import { useNodeDataTracker } from '$lib/history';
+  import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
+  import { editorFontFamily } from '../../stores/editor.store';
+  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
+
+  let props: {
+    id: string;
+    data: {
+      markdown: string;
+    };
+    selected: boolean;
+    width: number;
+    height: number;
+  } = $props();
+
+  let messageContext: MessageContext;
+
+  const [defaultWidth, defaultHeight] = [300, 150];
+
+  let overtypeElement: HTMLDivElement;
+  let overtypeEditor: any;
+
+  const { updateNodeData } = useSvelteFlow();
+  const edges = useEdges();
+
+  // Check if handles have connections (for smart auto mode)
+  const connections = $derived(checkMessageConnections(edges.current, props.id));
+
+  // Undo/redo tracking for markdown content
+  const tracker = useNodeDataTracker(props.id);
+  const markdownTracker = tracker.track('markdown', () => props.data.markdown ?? '');
+
+  const handleInletClass = $derived(
+    props.selected || $shouldShowHandles || connections.hasInlet
+      ? 'z-1 transition-opacity'
+      : `z-1 transition-opacity ${HIDDEN_HANDLE_CLASS}`
+  );
+
+  const handleOutletClass = $derived(
+    props.selected || $shouldShowHandles || connections.hasOutlet
+      ? 'z-1 transition-opacity'
+      : `z-1 transition-opacity ${HIDDEN_HANDLE_CLASS}`
+  );
+
+  function handleMarkdownChange(markdown: string) {
+    updateNodeData(props.id, { markdown });
+  }
+
+  function updateMarkdown(markdown: string) {
+    handleMarkdownChange(markdown);
+    overtypeEditor?.setValue(markdown);
+  }
+
+  const handleMessage: MessageCallbackFn = (message) =>
+    match(message)
+      .with(markdownMessages.string, (value) => updateMarkdown(value))
+      .with(markdownMessages.bang, () => messageContext.send(props.data.markdown))
+      .with(markdownMessages.set, ({ value }) => updateMarkdown(value))
+      .otherwise(() => {});
+
+  onDestroy(() => {
+    messageContext.queue.removeCallback(handleMessage);
+    messageContext.destroy();
+  });
+
+  onMount(async () => {
+    messageContext = new MessageContext(props.id);
+    messageContext.queue.addCallback(handleMessage);
+
+    const [_editor] = new OverType(overtypeElement, {
+      placeholder: 'Start typing markdown...',
+      toolbar: false,
+      value: props.data.markdown,
+      fontFamily: 'var(--patchies-markdown-node-font-family, var(--font-mono))',
+      theme: {
+        name: 'my-theme',
+        colors: {
+          bgPrimary: 'transparent',
+          bgSecondary: 'transparent',
+          text: '#fff',
+          h1: '#fff',
+          h2: '#fff',
+          h3: '#fff',
+          strong: '#fff',
+          em: '#fff',
+          link: '#fff',
+          code: '#fff',
+          codeBg: 'rgba(255, 255, 255, 0.2)',
+          blockquote: '#fff',
+          hr: '#fff',
+          syntaxMarker: 'rgba(255, 255, 255, 0.52)',
+          cursor: '#f95738',
+          selection: 'rgba(244, 211, 94, 0.4)'
+        }
+      },
+      onChange: (value: string) => handleMarkdownChange(value)
+    });
+
+    overtypeEditor = _editor;
+  });
+</script>
+
+<div class="relative">
+  <NodeResizer class="z-1" isVisible={props.selected} />
+
+  {#if props.selected}
+    <div class="node-title-drag-handle absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
+      <div class="font-mono text-xs font-medium text-zinc-400">markdown</div>
+    </div>
+  {/if}
+
+  <div class="group">
+    <TypedHandle
+      port="inlet"
+      spec={markdownSchema.inlets[0].handle!}
+      total={1}
+      index={0}
+      class={handleInletClass}
+      nodeId={props.id}
+    />
+
+    <div
+      bind:this={overtypeElement}
+      style="width: {props.width ?? defaultWidth}px; height: {props.height ?? defaultHeight}px"
+      style:--patchies-markdown-node-font-family={$editorFontFamily}
+      class="nodrag nowheel nopan overtype-editor rounded-lg bg-zinc-900"
+      onfocusin={markdownTracker.onFocus}
+      onfocusout={markdownTracker.onBlur}
+    ></div>
+
+    <TypedHandle
+      port="outlet"
+      spec={{ handleType: 'message' }}
+      total={1}
+      index={0}
+      class={handleOutletClass}
+      nodeId={props.id}
+    />
+  </div>
+</div>
+
+<style lang="postcss" scoped>
+  @reference "../../app.css";
+
+  .overtype-editor :global(.overtype-wrapper) {
+    @apply rounded-lg;
+  }
+
+  .overtype-editor :global(.overtype-wrapper .overtype-input),
+  .overtype-editor :global(.overtype-wrapper .overtype-preview) {
+    font-family: var(--patchies-markdown-node-font-family, var(--font-mono)) !important;
+  }
+</style>

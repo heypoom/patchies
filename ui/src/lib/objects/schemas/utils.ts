@@ -1,7 +1,7 @@
 import type { TSchema } from '@sinclair/typebox';
 import { Kind, OptionalKind } from '@sinclair/typebox';
 
-import type { ObjectSchemaRegistry } from './types';
+import type { ObjectSchemaRegistry } from '$lib/objects/schemas/types';
 
 // Syntax highlighting CSS classes
 const hl = {

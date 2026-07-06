@@ -1,3 +1,7 @@
+import { BASE_NOTE } from '$lib/midi/drums';
+
+export { BASE_NOTE };
+
 export type PadCount = 8 | 16;
 export type NoteOffMode = 'ignore' | 'stop';
 
@@ -17,9 +21,6 @@ export interface PadsNodeData {
   /** AI-provided initial sample URLs, keyed by pad index. Consumed on mount, then cleared. */
   _initialUrls?: Record<string, string>;
 }
-
-/** MIDI note for pad 1 (GM: Bass Drum 1) */
-export const BASE_NOTE = 36;
 
 /** GM drum names keyed by MIDI note number */
 export const GM_DRUM_NAMES: Record<number, string> = {

@@ -11,6 +11,7 @@ import type {
   FBOResolution
 } from '../../lib/rendering/types';
 import type { ClockCommandMessage, TransportState } from '$lib/transport/types';
+import type { ProjMapSurface } from '$lib/projmap/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
@@ -30,7 +31,7 @@ import { ReglRenderer } from './reglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
 import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
-import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
+import { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
 import { getFramebuffer, getRawTexture } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
@@ -58,7 +59,7 @@ import {
 } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager } from './CookStateManager';
-import { createGlslCookPolicy } from './cooking/glsl';
+import { createGlslCookPolicy } from '$workers/rendering/cooking/object-policies/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
@@ -1102,7 +1103,7 @@ export class FBORenderer {
     };
   }
 
-  updateProjectionMap(nodeId: string, surfaces: import('$objects/projmap/types').ProjMapSurface[]) {
+  updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]) {
     this.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
     this.cookState.markDirty(nodeId, 'config');
   }
