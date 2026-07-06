@@ -1,328 +1,176 @@
-# Modular Patchies
+# 47. Modular Patchies API Design
 
-## Problem
+Status: Active architecture target, partially implemented through object/audio registries.
 
-Right now, it's very hard to add new objects to Patchies. The codebase is tightly coupled and messy.
-
-It's also not possible to implement a plugin system e.g. dynamically adding modules that exposes new objects from a marketplace.
+Last verified against code: 2026-07-06.
 
 ## Goal
 
-We wanted to modularize patchies so that it can become a lightweight core library that can dynamically load additional modules.
+Make Patchies modular enough that the core runtime can stay small while objects, renderers, audio nodes, editor views, docs metadata, and licensed integrations can be registered dynamically.
 
-The idea is that you can build plugins to extend patchies' functionality, add custom nodes on the fly, and use patchies without the node-based GUI.
+This spec supports [167. Modular Patchies Roadmap](167-modular-patchies-roadmap.md). It focuses on the API shape for dynamic definitions and plugins.
 
-1. Allow you to easily add third party modules to patchies with a few lines of code.
-2. Keep the core engine lightweight.
-3. Dynamically load heavy modules that may slow down the core
-4. Allow headless usage of the patcher e.g. `p.objects.add({x, y, type: 'glsl'})`, so you can use Patchies as a backend for your app without the node-based GUI
-5. Enable sub-patching and abstractions. We want objects to continue running even if it is not the top-level patches. Right now the lifecycle is tied to the Svelte component lifecycle, so it won't run if its in a subpatch.
-6. Allow the use of AGPL-licensed components and libraries without making the Patchies core AGPL, so the Patchies core can be adopted in projects using any license.
-7. Allow you to dynamically define new object types within a patch, e.g. `p.objects.define(GlslObject)`
+## Current State
 
-The vision is that to add new objects to patchies, you'd create a new module in the `modules` directory, or publish it as an NPM package:
+Patchies has moved a long way from the original version of this spec:
 
+- Object-owned code is colocated under `ui/src/objects/<object-or-family>` as described in [100. Object Module Migration](100-object-module-migration.md).
+- `ObjectRegistry` supports registering V2 text object constructors and aliases.
+- `AudioRegistry` supports registering V2 audio node constructors and aliases.
+- `ObjectService` and `AudioService` instantiate registered text/audio classes outside the Svelte component tree.
+- The object browser combines static schemas, static node types, `ObjectRegistry`, and `AudioRegistry`.
+- The render type registry imports object-owned render-node type members from `ui/src/objects`.
+- `<x-patchies>` exists as a custom element entry point.
+
+The codebase is not yet dynamically modular in the product sense:
+
+- UI node components are still statically imported in `ui/src/lib/nodes/node-types.ts`.
+- Object schemas are still collected through static imports in `ui/src/lib/objects/schemas/index.ts`.
+- AI object descriptions, prompts, default node data, extension packs, shorthands, and render-node unions are still compile-time surfaces.
+- There is no remote plugin loader, plugin manifest format, plugin permission model, or plugin dependency resolver.
+- Built-in objects and AGPL-dependent objects such as Strudel are still bundled with the app.
+- The existing web component mounts the full editor and does not expose a stable API-first runtime surface yet.
+
+## API Shape
+
+The long-term API should expose one runtime object:
+
+```ts
+const patchies = await createPatchiesRuntime({
+  plugins: ['https://example.com/patchies-strudel/plugin.js']
+});
+
+patchies.objects.define(MyObject);
+patchies.audio.define(MyAudioNode);
+patchies.video.define(MyRenderer);
+
+await patchies.loadPatch(patchJson);
+patchies.send('node-id', { type: 'bang' });
 ```
-ui/
-modules/
-  hydra/
-  strudel/
-    LICENSE.md
+
+The API should work in three contexts:
+
+- **Editor:** Svelte/XYFlow renders views for runtime objects.
+- **Headless:** host code constructs and runs a graph without rendering the editor.
+- **Embed:** a web component wraps the runtime and exposes attributes, events, and imperative methods.
+
+## Object Definitions
+
+An object definition should describe both runtime behavior and optional editor affordances:
+
+```ts
+class DelayObject {
+  static type = 'delay';
+  static inlets = [{ name: 'in', type: 'message' }, { name: 'delay', type: 'float' }];
+  static outlets = [{ name: 'out', type: 'message' }];
+
+  constructor(nodeId, context) {}
+
+  create(params) {}
+  update(data) {}
+  destroy() {}
+  onMessage(data, meta) {}
+}
 ```
 
-This keeps the core engine lightweight, preferably with a bundle size goal (e.g. under 30KB).
+Definitions may also provide or reference:
 
-## Motivation
+- object schema metadata;
+- default data;
+- migrations;
+- object browser metadata;
+- docs metadata;
+- AI prompt metadata;
+- editor view factories;
+- settings view factories;
+- required services or permissions.
 
-I wanted Patchies to be a modular system that lets you run multiple libraries in a virtual machine of sorts, as a way to bridge together different paradigms. Imagine running Uxn/Tal emulators that can send messages to Csound. You can do all sort of experiments on the web.
+The existing V2 text object classes and V2 audio node classes are the nearest current implementation. The next step is to make the surrounding metadata dynamically registerable instead of split across static files.
 
-Also, the code quality as it stands is pretty bad. There are zero tests, neither unit tests nor e2e. By doing a gradular refactoring, we can start writing tests for those small services (e.g. tests for defining objects)
+## Service Registries
 
-## Approach - Start small
+Patchies should expose dynamic registries for each extension point:
 
-Instead of doing a big refactoring that has a high risk of breaking everything, we will start small first, by making a simple API that lets you define a new textual object e.g. `p.objects.define`. Then we start gradually moving objects from the current implementation to the new modular architecture.
+- `objects.define(definition)` for text/message objects;
+- `audio.define(definition)` for audio nodes and native DSP wrappers;
+- `video.define(definition)` for render-worker/FBO renderers;
+- `views.define(type, loader)` for editor node views;
+- `schemas.define(type, schema)` for docs, ports, validation, and object browser descriptions;
+- `defaults.define(type, factory)` for default node data;
+- `prompts.define(type, promptMetadata)` for AI object generation;
+- `packs.define(pack)` for object browser categories and installable bundles;
+- `shorthands.define(shorthand)` for object text expansion;
+- `migrations.define(migration)` for patch data upgrades.
 
-Again, the emphasis is not to break existing code, but add an additional layer on top of the code.
+Static registry files may continue to bootstrap built-ins, but they should become generated or declarative built-in plugin manifests, not the only place an object can exist.
+
+## Plugin Contract
+
+A plugin bundle should export a manifest and a registration function:
+
+```ts
+export const manifest = {
+  id: '@patchies/strudel',
+  version: '0.1.0',
+  license: 'AGPL-3.0-or-later',
+  objects: ['strudel'],
+  patchies: { minVersion: '0.1.0' },
+  resources: ['./StrudelNode.svelte', './worker.js']
+};
+
+export async function register(ctx) {
+  ctx.objects.define(StrudelObject);
+  ctx.views.define('strudel', () => import('./StrudelNode.svelte'));
+  ctx.schemas.define('strudel', strudelSchema);
+  ctx.defaults.define('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }));
+}
+```
+
+The plugin context should expose stable service APIs. Plugins should not reach into arbitrary `ui/src/lib` internals. If a plugin needs a capability, such as a video renderer, audio node, worker channel, VFS access, or settings surface, the plugin API should expose that capability intentionally.
+
+## Patch Loading Flow
+
+Patch loading should become dependency-aware:
+
+1. Parse patch JSON.
+2. Read declared plugin dependencies and object types present in the graph.
+3. Resolve missing object types to known plugin sources when possible.
+4. Load trusted plugin bundles.
+5. Register object, service, schema, view, and metadata definitions.
+6. Instantiate the graph through the headless runtime.
+7. Report unresolved types as structured diagnostics.
+
+For development, hot reload can be conservative. It is acceptable to tear down and recreate affected runtime objects when a plugin definition changes.
+
+## Licensing Boundary
+
+Dynamic plugins are also the path toward cleaner licensing boundaries.
+
+The core/editor bundle should not be forced to include every optional dependency. AGPL-dependent objects such as Strudel should move toward separately loaded plugin bundles with explicit license metadata. The app can offer a trusted source or installer, but the dependency boundary must remain visible.
+
+This spec is a technical design, not legal advice. Any licensing change should be reviewed separately once the bundle boundary exists.
 
 ## Milestones
 
-1. Can define a new no-op object e.g. `p.objects.define(VoidObject)`
-2. Can define inlets and outlets on objects
-3. Can make objects that responds to messages (i.e. sends and receives messages)
-
-More milestones to be added soon.
-
-## API: Patcher
-
-The patcher global object, `patcher`, contains a couple of services under its namespace, e.g.
-
-```ts
-let p = patcher;
-
-p.objects; // ObjectService.
-p.video; // VideoService
-p.audio; // AudioService
-```
-
-You can use the namespaced service objects to interact with the patcher.
-
-## API: Services
-
-The patcher shall exposes a set of _services_ which are used to manage the patcher's functionality:
-
-- **Objects**: defines new objects and create, update and destroy objects in the patcher.
-  - Messaging: listens to messages and sending messages between objects.
-  - Svelte: associate a svelte view component with an object, to use in place of the default text object view.
-- **Video**: defines new video nodes in the render graph for rendering video frames.
-- **Audio**: defines new audio nodes in the audio graph for processing audio frames.
-  - **Audio Scheduler**: schedules audio events in the future
-- **MIDI**: listens to MIDI events and send MIDI messages
-- **Audio Analysis**: runs fft analysis on audio sources
-
-## API: Define a new object
-
-This defines a `void` text object that does nothing:
-
-```ts
-class Void {
-  static type = "void";
-}
-
-p.objects.define(Void);
-```
-
-In this case, only the static `name` propery is defined.
-
-## API: Define an object that sends and receives messages
-
-This defines a `delay` text object that delays messages via the `delay` parameter:
-
-```ts
-class Delay extends PatchObject {
-  static type = "delay";
-
-  static inlets = [
-    // without declaring a type, the default inlet type is `msg` (any message)
-    { name: "in" },
-    { name: "delay", type: "float" },
-  ];
-
-  static outlets = [{ type: "out" }];
-
-  async onMessage(data, meta) {
-    await sleep(this.params.delay);
-    this.send({ type: "bang" });
-  }
-}
-
-p.objects.define(Delay);
-```
-
-When messages are sent to the typed inlets e.g. `{ type: 'float' }`, it gets stored in `this.params`.
-
-If the object extends `PatchObject`, it has a couple of useful methods:
-
-- `this.params.delay` - contains the latest valid value of `delay` received by at inlet
-- `this.send(data, meta)` - sends a message to the outlet
-- `async onMessage(data, meta)` - receives messages from any inlet
-
-## Example: Define a `mtof` object
-
-Define a `mtof` text object that converts MIDI note numbers to frequencies:
-
-```ts
-class MtofObject extends PatchObject {
-  static type = "mtof";
-  static inlets = [{ name: "note", type: "float" }];
-  static outlets = [{ name: "frequency", type: "float" }];
-
-  onMessage(note) {
-    this.send(Math.pow(2, (note - 69) / 12) * 440);
-  }
-}
-
-p.objects.define(MtofObject);
-```
-
-## API: Using Svelte view components
-
-If the `viewComponent` is defined and it is a valid Svelte component, the object will render with the provided view component. It will pass a couple of standard props to the component.
-
-We recommend writing your view components in Svelte to make full use of Svelte Flow.
-
-```ts
-import GLSLView from './GLSLView.svelte'
-
-class GlslObject extends PatchObject {
-  static type = 'glsl'
-  static viewComponent = GLSLView
-
-  onCreate() {
-
-  }
-
-  onDestroy() {
-
-  }
-
-  onMessage(data, meta) {
-    if (meta.inletKey.startsWith(...)) {
-      video.setNodeUniform(id, name, msg)
-    }
-  }
-}
-
-p.objects.define(GlslObject)
-```
-
-The `GLSLView` should be a valid Svelte component that receives a couple of props:
-
-```svelte
-<script lang="ts">
-  let previewCtx
-
-  const { video } = getPatcher()
-
-  onMount(() => {
-    previewCtx = canvas.getContext(...)
-    video.setNodePreviewContext(...)
-  })
-
-  onDestroy(() => {
-    video.removeNodePreviewContext(...)
-  })
-</script>
-
-<PreviewCanvas>
-
-</PreviewCanvas>
-```
-
-## API: using non-Svelte view libraries
-
-It should be possible to not use Svelte for your view components. You can define the `getView(): Element` method to render a DOM element instead.
-
-This allows you to use any libraries, such as Vue.js, to provide a view for an object.
-
-```tsx
-class Image {
-  static type = "image";
-
-  viewState = reactive({ imageUrl: null });
-
-  async onMessage(m) {
-    if (typeof m === "string" && m.startsWith("http")) {
-      this.setParam("src", m);
-    }
-  }
-
-  getView() {
-    const app = createApp(ImageView);
-    const root = createElement("div");
-    app.provide("state", this.viewState);
-    app.mount(root);
-
-    return root;
-  }
-}
-
-p.objects.define(Image);
-```
-
-## API: Define a video node
-
-A video node lets you:
-
-1. receive video inputs from other nodes , and
-2. emit video outputs to other nodes.
-
-The following registers the `glsl` video node in the video graph.
-
-```ts
-class GlslNode {
-  static type = "glsl";
-
-  constructor(renderNode, framebuffer) {}
-
-  render() {}
-
-  cleanup() {}
-
-  getUniforms(renderNode, fboNode) {
-    return [];
-  }
-
-  // optional: handles FFT packages
-  onFFT(payload) {
-    // ...
-  }
-}
-
-p.video.define(GlslNode);
-```
-
-These APIs let you alter the rendering graph:
-
-```ts
-// set data, texture, uniform
-video.upsertNode(id, type, data)
-video.setNodeTexture(id, texture)
-video.setNodeUniform(id, key, value)
-
-// update bitmaps.
-video.setNodeBitmap(id, bitmap)
-video.removeNodeBitmap(id)
-
-// pause/play + preview
-video.isNodePaused(id)
-video.toggleNodePaused(id)
-video.setNodePreviewEnabled(id, true)
-
-// rendering context
-video.setNodePreviewContext(id, bitmapCtx)
-video.removeNodePreviewContext(id, bitmapCtx)
-
-video.getOutputBitmap(): ImageBitmap
-```
-
-## API: Define an audio node
-
-```ts
-class OscNode {
-  static type = "osc~";
-  audioContext: AudioContext;
-
-  constructor(nodeId, params) {}
-
-  cleanup() {}
-
-  onConnect(source, target, context) {
-    const { param, sourceHandleId } = context;
-  }
-
-  onMessage(key, message) {}
-
-  // e.g. 'frequency' -> AudioParam
-  getAudioParam(key) {}
-}
-
-p.audio.define(OscNode);
-```
-
-These APIs lets you alter the audio graph:
-
-```ts
-// create/remove nodes
-p.audio.createNode("node-id", parameters);
-p.audio.removeNode("node-id");
-
-// send message to an audio node
-p.audio.send("node-id", key, message);
-
-// update edges
-p.audio.updateEdges(edges);
-
-// output gain
-p.audio.setOutputGain(value);
-p.audio.getOutputGain();
-```
+1. Wrap the current built-in text/audio registry initialization in a built-in plugin manifest.
+2. Add dynamic schema/default-data/view registration for one small object.
+3. Make the object browser read from the live registry surface instead of static lists plus ad hoc fallbacks.
+4. Load one trusted development plugin bundle at runtime.
+5. Move one low-risk built-in object family behind the plugin contract while still bundling it locally.
+6. Move Strudel or another heavy/licensed object to a separately loadable plugin bundle.
+7. Use plugin dependency metadata during patch load and subpatch load.
+
+## Success Criteria
+
+- A test can register a new message object at runtime and instantiate it in a patch without editing static registry files.
+- A plugin can register an object view lazily.
+- A missing object type produces a structured load error with plugin-resolution hints.
+- Built-in objects and external objects use the same registration API.
+- The editor, headless runtime, and web component all consume the same registered definitions.
+
+## Non-Goals
+
+- Do not require remote plugin loading before local/built-in plugin manifests work.
+- Do not expose unstable internal services just to make the first plugin easy.
+- Do not make every existing static registry disappear in one refactor.
+- Do not promise hot replacement for every object type in the first plugin milestone.
