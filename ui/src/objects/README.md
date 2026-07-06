@@ -1,55 +1,48 @@
 # Objects Directory
 
-This directory contains self-contained object modules. Each module lives in its own subdirectory and owns all related files: components, workers, system classes, types, and prompts.
+This directory contains object-owned Patchies modules. Each object, or small obvious object family, should live under `src/objects/<object-or-family>/` and own the files that are specific to that object.
 
-## Convention
+For historical context and the full migration boundary rules, see [`docs/design-docs/specs/100-object-module-migration.md`](../../../docs/design-docs/specs/100-object-module-migration.md).
+
+## Ownership
+
+Object modules should own object-specific:
+
+- Svelte node components
+- object schemas
+- audio or text object runtime classes
+- object-specific AI prompts
+- default data, render-node type members, settings, constants, helpers, and tests
+- workers or system classes that are not shared infrastructure
+
+Markdown object documentation stays in `ui/static/content/objects/`.
+
+Shared infrastructure belongs outside this directory when it is not owned by one object or a small object family. Examples include registries, schema helper utilities, shared layout components used by unrelated objects, object service plumbing, rendering infrastructure, and native DSP framework code.
+
+## Layout
+
+There is no required folder shape beyond keeping object-owned files colocated. Use subfolders when they make a module easier to scan:
 
 ```text
-src/objects/<module>/
-  components/        # Svelte node components
-  workers/           # Web worker files (*.worker.ts)
-  types.ts           # Shared types for this module
-  *System.ts         # Singleton system/manager class (if needed)
-  *Base.ts           # Shared base class (if needed)
-  prompts.ts         # AI object prompts for this module
+src/objects/<object-or-family>/
+  components/        # Optional Svelte components
+  workers/           # Optional workers (*.worker.ts)
+  native-dsp/        # Optional native DSP node/processor files
+  render-types.ts    # Optional render-node type member
+  schema.ts          # Optional object schema
+  prompt.ts          # Optional AI prompt
+  *.test.ts          # Object-specific tests
 ```
 
-Module files are imported using the `$objects` alias:
+## Imports
+
+Use the `$objects` alias when importing object-owned files:
 
 ```ts
-import { MySystem } from '$objects/mymodule/MySystem';
-import MyNode from '$objects/mymodule/components/MyNode.svelte';
+import MyNode from '$objects/mymodule/MyNode.svelte';
+import { MyObject } from '$objects/mymodule/MyObject';
 ```
 
-## Modules
+Files outside `src/objects` should only import object modules when they are registry-style files whose job is to gather object definitions, such as component, audio, text-object, schema, prompt, shorthand, default-data, or render-type registries.
 
-### `mediapipe/`
-
-MediaPipe ML vision nodes: `vision.hand`, `vision.body`, `vision.face`, `vision.segment`, `vision.detect`, `vision.gesture`, `vision.classify`.
-
-- `types.ts` — shared types and worker message protocol
-- `MediaPipeWorkerBase.ts` — abstract base class for all vision workers (WASM workaround, FPS tracking, GPU→CPU fallback)
-- `MediaPipeNodeSystem.ts` — singleton managing workers, the rAF frame loop, and result routing
-- `workers/` — one worker per task type (`hand.worker.ts`, `body.worker.ts`, etc.)
-- `components/` — Svelte node components + shared `MediaPipeNodeLayout.svelte`
-- `prompts.ts` — AI object prompts for all vision nodes
-
-### `serial/`
-
-Serial port communication nodes.
-
-### `projmap/`
-
-Projection mapping nodes.
-
-### `curve/`
-
-Curve/automation nodes.
-
-### `pads/`
-
-Pad/trigger nodes.
-
-### `table/`
-
-Table data nodes.
+If a file outside `src/objects` needs non-registry behavior from an object module, reconsider the boundary: either move the shared behavior out to `src/lib`, or move the object-specific caller into the owning object module.
