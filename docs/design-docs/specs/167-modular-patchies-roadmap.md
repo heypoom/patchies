@@ -6,23 +6,23 @@ Move Patchies towards a thin, headless, extensible core that supports:
 
 1. Enabling the XYFlow `onlyRenderVisibleElements` optimization. This destroys the Svelte component immediately when they are outside of viewport, then re-create as they enter viewport.
 
-  This means the Svelte component lifecycle must be lightweight and completely independent of the actual object lifecycle.
+This means the Svelte component lifecycle must be lightweight and completely independent of the actual object lifecycle.
 
 2. Makes Patchies object dynamically loadable. Currently, all objects are statically defined in `src/objects`. Ideally, you can give Patchies a URL to a JavaScript bundle or resource bundle, and it should be able to load new objects.
 
-  This means that the registries must allow for dynamic loading, and we must be able to quickly reload the patch graph somehow to dynamically load new objects.
+This means that the registries must allow for dynamic loading, and we must be able to quickly reload the patch graph somehow to dynamically load new objects.
 
 3. Unlock ability to have subpatches and loading external patches inside the patch (i.e. Max/MSP style abstractions)
 
 4. Makes Patchies operate-able as a headless and API-first library.
 
-  We should be able to load the patch JSON without rendering the XYFlow graph interface, or programmatically construct the patch graph at runtime. We should even be able to dynamically define new objects.
+We should be able to load the patch JSON without rendering the XYFlow graph interface, or programmatically construct the patch graph at runtime. We should even be able to dynamically define new objects.
 
 5. Makes Patchies embeddable in other application as a web component.
 
 6. Make AGPL components such as Strudel not force the entire app to be AGPL licensed.
 
-  Ideally, the thin core of Patchies can be MIT-licensed in the future, whilst a subfolder for "Strudel" that are network-loaded (and maybe some other modules/objects) become AGPL licensed, for example. The network boundary is what makes dual licensing safe.
+Ideally, the thin core of Patchies can be MIT-licensed in the future, whilst a subfolder for "Strudel" that are network-loaded (and maybe some other modules/objects) become AGPL licensed, for example. The network boundary is what makes dual licensing safe.
 
 ### Key specifications
 
@@ -69,6 +69,20 @@ Patchies should expose an embeddable web component that can load a patch, load p
 ## Phase 1: Headless Runtime Boundary
 
 Create a `PatchRuntime` or equivalent service object that can load a patch JSON document, instantiate runtime objects, apply graph changes, route messages, and coordinate audio/video/message services without mounting the XYFlow editor.
+
+The first implementation step is intentionally smaller than the final full-system
+runtime: add a minimal `PatchRuntime` that owns lifecycle for one low-risk object
+family, plus a lightweight editor reconciler that translates the XYFlow editor
+graph into `createObject`, `updateObject`, and `destroyObject` runtime calls.
+The editor reconciler may understand XYFlow nodes, but `PatchRuntime` should not.
+Mounted Svelte views only attach to the existing runtime state. `PatchRuntime`
+should remain a thin facade over focused runtime services such as message/object
+lifecycle and audio routing, rather than becoming a monolithic owner of every
+runtime concern. Runtime helpers should own lifecycle sync state such as audio
+object identity tracking and suppression of duplicate recreations; Svelte views
+should only report their current editor state. Message runtime helpers should
+own parameter-change forwarding, view message subscriptions, and runtime-derived
+object port lookup.
 
 This phase extends spec 40. The important shift is that the runtime owns object lifecycle:
 

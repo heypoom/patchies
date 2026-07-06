@@ -50,6 +50,7 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { ObjectService } from '$lib/objects/v2/ObjectService';
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
@@ -103,6 +104,7 @@
     getVisualGroupIdsContainingPoint,
     syncVisualGroupMembership
   } from '$lib/canvas/grouping';
+  import { logger } from '$lib/utils/logger';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
   import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
 
@@ -138,6 +140,9 @@
   import { NodeOperationsService } from '$lib/services/NodeOperationsService';
   import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
   import { AiOperationsService } from '$lib/services/AiOperationsService';
+  import { PatchRuntime } from '$lib/runtime/PatchRuntime';
+  import { EditorRuntimeReconciler } from '$lib/runtime/EditorRuntimeReconciler';
+  import { setPatchRuntime } from '$lib/runtime/patch-runtime-context';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { SvelteSet } from 'svelte/reactivity';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
@@ -153,6 +158,7 @@
   let messageSystem = MessageSystem.getInstance();
   let glSystem = GLSystem.getInstance();
   let audioService = AudioService.getInstance();
+  let objectService = ObjectService.getInstance();
   let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
   let eventBus = PatchiesEventBus.getInstance();
   let workerNodeSystem = WorkerNodeSystem.getInstance();
@@ -303,6 +309,17 @@
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, fitView, getViewport, getNode, updateNodeData } = useSvelteFlow();
+
+  const runtime = new PatchRuntime({
+    objectService,
+    audioService,
+    onObjectParamsChange: (nodeId, params) => updateNodeData(nodeId, { params })
+  });
+
+  setPatchRuntime(runtime);
+
+  const reconciler = new EditorRuntimeReconciler(runtime);
+
   const detachedCodeEditor = useDetachedCodeEditorOverlay({
     getNodes: () => nodes,
     updateNodeData,
@@ -504,6 +521,12 @@
       mediaPipeNodeSystem.unregister(nodeId);
       ProfilerCoordinator.getInstance().unregister(nodeId);
     }
+  });
+
+  $effect(() => {
+    reconciler
+      .reconcile(nodes)
+      .catch((error) => logger.error('failed to reconcile editor graph with patch runtime', error));
   });
 
   $effect(() => {
@@ -950,6 +973,8 @@
   });
 
   onDestroy(() => {
+    runtime.destroy();
+
     // Clean up all nodes when component is destroyed
     for (const node of nodes) {
       messageSystem.unregisterNode(node.id);
