@@ -112,6 +112,7 @@
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
   import { allPreviewsDisabled } from '../../stores/renderer.store';
+  import { cullObjects } from '../../stores/debug.store';
   import {
     activeCodeEditorTarget,
     closeCodeEditorOverlay
@@ -1574,6 +1575,7 @@
         class="bg-zinc-900"
         snapGrid={$snapGridSize > 0 ? [$snapGridSize, $snapGridSize] : undefined}
         proOptions={{ hideAttribution: true }}
+        onlyRenderVisibleElements={$cullObjects}
         clickConnect={$isConnectionMode}
         {isValidConnection}
         onnodedragstart={() => {

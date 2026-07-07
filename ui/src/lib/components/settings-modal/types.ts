@@ -4,6 +4,7 @@ export const SETTINGS_CATEGORIES = [
   'editor',
   'rendering',
   'ai',
+  'debug',
   // Per-Patch
   'visual',
   'transport',
@@ -25,6 +26,7 @@ export const CATEGORY_INFO: SettingsCategoryInfo[] = [
   { id: 'editor', label: 'Editor', scope: 'per-user' },
   { id: 'rendering', label: 'Rendering', scope: 'per-user' },
   { id: 'ai', label: 'AI', scope: 'per-user' },
+  { id: 'debug', label: 'Debug', scope: 'per-user' },
   { id: 'visual', label: 'Visual', scope: 'per-patch' },
   { id: 'transport', label: 'Transport', scope: 'per-patch' },
   { id: 'network', label: 'Network', scope: 'per-patch' }

@@ -74,6 +74,12 @@ export type TextObjectClass = {
   /** Description of the object */
   description?: string;
 
+  /** Object browser/docs category */
+  category?: string;
+
+  /** Search tags */
+  tags?: string[];
+
   /** Inlet definitions */
   inlets?: ObjectInlet[];
 

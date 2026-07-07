@@ -75,6 +75,10 @@ function deriveHandleSpecFromPort(
   port: ObjectInlet | ObjectOutlet,
   originalIndex: number
 ): HandleSpec {
+  if (port.handle) {
+    return port.handle;
+  }
+
   if (port.type === 'signal') {
     return { handleType: 'audio', handleId: originalIndex };
   }
@@ -128,6 +132,7 @@ interface V2NodeClass {
   type: string;
   aliases?: string[];
   description?: string;
+  category?: string;
   group?: string;
   inlets?: ObjectInlet[];
   outlets?: ObjectOutlet[];
@@ -155,7 +160,7 @@ export function schemaFromNode(NodeClass: V2NodeClass, category: string): Object
 
   return {
     type: NodeClass.type,
-    category,
+    category: NodeClass.category ?? category,
     description: NodeClass.description ?? '',
     inlets,
     outlets,

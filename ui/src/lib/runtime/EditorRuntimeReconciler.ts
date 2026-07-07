@@ -88,12 +88,10 @@ export class EditorRuntimeReconciler {
   }
 
   private getRuntimeObjectSpec(node: Node): PatchRuntimeObjectSpec | null {
-    if (node.type !== 'object') return null;
+    const objectType = getRuntimeObjectType(node);
+    if (!objectType || !this.runtime.isObjectInRegistry(objectType)) return null;
 
     const data = node.data as EditorRuntimeObjectData | undefined;
-
-    const objectType = typeof data?.name === 'string' ? data.name : '';
-    if (!objectType || !this.runtime.isObjectInRegistry(objectType)) return null;
 
     return getRuntimeObjectSpecFromNode(node.id, objectType, data);
   }
@@ -122,6 +120,14 @@ export class EditorRuntimeReconciler {
 
 const getRuntimeObjectSpecKey = (spec: PatchRuntimeObjectSpec): string =>
   hash([spec.objectType, spec.params, spec.rawParams]);
+
+function getRuntimeObjectType(node: Node): string {
+  if (node.type !== 'object') return node.type ?? '';
+
+  const data = node.data as EditorRuntimeObjectData | undefined;
+
+  return typeof data?.name === 'string' ? data.name : '';
+}
 
 function getRuntimeObjectSpecFromNode(
   nodeId: string,

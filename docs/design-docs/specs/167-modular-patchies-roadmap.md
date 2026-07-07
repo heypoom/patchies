@@ -32,6 +32,7 @@ This roadmap connects the earlier architecture specs into one migration path:
 - [47. Modular Patchies](47-modular-patchies-api-design.md) defines the long-term API direction for dynamic object, video, and audio registration.
 - [100. Object Module Migration](100-object-module-migration.md) defines the current object-owned colocation boundary under `ui/src/objects/`.
 - [134. Viewport Pause Culling for Main-Thread Nodes](134-viewport-pause-culling-for-main-thread-nodes.md) is a near-term performance bridge for offscreen DOM renderers, but it does not replace the need for UI/runtime lifecycle separation.
+- [Visual Object Headless Migration](../visual-object-headless-migration.md) is the short implementation checklist for moving a Svelte-owned visual object into the decoupled runtime model.
 
 The current `ui/src/objects/<object-or-family>` structure remains useful, but it should be treated as an internal packaging boundary on the way to separately loadable plugin bundles.
 
@@ -93,6 +94,15 @@ message node. Audio objects are also visible to the runtime object registry chec
 so message endpoints can route control messages into audio parameters. This is
 still a partial Phase 1 implementation: patch loading, graph-level connect APIs,
 video runtime ownership, plugins, and subpatches remain future work.
+
+The first UI-owned Svelte node validation slice is `button`. Its runtime
+behavior lives in `ui/src/objects/button/ButtonObject.ts`, registered through the
+same object service path as text objects. `ObjectService` owns the per-node
+instance map and `MessageContext` lifecycle; `ButtonNode.svelte` only renders the
+button and creates a view-local `MessageContext` with the same node id. The view
+uses the shared message queue to inject click messages into the headless object
+and to flash when inbound messages arrive; view cleanup must not unregister the
+runtime message node.
 
 This phase extends spec 40. The important shift is that the runtime owns object lifecycle:
 
