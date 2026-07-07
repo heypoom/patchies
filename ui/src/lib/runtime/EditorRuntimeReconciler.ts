@@ -31,7 +31,6 @@ export type EditorRuntime = {
   createObject(spec: PatchRuntimeObjectSpec): Promise<void>;
   updateObject(nodeId: string, spec: PatchRuntimeObjectSpec): Promise<void>;
   destroyObject(nodeId: string): void;
-  canCreateAudioObject?(objectType: string): boolean;
   syncAudioObject?(spec: DedicatedAudioObjectSpec): boolean;
   destroyAudioObject?(nodeId: string): void;
 };
@@ -59,6 +58,7 @@ export class EditorRuntimeReconciler {
 
     for (const node of nodes) {
       const audioSpec = this.getDedicatedAudioObjectSpec(node, edges);
+
       if (audioSpec) {
         nextAudioSpecs.set(audioSpec.id, audioSpec);
         continue;
@@ -123,7 +123,7 @@ export class EditorRuntimeReconciler {
     if (node.type === 'object') return null;
 
     const objectType = getRuntimeObjectType(node);
-    if (!objectType || !this.runtime.canCreateAudioObject?.(objectType)) return null;
+    if (!objectType || !this.runtime.isObjectInRegistry(objectType)) return null;
 
     const nodeClass = AudioRegistry.getInstance().get(objectType);
     if (!nodeClass) return null;

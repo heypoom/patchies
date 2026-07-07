@@ -20,7 +20,7 @@
   import { logger } from '$lib/utils/logger';
   import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
-  import { hasSignalPorts } from '$lib/audio/v2/audio-helpers';
+  import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
   import {
     isAiFeaturesVisible,
     isObjectBrowserOpen,
@@ -437,7 +437,7 @@
     const { name, params } = getNameAndParams();
     updateNodeData(nodeId, { expr, name, params });
 
-    if (!name || !patchRuntime?.canCreateAudioObject(name)) return false;
+    if (!name || !getAudioObjectNames().includes(name)) return false;
 
     syncAudioObject(name, params);
 

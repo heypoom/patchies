@@ -54,12 +54,12 @@ export class RuntimeAudioObjectAdapter {
     this.onAudioObjectDataChange = options.onAudioObjectDataChange;
   }
 
-  canCreateAudioObject(objectType: string): boolean {
+  isObjectInRegistry(objectType: string): boolean {
     return this.isAudioObject(objectType);
   }
 
   syncAudioObject(spec: RuntimeAudioObjectSpec): boolean {
-    if (!this.canCreateAudioObject(spec.objectType)) {
+    if (!this.isObjectInRegistry(spec.objectType)) {
       // The same editor node may stop being an audio object after its text changes.
       // If this adapter previously created audio runtime state for it, tear that down.
       this.suppressedAudioObjectSyncs.delete(spec.id);

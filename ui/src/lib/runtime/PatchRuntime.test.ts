@@ -646,12 +646,15 @@ describe('EditorRuntimeReconciler', () => {
 
   it('lets the audio runtime decide whether dedicated audio syncs are no-ops', async () => {
     const syncAudioObject = vi.fn();
+
     const runtime = createFakeEditorRuntime({
-      canCreateAudioObject: vi.fn(isTap),
+      isObjectInRegistry: vi.fn(isTap),
       syncAudioObject
     });
+
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'tap-tilde-runtime-noop-test';
+
     const node = tapTildeNode(nodeId, {
       bufferSize: 1024,
       mode: 'xy',

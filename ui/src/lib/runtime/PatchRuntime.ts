@@ -48,9 +48,7 @@ export class PatchRuntime {
   }
 
   isObjectInRegistry(objectType: string): boolean {
-    return (
-      this.message.isObjectInRegistry(objectType) || this.audio.canCreateAudioObject(objectType)
-    );
+    return this.message.isObjectInRegistry(objectType) || this.audio.isObjectInRegistry(objectType);
   }
 
   async createObject(spec: PatchRuntimeObjectSpec): Promise<void> {
@@ -78,10 +76,6 @@ export class PatchRuntime {
 
   getObjectViewRevision(nodeId: string): number {
     return this.message.getObjectViewRevision(nodeId);
-  }
-
-  canCreateAudioObject(objectType: string): boolean {
-    return this.audio.canCreateAudioObject(objectType);
   }
 
   syncAudioObject(spec: RuntimeAudioObjectSpec): boolean {
