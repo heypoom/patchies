@@ -32,6 +32,7 @@ This roadmap connects the earlier architecture specs into one migration path:
 - [47. Modular Patchies](47-modular-patchies-api-design.md) defines the long-term API direction for dynamic object, video, and audio registration.
 - [100. Object Module Migration](100-object-module-migration.md) defines the current object-owned colocation boundary under `ui/src/objects/`.
 - [134. Viewport Pause Culling for Main-Thread Nodes](134-viewport-pause-culling-for-main-thread-nodes.md) is a near-term performance bridge for offscreen DOM renderers, but it does not replace the need for UI/runtime lifecycle separation.
+- [Visual Object Headless Migration](../visual-object-headless-migration.md) is the short implementation checklist for moving a Svelte-owned visual object into the decoupled runtime model.
 
 The current `ui/src/objects/<object-or-family>` structure remains useful, but it should be treated as an internal packaging boundary on the way to separately loadable plugin bundles.
 
