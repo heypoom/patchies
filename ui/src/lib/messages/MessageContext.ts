@@ -84,7 +84,6 @@ export class MessageContext {
   public nodeId: string;
 
   public messageCallbacks: MessageCallbackFn[] = [];
-  private readonly boundMessageCallbackHandler: MessageCallbackFn;
   private intervals: number[] = [];
   private timeouts: number[] = [];
   private animationFrames: number[] = [];
@@ -122,8 +121,7 @@ export class MessageContext {
     this.queue = this.messageSystem.registerNode(nodeId);
 
     // Set up the onMessage callback forwarding
-    this.boundMessageCallbackHandler = this.messageCallbackHandler.bind(this);
-    this.queue.addCallback(this.boundMessageCallbackHandler);
+    this.queue.addCallback(this.messageCallbackHandler);
 
     // Lets you use `fft()` methods
     this.preloadAudioAnalysisSystem();
@@ -407,7 +405,7 @@ export class MessageContext {
     this.runCleanupCallbacks();
     this.clearTimers();
     this.clearChannelSubscriptions();
-    this.queue.removeCallback(this.boundMessageCallbackHandler);
+    this.queue.removeCallback(this.messageCallbackHandler);
 
     if (unregisterNode) {
       this.messageSystem.unregisterNode(this.nodeId);

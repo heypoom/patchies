@@ -1,156 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Edge, Node } from '@xyflow/svelte';
+import type { Edge } from '@xyflow/svelte';
 import { PatchAudioRuntime } from './PatchAudioRuntime';
-import { PatchMessageRuntime, type PatchRuntimeObjectService } from './PatchMessageRuntime';
+import { PatchMessageRuntime } from './PatchMessageRuntime';
 import { PatchRuntime } from './PatchRuntime';
 import { EditorRuntimeReconciler } from './EditorRuntimeReconciler';
-import { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
-import type { MessageContext } from '$lib/messages/MessageContext';
-import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
 import { MessageSystem } from '$lib/messages/MessageSystem';
-
-const TEST_OBJECT_TYPE = 'patch-runtime-test';
-
-class PatchRuntimeTestObject implements TextObjectV2 {
-  static type = TEST_OBJECT_TYPE;
-  static inlets: ObjectInlet[] = [{ name: 'value', type: 'any' as const }];
-  static outlets: ObjectOutlet[] = [{ name: 'out', type: 'any' as const }];
-
-  static createdRawParams: unknown[][] = [];
-  static destroyedNodeIds: string[] = [];
-  static createGate: Promise<void> | null = null;
-  static normalizeParamOnCreate = false;
-  static dynamicInlets: ObjectInlet[] | null = null;
-  static dynamicOutlets: ObjectOutlet[] | null = null;
-
-  constructor(
-    readonly nodeId: string,
-    readonly context: ObjectContext
-  ) {}
-
-  async create(rawParams: unknown[]) {
-    await PatchRuntimeTestObject.createGate;
-
-    PatchRuntimeTestObject.createdRawParams.push(rawParams);
-
-    if (PatchRuntimeTestObject.normalizeParamOnCreate) {
-      this.context.setParam(0, 'normalized');
-    }
-  }
-
-  destroy() {
-    PatchRuntimeTestObject.destroyedNodeIds.push(this.nodeId);
-  }
-
-  getInlets() {
-    return PatchRuntimeTestObject.dynamicInlets ?? PatchRuntimeTestObject.inlets;
-  }
-
-  getOutlets() {
-    return PatchRuntimeTestObject.dynamicOutlets ?? PatchRuntimeTestObject.outlets;
-  }
-}
+import {
+  createFakeEditorRuntime,
+  FakeAudioService,
+  FakeEventBus,
+  FakeObjectService,
+  objectNode,
+  PatchRuntimeTestObject,
+  resetPatchRuntimeTestObject,
+  TEST_OBJECT_TYPE
+} from './PatchRuntime.test-helpers';
 
 beforeEach(() => {
-  PatchRuntimeTestObject.createdRawParams = [];
-  PatchRuntimeTestObject.destroyedNodeIds = [];
-  PatchRuntimeTestObject.createGate = null;
-  PatchRuntimeTestObject.normalizeParamOnCreate = false;
-  PatchRuntimeTestObject.dynamicInlets = null;
-  PatchRuntimeTestObject.dynamicOutlets = null;
+  resetPatchRuntimeTestObject();
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-class FakeObjectService implements PatchRuntimeObjectService {
-  private objectsById = new Map<string, TextObjectV2>();
-
-  isObjectInRegistry(objectType: string): boolean {
-    return objectType === TEST_OBJECT_TYPE;
-  }
-
-  async createObject(
-    nodeId: string,
-    objectType: string,
-    messageContext: MessageContext,
-    params: unknown[] = [],
-    rawParams: string[] = []
-  ): Promise<TextObjectV2 | null> {
-    if (!this.isObjectInRegistry(objectType)) return null;
-
-    const context = new ObjectContext(nodeId, messageContext, PatchRuntimeTestObject.inlets);
-    context.initParams(params);
-
-    const object = new PatchRuntimeTestObject(nodeId, context);
-    this.objectsById.set(nodeId, object);
-
-    await object.create(rawParams);
-
-    return object;
-  }
-
-  removeObjectById(nodeId: string): void {
-    const object = this.objectsById.get(nodeId);
-    if (!object) return;
-
-    object.destroy?.();
-    object.context.destroy();
-
-    this.objectsById.delete(nodeId);
-  }
-
-  getObjectById(nodeId: string): TextObjectV2 | null {
-    return this.objectsById.get(nodeId) ?? null;
-  }
-}
-
-class FakeAudioService {
-  removeNodeById = vi.fn();
-  createNode = vi.fn();
-  updateEdges = vi.fn();
-  send = vi.fn();
-
-  audioNode = {
-    nodeId: 'object-audio-runtime-test',
-    audioNode: null
-  };
-
-  getNodeById = vi.fn(() => this.audioNode);
-}
-
-class FakeEventBus {
-  listeners = new Map<string, Array<(event: never) => void>>();
-
-  addEventListener = vi.fn((type: string, listener: (event: never) => void) => {
-    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
-  });
-
-  removeEventListener = vi.fn((type: string, listener: (event: never) => void) => {
-    this.listeners.set(
-      type,
-      (this.listeners.get(type) ?? []).filter((candidate) => candidate !== listener)
-    );
-  });
-
-  dispatch(event: { type: string } & Record<string, unknown>) {
-    for (const listener of this.listeners.get(event.type) ?? []) {
-      listener(event as never);
-    }
-  }
-}
-
-function objectNode(id: string, data: Record<string, unknown>): Node {
-  return {
-    id,
-    type: 'object',
-    position: { x: 0, y: 0 },
-    data
-  };
-}
 
 describe('PatchMessageRuntime', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
@@ -597,13 +470,9 @@ describe('PatchRuntime', () => {
 
 describe('EditorRuntimeReconciler', () => {
   it('translates XYFlow object nodes into PatchRuntime object calls', async () => {
-    const runtime = {
-      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
-      createObject: vi.fn(),
-      updateObject: vi.fn(),
-      destroyObject: vi.fn()
-    };
+    const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
+
     const nodeId = 'object-editor-runtime-test';
 
     await reconciler.reconcile([
@@ -642,13 +511,7 @@ describe('EditorRuntimeReconciler', () => {
   });
 
   it('skips updates when the runtime object spec has not changed', async () => {
-    const runtime = {
-      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
-      createObject: vi.fn(),
-      updateObject: vi.fn(),
-      destroyObject: vi.fn()
-    };
-
+    const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
 
     const node = objectNode('object-editor-runtime-skip-test', {
@@ -667,15 +530,12 @@ describe('EditorRuntimeReconciler', () => {
   it('retries failed creates as creates on the next reconcile', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
-    const runtime = {
-      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+    const runtime = createFakeEditorRuntime({
       createObject: vi
         .fn()
         .mockRejectedValueOnce(new Error('create failed'))
-        .mockResolvedValueOnce(undefined),
-      updateObject: vi.fn(),
-      destroyObject: vi.fn()
-    };
+        .mockResolvedValueOnce(undefined)
+    });
 
     const reconciler = new EditorRuntimeReconciler(runtime);
 
@@ -697,15 +557,12 @@ describe('EditorRuntimeReconciler', () => {
   it('retries failed updates on the next reconcile', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
-    const runtime = {
-      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
-      createObject: vi.fn(),
+    const runtime = createFakeEditorRuntime({
       updateObject: vi
         .fn()
         .mockRejectedValueOnce(new Error('update failed'))
-        .mockResolvedValueOnce(undefined),
-      destroyObject: vi.fn()
-    };
+        .mockResolvedValueOnce(undefined)
+    });
 
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'object-editor-runtime-update-retry-test';
@@ -735,17 +592,14 @@ describe('EditorRuntimeReconciler', () => {
   it('destroys runtime objects removed while an earlier create is still pending', async () => {
     let releaseCreate!: () => void;
 
-    const runtime = {
-      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+    const runtime = createFakeEditorRuntime({
       createObject: vi.fn(
         () =>
           new Promise<void>((resolve) => {
             releaseCreate = resolve;
           })
-      ),
-      updateObject: vi.fn(),
-      destroyObject: vi.fn()
-    };
+      )
+    });
 
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'object-editor-runtime-pending-create-test';
