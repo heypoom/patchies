@@ -135,7 +135,7 @@ export class ObjectService {
    * @param objectType - The object type to check
    * @returns True if defined
    */
-  isV2ObjectType(objectType: string): boolean {
+  isObjectInRegistry(objectType: string): boolean {
     return this.registry.isDefined(objectType);
   }
 

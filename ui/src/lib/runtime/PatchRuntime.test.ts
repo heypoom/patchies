@@ -1,0 +1,622 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Edge } from '@xyflow/svelte';
+import { PatchAudioRuntime } from './PatchAudioRuntime';
+import { PatchMessageRuntime } from './PatchMessageRuntime';
+import { PatchRuntime } from './PatchRuntime';
+import { EditorRuntimeReconciler } from './EditorRuntimeReconciler';
+import { logger } from '$lib/utils/logger';
+import { MessageSystem } from '$lib/messages/MessageSystem';
+import {
+  createFakeEditorRuntime,
+  FakeAudioService,
+  FakeEventBus,
+  FakeObjectService,
+  objectNode,
+  PatchRuntimeTestObject,
+  resetPatchRuntimeTestObject,
+  TEST_OBJECT_TYPE
+} from './PatchRuntime.test-helpers';
+
+beforeEach(() => {
+  resetPatchRuntimeTestObject();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('PatchMessageRuntime', () => {
+  it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
+    const objectService = new FakeObjectService();
+    const runtime = new PatchMessageRuntime({ objectService });
+    const nodeId = 'object-patch-runtime-test';
+
+    await runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    const createdObject = objectService.getObjectById(nodeId);
+    expect(createdObject).toBeInstanceOf(PatchRuntimeTestObject);
+    expect(createdObject?.context.getParams()).toEqual(['initial']);
+    expect(PatchRuntimeTestObject.createdRawParams).toEqual([['initial']]);
+
+    await runtime.updateObject(nodeId, {
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['display-only update'],
+      rawParams: ['initial']
+    });
+
+    expect(objectService.getObjectById(nodeId)).toBe(createdObject);
+    expect(PatchRuntimeTestObject.destroyedNodeIds).toEqual([]);
+
+    runtime.destroyObject(nodeId);
+
+    expect(objectService.getObjectById(nodeId)).toBeNull();
+    expect(runtime.getObjectMessageContext(nodeId)).toBeNull();
+    expect(PatchRuntimeTestObject.destroyedNodeIds).toEqual([nodeId]);
+  });
+
+  it('keeps message edges routable after replacing an object with the same node id', async () => {
+    const objectService = new FakeObjectService();
+    const runtime = new PatchMessageRuntime({ objectService });
+    const messageSystem = MessageSystem.getInstance();
+    const sourceNodeId = 'object-message-replace-source';
+    const targetNodeId = 'object-message-replace-target';
+    const onMessage = vi.fn();
+
+    const targetQueue = messageSystem.registerNode(targetNodeId);
+    targetQueue.addCallback(onMessage);
+
+    await runtime.createObject({
+      id: sourceNodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    messageSystem.updateEdges([
+      {
+        id: 'replace-source-to-target',
+        source: sourceNodeId,
+        target: targetNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    runtime.getObjectMessageContext(sourceNodeId)?.send('before replace');
+    expect(onMessage).toHaveBeenCalledWith(
+      'before replace',
+      expect.objectContaining({ source: sourceNodeId })
+    );
+
+    await runtime.updateObject(sourceNodeId, {
+      id: sourceNodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['next'],
+      rawParams: ['next']
+    });
+
+    runtime.getObjectMessageContext(sourceNodeId)?.send('after replace');
+    expect(onMessage).toHaveBeenCalledWith(
+      'after replace',
+      expect.objectContaining({ source: sourceNodeId })
+    );
+
+    runtime.destroy();
+    messageSystem.unregisterNode(targetNodeId);
+    messageSystem.updateEdges([]);
+  });
+
+  it('ignores async create results after the object is destroyed', async () => {
+    let releaseCreate!: () => void;
+
+    PatchRuntimeTestObject.createGate = new Promise((resolve) => {
+      releaseCreate = resolve;
+    });
+
+    PatchRuntimeTestObject.normalizeParamOnCreate = true;
+
+    const objectService = new FakeObjectService();
+    const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
+
+    const runtime = new PatchMessageRuntime({
+      objectService,
+      onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params })
+    });
+
+    const nodeId = 'object-patch-runtime-async-test';
+
+    const createPromise = runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    runtime.destroyObject(nodeId);
+    releaseCreate();
+    await createPromise;
+
+    expect(objectService.getObjectById(nodeId)).toBeNull();
+    expect(runtime.getObjectMessageContext(nodeId)).toBeNull();
+    expect(paramUpdates).toEqual([]);
+  });
+
+  it('forwards object param events through the runtime callback', () => {
+    const objectService = new FakeObjectService();
+    const eventBus = new FakeEventBus();
+    const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
+
+    const runtime = new PatchMessageRuntime({
+      objectService,
+      eventBus,
+      onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params })
+    });
+
+    eventBus.dispatch({
+      type: 'objectParamsChanged',
+      nodeId: 'object-param-event-test',
+      params: ['updated'],
+      index: 0,
+      value: 'updated'
+    });
+
+    expect(paramUpdates).toEqual([{ nodeId: 'object-param-event-test', params: ['updated'] }]);
+
+    runtime.destroy();
+
+    expect(eventBus.removeEventListener).toHaveBeenCalledWith(
+      'objectParamsChanged',
+      expect.any(Function)
+    );
+  });
+
+  it('resolves runtime object ports without exposing ObjectService to the view', async () => {
+    const objectService = new FakeObjectService();
+    const runtime = new PatchMessageRuntime({ objectService });
+    const nodeId = 'object-port-runtime-test';
+
+    PatchRuntimeTestObject.dynamicInlets = [{ name: 'dynamic-in', type: 'float' }];
+    PatchRuntimeTestObject.dynamicOutlets = [{ name: 'dynamic-out', type: 'string' }];
+
+    await runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    expect(
+      runtime.getObjectPorts(nodeId, {
+        inlets: [{ name: 'fallback-in', type: 'any' }],
+        outlets: [{ name: 'fallback-out', type: 'any' }]
+      })
+    ).toEqual({
+      inlets: [{ name: 'dynamic-in', type: 'float' }],
+      outlets: [{ name: 'dynamic-out', type: 'string' }],
+      hasDynamicOutlets: true
+    });
+  });
+
+  it('subscribes view callbacks to runtime object messages', async () => {
+    const objectService = new FakeObjectService();
+    const runtime = new PatchMessageRuntime({ objectService });
+    const nodeId = 'object-message-subscription-test';
+    const onMessage = vi.fn();
+
+    await runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    const unsubscribe = runtime.subscribeObjectMessages(nodeId, onMessage);
+    expect(unsubscribe).toEqual(expect.any(Function));
+
+    runtime
+      .getObjectMessageContext(nodeId)
+      ?.queue.sendMessage({ source: 'source-node', data: 'payload' });
+
+    expect(onMessage).toHaveBeenCalledWith('payload', {
+      source: 'source-node',
+      data: 'payload'
+    });
+
+    unsubscribe?.();
+    runtime
+      .getObjectMessageContext(nodeId)
+      ?.queue.sendMessage({ source: 'source-node', data: 'after-unsubscribe' });
+
+    expect(onMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('bumps object revision once when replacing an existing object', async () => {
+    const objectService = new FakeObjectService();
+    const runtime = new PatchMessageRuntime({ objectService });
+    const nodeId = 'object-revision-replace-test';
+
+    await runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    const revisionAfterCreate = runtime.getObjectViewRevision(nodeId);
+
+    await runtime.updateObject(nodeId, {
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['next'],
+      rawParams: ['next']
+    });
+
+    expect(runtime.getObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
+  });
+});
+
+describe('PatchAudioRuntime', () => {
+  it('owns audio object service interactions', () => {
+    const audioService = new FakeAudioService();
+    const runtime = new PatchAudioRuntime({ audioService });
+    const nodeId = 'object-audio-runtime-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
+
+    runtime.createOrUpdateAudioObject(nodeId, 'osc~', [440], edges);
+
+    expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+    expect(audioService.updateEdges).toHaveBeenCalledWith(edges);
+
+    runtime.sendAudioObjectMessage(nodeId, 'frequency', 220);
+    expect(audioService.send).toHaveBeenCalledWith(nodeId, 'frequency', 220);
+
+    expect(runtime.getAudioObject(nodeId)).toBe(audioService.audioNode);
+
+    runtime.destroyAudioObject(nodeId);
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+  });
+
+  it('syncs audio object identity changes from view state', () => {
+    const audioService = new FakeAudioService();
+
+    const runtime = new PatchAudioRuntime({
+      audioService,
+      isAudioObject: (objectType) => objectType === 'osc~'
+    });
+
+    const nodeId = 'object-audio-sync-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
+
+    expect(
+      runtime.syncAudioObject({
+        id: nodeId,
+        objectType: 'osc~',
+        params: [440],
+        edges
+      })
+    ).toBe(true);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+
+    expect(
+      runtime.syncAudioObject({
+        id: nodeId,
+        objectType: 'osc~',
+        params: [440],
+        edges
+      })
+    ).toBe(false);
+
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
+
+    runtime.suppressNextAudioObjectSync(nodeId);
+
+    expect(
+      runtime.syncAudioObject({
+        id: nodeId,
+        objectType: 'osc~',
+        params: [220],
+        edges
+      })
+    ).toBe(false);
+
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
+
+    expect(
+      runtime.syncAudioObject({
+        id: nodeId,
+        objectType: 'gain~',
+        params: [0.5],
+        edges
+      })
+    ).toBe(true);
+
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+  });
+
+  it('does not record stale audio tracking state when a suppressed first sync is consumed', () => {
+    const audioService = new FakeAudioService();
+
+    const runtime = new PatchAudioRuntime({
+      audioService,
+      isAudioObject: (objectType) => objectType === 'osc~'
+    });
+
+    const nodeId = 'object-audio-suppressed-first-sync-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
+
+    runtime.suppressNextAudioObjectSync(nodeId);
+
+    expect(
+      runtime.syncAudioObject({
+        id: nodeId,
+        objectType: 'osc~',
+        params: [440],
+        edges
+      })
+    ).toBe(false);
+
+    runtime.destroy();
+
+    expect(audioService.removeNodeById).not.toHaveBeenCalled();
+
+    expect(
+      runtime.syncAudioObject({
+        id: nodeId,
+        objectType: 'osc~',
+        params: [440],
+        edges
+      })
+    ).toBe(true);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+  });
+});
+
+describe('PatchRuntime', () => {
+  it('creates a message endpoint for audio objects', async () => {
+    const objectService = new FakeObjectService();
+
+    const runtime = new PatchRuntime({
+      objectService,
+      audioService: new FakeAudioService(),
+      isAudioObject: (objectType) => objectType === 'osc~'
+    });
+
+    const sourceNodeId = 'slider-source';
+    const audioNodeId = 'osc-target';
+    const callback = vi.fn();
+    const messageSystem = MessageSystem.getInstance();
+
+    expect(runtime.isObjectInRegistry('osc~')).toBe(true);
+
+    await runtime.createObject({
+      id: audioNodeId,
+      objectType: 'osc~',
+      params: [440],
+      rawParams: ['440']
+    });
+
+    const unsubscribe = runtime.subscribeObjectMessages(audioNodeId, callback);
+    expect(unsubscribe).toEqual(expect.any(Function));
+
+    messageSystem.registerNode(sourceNodeId);
+
+    messageSystem.updateEdges([
+      {
+        id: 'slider-to-osc-frequency',
+        source: sourceNodeId,
+        target: audioNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    messageSystem.sendMessage(sourceNodeId, 220);
+
+    expect(callback).toHaveBeenCalledWith(
+      220,
+      expect.objectContaining({
+        source: sourceNodeId,
+        inlet: 0,
+        inletKey: 'message-in-0'
+      })
+    );
+
+    unsubscribe?.();
+    runtime.destroy();
+
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
+  });
+
+  it('keeps a facade over message and audio runtime helpers', async () => {
+    const objectService = new FakeObjectService();
+    const audioService = new FakeAudioService();
+
+    const runtime = new PatchRuntime({
+      objectService,
+      audioService,
+      isAudioObject: (objectType) => objectType === 'osc~'
+    });
+
+    const nodeId = 'object-patch-runtime-facade-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
+
+    await runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+    runtime.createOrUpdateAudioObject(nodeId, 'osc~', [440], edges);
+
+    expect(objectService.getObjectById(nodeId)).toBeInstanceOf(PatchRuntimeTestObject);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+
+    runtime.destroy();
+
+    expect(objectService.getObjectById(nodeId)).toBeNull();
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+  });
+});
+
+describe('EditorRuntimeReconciler', () => {
+  it('translates XYFlow object nodes into PatchRuntime object calls', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+
+    const nodeId = 'object-editor-runtime-test';
+
+    await reconciler.reconcile([
+      objectNode(nodeId, {
+        expr: `${TEST_OBJECT_TYPE} initial`,
+        name: TEST_OBJECT_TYPE,
+        params: ['initial']
+      })
+    ]);
+
+    expect(runtime.createObject).toHaveBeenCalledWith({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    await reconciler.reconcile([
+      objectNode(nodeId, {
+        expr: `${TEST_OBJECT_TYPE} initial`,
+        name: TEST_OBJECT_TYPE,
+        params: ['display-only update']
+      })
+    ]);
+
+    expect(runtime.updateObject).toHaveBeenCalledWith(nodeId, {
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['display-only update'],
+      rawParams: ['initial']
+    });
+
+    await reconciler.reconcile([]);
+
+    expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
+  });
+
+  it('skips updates when the runtime object spec has not changed', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+
+    const node = objectNode('object-editor-runtime-skip-test', {
+      expr: `${TEST_OBJECT_TYPE} initial`,
+      name: TEST_OBJECT_TYPE,
+      params: ['initial']
+    });
+
+    await reconciler.reconcile([node]);
+    await reconciler.reconcile([node]);
+
+    expect(runtime.createObject).toHaveBeenCalledTimes(1);
+    expect(runtime.updateObject).not.toHaveBeenCalled();
+  });
+
+  it('retries failed creates as creates on the next reconcile', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+    const runtime = createFakeEditorRuntime({
+      createObject: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('create failed'))
+        .mockResolvedValueOnce(undefined)
+    });
+
+    const reconciler = new EditorRuntimeReconciler(runtime);
+
+    const node = objectNode('object-editor-runtime-create-retry-test', {
+      expr: `${TEST_OBJECT_TYPE} initial`,
+      name: TEST_OBJECT_TYPE,
+      params: ['initial']
+    });
+
+    await expect(reconciler.reconcile([node])).resolves.toBeUndefined();
+    await reconciler.reconcile([node]);
+
+    expect(runtime.createObject).toHaveBeenCalledTimes(2);
+    expect(runtime.updateObject).not.toHaveBeenCalled();
+
+    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error));
+  });
+
+  it('retries failed updates on the next reconcile', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+    const runtime = createFakeEditorRuntime({
+      updateObject: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('update failed'))
+        .mockResolvedValueOnce(undefined)
+    });
+
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'object-editor-runtime-update-retry-test';
+
+    await reconciler.reconcile([
+      objectNode(nodeId, {
+        expr: `${TEST_OBJECT_TYPE} initial`,
+        name: TEST_OBJECT_TYPE,
+        params: ['initial']
+      })
+    ]);
+
+    const updatedNode = objectNode(nodeId, {
+      expr: `${TEST_OBJECT_TYPE} initial`,
+      name: TEST_OBJECT_TYPE,
+      params: ['updated']
+    });
+
+    await expect(reconciler.reconcile([updatedNode])).resolves.toBeUndefined();
+    await reconciler.reconcile([updatedNode]);
+
+    expect(runtime.updateObject).toHaveBeenCalledTimes(2);
+
+    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error));
+  });
+
+  it('destroys runtime objects removed while an earlier create is still pending', async () => {
+    let releaseCreate!: () => void;
+
+    const runtime = createFakeEditorRuntime({
+      createObject: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseCreate = resolve;
+          })
+      )
+    });
+
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'object-editor-runtime-pending-create-test';
+
+    const firstReconcile = reconciler.reconcile([
+      objectNode(nodeId, {
+        expr: `${TEST_OBJECT_TYPE} initial`,
+        name: TEST_OBJECT_TYPE,
+        params: ['initial']
+      })
+    ]);
+
+    await reconciler.reconcile([]);
+    releaseCreate();
+
+    await firstReconcile;
+
+    expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
+  });
+});

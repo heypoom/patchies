@@ -3,9 +3,6 @@
   import { onDestroy, onMount } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
-  import { AudioService } from '$lib/audio/v2/AudioService';
-  import { ObjectService } from '$lib/objects/v2/ObjectService';
-  import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -23,7 +20,7 @@
   import { logger } from '$lib/utils/logger';
   import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
-  import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
+  import { hasSignalPorts } from '$lib/audio/v2/audio-helpers';
   import {
     isAiFeaturesVisible,
     isObjectBrowserOpen,
@@ -38,14 +35,15 @@
     shouldSuppressObjectAutocomplete
   } from '$lib/search/object-autocomplete-query';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
-  import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
   import DisabledObjectSuggestionInline from '$objects/object/DisabledObjectSuggestionInline.svelte';
   import ObjectSuggestionDropdown from '$objects/object/ObjectSuggestionDropdown.svelte';
   import { getIconById } from '$lib/components/icons';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useObjectDataTracker } from '$lib/history';
-  import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
   import { editorFontFamily } from '../../stores/editor.store';
+  import { getPatchRuntime } from '$lib/runtime/patch-runtime-context';
+  import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
+  import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
 
   let {
     id: nodeId,
@@ -91,10 +89,24 @@
   // Track object instance version to trigger re-evaluation of outlets
   let objectInstanceVersion = $state(0);
 
-  let audioService = AudioService.getInstance();
-  let objectService = ObjectService.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
-  const messageContext = new MessageContext(nodeId);
+  const patchRuntime = getPatchRuntime();
+
+  function syncAudioObject(name: string, params: unknown[]) {
+    const didSync =
+      patchRuntime?.syncAudioObject({
+        id: nodeId,
+        objectType: name,
+        params,
+        edges: getEdges()
+      }) ?? false;
+
+    if (didSync) objectInstanceVersion++;
+  }
+
+  $effect(() => {
+    syncAudioObject(data.name, data.params);
+  });
 
   // Composable for searching disabled objects
   const { searchDisabledObject } = useDisabledObjectSuggestion(
@@ -109,20 +121,15 @@
     return getCombinedMetadata(getObjectNameFromExpr(expr));
   });
 
-  // Dynamic inlets based on object definition
-  const inlets = $derived.by(() => {
-    void objectInstanceVersion;
-
-    if (!objectMeta) return [];
-
-    const objectInstance = objectService.getObjectById(nodeId);
-
-    if (objectInstance?.getInlets) {
-      return objectInstance.getInlets();
-    }
-
-    return objectMeta.inlets || [];
+  const objectPorts = useObjectPorts({
+    nodeId,
+    getObjectMeta: () => objectMeta,
+    getObjectInstanceVersion: () => objectInstanceVersion
   });
+
+  const inlets = $derived(objectPorts.inlets);
+  const outlets = $derived(objectPorts.outlets);
+  const hasDynamicOutlets = $derived(objectPorts.hasDynamicOutlets);
 
   // Visible inlets for rendering handles (excludes hidden inlets)
   // Preserves original index for param mapping
@@ -157,33 +164,6 @@
         }
       }
     });
-  });
-
-  // Sync AudioService when data changes externally (e.g., via undo/redo)
-  const audioSync = useAudioServiceSync(
-    () => ({ name: data.name, params: data.params }),
-    (name, params) => {
-      syncAudioService(name, params);
-      objectInstanceVersion++;
-    }
-  );
-
-  // Dynamic outlets based on object definition
-  // Supports objects with dynamic outlet count via instance getOutlets() method
-  const outlets = $derived.by((): ObjectOutlet[] => {
-    // Depend on objectInstanceVersion to re-evaluate when object is created
-    void objectInstanceVersion;
-
-    if (!objectMeta) return [];
-
-    // Check if the object instance has a getOutlets method for dynamic outlets
-    const objectInstance = objectService.getObjectById(nodeId);
-
-    if (objectInstance?.getOutlets) {
-      return objectInstance.getOutlets();
-    }
-
-    return objectMeta.outlets || [];
   });
 
   const filteredSuggestions = $derived.by(() => {
@@ -370,6 +350,7 @@
       // For typed inlets with message schemas (e.g., string inlet that also accepts bang/stop),
       // only update the displayed param when the value matches the base type.
       const hasMessages = !!inlet.messages?.length;
+
       const matchesBaseType =
         !hasMessages ||
         (inlet.type === 'string' && typeof message === 'string') ||
@@ -381,14 +362,18 @@
 
       if (matchesBaseType) {
         // For audio objects, suppress the audio sync since the message is already
-        // being forwarded to the worklet directly via audioService.send below.
-        if (isAudioObject) audioSync.suppress();
+        // being forwarded to the worklet directly via PatchRuntime below.
+        if (isAudioObject) {
+          patchRuntime?.suppressNextAudioObjectSync(nodeId);
+        }
 
         updateParamByIndex(meta.inlet, message);
       }
     } else if (isSetImmediate) {
       // Update parameters for a simple `set` message.
-      if (isAudioObject) audioSync.suppress();
+      if (isAudioObject) {
+        patchRuntime?.suppressNextAudioObjectSync(nodeId);
+      }
 
       updateParamByIndex(meta.inlet, message.value);
     } else if (isScheduled) {
@@ -398,7 +383,8 @@
 
     // Route audio object messages to audio service
     if (inlet.name && isAudioObject) {
-      audioService.send(nodeId, inlet.name, message);
+      patchRuntime?.sendAudioObjectMessage(nodeId, inlet.name, message);
+
       return;
     }
   };
@@ -424,31 +410,9 @@
   }
 
   function tryCreatePlainObject() {
-    const { name, params, rawParams } = getNameAndParams();
+    const { name, params } = getNameAndParams();
 
     updateNodeData(nodeId, { expr, name, params });
-
-    if (objectService.isV2ObjectType(name)) {
-      objectService.removeObjectById(nodeId);
-
-      objectService.createObject(nodeId, name, messageContext, params, rawParams).then((object) => {
-        syncObjectParamsFromInstance(object);
-        objectInstanceVersion++;
-        updateNodeInternals(nodeId);
-      });
-    }
-  }
-
-  function syncObjectParamsFromInstance(object: TextObjectV2 | null): void {
-    const objectParams = object?.context.getParams() ?? [];
-
-    const hasParamChanges =
-      objectParams.length !== data.params.length ||
-      objectParams.some((param, index) => !Object.is(param, data.params[index]));
-
-    if (hasParamChanges) {
-      updateNodeData(nodeId, { params: objectParams });
-    }
   }
 
   function tryCreatePreset(): boolean {
@@ -463,17 +427,8 @@
 
     // Transform to the preset's node type with its data
     changeNode(flatPreset.preset.type, flatPreset.preset.data as Record<string, unknown>);
-    return true;
-  }
 
-  function syncAudioService(name: string, params: unknown[]) {
-    // Suppress the useAudioServiceSync effect — this direct call already handles recreation.
-    // Without this, the $effect would detect the params change and trigger a second recreation,
-    // causing a race between two async createNode calls (zombie processor leak).
-    audioSync.suppress();
-    audioService.removeNodeById(nodeId);
-    audioService.createNode(nodeId, name, params);
-    audioService.updateEdges(getEdges());
+    return true;
   }
 
   function tryCreateAudioObject() {
@@ -482,10 +437,9 @@
     const { name, params } = getNameAndParams();
     updateNodeData(nodeId, { expr, name, params });
 
-    if (!getAudioObjectNames().includes(name)) return false;
+    if (!name || !patchRuntime?.canCreateAudioObject(name)) return false;
 
-    syncAudioService(name, params);
-    objectInstanceVersion++;
+    syncAudioObject(name, params);
 
     return true;
   }
@@ -544,6 +498,7 @@
         event.preventDefault();
         exitEditingMode(true);
       }
+
       return;
     }
 
@@ -652,55 +607,17 @@
         showAutocomplete = true;
       }, 10);
     }
-
-    if (getAudioObjectNames().includes(data.name)) {
-      syncAudioService(data.name, data.params);
-      objectInstanceVersion++;
-    }
-
-    // Create V2 text object if applicable
-    if (objectService.isV2ObjectType(data.name)) {
-      // Extract raw params from expr for V2 objects
-      const rawParams = (data.expr || '').trim().split(' ').slice(1);
-
-      // Use saved data.params if available (may have been updated via messages),
-      // otherwise fall back to parsing from expr.
-      // Only use saved params if they match expected inlet count to avoid type mismatches.
-      const expectedParams = parseObjectParamFromString(data.name, rawParams);
-
-      const parsedParams =
-        data.params && data.params.length === expectedParams.length ? data.params : expectedParams;
-
-      objectService
-        .createObject(nodeId, data.name, messageContext, parsedParams, rawParams)
-        .then((object) => {
-          syncObjectParamsFromInstance(object);
-
-          // Trigger re-evaluation of outlets after object is created
-          objectInstanceVersion++;
-
-          updateNodeInternals(nodeId);
-        });
-    }
-
-    messageContext.queue.addCallback(handleObjectMessage);
-
-    eventBus.addEventListener('objectParamsChanged', handleObjectParamsChanged);
   });
 
   onDestroy(() => {
-    audioService.removeNodeById(nodeId);
-    objectService.removeObjectById(nodeId);
-
-    eventBus.removeEventListener('objectParamsChanged', handleObjectParamsChanged);
+    patchRuntime?.destroyAudioObject(nodeId);
   });
 
-  /** Handle params changed from within an object (e.g., setStore) */
-  function handleObjectParamsChanged(event: { nodeId: string; params: unknown[] }) {
-    if (event.nodeId !== nodeId) return;
-
-    updateNodeData(nodeId, { params: event.params });
-  }
+  useObjectRuntimeView({
+    nodeId,
+    onMessage: handleObjectMessage,
+    updateNodeInternals
+  });
 
   // Calculate minimum width based on port count (inlets or outlets, whichever is larger)
   const minWidthStyle = $derived.by(() => {
@@ -712,13 +629,6 @@
     const minWidth = maxPorts * 20;
 
     return `min-width: ${minWidth}px`;
-  });
-
-  // Check if this object has dynamic outlets (needs to show raw params instead of parsed)
-  const hasDynamicOutlets = $derived.by(() => {
-    void objectInstanceVersion;
-    const objectInstance = objectService.getObjectById(nodeId);
-    return !!objectInstance?.getOutlets;
   });
 
   // Get raw params from expr for display (used for objects with dynamic outlets)
@@ -806,7 +716,7 @@
     void data.params;
     void objectInstanceVersion;
 
-    const audioNode = audioService.getNodeById(nodeId);
+    const audioNode = patchRuntime?.getAudioObject(nodeId);
     if (!audioNode?.getIcon) return null;
 
     const iconId = audioNode.getIcon();
@@ -820,7 +730,7 @@
     void data.params;
     void objectInstanceVersion;
 
-    const audioNode = audioService.getNodeById(nodeId);
+    const audioNode = patchRuntime?.getAudioObject(nodeId);
     return audioNode?.getIconParamIndex?.() ?? null;
   });
 </script>
