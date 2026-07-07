@@ -18,7 +18,7 @@ interface RuntimeObjectSnapshot {
 type NextRuntimeObjectSnapshot = RuntimeObjectSnapshot & { pendingIds: Set<string> };
 
 export type EditorRuntime = {
-  canCreateObject(objectType: string): boolean;
+  isObjectInRegistry(objectType: string): boolean;
   createObject(spec: PatchRuntimeObjectSpec): Promise<void>;
   updateObject(nodeId: string, spec: PatchRuntimeObjectSpec): Promise<void>;
   destroyObject(nodeId: string): void;
@@ -93,7 +93,7 @@ export class EditorRuntimeReconciler {
     const data = node.data as EditorRuntimeObjectData | undefined;
 
     const objectType = typeof data?.name === 'string' ? data.name : '';
-    if (!objectType || !this.runtime.canCreateObject(objectType)) return null;
+    if (!objectType || !this.runtime.isObjectInRegistry(objectType)) return null;
 
     return getRuntimeObjectSpecFromNode(node.id, objectType, data);
   }

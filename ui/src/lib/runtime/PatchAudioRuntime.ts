@@ -1,4 +1,5 @@
 import type { Edge } from '@xyflow/svelte';
+import { hash } from 'ohash';
 import { getAudioObjectNames } from '$lib/audio/v2/audio-helpers';
 import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 
@@ -120,6 +121,6 @@ export class PatchAudioRuntime {
   }
 
   private getAudioObjectSyncKey(objectType: string, params: unknown[]): string {
-    return JSON.stringify([objectType, params]);
+    return hash([objectType, params]);
   }
 }

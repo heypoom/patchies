@@ -43,8 +43,10 @@ export class PatchRuntime {
     });
   }
 
-  canCreateObject(objectType: string): boolean {
-    return this.message.canCreateObject(objectType);
+  isObjectInRegistry(objectType: string): boolean {
+    return (
+      this.message.isObjectInRegistry(objectType) || this.audio.canCreateAudioObject(objectType)
+    );
   }
 
   async createObject(spec: PatchRuntimeObjectSpec): Promise<void> {
@@ -70,8 +72,8 @@ export class PatchRuntime {
     return this.message.getObjectPorts(nodeId, objectMeta);
   }
 
-  getObjectRevision(nodeId: string): number {
-    return this.message.getObjectRevision(nodeId);
+  getObjectViewRevision(nodeId: string): number {
+    return this.message.getObjectViewRevision(nodeId);
   }
 
   canCreateAudioObject(objectType: string): boolean {

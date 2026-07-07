@@ -1,4 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
+import { hash } from 'ohash';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -22,7 +23,7 @@ type RuntimeObjectRecord = {
   objectType: string;
   lifecycleKey: string;
   messageContext: MessageContext;
-  generation: number;
+  lifecycleToken: number;
 };
 
 export type PatchRuntimeObjectService = {
@@ -34,7 +35,7 @@ export type PatchRuntimeObjectService = {
     rawParams?: string[]
   ): Promise<TextObjectV2 | null>;
 
-  isV2ObjectType(objectType: string): boolean;
+  isObjectInRegistry(objectType: string): boolean;
   getObjectById(nodeId: string): TextObjectV2 | null;
   removeObjectById(nodeId: string): void;
 };
@@ -44,6 +45,7 @@ export type PatchRuntimeEventBus = {
     type: 'objectParamsChanged',
     listener: (event: ObjectParamsChangedEvent) => void
   ): void;
+
   removeEventListener(
     type: 'objectParamsChanged',
     listener: (event: ObjectParamsChangedEvent) => void
@@ -68,8 +70,8 @@ export class PatchMessageRuntime {
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private objects = new Map<string, RuntimeObjectRecord>();
   private objectMessageContexts = new SvelteMap<string, MessageContext>();
-  private objectRevisions = new SvelteMap<string, number>();
-  private objectGenerations = new Map<string, number>();
+  private objectViewRevisions = new SvelteMap<string, number>();
+  private objectLifecycleTokens = new Map<string, number>();
 
   constructor(options: PatchMessageRuntimeOptions) {
     this.objectService = options.objectService;
@@ -79,28 +81,79 @@ export class PatchMessageRuntime {
     this.eventBus.addEventListener('objectParamsChanged', this.handleObjectParamsChanged);
   }
 
-  canCreateObject(objectType: string): boolean {
-    return this.objectService.isV2ObjectType(objectType);
+  isObjectInRegistry(objectType: string): boolean {
+    return this.objectService.isObjectInRegistry(objectType);
   }
 
   async createObject(spec: PatchRuntimeObjectSpec): Promise<void> {
-    await this.createOrReplaceObject(spec);
+    this.removeObject(spec.id, {
+      bumpRevision: false,
+      unregisterMessageNode: false
+    });
+
+    const lifecycleToken = this.nextObjectLifecycleToken(spec.id);
+    const messageContext = new MessageContext(spec.id);
+    const lifecycleKey = getObjectLifecycleKey(spec);
+
+    this.objects.set(spec.id, {
+      objectType: spec.objectType,
+      lifecycleKey,
+      messageContext,
+      lifecycleToken
+    });
+
+    this.objectMessageContexts.set(spec.id, messageContext);
+
+    const object = await this.objectService.createObject(
+      spec.id,
+      spec.objectType,
+      messageContext,
+      spec.params,
+      spec.rawParams
+    );
+
+    if (!this.isCurrentObjectLifecycleToken(spec.id, lifecycleToken)) {
+      return;
+    }
+
+    if (!object) {
+      this.bumpObjectViewRevision(spec.id);
+      return;
+    }
+
+    const params = object.context.getParams();
+
+    if (hasParamChanges(spec.params, params)) {
+      this.onObjectParamsChange?.(spec.id, params);
+    }
+
+    this.bumpObjectViewRevision(spec.id);
   }
 
   async updateObject(nodeId: string, spec: PatchRuntimeObjectSpec): Promise<void> {
     const existing = this.objects.get(nodeId);
-    const lifecycleKey = this.getObjectLifecycleKey(spec);
+    const lifecycleKey = getObjectLifecycleKey(spec);
 
     const canSkipUpdate =
       existing && existing.objectType === spec.objectType && existing.lifecycleKey === lifecycleKey;
 
     if (canSkipUpdate) return;
 
-    await this.createOrReplaceObject(spec);
+    await this.createObject(spec);
   }
 
   destroyObject(nodeId: string): void {
-    this.removeObject(nodeId, { bumpRevision: true });
+    const record = this.objects.get(nodeId);
+    if (!record) return;
+
+    this.objectService.removeObjectById(nodeId);
+    record.messageContext.destroy();
+
+    this.objects.delete(nodeId);
+    this.objectMessageContexts.delete(nodeId);
+
+    this.nextObjectLifecycleToken(nodeId);
+    this.bumpObjectViewRevision(nodeId);
   }
 
   private removeObject(
@@ -117,8 +170,8 @@ export class PatchMessageRuntime {
     this.objectMessageContexts.delete(nodeId);
 
     if (options.bumpRevision) {
-      this.nextObjectGeneration(nodeId);
-      this.bumpObjectRevision(nodeId);
+      this.nextObjectLifecycleToken(nodeId);
+      this.bumpObjectViewRevision(nodeId);
     }
   }
 
@@ -150,8 +203,8 @@ export class PatchMessageRuntime {
     };
   }
 
-  getObjectRevision(nodeId: string): number {
-    return this.objectRevisions.get(nodeId) ?? 0;
+  getObjectViewRevision(nodeId: string): number {
+    return this.objectViewRevisions.get(nodeId) ?? 0;
   }
 
   destroy(): void {
@@ -164,71 +217,33 @@ export class PatchMessageRuntime {
 
   private handleObjectParamsChanged = (event: ObjectParamsChangedEvent) => {
     this.onObjectParamsChange?.(event.nodeId, event.params);
-    this.bumpObjectRevision(event.nodeId);
+    this.bumpObjectViewRevision(event.nodeId);
   };
 
-  private async createOrReplaceObject(spec: PatchRuntimeObjectSpec): Promise<void> {
-    this.removeObject(spec.id, { bumpRevision: false, unregisterMessageNode: false });
-
-    const generation = this.nextObjectGeneration(spec.id);
-    const messageContext = new MessageContext(spec.id);
-    const lifecycleKey = this.getObjectLifecycleKey(spec);
-
-    this.objects.set(spec.id, {
-      objectType: spec.objectType,
-      lifecycleKey,
-      messageContext,
-      generation
-    });
-
-    this.objectMessageContexts.set(spec.id, messageContext);
-
-    const object = await this.objectService.createObject(
-      spec.id,
-      spec.objectType,
-      messageContext,
-      spec.params,
-      spec.rawParams
-    );
-
-    if (!this.isCurrentObjectGeneration(spec.id, generation)) {
-      return;
-    }
-
-    const objectParams = object?.context.getParams() ?? [];
-
-    if (this.hasParamChanges(spec.params, objectParams)) {
-      this.onObjectParamsChange?.(spec.id, objectParams);
-    }
-
-    this.bumpObjectRevision(spec.id);
+  private bumpObjectViewRevision(nodeId: string): void {
+    this.objectViewRevisions.set(nodeId, (this.objectViewRevisions.get(nodeId) ?? 0) + 1);
   }
 
-  private getObjectLifecycleKey(spec: PatchRuntimeObjectSpec): string {
-    return JSON.stringify([spec.objectType, spec.rawParams]);
+  private nextObjectLifecycleToken(nodeId: string): number {
+    const lifecycleToken = (this.objectLifecycleTokens.get(nodeId) ?? 0) + 1;
+    this.objectLifecycleTokens.set(nodeId, lifecycleToken);
+
+    return lifecycleToken;
   }
 
-  private hasParamChanges(currentParams: unknown[], objectParams: unknown[]): boolean {
-    return (
-      currentParams.length !== objectParams.length ||
-      objectParams.some((param, index) => !Object.is(param, currentParams[index]))
-    );
-  }
-
-  private bumpObjectRevision(nodeId: string): void {
-    this.objectRevisions.set(nodeId, (this.objectRevisions.get(nodeId) ?? 0) + 1);
-  }
-
-  private nextObjectGeneration(nodeId: string): number {
-    const generation = (this.objectGenerations.get(nodeId) ?? 0) + 1;
-    this.objectGenerations.set(nodeId, generation);
-
-    return generation;
-  }
-
-  private isCurrentObjectGeneration(nodeId: string, generation: number): boolean {
+  private isCurrentObjectLifecycleToken(nodeId: string, lifecycleToken: number): boolean {
     const record = this.objects.get(nodeId);
 
-    return record?.generation === generation && this.objectGenerations.get(nodeId) === generation;
+    return (
+      record?.lifecycleToken === lifecycleToken &&
+      this.objectLifecycleTokens.get(nodeId) === lifecycleToken
+    );
   }
 }
+
+const hasParamChanges = (currentParams: unknown[], objectParams: unknown[]): boolean =>
+  currentParams.length !== objectParams.length ||
+  objectParams.some((param, index) => !Object.is(param, currentParams[index]));
+
+const getObjectLifecycleKey = (spec: PatchRuntimeObjectSpec): string =>
+  hash([spec.objectType, spec.rawParams]);

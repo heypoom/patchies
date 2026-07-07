@@ -69,7 +69,7 @@ afterEach(() => {
 class FakeObjectService implements PatchRuntimeObjectService {
   private objectsById = new Map<string, TextObjectV2>();
 
-  isV2ObjectType(objectType: string): boolean {
+  isObjectInRegistry(objectType: string): boolean {
     return objectType === TEST_OBJECT_TYPE;
   }
 
@@ -80,7 +80,7 @@ class FakeObjectService implements PatchRuntimeObjectService {
     params: unknown[] = [],
     rawParams: string[] = []
   ): Promise<TextObjectV2 | null> {
-    if (!this.isV2ObjectType(objectType)) return null;
+    if (!this.isObjectInRegistry(objectType)) return null;
 
     const context = new ObjectContext(nodeId, messageContext, PatchRuntimeTestObject.inlets);
     context.initParams(params);
@@ -375,7 +375,7 @@ describe('PatchMessageRuntime', () => {
       rawParams: ['initial']
     });
 
-    const revisionAfterCreate = runtime.getObjectRevision(nodeId);
+    const revisionAfterCreate = runtime.getObjectViewRevision(nodeId);
 
     await runtime.updateObject(nodeId, {
       id: nodeId,
@@ -384,7 +384,7 @@ describe('PatchMessageRuntime', () => {
       rawParams: ['next']
     });
 
-    expect(runtime.getObjectRevision(nodeId)).toBe(revisionAfterCreate + 1);
+    expect(runtime.getObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
   });
 });
 
@@ -508,6 +508,62 @@ describe('PatchAudioRuntime', () => {
 });
 
 describe('PatchRuntime', () => {
+  it('creates a message endpoint for audio objects', async () => {
+    const objectService = new FakeObjectService();
+
+    const runtime = new PatchRuntime({
+      objectService,
+      audioService: new FakeAudioService(),
+      isAudioObject: (objectType) => objectType === 'osc~'
+    });
+
+    const sourceNodeId = 'slider-source';
+    const audioNodeId = 'osc-target';
+    const callback = vi.fn();
+    const messageSystem = MessageSystem.getInstance();
+
+    expect(runtime.isObjectInRegistry('osc~')).toBe(true);
+
+    await runtime.createObject({
+      id: audioNodeId,
+      objectType: 'osc~',
+      params: [440],
+      rawParams: ['440']
+    });
+
+    const unsubscribe = runtime.subscribeObjectMessages(audioNodeId, callback);
+    expect(unsubscribe).toEqual(expect.any(Function));
+
+    messageSystem.registerNode(sourceNodeId);
+
+    messageSystem.updateEdges([
+      {
+        id: 'slider-to-osc-frequency',
+        source: sourceNodeId,
+        target: audioNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    messageSystem.sendMessage(sourceNodeId, 220);
+
+    expect(callback).toHaveBeenCalledWith(
+      220,
+      expect.objectContaining({
+        source: sourceNodeId,
+        inlet: 0,
+        inletKey: 'message-in-0'
+      })
+    );
+
+    unsubscribe?.();
+    runtime.destroy();
+
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
+  });
+
   it('keeps a facade over message and audio runtime helpers', async () => {
     const objectService = new FakeObjectService();
     const audioService = new FakeAudioService();
@@ -542,7 +598,7 @@ describe('PatchRuntime', () => {
 describe('EditorRuntimeReconciler', () => {
   it('translates XYFlow object nodes into PatchRuntime object calls', async () => {
     const runtime = {
-      canCreateObject: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
       createObject: vi.fn(),
       updateObject: vi.fn(),
       destroyObject: vi.fn()
@@ -587,7 +643,7 @@ describe('EditorRuntimeReconciler', () => {
 
   it('skips updates when the runtime object spec has not changed', async () => {
     const runtime = {
-      canCreateObject: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
       createObject: vi.fn(),
       updateObject: vi.fn(),
       destroyObject: vi.fn()
@@ -612,7 +668,7 @@ describe('EditorRuntimeReconciler', () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
     const runtime = {
-      canCreateObject: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
       createObject: vi
         .fn()
         .mockRejectedValueOnce(new Error('create failed'))
@@ -642,7 +698,7 @@ describe('EditorRuntimeReconciler', () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
     const runtime = {
-      canCreateObject: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
       createObject: vi.fn(),
       updateObject: vi
         .fn()
@@ -680,7 +736,7 @@ describe('EditorRuntimeReconciler', () => {
     let releaseCreate!: () => void;
 
     const runtime = {
-      canCreateObject: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+      isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
       createObject: vi.fn(
         () =>
           new Promise<void>((resolve) => {
