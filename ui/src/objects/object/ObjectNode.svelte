@@ -124,7 +124,7 @@
   const objectPorts = useObjectPorts({
     nodeId,
     getObjectMeta: () => objectMeta,
-    getObjectInstanceVersion: () => objectInstanceVersion
+    trackObjectInstanceVersion: () => objectInstanceVersion
   });
 
   const inlets = $derived(objectPorts.inlets);

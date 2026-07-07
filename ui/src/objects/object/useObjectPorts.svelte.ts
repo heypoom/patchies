@@ -4,28 +4,28 @@ import { getPatchRuntime } from '$lib/runtime/patch-runtime-context';
 type ObjectPortsOptions = {
   nodeId: string;
   getObjectMeta: () => ObjectMetadata | null | undefined;
-  getObjectInstanceVersion: () => number;
+  trackObjectInstanceVersion: () => number;
 };
 
 export function useObjectPorts(options: ObjectPortsOptions) {
   const patchRuntime = getPatchRuntime();
 
   const inlets = $derived.by((): ObjectInlet[] => {
-    options.getObjectInstanceVersion();
+    options.trackObjectInstanceVersion();
     patchRuntime?.trackObjectViewRevision(options.nodeId);
 
     return patchRuntime?.getObjectPorts(options.nodeId, options.getObjectMeta()).inlets ?? [];
   });
 
   const outlets = $derived.by((): ObjectOutlet[] => {
-    options.getObjectInstanceVersion();
+    options.trackObjectInstanceVersion();
     patchRuntime?.trackObjectViewRevision(options.nodeId);
 
     return patchRuntime?.getObjectPorts(options.nodeId, options.getObjectMeta()).outlets ?? [];
   });
 
   const hasDynamicOutlets = $derived.by(() => {
-    options.getObjectInstanceVersion();
+    options.trackObjectInstanceVersion();
     patchRuntime?.trackObjectViewRevision(options.nodeId);
 
     return (
