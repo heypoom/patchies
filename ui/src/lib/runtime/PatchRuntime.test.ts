@@ -258,7 +258,7 @@ describe('PatchMessageRuntime', () => {
       rawParams: ['initial']
     });
 
-    const revisionAfterCreate = runtime.getObjectViewRevision(nodeId);
+    const revisionAfterCreate = runtime.trackObjectViewRevision(nodeId);
 
     await runtime.updateObject(nodeId, {
       id: nodeId,
@@ -267,7 +267,7 @@ describe('PatchMessageRuntime', () => {
       rawParams: ['next']
     });
 
-    expect(runtime.getObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
+    expect(runtime.trackObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
   });
 });
 

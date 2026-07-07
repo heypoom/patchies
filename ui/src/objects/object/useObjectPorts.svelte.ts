@@ -12,21 +12,21 @@ export function useObjectPorts(options: ObjectPortsOptions) {
 
   const inlets = $derived.by((): ObjectInlet[] => {
     options.getObjectInstanceVersion();
-    patchRuntime?.getObjectViewRevision(options.nodeId);
+    patchRuntime?.trackObjectViewRevision(options.nodeId);
 
     return patchRuntime?.getObjectPorts(options.nodeId, options.getObjectMeta()).inlets ?? [];
   });
 
   const outlets = $derived.by((): ObjectOutlet[] => {
     options.getObjectInstanceVersion();
-    patchRuntime?.getObjectViewRevision(options.nodeId);
+    patchRuntime?.trackObjectViewRevision(options.nodeId);
 
     return patchRuntime?.getObjectPorts(options.nodeId, options.getObjectMeta()).outlets ?? [];
   });
 
   const hasDynamicOutlets = $derived.by(() => {
     options.getObjectInstanceVersion();
-    patchRuntime?.getObjectViewRevision(options.nodeId);
+    patchRuntime?.trackObjectViewRevision(options.nodeId);
 
     return (
       patchRuntime?.getObjectPorts(options.nodeId, options.getObjectMeta()).hasDynamicOutlets ??

@@ -74,8 +74,8 @@ export class PatchRuntime {
     return this.message.getObjectPorts(nodeId, objectMeta);
   }
 
-  getObjectViewRevision(nodeId: string): number {
-    return this.message.getObjectViewRevision(nodeId);
+  trackObjectViewRevision(nodeId: string): number {
+    return this.message.trackObjectViewRevision(nodeId);
   }
 
   syncAudioObject(spec: RuntimeAudioObjectSpec): boolean {

@@ -203,7 +203,11 @@ export class PatchMessageRuntime {
     };
   }
 
-  getObjectViewRevision(nodeId: string): number {
+  /**
+   * Reads the object's view revision from a SvelteMap so callers inside
+   * `$derived`/`$effect` track runtime object changes as a reactive dependency.
+   */
+  trackObjectViewRevision(nodeId: string): number {
     return this.objectViewRevisions.get(nodeId) ?? 0;
   }
 
