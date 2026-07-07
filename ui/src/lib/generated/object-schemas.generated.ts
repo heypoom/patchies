@@ -2933,11 +2933,20 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 'message',
         type: 'message',
-        description: 'Control messages: "start", "stop", or bang to toggle',
+        description: 'Control messages',
         messages: [
+          { schema: Type.Boolean(), description: 'True starts the metronome. False stops it.' },
           {
-            schema: Type.Any(),
-            description: 'Control messages: "start", "stop", or bang to toggle'
+            schema: Type.Object({ type: Type.Literal('start') }),
+            description: 'Start the metronome'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('stop') }),
+            description: 'Stop the metronome'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Toggle the metronome'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }
@@ -2955,10 +2964,13 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'out',
         type: 'bang',
         description: 'Bang signal sent at regular intervals',
+        messages: [
+          { schema: Type.Object({ type: Type.Literal('bang') }), description: 'Sent on each tick' }
+        ],
         handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    tags: ['metro']
+    tags: ['control', 'timing', 'metronome', 'clock', 'trigger']
   },
 
   'mic~': {
