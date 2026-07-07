@@ -357,12 +357,12 @@ describe('RuntimeAudioObjectAdapter', () => {
 
     const nodeId = 'object-audio-undo-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'meter' }] as Edge[];
-    const spec = { id: nodeId, objectType: 'osc~', params: [440], edges };
+    const descriptor = { id: nodeId, objectType: 'osc~', params: [440], edges };
 
-    expect(runtime.syncAudioObject(spec)).toBe(true);
+    expect(runtime.syncAudioObject(descriptor)).toBe(true);
 
     audioService.getNodeById.mockReturnValueOnce(null);
-    expect(runtime.syncAudioObject(spec)).toBe(true);
+    expect(runtime.syncAudioObject(descriptor)).toBe(true);
     expect(audioService.createNode).toHaveBeenCalledTimes(2);
   });
 
@@ -762,7 +762,7 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
   });
 
-  it('skips updates when the runtime object spec has not changed', async () => {
+  it('skips updates when the runtime object descriptor has not changed', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
 

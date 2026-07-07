@@ -12,7 +12,7 @@ type ObjectParamsChangedEvent = {
   params: unknown[];
 };
 
-export type PatchRuntimeObjectSpec = {
+export type PatchRuntimeObjectDescriptor = {
   id: string;
   objectType: string;
   params: unknown[];
@@ -85,61 +85,63 @@ export class PatchMessageRuntime {
     return this.objectService.isObjectInRegistry(objectType);
   }
 
-  async createObject(spec: PatchRuntimeObjectSpec): Promise<void> {
-    this.removeObject(spec.id, {
+  async createObject(descriptor: PatchRuntimeObjectDescriptor): Promise<void> {
+    this.removeObject(descriptor.id, {
       bumpRevision: false,
       unregisterMessageNode: false
     });
 
-    const lifecycleToken = this.nextObjectLifecycleToken(spec.id);
-    const messageContext = new MessageContext(spec.id);
-    const lifecycleKey = getObjectLifecycleKey(spec);
+    const lifecycleToken = this.nextObjectLifecycleToken(descriptor.id);
+    const messageContext = new MessageContext(descriptor.id);
+    const lifecycleKey = getObjectLifecycleKey(descriptor);
 
-    this.objects.set(spec.id, {
-      objectType: spec.objectType,
+    this.objects.set(descriptor.id, {
+      objectType: descriptor.objectType,
       lifecycleKey,
       messageContext,
       lifecycleToken
     });
 
-    this.objectMessageContexts.set(spec.id, messageContext);
+    this.objectMessageContexts.set(descriptor.id, messageContext);
 
     const object = await this.objectService.createObject(
-      spec.id,
-      spec.objectType,
+      descriptor.id,
+      descriptor.objectType,
       messageContext,
-      spec.params,
-      spec.rawParams
+      descriptor.params,
+      descriptor.rawParams
     );
 
-    if (!this.isCurrentObjectLifecycleToken(spec.id, lifecycleToken)) {
+    if (!this.isCurrentObjectLifecycleToken(descriptor.id, lifecycleToken)) {
       return;
     }
 
     if (!object) {
-      this.bumpObjectViewRevision(spec.id);
+      this.bumpObjectViewRevision(descriptor.id);
       return;
     }
 
     const params = object.context.getParams();
 
-    if (hasParamChanges(spec.params, params)) {
-      this.onObjectParamsChange?.(spec.id, params);
+    if (hasParamChanges(descriptor.params, params)) {
+      this.onObjectParamsChange?.(descriptor.id, params);
     }
 
-    this.bumpObjectViewRevision(spec.id);
+    this.bumpObjectViewRevision(descriptor.id);
   }
 
-  async updateObject(nodeId: string, spec: PatchRuntimeObjectSpec): Promise<void> {
+  async updateObject(nodeId: string, descriptor: PatchRuntimeObjectDescriptor): Promise<void> {
     const existing = this.objects.get(nodeId);
-    const lifecycleKey = getObjectLifecycleKey(spec);
+    const lifecycleKey = getObjectLifecycleKey(descriptor);
 
     const canSkipUpdate =
-      existing && existing.objectType === spec.objectType && existing.lifecycleKey === lifecycleKey;
+      existing &&
+      existing.objectType === descriptor.objectType &&
+      existing.lifecycleKey === lifecycleKey;
 
     if (canSkipUpdate) return;
 
-    await this.createObject(spec);
+    await this.createObject(descriptor);
   }
 
   destroyObject(nodeId: string): void {
@@ -249,5 +251,5 @@ const hasParamChanges = (currentParams: unknown[], objectParams: unknown[]): boo
   currentParams.length !== objectParams.length ||
   objectParams.some((param, index) => !Object.is(param, currentParams[index]));
 
-const getObjectLifecycleKey = (spec: PatchRuntimeObjectSpec): string =>
-  hash([spec.objectType, spec.rawParams]);
+const getObjectLifecycleKey = (descriptor: PatchRuntimeObjectDescriptor): string =>
+  hash([descriptor.objectType, descriptor.rawParams]);

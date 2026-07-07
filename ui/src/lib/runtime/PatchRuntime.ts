@@ -6,21 +6,24 @@ import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 import {
   RuntimeAudioObjectAdapter,
   type RuntimeAudioObjectService,
-  type RuntimeAudioObjectSpec
+  type RuntimeAudioObjectDescriptor
 } from './RuntimeAudioObjectAdapter';
 
 import {
   PatchMessageRuntime,
   type RuntimeObjectPorts,
   type PatchRuntimeObjectService,
-  type PatchRuntimeObjectSpec
+  type PatchRuntimeObjectDescriptor
 } from './PatchMessageRuntime';
 
 export type {
   RuntimeAudioObjectService,
-  RuntimeAudioObjectSpec
+  RuntimeAudioObjectDescriptor
 } from './RuntimeAudioObjectAdapter';
-export type { PatchRuntimeObjectService, PatchRuntimeObjectSpec } from './PatchMessageRuntime';
+export type {
+  PatchRuntimeObjectService,
+  PatchRuntimeObjectDescriptor
+} from './PatchMessageRuntime';
 
 export type PatchRuntimeOptions = {
   objectService: PatchRuntimeObjectService;
@@ -51,12 +54,12 @@ export class PatchRuntime {
     return this.message.isObjectInRegistry(objectType) || this.audio.isObjectInRegistry(objectType);
   }
 
-  async createObject(spec: PatchRuntimeObjectSpec): Promise<void> {
-    await this.message.createObject(spec);
+  async createObject(descriptor: PatchRuntimeObjectDescriptor): Promise<void> {
+    await this.message.createObject(descriptor);
   }
 
-  async updateObject(nodeId: string, spec: PatchRuntimeObjectSpec): Promise<void> {
-    await this.message.updateObject(nodeId, spec);
+  async updateObject(nodeId: string, descriptor: PatchRuntimeObjectDescriptor): Promise<void> {
+    await this.message.updateObject(nodeId, descriptor);
   }
 
   destroyObject(nodeId: string): void {
@@ -78,8 +81,8 @@ export class PatchRuntime {
     return this.message.trackObjectViewRevision(nodeId);
   }
 
-  syncAudioObject(spec: RuntimeAudioObjectSpec): boolean {
-    return this.audio.syncAudioObject(spec);
+  syncAudioObject(descriptor: RuntimeAudioObjectDescriptor): boolean {
+    return this.audio.syncAudioObject(descriptor);
   }
 
   suppressNextAudioObjectSync(nodeId: string): void {

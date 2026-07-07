@@ -20,7 +20,7 @@ export interface RuntimeAudioObjectAdapterOptions {
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-export type RuntimeAudioObjectSpec = {
+export type RuntimeAudioObjectDescriptor = {
   id: string;
   objectType: string;
   params: unknown[];
@@ -58,45 +58,57 @@ export class RuntimeAudioObjectAdapter {
     return this.isAudioObject(objectType);
   }
 
-  syncAudioObject(spec: RuntimeAudioObjectSpec): boolean {
-    if (!this.isObjectInRegistry(spec.objectType)) {
+  syncAudioObject(descriptor: RuntimeAudioObjectDescriptor): boolean {
+    if (!this.isObjectInRegistry(descriptor.objectType)) {
       // The same editor node may stop being an audio object after its text changes.
       // If this adapter previously created audio runtime state for it, tear that down.
-      this.suppressedAudioObjectSyncs.delete(spec.id);
-      if (!this.audioObjectSyncKeys.has(spec.id)) return false;
+      this.suppressedAudioObjectSyncs.delete(descriptor.id);
+      if (!this.audioObjectSyncKeys.has(descriptor.id)) return false;
 
-      this.destroyAudioObject(spec.id);
+      this.destroyAudioObject(descriptor.id);
 
       return true;
     }
 
-    const syncKey = this.getAudioObjectSyncKey(spec.objectType, spec.params);
+    const syncKey = this.getAudioObjectSyncKey(descriptor.objectType, descriptor.params);
 
-    if (this.audioObjectSyncKeys.get(spec.id) === syncKey) {
+    if (this.audioObjectSyncKeys.get(descriptor.id) === syncKey) {
       // The editor state still describes the same audio object. Usually this is a no-op,
       // but delete/undo or graph cleanup can remove the AudioService node while leaving
       // this adapter's sync cache warm. Recreate when the service node is missing.
-      if (!this.audioObjectIds.has(spec.id) || this.getAudioObject(spec.id)) return false;
+      if (!this.audioObjectIds.has(descriptor.id) || this.getAudioObject(descriptor.id)) {
+        return false;
+      }
 
-      this.createOrUpdateAudioObject(spec.id, spec.objectType, spec.params, spec.edges);
+      this.createOrUpdateAudioObject(
+        descriptor.id,
+        descriptor.objectType,
+        descriptor.params,
+        descriptor.edges
+      );
 
       return true;
     }
 
-    if (this.suppressedAudioObjectSyncs.delete(spec.id)) {
+    if (this.suppressedAudioObjectSyncs.delete(descriptor.id)) {
       // Runtime-owned message contexts can update both the live audio node and editor
       // node data. When that data change loops back through reconciliation, skip the
       // recreate because the audio node already received the setting message.
-      if (this.audioObjectIds.has(spec.id)) {
-        this.audioObjectSyncKeys.set(spec.id, syncKey);
+      if (this.audioObjectIds.has(descriptor.id)) {
+        this.audioObjectSyncKeys.set(descriptor.id, syncKey);
       } else {
-        this.audioObjectSyncKeys.delete(spec.id);
+        this.audioObjectSyncKeys.delete(descriptor.id);
       }
 
       return false;
     }
 
-    this.createOrUpdateAudioObject(spec.id, spec.objectType, spec.params, spec.edges);
+    this.createOrUpdateAudioObject(
+      descriptor.id,
+      descriptor.objectType,
+      descriptor.params,
+      descriptor.edges
+    );
 
     return true;
   }
