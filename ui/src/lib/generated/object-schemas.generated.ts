@@ -2933,9 +2933,9 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 'message',
         type: 'message',
-        description: 'Control messages: true starts, false stops, start, stop, or bang toggles',
+        description: 'Control messages',
         messages: [
-          { schema: Type.Boolean(), description: 'true starts the metronome, false stops it' },
+          { schema: Type.Boolean(), description: 'True starts the metronome. False stops it.' },
           {
             schema: Type.Object({ type: Type.Literal('start') }),
             description: 'Start the metronome'
@@ -2964,10 +2964,13 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'out',
         type: 'bang',
         description: 'Bang signal sent at regular intervals',
+        messages: [
+          { schema: Type.Object({ type: Type.Literal('bang') }), description: 'Sent on each tick' }
+        ],
         handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    tags: ['metro']
+    tags: ['control', 'timing', 'metronome', 'clock', 'trigger']
   },
 
   'mic~': {

@@ -66,7 +66,6 @@ export * from '$objects/scan/schema';
 export * from '$objects/uniq/schema';
 export * from '$objects/peek/schema';
 export * from '$objects/loadbang/schema';
-export * from '$objects/metro/schema';
 export * from '$objects/markdown/schema';
 export * from '$objects/tone~/schema';
 export * from '$objects/elem~/schema';
@@ -167,7 +166,6 @@ import { scanSchema } from '$objects/scan/schema';
 import { uniqSchema } from '$objects/uniq/schema';
 import { peekSchema } from '$objects/peek/schema';
 import { loadbangSchema } from '$objects/loadbang/schema';
-import { metroSchema } from '$objects/metro/schema';
 import { markdownSchema } from '$objects/markdown/schema';
 import { toneSchema } from '$objects/tone~/schema';
 import { elemSchema } from '$objects/elem~/schema';
@@ -298,7 +296,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   uniq: uniqSchema,
   peek: peekSchema,
   loadbang: loadbangSchema,
-  metro: metroSchema,
   markdown: markdownSchema,
   'tone~': toneSchema,
   'elem~': elemSchema,

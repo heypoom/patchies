@@ -16,15 +16,17 @@ const metroMessages = {
  */
 export class MetroObject implements TextObjectV2 {
   static type = 'metro';
+  static category = 'control';
   static description = 'Metronome that sends bang signals at regular intervals';
+  static tags = ['control', 'timing', 'metronome', 'clock', 'trigger'];
 
   static inlets: ObjectInlet[] = [
     {
       name: 'message',
       type: 'message',
-      description: 'Control messages: true starts, false stops, start, stop, or bang toggles',
+      description: 'Control messages',
       messages: [
-        { schema: BooleanControl, description: 'true starts the metronome, false stops it' },
+        { schema: BooleanControl, description: 'True starts the metronome. False stops it.' },
         { schema: Start, description: 'Start the metronome' },
         { schema: Stop, description: 'Stop the metronome' },
         { schema: Bang, description: 'Toggle the metronome' }
@@ -40,7 +42,12 @@ export class MetroObject implements TextObjectV2 {
   ];
 
   static outlets: ObjectOutlet[] = [
-    { name: 'out', type: 'bang', description: 'Bang signal sent at regular intervals' }
+    {
+      name: 'out',
+      type: 'bang',
+      description: 'Bang signal sent at regular intervals',
+      messages: [{ schema: Bang, description: 'Sent on each tick' }]
+    }
   ];
 
   readonly nodeId: string;
