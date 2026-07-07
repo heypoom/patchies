@@ -84,6 +84,16 @@ should only report their current editor state. Message runtime helpers should
 own parameter-change forwarding, view message subscriptions, and runtime-derived
 object port lookup.
 
+Current checkpoint as of 2026-07-07: `PatchRuntime` exists as a thin facade over
+`PatchMessageRuntime` and `PatchAudioRuntime`, and `EditorRuntimeReconciler`
+translates XYFlow object nodes into runtime create/update/destroy calls.
+Runtime-owned message contexts now survive same-node object replacement without
+dropping existing message routing, while true deletion still unregisters the
+message node. Audio objects are also visible to the runtime object registry check
+so message endpoints can route control messages into audio parameters. This is
+still a partial Phase 1 implementation: patch loading, graph-level connect APIs,
+video runtime ownership, plugins, and subpatches remain future work.
+
 This phase extends spec 40. The important shift is that the runtime owns object lifecycle:
 
 - `createObject(node)` creates or reuses a runtime object instance.

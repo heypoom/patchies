@@ -2,7 +2,7 @@
 
 Status: Active architecture target, partially implemented through runtime services.
 
-Last verified against code: 2026-07-06.
+Last verified against code: 2026-07-07.
 
 ## Goal
 
@@ -18,10 +18,22 @@ This spec is now a supporting spec for [167. Modular Patchies Roadmap](167-modul
 
 ## Current State
 
-Patchies does not yet have a single `PatchRuntime`, `Patcher`, or `PatcherNode` class that owns the whole graph lifecycle.
+Patchies now has a small `PatchRuntime` facade, but it does not yet own the
+whole patch graph lifecycle.
 
 The codebase does have several headless runtime primitives:
 
+- `ui/src/lib/runtime/PatchRuntime.ts` coordinates the first runtime slice for
+  message/text and V2 audio object behavior.
+- `ui/src/lib/runtime/PatchMessageRuntime.ts` owns runtime `MessageContext`
+  lifecycle, parameter-change forwarding, message subscriptions for views,
+  runtime-derived object ports, and view revision bumps.
+- `ui/src/lib/runtime/PatchAudioRuntime.ts` owns audio object identity sync,
+  duplicate recreation suppression, message forwarding to audio parameters, and
+  cleanup for runtime-created audio objects.
+- `ui/src/lib/runtime/EditorRuntimeReconciler.ts` translates XYFlow object nodes
+  into runtime object create/update/destroy calls. It may understand editor node
+  shape; `PatchRuntime` itself should not.
 - `ui/src/lib/objects/v2/ObjectService.ts` owns V2 text object instances, message dispatch, creation, and destruction outside Svelte components.
 - `ui/src/lib/registry/ObjectRegistry.ts` and `ui/src/lib/registry/AudioRegistry.ts` support runtime registration of text object and audio node constructors.
 - `ui/src/lib/audio/v2/AudioService.ts` owns V2 audio node instances, audio graph updates, scheduled messages, and virtual audio routing.
@@ -31,6 +43,8 @@ The codebase does have several headless runtime primitives:
 The editor still owns too much:
 
 - `ui/src/lib/components/FlowCanvasInner.svelte` owns the canonical `nodes` and `edges` arrays, history, deletion cleanup, viewport culling wiring, and many cross-system side effects.
+- Patch loading, graph-level connect/disconnect APIs, video runtime ownership,
+  plugin loading, and subpatch runtime ownership are not yet runtime-owned.
 - Many object views still call `useSvelteFlow()` directly to update node data or inspect graph state.
 - Static registries such as `ui/src/lib/nodes/node-types.ts`, `ui/src/lib/objects/schemas/index.ts`, and object browser packs are still required for complete editor behavior.
 - `<x-patchies>` currently mounts the full editor shell; it is not yet a stable API-first embed surface.

@@ -20,7 +20,7 @@ The real issue was not `MetroObject`. The replacement path destroyed the old `Me
 - `MessageContext.destroy()` now accepts `{ unregisterNode?: boolean }`, defaulting to `true`.
 - `PatchMessageRuntime` uses `unregisterNode: false` when replacing an object with the same node id.
 - True node deletion still unregisters the message node.
-- `MessageContext` now stores the exact bound callback it registers, so cleanup removes the correct callback.
+- `MessageContext` uses the same stable arrow-property callback for queue registration and cleanup.
 
 Regression test added in `ui/src/lib/runtime/PatchRuntime.test.ts`: messages must still route after replacing an object with the same node id, without calling `messageSystem.updateEdges()` again.
 
