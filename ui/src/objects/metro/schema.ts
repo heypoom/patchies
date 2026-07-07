@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from '$lib/objects/schemas/types';
-import { Bang, Stop } from '$lib/objects/schemas/common';
+import { Bang, Start, Stop } from '$lib/objects/schemas/common';
 
 /**
  * Schema for the metro (metronome) object.
@@ -12,20 +12,30 @@ export const metroSchema: ObjectSchema = {
   inlets: [
     {
       id: 'message',
+      type: 'message',
       description: 'Control messages',
-      handle: { handleType: 'message' },
+      handle: { handleType: 'message', handleId: 0 },
       messages: [
-        { schema: Bang, description: 'Start the metronome' },
+        { schema: Type.Boolean(), description: 'true starts the metronome, false stops it' },
+        { schema: Start, description: 'Start the metronome' },
         { schema: Stop, description: 'Stop the metronome' },
-        { schema: Type.Number(), description: 'Set interval in milliseconds' }
+        { schema: Bang, description: 'Toggle the metronome' }
       ]
+    },
+    {
+      id: 'interval',
+      type: 'int',
+      description: 'Interval in milliseconds',
+      handle: { handleType: 'message', handleId: 1 },
+      messages: [{ schema: Type.Integer(), description: 'Set interval in milliseconds' }]
     }
   ],
   outlets: [
     {
-      id: 'message',
-      description: 'Metronome ticks',
-      handle: { handleType: 'message' },
+      id: 'out',
+      type: 'bang',
+      description: 'Bang signal sent at regular intervals',
+      handle: { handleType: 'message', handleId: 0 },
       messages: [{ schema: Bang, description: 'Sent on each tick' }]
     }
   ],

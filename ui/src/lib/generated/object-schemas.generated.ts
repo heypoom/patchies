@@ -2933,11 +2933,20 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 'message',
         type: 'message',
-        description: 'Control messages: "start", "stop", or bang to toggle',
+        description: 'Control messages: true starts, false stops, start, stop, or bang toggles',
         messages: [
+          { schema: Type.Boolean(), description: 'true starts the metronome, false stops it' },
           {
-            schema: Type.Any(),
-            description: 'Control messages: "start", "stop", or bang to toggle'
+            schema: Type.Object({ type: Type.Literal('start') }),
+            description: 'Start the metronome'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('stop') }),
+            description: 'Stop the metronome'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Toggle the metronome'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }
