@@ -103,12 +103,15 @@ export class PatchMessageRuntime {
     this.removeObject(nodeId, { bumpRevision: true });
   }
 
-  private removeObject(nodeId: string, options: { bumpRevision: boolean }): void {
+  private removeObject(
+    nodeId: string,
+    options: { bumpRevision: boolean; unregisterMessageNode?: boolean }
+  ): void {
     const record = this.objects.get(nodeId);
     if (!record) return;
 
     this.objectService.removeObjectById(nodeId);
-    record.messageContext.destroy();
+    record.messageContext.destroy({ unregisterNode: options.unregisterMessageNode ?? true });
 
     this.objects.delete(nodeId);
     this.objectMessageContexts.delete(nodeId);
@@ -165,7 +168,7 @@ export class PatchMessageRuntime {
   };
 
   private async createOrReplaceObject(spec: PatchRuntimeObjectSpec): Promise<void> {
-    this.removeObject(spec.id, { bumpRevision: false });
+    this.removeObject(spec.id, { bumpRevision: false, unregisterMessageNode: false });
 
     const generation = this.nextObjectGeneration(spec.id);
     const messageContext = new MessageContext(spec.id);

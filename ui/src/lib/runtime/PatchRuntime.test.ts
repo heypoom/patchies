@@ -9,6 +9,7 @@ import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { MessageContext } from '$lib/messages/MessageContext';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
+import { MessageSystem } from '$lib/messages/MessageSystem';
 
 const TEST_OBJECT_TYPE = 'patch-runtime-test';
 
@@ -184,6 +185,58 @@ describe('PatchMessageRuntime', () => {
     expect(objectService.getObjectById(nodeId)).toBeNull();
     expect(runtime.getObjectMessageContext(nodeId)).toBeNull();
     expect(PatchRuntimeTestObject.destroyedNodeIds).toEqual([nodeId]);
+  });
+
+  it('keeps message edges routable after replacing an object with the same node id', async () => {
+    const objectService = new FakeObjectService();
+    const runtime = new PatchMessageRuntime({ objectService });
+    const messageSystem = MessageSystem.getInstance();
+    const sourceNodeId = 'object-message-replace-source';
+    const targetNodeId = 'object-message-replace-target';
+    const onMessage = vi.fn();
+
+    const targetQueue = messageSystem.registerNode(targetNodeId);
+    targetQueue.addCallback(onMessage);
+
+    await runtime.createObject({
+      id: sourceNodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['initial'],
+      rawParams: ['initial']
+    });
+
+    messageSystem.updateEdges([
+      {
+        id: 'replace-source-to-target',
+        source: sourceNodeId,
+        target: targetNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    runtime.getObjectMessageContext(sourceNodeId)?.send('before replace');
+    expect(onMessage).toHaveBeenCalledWith(
+      'before replace',
+      expect.objectContaining({ source: sourceNodeId })
+    );
+
+    await runtime.updateObject(sourceNodeId, {
+      id: sourceNodeId,
+      objectType: TEST_OBJECT_TYPE,
+      params: ['next'],
+      rawParams: ['next']
+    });
+
+    runtime.getObjectMessageContext(sourceNodeId)?.send('after replace');
+    expect(onMessage).toHaveBeenCalledWith(
+      'after replace',
+      expect.objectContaining({ source: sourceNodeId })
+    );
+
+    runtime.destroy();
+    messageSystem.unregisterNode(targetNodeId);
+    messageSystem.updateEdges([]);
   });
 
   it('ignores async create results after the object is destroyed', async () => {
