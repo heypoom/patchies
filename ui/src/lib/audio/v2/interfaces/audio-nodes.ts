@@ -30,8 +30,14 @@ export type AudioNodeClass = {
   /** If false, the node is excluded from generated object schemas and docs. */
   includeInGeneratedSchemas?: boolean;
 
+  /** If true, dedicated UI nodes of this type are owned by PatchRuntime instead of the Svelte view. */
+  runtimeManaged?: boolean;
+
   /** Aliases for the node type (e.g. 's~' for 'send~') */
   aliases?: string[];
+
+  /** Map public message-inlet commands to audio-service setting messages. */
+  getMessageSettingsUpdate?: (message: unknown) => Record<string, unknown> | null;
 } & ObjectMetadata &
   AudioNodeConstructor;
 

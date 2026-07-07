@@ -314,7 +314,8 @@
   const runtime = new PatchRuntime({
     objectService,
     audioService,
-    onObjectParamsChange: (nodeId, params) => updateNodeData(nodeId, { params })
+    onObjectParamsChange: (nodeId, params) => updateNodeData(nodeId, { params }),
+    onAudioObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates)
   });
 
   setPatchRuntime(runtime);
@@ -526,7 +527,7 @@
 
   $effect(() => {
     reconciler
-      .reconcile(nodes)
+      .reconcile(nodes, edges)
       .catch((error) => logger.error('failed to reconcile editor graph with patch runtime', error));
   });
 

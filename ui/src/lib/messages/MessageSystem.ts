@@ -80,8 +80,9 @@ export class MessageSystem {
   private graphEdges: Edge[] = [];
   private patchbayEdges = new Map<string, Edge>();
 
-  // Legacy
-  private connections = new Map<string, string[]>(); // nodeId -> array of connected nodeIds
+  // Derived routing cache: source node id -> connected target node ids.
+  // Rebuilt from edges in updateEdges().
+  private connections = new Map<string, string[]>();
 
   static getInstance(): MessageSystem {
     if (!MessageSystem.instance) {
@@ -98,6 +99,7 @@ export class MessageSystem {
     }
 
     this.deletedNodes.delete(nodeId);
+
     return this.messageQueues.get(nodeId)!;
   }
 
@@ -107,21 +109,10 @@ export class MessageSystem {
 
     // Clear message queue
     const queue = this.messageQueues.get(nodeId);
+
     if (queue) {
       queue.clear();
       this.messageQueues.delete(nodeId);
-    }
-
-    // Remove connections
-    this.connections.delete(nodeId);
-
-    // Remove incoming connections to this node
-    for (const [, targets] of this.connections.entries()) {
-      const index = targets.indexOf(nodeId);
-
-      if (index > -1) {
-        targets.splice(index, 1);
-      }
     }
   }
 
@@ -135,10 +126,12 @@ export class MessageSystem {
 
     // Build new connection map using Set for O(1) deduplication
     const connectionSets = new Map<string, Set<string>>();
+
     for (const edge of this.edges) {
       if (!connectionSets.has(edge.source)) {
         connectionSets.set(edge.source, new Set());
       }
+
       connectionSets.get(edge.source)!.add(edge.target);
     }
 
@@ -224,6 +217,7 @@ export class MessageSystem {
   createInterval(callback: () => void, ms: number): number {
     const intervalId = this.intervalCounter++;
     const timeout = setInterval(callback, ms);
+
     this.intervals.set(intervalId, timeout);
 
     return intervalId;

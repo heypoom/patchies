@@ -15,7 +15,7 @@ export function useObjectRuntimeView(options: ObjectRuntimeViewOptions) {
   });
 
   $effect(() => {
-    patchRuntime?.getObjectViewRevision(options.nodeId);
+    patchRuntime?.trackObjectViewRevision(options.nodeId);
     options.updateNodeInternals(options.nodeId);
   });
 }

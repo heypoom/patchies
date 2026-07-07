@@ -8,6 +8,7 @@ import ruby from 'highlight.js/lib/languages/ruby';
 import wasm from 'highlight.js/lib/languages/wasm';
 import x86asm from 'highlight.js/lib/languages/x86asm';
 import type { SupportedLanguage } from '$lib/codemirror/types';
+import { isFiniteNumber, isRecord } from '$lib/utils/value-guards';
 import type { CodeEditorTarget } from '../../stores/code-editor-layout.store';
 import type { PointerEvent_, SurfaceWheelEvent_, TouchPoint } from './SurfaceListeners';
 
@@ -191,12 +192,6 @@ const escapeHtml = (value: string): string =>
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const isFiniteNumber = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value);
 
 const isOptionalString = (value: unknown): value is string | undefined =>
   value === undefined || typeof value === 'string';

@@ -1,5 +1,6 @@
 import type { Node } from '@xyflow/svelte';
 import { vi } from 'vitest';
+import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { MessageContext } from '$lib/messages/MessageContext';
 import { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
@@ -7,7 +8,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 import { ButtonObject } from '$objects/button/ButtonObject';
 
 import type { EditorRuntime } from './EditorRuntimeReconciler';
-import type { PatchRuntimeObjectService } from './PatchMessageRuntime';
+import type { RuntimeObjectService } from './PatchMessageRuntime';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
 
@@ -60,7 +61,7 @@ export function resetPatchRuntimeTestObject(): void {
   PatchRuntimeTestObject.dynamicOutlets = null;
 }
 
-export class FakeObjectService implements PatchRuntimeObjectService {
+export class FakeObjectService implements RuntimeObjectService {
   private objectsById = new Map<string, TextObjectV2>();
 
   isObjectInRegistry(objectType: string): boolean {
@@ -113,12 +114,12 @@ export class FakeAudioService {
   updateEdges = vi.fn();
   send = vi.fn();
 
-  audioNode = {
+  audioNode: AudioNodeV2 = {
     nodeId: 'object-audio-runtime-test',
     audioNode: null
   };
 
-  getNodeById = vi.fn(() => this.audioNode);
+  getNodeById = vi.fn<() => AudioNodeV2 | null>(() => this.audioNode);
 }
 
 export class FakeEventBus {
@@ -154,6 +155,13 @@ export const buttonNode = (id: string): Node => ({
   type: 'button',
   position: { x: 0, y: 0 },
   data: {}
+});
+
+export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): Node => ({
+  id,
+  type: 'tap~',
+  position: { x: 0, y: 0 },
+  data
 });
 
 export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) => ({

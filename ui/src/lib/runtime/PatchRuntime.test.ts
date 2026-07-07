@@ -1,12 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Edge } from '@xyflow/svelte';
-import { PatchAudioRuntime } from './PatchAudioRuntime';
+import { RuntimeAudioObjectAdapter } from './RuntimeAudioObjectAdapter';
 import { PatchMessageRuntime } from './PatchMessageRuntime';
 import { PatchRuntime } from './PatchRuntime';
 import { EditorRuntimeReconciler } from './EditorRuntimeReconciler';
 import { logger } from '$lib/utils/logger';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import { MessageContext } from '$lib/messages/MessageContext';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
+import { ScopeAudioNode } from '$objects/scope~/ScopeAudioNode';
 import {
   buttonNode,
   createFakeEditorRuntime,
@@ -16,6 +19,7 @@ import {
   objectNode,
   PatchRuntimeTestObject,
   resetPatchRuntimeTestObject,
+  tapTildeNode,
   TEST_OBJECT_TYPE
 } from './PatchRuntime.test-helpers';
 
@@ -26,6 +30,10 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+const isScope = (objectType: string) => objectType === 'scope~';
+const isOsc = (objectType: string) => objectType === 'osc~';
+const isTap = (objectType: string) => objectType === 'tap~';
 
 describe('PatchMessageRuntime', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
@@ -250,7 +258,7 @@ describe('PatchMessageRuntime', () => {
       rawParams: ['initial']
     });
 
-    const revisionAfterCreate = runtime.getObjectViewRevision(nodeId);
+    const revisionAfterCreate = runtime.trackObjectViewRevision(nodeId);
 
     await runtime.updateObject(nodeId, {
       id: nodeId,
@@ -259,18 +267,23 @@ describe('PatchMessageRuntime', () => {
       rawParams: ['next']
     });
 
-    expect(runtime.getObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
+    expect(runtime.trackObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
   });
 });
 
-describe('PatchAudioRuntime', () => {
+describe('RuntimeAudioObjectAdapter', () => {
   it('owns audio object service interactions', () => {
     const audioService = new FakeAudioService();
-    const runtime = new PatchAudioRuntime({ audioService });
+    const runtime = new RuntimeAudioObjectAdapter({ audioService });
     const nodeId = 'object-audio-runtime-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
 
-    runtime.createOrUpdateAudioObject(nodeId, 'osc~', [440], edges);
+    runtime.upsertAudioObject({
+      id: nodeId,
+      objectType: 'osc~',
+      params: [440],
+      edges
+    });
 
     expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
@@ -287,11 +300,7 @@ describe('PatchAudioRuntime', () => {
 
   it('syncs audio object identity changes from view state', () => {
     const audioService = new FakeAudioService();
-
-    const runtime = new PatchAudioRuntime({
-      audioService,
-      isAudioObject: (objectType) => objectType === 'osc~'
-    });
+    const runtime = new RuntimeAudioObjectAdapter({ audioService, isAudioObject: isOsc });
 
     const nodeId = 'object-audio-sync-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
@@ -343,10 +352,51 @@ describe('PatchAudioRuntime', () => {
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
   });
 
+  it('syncs runtime-managed audio nodes as a desired descriptor set', () => {
+    const audioService = new FakeAudioService();
+    const runtime = new RuntimeAudioObjectAdapter({ audioService, isAudioObject: isTap });
+    const nodeId = 'tap-runtime-managed-set-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'consumer' }] as Edge[];
+    const descriptor = {
+      id: nodeId,
+      objectType: 'tap~',
+      params: [null, null, 1024, 'xy', 30, false],
+      edges
+    };
+
+    runtime.syncRuntimeManagedAudioNodes([descriptor]);
+    runtime.syncRuntimeManagedAudioNodes([descriptor]);
+
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
+
+    runtime.syncRuntimeManagedAudioNodes([]);
+
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+  });
+
+  it('recreates an audio object when cached sync state outlives the service node', () => {
+    const audioService = new FakeAudioService();
+
+    const runtime = new RuntimeAudioObjectAdapter({
+      audioService,
+      isAudioObject: (objectType) => objectType === 'osc~'
+    });
+
+    const nodeId = 'object-audio-undo-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'meter' }] as Edge[];
+    const descriptor = { id: nodeId, objectType: 'osc~', params: [440], edges };
+
+    expect(runtime.syncAudioObject(descriptor)).toBe(true);
+
+    audioService.getNodeById.mockReturnValueOnce(null);
+    expect(runtime.syncAudioObject(descriptor)).toBe(true);
+    expect(audioService.createNode).toHaveBeenCalledTimes(2);
+  });
+
   it('does not record stale audio tracking state when a suppressed first sync is consumed', () => {
     const audioService = new FakeAudioService();
 
-    const runtime = new PatchAudioRuntime({
+    const runtime = new RuntimeAudioObjectAdapter({
       audioService,
       isAudioObject: (objectType) => objectType === 'osc~'
     });
@@ -379,6 +429,48 @@ describe('PatchAudioRuntime', () => {
     ).toBe(true);
 
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+  });
+
+  it('routes audio object command messages through runtime-owned message contexts', () => {
+    const audioService = new FakeAudioService();
+    const onAudioObjectDataChange = vi.fn();
+
+    const runtime = new RuntimeAudioObjectAdapter({
+      audioService,
+      isAudioObject: isTap,
+      onAudioObjectDataChange
+    });
+
+    const messageSystem = MessageSystem.getInstance();
+    const sourceNodeId = 'tap-command-source';
+    const tapNodeId = 'tap-command-target';
+
+    AudioRegistry.getInstance().register(TapNode);
+    messageSystem.registerNode(sourceNodeId);
+    messageSystem.updateEdges([
+      {
+        id: 'source-to-tap-command',
+        source: sourceNodeId,
+        target: tapNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    runtime.upsertAudioObject({
+      id: tapNodeId,
+      objectType: 'tap~',
+      params: [null, null, 512, 'wave', 0, true],
+      edges: []
+    });
+    messageSystem.sendMessage(sourceNodeId, { type: 'setSamples', value: 1024 });
+
+    expect(audioService.send).toHaveBeenCalledWith(tapNodeId, 'bufferSize', 1024);
+    expect(onAudioObjectDataChange).toHaveBeenCalledWith(tapNodeId, { bufferSize: 1024 });
+
+    runtime.destroy();
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
   });
 });
 
@@ -463,7 +555,7 @@ describe('PatchRuntime', () => {
     const runtime = new PatchRuntime({
       objectService,
       audioService: new FakeAudioService(),
-      isAudioObject: (objectType) => objectType === 'osc~'
+      isAudioObject: isOsc
     });
 
     const sourceNodeId = 'slider-source';
@@ -532,7 +624,12 @@ describe('PatchRuntime', () => {
       params: ['initial'],
       rawParams: ['initial']
     });
-    runtime.createOrUpdateAudioObject(nodeId, 'osc~', [440], edges);
+    runtime.upsertAudioObject({
+      id: nodeId,
+      objectType: 'osc~',
+      params: [440],
+      edges
+    });
 
     expect(objectService.getObjectById(nodeId)).toBeInstanceOf(PatchRuntimeTestObject);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
@@ -545,6 +642,110 @@ describe('PatchRuntime', () => {
 });
 
 describe('EditorRuntimeReconciler', () => {
+  it('syncs dedicated audio UI nodes through the audio runtime lifecycle', async () => {
+    const audioService = new FakeAudioService();
+
+    const runtime = new PatchRuntime({
+      objectService: new FakeObjectService(),
+      audioService,
+      isAudioObject: isTap
+    });
+
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'tap-tilde-editor-runtime-test';
+
+    AudioRegistry.getInstance().register(TapNode);
+
+    await reconciler.reconcile([
+      tapTildeNode(nodeId, {
+        bufferSize: 1024,
+        mode: 'xy',
+        fps: 30,
+        zeroCrossing: false
+      })
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
+      null,
+      null,
+      1024,
+      'xy',
+      30,
+      false
+    ]);
+
+    await reconciler.reconcile([]);
+
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+
+    runtime.destroy();
+  });
+
+  it('delegates runtime-managed audio descriptor sets to the audio runtime', async () => {
+    const syncedDescriptorSets: unknown[][] = [];
+    const syncRuntimeManagedAudioNodes = vi.fn((descriptors: Iterable<unknown>) => {
+      syncedDescriptorSets.push([...descriptors]);
+    });
+
+    const runtime = createFakeEditorRuntime({
+      isObjectInRegistry: vi.fn(isTap),
+      syncRuntimeManagedAudioNodes
+    });
+
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'tap-tilde-runtime-noop-test';
+
+    const node = tapTildeNode(nodeId, {
+      bufferSize: 1024,
+      mode: 'xy',
+      fps: 30,
+      zeroCrossing: false
+    });
+
+    AudioRegistry.getInstance().register(TapNode);
+
+    await reconciler.reconcile([node]);
+    await reconciler.reconcile([node]);
+
+    expect(syncRuntimeManagedAudioNodes).toHaveBeenCalledTimes(2);
+    expect(syncedDescriptorSets[0]).toEqual([
+      {
+        id: nodeId,
+        objectType: 'tap~',
+        params: [null, null, 1024, 'xy', 30, false],
+        edges: []
+      }
+    ]);
+  });
+
+  it('does not sync dedicated audio UI nodes that still own their view runtime', async () => {
+    const audioService = new FakeAudioService();
+
+    const runtime = new PatchRuntime({
+      objectService: new FakeObjectService(),
+      audioService,
+      isAudioObject: isScope
+    });
+
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'scope-editor-runtime-test';
+
+    AudioRegistry.getInstance().register(ScopeAudioNode);
+
+    await reconciler.reconcile([
+      {
+        id: nodeId,
+        type: 'scope~',
+        position: { x: 0, y: 0 },
+        data: {}
+      }
+    ]);
+
+    expect(audioService.createNode).not.toHaveBeenCalled();
+
+    runtime.destroy();
+  });
+
   it('translates XYFlow button nodes into runtime object lifecycle calls', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
@@ -559,6 +760,7 @@ describe('EditorRuntimeReconciler', () => {
       params: [],
       rawParams: []
     });
+
     expect(runtime.createObject).toHaveBeenCalledTimes(1);
     expect(runtime.destroyObject).not.toHaveBeenCalled();
 
@@ -608,7 +810,7 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
   });
 
-  it('skips updates when the runtime object spec has not changed', async () => {
+  it('skips updates when the runtime object descriptor has not changed', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
 

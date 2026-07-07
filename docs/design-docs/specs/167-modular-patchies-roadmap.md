@@ -86,7 +86,7 @@ own parameter-change forwarding, view message subscriptions, and runtime-derived
 object port lookup.
 
 Current checkpoint as of 2026-07-07: `PatchRuntime` exists as a thin facade over
-`PatchMessageRuntime` and `PatchAudioRuntime`, and `EditorRuntimeReconciler`
+`PatchMessageRuntime` and `RuntimeAudioObjectAdapter`, and `EditorRuntimeReconciler`
 translates XYFlow object nodes into runtime create/update/destroy calls.
 Runtime-owned message contexts now survive same-node object replacement without
 dropping existing message routing, while true deletion still unregisters the

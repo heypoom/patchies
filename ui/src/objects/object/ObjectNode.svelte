@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -20,7 +20,7 @@
   import { logger } from '$lib/utils/logger';
   import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
-  import { hasSignalPorts } from '$lib/audio/v2/audio-helpers';
+  import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
   import {
     isAiFeaturesVisible,
     isObjectBrowserOpen,
@@ -124,7 +124,7 @@
   const objectPorts = useObjectPorts({
     nodeId,
     getObjectMeta: () => objectMeta,
-    getObjectInstanceVersion: () => objectInstanceVersion
+    trackObjectInstanceVersion: () => objectInstanceVersion
   });
 
   const inlets = $derived(objectPorts.inlets);
@@ -437,7 +437,7 @@
     const { name, params } = getNameAndParams();
     updateNodeData(nodeId, { expr, name, params });
 
-    if (!name || !patchRuntime?.canCreateAudioObject(name)) return false;
+    if (!name || !getAudioObjectNames().includes(name)) return false;
 
     syncAudioObject(name, params);
 
@@ -607,10 +607,6 @@
         showAutocomplete = true;
       }, 10);
     }
-  });
-
-  onDestroy(() => {
-    patchRuntime?.destroyAudioObject(nodeId);
   });
 
   useObjectRuntimeView({

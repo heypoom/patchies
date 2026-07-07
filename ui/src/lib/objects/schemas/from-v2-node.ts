@@ -135,6 +135,7 @@ interface V2NodeClass {
   category?: string;
   group?: string;
   inlets?: ObjectInlet[];
+  schemaInlets?: ObjectInlet[];
   outlets?: ObjectOutlet[];
   tags?: string[];
 }
@@ -149,7 +150,7 @@ interface V2NodeClass {
  * ```
  */
 export function schemaFromNode(NodeClass: V2NodeClass, category: string): ObjectSchema {
-  const inlets = (NodeClass.inlets ?? [])
+  const inlets = (NodeClass.schemaInlets ?? NodeClass.inlets ?? [])
     .map((inlet, i) => ({ inlet, i }))
     .filter(({ inlet }) => !inlet.hideDocs)
     .map(({ inlet, i }) => inletToSchema(inlet, i));

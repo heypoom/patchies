@@ -1,35 +1,40 @@
-import type { Edge } from '@xyflow/svelte';
 import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
 import {
-  PatchAudioRuntime,
-  type PatchAudioObjectSpec,
-  type PatchRuntimeAudioService
-} from './PatchAudioRuntime';
+  RuntimeAudioObjectAdapter,
+  type RuntimeAudioObjectService,
+  type RuntimeAudioObjectDescriptor
+} from './RuntimeAudioObjectAdapter';
 
 import {
   PatchMessageRuntime,
   type RuntimeObjectPorts,
-  type PatchRuntimeObjectService,
-  type PatchRuntimeObjectSpec
+  type RuntimeObjectService,
+  type RuntimeObjectDescriptor
 } from './PatchMessageRuntime';
 
-export type { PatchRuntimeAudioService } from './PatchAudioRuntime';
-export type { PatchAudioObjectSpec } from './PatchAudioRuntime';
-export type { PatchRuntimeObjectService, PatchRuntimeObjectSpec } from './PatchMessageRuntime';
+export type {
+  RuntimeAudioObjectService,
+  RuntimeAudioObjectDescriptor
+} from './RuntimeAudioObjectAdapter';
+export type {
+  RuntimeObjectService as PatchRuntimeObjectService,
+  RuntimeObjectDescriptor as RuntimeObjectDescriptor
+} from './PatchMessageRuntime';
 
 export type PatchRuntimeOptions = {
-  objectService: PatchRuntimeObjectService;
-  audioService?: PatchRuntimeAudioService;
+  objectService: RuntimeObjectService;
+  audioService?: RuntimeAudioObjectService;
   isAudioObject?: (objectType: string) => boolean;
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
+  onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 };
 
 export class PatchRuntime {
   private message: PatchMessageRuntime;
-  private audio: PatchAudioRuntime;
+  private audio: RuntimeAudioObjectAdapter;
 
   constructor(options: PatchRuntimeOptions) {
     this.message = new PatchMessageRuntime({
@@ -37,24 +42,23 @@ export class PatchRuntime {
       onObjectParamsChange: options.onObjectParamsChange
     });
 
-    this.audio = new PatchAudioRuntime({
+    this.audio = new RuntimeAudioObjectAdapter({
       audioService: options.audioService,
-      isAudioObject: options.isAudioObject
+      isAudioObject: options.isAudioObject,
+      onAudioObjectDataChange: options.onAudioObjectDataChange
     });
   }
 
   isObjectInRegistry(objectType: string): boolean {
-    return (
-      this.message.isObjectInRegistry(objectType) || this.audio.canCreateAudioObject(objectType)
-    );
+    return this.message.isObjectInRegistry(objectType) || this.audio.isObjectInRegistry(objectType);
   }
 
-  async createObject(spec: PatchRuntimeObjectSpec): Promise<void> {
-    await this.message.createObject(spec);
+  async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {
+    await this.message.createObject(descriptor);
   }
 
-  async updateObject(nodeId: string, spec: PatchRuntimeObjectSpec): Promise<void> {
-    await this.message.updateObject(nodeId, spec);
+  async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void> {
+    await this.message.updateObject(nodeId, descriptor);
   }
 
   destroyObject(nodeId: string): void {
@@ -72,29 +76,24 @@ export class PatchRuntime {
     return this.message.getObjectPorts(nodeId, objectMeta);
   }
 
-  getObjectViewRevision(nodeId: string): number {
-    return this.message.getObjectViewRevision(nodeId);
+  trackObjectViewRevision(nodeId: string): number {
+    return this.message.trackObjectViewRevision(nodeId);
   }
 
-  canCreateAudioObject(objectType: string): boolean {
-    return this.audio.canCreateAudioObject(objectType);
+  syncAudioObject(descriptor: RuntimeAudioObjectDescriptor): boolean {
+    return this.audio.syncAudioObject(descriptor);
   }
 
-  syncAudioObject(spec: PatchAudioObjectSpec): boolean {
-    return this.audio.syncAudioObject(spec);
+  syncRuntimeManagedAudioNodes(descriptors: Iterable<RuntimeAudioObjectDescriptor>): void {
+    this.audio.syncRuntimeManagedAudioNodes(descriptors);
   }
 
   suppressNextAudioObjectSync(nodeId: string): void {
     this.audio.suppressNextAudioObjectSync(nodeId);
   }
 
-  createOrUpdateAudioObject(
-    nodeId: string,
-    objectType: string,
-    params: unknown[],
-    edges: Edge[]
-  ): void {
-    this.audio.createOrUpdateAudioObject(nodeId, objectType, params, edges);
+  upsertAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
+    this.audio.upsertAudioObject(descriptor);
   }
 
   destroyAudioObject(nodeId: string): void {
