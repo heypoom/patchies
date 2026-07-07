@@ -1,5 +1,6 @@
 import type { Node } from '@xyflow/svelte';
 import { vi } from 'vitest';
+import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { MessageContext } from '$lib/messages/MessageContext';
 import { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
@@ -113,12 +114,12 @@ export class FakeAudioService {
   updateEdges = vi.fn();
   send = vi.fn();
 
-  audioNode = {
+  audioNode: AudioNodeV2 = {
     nodeId: 'object-audio-runtime-test',
     audioNode: null
   };
 
-  getNodeById = vi.fn(() => this.audioNode);
+  getNodeById = vi.fn<() => AudioNodeV2 | null>(() => this.audioNode);
 }
 
 export class FakeEventBus {

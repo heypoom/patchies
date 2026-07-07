@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Edge } from '@xyflow/svelte';
-import { PatchAudioRuntime } from './PatchAudioRuntime';
+import { RuntimeAudioObjectAdapter } from './RuntimeAudioObjectAdapter';
 import { PatchMessageRuntime } from './PatchMessageRuntime';
 import { PatchRuntime } from './PatchRuntime';
 import { EditorRuntimeReconciler } from './EditorRuntimeReconciler';
@@ -30,6 +30,10 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+const isScope = (objectType: string) => objectType === 'scope~';
+const isOsc = (objectType: string) => objectType === 'osc~';
+const isTap = (objectType: string) => objectType === 'tap~';
 
 describe('PatchMessageRuntime', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
@@ -267,10 +271,10 @@ describe('PatchMessageRuntime', () => {
   });
 });
 
-describe('PatchAudioRuntime', () => {
+describe('RuntimeAudioObjectAdapter', () => {
   it('owns audio object service interactions', () => {
     const audioService = new FakeAudioService();
-    const runtime = new PatchAudioRuntime({ audioService });
+    const runtime = new RuntimeAudioObjectAdapter({ audioService });
     const nodeId = 'object-audio-runtime-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
 
@@ -291,11 +295,7 @@ describe('PatchAudioRuntime', () => {
 
   it('syncs audio object identity changes from view state', () => {
     const audioService = new FakeAudioService();
-
-    const runtime = new PatchAudioRuntime({
-      audioService,
-      isAudioObject: (objectType) => objectType === 'osc~'
-    });
+    const runtime = new RuntimeAudioObjectAdapter({ audioService, isAudioObject: isOsc });
 
     const nodeId = 'object-audio-sync-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
@@ -347,10 +347,29 @@ describe('PatchAudioRuntime', () => {
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
   });
 
+  it('recreates an audio object when cached sync state outlives the service node', () => {
+    const audioService = new FakeAudioService();
+
+    const runtime = new RuntimeAudioObjectAdapter({
+      audioService,
+      isAudioObject: (objectType) => objectType === 'osc~'
+    });
+
+    const nodeId = 'object-audio-undo-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'meter' }] as Edge[];
+    const spec = { id: nodeId, objectType: 'osc~', params: [440], edges };
+
+    expect(runtime.syncAudioObject(spec)).toBe(true);
+
+    audioService.getNodeById.mockReturnValueOnce(null);
+    expect(runtime.syncAudioObject(spec)).toBe(true);
+    expect(audioService.createNode).toHaveBeenCalledTimes(2);
+  });
+
   it('does not record stale audio tracking state when a suppressed first sync is consumed', () => {
     const audioService = new FakeAudioService();
 
-    const runtime = new PatchAudioRuntime({
+    const runtime = new RuntimeAudioObjectAdapter({
       audioService,
       isAudioObject: (objectType) => objectType === 'osc~'
     });
@@ -388,11 +407,13 @@ describe('PatchAudioRuntime', () => {
   it('routes audio object command messages through runtime-owned message contexts', () => {
     const audioService = new FakeAudioService();
     const onAudioObjectDataChange = vi.fn();
-    const runtime = new PatchAudioRuntime({
+
+    const runtime = new RuntimeAudioObjectAdapter({
       audioService,
-      isAudioObject: (objectType) => objectType === 'tap~',
+      isAudioObject: isTap,
       onAudioObjectDataChange
     });
+
     const messageSystem = MessageSystem.getInstance();
     const sourceNodeId = 'tap-command-source';
     const tapNodeId = 'tap-command-target';
@@ -502,7 +523,7 @@ describe('PatchRuntime', () => {
     const runtime = new PatchRuntime({
       objectService,
       audioService: new FakeAudioService(),
-      isAudioObject: (objectType) => objectType === 'osc~'
+      isAudioObject: isOsc
     });
 
     const sourceNodeId = 'slider-source';
@@ -586,15 +607,18 @@ describe('PatchRuntime', () => {
 describe('EditorRuntimeReconciler', () => {
   it('syncs dedicated audio UI nodes through the audio runtime lifecycle', async () => {
     const audioService = new FakeAudioService();
+
     const runtime = new PatchRuntime({
       objectService: new FakeObjectService(),
       audioService,
-      isAudioObject: (objectType) => objectType === 'tap~'
+      isAudioObject: isTap
     });
+
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'tap-tilde-editor-runtime-test';
 
     AudioRegistry.getInstance().register(TapNode);
+
     await reconciler.reconcile([
       tapTildeNode(nodeId, {
         bufferSize: 1024,
@@ -620,17 +644,43 @@ describe('EditorRuntimeReconciler', () => {
     runtime.destroy();
   });
 
+  it('lets the audio runtime decide whether dedicated audio syncs are no-ops', async () => {
+    const syncAudioObject = vi.fn();
+    const runtime = createFakeEditorRuntime({
+      canCreateAudioObject: vi.fn(isTap),
+      syncAudioObject
+    });
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'tap-tilde-runtime-noop-test';
+    const node = tapTildeNode(nodeId, {
+      bufferSize: 1024,
+      mode: 'xy',
+      fps: 30,
+      zeroCrossing: false
+    });
+
+    AudioRegistry.getInstance().register(TapNode);
+
+    await reconciler.reconcile([node]);
+    await reconciler.reconcile([node]);
+
+    expect(syncAudioObject).toHaveBeenCalledTimes(2);
+  });
+
   it('does not sync dedicated audio UI nodes that still own their view runtime', async () => {
     const audioService = new FakeAudioService();
+
     const runtime = new PatchRuntime({
       objectService: new FakeObjectService(),
       audioService,
-      isAudioObject: (objectType) => objectType === 'scope~'
+      isAudioObject: isScope
     });
+
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'scope-editor-runtime-test';
 
     AudioRegistry.getInstance().register(ScopeAudioNode);
+
     await reconciler.reconcile([
       {
         id: nodeId,
@@ -659,6 +709,7 @@ describe('EditorRuntimeReconciler', () => {
       params: [],
       rawParams: []
     });
+
     expect(runtime.createObject).toHaveBeenCalledTimes(1);
     expect(runtime.destroyObject).not.toHaveBeenCalled();
 

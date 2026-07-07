@@ -26,8 +26,8 @@ export interface WorkletDspNodeConfig {
 
   tags?: string[];
   aliases?: string[];
-  runtimeManaged?: boolean;
 
+  runtimeManaged?: boolean;
   getMessageSettingsUpdate?: (message: unknown) => Record<string, unknown> | null;
 
   /**
@@ -70,11 +70,14 @@ type NativeDspNodeClass = {
   type: string;
   group: AudioNodeGroup;
   description: string;
+
   inlets: ObjectInlet[];
   schemaInlets?: ObjectInlet[];
   outlets: ObjectOutlet[];
+
   tags?: string[];
   aliases?: string[];
+
   runtimeManaged?: boolean;
   getMessageSettingsUpdate?: (message: unknown) => Record<string, unknown> | null;
 

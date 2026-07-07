@@ -4,10 +4,10 @@ import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
 import {
-  PatchAudioRuntime,
-  type PatchAudioObjectSpec,
-  type PatchRuntimeAudioService
-} from './PatchAudioRuntime';
+  RuntimeAudioObjectAdapter,
+  type RuntimeAudioObjectService,
+  type RuntimeAudioObjectSpec
+} from './RuntimeAudioObjectAdapter';
 
 import {
   PatchMessageRuntime,
@@ -16,13 +16,15 @@ import {
   type PatchRuntimeObjectSpec
 } from './PatchMessageRuntime';
 
-export type { PatchRuntimeAudioService } from './PatchAudioRuntime';
-export type { PatchAudioObjectSpec } from './PatchAudioRuntime';
+export type {
+  RuntimeAudioObjectService,
+  RuntimeAudioObjectSpec
+} from './RuntimeAudioObjectAdapter';
 export type { PatchRuntimeObjectService, PatchRuntimeObjectSpec } from './PatchMessageRuntime';
 
 export type PatchRuntimeOptions = {
   objectService: PatchRuntimeObjectService;
-  audioService?: PatchRuntimeAudioService;
+  audioService?: RuntimeAudioObjectService;
   isAudioObject?: (objectType: string) => boolean;
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
@@ -30,7 +32,7 @@ export type PatchRuntimeOptions = {
 
 export class PatchRuntime {
   private message: PatchMessageRuntime;
-  private audio: PatchAudioRuntime;
+  private audio: RuntimeAudioObjectAdapter;
 
   constructor(options: PatchRuntimeOptions) {
     this.message = new PatchMessageRuntime({
@@ -38,7 +40,7 @@ export class PatchRuntime {
       onObjectParamsChange: options.onObjectParamsChange
     });
 
-    this.audio = new PatchAudioRuntime({
+    this.audio = new RuntimeAudioObjectAdapter({
       audioService: options.audioService,
       isAudioObject: options.isAudioObject,
       onAudioObjectDataChange: options.onAudioObjectDataChange
@@ -82,7 +84,7 @@ export class PatchRuntime {
     return this.audio.canCreateAudioObject(objectType);
   }
 
-  syncAudioObject(spec: PatchAudioObjectSpec): boolean {
+  syncAudioObject(spec: RuntimeAudioObjectSpec): boolean {
     return this.audio.syncAudioObject(spec);
   }
 

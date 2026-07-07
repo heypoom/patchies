@@ -48,10 +48,7 @@ export class EditorRuntimeReconciler {
     pendingIds: new Set()
   };
 
-  private currentAudio: RuntimeObjectSnapshot = {
-    ids: new Set(),
-    specKeys: new Map()
-  };
+  private currentAudioIds = new Set<string>();
 
   constructor(private runtime: EditorRuntime) {}
 
@@ -143,23 +140,16 @@ export class EditorRuntimeReconciler {
   private syncDedicatedAudioObjects(nextAudioSpecs: Map<string, DedicatedAudioObjectSpec>): void {
     const nextAudioIds = new Set(nextAudioSpecs.keys());
 
-    for (const nodeId of this.currentAudio.ids) {
+    for (const nodeId of this.currentAudioIds) {
       if (!nextAudioIds.has(nodeId)) {
         this.runtime.destroyAudioObject?.(nodeId);
-        this.currentAudio.ids.delete(nodeId);
-        this.currentAudio.specKeys.delete(nodeId);
+        this.currentAudioIds.delete(nodeId);
       }
     }
 
     for (const spec of nextAudioSpecs.values()) {
-      const specKey = getDedicatedAudioObjectSpecKey(spec);
-      const lastSyncedSpecKey = this.currentAudio.specKeys.get(spec.id);
-
-      if (this.currentAudio.ids.has(spec.id) && lastSyncedSpecKey === specKey) continue;
-
       this.runtime.syncAudioObject?.(spec);
-      this.currentAudio.ids.add(spec.id);
-      this.currentAudio.specKeys.set(spec.id, specKey);
+      this.currentAudioIds.add(spec.id);
     }
   }
 
@@ -187,9 +177,6 @@ export class EditorRuntimeReconciler {
 
 const getRuntimeObjectSpecKey = (spec: PatchRuntimeObjectSpec): string =>
   hash([spec.objectType, spec.params, spec.rawParams]);
-
-const getDedicatedAudioObjectSpecKey = (spec: DedicatedAudioObjectSpec): string =>
-  hash([spec.objectType, spec.params]);
 
 function getRuntimeObjectType(node: Node): string {
   if (node.type !== 'object') return node.type ?? '';

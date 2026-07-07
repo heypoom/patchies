@@ -28,7 +28,7 @@ The codebase does have several headless runtime primitives:
 - `ui/src/lib/runtime/PatchMessageRuntime.ts` owns runtime `MessageContext`
   lifecycle, parameter-change forwarding, message subscriptions for views,
   runtime-derived object ports, and view revision bumps.
-- `ui/src/lib/runtime/PatchAudioRuntime.ts` owns audio object identity sync,
+- `ui/src/lib/runtime/RuntimeAudioObjectAdapter.ts` owns audio object identity sync,
   duplicate recreation suppression, message forwarding to audio parameters, and
   cleanup for runtime-created audio objects.
 - `ui/src/lib/runtime/EditorRuntimeReconciler.ts` translates XYFlow object nodes
