@@ -4,6 +4,7 @@
 
 import { AdsrObject } from '$objects/adsr/AdsrObject';
 import { BeatObject } from '$objects/beat/BeatObject';
+import { ButtonObject } from '$objects/button/ButtonObject';
 import {
   AndObject,
   EqualObject,
@@ -53,6 +54,7 @@ export const TEXT_OBJECTS = [
   AdsrObject,
   ClipObject,
   BeatObject,
+  ButtonObject,
   DebounceObject,
   DelayObject,
   FloatObject,

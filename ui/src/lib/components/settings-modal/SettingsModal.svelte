@@ -3,6 +3,7 @@
   import GeneralSettings from './categories/GeneralSettings.svelte';
   import EditorSettings from './categories/EditorSettings.svelte';
   import RenderingSettings from './categories/RenderingSettings.svelte';
+  import DebugSettings from './categories/DebugSettings.svelte';
   import AISettings from './categories/AISettings.svelte';
   import VisualSettings from './categories/VisualSettings.svelte';
   import TransportSettings from './categories/TransportSettings.svelte';
@@ -224,6 +225,8 @@
             <EditorSettings />
           {:else if activeCategory === 'rendering'}
             <RenderingSettings />
+          {:else if activeCategory === 'debug'}
+            <DebugSettings />
           {:else if activeCategory === 'ai'}
             <AISettings />
           {:else if activeCategory === 'visual'}

@@ -1,4 +1,5 @@
 import type { TSchema } from '@sinclair/typebox';
+import type { HandleSpec } from '$lib/objects/schemas/types';
 
 /**
  * Data types for node inlets/outlets.
@@ -45,6 +46,9 @@ export interface ObjectInlet {
    * When provided, these are used for docs generation and validation.
    */
   messages?: InletMessage[];
+
+  /** Explicit handle metadata for generated object schemas. */
+  handle?: HandleSpec;
 
   /** Does this inlet represent an audio parameter in the audio node? **/
   isAudioParam?: boolean;
@@ -137,6 +141,9 @@ export interface ObjectOutlet {
    * TypeBox message schemas for documentation.
    */
   messages?: InletMessage[];
+
+  /** Explicit handle metadata for generated object schemas. */
+  handle?: HandleSpec;
 }
 
 /**
@@ -145,6 +152,7 @@ export interface ObjectOutlet {
  */
 export interface ObjectMetadata {
   type?: string;
+  category?: string;
   inlets?: ObjectInlet[];
   outlets?: ObjectOutlet[];
   description?: string;

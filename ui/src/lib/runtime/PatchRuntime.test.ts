@@ -6,7 +6,9 @@ import { PatchRuntime } from './PatchRuntime';
 import { EditorRuntimeReconciler } from './EditorRuntimeReconciler';
 import { logger } from '$lib/utils/logger';
 import { MessageSystem } from '$lib/messages/MessageSystem';
+import { MessageContext } from '$lib/messages/MessageContext';
 import {
+  buttonNode,
   createFakeEditorRuntime,
   FakeAudioService,
   FakeEventBus,
@@ -381,6 +383,80 @@ describe('PatchAudioRuntime', () => {
 });
 
 describe('PatchRuntime', () => {
+  it('owns button message routing outside the Svelte view lifecycle', async () => {
+    const runtime = new PatchRuntime({
+      objectService: new FakeObjectService(),
+      audioService: new FakeAudioService()
+    });
+
+    const inputNodeId = 'button-runtime-input';
+    const buttonNodeId = 'button-runtime-test';
+    const targetNodeId = 'button-runtime-target';
+    const messageSystem = MessageSystem.getInstance();
+    const onMessage = vi.fn();
+    const onViewMessage = vi.fn();
+
+    const targetQueue = messageSystem.registerNode(targetNodeId);
+    targetQueue.addCallback(onMessage);
+    messageSystem.registerNode(inputNodeId);
+
+    messageSystem.updateEdges([
+      {
+        id: 'input-to-button',
+        source: inputNodeId,
+        target: buttonNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      },
+      {
+        id: 'button-to-target',
+        source: buttonNodeId,
+        target: targetNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    await runtime.createObject({
+      id: buttonNodeId,
+      objectType: 'button',
+      params: [],
+      rawParams: []
+    });
+
+    const viewMessageContext = new MessageContext(buttonNodeId);
+    viewMessageContext.messageCallbacks = [onViewMessage];
+
+    viewMessageContext.queue.sendMessage({ data: { type: 'bang' }, source: buttonNodeId });
+
+    expect(onMessage).toHaveBeenCalledWith(
+      { type: 'bang' },
+      expect.objectContaining({ source: buttonNodeId })
+    );
+    expect(onViewMessage).toHaveBeenCalledWith(
+      { type: 'bang' },
+      expect.objectContaining({ source: buttonNodeId })
+    );
+
+    messageSystem.sendMessage(inputNodeId, 'inbound button message');
+
+    expect(onMessage).toHaveBeenCalledTimes(2);
+    expect(onViewMessage).toHaveBeenCalledWith(
+      'inbound button message',
+      expect.objectContaining({
+        source: inputNodeId,
+        inlet: 0,
+        inletKey: 'message-in-0'
+      })
+    );
+
+    viewMessageContext.destroy({ unregisterNode: false });
+    runtime.destroy();
+    messageSystem.unregisterNode(inputNodeId);
+    messageSystem.unregisterNode(targetNodeId);
+    messageSystem.updateEdges([]);
+  });
+
   it('creates a message endpoint for audio objects', async () => {
     const objectService = new FakeObjectService();
 
@@ -469,6 +545,28 @@ describe('PatchRuntime', () => {
 });
 
 describe('EditorRuntimeReconciler', () => {
+  it('translates XYFlow button nodes into runtime object lifecycle calls', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'button-editor-runtime-test';
+
+    await reconciler.reconcile([buttonNode(nodeId)]);
+    await reconciler.reconcile([buttonNode(nodeId)]);
+
+    expect(runtime.createObject).toHaveBeenCalledWith({
+      id: nodeId,
+      objectType: 'button',
+      params: [],
+      rawParams: []
+    });
+    expect(runtime.createObject).toHaveBeenCalledTimes(1);
+    expect(runtime.destroyObject).not.toHaveBeenCalled();
+
+    await reconciler.reconcile([]);
+
+    expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
+  });
+
   it('translates XYFlow object nodes into PatchRuntime object calls', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);

@@ -34,6 +34,11 @@ The codebase does have several headless runtime primitives:
 - `ui/src/lib/runtime/EditorRuntimeReconciler.ts` translates XYFlow object nodes
   into runtime object create/update/destroy calls. It may understand editor node
   shape; `PatchRuntime` itself should not.
+- The first UI-owned Svelte node runtime slice is `button`: `ButtonObject` lives
+  under `ui/src/objects/button/` and is managed by `ObjectService`, while
+  `ButtonNode.svelte` remains a view that uses a view-local `MessageContext` to
+  inject click messages and render flash feedback without owning object
+  lifecycle.
 - `ui/src/lib/objects/v2/ObjectService.ts` owns V2 text object instances, message dispatch, creation, and destruction outside Svelte components.
 - `ui/src/lib/registry/ObjectRegistry.ts` and `ui/src/lib/registry/AudioRegistry.ts` support runtime registration of text object and audio node constructors.
 - `ui/src/lib/audio/v2/AudioService.ts` owns V2 audio node instances, audio graph updates, scheduled messages, and virtual audio routing.

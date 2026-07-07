@@ -2,8 +2,9 @@ import type { Node } from '@xyflow/svelte';
 import { vi } from 'vitest';
 import type { MessageContext } from '$lib/messages/MessageContext';
 import { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { ButtonObject } from '$objects/button/ButtonObject';
 
 import type { EditorRuntime } from './EditorRuntimeReconciler';
 import type { PatchRuntimeObjectService } from './PatchMessageRuntime';
@@ -63,7 +64,7 @@ export class FakeObjectService implements PatchRuntimeObjectService {
   private objectsById = new Map<string, TextObjectV2>();
 
   isObjectInRegistry(objectType: string): boolean {
-    return objectType === TEST_OBJECT_TYPE;
+    return objectType === TEST_OBJECT_TYPE || objectType === ButtonObject.type;
   }
 
   async createObject(
@@ -75,13 +76,18 @@ export class FakeObjectService implements PatchRuntimeObjectService {
   ): Promise<TextObjectV2 | null> {
     if (!this.isObjectInRegistry(objectType)) return null;
 
-    const context = new ObjectContext(nodeId, messageContext, PatchRuntimeTestObject.inlets);
+    const ObjectClass: TextObjectClass =
+      objectType === ButtonObject.type ? ButtonObject : PatchRuntimeTestObject;
+    const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets);
     context.initParams(params);
 
-    const object = new PatchRuntimeTestObject(nodeId, context);
+    const object = new ObjectClass(nodeId, context);
     this.objectsById.set(nodeId, object);
+    context.addMessageCallback((data, meta) => {
+      object.onMessage?.(data, meta);
+    });
 
-    await object.create(rawParams);
+    await object.create?.(rawParams);
 
     return object;
   }
@@ -143,8 +149,17 @@ export const objectNode = (id: string, data: Record<string, unknown>): Node => (
   data
 });
 
+export const buttonNode = (id: string): Node => ({
+  id,
+  type: 'button',
+  position: { x: 0, y: 0 },
+  data: {}
+});
+
 export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) => ({
-  isObjectInRegistry: vi.fn((objectType: string) => objectType === TEST_OBJECT_TYPE),
+  isObjectInRegistry: vi.fn(
+    (objectType: string) => objectType === TEST_OBJECT_TYPE || objectType === 'button'
+  ),
   createObject: vi.fn(),
   updateObject: vi.fn(),
   destroyObject: vi.fn(),

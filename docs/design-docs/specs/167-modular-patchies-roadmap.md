@@ -94,6 +94,15 @@ so message endpoints can route control messages into audio parameters. This is
 still a partial Phase 1 implementation: patch loading, graph-level connect APIs,
 video runtime ownership, plugins, and subpatches remain future work.
 
+The first UI-owned Svelte node validation slice is `button`. Its runtime
+behavior lives in `ui/src/objects/button/ButtonObject.ts`, registered through the
+same object service path as text objects. `ObjectService` owns the per-node
+instance map and `MessageContext` lifecycle; `ButtonNode.svelte` only renders the
+button and creates a view-local `MessageContext` with the same node id. The view
+uses the shared message queue to inject click messages into the headless object
+and to flash when inbound messages arrive; view cleanup must not unregister the
+runtime message node.
+
 This phase extends spec 40. The important shift is that the runtime owns object lifecycle:
 
 - `createObject(node)` creates or reuses a runtime object instance.

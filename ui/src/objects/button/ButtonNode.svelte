@@ -1,34 +1,36 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
+
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { buttonSchema } from '$objects/button/schema';
-  import { onMount } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
+  import { objectSchemas } from '$lib/objects/schemas';
+  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
+
   import { shouldShowHandles } from '../../stores/ui.store';
 
   let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
 
-  let messageContext: MessageContext;
-
   let isFlashing = $state(false);
+  let flashTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  const handleMessage = () => {
+  const flash = () => {
     isFlashing = true;
 
-    messageContext.send({ type: 'bang' });
+    if (flashTimeout) clearTimeout(flashTimeout);
 
-    setTimeout(() => {
+    flashTimeout = setTimeout(() => {
       isFlashing = false;
+      flashTimeout = null;
     }, 150);
   };
 
-  onMount(() => {
-    messageContext = new MessageContext(nodeId);
-    messageContext.queue.addCallback(handleMessage);
+  const viewMessageContext = useNodeViewMessageContext(nodeId, flash);
+  const handleClick = () => viewMessageContext.send({ type: 'bang' });
+  const buttonSchema = objectSchemas.button;
 
-    return () => {
-      messageContext.queue.removeCallback(handleMessage);
-      messageContext.destroy();
-    };
+  onDestroy(() => {
+    if (flashTimeout) {
+      clearTimeout(flashTimeout);
+    }
   });
 
   const borderColor = $derived(selected ? '!border-zinc-400' : '!border-zinc-600');
@@ -61,7 +63,7 @@
         />
 
         <button
-          onclick={() => messageContext.send({ type: 'bang' })}
+          onclick={handleClick}
           class={[
             'h-10 w-10 cursor-pointer rounded-full border font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600',
             isFlashing ? '!border-transparent bg-zinc-500' : `${borderColor} bg-zinc-900`,
