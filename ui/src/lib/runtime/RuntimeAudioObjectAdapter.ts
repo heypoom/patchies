@@ -1,6 +1,5 @@
 import type { Edge } from '@xyflow/svelte';
 import { hash } from 'ohash';
-import { getAudioObjectNames } from '$lib/audio/v2/audio-helpers';
 import type { AudioNodeClass, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -8,7 +7,7 @@ import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 export interface RuntimeAudioObjectService {
   removeNodeById(nodeId: string): void;
-  createNode(nodeId: string, objectType: string, params: unknown[]): void;
+  createNode(nodeId: string, objectType: string, params: unknown[]): Promise<AudioNodeV2 | null>;
   updateEdges(edges: Edge[]): void;
   send(nodeId: string, key: string, message: unknown): void;
   getNodeById(nodeId: string): AudioNodeV2 | null;
@@ -52,7 +51,7 @@ export class RuntimeAudioObjectAdapter {
     this.audioService = options.audioService;
 
     this.isAudioObject =
-      options.isAudioObject ?? ((objectType) => getAudioObjectNames().includes(objectType));
+      options.isAudioObject ?? ((objectType) => AudioRegistry.getInstance().isDefined(objectType));
 
     this.onAudioObjectDataChange = options.onAudioObjectDataChange;
   }
@@ -83,7 +82,7 @@ export class RuntimeAudioObjectAdapter {
         return false;
       }
 
-      this.createOrUpdateAudioObject(descriptor);
+      this.upsertAudioObject(descriptor);
 
       return true;
     }
@@ -101,7 +100,7 @@ export class RuntimeAudioObjectAdapter {
       return false;
     }
 
-    this.createOrUpdateAudioObject(descriptor);
+    this.upsertAudioObject(descriptor);
 
     return true;
   }
@@ -131,7 +130,7 @@ export class RuntimeAudioObjectAdapter {
     this.suppressedAudioObjectSyncs.add(nodeId);
   }
 
-  createOrUpdateAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
+  upsertAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
     const audioService = this.getAudioService();
 
     // cleanup existing nodes
@@ -150,6 +149,7 @@ export class RuntimeAudioObjectAdapter {
   }
 
   destroyAudioObject(nodeId: string): void {
+    // cleanup existing nodes
     this.getAudioService().removeNodeById(nodeId);
     this.removeAudioObjectMessageContext(nodeId, true);
 

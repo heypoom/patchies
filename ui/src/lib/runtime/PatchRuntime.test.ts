@@ -278,7 +278,7 @@ describe('RuntimeAudioObjectAdapter', () => {
     const nodeId = 'object-audio-runtime-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
 
-    runtime.createOrUpdateAudioObject({
+    runtime.upsertAudioObject({
       id: nodeId,
       objectType: 'osc~',
       params: [440],
@@ -457,7 +457,7 @@ describe('RuntimeAudioObjectAdapter', () => {
       }
     ]);
 
-    runtime.createOrUpdateAudioObject({
+    runtime.upsertAudioObject({
       id: tapNodeId,
       objectType: 'tap~',
       params: [null, null, 512, 'wave', 0, true],
@@ -624,7 +624,7 @@ describe('PatchRuntime', () => {
       params: ['initial'],
       rawParams: ['initial']
     });
-    runtime.createOrUpdateAudioObject({
+    runtime.upsertAudioObject({
       id: nodeId,
       objectType: 'osc~',
       params: [440],

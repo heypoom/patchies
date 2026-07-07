@@ -92,8 +92,8 @@ export class PatchRuntime {
     this.audio.suppressNextAudioObjectSync(nodeId);
   }
 
-  createOrUpdateAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
-    this.audio.createOrUpdateAudioObject(descriptor);
+  upsertAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
+    this.audio.upsertAudioObject(descriptor);
   }
 
   destroyAudioObject(nodeId: string): void {
