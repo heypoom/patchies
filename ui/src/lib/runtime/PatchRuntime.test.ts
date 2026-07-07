@@ -278,7 +278,12 @@ describe('RuntimeAudioObjectAdapter', () => {
     const nodeId = 'object-audio-runtime-test';
     const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'out' }] as Edge[];
 
-    runtime.createOrUpdateAudioObject(nodeId, 'osc~', [440], edges);
+    runtime.createOrUpdateAudioObject({
+      id: nodeId,
+      objectType: 'osc~',
+      params: [440],
+      edges
+    });
 
     expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
@@ -343,6 +348,28 @@ describe('RuntimeAudioObjectAdapter', () => {
         edges
       })
     ).toBe(true);
+
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+  });
+
+  it('syncs runtime-managed audio nodes as a desired descriptor set', () => {
+    const audioService = new FakeAudioService();
+    const runtime = new RuntimeAudioObjectAdapter({ audioService, isAudioObject: isTap });
+    const nodeId = 'tap-runtime-managed-set-test';
+    const edges = [{ id: 'audio-edge-1', source: nodeId, target: 'consumer' }] as Edge[];
+    const descriptor = {
+      id: nodeId,
+      objectType: 'tap~',
+      params: [null, null, 1024, 'xy', 30, false],
+      edges
+    };
+
+    runtime.syncRuntimeManagedAudioNodes([descriptor]);
+    runtime.syncRuntimeManagedAudioNodes([descriptor]);
+
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
+
+    runtime.syncRuntimeManagedAudioNodes([]);
 
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
   });
@@ -430,7 +457,12 @@ describe('RuntimeAudioObjectAdapter', () => {
       }
     ]);
 
-    runtime.createOrUpdateAudioObject(tapNodeId, 'tap~', [null, null, 512, 'wave', 0, true], []);
+    runtime.createOrUpdateAudioObject({
+      id: tapNodeId,
+      objectType: 'tap~',
+      params: [null, null, 512, 'wave', 0, true],
+      edges: []
+    });
     messageSystem.sendMessage(sourceNodeId, { type: 'setSamples', value: 1024 });
 
     expect(audioService.send).toHaveBeenCalledWith(tapNodeId, 'bufferSize', 1024);
@@ -592,7 +624,12 @@ describe('PatchRuntime', () => {
       params: ['initial'],
       rawParams: ['initial']
     });
-    runtime.createOrUpdateAudioObject(nodeId, 'osc~', [440], edges);
+    runtime.createOrUpdateAudioObject({
+      id: nodeId,
+      objectType: 'osc~',
+      params: [440],
+      edges
+    });
 
     expect(objectService.getObjectById(nodeId)).toBeInstanceOf(PatchRuntimeTestObject);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
@@ -644,12 +681,15 @@ describe('EditorRuntimeReconciler', () => {
     runtime.destroy();
   });
 
-  it('lets the audio runtime decide whether dedicated audio syncs are no-ops', async () => {
-    const syncAudioObject = vi.fn();
+  it('delegates runtime-managed audio descriptor sets to the audio runtime', async () => {
+    const syncedDescriptorSets: unknown[][] = [];
+    const syncRuntimeManagedAudioNodes = vi.fn((descriptors: Iterable<unknown>) => {
+      syncedDescriptorSets.push([...descriptors]);
+    });
 
     const runtime = createFakeEditorRuntime({
       isObjectInRegistry: vi.fn(isTap),
-      syncAudioObject
+      syncRuntimeManagedAudioNodes
     });
 
     const reconciler = new EditorRuntimeReconciler(runtime);
@@ -667,7 +707,15 @@ describe('EditorRuntimeReconciler', () => {
     await reconciler.reconcile([node]);
     await reconciler.reconcile([node]);
 
-    expect(syncAudioObject).toHaveBeenCalledTimes(2);
+    expect(syncRuntimeManagedAudioNodes).toHaveBeenCalledTimes(2);
+    expect(syncedDescriptorSets[0]).toEqual([
+      {
+        id: nodeId,
+        objectType: 'tap~',
+        params: [null, null, 1024, 'xy', 30, false],
+        edges: []
+      }
+    ]);
   });
 
   it('does not sync dedicated audio UI nodes that still own their view runtime', async () => {

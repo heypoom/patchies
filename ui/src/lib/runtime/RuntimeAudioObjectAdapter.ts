@@ -45,6 +45,9 @@ export class RuntimeAudioObjectAdapter {
   /** Node ids whose next editor-state sync should be ignored because runtime messaging already applied it. */
   private suppressedAudioObjectSyncs = new Set<string>();
 
+  /** Runtime-managed dedicated UI audio node ids, tracked separately from generic object audio ids. */
+  private runtimeManagedAudioNodeIds = new Set<string>();
+
   constructor(options: RuntimeAudioObjectAdapterOptions = {}) {
     this.audioService = options.audioService;
 
@@ -70,7 +73,7 @@ export class RuntimeAudioObjectAdapter {
       return true;
     }
 
-    const syncKey = this.getAudioObjectSyncKey(descriptor.objectType, descriptor.params);
+    const syncKey = this.getAudioObjectSyncKey(descriptor);
 
     if (this.audioObjectSyncKeys.get(descriptor.id) === syncKey) {
       // The editor state still describes the same audio object. Usually this is a no-op,
@@ -80,12 +83,7 @@ export class RuntimeAudioObjectAdapter {
         return false;
       }
 
-      this.createOrUpdateAudioObject(
-        descriptor.id,
-        descriptor.objectType,
-        descriptor.params,
-        descriptor.edges
-      );
+      this.createOrUpdateAudioObject(descriptor);
 
       return true;
     }
@@ -103,41 +101,52 @@ export class RuntimeAudioObjectAdapter {
       return false;
     }
 
-    this.createOrUpdateAudioObject(
-      descriptor.id,
-      descriptor.objectType,
-      descriptor.params,
-      descriptor.edges
-    );
+    this.createOrUpdateAudioObject(descriptor);
 
     return true;
+  }
+
+  /**
+   * Syncs the full desired set of runtime-managed dedicated audio UI nodes.
+   * Any previously tracked runtime-managed node omitted from this set is destroyed.
+   */
+  syncRuntimeManagedAudioNodes(descriptors: Iterable<RuntimeAudioObjectDescriptor>): void {
+    const nextDescriptors = [...descriptors];
+    const nextIds = new Set(nextDescriptors.map((descriptor) => descriptor.id));
+
+    for (const nodeId of this.runtimeManagedAudioNodeIds) {
+      if (!nextIds.has(nodeId)) {
+        this.destroyAudioObject(nodeId);
+        this.runtimeManagedAudioNodeIds.delete(nodeId);
+      }
+    }
+
+    for (const descriptor of nextDescriptors) {
+      this.syncAudioObject(descriptor);
+      this.runtimeManagedAudioNodeIds.add(descriptor.id);
+    }
   }
 
   suppressNextAudioObjectSync(nodeId: string): void {
     this.suppressedAudioObjectSyncs.add(nodeId);
   }
 
-  createOrUpdateAudioObject(
-    nodeId: string,
-    objectType: string,
-    params: unknown[],
-    edges: Edge[]
-  ): void {
+  createOrUpdateAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
     const audioService = this.getAudioService();
 
     // cleanup existing nodes
-    this.removeAudioObjectMessageContext(nodeId, false);
-    audioService.removeNodeById(nodeId);
+    this.removeAudioObjectMessageContext(descriptor.id, false);
+    audioService.removeNodeById(descriptor.id);
 
     // insert new nodes
-    audioService.createNode(nodeId, objectType, params);
-    this.createAudioObjectMessageContext(nodeId, objectType);
-    audioService.updateEdges(edges);
+    audioService.createNode(descriptor.id, descriptor.objectType, descriptor.params);
+    this.createAudioObjectMessageContext(descriptor.id, descriptor.objectType);
+    audioService.updateEdges(descriptor.edges);
 
     // sync ids and keys
-    this.audioObjectIds.add(nodeId);
-    this.audioObjectSyncKeys.set(nodeId, this.getAudioObjectSyncKey(objectType, params));
-    this.suppressedAudioObjectSyncs.delete(nodeId);
+    this.audioObjectIds.add(descriptor.id);
+    this.audioObjectSyncKeys.set(descriptor.id, this.getAudioObjectSyncKey(descriptor));
+    this.suppressedAudioObjectSyncs.delete(descriptor.id);
   }
 
   destroyAudioObject(nodeId: string): void {
@@ -148,6 +157,7 @@ export class RuntimeAudioObjectAdapter {
     this.audioObjectIds.delete(nodeId);
     this.audioObjectSyncKeys.delete(nodeId);
     this.suppressedAudioObjectSyncs.delete(nodeId);
+    this.runtimeManagedAudioNodeIds.delete(nodeId);
   }
 
   sendAudioObjectMessage(nodeId: string, key: string, message: unknown): void {
@@ -172,8 +182,10 @@ export class RuntimeAudioObjectAdapter {
     return this.audioService;
   }
 
-  private getAudioObjectSyncKey(objectType: string, params: unknown[]): string {
-    return hash([objectType, params]);
+  private getAudioObjectSyncKey(
+    descriptor: Pick<RuntimeAudioObjectDescriptor, 'objectType' | 'params'>
+  ): string {
+    return hash([descriptor.objectType, descriptor.params]);
   }
 
   private createAudioObjectMessageContext(nodeId: string, objectType: string): void {

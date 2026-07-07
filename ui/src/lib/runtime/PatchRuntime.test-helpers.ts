@@ -8,7 +8,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 import { ButtonObject } from '$objects/button/ButtonObject';
 
 import type { EditorRuntime } from './EditorRuntimeReconciler';
-import type { PatchRuntimeObjectService } from './PatchMessageRuntime';
+import type { RuntimeObjectService } from './PatchMessageRuntime';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
 
@@ -61,7 +61,7 @@ export function resetPatchRuntimeTestObject(): void {
   PatchRuntimeTestObject.dynamicOutlets = null;
 }
 
-export class FakeObjectService implements PatchRuntimeObjectService {
+export class FakeObjectService implements RuntimeObjectService {
   private objectsById = new Map<string, TextObjectV2>();
 
   isObjectInRegistry(objectType: string): boolean {

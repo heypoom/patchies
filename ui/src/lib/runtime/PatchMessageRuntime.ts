@@ -12,7 +12,7 @@ type ObjectParamsChangedEvent = {
   params: unknown[];
 };
 
-export type PatchRuntimeObjectDescriptor = {
+export type RuntimeObjectDescriptor = {
   id: string;
   objectType: string;
   params: unknown[];
@@ -26,7 +26,7 @@ type RuntimeObjectRecord = {
   lifecycleToken: number;
 };
 
-export type PatchRuntimeObjectService = {
+export type RuntimeObjectService = {
   createObject(
     nodeId: string,
     objectType: string,
@@ -40,7 +40,7 @@ export type PatchRuntimeObjectService = {
   removeObjectById(nodeId: string): void;
 };
 
-export type PatchRuntimeEventBus = {
+export type RuntimeEventBus = {
   addEventListener(
     type: 'objectParamsChanged',
     listener: (event: ObjectParamsChangedEvent) => void
@@ -59,14 +59,14 @@ export type RuntimeObjectPorts = {
 };
 
 export type PatchMessageRuntimeOptions = {
-  objectService: PatchRuntimeObjectService;
-  eventBus?: PatchRuntimeEventBus;
+  objectService: RuntimeObjectService;
+  eventBus?: RuntimeEventBus;
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
 };
 
 export class PatchMessageRuntime {
-  private objectService: PatchRuntimeObjectService;
-  private eventBus: PatchRuntimeEventBus;
+  private objectService: RuntimeObjectService;
+  private eventBus: RuntimeEventBus;
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private objects = new Map<string, RuntimeObjectRecord>();
   private objectMessageContexts = new SvelteMap<string, MessageContext>();
@@ -85,7 +85,7 @@ export class PatchMessageRuntime {
     return this.objectService.isObjectInRegistry(objectType);
   }
 
-  async createObject(descriptor: PatchRuntimeObjectDescriptor): Promise<void> {
+  async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {
     this.removeObject(descriptor.id, {
       bumpRevision: false,
       unregisterMessageNode: false
@@ -130,7 +130,7 @@ export class PatchMessageRuntime {
     this.bumpObjectViewRevision(descriptor.id);
   }
 
-  async updateObject(nodeId: string, descriptor: PatchRuntimeObjectDescriptor): Promise<void> {
+  async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void> {
     const existing = this.objects.get(nodeId);
     const lifecycleKey = getObjectLifecycleKey(descriptor);
 
@@ -251,5 +251,5 @@ const hasParamChanges = (currentParams: unknown[], objectParams: unknown[]): boo
   currentParams.length !== objectParams.length ||
   objectParams.some((param, index) => !Object.is(param, currentParams[index]));
 
-const getObjectLifecycleKey = (descriptor: PatchRuntimeObjectDescriptor): string =>
+const getObjectLifecycleKey = (descriptor: RuntimeObjectDescriptor): string =>
   hash([descriptor.objectType, descriptor.rawParams]);
