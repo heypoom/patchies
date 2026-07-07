@@ -154,6 +154,7 @@ export interface ObjectMetadata {
   type?: string;
   category?: string;
   inlets?: ObjectInlet[];
+  schemaInlets?: ObjectInlet[];
   outlets?: ObjectOutlet[];
   description?: string;
   tags?: string[];

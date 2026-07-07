@@ -21,10 +21,14 @@ export interface WorkletDspNodeConfig {
   audioOutlets?: number;
 
   inlets: ObjectInlet[];
+  schemaInlets?: ObjectInlet[];
   outlets: ObjectOutlet[];
 
   tags?: string[];
   aliases?: string[];
+  runtimeManaged?: boolean;
+
+  getMessageSettingsUpdate?: (message: unknown) => Record<string, unknown> | null;
 
   /**
    * Optional lifecycle hook called after the AudioWorkletNode is created.
@@ -67,9 +71,13 @@ type NativeDspNodeClass = {
   group: AudioNodeGroup;
   description: string;
   inlets: ObjectInlet[];
+  schemaInlets?: ObjectInlet[];
   outlets: ObjectOutlet[];
   tags?: string[];
   aliases?: string[];
+  runtimeManaged?: boolean;
+  getMessageSettingsUpdate?: (message: unknown) => Record<string, unknown> | null;
+
   new (nodeId: string, audioContext: AudioContext): AudioNodeV2;
 };
 
@@ -92,9 +100,12 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     static group = config.group;
     static description = config.description;
     static inlets = config.inlets;
+    static schemaInlets = config.schemaInlets;
     static outlets = config.outlets;
     static tags = config.tags;
     static aliases = config.aliases;
+    static runtimeManaged = config.runtimeManaged;
+    static getMessageSettingsUpdate = config.getMessageSettingsUpdate;
 
     readonly nodeId: string;
     audioNode: AudioWorkletNode | null = null;

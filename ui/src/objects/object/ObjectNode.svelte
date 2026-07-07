@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -607,10 +607,6 @@
         showAutocomplete = true;
       }, 10);
     }
-  });
-
-  onDestroy(() => {
-    patchRuntime?.destroyAudioObject(nodeId);
   });
 
   useObjectRuntimeView({

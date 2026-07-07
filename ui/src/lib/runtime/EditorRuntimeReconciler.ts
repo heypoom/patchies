@@ -1,5 +1,7 @@
-import type { Node } from '@xyflow/svelte';
+import type { Edge, Node } from '@xyflow/svelte';
 import { hash } from 'ohash';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 import { logger } from '$lib/utils/logger';
 import type { PatchRuntimeObjectSpec } from './PatchRuntime';
@@ -17,11 +19,21 @@ interface RuntimeObjectSnapshot {
 
 type NextRuntimeObjectSnapshot = RuntimeObjectSnapshot & { pendingIds: Set<string> };
 
+type DedicatedAudioObjectSpec = {
+  id: string;
+  objectType: string;
+  params: unknown[];
+  edges: Edge[];
+};
+
 export type EditorRuntime = {
   isObjectInRegistry(objectType: string): boolean;
   createObject(spec: PatchRuntimeObjectSpec): Promise<void>;
   updateObject(nodeId: string, spec: PatchRuntimeObjectSpec): Promise<void>;
   destroyObject(nodeId: string): void;
+  canCreateAudioObject?(objectType: string): boolean;
+  syncAudioObject?(spec: DedicatedAudioObjectSpec): boolean;
+  destroyAudioObject?(nodeId: string): void;
 };
 
 export class EditorRuntimeReconciler {
@@ -36,13 +48,25 @@ export class EditorRuntimeReconciler {
     pendingIds: new Set()
   };
 
+  private currentAudio: RuntimeObjectSnapshot = {
+    ids: new Set(),
+    specKeys: new Map()
+  };
+
   constructor(private runtime: EditorRuntime) {}
 
-  async reconcile(nodes: Node[]): Promise<void> {
+  async reconcile(nodes: Node[], edges: Edge[] = []): Promise<void> {
     const nextObjectSpecs = new Map<string, PatchRuntimeObjectSpec>();
+    const nextAudioSpecs = new Map<string, DedicatedAudioObjectSpec>();
     const pendingRuntimeUpdates: Promise<void>[] = [];
 
     for (const node of nodes) {
+      const audioSpec = this.getDedicatedAudioObjectSpec(node, edges);
+      if (audioSpec) {
+        nextAudioSpecs.set(audioSpec.id, audioSpec);
+        continue;
+      }
+
       const spec = this.getRuntimeObjectSpec(node);
       if (!spec) continue;
 
@@ -66,6 +90,8 @@ export class EditorRuntimeReconciler {
         this.next.pendingIds.delete(nodeId);
       }
     }
+
+    this.syncDedicatedAudioObjects(nextAudioSpecs);
 
     for (const spec of nextObjectSpecs.values()) {
       if (this.next.pendingIds.has(spec.id)) continue;
@@ -96,6 +122,47 @@ export class EditorRuntimeReconciler {
     return getRuntimeObjectSpecFromNode(node.id, objectType, data);
   }
 
+  private getDedicatedAudioObjectSpec(node: Node, edges: Edge[]): DedicatedAudioObjectSpec | null {
+    if (node.type === 'object') return null;
+
+    const objectType = getRuntimeObjectType(node);
+    if (!objectType || !this.runtime.canCreateAudioObject?.(objectType)) return null;
+
+    const nodeClass = AudioRegistry.getInstance().get(objectType);
+    if (!nodeClass) return null;
+    if (!nodeClass.runtimeManaged) return null;
+
+    return {
+      id: node.id,
+      objectType,
+      params: getAudioParamsFromNodeData(nodeClass.inlets ?? [], node.data),
+      edges
+    };
+  }
+
+  private syncDedicatedAudioObjects(nextAudioSpecs: Map<string, DedicatedAudioObjectSpec>): void {
+    const nextAudioIds = new Set(nextAudioSpecs.keys());
+
+    for (const nodeId of this.currentAudio.ids) {
+      if (!nextAudioIds.has(nodeId)) {
+        this.runtime.destroyAudioObject?.(nodeId);
+        this.currentAudio.ids.delete(nodeId);
+        this.currentAudio.specKeys.delete(nodeId);
+      }
+    }
+
+    for (const spec of nextAudioSpecs.values()) {
+      const specKey = getDedicatedAudioObjectSpecKey(spec);
+      const lastSyncedSpecKey = this.currentAudio.specKeys.get(spec.id);
+
+      if (this.currentAudio.ids.has(spec.id) && lastSyncedSpecKey === specKey) continue;
+
+      this.runtime.syncAudioObject?.(spec);
+      this.currentAudio.ids.add(spec.id);
+      this.currentAudio.specKeys.set(spec.id, specKey);
+    }
+  }
+
   private async syncRuntimeObject(
     spec: PatchRuntimeObjectSpec,
     specKey: string,
@@ -120,6 +187,9 @@ export class EditorRuntimeReconciler {
 
 const getRuntimeObjectSpecKey = (spec: PatchRuntimeObjectSpec): string =>
   hash([spec.objectType, spec.params, spec.rawParams]);
+
+const getDedicatedAudioObjectSpecKey = (spec: DedicatedAudioObjectSpec): string =>
+  hash([spec.objectType, spec.params]);
 
 function getRuntimeObjectType(node: Node): string {
   if (node.type !== 'object') return node.type ?? '';
@@ -149,4 +219,21 @@ function getRawObjectParamsFromExpr(expr: unknown): string[] {
   if (!trimmed) return [];
 
   return trimmed.split(/\s+/).slice(1);
+}
+
+function getAudioParamsFromNodeData(
+  inlets: ObjectInlet[],
+  data: Record<string, unknown> | undefined
+): unknown[] {
+  return inlets.map((inlet) => {
+    if (inlet.type === 'signal' && !inlet.acceptsFloat && !inlet.messages?.length) {
+      return null;
+    }
+
+    if (inlet.name && data && data[inlet.name] !== undefined) {
+      return data[inlet.name];
+    }
+
+    return inlet.defaultValue ?? null;
+  });
 }

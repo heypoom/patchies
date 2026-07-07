@@ -156,6 +156,13 @@ export const buttonNode = (id: string): Node => ({
   data: {}
 });
 
+export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): Node => ({
+  id,
+  type: 'tap~',
+  position: { x: 0, y: 0 },
+  data
+});
+
 export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) => ({
   isObjectInRegistry: vi.fn(
     (objectType: string) => objectType === TEST_OBJECT_TYPE || objectType === 'button'

@@ -1,7 +1,10 @@
 import type { Edge } from '@xyflow/svelte';
 import { hash } from 'ohash';
 import { getAudioObjectNames } from '$lib/audio/v2/audio-helpers';
-import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
+import type { AudioNodeClass, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
+import { MessageContext } from '$lib/messages/MessageContext';
+import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 export type PatchRuntimeAudioService = {
   removeNodeById(nodeId: string): void;
@@ -14,6 +17,7 @@ export type PatchRuntimeAudioService = {
 export type PatchAudioRuntimeOptions = {
   audioService?: PatchRuntimeAudioService;
   isAudioObject?: (objectType: string) => boolean;
+  onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 };
 
 export type PatchAudioObjectSpec = {
@@ -26,8 +30,10 @@ export type PatchAudioObjectSpec = {
 export class PatchAudioRuntime {
   private audioService?: PatchRuntimeAudioService;
   private isAudioObject: (objectType: string) => boolean;
+  private onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
   private audioObjectIds = new Set<string>();
   private audioObjectSyncKeys = new Map<string, string>();
+  private audioObjectMessageContexts = new Map<string, MessageContext>();
   private suppressedAudioObjectSyncs = new Set<string>();
 
   constructor(options: PatchAudioRuntimeOptions = {}) {
@@ -35,6 +41,7 @@ export class PatchAudioRuntime {
 
     this.isAudioObject =
       options.isAudioObject ?? ((objectType) => getAudioObjectNames().includes(objectType));
+    this.onAudioObjectDataChange = options.onAudioObjectDataChange;
   }
 
   canCreateAudioObject(objectType: string): boolean {
@@ -81,8 +88,10 @@ export class PatchAudioRuntime {
   ): void {
     const audioService = this.getAudioService();
 
+    this.removeAudioObjectMessageContext(nodeId, false);
     audioService.removeNodeById(nodeId);
     audioService.createNode(nodeId, objectType, params);
+    this.createAudioObjectMessageContext(nodeId, objectType);
     audioService.updateEdges(edges);
 
     this.audioObjectIds.add(nodeId);
@@ -92,6 +101,7 @@ export class PatchAudioRuntime {
 
   destroyAudioObject(nodeId: string): void {
     this.getAudioService().removeNodeById(nodeId);
+    this.removeAudioObjectMessageContext(nodeId, true);
 
     this.audioObjectIds.delete(nodeId);
     this.audioObjectSyncKeys.delete(nodeId);
@@ -122,5 +132,50 @@ export class PatchAudioRuntime {
 
   private getAudioObjectSyncKey(objectType: string, params: unknown[]): string {
     return hash([objectType, params]);
+  }
+
+  private createAudioObjectMessageContext(nodeId: string, objectType: string): void {
+    const nodeClass = AudioRegistry.getInstance().get(objectType);
+    const messageContext = new MessageContext(nodeId);
+    const callback = this.createAudioObjectMessageCallback(nodeId, nodeClass);
+
+    messageContext.queue.addCallback(callback);
+    this.audioObjectMessageContexts.set(nodeId, messageContext);
+  }
+
+  private createAudioObjectMessageCallback(
+    nodeId: string,
+    nodeClass: AudioNodeClass | undefined
+  ): MessageCallbackFn {
+    return (message, meta) => {
+      const settingsUpdate = nodeClass?.getMessageSettingsUpdate?.(message);
+
+      if (settingsUpdate) {
+        for (const [key, value] of Object.entries(settingsUpdate)) {
+          this.sendAudioObjectMessage(nodeId, key, value);
+        }
+
+        this.suppressNextAudioObjectSync(nodeId);
+        this.onAudioObjectDataChange?.(nodeId, settingsUpdate);
+
+        return;
+      }
+
+      const inlet = meta.inlet;
+      if (inlet === undefined) return;
+
+      const inletName = nodeClass?.inlets?.[inlet]?.name;
+      if (!inletName) return;
+
+      this.sendAudioObjectMessage(nodeId, inletName, message);
+    };
+  }
+
+  private removeAudioObjectMessageContext(nodeId: string, unregisterMessageNode: boolean): void {
+    const messageContext = this.audioObjectMessageContexts.get(nodeId);
+    if (!messageContext) return;
+
+    messageContext.destroy({ unregisterNode: unregisterMessageNode });
+    this.audioObjectMessageContexts.delete(nodeId);
   }
 }

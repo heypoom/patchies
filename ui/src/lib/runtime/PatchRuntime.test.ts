@@ -7,6 +7,9 @@ import { EditorRuntimeReconciler } from './EditorRuntimeReconciler';
 import { logger } from '$lib/utils/logger';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import { MessageContext } from '$lib/messages/MessageContext';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
+import { ScopeAudioNode } from '$objects/scope~/ScopeAudioNode';
 import {
   buttonNode,
   createFakeEditorRuntime,
@@ -16,6 +19,7 @@ import {
   objectNode,
   PatchRuntimeTestObject,
   resetPatchRuntimeTestObject,
+  tapTildeNode,
   TEST_OBJECT_TYPE
 } from './PatchRuntime.test-helpers';
 
@@ -380,6 +384,41 @@ describe('PatchAudioRuntime', () => {
 
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
   });
+
+  it('routes audio object command messages through runtime-owned message contexts', () => {
+    const audioService = new FakeAudioService();
+    const onAudioObjectDataChange = vi.fn();
+    const runtime = new PatchAudioRuntime({
+      audioService,
+      isAudioObject: (objectType) => objectType === 'tap~',
+      onAudioObjectDataChange
+    });
+    const messageSystem = MessageSystem.getInstance();
+    const sourceNodeId = 'tap-command-source';
+    const tapNodeId = 'tap-command-target';
+
+    AudioRegistry.getInstance().register(TapNode);
+    messageSystem.registerNode(sourceNodeId);
+    messageSystem.updateEdges([
+      {
+        id: 'source-to-tap-command',
+        source: sourceNodeId,
+        target: tapNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    runtime.createOrUpdateAudioObject(tapNodeId, 'tap~', [null, null, 512, 'wave', 0, true], []);
+    messageSystem.sendMessage(sourceNodeId, { type: 'setSamples', value: 1024 });
+
+    expect(audioService.send).toHaveBeenCalledWith(tapNodeId, 'bufferSize', 1024);
+    expect(onAudioObjectDataChange).toHaveBeenCalledWith(tapNodeId, { bufferSize: 1024 });
+
+    runtime.destroy();
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
+  });
 });
 
 describe('PatchRuntime', () => {
@@ -545,6 +584,67 @@ describe('PatchRuntime', () => {
 });
 
 describe('EditorRuntimeReconciler', () => {
+  it('syncs dedicated audio UI nodes through the audio runtime lifecycle', async () => {
+    const audioService = new FakeAudioService();
+    const runtime = new PatchRuntime({
+      objectService: new FakeObjectService(),
+      audioService,
+      isAudioObject: (objectType) => objectType === 'tap~'
+    });
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'tap-tilde-editor-runtime-test';
+
+    AudioRegistry.getInstance().register(TapNode);
+    await reconciler.reconcile([
+      tapTildeNode(nodeId, {
+        bufferSize: 1024,
+        mode: 'xy',
+        fps: 30,
+        zeroCrossing: false
+      })
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
+      null,
+      null,
+      1024,
+      'xy',
+      30,
+      false
+    ]);
+
+    await reconciler.reconcile([]);
+
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+
+    runtime.destroy();
+  });
+
+  it('does not sync dedicated audio UI nodes that still own their view runtime', async () => {
+    const audioService = new FakeAudioService();
+    const runtime = new PatchRuntime({
+      objectService: new FakeObjectService(),
+      audioService,
+      isAudioObject: (objectType) => objectType === 'scope~'
+    });
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'scope-editor-runtime-test';
+
+    AudioRegistry.getInstance().register(ScopeAudioNode);
+    await reconciler.reconcile([
+      {
+        id: nodeId,
+        type: 'scope~',
+        position: { x: 0, y: 0 },
+        data: {}
+      }
+    ]);
+
+    expect(audioService.createNode).not.toHaveBeenCalled();
+
+    runtime.destroy();
+  });
+
   it('translates XYFlow button nodes into runtime object lifecycle calls', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);

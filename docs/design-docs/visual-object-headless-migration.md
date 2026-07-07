@@ -23,6 +23,11 @@ port metadata, and docs/search schema should live in the object definition under
    Include TypeBox `messages` and explicit `handle` specs when existing handle
    IDs must be preserved.
 
+   For native DSP/audio-backed visual nodes, put public docs/handle ports in
+   `schemaInlets` when they differ from the worklet's actual parameter inlet
+   array. Keep hidden worklet parameters in `inlets` with `hideDocs` /
+   `hideInlet` so processor inlet indices remain stable.
+
    For one message inlet/outlet that previously used `{ handleType: 'message' }`,
    keep that exact handle spec. Do not let generation add `handleId: 0` unless
    you intend to migrate saved edge handle IDs.

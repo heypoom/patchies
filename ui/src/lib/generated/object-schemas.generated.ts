@@ -4651,7 +4651,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
   'tap~': {
     type: 'tap~',
     category: 'audio',
-    description: 'Capture audio frames and forward as messages',
+    description: 'Capture audio frames and forward them as messages',
     inlets: [
       {
         id: 'in',
@@ -4666,63 +4666,53 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         handle: { handleType: 'audio', handleId: 1 }
       },
       {
-        id: 'bufferSize',
-        type: 'int',
-        description: 'Number of samples captured per frame',
+        id: 'command',
+        type: 'message',
+        description: 'Control messages for tap settings',
         messages: [
           {
-            schema: Type.Integer({ minimum: 64, maximum: 2048 }),
-            description: 'Number of samples captured per frame'
-          }
-        ],
-        handle: { handleType: 'message', handleId: 2 }
-      },
-      {
-        id: 'mode',
-        type: 'string',
-        description: 'Capture mode',
-        messages: [{ schema: Type.String(), description: 'Capture mode' }],
-        handle: { handleType: 'message', handleId: 3 }
-      },
-      {
-        id: 'fps',
-        type: 'float',
-        description: 'Max refresh rate in fps (0 = unlimited)',
-        messages: [
+            schema: Type.Object({
+              type: Type.Literal('setMode'),
+              value: Type.Union([Type.Literal('wave'), Type.Literal('xy')])
+            }),
+            description: 'Set capture mode to wave or xy'
+          },
           {
-            schema: Type.Number({ minimum: 0, maximum: 120 }),
-            description: 'Max refresh rate in fps (0 = unlimited)'
-          }
-        ],
-        handle: { handleType: 'message', handleId: 4 }
-      },
-      {
-        id: 'zeroCrossing',
-        type: 'bool',
-        description: 'Trigger captures on rising zero-crossings for stable scope-style frames',
-        messages: [
+            schema: Type.Object({
+              type: Type.Literal('setFpsLimit'),
+              value: Type.Number({ minimum: 0, maximum: 120 })
+            }),
+            description: 'Set FPS limit from 0 to 120, where 0 is unlimited'
+          },
           {
-            schema: Type.Boolean(),
-            description: 'Trigger captures on rising zero-crossings for stable scope-style frames'
+            schema: Type.Object({ type: Type.Literal('setZeroCrossing'), value: Type.Boolean() }),
+            description: 'Enable or disable zero-crossing trigger detection'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('setSamples'),
+              value: Type.Integer({ minimum: 64, maximum: 2048 })
+            }),
+            description: 'Set sample buffer size from 64 to 2048'
           }
         ],
-        handle: { handleType: 'message', handleId: 5 }
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
     outlets: [
       {
         id: 'out',
         type: 'message',
-        description: 'Captured buffer.',
+        description: 'Captured buffer',
         messages: [
-          { schema: Type.Unsafe({ type: 'Float32Array' }), description: 'Wave Mode' },
+          { schema: Type.Unsafe({ type: 'Float32Array' }), description: 'Wave mode sample buffer' },
           {
             schema: Type.Object({
               type: Type.Literal('xy'),
               x: Type.Unsafe({ type: 'Float32Array' }),
               y: Type.Unsafe({ type: 'Float32Array' })
             }),
-            description: 'XY Mode'
+            description: 'XY mode sample buffers'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }

@@ -2,24 +2,21 @@
   import { onDestroy, onMount } from 'svelte';
   import { Settings, X, RotateCcw } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { AudioService } from '$lib/audio/v2/AudioService';
-  import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import TapSettings from '$lib/components/settings/TapSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { getTapTildeSettingsUpdate } from '$lib/objects/schemas';
+  import { getPatchRuntime } from '$lib/runtime/patch-runtime-context';
   import { editorFontFamily } from '../../stores/editor.store';
 
   type TapMode = 'wave' | 'xy';
-  type TapNodeData = {
+
+  interface TapNodeData {
     mode?: TapMode;
     bufferSize?: number;
     fps?: number;
     zeroCrossing?: boolean;
-  };
+  }
 
   const DEFAULTS = {
     mode: 'wave' as TapMode,
@@ -37,11 +34,9 @@
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = useNodeDataTracker(node.id);
-  const audioService = AudioService.getInstance();
+  const patchRuntime = getPatchRuntime();
 
   let showSettings = $state(false);
-  let tapNode: AudioNodeV2 | null = $state(null);
-  let messageContext: MessageContext | null = null;
   let nodeButton: HTMLButtonElement | null = $state(null);
   let resizeObserver: ResizeObserver | null = null;
   let settingsOffset = $state(90);
@@ -55,9 +50,8 @@
   const topInletCount = $derived(audioInletCount + 1);
   const containerClass = $derived(node.selected ? 'object-container-selected' : 'object-container');
 
-  function sendSetting(key: string, value: unknown) {
-    tapNode?.send?.(key, value);
-  }
+  const sendSetting = (key: string, value: unknown) =>
+    patchRuntime?.sendAudioObjectMessage(node.id, key, value);
 
   function updateSettingsOffset() {
     if (!nodeButton) return;
@@ -90,6 +84,7 @@
   }
 
   function updateSettings(updates: Partial<TapNodeData>) {
+    patchRuntime?.suppressNextAudioObjectSync(node.id);
     updateNodeData(node.id, updates);
   }
 
@@ -156,15 +151,6 @@
     tracker.commit('zeroCrossing', oldZeroCrossing, zeroCrossing);
   }
 
-  const handleMessage: MessageCallbackFn = (message, meta) => {
-    if (meta.inletKey !== undefined && meta.inletKey !== 'message-in-0') return;
-
-    const updates = getTapTildeSettingsUpdate(message);
-    if (!updates) return;
-
-    applySettingsUpdate(updates);
-  };
-
   let prevInletCount: number | null = null;
 
   $effect(() => {
@@ -173,6 +159,13 @@
     if (digits > sampleDigitCount) {
       sampleDigitCount = digits;
     }
+  });
+
+  $effect(() => {
+    mode = node.data.mode ?? DEFAULTS.mode;
+    bufferSize = node.data.bufferSize ?? DEFAULTS.bufferSize;
+    fps = node.data.fps ?? DEFAULTS.fps;
+    zeroCrossing = node.data.zeroCrossing ?? DEFAULTS.zeroCrossing;
   });
 
   $effect(() => {
@@ -188,6 +181,7 @@
       const staleEdges = getEdges().filter(
         (edge) => edge.target === node.id && edge.targetHandle === 'audio-in-1'
       );
+
       if (staleEdges.length > 0) {
         deleteElements({ edges: staleEdges });
       }
@@ -196,13 +190,7 @@
     prevInletCount = count;
   });
 
-  onMount(async () => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
-
-    tapNode = await audioService.createNode(node.id, 'tap~', []);
-    applyAllSettings();
-
+  onMount(() => {
     updateSettingsOffset();
 
     if (nodeButton && typeof ResizeObserver !== 'undefined') {
@@ -213,9 +201,6 @@
 
   onDestroy(() => {
     resizeObserver?.disconnect();
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-    audioService.removeNodeById(node.id);
   });
 </script>
 

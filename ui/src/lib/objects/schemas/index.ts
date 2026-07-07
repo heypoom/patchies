@@ -61,7 +61,6 @@ export * from '$objects/expr/schema';
 export * from '$objects/filter/schema';
 export * from '$objects/map/schema';
 export * from '$objects/tap/schema';
-export * from '$objects/tap~/schema';
 export * from '$objects/scan/schema';
 export * from '$objects/uniq/schema';
 export * from '$objects/peek/schema';
@@ -161,7 +160,6 @@ import { exprSchema } from '$objects/expr/schema';
 import { filterSchema } from '$objects/filter/schema';
 import { mapSchema } from '$objects/map/schema';
 import { tapSchema } from '$objects/tap/schema';
-import { tapTildeSchema } from '$objects/tap~/schema';
 import { scanSchema } from '$objects/scan/schema';
 import { uniqSchema } from '$objects/uniq/schema';
 import { peekSchema } from '$objects/peek/schema';
@@ -291,7 +289,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   filter: filterSchema,
   map: mapSchema,
   tap: tapSchema,
-  'tap~': tapTildeSchema,
   scan: scanSchema,
   uniq: uniqSchema,
   peek: peekSchema,

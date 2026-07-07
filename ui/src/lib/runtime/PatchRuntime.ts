@@ -25,6 +25,7 @@ export type PatchRuntimeOptions = {
   audioService?: PatchRuntimeAudioService;
   isAudioObject?: (objectType: string) => boolean;
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
+  onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 };
 
 export class PatchRuntime {
@@ -39,7 +40,8 @@ export class PatchRuntime {
 
     this.audio = new PatchAudioRuntime({
       audioService: options.audioService,
-      isAudioObject: options.isAudioObject
+      isAudioObject: options.isAudioObject,
+      onAudioObjectDataChange: options.onAudioObjectDataChange
     });
   }
 
