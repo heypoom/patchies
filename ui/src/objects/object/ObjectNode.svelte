@@ -55,7 +55,7 @@
     selected: boolean;
   } = $props();
 
-  const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
+  const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
 
   const edgesHelper = useEdges();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -86,27 +86,8 @@
   // Track whether a negative value has been seen per inlet (for stable sign width)
   let stickyNegative = $state<Record<number, boolean>>({});
 
-  // Track object instance version to trigger re-evaluation of outlets
-  let objectInstanceVersion = $state(0);
-
   const eventBus = PatchiesEventBus.getInstance();
   const patchRuntime = getPatchRuntime();
-
-  function syncAudioObject(name: string, params: unknown[]) {
-    const didSync =
-      patchRuntime?.syncAudioObject({
-        id: nodeId,
-        objectType: name,
-        params,
-        edges: getEdges()
-      }) ?? false;
-
-    if (didSync) objectInstanceVersion++;
-  }
-
-  $effect(() => {
-    syncAudioObject(data.name, data.params);
-  });
 
   // Composable for searching disabled objects
   const { searchDisabledObject } = useDisabledObjectSuggestion(
@@ -124,7 +105,7 @@
   const objectPorts = useObjectPorts({
     nodeId,
     getObjectMeta: () => objectMeta,
-    trackObjectInstanceVersion: () => objectInstanceVersion
+    trackObjectInstanceVersion: () => patchRuntime?.trackObjectViewRevision(nodeId) ?? 0
   });
 
   const inlets = $derived(objectPorts.inlets);
@@ -361,8 +342,8 @@
         !inlet.type;
 
       if (matchesBaseType) {
-        // For audio objects, suppress the audio sync since the message is already
-        // being forwarded to the worklet directly via PatchRuntime below.
+        // For audio objects, suppress the next reconciler sync since the runtime-owned
+        // message context already forwards this message to the live audio node.
         if (isAudioObject) {
           patchRuntime?.suppressNextAudioObjectSync(nodeId);
         }
@@ -381,10 +362,7 @@
       isAutomated = { ...isAutomated, [meta.inlet]: true };
     }
 
-    // Route audio object messages to audio service
-    if (inlet.name && isAudioObject) {
-      patchRuntime?.sendAudioObjectMessage(nodeId, inlet.name, message);
-
+    if (isAudioObject) {
       return;
     }
   };
@@ -438,8 +416,6 @@
     updateNodeData(nodeId, { expr, name, params });
 
     if (!name || !getAudioObjectNames().includes(name)) return false;
-
-    syncAudioObject(name, params);
 
     return true;
   }
@@ -710,7 +686,7 @@
   const dynamicIconComponent = $derived.by(() => {
     // Re-evaluate when params change or when audio node is created
     void data.params;
-    void objectInstanceVersion;
+    patchRuntime?.trackObjectViewRevision(nodeId);
 
     const audioNode = patchRuntime?.getAudioObject(nodeId);
     if (!audioNode?.getIcon) return null;
@@ -724,7 +700,7 @@
   // Get the param index that the icon represents (to hide it from display)
   const iconParamIndex = $derived.by(() => {
     void data.params;
-    void objectInstanceVersion;
+    patchRuntime?.trackObjectViewRevision(nodeId);
 
     const audioNode = patchRuntime?.getAudioObject(nodeId);
     return audioNode?.getIconParamIndex?.() ?? null;

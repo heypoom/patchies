@@ -111,7 +111,6 @@ export class FakeObjectService implements RuntimeObjectService {
 export class FakeAudioService {
   removeNodeById = vi.fn();
   createNode = vi.fn();
-  updateEdges = vi.fn();
   send = vi.fn();
 
   audioNode: AudioNodeV2 = {
@@ -165,11 +164,16 @@ export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): No
 });
 
 export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) => ({
-  isObjectInRegistry: vi.fn(
+  isMessageObjectInRegistry: vi.fn(
     (objectType: string) => objectType === TEST_OBJECT_TYPE || objectType === 'button'
   ),
+  isAudioObjectInRegistry: vi.fn(() => false),
   createObject: vi.fn(),
   updateObject: vi.fn(),
   destroyObject: vi.fn(),
+  upsertAudioObject: vi.fn(),
+  destroyAudioObject: vi.fn(),
+  getAudioObject: vi.fn(() => null),
+  consumeSuppressedAudioObjectSync: vi.fn(() => false),
   ...overrides
 });

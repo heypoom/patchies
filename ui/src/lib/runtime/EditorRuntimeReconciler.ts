@@ -1,4 +1,4 @@
-import type { Edge, Node } from '@xyflow/svelte';
+import type { Node } from '@xyflow/svelte';
 import { hash } from 'ohash';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
@@ -21,15 +21,24 @@ interface RuntimeObjectSnapshot {
 type NextRuntimeObjectSnapshot = RuntimeObjectSnapshot & { pendingIds: Set<string> };
 
 export interface EditorRuntime {
-  isObjectInRegistry(objectType: string): boolean;
+  isMessageObjectInRegistry(objectType: string): boolean;
+  isAudioObjectInRegistry(objectType: string): boolean;
   createObject(descriptor: RuntimeObjectDescriptor): Promise<void>;
   updateObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void>;
   destroyObject(nodeId: string): void;
-  syncRuntimeManagedAudioNodes?(descriptors: Iterable<RuntimeAudioObjectDescriptor>): void;
+  upsertAudioObject(descriptor: RuntimeAudioObjectDescriptor): void;
+  destroyAudioObject(nodeId: string): void;
+  getAudioObject(nodeId: string): unknown | null;
+  consumeSuppressedAudioObjectSync(nodeId: string): boolean;
 }
 
 export class EditorRuntimeReconciler {
   private current: RuntimeObjectSnapshot = {
+    ids: new Set(),
+    descriptorKeys: new Map()
+  };
+
+  private currentAudio: RuntimeObjectSnapshot = {
     ids: new Set(),
     descriptorKeys: new Map()
   };
@@ -42,13 +51,13 @@ export class EditorRuntimeReconciler {
 
   constructor(private runtime: EditorRuntime) {}
 
-  async reconcile(nodes: Node[], edges: Edge[] = []): Promise<void> {
+  async reconcile(nodes: Node[]): Promise<void> {
     const nextObjectDescriptors = new Map<string, RuntimeObjectDescriptor>();
     const nextAudioDescriptors = new Map<string, RuntimeAudioObjectDescriptor>();
     const pendingRuntimeUpdates: Promise<void>[] = [];
 
     for (const node of nodes) {
-      const audioDescriptor = this.getRuntimeAudioObjectDescriptorFromEditorNode(node, edges);
+      const audioDescriptor = this.getRuntimeAudioObjectDescriptorFromEditorNode(node);
 
       if (audioDescriptor) {
         nextAudioDescriptors.set(audioDescriptor.id, audioDescriptor);
@@ -82,7 +91,7 @@ export class EditorRuntimeReconciler {
       }
     }
 
-    this.runtime.syncRuntimeManagedAudioNodes?.(nextAudioDescriptors.values());
+    this.syncAudioObjects(nextAudioDescriptors);
 
     for (const descriptor of nextObjectDescriptors.values()) {
       if (this.next.pendingIds.has(descriptor.id)) continue;
@@ -106,7 +115,7 @@ export class EditorRuntimeReconciler {
 
   private getRuntimeObjectDescriptor(node: Node): RuntimeObjectDescriptor | null {
     const objectType = getRuntimeObjectType(node);
-    if (!objectType || !this.runtime.isObjectInRegistry(objectType)) return null;
+    if (!objectType || !this.runtime.isMessageObjectInRegistry(objectType)) return null;
 
     const data = node.data as EditorRuntimeObjectData | undefined;
 
@@ -114,13 +123,20 @@ export class EditorRuntimeReconciler {
   }
 
   private getRuntimeAudioObjectDescriptorFromEditorNode(
-    node: Node,
-    edges: Edge[]
+    node: Node
   ): RuntimeAudioObjectDescriptor | null {
-    if (node.type === 'object') return null;
-
     const objectType = getRuntimeObjectType(node);
-    if (!objectType || !this.runtime.isObjectInRegistry(objectType)) return null;
+    if (!objectType || !this.runtime.isAudioObjectInRegistry(objectType)) return null;
+
+    const data = node.data as EditorRuntimeObjectData | undefined;
+
+    if (node.type === 'object') {
+      return {
+        id: node.id,
+        objectType,
+        params: getRuntimeObjectDescriptorFromNode(node.id, objectType, data).params
+      };
+    }
 
     const nodeClass = AudioRegistry.getInstance().get(objectType);
     if (!nodeClass) return null;
@@ -129,9 +145,46 @@ export class EditorRuntimeReconciler {
     return {
       id: node.id,
       objectType,
-      params: getAudioParamsFromNodeData(nodeClass.inlets ?? [], node.data),
-      edges
+      params: getAudioParamsFromNodeData(nodeClass.inlets ?? [], node.data)
     };
+  }
+
+  private syncAudioObjects(nextAudioDescriptors: Map<string, RuntimeAudioObjectDescriptor>): void {
+    for (const nodeId of [...this.currentAudio.ids]) {
+      if (!nextAudioDescriptors.has(nodeId)) {
+        this.runtime.destroyAudioObject(nodeId);
+        this.currentAudio.ids.delete(nodeId);
+        this.currentAudio.descriptorKeys.delete(nodeId);
+      }
+    }
+
+    for (const descriptor of nextAudioDescriptors.values()) {
+      const descriptorKey = getRuntimeAudioObjectDescriptorKey(descriptor);
+      const hasCommittedAudioObject = this.currentAudio.ids.has(descriptor.id);
+      const lastSyncedDescriptorKey = this.currentAudio.descriptorKeys.get(descriptor.id);
+
+      if (
+        hasCommittedAudioObject &&
+        lastSyncedDescriptorKey === descriptorKey &&
+        this.runtime.getAudioObject(descriptor.id)
+      ) {
+        continue;
+      }
+
+      if (this.runtime.consumeSuppressedAudioObjectSync(descriptor.id)) {
+        if (hasCommittedAudioObject) {
+          this.currentAudio.descriptorKeys.set(descriptor.id, descriptorKey);
+        } else {
+          this.currentAudio.descriptorKeys.delete(descriptor.id);
+        }
+
+        continue;
+      }
+
+      this.runtime.upsertAudioObject(descriptor);
+      this.currentAudio.ids.add(descriptor.id);
+      this.currentAudio.descriptorKeys.set(descriptor.id, descriptorKey);
+    }
   }
 
   private async syncRuntimeObject(
@@ -158,6 +211,9 @@ export class EditorRuntimeReconciler {
 
 const getRuntimeObjectDescriptorKey = (descriptor: RuntimeObjectDescriptor): string =>
   hash([descriptor.objectType, descriptor.params, descriptor.rawParams]);
+
+const getRuntimeAudioObjectDescriptorKey = (descriptor: RuntimeAudioObjectDescriptor): string =>
+  hash([descriptor.objectType, descriptor.params]);
 
 function getRuntimeObjectType(node: Node): string {
   if (node.type !== 'object') return node.type ?? '';
