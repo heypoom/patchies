@@ -22,9 +22,12 @@ import { DelayObject } from '$objects/delay/DelayObject';
 import { FloatObject } from '$objects/float/FloatObject';
 import { IntObject } from '$objects/int/IntObject';
 import { KVObject } from '$objects/kv/KVObject';
+import { LabelObject } from '$objects/label/LabelObject';
+import { LinkObject } from '$objects/link/LinkObject';
 import { LoadbangObject } from '$objects/loadbang/LoadbangObject';
 import { MetroObject } from '$objects/metro/MetroObject';
 import { MtofObject } from '$objects/mtof/MtofObject';
+import { NoteObject } from '$objects/note/NoteObject';
 import {
   AddObject,
   DivideObject,
@@ -37,6 +40,7 @@ import { SelectObject } from '$objects/select/SelectObject';
 import { ScaleObject } from '$objects/scale/ScaleObject';
 import { SpigotObject } from '$objects/spigot/SpigotObject';
 import { ThrottleObject } from '$objects/throttle/ThrottleObject';
+import { TitleObject } from '$objects/title/TitleObject';
 import { ToggleObject } from '$objects/toggle/ToggleObject';
 import { UniqbyObject } from '$objects/uniqby/UniqbyObject';
 import { WebMidiLinkObject } from '$objects/web-midi-link/WebMidiLinkObject';
@@ -63,9 +67,12 @@ export const TEXT_OBJECTS = [
   FloatObject,
   IntObject,
   KVObject,
+  LabelObject,
+  LinkObject,
   LoadbangObject,
   MetroObject,
   MtofObject,
+  NoteObject,
   AddObject,
   SubtractObject,
   MultiplyObject,
@@ -85,6 +92,7 @@ export const TEXT_OBJECTS = [
   ScaleObject,
   SpigotObject,
   ThrottleObject,
+  TitleObject,
   ToggleObject,
   UniqbyObject,
   WebMidiLinkObject,

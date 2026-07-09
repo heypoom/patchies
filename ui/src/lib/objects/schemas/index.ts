@@ -77,11 +77,7 @@ export * from '$objects/wgpu.compute/schema';
 export * from '$objects/bg.out/schema';
 export * from '$objects/send.vdo/schema';
 export * from '$objects/recv.vdo/schema';
-export * from '$objects/note/schema';
 export * from '$objects/group/schema';
-export * from '$objects/label/schema';
-export * from '$objects/title/schema';
-export * from '$objects/link/schema';
 export * from '$objects/meter~/schema';
 export * from '$objects/sequencer/schema';
 export * from '$objects/bytebeat~/schema';
@@ -172,11 +168,7 @@ import { wgpuComputeSchema } from '$objects/wgpu.compute/schema';
 import { bgOutSchema } from '$objects/bg.out/schema';
 import { sendVdoSchema } from '$objects/send.vdo/schema';
 import { recvVdoSchema } from '$objects/recv.vdo/schema';
-import { noteSchema } from '$objects/note/schema';
 import { groupSchema } from '$objects/group/schema';
-import { labelSchema } from '$objects/label/schema';
-import { titleSchema } from '$objects/title/schema';
-import { linkSchema } from '$objects/link/schema';
 import { meterSchema } from '$objects/meter~/schema';
 import { sequencerSchema } from '$objects/sequencer/schema';
 import { bytebeatSchema } from '$objects/bytebeat~/schema';
@@ -297,11 +289,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'bg.out': bgOutSchema,
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
-  note: noteSchema,
   group: groupSchema,
-  label: labelSchema,
-  title: titleSchema,
-  link: linkSchema,
   'meter~': meterSchema,
   sequencer: sequencerSchema,
   'bytebeat~': bytebeatSchema,
