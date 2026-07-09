@@ -1,10 +1,19 @@
 import { Type } from '@sinclair/typebox';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { Bang, messages } from '$lib/objects/schemas/common';
+import { schema } from '$lib/objects/schemas/types';
+
+const BooleanControl = Type.Boolean();
+const NumberControl = Type.Number();
+
+const toggleMessages = {
+  booleanControl: schema(BooleanControl),
+  numberControl: schema(NumberControl)
+};
 
 export class ToggleObject implements TextObjectV2 {
   static type = 'toggle';
@@ -20,8 +29,8 @@ export class ToggleObject implements TextObjectV2 {
       defaultValue: false,
       messages: [
         { schema: Bang, description: 'Flip the toggle state' },
-        { schema: Type.Boolean(), description: 'Set the toggle state' },
-        { schema: Type.Number(), description: 'Set on for values greater than or equal to 1' }
+        { schema: BooleanControl, description: 'Set the toggle state' },
+        { schema: NumberControl, description: 'Set on for values greater than or equal to 1' }
       ],
       handle: { handleType: 'message' }
     }
@@ -49,10 +58,10 @@ export class ToggleObject implements TextObjectV2 {
       .with(['value', messages.bang], () => {
         this.setAndSend(!this.getValue());
       })
-      .with(['value', P.boolean], ([, value]) => {
+      .with(['value', toggleMessages.booleanControl], ([, value]) => {
         this.setAndSend(value);
       })
-      .with(['value', P.number], ([, value]) => {
+      .with(['value', toggleMessages.numberControl], ([, value]) => {
         this.setAndSend(value >= 1);
       })
       .otherwise(() => {});
