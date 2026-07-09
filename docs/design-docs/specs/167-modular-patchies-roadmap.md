@@ -110,14 +110,18 @@ audio graph edges because `FlowCanvasInner.svelte` already forwards editor edge
 changes to `AudioService.updateEdges()`, and `AudioService.createNode()` connects
 pending edges for late-created nodes.
 
-The first UI-owned Svelte node validation slice is `button`. Its runtime
-behavior lives in `ui/src/objects/button/ButtonObject.ts`, registered through the
-same object service path as text objects. `ObjectService` owns the per-node
-instance map and `MessageContext` lifecycle; `ButtonNode.svelte` only renders the
-button and creates a view-local `MessageContext` with the same node id. The view
-uses the shared message queue to inject click messages into the headless object
-and to flash when inbound messages arrive; view cleanup must not unregister the
-runtime message node.
+The first UI-owned Svelte node validation slices are `button` and `toggle`.
+Their runtime behavior lives in object classes registered through the same
+object service path as text objects. `ObjectService` owns the per-node instance
+map and `MessageContext` lifecycle; the Svelte node only renders the control and
+creates a view-local `MessageContext` with the same node id. The view uses the
+shared message queue to inject click messages into the headless object and to
+react to inbound messages; view cleanup must not unregister the runtime message
+node.
+
+The `toggle` migration also showed that runtime dispatch must preserve behavior
+across both UI-originated messages and patch-cable messages. Object views should
+not depend on a special message path that differs from normal graph routing.
 
 This phase extends spec 40. The important shift is that the runtime owns object lifecycle:
 
@@ -133,6 +137,7 @@ Success criteria:
 - A simple patch with message/text objects can run through an API-only test with no Svelte component mounted.
 - Existing editor mutations are routed through the runtime API instead of directly coupling every object behavior to XYFlow state.
 - Object views can be remounted without resetting runtime-owned state.
+- Runtime tests cover both UI-originated messages and patch-cable messages.
 
 ## Phase 2: View Lifecycle Compatibility
 
@@ -273,7 +278,8 @@ This spec is not legal advice. Before changing project licensing, the bundle str
 
 ## Migration Order
 
-1. Add runtime object lifecycle APIs and migrate one low-risk message object.
+1. Add runtime object lifecycle APIs and migrate one low-risk message object,
+   including UI-local and edge-routed message-path validation.
 2. Route editor graph mutations through the runtime API.
 3. Convert representative object families: message-only, audio, worker-backed video, DOM-preview video.
 4. Make views remount-safe, then enable `onlyRenderVisibleElements` behind a feature flag.
