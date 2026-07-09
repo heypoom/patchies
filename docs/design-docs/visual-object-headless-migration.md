@@ -23,6 +23,11 @@ port metadata, and docs/search schema should live in the object definition under
    Include TypeBox `messages` and explicit `handle` specs when existing handle
    IDs must be preserved.
 
+   Match incoming message variants with the same TypeBox schemas used in the
+   metadata. Prefer `schema(Type.Boolean())`, `schema(Type.Number())`, or
+   pre-wrapped common matchers such as `messages.bang` over raw `ts-pattern`
+   primitive patterns like `P.boolean` and `P.number`.
+
    For native DSP/audio-backed visual nodes, put public docs/handle ports in
    `schemaInlets` when they differ from the worklet's actual parameter inlet
    array. Keep hidden worklet parameters in `inlets` with `hideDocs` /
@@ -62,17 +67,32 @@ port metadata, and docs/search schema should live in the object definition under
    update node data. The headless object should receive the same message path as
    external patch messages.
 
+   A view-local send may arrive without inlet metadata because it goes directly
+   to the node's queue. Edge-routed messages may also arrive with `inletKey`
+   only (for example legacy `message-in` handles do not produce numeric
+   `meta.inlet`). Do not rely on `meta.inletName` being present unless the
+   runtime resolves it from the object metadata; for single-inlet objects,
+   defaulting missing inlet metadata to that inlet is acceptable.
+
 8. Verify headless and remount behavior.
 
    Add or update runtime tests that prove behavior works without mounting the
    Svelte component. Then verify `Cull objects` in Settings so unmount/remount
    does not reset runtime-owned state.
 
+   Include tests for both message paths when they differ: UI-originated sends
+   with no inlet metadata, and edge-routed sends using the preserved handle key
+   shape such as `message-in`. These tests catch cases where click behavior
+   works but patched messages do not, or vice versa.
+
 ## Checklist
 
 - Runtime behavior is in `<ObjectName>Object.ts`, not the Svelte view.
 - Static object metadata replaces `schema.ts`.
 - Generated schema preserves existing handle IDs.
+- Message matchers use the TypeBox schemas declared in metadata.
+- Runtime message dispatch handles UI-local sends and edge-routed `inletKey`
+  metadata for preserved handle IDs.
 - `schema.ts` is deleted and removed from `schemas/index.ts`.
 - Svelte cleanup does not unregister the runtime message node.
 - Runtime tests pass without Svelte.
