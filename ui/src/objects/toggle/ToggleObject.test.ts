@@ -4,6 +4,7 @@ import { ToggleObject } from '$objects/toggle/ToggleObject';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { MessageMeta } from '$lib/objects/v2/interfaces/text-objects';
+import { resolveMessageInlet } from '$lib/objects/v2/resolve-message-inlet';
 
 function createToggle(initialValue = false) {
   const sent: unknown[] = [];
@@ -69,5 +70,15 @@ describe('ToggleObject', () => {
 
     expect(values.value).toBe(true);
     expect(sent).toEqual([false, true]);
+  });
+
+  it('resolves edge messages sent through the legacy message-in handle', () => {
+    const resolved = resolveMessageInlet(ToggleObject.inlets, {
+      source: 'button-7',
+      inletKey: 'message-in',
+      outletKey: 'message-out'
+    });
+
+    expect(resolved).toEqual({ inlet: 0, inletName: 'value' });
   });
 });
