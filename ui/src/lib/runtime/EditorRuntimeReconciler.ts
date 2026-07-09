@@ -12,6 +12,7 @@ interface EditorRuntimeObjectData {
   name?: unknown;
   params?: unknown;
   value?: unknown;
+  text?: unknown;
 }
 
 interface RuntimeObjectSnapshot {
@@ -246,8 +247,12 @@ function getLegacyRuntimeParams(
   objectType: string,
   data?: EditorRuntimeObjectData
 ): unknown[] | null {
-  if (objectType === 'toggle' && typeof data?.value === 'boolean') {
+  if ((objectType === 'switch' || objectType === 'toggle') && typeof data?.value === 'boolean') {
     return [data.value];
+  }
+
+  if (objectType === 'textbox' && typeof data?.text === 'string') {
+    return [data.text];
   }
 
   return null;

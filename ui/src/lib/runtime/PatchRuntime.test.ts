@@ -18,8 +18,10 @@ import {
   objectNode,
   PatchRuntimeTestObject,
   resetPatchRuntimeTestObject,
+  switchNode,
   tapTildeNode,
   TEST_OBJECT_TYPE,
+  textboxNode,
   toggleNode
 } from './PatchRuntime.test-helpers';
 
@@ -821,6 +823,36 @@ describe('EditorRuntimeReconciler', () => {
       id: nodeId,
       objectType: 'toggle',
       params: [true],
+      rawParams: []
+    });
+  });
+
+  it('translates legacy XYFlow switch value into runtime params', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'switch-editor-runtime-test';
+
+    await reconciler.reconcile([switchNode(nodeId, { value: true })]);
+
+    expect(runtime.createObject).toHaveBeenCalledWith({
+      id: nodeId,
+      objectType: 'switch',
+      params: [true],
+      rawParams: []
+    });
+  });
+
+  it('translates legacy XYFlow textbox text into runtime params', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'textbox-editor-runtime-test';
+
+    await reconciler.reconcile([textboxNode(nodeId, { text: 'saved text' })]);
+
+    expect(runtime.createObject).toHaveBeenCalledWith({
+      id: nodeId,
+      objectType: 'textbox',
+      params: ['saved text'],
       rawParams: []
     });
   });

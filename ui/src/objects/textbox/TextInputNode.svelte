@@ -1,13 +1,10 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
+  import { untrack } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { textboxSchema } from '$objects/textbox/schema';
-  import { onMount, onDestroy } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
-  import { messages } from '$lib/objects/schemas/common';
+  import { TextboxObject } from '$objects/textbox/TextboxObject';
+  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
   import { useNodeDataTracker } from '$lib/history';
   import { shouldShowHandles } from '../../stores/ui.store';
   import { editorFontFamily } from '../../stores/editor.store';
@@ -17,7 +14,7 @@
 
   let node: {
     id: string;
-    data: { text: string; locked?: boolean };
+    data: { text: string; locked?: boolean; params?: unknown[] };
     selected: boolean;
     width?: number;
     height?: number;
@@ -28,18 +25,21 @@
   const { updateNodeData } = useSvelteFlow();
   const store = useStore();
   const edges = useEdges();
+  const viewMessageContext = useNodeViewMessageContext(untrack(() => node.id), () => {});
+  const textboxObject = TextboxObject;
 
   // Check if handles have connections (for smart auto mode)
   const connections = $derived(checkMessageConnections(edges.current, node.id));
 
-  let messageContext: MessageContext;
-
   const tracker = $derived.by(() => useNodeDataTracker(node.id));
-  const textTracker = $derived.by(() => tracker.track('text', () => node.data.text ?? ''));
+  let textOnFocus: string | null = null;
+  let paramsOnFocus: unknown[] | null = null;
 
   let textareaElement: HTMLTextAreaElement;
 
-  const text = $derived(node.data.text || '');
+  const text = $derived(
+    typeof node.data.params?.[0] === 'string' ? node.data.params[0] : node.data.text || ''
+  );
   const width = $derived(node.width ?? defaultWidth);
   const height = $derived(node.height ?? defaultHeight);
   const isLocked = $derived((node.data.locked ?? false) || !store.nodesDraggable);
@@ -56,30 +56,36 @@
     node.selected || $shouldShowHandles || connections.hasOutlet ? '' : HIDDEN_HANDLE_CLASS
   );
 
-  const setText = (text: string) => updateNodeData(node.id, { text });
+  function setText(text: string) {
+    updateNodeData(node.id, { text, params: [text] });
+    viewMessageContext.send(text);
+  }
 
-  const handleMessage: MessageCallbackFn = (message) => {
-    match(message)
-      .with(P.string, (text) => {
-        setText(text);
-      })
-      .with(messages.bang, () => {
-        messageContext.send(text);
-      })
-      .with(messages.clear, () => {
-        setText('');
-      });
-  };
+  function handleTextFocus() {
+    textOnFocus = text;
+    paramsOnFocus = [...(node.data.params ?? [])];
+  }
 
-  onMount(() => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
-  });
+  function handleTextBlur() {
+    if (textOnFocus === null) return;
 
-  onDestroy(() => {
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-  });
+    const currentText = text;
+    if (textOnFocus === currentText) {
+      textOnFocus = null;
+      paramsOnFocus = null;
+      return;
+    }
+
+    const nextParams = [currentText];
+
+    tracker.commitMany('textbox text change', [
+      { dataKey: 'text', oldValue: textOnFocus, newValue: currentText },
+      { dataKey: 'params', oldValue: paramsOnFocus ?? [], newValue: nextParams }
+    ]);
+
+    textOnFocus = null;
+    paramsOnFocus = null;
+  }
 
   function handleTextChange(event: Event) {
     const target = event.target as HTMLTextAreaElement;
@@ -87,7 +93,8 @@
   }
 
   function sendText() {
-    messageContext.send(text);
+    viewMessageContext.send(text);
+    viewMessageContext.send({ type: 'bang' });
   }
 </script>
 
@@ -156,7 +163,7 @@
       {#if showInlet}
         <TypedHandle
           port="inlet"
-          spec={textboxSchema.inlets[0].handle!}
+          spec={textboxObject.inlets[0].handle!}
           total={1}
           index={0}
           class={handleInletClass}
@@ -169,8 +176,8 @@
         bind:this={textareaElement}
         value={text}
         oninput={handleTextChange}
-        onfocus={textTracker.onFocus}
-        onblur={textTracker.onBlur}
+        onfocus={handleTextFocus}
+        onblur={handleTextBlur}
         placeholder="Enter text here..."
         style="width: {width}px; height: {height}px;"
         class={[
@@ -193,7 +200,7 @@
       {#if showOutlet}
         <TypedHandle
           port="outlet"
-          spec={textboxSchema.outlets[0].handle!}
+          spec={textboxObject.outlets[0].handle!}
           total={1}
           index={0}
           class={handleOutletClass}

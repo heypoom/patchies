@@ -20,11 +20,9 @@ export * from '$objects/video/schema';
 export * from '$objects/webcam/schema';
 export * from '$objects/screen/schema';
 export * from '$objects/iframe/schema';
-export * from '$objects/switch/schema';
 export * from '$objects/msg/schema';
 export * from '$objects/slider/schema';
 export * from '$objects/knob/schema';
-export * from '$objects/textbox/schema';
 export * from '$objects/keyboard/schema';
 export * from '$objects/soundfile~/schema';
 export * from '$objects/sampler~/schema';
@@ -63,7 +61,6 @@ export * from '$objects/tap/schema';
 export * from '$objects/scan/schema';
 export * from '$objects/uniq/schema';
 export * from '$objects/peek/schema';
-export * from '$objects/loadbang/schema';
 export * from '$objects/markdown/schema';
 export * from '$objects/tone~/schema';
 export * from '$objects/elem~/schema';
@@ -117,11 +114,9 @@ import { videoSchema } from '$objects/video/schema';
 import { webcamSchema } from '$objects/webcam/schema';
 import { screenSchema } from '$objects/screen/schema';
 import { iframeSchema } from '$objects/iframe/schema';
-import { switchSchema } from '$objects/switch/schema';
 import { msgSchema } from '$objects/msg/schema';
 import { sliderSchema } from '$objects/slider/schema';
 import { knobSchema } from '$objects/knob/schema';
-import { textboxSchema } from '$objects/textbox/schema';
 import { keyboardSchema } from '$objects/keyboard/schema';
 import { soundfileSchema } from '$objects/soundfile~/schema';
 import { samplerSchema } from '$objects/sampler~/schema';
@@ -161,7 +156,6 @@ import { tapSchema } from '$objects/tap/schema';
 import { scanSchema } from '$objects/scan/schema';
 import { uniqSchema } from '$objects/uniq/schema';
 import { peekSchema } from '$objects/peek/schema';
-import { loadbangSchema } from '$objects/loadbang/schema';
 import { markdownSchema } from '$objects/markdown/schema';
 import { toneSchema } from '$objects/tone~/schema';
 import { elemSchema } from '$objects/elem~/schema';
@@ -245,11 +239,9 @@ export const objectSchemas: ObjectSchemaRegistry = {
   webcam: webcamSchema,
   screen: screenSchema,
   iframe: iframeSchema,
-  switch: switchSchema,
   msg: msgSchema,
   slider: sliderSchema,
   knob: knobSchema,
-  textbox: textboxSchema,
   keyboard: keyboardSchema,
   'soundfile~': soundfileSchema,
   'sampler~': samplerSchema,
@@ -289,7 +281,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   scan: scanSchema,
   uniq: uniqSchema,
   peek: peekSchema,
-  loadbang: loadbangSchema,
   markdown: markdownSchema,
   'tone~': toneSchema,
   'elem~': elemSchema,

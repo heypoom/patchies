@@ -163,6 +163,20 @@ export const toggleNode = (id: string, data: Record<string, unknown> = {}): Node
   data
 });
 
+export const switchNode = (id: string, data: Record<string, unknown> = {}): Node => ({
+  id,
+  type: 'switch',
+  position: { x: 0, y: 0 },
+  data
+});
+
+export const textboxNode = (id: string, data: Record<string, unknown> = {}): Node => ({
+  id,
+  type: 'textbox',
+  position: { x: 0, y: 0 },
+  data
+});
+
 export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): Node => ({
   id,
   type: 'tap~',
@@ -173,7 +187,11 @@ export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): No
 export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) => ({
   isMessageObjectInRegistry: vi.fn(
     (objectType: string) =>
-      objectType === TEST_OBJECT_TYPE || objectType === 'button' || objectType === 'toggle'
+      objectType === TEST_OBJECT_TYPE ||
+      objectType === 'button' ||
+      objectType === 'switch' ||
+      objectType === 'textbox' ||
+      objectType === 'toggle'
   ),
   isAudioObjectInRegistry: vi.fn(() => false),
   createObject: vi.fn(),

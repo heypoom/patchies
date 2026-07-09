@@ -1,21 +1,26 @@
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import { Bang } from '$lib/objects/schemas/common';
 
 /**
  * LoadbangObject sends a bang message when the object is created/loaded.
  */
 export class LoadbangObject implements TextObjectV2 {
   static type = 'loadbang';
-  static description = 'Sends a bang signal when the object is created';
+  static category = 'control';
+  static description = 'Send bang message when patch loads';
+  static tags = ['control', 'initialization', 'startup', 'trigger'];
 
   static inlets: ObjectInlet[] = [];
 
   static outlets: ObjectOutlet[] = [
     {
-      name: 'out',
+      name: 'message',
       type: 'bang',
-      description: 'Bang signal sent on load'
+      description: 'Bang on load',
+      messages: [{ schema: Bang, description: 'Sent when patch loads' }],
+      handle: { handleType: 'message' }
     }
   ];
 

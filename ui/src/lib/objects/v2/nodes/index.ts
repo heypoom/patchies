@@ -46,6 +46,8 @@ import { SamplerateObject } from '$objects/samplerate/SamplerateObject';
 import { UnpackObject } from '$objects/unpack/UnpackObject';
 import { StackObject } from '$objects/stack/StackObject';
 import { QueueObject } from '$objects/queue/QueueObject';
+import { SwitchObject } from '$objects/switch/SwitchObject';
+import { TextboxObject } from '$objects/textbox/TextboxObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
@@ -91,7 +93,9 @@ export const TEXT_OBJECTS = [
   SamplerateObject,
   UnpackObject,
   StackObject,
-  QueueObject
+  QueueObject,
+  SwitchObject,
+  TextboxObject
 ] as const satisfies TextObjectClass[];
 
 /**
