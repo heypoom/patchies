@@ -43,6 +43,15 @@ describe('ToggleObject', () => {
     expect(sent).toEqual([true]);
   });
 
+  it('handles click messages without resolved inlet metadata', () => {
+    const { object, sent, values } = createToggle(false);
+
+    object.onMessage({ type: 'bang' }, { source: 'toggle-1' });
+
+    expect(values.value).toBe(true);
+    expect(sent).toEqual([true]);
+  });
+
   it('stores boolean messages directly and emits them', () => {
     const { object, sent, values } = createToggle(true);
 

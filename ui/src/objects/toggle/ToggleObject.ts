@@ -43,7 +43,9 @@ export class ToggleObject implements TextObjectV2 {
   ) {}
 
   onMessage(data: unknown, meta: MessageMeta): void {
-    match([meta.inletName, data])
+    const inletName = meta.inletName ?? 'value';
+
+    match([inletName, data])
       .with(['value', messages.bang], () => {
         this.setAndSend(!this.getValue());
       })
