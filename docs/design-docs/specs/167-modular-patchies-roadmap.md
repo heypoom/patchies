@@ -95,6 +95,21 @@ so message endpoints can route control messages into audio parameters. This is
 still a partial Phase 1 implementation: patch loading, graph-level connect APIs,
 video runtime ownership, plugins, and subpatches remain future work.
 
+Audio object lifecycle should follow the same reconciler-owned model as message
+objects. `EditorRuntimeReconciler` decides whether each editor node describes a
+message object, an object-box audio object, or a dedicated runtime-managed audio
+UI node. Object-box audio nodes such as `osc~ 440` must not be created by
+`ObjectNode.svelte`; the view may still update displayed params and suppress the
+next audio sync when the runtime message context has already updated the live
+audio node. Runtime-managed audio UI nodes such as `tap~` and object-box audio
+nodes should share the same audio descriptor reconciliation path.
+`RuntimeAudioObjectAdapter` should only
+apply audio node lifecycle changes, own runtime message contexts, and bridge
+messages into `AudioService.send()`. `AudioService` remains the sole owner of
+audio graph edges because `FlowCanvasInner.svelte` already forwards editor edge
+changes to `AudioService.updateEdges()`, and `AudioService.createNode()` connects
+pending edges for late-created nodes.
+
 The first UI-owned Svelte node validation slice is `button`. Its runtime
 behavior lives in `ui/src/objects/button/ButtonObject.ts`, registered through the
 same object service path as text objects. `ObjectService` owns the per-node

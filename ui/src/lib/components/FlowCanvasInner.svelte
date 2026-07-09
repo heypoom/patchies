@@ -527,7 +527,7 @@
 
   $effect(() => {
     reconciler
-      .reconcile(nodes, edges)
+      .reconcile(nodes)
       .catch((error) => logger.error('failed to reconcile editor graph with patch runtime', error));
   });
 
