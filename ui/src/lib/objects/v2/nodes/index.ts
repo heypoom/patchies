@@ -37,6 +37,7 @@ import { SelectObject } from '$objects/select/SelectObject';
 import { ScaleObject } from '$objects/scale/ScaleObject';
 import { SpigotObject } from '$objects/spigot/SpigotObject';
 import { ThrottleObject } from '$objects/throttle/ThrottleObject';
+import { ToggleObject } from '$objects/toggle/ToggleObject';
 import { UniqbyObject } from '$objects/uniqby/UniqbyObject';
 import { WebMidiLinkObject } from '$objects/web-midi-link/WebMidiLinkObject';
 import { SendObject } from '$objects/send-recv/SendObject';
@@ -82,6 +83,7 @@ export const TEXT_OBJECTS = [
   ScaleObject,
   SpigotObject,
   ThrottleObject,
+  ToggleObject,
   UniqbyObject,
   WebMidiLinkObject,
   SendObject,

@@ -1,0 +1,67 @@
+import { Type } from '@sinclair/typebox';
+import { match, P } from 'ts-pattern';
+
+import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
+import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { Bang, messages } from '$lib/objects/schemas/common';
+
+export class ToggleObject implements TextObjectV2 {
+  static type = 'toggle';
+  static category = 'interface';
+  static description = 'A toggle button that sends true/false when clicked';
+  static tags = ['interface', 'control', 'switch', 'boolean', 'input'];
+
+  static inlets: ObjectInlet[] = [
+    {
+      name: 'value',
+      type: 'bool',
+      description: 'Control messages',
+      defaultValue: false,
+      messages: [
+        { schema: Bang, description: 'Flip the toggle state' },
+        { schema: Type.Boolean(), description: 'Set the toggle state' },
+        { schema: Type.Number(), description: 'Set on for values greater than or equal to 1' }
+      ],
+      handle: { handleType: 'message' }
+    }
+  ];
+
+  static outlets: ObjectOutlet[] = [
+    {
+      name: 'message',
+      type: 'bool',
+      description: 'Toggle output',
+      messages: [{ schema: Type.Boolean(), description: 'Current state' }],
+      handle: { handleType: 'message' }
+    }
+  ];
+
+  constructor(
+    readonly nodeId: string,
+    readonly context: ObjectContext
+  ) {}
+
+  onMessage(data: unknown, meta: MessageMeta): void {
+    match([meta.inletName, data])
+      .with(['value', messages.bang], () => {
+        this.setAndSend(!this.getValue());
+      })
+      .with(['value', P.boolean], ([, value]) => {
+        this.setAndSend(value);
+      })
+      .with(['value', P.number], ([, value]) => {
+        this.setAndSend(value >= 1);
+      })
+      .otherwise(() => {});
+  }
+
+  private getValue(): boolean {
+    return this.context.getParam('value') === true;
+  }
+
+  private setAndSend(value: boolean): void {
+    this.context.setParam('value', value, { notifyUI: true });
+    this.context.send(value);
+  }
+}

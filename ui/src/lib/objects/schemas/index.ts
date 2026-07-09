@@ -20,7 +20,6 @@ export * from '$objects/video/schema';
 export * from '$objects/webcam/schema';
 export * from '$objects/screen/schema';
 export * from '$objects/iframe/schema';
-export * from '$objects/toggle/schema';
 export * from '$objects/switch/schema';
 export * from '$objects/msg/schema';
 export * from '$objects/slider/schema';
@@ -118,7 +117,6 @@ import { videoSchema } from '$objects/video/schema';
 import { webcamSchema } from '$objects/webcam/schema';
 import { screenSchema } from '$objects/screen/schema';
 import { iframeSchema } from '$objects/iframe/schema';
-import { toggleSchema } from '$objects/toggle/schema';
 import { switchSchema } from '$objects/switch/schema';
 import { msgSchema } from '$objects/msg/schema';
 import { sliderSchema } from '$objects/slider/schema';
@@ -247,7 +245,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   webcam: webcamSchema,
   screen: screenSchema,
   iframe: iframeSchema,
-  toggle: toggleSchema,
   switch: switchSchema,
   msg: msgSchema,
   slider: sliderSchema,

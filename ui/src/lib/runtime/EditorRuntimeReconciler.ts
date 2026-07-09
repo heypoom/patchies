@@ -11,6 +11,7 @@ interface EditorRuntimeObjectData {
   expr?: unknown;
   name?: unknown;
   params?: unknown;
+  value?: unknown;
 }
 
 interface RuntimeObjectSnapshot {
@@ -230,10 +231,25 @@ function getRuntimeObjectDescriptorFromNode(
 ) {
   const rawParams = getRawObjectParamsFromExpr(data?.expr);
   const expectedParams = parseObjectParamFromString(objectType, rawParams);
-  const savedParams = Array.isArray(data?.params) ? data.params : [];
-  const params = savedParams.length === expectedParams.length ? savedParams : expectedParams;
+  const hasSavedParams = Array.isArray(data?.params);
+  const savedParams: unknown[] = hasSavedParams ? (data.params as unknown[]) : [];
+  const params =
+    hasSavedParams && savedParams.length === expectedParams.length
+      ? savedParams
+      : (getLegacyRuntimeParams(objectType, data) ?? expectedParams);
 
   return { id: nodeId, objectType, params, rawParams };
+}
+
+function getLegacyRuntimeParams(
+  objectType: string,
+  data?: EditorRuntimeObjectData
+): unknown[] | null {
+  if (objectType === 'toggle' && typeof data?.value === 'boolean') {
+    return [data.value];
+  }
+
+  return null;
 }
 
 function getRawObjectParamsFromExpr(expr: unknown): string[] {
