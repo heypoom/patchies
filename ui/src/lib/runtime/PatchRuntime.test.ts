@@ -19,7 +19,8 @@ import {
   PatchRuntimeTestObject,
   resetPatchRuntimeTestObject,
   tapTildeNode,
-  TEST_OBJECT_TYPE
+  TEST_OBJECT_TYPE,
+  toggleNode
 } from './PatchRuntime.test-helpers';
 
 beforeEach(() => {
@@ -807,6 +808,21 @@ describe('EditorRuntimeReconciler', () => {
     await reconciler.reconcile([]);
 
     expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
+  });
+
+  it('translates legacy XYFlow toggle value into runtime params', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'toggle-editor-runtime-test';
+
+    await reconciler.reconcile([toggleNode(nodeId, { value: true })]);
+
+    expect(runtime.createObject).toHaveBeenCalledWith({
+      id: nodeId,
+      objectType: 'toggle',
+      params: [true],
+      rawParams: []
+    });
   });
 
   it('translates XYFlow object nodes into PatchRuntime object calls', async () => {

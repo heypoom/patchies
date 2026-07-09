@@ -5,6 +5,7 @@ import { validateMessageToObject } from '$lib/objects/validate-object-message';
 import { registerTextObjects } from './nodes';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { profiler } from '$lib/profiler';
+import { resolveMessageInlet } from './resolve-message-inlet';
 
 import type { TextObjectV2, MessageMeta } from './interfaces/text-objects';
 import { getObjectType } from '../get-type';
@@ -147,15 +148,13 @@ export class ObjectService {
     const type = getObjectType(object);
     const objectClass = this.registry.get(type);
     const objectInlets = object.getInlets?.() ?? objectClass?.inlets;
-
-    const dynamicInletName =
-      meta.inlet === undefined ? undefined : objectInlets?.[meta.inlet]?.name;
-
-    const inletName = dynamicInletName ?? object.context.getInletName(meta.inlet) ?? meta.inletName;
+    const resolvedInlet = resolveMessageInlet(objectInlets, meta);
+    const inletName =
+      resolvedInlet.inletName ?? object.context.getInletName(resolvedInlet.inlet) ?? meta.inletName;
 
     // Validate message type against inlet specification if inlets are defined
-    if (objectInlets && meta.inlet !== undefined) {
-      const inlet = objectInlets[meta.inlet];
+    if (objectInlets && resolvedInlet.inlet !== undefined) {
+      const inlet = objectInlets[resolvedInlet.inlet];
 
       if (inlet && !validateMessageToObject(data, inlet)) {
         logger.warn(
@@ -168,7 +167,7 @@ export class ObjectService {
     }
 
     profiler.measureMessage(object.nodeId, type, () => {
-      object.onMessage?.(data, { ...meta, inletName });
+      object.onMessage?.(data, { ...meta, inlet: resolvedInlet.inlet, inletName });
     });
   }
 

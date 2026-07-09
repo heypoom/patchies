@@ -1,58 +1,17 @@
 <script lang="ts">
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { toggleSchema } from '$objects/toggle/schema';
-  import { onMount } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import { useSvelteFlow } from '@xyflow/svelte';
-  import { match, P } from 'ts-pattern';
-  import { messages } from '$lib/objects/schemas/common';
+  import { objectSchemas } from '$lib/objects/schemas';
+  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
+
   import { shouldShowHandles } from '../../stores/ui.store';
 
   let { id: nodeId, selected, data }: { id: string; selected: boolean; data: any } = $props();
 
-  let messageContext: MessageContext;
-  const { updateNodeData } = useSvelteFlow();
+  const toggleSchema = objectSchemas.toggle;
+  const viewMessageContext = useNodeViewMessageContext(nodeId, () => {});
+  const toggleValue = () => viewMessageContext.send({ type: 'bang' });
 
-  // Get toggle state from node data, default to false
-  let isOn = $derived(data.value ?? false);
-
-  const sendValue = () => {
-    setTimeout(() => {
-      messageContext.send(isOn);
-    }, 0);
-  };
-
-  const toggleValue = () => {
-    const newValue = !isOn;
-    updateNodeData(nodeId, { value: newValue });
-    sendValue();
-  };
-
-  const handleMessage = (message: unknown) => {
-    match(message)
-      .with(messages.bang, () => {
-        toggleValue();
-      })
-      .with(P.boolean, (value) => {
-        updateNodeData(nodeId, { value });
-        sendValue();
-      })
-      .with(P.number, (value) => {
-        updateNodeData(nodeId, { value: value >= 1 });
-        sendValue();
-      })
-      .otherwise(() => {});
-  };
-
-  onMount(() => {
-    messageContext = new MessageContext(nodeId);
-    messageContext.queue.addCallback(handleMessage);
-
-    return () => {
-      messageContext.queue.removeCallback(handleMessage);
-      messageContext.destroy();
-    };
-  });
+  let isOn = $derived((data.params?.[0] ?? data.value) === true);
 
   const borderColor = $derived(selected ? '!border-zinc-400' : '!border-zinc-600');
 
