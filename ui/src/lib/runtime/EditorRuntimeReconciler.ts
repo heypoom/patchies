@@ -4,6 +4,8 @@ import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 import { logger } from '$lib/utils/logger';
+import { getKnobParams } from '$objects/knob/KnobObject';
+import { getSliderParams } from '$objects/slider/SliderObject';
 
 import type { RuntimeObjectDescriptor, RuntimeAudioObjectDescriptor } from './PatchRuntime';
 
@@ -13,6 +15,12 @@ interface EditorRuntimeObjectData {
   params?: unknown;
   value?: unknown;
   text?: unknown;
+  min?: unknown;
+  max?: unknown;
+  defaultValue?: unknown;
+  isFloat?: unknown;
+  step?: unknown;
+  runOnMount?: unknown;
 }
 
 interface RuntimeObjectSnapshot {
@@ -253,6 +261,32 @@ function getLegacyRuntimeParams(
 
   if (objectType === 'textbox' && typeof data?.text === 'string') {
     return [data.text];
+  }
+
+  if (objectType === 'slider') {
+    return getSliderParams({
+      params: Array.isArray(data?.params) ? data.params : undefined,
+      value: typeof data?.value === 'number' ? data.value : undefined,
+      min: typeof data?.min === 'number' ? data.min : undefined,
+      max: typeof data?.max === 'number' ? data.max : undefined,
+      defaultValue: typeof data?.defaultValue === 'number' ? data.defaultValue : undefined,
+      isFloat: typeof data?.isFloat === 'boolean' ? data.isFloat : undefined,
+      step: typeof data?.step === 'number' ? data.step : undefined,
+      runOnMount: typeof data?.runOnMount === 'boolean' ? data.runOnMount : undefined
+    });
+  }
+
+  if (objectType === 'knob') {
+    return getKnobParams({
+      params: Array.isArray(data?.params) ? data.params : undefined,
+      value: typeof data?.value === 'number' ? data.value : undefined,
+      min: typeof data?.min === 'number' ? data.min : undefined,
+      max: typeof data?.max === 'number' ? data.max : undefined,
+      defaultValue: typeof data?.defaultValue === 'number' ? data.defaultValue : undefined,
+      isFloat: typeof data?.isFloat === 'boolean' ? data.isFloat : undefined,
+      step: typeof data?.step === 'number' ? data.step : undefined,
+      runOnMount: typeof data?.runOnMount === 'boolean' ? data.runOnMount : undefined
+    });
   }
 
   return null;

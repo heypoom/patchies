@@ -1,19 +1,15 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { knobSchema } from '$objects/knob/schema';
+  import { getKnobParams, KNOB_PARAM_INDEX, KnobObject } from '$objects/knob/KnobObject';
   import KnobSettings from '$lib/components/settings/KnobSettings.svelte';
-  import { onMount, onDestroy } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
-  import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
+  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
 
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
@@ -31,6 +27,7 @@
       locked?: boolean;
       showInlet?: boolean;
       showOutlet?: boolean;
+      params?: unknown[];
     };
     selected: boolean;
   } = $props();
@@ -48,19 +45,25 @@
     tracker.track('value', () => node.data.value ?? defaultValue)
   );
 
-  let messageContext: MessageContext;
+  const viewMessageContext = useNodeViewMessageContext(node.id, () => {});
   let showSettings = $state(false);
   let isDragging = $state(false);
   let dragStartY = $state(0);
   let dragStartValue = $state(0);
 
   // Configuration values with defaults
-  const min = $derived(node.data.min ?? 0);
-  const max = $derived(node.data.max ?? (node.data.isFloat ? 1 : 100));
-  const step = $derived(getControlStep(node.data));
-  const defaultValue = $derived(node.data.defaultValue ?? min);
-  const isFloat = $derived(node.data.isFloat ?? false);
-  const currentValue = $derived(node.data.value ?? defaultValue);
+  const params = $derived(getKnobParams(node.data));
+  const min = $derived((params[KNOB_PARAM_INDEX.min] as number) ?? 0);
+  const isFloat = $derived(params[KNOB_PARAM_INDEX.isFloat] === true);
+  const max = $derived((params[KNOB_PARAM_INDEX.max] as number) ?? (isFloat ? 1 : 100));
+  const step = $derived(
+    getControlStep({
+      step: params[KNOB_PARAM_INDEX.step] as number | undefined,
+      isFloat
+    })
+  );
+  const defaultValue = $derived((params[KNOB_PARAM_INDEX.defaultValue] as number) ?? min);
+  const currentValue = $derived((params[KNOB_PARAM_INDEX.value] as number) ?? defaultValue);
   const size = $derived(node.data.size ?? 50);
 
   // Combined lock state: internal lock OR global interactivity disabled
@@ -116,36 +119,11 @@
     return snapControlValue(value, { min, max, step, isFloat });
   }
 
-  const handleMessage: MessageCallbackFn = (message) => {
-    match(message)
-      .with(P.number, (value) => {
-        const newValue = snapValue(value);
-        updateNodeData(node.id, { ...node.data, value: newValue });
-        messageContext.send(newValue);
-      })
-      .with(messages.reset, () => {
-        updateNodeData(node.id, { ...node.data, value: defaultValue });
-        messageContext.send(defaultValue);
-      })
-      .with(messages.bang, () => {
-        messageContext.send(currentValue);
-      })
-      .with(messages.setMin, ({ value }) => {
-        const clampedValue = snapControlValue(currentValue, { min: value, max, step, isFloat });
-        updateNodeData(node.id, { ...node.data, min: value, value: clampedValue });
-      })
-      .with(messages.setMax, ({ value }) => {
-        const clampedValue = snapControlValue(currentValue, { min, max: value, step, isFloat });
-        updateNodeData(node.id, { ...node.data, max: value, value: clampedValue });
-      })
-      .with(messages.setDefault, ({ value }) => {
-        updateNodeData(node.id, { ...node.data, defaultValue: value });
-      })
-      .with(messages.setValue, ({ value }) => {
-        const newValue = snapValue(value);
-        updateNodeData(node.id, { ...node.data, value: newValue });
-      });
-  };
+  function updateControlData(updates: Partial<typeof node.data>) {
+    const nextData = { ...node.data, ...updates };
+
+    updateNodeData(node.id, { ...nextData, params: getKnobParams(nextData) });
+  }
 
   function handlePointerDown(event: PointerEvent) {
     isDragging = true;
@@ -168,8 +146,8 @@
     const newValue = snapValue(rawValue);
 
     if (newValue !== currentValue) {
-      updateNodeData(node.id, { ...node.data, value: newValue });
-      messageContext.send(newValue);
+      updateControlData({ value: newValue });
+      viewMessageContext.send(newValue);
     }
   }
 
@@ -203,25 +181,8 @@
       }
     }
 
-    updateNodeData(node.id, newData);
+    updateNodeData(node.id, { ...newData, params: getKnobParams(newData) });
   }
-
-  onMount(() => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
-
-    // Run on mount by default
-    setTimeout(() => {
-      if (node.data.runOnMount ?? true) {
-        messageContext.send(currentValue);
-      }
-    }, 100);
-  });
-
-  onDestroy(() => {
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-  });
 
   // Handle visibility: 3 states
   // - undefined (auto): show with fade, respects lock; always show if connected
@@ -286,7 +247,7 @@
         {#if inletVisible}
           <TypedHandle
             port="inlet"
-            spec={knobSchema.inlets[0].handle!}
+            spec={KnobObject.inlets[0].handle!}
             total={1}
             index={0}
             class={`!-top-2 ${handleInletClass}`}
@@ -347,7 +308,7 @@
         {#if outletVisible}
           <TypedHandle
             port="outlet"
-            spec={knobSchema.outlets[0].handle!}
+            spec={KnobObject.outlets[0].handle!}
             total={1}
             index={0}
             nodeId={node.id}
@@ -401,8 +362,8 @@
         {tracker}
         onUpdate={updateConfig}
         onReset={() => {
-          updateNodeData(node.id, { ...node.data, value: defaultValue });
-          messageContext.send(defaultValue);
+          updateControlData({ value: defaultValue });
+          viewMessageContext.send({ type: 'reset' });
         }}
       />
     </div>

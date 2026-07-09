@@ -8,18 +8,14 @@
     useEdges
   } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { sliderSchema } from '$objects/slider/schema';
-  import { onMount, onDestroy } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
-  import { messages } from '$lib/objects/schemas';
+  import { getSliderParams, SLIDER_PARAM_INDEX, SliderObject } from '$objects/slider/SliderObject';
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SliderSettings from '$lib/components/settings/SliderSettings.svelte';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
+  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
@@ -35,6 +31,7 @@
       runOnMount?: boolean;
       resizable?: boolean;
       locked?: boolean;
+      params?: unknown[];
     };
     selected: boolean;
     width?: number;
@@ -55,17 +52,23 @@
     tracker.track('value', () => node.data.value ?? defaultValue)
   );
 
-  let messageContext: MessageContext;
+  const viewMessageContext = useNodeViewMessageContext(node.id, () => {});
   let showSettings = $state(false);
   let sliderElement: HTMLInputElement;
 
   // Configuration values with defaults
-  const min = $derived(node.data.min ?? 0);
-  const max = $derived(node.data.max ?? (node.data.isFloat ? 1 : 100));
-  const step = $derived(getControlStep(node.data));
-  const defaultValue = $derived(node.data.defaultValue ?? min);
-  const isFloat = $derived(node.data.isFloat ?? false);
-  const currentValue = $derived(node.data.value ?? defaultValue);
+  const params = $derived(getSliderParams(node.data));
+  const min = $derived((params[SLIDER_PARAM_INDEX.min] as number) ?? 0);
+  const isFloat = $derived(params[SLIDER_PARAM_INDEX.isFloat] === true);
+  const max = $derived((params[SLIDER_PARAM_INDEX.max] as number) ?? (isFloat ? 1 : 100));
+  const step = $derived(
+    getControlStep({
+      step: params[SLIDER_PARAM_INDEX.step] as number | undefined,
+      isFloat
+    })
+  );
+  const defaultValue = $derived((params[SLIDER_PARAM_INDEX.defaultValue] as number) ?? min);
+  const currentValue = $derived((params[SLIDER_PARAM_INDEX.value] as number) ?? defaultValue);
   const sliderWidth = $derived(node.width ?? 130);
   const sliderHeight = $derived(node.height ?? 140);
   const isResizable = $derived(node.data.resizable ?? false);
@@ -83,46 +86,11 @@
     return snapControlValue(value, { min, max, step, isFloat });
   }
 
-  const handleMessage: MessageCallbackFn = (message) => {
-    match(message)
-      .with(P.number, (value) => {
-        const newValue = snapValue(value);
+  function updateControlData(updates: Partial<typeof node.data>) {
+    const nextData = { ...node.data, ...updates };
 
-        updateNodeData(node.id, { ...node.data, value: newValue });
-        messageContext.send(newValue);
-
-        if (sliderElement) sliderElement.value = newValue.toString();
-      })
-      .with(messages.reset, () => {
-        updateNodeData(node.id, { ...node.data, value: defaultValue });
-        messageContext.send(defaultValue);
-
-        if (sliderElement) sliderElement.value = defaultValue.toString();
-      })
-      .with(messages.bang, () => {
-        messageContext.send(currentValue);
-      })
-      .with(messages.setMin, ({ value }) => {
-        const clampedValue = snapControlValue(currentValue, { min: value, max, step, isFloat });
-
-        updateNodeData(node.id, { ...node.data, min: value, value: clampedValue });
-      })
-      .with(messages.setMax, ({ value }) => {
-        const clampedValue = snapControlValue(currentValue, { min, max: value, step, isFloat });
-
-        updateNodeData(node.id, { ...node.data, max: value, value: clampedValue });
-      })
-      .with(messages.setDefault, ({ value }) => {
-        updateNodeData(node.id, { ...node.data, defaultValue: value });
-      })
-      .with(messages.setValue, ({ value }) => {
-        const clamped = snapValue(value);
-
-        updateNodeData(node.id, { ...node.data, value: clamped });
-
-        if (sliderElement) sliderElement.value = clamped.toString();
-      });
-  };
+    updateNodeData(node.id, { ...nextData, params: getSliderParams(nextData) });
+  }
 
   function handleSliderChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -131,8 +99,8 @@
     const newValue = snapValue(rawValue);
 
     if (newValue !== currentValue) {
-      updateNodeData(node.id, { ...node.data, value: newValue });
-      messageContext.send(newValue);
+      updateControlData({ value: newValue });
+      viewMessageContext.send(newValue);
     }
   }
 
@@ -169,34 +137,12 @@
       }
     }
 
-    updateNodeData(node.id, newData);
+    updateNodeData(node.id, { ...newData, params: getSliderParams(newData) });
 
     setTimeout(() => {
       updateNodeInternals();
     }, 5);
   }
-
-  onMount(() => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
-
-    // Initialize slider value
-    if (sliderElement) {
-      sliderElement.value = currentValue.toString();
-    }
-
-    // Run on mount by default.
-    setTimeout(() => {
-      if (node.data.runOnMount ?? true) {
-        messageContext.send(currentValue);
-      }
-    }, 100);
-  });
-
-  onDestroy(() => {
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-  });
 
   // Update node internals when size changes
   $effect(() => {
@@ -280,7 +226,7 @@
         {#if showInlet}
           <TypedHandle
             port="inlet"
-            spec={sliderSchema.inlets[0].handle!}
+            spec={SliderObject.inlets[0].handle!}
             total={1}
             index={0}
             class={`!-top-2 ${handleInletClass}`}
@@ -331,7 +277,7 @@
 
         <TypedHandle
           port="outlet"
-          spec={sliderSchema.outlets[0].handle!}
+          spec={SliderObject.outlets[0].handle!}
           total={1}
           index={0}
           nodeId={node.id}
@@ -385,13 +331,13 @@
         {tracker}
         onUpdate={updateConfig}
         onReset={() => {
-          updateNodeData(node.id, { ...node.data, value: defaultValue });
+          updateControlData({ value: defaultValue });
 
           if (sliderElement) {
             sliderElement.value = defaultValue.toString();
           }
 
-          messageContext.send(defaultValue);
+          viewMessageContext.send({ type: 'reset' });
         }}
       />
     </div>

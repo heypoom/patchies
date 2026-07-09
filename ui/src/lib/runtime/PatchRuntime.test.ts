@@ -15,9 +15,11 @@ import {
   FakeAudioService,
   FakeEventBus,
   FakeObjectService,
+  knobNode,
   objectNode,
   PatchRuntimeTestObject,
   resetPatchRuntimeTestObject,
+  sliderNode,
   switchNode,
   tapTildeNode,
   TEST_OBJECT_TYPE,
@@ -853,6 +855,54 @@ describe('EditorRuntimeReconciler', () => {
       id: nodeId,
       objectType: 'textbox',
       params: ['saved text'],
+      rawParams: []
+    });
+  });
+
+  it('translates legacy XYFlow slider data into runtime params', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'slider-editor-runtime-test';
+
+    await reconciler.reconcile([
+      sliderNode(nodeId, {
+        value: 7,
+        min: -10,
+        max: 10,
+        defaultValue: 2,
+        isFloat: true,
+        step: 0.5
+      })
+    ]);
+
+    expect(runtime.createObject).toHaveBeenCalledWith({
+      id: nodeId,
+      objectType: 'slider',
+      params: [null, 7, -10, 10, 2, true, 0.5, true],
+      rawParams: []
+    });
+  });
+
+  it('translates legacy XYFlow knob data into runtime params', async () => {
+    const runtime = createFakeEditorRuntime();
+    const reconciler = new EditorRuntimeReconciler(runtime);
+    const nodeId = 'knob-editor-runtime-test';
+
+    await reconciler.reconcile([
+      knobNode(nodeId, {
+        value: 7,
+        min: -10,
+        max: 10,
+        defaultValue: 2,
+        isFloat: true,
+        step: 0.5
+      })
+    ]);
+
+    expect(runtime.createObject).toHaveBeenCalledWith({
+      id: nodeId,
+      objectType: 'knob',
+      params: [null, 7, -10, 10, 2, true, 0.5, true],
       rawParams: []
     });
   });

@@ -177,6 +177,20 @@ export const textboxNode = (id: string, data: Record<string, unknown> = {}): Nod
   data
 });
 
+export const sliderNode = (id: string, data: Record<string, unknown> = {}): Node => ({
+  id,
+  type: 'slider',
+  position: { x: 0, y: 0 },
+  data
+});
+
+export const knobNode = (id: string, data: Record<string, unknown> = {}): Node => ({
+  id,
+  type: 'knob',
+  position: { x: 0, y: 0 },
+  data
+});
+
 export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): Node => ({
   id,
   type: 'tap~',
@@ -189,6 +203,8 @@ export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) 
     (objectType: string) =>
       objectType === TEST_OBJECT_TYPE ||
       objectType === 'button' ||
+      objectType === 'knob' ||
+      objectType === 'slider' ||
       objectType === 'switch' ||
       objectType === 'textbox' ||
       objectType === 'toggle'

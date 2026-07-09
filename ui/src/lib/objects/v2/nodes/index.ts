@@ -22,6 +22,7 @@ import { DelayObject } from '$objects/delay/DelayObject';
 import { FloatObject } from '$objects/float/FloatObject';
 import { IntObject } from '$objects/int/IntObject';
 import { KVObject } from '$objects/kv/KVObject';
+import { KnobObject } from '$objects/knob/KnobObject';
 import { LabelObject } from '$objects/label/LabelObject';
 import { LinkObject } from '$objects/link/LinkObject';
 import { LoadbangObject } from '$objects/loadbang/LoadbangObject';
@@ -38,6 +39,7 @@ import { PackObject } from '$objects/pack/PackObject';
 import { PatchbayObject } from '$objects/patchbay/PatchbayObject';
 import { SelectObject } from '$objects/select/SelectObject';
 import { ScaleObject } from '$objects/scale/ScaleObject';
+import { SliderObject } from '$objects/slider/SliderObject';
 import { SpigotObject } from '$objects/spigot/SpigotObject';
 import { ThrottleObject } from '$objects/throttle/ThrottleObject';
 import { TitleObject } from '$objects/title/TitleObject';
@@ -67,6 +69,7 @@ export const TEXT_OBJECTS = [
   FloatObject,
   IntObject,
   KVObject,
+  KnobObject,
   LabelObject,
   LinkObject,
   LoadbangObject,
@@ -90,6 +93,7 @@ export const TEXT_OBJECTS = [
   PatchbayObject,
   SelectObject,
   ScaleObject,
+  SliderObject,
   SpigotObject,
   ThrottleObject,
   TitleObject,

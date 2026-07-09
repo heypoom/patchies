@@ -21,8 +21,6 @@ export * from '$objects/webcam/schema';
 export * from '$objects/screen/schema';
 export * from '$objects/iframe/schema';
 export * from '$objects/msg/schema';
-export * from '$objects/slider/schema';
-export * from '$objects/knob/schema';
 export * from '$objects/keyboard/schema';
 export * from '$objects/soundfile~/schema';
 export * from '$objects/sampler~/schema';
@@ -111,8 +109,6 @@ import { webcamSchema } from '$objects/webcam/schema';
 import { screenSchema } from '$objects/screen/schema';
 import { iframeSchema } from '$objects/iframe/schema';
 import { msgSchema } from '$objects/msg/schema';
-import { sliderSchema } from '$objects/slider/schema';
-import { knobSchema } from '$objects/knob/schema';
 import { keyboardSchema } from '$objects/keyboard/schema';
 import { soundfileSchema } from '$objects/soundfile~/schema';
 import { samplerSchema } from '$objects/sampler~/schema';
@@ -232,8 +228,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   screen: screenSchema,
   iframe: iframeSchema,
   msg: msgSchema,
-  slider: sliderSchema,
-  knob: knobSchema,
   keyboard: keyboardSchema,
   'soundfile~': soundfileSchema,
   'sampler~': samplerSchema,
