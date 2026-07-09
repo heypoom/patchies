@@ -73,7 +73,10 @@ export class RuntimeAudioObjectAdapter {
     this.audioService.removeNodeById(descriptor.id);
 
     // insert new nodes
-    this.audioService.createNode(descriptor.id, descriptor.objectType, descriptor.params);
+    this.audioService
+      .createNode(descriptor.id, descriptor.objectType, descriptor.params)
+      .catch(() => undefined);
+
     const messageContext = this.createAudioObjectMessageContext(
       descriptor.id,
       descriptor.objectType
@@ -81,6 +84,7 @@ export class RuntimeAudioObjectAdapter {
 
     this.audioObjects.set(descriptor.id, { messageContext });
     this.suppressedAudioObjectSyncs.delete(descriptor.id);
+
     this.bumpAudioObjectViewRevision(descriptor.id);
   }
 

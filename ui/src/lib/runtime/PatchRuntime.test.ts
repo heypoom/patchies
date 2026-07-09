@@ -305,6 +305,33 @@ describe('RuntimeAudioObjectAdapter', () => {
     expect(runtime.consumeSuppressedAudioObjectSync(nodeId)).toBe(false);
   });
 
+  it('handles async audio node creation failures as fire-and-forget work', () => {
+    const audioService = new FakeAudioService();
+    const runtime = new RuntimeAudioObjectAdapter({ audioService });
+    const nodeId = 'object-audio-create-rejection-test';
+    const catchHandlers: Array<(error: unknown) => unknown> = [];
+
+    const createPromise = {
+      catch: vi.fn((handler: (error: unknown) => unknown) => {
+        catchHandlers.push(handler);
+
+        return Promise.resolve(null);
+      })
+    } as unknown as ReturnType<typeof audioService.createNode>;
+
+    audioService.createNode.mockReturnValueOnce(createPromise);
+
+    runtime.upsertAudioObject({
+      id: nodeId,
+      objectType: 'osc~',
+      params: [440]
+    });
+
+    expect(createPromise.catch).toHaveBeenCalledWith(expect.any(Function));
+    expect(catchHandlers).toHaveLength(1);
+    expect(() => catchHandlers[0](new Error('create failed'))).not.toThrow();
+  });
+
   it('routes audio object command messages through runtime-owned message contexts', () => {
     const audioService = new FakeAudioService();
     const onAudioObjectDataChange = vi.fn();

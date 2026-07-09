@@ -110,7 +110,7 @@ export class FakeObjectService implements RuntimeObjectService {
 
 export class FakeAudioService {
   removeNodeById = vi.fn();
-  createNode = vi.fn();
+  createNode = vi.fn(() => Promise.resolve(this.audioNode));
   send = vi.fn();
 
   audioNode: AudioNodeV2 = {
