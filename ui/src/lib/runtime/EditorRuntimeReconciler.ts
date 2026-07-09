@@ -233,6 +233,7 @@ function getRuntimeObjectDescriptorFromNode(
   const expectedParams = parseObjectParamFromString(objectType, rawParams);
   const hasSavedParams = Array.isArray(data?.params);
   const savedParams: unknown[] = hasSavedParams ? (data.params as unknown[]) : [];
+
   const params =
     hasSavedParams && savedParams.length === expectedParams.length
       ? savedParams
