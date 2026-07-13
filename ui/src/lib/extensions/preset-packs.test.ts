@@ -151,7 +151,37 @@ describe('built-in preset packs', () => {
 
   test('registers Paper Shaders as a GLSL preset pack', () => {
     const paperShaders = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'paper-shaders');
-    const presetNames = ['Paper Mesh Gradient', 'Paper Dot Grid', 'Paper Waves', 'Paper Spiral'];
+    const presetNames = [
+      'Paper Mesh Gradient',
+      'Paper Dot Grid',
+      'Paper Waves',
+      'Paper Spiral',
+      'Paper Static Mesh Gradient',
+      'Paper Static Radial Gradient',
+      'Paper Simplex Noise',
+      'Paper Perlin Noise',
+      'Paper Neuro Noise',
+      'Paper Swirl',
+      'Paper Color Panels',
+      'Paper Dot Orbit',
+      'Paper Metaballs',
+      'Paper Voronoi',
+      'Paper Warp',
+      'Paper God Rays',
+      'Paper Grain Gradient',
+      'Paper Smoke Ring',
+      'Paper Pulsing Border'
+    ];
+    const noiseTexturePresetNames = [
+      'Paper Dot Orbit',
+      'Paper Metaballs',
+      'Paper Voronoi',
+      'Paper Warp',
+      'Paper God Rays',
+      'Paper Grain Gradient',
+      'Paper Smoke Ring',
+      'Paper Pulsing Border'
+    ];
 
     expect(paperShaders?.name).toBe('Paper Shaders');
     expect(paperShaders?.requiredObjects).toEqual(['glsl']);
@@ -163,6 +193,13 @@ describe('built-in preset packs', () => {
 
       expect(preset?.type).toBe('glsl');
       expect(presetData?.code).toContain('void mainImage(out vec4 fragColor, in vec2 fragCoord)');
+    }
+
+    for (const presetName of noiseTexturePresetNames) {
+      const preset = BUILTIN_PRESETS[presetName];
+      const presetData = preset?.data as { code?: string } | undefined;
+
+      expect(presetData?.code).toContain('uniform sampler2D noiseTexture;');
     }
   });
 
