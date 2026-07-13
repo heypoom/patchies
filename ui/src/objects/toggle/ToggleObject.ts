@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { match } from 'ts-pattern';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { Bang, messages } from '$lib/objects/schemas/common';
 import { schema } from '$lib/objects/schemas/types';
@@ -51,17 +51,15 @@ export class ToggleObject implements TextObjectV2 {
     readonly context: ObjectContext
   ) {}
 
-  onMessage(data: unknown, meta: MessageMeta): void {
-    const inletName = meta.inletName ?? 'value';
-
-    match([inletName, data])
-      .with(['value', messages.bang], () => {
+  onMessage(data: unknown): void {
+    match(data)
+      .with(messages.bang, () => {
         this.setAndSend(!this.getValue());
       })
-      .with(['value', toggleMessages.booleanControl], ([, value]) => {
+      .with(toggleMessages.booleanControl, (value) => {
         this.setAndSend(value);
       })
-      .with(['value', toggleMessages.numberControl], ([, value]) => {
+      .with(toggleMessages.numberControl, (value) => {
         this.setAndSend(value >= 1);
       })
       .otherwise(() => {});

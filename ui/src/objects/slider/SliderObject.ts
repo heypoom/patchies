@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { match } from 'ts-pattern';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { Bang, Reset, SetDefault, SetMax, SetMin, SetValue, messages } from '$lib/objects/schemas';
 import { schema } from '$lib/objects/schemas/types';
@@ -113,31 +113,29 @@ export class SliderObject implements TextObjectV2 {
     }
   }
 
-  onMessage(data: unknown, meta: MessageMeta): void {
-    const inletName = meta.inletName ?? 'message';
-
-    match([inletName, data])
-      .with(['message', sliderMessages.numberControl], ([, value]) => {
+  onMessage(data: unknown): void {
+    match(data)
+      .with(sliderMessages.numberControl, (value) => {
         this.setAndSendValue(value);
       })
-      .with(['message', messages.reset], () => {
+      .with(messages.reset, () => {
         this.setAndSendValue(this.getDefaultValue());
       })
-      .with(['message', messages.bang], () => {
+      .with(messages.bang, () => {
         this.context.send(this.getValue());
       })
-      .with(['message', messages.setMin], ([, { value }]) => {
+      .with(messages.setMin, ({ value }) => {
         this.setConfigParam('min', value);
         this.setValue(this.snapValue(this.getValue()));
       })
-      .with(['message', messages.setMax], ([, { value }]) => {
+      .with(messages.setMax, ({ value }) => {
         this.setConfigParam('max', value);
         this.setValue(this.snapValue(this.getValue()));
       })
-      .with(['message', messages.setDefault], ([, { value }]) => {
+      .with(messages.setDefault, ({ value }) => {
         this.setConfigParam('defaultValue', value);
       })
-      .with(['message', messages.setValue], ([, { value }]) => {
+      .with(messages.setValue, ({ value }) => {
         this.setValue(this.snapValue(value));
       })
       .otherwise(() => {});

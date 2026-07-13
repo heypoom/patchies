@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SliderObject } from './SliderObject';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { MessageMeta } from '$lib/objects/v2/interfaces/text-objects';
 
 function createSlider(initialData: Record<string, unknown> = {}) {
   const sent: unknown[] = [];
@@ -36,8 +35,6 @@ function createSlider(initialData: Record<string, unknown> = {}) {
   return { object, sent, updates, values };
 }
 
-const meta = (inletName = 'message'): MessageMeta => ({ source: 'source', inletName });
-
 describe('SliderObject', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -66,7 +63,7 @@ describe('SliderObject', () => {
       step: 2
     });
 
-    object.onMessage(7, meta());
+    object.onMessage(7);
 
     expect(values.value).toBe(8);
     expect(updates).toEqual([{ updates: { value: 8 }, options: { notifyUI: true } }]);
@@ -76,7 +73,7 @@ describe('SliderObject', () => {
   it('outputs the current value on bang without changing params', () => {
     const { object, sent, updates } = createSlider({ value: 42 });
 
-    object.onMessage({ type: 'bang' }, meta());
+    object.onMessage({ type: 'bang' });
 
     expect(updates).toEqual([]);
     expect(sent).toEqual([42]);
@@ -90,7 +87,7 @@ describe('SliderObject', () => {
       defaultValue: 3
     });
 
-    object.onMessage({ type: 'reset' }, meta());
+    object.onMessage({ type: 'reset' });
 
     expect(values.value).toBe(3);
     expect(sent).toEqual([3]);
@@ -104,7 +101,7 @@ describe('SliderObject', () => {
       defaultValue: 0
     });
 
-    object.onMessage({ type: 'setMin', value: 5 }, meta());
+    object.onMessage({ type: 'setMin', value: 5 });
 
     expect(values.min).toBe(5);
     expect(values.value).toBe(5);
@@ -119,7 +116,7 @@ describe('SliderObject', () => {
       defaultValue: 0
     });
 
-    object.onMessage({ type: 'setValue', value: 6 }, meta());
+    object.onMessage({ type: 'setValue', value: 6 });
 
     expect(values.value).toBe(6);
     expect(sent).toEqual([]);

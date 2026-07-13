@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { TextboxObject } from '$objects/textbox/TextboxObject';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { MessageMeta } from '$lib/objects/v2/interfaces/text-objects';
 import { resolveMessageInlet } from '$lib/objects/v2/resolve-message-inlet';
 
 function createTextbox(initialText = '') {
@@ -31,13 +30,11 @@ function createTextbox(initialText = '') {
   return { object, sent, updates, values };
 }
 
-const meta = (inletName = 'message'): MessageMeta => ({ source: 'source', inletName });
-
 describe('TextboxObject', () => {
   it('stores string messages as text and notifies the UI', () => {
     const { object, sent, updates, values } = createTextbox();
 
-    object.onMessage('hello patch', meta());
+    object.onMessage('hello patch');
 
     expect(values.text).toBe('hello patch');
     expect(updates).toEqual([{ updates: { text: 'hello patch' }, options: { notifyUI: true } }]);
@@ -47,7 +44,7 @@ describe('TextboxObject', () => {
   it('outputs the current text on bang', () => {
     const { object, sent, values } = createTextbox('stored text');
 
-    object.onMessage({ type: 'bang' }, meta());
+    object.onMessage({ type: 'bang' });
 
     expect(values.text).toBe('stored text');
     expect(sent).toEqual(['stored text']);
@@ -56,7 +53,7 @@ describe('TextboxObject', () => {
   it('clears stored text on clear and notifies the UI', () => {
     const { object, sent, updates, values } = createTextbox('erase me');
 
-    object.onMessage({ type: 'clear' }, meta());
+    object.onMessage({ type: 'clear' });
 
     expect(values.text).toBe('');
     expect(updates).toEqual([{ updates: { text: '' }, options: { notifyUI: true } }]);
@@ -66,7 +63,7 @@ describe('TextboxObject', () => {
   it('handles UI-originated send messages without resolved inlet metadata', () => {
     const { object, sent } = createTextbox('from ui');
 
-    object.onMessage({ type: 'bang' }, { source: 'textbox-1' });
+    object.onMessage({ type: 'bang' });
 
     expect(sent).toEqual(['from ui']);
   });
@@ -74,7 +71,7 @@ describe('TextboxObject', () => {
   it('handles UI-originated text updates without resolved inlet metadata', () => {
     const { object, values } = createTextbox();
 
-    object.onMessage('typed locally', { source: 'textbox-1' });
+    object.onMessage('typed locally');
 
     expect(values.text).toBe('typed locally');
   });

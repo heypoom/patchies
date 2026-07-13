@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { match } from 'ts-pattern';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { schema } from '$lib/objects/schemas/types';
 
@@ -35,7 +35,7 @@ export class SwitchObject implements TextObjectV2 {
     readonly context: ObjectContext
   ) {}
 
-  onMessage(data: unknown, _meta: MessageMeta): void {
+  onMessage(data: unknown): void {
     match(data)
       .with(switchMessages.booleanValue, (value) => {
         this.setAndSend(value);

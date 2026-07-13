@@ -33,7 +33,7 @@ describe('SwitchObject', () => {
   it('stores and emits boolean values from view-originated toggle messages', () => {
     const { object, sent, updates, values } = createSwitch(false);
 
-    object.onMessage(true, { source: 'switch-1' });
+    object.onMessage(true);
 
     expect(values.value).toBe(true);
     expect(updates).toEqual([{ updates: { value: true }, options: { notifyUI: true } }]);
@@ -43,7 +43,7 @@ describe('SwitchObject', () => {
   it('ignores non-boolean messages', () => {
     const { object, sent, updates, values } = createSwitch(false);
 
-    object.onMessage({ type: 'bang' }, { source: 'switch-1' });
+    object.onMessage({ type: 'bang' });
 
     expect(values.value).toBe(false);
     expect(updates).toEqual([]);

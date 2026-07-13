@@ -82,7 +82,6 @@
   }
 
   function sendText() {
-    viewMessageContext.send(text);
     viewMessageContext.send({ type: 'bang' });
   }
 </script>
