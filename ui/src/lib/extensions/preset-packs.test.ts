@@ -149,6 +149,23 @@ describe('built-in preset packs', () => {
     expect(presetData?.code).toContain('version');
   });
 
+  test('registers Paper Shaders as a GLSL preset pack', () => {
+    const paperShaders = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'paper-shaders');
+    const presetNames = ['Paper Mesh Gradient', 'Paper Dot Grid', 'Paper Waves', 'Paper Spiral'];
+
+    expect(paperShaders?.name).toBe('Paper Shaders');
+    expect(paperShaders?.requiredObjects).toEqual(['glsl']);
+    expect(paperShaders && getPresetPackPresetNames(paperShaders)).toEqual(presetNames);
+
+    for (const presetName of presetNames) {
+      const preset = BUILTIN_PRESETS[presetName];
+      const presetData = preset?.data as { code?: string } | undefined;
+
+      expect(preset?.type).toBe('glsl');
+      expect(presetData?.code).toContain('void mainImage(out vec4 fragColor, in vec2 fragCoord)');
+    }
+  });
+
   test('registers curated ChucK examples in their own preset pack', () => {
     const demoCompositions = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'demo-compositions');
     const chuckDemos = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'chuck-demos');

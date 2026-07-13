@@ -2,6 +2,7 @@ import type { PresetPack } from '../../stores/extensions.store';
 import { GREGGMAN_BYTEBEAT_PRESET_FOLDERS } from '../presets/builtin/bytebeat/greggman';
 import { CHUCK_DEMO_PRESET_KEYS } from '../presets/builtin/chuck';
 import { HYDRA_DEMO_PRESET_KEYS } from '../presets/builtin/hydra';
+import { PAPER_SHADER_PRESET_NAMES } from '../presets/builtin/glsl/paper-shaders';
 import { PEPPERMINT_PRESET_KEYS } from '../presets/builtin/peppermint';
 
 export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
@@ -69,6 +70,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Rectangle',
       'Cross'
     ]
+  },
+  {
+    id: 'paper-shaders',
+    name: 'Paper Shaders',
+    description: 'Polished GLSL textures adapted from Paper Shaders',
+    icon: 'Palette',
+    requiredObjects: ['glsl'],
+    presets: [...PAPER_SHADER_PRESET_NAMES]
   },
   {
     id: 'texture-composite',
