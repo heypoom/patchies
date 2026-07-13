@@ -18,7 +18,6 @@ import { preset as grainGradientPreset } from './grain-gradient';
 import { preset as smokeRingPreset } from './smoke-ring';
 import { preset as pulsingBorderPreset } from './pulsing-border';
 import { preset as ditheringPreset } from './dithering';
-import { preset as liquidMetalPreset } from './liquid-metal';
 import { preset as gemSmokePreset } from './gem-smoke';
 import { preset as texturePreset } from './paper-texture';
 
@@ -45,7 +44,6 @@ export const PAPER_SHADER_PRESETS: Record<string, GLSLPreset> = {
   'Paper Smoke Ring': smokeRingPreset,
   'Paper Pulsing Border': pulsingBorderPreset,
   'Paper Dithering': ditheringPreset,
-  'Paper Liquid Metal': liquidMetalPreset,
   'Paper Gem Smoke': gemSmokePreset,
   'Paper Texture': texturePreset
 };
