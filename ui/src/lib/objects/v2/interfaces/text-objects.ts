@@ -98,10 +98,4 @@ export type TextObjectClass = {
 
   /** Outlet definitions (used as default if instance doesn't implement getOutlets) */
   outlets?: ObjectOutlet[];
-
-  /**
-   * Optional adapter from the visual node's data shape to runtime params.
-   * Use this when a visual object's stored node data does not map 1:1 to inlet names.
-   */
-  getRuntimeDataFromNodeData?(data: Record<string, unknown> | undefined): Record<string, unknown>;
 } & TextObjectConstructor;

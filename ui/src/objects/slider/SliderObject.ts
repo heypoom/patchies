@@ -94,18 +94,6 @@ export class SliderObject implements TextObjectV2 {
     }
   ];
 
-  static getRuntimeDataFromNodeData(data: Record<string, unknown> | undefined): SliderData {
-    return getSliderData({
-      value: data?.value,
-      min: data?.min,
-      max: data?.max,
-      defaultValue: data?.defaultValue,
-      isFloat: data?.isFloat,
-      step: data?.step,
-      runOnMount: data?.runOnMount
-    });
-  }
-
   private runOnMountTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(

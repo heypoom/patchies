@@ -884,8 +884,7 @@ describe('EditorRuntimeReconciler', () => {
         max: 10,
         defaultValue: 2,
         isFloat: true,
-        step: 0.5,
-        runOnMount: true
+        step: 0.5
       },
       rawParams: []
     });
@@ -916,8 +915,7 @@ describe('EditorRuntimeReconciler', () => {
         max: 10,
         defaultValue: 2,
         isFloat: true,
-        step: 0.5,
-        runOnMount: true
+        step: 0.5
       },
       rawParams: []
     });

@@ -128,9 +128,10 @@ headless runtime work. `ObjectNode` should only search/load `TEXT_OBJECTS`
 plus audio object names.
 
 `EditorRuntimeReconciler` may branch on editor representation (`object` node
-versus dedicated node), but must not mention concrete object names. If an object
-needs data defaults or compatibility handling, put that logic on the object
-definition with `getRuntimeDataFromNodeData()`.
+versus dedicated node), but must not mention concrete object names. Visual
+runtime data is the dedicated node's object-shaped `node.data`; put defaults in
+the object/view helpers that read the data, and use explicit migrations for
+saved shape changes.
 
 ## Headless Visual Objects
 

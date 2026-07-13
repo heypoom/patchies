@@ -62,8 +62,8 @@ port metadata, and docs/search schema should live in the object definition under
 
    Keep visual-node state in the same object-shaped `node.data` that the Svelte
    component receives. Do not add hidden positional params just to feed the
-   runtime. If the runtime needs defaults or compatibility handling, put that in
-   the object definition with `getRuntimeDataFromNodeData`.
+   runtime. Put defaults in the object/view helpers that read node data, and use
+   explicit migrations for saved data shape changes.
 
 6. Add a view-local message context when the UI needs message feedback.
 

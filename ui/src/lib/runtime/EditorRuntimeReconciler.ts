@@ -238,7 +238,7 @@ function getRuntimeObjectDescriptorFromNode(
   const runtimeData =
     data?.name === objectType
       ? getTextObjectData(objectType, data, rawParams)
-      : getVisualObjectData(objectClass, data);
+      : { ...(data ?? {}) };
 
   return { id: nodeId, objectType, data: runtimeData, rawParams };
 }
@@ -269,18 +269,6 @@ function getRuntimeObjectParamsFromNode(
   return hasSavedParams && savedParams.length === expectedParams.length
     ? savedParams
     : expectedParams;
-}
-
-function getVisualObjectData(
-  objectClass: TextObjectClass | undefined,
-  data?: EditorRuntimeObjectData
-): Record<string, unknown> {
-  if (!objectClass) return { ...(data ?? {}) };
-
-  const objectData = objectClass.getRuntimeDataFromNodeData?.(data);
-  if (objectData) return objectData;
-
-  return { ...(data ?? {}) };
 }
 
 function getRawObjectParamsFromExpr(expr: unknown): string[] {
