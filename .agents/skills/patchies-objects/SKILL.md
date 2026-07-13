@@ -105,22 +105,82 @@ When adding a visual/expression node, update the relevant surfaces:
 - AI object prompts: `object-descriptions-types.ts`, object prompt file, and prompt index.
 - CodeMirror completions for JavaScript-based nodes that expose API functions.
 
+## Runtime Object Kinds
+
+Patchies has separate editor representations that can share runtime lifecycle
+and message routing:
+
+- Object-box text objects use `{ expr, name, params }` and are loadable through
+  `ObjectNode`.
+- Dedicated visual nodes use object-shaped `node.data`, such as
+  `{ value, min, max, step, isFloat }`.
+- Audio nodes keep their audio-specific `params[]` runtime contract unless the
+  audio object explicitly provides a higher-level message/settings adapter.
+
+Keep these registries distinct in `ui/src/lib/objects/v2/nodes/index.ts`:
+
+- `TEXT_OBJECTS`: object-box objects only.
+- `VISUAL_OBJECTS`: dedicated Svelte-node-backed visual objects.
+- `RUNTIME_OBJECTS`: union used for runtime registration and schema generation.
+
+Do not put a dedicated visual node in `TEXT_OBJECTS` just to make schemas or
+headless runtime work. `ObjectNode` should only search/load `TEXT_OBJECTS`
+plus audio object names.
+
+`EditorRuntimeReconciler` may branch on editor representation (`object` node
+versus dedicated node), but must not mention concrete object names. If an object
+needs data defaults or compatibility handling, put that logic on the object
+definition with `getRuntimeDataFromNodeData()`.
+
+## Headless Visual Objects
+
+When moving a visual Svelte node to a headless runtime object, read
+`docs/design-docs/visual-object-headless-migration.md` first.
+
+Guidelines:
+
+- Put runtime behavior in `<ObjectName>Object.ts`: `create`, `update`,
+  `destroy`, timers, subscriptions, `onMessage`, and `context.send(...)`.
+- Keep the Svelte component as a view over `node.data` plus local UI state.
+- Store runtime state in object-shaped data via `context.getData()` and
+  `context.setData(updates, { notifyUI: true })`.
+- Do not add hidden positional params just to feed the runtime.
+- If a view action should behave like an external patch message, send through
+  the shared message queue or view message context instead of duplicating logic
+  in the component.
+- UI-local sends may arrive without `meta.inletName`; edge-routed messages may
+  arrive with only `inletKey`. Runtime dispatch should resolve metadata from
+  object inlets, and single-inlet objects may default missing metadata to that
+  inlet.
+- Add runtime tests that prove behavior works without mounting the Svelte
+  component. Include UI-originated and edge-routed message paths when they can
+  differ.
+
 ## Text Objects
 
 For text control objects:
 
 - Create a class implementing `TextObjectV2` in the owning `ui/src/objects/<module>/`.
-- Register it in `ui/src/lib/objects/v2/nodes/index.ts`; this file should stay a registry/import surface.
+- Register it in `TEXT_OBJECTS` in `ui/src/lib/objects/v2/nodes/index.ts`;
+  this file should stay a registry/import surface.
 - Add it to the appropriate extension pack.
 - Add object docs in `ui/static/content/objects/{name}.md`.
 - Add AI object prompt coverage.
 - Use TypeBox schemas for message types.
+
+Object-box text objects can keep positional `params[]`. Use
+`context.getParam()` / `context.setParam()` where that matches the expression
+model. New visual runtime objects should prefer `getData()` / `setData()`.
 
 Do not pattern-match text object messages against raw `P.string`, `P.array()`, or similar patterns. Define TypeBox schemas with `msg()`/`sym()`, wrap them with `schema()`, and match those wrappers.
 
 ## Schema Generation
 
 Object schemas for docs are generated at build time with `bun run generate:schemas`.
+
+Schema generation uses `RUNTIME_OBJECTS`, not only `TEXT_OBJECTS`, so docs can
+include both text and visual definitions without making visual objects loadable
+through `ObjectNode`.
 
 When adding fields to `InletSchema` or `OutletSchema`, update:
 

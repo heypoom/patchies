@@ -23,6 +23,21 @@ Rules:
 - Async `create()` is supported for nodes that load resources such as AudioWorklets.
 - Use `isAudioParam: true` on inlet metadata for modulatable Web Audio or worklet params. `AudioService` uses this metadata for param connections and scheduled messages.
 
+Audio runtime descriptors still use the audio `params[]` contract. Object-box
+audio expressions such as `osc~ 440` and dedicated runtime-managed audio UI
+nodes are reconciled into audio params from inlet metadata. Do not convert audio
+nodes to the visual object `data` descriptor unless a later audio-specific spec
+requires it.
+
+Dedicated audio UI nodes that should be owned by `AudioService` must opt in with
+`runtimeManaged`. Nodes that still own their runtime from the Svelte component
+should not be synced by the editor reconciler.
+
+If incoming message commands should update editor-visible node data, implement
+`getMessageSettingsUpdate` on the audio node. Keep that behavior object-owned;
+do not add object-name branches to `AudioService`, `RuntimeAudioObjectAdapter`,
+or `EditorRuntimeReconciler`.
+
 ## New Audio Node Checklist
 
 - Create the node class under the owning `ui/src/objects/<module>/`.
@@ -114,6 +129,10 @@ Useful inlet metadata:
 - `schemaInlets` lets docs/generated schemas show a different public inlet list than the runtime worklet config.
 - `audioParamAutomationRate` configures `a-rate`/`k-rate` params when `isAudioParam` is true.
 
+For runtime-managed audio UI nodes, use `schemaInlets` when the public handles
+or docs should differ from the raw worklet parameter list. Keep processor param
+indices stable in `inlets`; expose the friendly surface through `schemaInlets`.
+
 Reference nodes:
 
 - `wrap~` for the simplest processor.
@@ -129,3 +148,6 @@ Gotchas:
 - Signal inlets cannot receive control messages. Add a separate message inlet when a node needs commands.
 - Do not document message schemas in markdown files. The node definition is the single source of truth.
 - If a visible signal inlet should accept float constants, prefer `acceptsFloat`. Use `controlsSignalInlet` plus `hideInlet` only when a separate hidden control inlet is actually needed.
+- Preserve existing handle IDs when migrating audio-backed visual nodes. For a
+  single message inlet/outlet that used `{ handleType: 'message' }`, do not add
+  `handleId: 0` unless intentionally migrating saved edge handle IDs.
