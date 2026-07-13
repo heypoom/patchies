@@ -170,7 +170,11 @@ describe('built-in preset packs', () => {
       'Paper God Rays',
       'Paper Grain Gradient',
       'Paper Smoke Ring',
-      'Paper Pulsing Border'
+      'Paper Pulsing Border',
+      'Paper Dithering',
+      'Paper Liquid Metal',
+      'Paper Gem Smoke',
+      'Paper Texture'
     ];
     const noiseTexturePresetNames = [
       'Paper Dot Orbit',
@@ -180,7 +184,8 @@ describe('built-in preset packs', () => {
       'Paper God Rays',
       'Paper Grain Gradient',
       'Paper Smoke Ring',
-      'Paper Pulsing Border'
+      'Paper Pulsing Border',
+      'Paper Texture'
     ];
 
     expect(paperShaders?.name).toBe('Paper Shaders');

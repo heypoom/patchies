@@ -27,12 +27,18 @@ The pack includes standalone procedural shaders that can run inside the existing
 - Paper Grain Gradient
 - Paper Smoke Ring
 - Paper Pulsing Border
+- Paper Dithering
+- Paper Liquid Metal
+- Paper Gem Smoke
+- Paper Texture
 
 The pack is intentionally limited to shaders that do not require uploaded images or preprocessing. Shaders that use Paper's noise texture expose it as a `sampler2D noiseTexture` inlet so users can patch in any texture source. Image filters and shaders that depend on preprocessing are out of scope for this pass.
 
 ## Design
 
-Each shader is added as a normal built-in GLSL preset under `ui/src/lib/presets/builtin/glsl/`. The ports keep the visual structure of the Paper shader, but adapt it to Patchies' Shadertoy-style `mainImage(out vec4 fragColor, in vec2 fragCoord)` wrapper.
+Each shader is added as a normal built-in GLSL preset under `ui/src/lib/presets/builtin/glsl/paper-shaders/`, with one file per preset and an `index.ts` barrel that exports the preset names and preset map. Shared GLSL snippets live in `shared.ts` so individual presets stay small enough to edit comfortably.
+
+The ports keep the visual structure of the Paper shader, but adapt it to Patchies' Shadertoy-style `mainImage(out vec4 fragColor, in vec2 fragCoord)` wrapper.
 
 Paper's custom varyings are approximated in fragment code:
 
