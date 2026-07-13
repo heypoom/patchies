@@ -16,6 +16,7 @@ When adding or changing a built-in preset pack:
 - Add the pack to `ui/src/lib/extensions/preset-packs.ts`.
 - Add a lucide icon in `ui/src/lib/extensions/pack-icons.ts`.
 
-## Verification
+## Tests
 
-Prefer focused preset-pack tests for registry behavior and pack membership. For declaration-only preset code, do not add brittle tests that assert source text unless that text is user-visible or part of the preset contract.
+- Do not add brittle tests that assert source text unless that text is user-visible or part of the preset contract.
+- Do not add or update tests that assert the preset pack registry.
