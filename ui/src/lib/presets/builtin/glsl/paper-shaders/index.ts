@@ -19,7 +19,6 @@ import { preset as smokeRingPreset } from './smoke-ring';
 import { preset as pulsingBorderPreset } from './pulsing-border';
 import { preset as ditheringPreset } from './dithering';
 import { preset as gemSmokePreset } from './gem-smoke';
-import { preset as texturePreset } from './paper-texture';
 
 import type { GLSLPreset } from '../types';
 
@@ -44,8 +43,7 @@ export const PAPER_SHADER_PRESETS: Record<string, GLSLPreset> = {
   'Paper Smoke Ring': smokeRingPreset,
   'Paper Pulsing Border': pulsingBorderPreset,
   'Paper Dithering': ditheringPreset,
-  'Paper Gem Smoke': gemSmokePreset,
-  'Paper Texture': texturePreset
+  'Paper Gem Smoke': gemSmokePreset
 };
 
 export const PAPER_SHADER_PRESET_NAMES = Object.keys(PAPER_SHADER_PRESETS);
