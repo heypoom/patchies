@@ -24,7 +24,7 @@
     HOT_THRESHOLD_OPTIONS
   } from '../../../stores/profiler-settings.store';
 
-  import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
+  import type { ProfilerCategory, TimingStats } from '$lib/profiler/types';
 
   import {
     PROFILER_CHART_HEIGHT as CH,

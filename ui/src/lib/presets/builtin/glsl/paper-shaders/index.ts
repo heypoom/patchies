@@ -21,57 +21,33 @@ import { preset as ditheringPreset } from './dithering';
 import { preset as liquidMetalPreset } from './liquid-metal';
 import { preset as gemSmokePreset } from './gem-smoke';
 import { preset as texturePreset } from './paper-texture';
+
 import type { GLSLPreset } from '../types';
 
-export const PAPER_SHADER_PRESET_NAMES = [
-  'Paper Mesh Gradient',
-  'Paper Dot Grid',
-  'Paper Waves',
-  'Paper Spiral',
-  'Paper Static Mesh Gradient',
-  'Paper Static Radial Gradient',
-  'Paper Simplex Noise',
-  'Paper Perlin Noise',
-  'Paper Neuro Noise',
-  'Paper Swirl',
-  'Paper Color Panels',
-  'Paper Dot Orbit',
-  'Paper Metaballs',
-  'Paper Voronoi',
-  'Paper Warp',
-  'Paper God Rays',
-  'Paper Grain Gradient',
-  'Paper Smoke Ring',
-  'Paper Pulsing Border',
-  'Paper Dithering',
-  'Paper Liquid Metal',
-  'Paper Gem Smoke',
-  'Paper Texture'
-] as const;
+export const PAPER_SHADER_PRESETS: Record<string, GLSLPreset> = {
+  'Paper Mesh Gradient': meshGradientPreset,
+  'Paper Dot Grid': dotGridPreset,
+  'Paper Waves': wavesPreset,
+  'Paper Spiral': spiralPreset,
+  'Paper Static Mesh Gradient': staticMeshGradientPreset,
+  'Paper Static Radial Gradient': staticRadialGradientPreset,
+  'Paper Simplex Noise': simplexNoisePreset,
+  'Paper Perlin Noise': perlinNoisePreset,
+  'Paper Neuro Noise': neuroNoisePreset,
+  'Paper Swirl': swirlPreset,
+  'Paper Color Panels': colorPanelsPreset,
+  'Paper Dot Orbit': dotOrbitPreset,
+  'Paper Metaballs': metaballsPreset,
+  'Paper Voronoi': voronoiPreset,
+  'Paper Warp': warpPreset,
+  'Paper God Rays': godRaysPreset,
+  'Paper Grain Gradient': grainGradientPreset,
+  'Paper Smoke Ring': smokeRingPreset,
+  'Paper Pulsing Border': pulsingBorderPreset,
+  'Paper Dithering': ditheringPreset,
+  'Paper Liquid Metal': liquidMetalPreset,
+  'Paper Gem Smoke': gemSmokePreset,
+  'Paper Texture': texturePreset
+};
 
-export const PAPER_SHADER_PRESETS: Record<(typeof PAPER_SHADER_PRESET_NAMES)[number], GLSLPreset> =
-  {
-    'Paper Mesh Gradient': meshGradientPreset,
-    'Paper Dot Grid': dotGridPreset,
-    'Paper Waves': wavesPreset,
-    'Paper Spiral': spiralPreset,
-    'Paper Static Mesh Gradient': staticMeshGradientPreset,
-    'Paper Static Radial Gradient': staticRadialGradientPreset,
-    'Paper Simplex Noise': simplexNoisePreset,
-    'Paper Perlin Noise': perlinNoisePreset,
-    'Paper Neuro Noise': neuroNoisePreset,
-    'Paper Swirl': swirlPreset,
-    'Paper Color Panels': colorPanelsPreset,
-    'Paper Dot Orbit': dotOrbitPreset,
-    'Paper Metaballs': metaballsPreset,
-    'Paper Voronoi': voronoiPreset,
-    'Paper Warp': warpPreset,
-    'Paper God Rays': godRaysPreset,
-    'Paper Grain Gradient': grainGradientPreset,
-    'Paper Smoke Ring': smokeRingPreset,
-    'Paper Pulsing Border': pulsingBorderPreset,
-    'Paper Dithering': ditheringPreset,
-    'Paper Liquid Metal': liquidMetalPreset,
-    'Paper Gem Smoke': gemSmokePreset,
-    'Paper Texture': texturePreset
-  };
+export const PAPER_SHADER_PRESET_NAMES = Object.keys(PAPER_SHADER_PRESETS);
