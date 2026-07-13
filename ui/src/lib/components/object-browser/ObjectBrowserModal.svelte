@@ -59,6 +59,7 @@
   } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { objectSchemas } from '$lib/objects/schemas';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { SvelteMap } from 'svelte/reactivity';
 
   function openPacks() {
     $objectBrowserMode = 'packs';
@@ -111,8 +112,9 @@
 
   // Get preset categories grouped by library and type
   const presetCategories = $derived.by((): CategoryGroup[] => {
-    const presetsByCategory = new Map<string, ObjectItem[]>();
-    const categoryIconMap = new Map<string, string>();
+    const presetsByCategory = new SvelteMap<string, ObjectItem[]>();
+    const categoryIconMap = new SvelteMap<string, string>();
+    const categoryIdMap = new SvelteMap<string, string>();
 
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
@@ -127,14 +129,23 @@
 
       const presetPack =
         libraryName === 'Built-in' ? getBuiltInPresetPackByPresetName(preset.name) : undefined;
+
       const typeFolder = path.length > 2 ? path[1] : preset.type;
+
       const categoryKey =
         libraryName === 'Built-in'
           ? (presetPack?.name ?? typeFolder)
           : formatPresetLocation(flatPreset);
 
+      const categoryId =
+        libraryName === 'Built-in'
+          ? `preset-pack:${presetPack?.id ?? categoryKey}`
+          : `preset-library:${categoryKey}`;
+
       if (!presetsByCategory.has(categoryKey)) {
         presetsByCategory.set(categoryKey, []);
+        categoryIdMap.set(categoryKey, categoryId);
+
         const pack = BUILT_IN_PACKS.find((p) => p.objects.includes(preset.type));
         categoryIconMap.set(categoryKey, presetPack?.icon ?? pack?.icon ?? 'Package');
       }
@@ -162,6 +173,7 @@
     });
 
     return sortedCategories.map((category) => ({
+      id: categoryIdMap.get(category)!,
       title: category,
       icon: categoryIconMap.get(category) || 'Package',
       isPresetCategory: true,
@@ -178,11 +190,12 @@
 
   const fuse = $derived(
     new Fuse(
-      allCategoriesWithPresets.flatMap((cat) =>
-        cat.objects.map((obj) => ({
+      allCategoriesWithPresets.flatMap((category) =>
+        category.objects.map((obj) => ({
           ...obj,
-          categoryTitle: cat.title,
-          isPreset: cat.isPresetCategory === true
+          categoryId: category.id,
+          categoryTitle: category.title,
+          isPreset: category.isPresetCategory === true
         }))
       ),
       {
@@ -212,14 +225,16 @@
       }
     );
 
-    const matchedObjects = new Map<string, ObjectItem[]>();
+    const matchedObjects = new SvelteMap<string, ObjectItem[]>();
 
     for (const result of sortedResults) {
-      const categoryTitle = result.item.categoryTitle;
-      if (!matchedObjects.has(categoryTitle)) {
-        matchedObjects.set(categoryTitle, []);
+      const categoryId = result.item.categoryId;
+
+      if (!matchedObjects.has(categoryId)) {
+        matchedObjects.set(categoryId, []);
       }
-      matchedObjects.get(categoryTitle)!.push({
+
+      matchedObjects.get(categoryId)!.push({
         name: result.item.name,
         description: result.item.description,
         category: result.item.category,
@@ -227,23 +242,26 @@
       });
     }
 
-    const categoryOrder = new Map<string, number>();
+    const categoryOrder = new SvelteMap<string, number>();
+
     sortedResults.forEach((result, index) => {
-      const cat = result.item.categoryTitle;
-      if (!categoryOrder.has(cat)) {
-        categoryOrder.set(cat, index);
+      const categoryId = result.item.categoryId;
+
+      if (!categoryOrder.has(categoryId)) {
+        categoryOrder.set(categoryId, index);
       }
     });
 
     return allCategoriesWithPresets
-      .map((cat) => ({
-        ...cat,
-        objects: matchedObjects.get(cat.title) || []
+      .map((category) => ({
+        ...category,
+        objects: matchedObjects.get(category.id) || []
       }))
-      .filter((cat) => cat.objects.length > 0)
+      .filter((category) => category.objects.length > 0)
       .toSorted((a, b) => {
-        const aOrder = categoryOrder.get(a.title) ?? Infinity;
-        const bOrder = categoryOrder.get(b.title) ?? Infinity;
+        const aOrder = categoryOrder.get(a.id) ?? Infinity;
+        const bOrder = categoryOrder.get(b.id) ?? Infinity;
+
         return aOrder - bOrder;
       });
   });
@@ -251,6 +269,7 @@
   const suggestedDisabledObject = $derived.by((): DisabledObjectInfo | null => {
     if (!searchQuery.trim()) return null;
     if (filteredCategories.length > 0) return null;
+
     return searchDisabledObject(searchQuery);
   });
 
@@ -275,12 +294,12 @@
     handleClose();
   }
 
-  function toggleCategory(title: string) {
+  function toggleCategory(id: string) {
     const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(title)) {
-      newExpanded.delete(title);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
     } else {
-      newExpanded.add(title);
+      newExpanded.add(id);
     }
     expandedCategories = newExpanded;
   }
@@ -292,7 +311,7 @@
 
   $effect(() => {
     if (open && !hasInitialized) {
-      expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
+      expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.id));
       hasInitialized = true;
     } else if (!open) {
       hasInitialized = false;
@@ -301,7 +320,7 @@
 
   $effect(() => {
     if (searchQuery.trim() && filteredCategories.length > 0) {
-      expandedCategories = new Set(filteredCategories.map((cat) => cat.title));
+      expandedCategories = new Set(filteredCategories.map((cat) => cat.id));
     }
   });
 
@@ -731,14 +750,14 @@
           </div>
         {:else}
           <div class="flex flex-col gap-2">
-            {#each filteredCategories as category (category.title)}
+            {#each filteredCategories as category (category.id)}
               {@const isCategoryPreset = category.isPresetCategory === true}
               {@const IconComponent = getIconComponent(category.icon)}
 
               <div>
                 <!-- Category header -->
                 <button
-                  onclick={() => toggleCategory(category.title)}
+                  onclick={() => toggleCategory(category.id)}
                   class="mb-1 flex w-full cursor-pointer items-center justify-between rounded border-none bg-transparent px-1.5 py-[5px] transition-colors hover:bg-white/2"
                 >
                   <div class="flex items-center gap-2">
@@ -762,13 +781,13 @@
                   <ChevronDown
                     class={[
                       'h-3.5 w-3.5 text-zinc-600 transition-transform',
-                      expandedCategories.has(category.title) ? '' : '-rotate-90'
+                      expandedCategories.has(category.id) ? '' : '-rotate-90'
                     ]}
                   />
                 </button>
 
                 <!-- Objects grid -->
-                {#if expandedCategories.has(category.title)}
+                {#if expandedCategories.has(category.id)}
                   <div class="mb-1 grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4">
                     {#each category.objects as object (object.name)}
                       {@const isPreset = category.isPresetCategory === true}

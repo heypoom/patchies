@@ -19,6 +19,15 @@ function getObjectNamesForCategory(categoryTitle: string): string[] {
 }
 
 describe('getCategorizedObjects', () => {
+  it('uses stable category ids separate from display titles', () => {
+    const enabledObjects = new Set(BUILT_IN_PACKS.flatMap((pack) => pack.objects));
+
+    const categories = getCategorizedObjects(true, enabledObjects);
+
+    expect(categories.map((category) => category.id)).toContain('object-pack:midi');
+    expect(new Set(categories.map((category) => category.id)).size).toBe(categories.length);
+  });
+
   it('includes enabled V2 text objects before object nodes mount', () => {
     expect(getObjectNamesForCategory('Control')).toEqual([
       'debounce',

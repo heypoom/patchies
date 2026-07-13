@@ -12,6 +12,7 @@ export interface ObjectItem {
 }
 
 export interface CategoryGroup {
+  id: string;
   title: string;
   icon: string; // lucide icon name
   objects: ObjectItem[];
@@ -154,6 +155,7 @@ export function getCategorizedObjects(
     const objects = packObjects.get(pack.id)!;
     if (objects.length > 0) {
       result.push({
+        id: `object-pack:${pack.id}`,
         title: pack.name,
         icon: pack.icon,
         objects
