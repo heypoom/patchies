@@ -1,8 +1,8 @@
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
+
 import { TEXT_OBJECTS } from '$lib/objects/v2/nodes';
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
-
-import { ObjectShorthandRegistry } from '../registry/ObjectShorthandRegistry';
 
 export const getObjectNameFromExpr = (expr: string): string =>
   expr.trim().toLowerCase().split(' ')?.[0];
@@ -34,16 +34,12 @@ export function getObjectAliases(objectName: string): string[] {
   return [];
 }
 
-export function getTextObjectNames(): string[] {
-  return getTextObjectClasses().flatMap((object) => [object.type, ...(object.aliases ?? [])]);
-}
+export const getTextObjectNames = (): string[] =>
+  getTextObjectClasses().flatMap((object) => [object.type, ...(object.aliases ?? [])]);
 
-export function isTextObjectName(objectName: string): boolean {
-  return getTextObjectClasses().some(
+export const isTextObjectName = (objectName: string): boolean =>
+  getTextObjectClasses().some(
     (object) => object.type === objectName || object.aliases?.includes(objectName)
   );
-}
 
-function getTextObjectClasses(): readonly TextObjectClass[] {
-  return TEXT_OBJECTS;
-}
+const getTextObjectClasses = (): readonly TextObjectClass[] => TEXT_OBJECTS;

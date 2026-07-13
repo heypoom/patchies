@@ -97,6 +97,7 @@ export class PatchMessageRuntime {
 
     this.onObjectParamsChange = options.onObjectParamsChange;
     this.onObjectDataChange = options.onObjectDataChange;
+
     this.eventBus.addEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.addEventListener('objectDataChanged', this.handleObjectDataChanged);
   }
@@ -253,7 +254,7 @@ export class PatchMessageRuntime {
     this.eventBus.removeEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.removeEventListener('objectDataChanged', this.handleObjectDataChanged);
 
-    for (const nodeId of [...this.objects.keys()]) {
+    for (const nodeId of this.objects.keys()) {
       this.destroyObject(nodeId);
     }
   }

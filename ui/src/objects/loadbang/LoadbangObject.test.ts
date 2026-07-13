@@ -36,4 +36,17 @@ describe('LoadbangObject', () => {
     vi.advanceTimersByTime(1);
     expect(sent).toEqual([{ type: 'bang' }]);
   });
+
+  it('cancels the pending bang when destroyed before the delay elapses', () => {
+    vi.useFakeTimers();
+
+    const { object, sent } = createLoadbang();
+
+    object.create();
+    object.destroy();
+
+    vi.advanceTimersByTime(500);
+
+    expect(sent).toEqual([]);
+  });
 });

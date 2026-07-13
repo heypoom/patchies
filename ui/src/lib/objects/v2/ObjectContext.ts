@@ -16,9 +16,11 @@ export class ObjectContext {
   readonly nodeId: string;
 
   private messageContext: MessageContext;
+
   private data: Record<string, unknown> = {};
   private params: unknown[] = [];
   private inlets: ObjectInlet[] = [];
+
   private paramsChangeCallbacks: ParamsChangeCallback[] = [];
   private dataChangeCallbacks: DataChangeCallback[] = [];
   private messageCallbacks: MessageCallbackFn[] = [];
@@ -36,6 +38,7 @@ export class ObjectContext {
 
     // Initialize params with default values from inlets
     this.params = inlets.map((inlet) => inlet.defaultValue ?? null);
+
     if (Array.isArray(data.params)) {
       this.initParams(data.params);
     }
@@ -86,7 +89,6 @@ export class ObjectContext {
    */
   setParam(indexOrName: number | string, value: unknown, options?: { notifyUI?: boolean }): void {
     const index = typeof indexOrName === 'string' ? this.getInletIndex(indexOrName) : indexOrName;
-
     if (index === -1) return;
 
     // Expand params array if needed
@@ -206,6 +208,7 @@ export class ObjectContext {
 
     return () => {
       const index = this.dataChangeCallbacks.indexOf(callback);
+
       if (index > -1) {
         this.dataChangeCallbacks.splice(index, 1);
       }

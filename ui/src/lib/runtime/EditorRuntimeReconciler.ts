@@ -12,6 +12,7 @@ interface EditorRuntimeObjectData {
   expr?: unknown;
   name?: unknown;
   params?: unknown;
+
   [key: string]: unknown;
 }
 
@@ -124,7 +125,7 @@ export class EditorRuntimeReconciler {
     const objectClass = this.runtime.getMessageObjectClass(objectType);
     if (!objectClass) return null;
 
-    return getRuntimeObjectDescriptorFromNode(node.id, objectType, data, objectClass);
+    return getRuntimeObjectDescriptorFromNode(node.id, objectType, data);
   }
 
   private getRuntimeAudioObjectDescriptorFromEditorNode(
@@ -155,7 +156,7 @@ export class EditorRuntimeReconciler {
   }
 
   private syncAudioObjects(nextAudioDescriptors: Map<string, RuntimeAudioObjectDescriptor>): void {
-    for (const nodeId of [...this.currentAudio.ids]) {
+    for (const nodeId of this.currentAudio.ids) {
       if (!nextAudioDescriptors.has(nodeId)) {
         this.runtime.destroyAudioObject(nodeId);
         this.currentAudio.ids.delete(nodeId);
@@ -221,24 +222,25 @@ const getRuntimeAudioObjectDescriptorKey = (descriptor: RuntimeAudioObjectDescri
   hash([descriptor.objectType, descriptor.params]);
 
 function getRuntimeObjectType(node: Node): string {
-  if (node.type !== 'object') return node.type ?? '';
+  // Text object types are stored in `data.name`
+  if (node.type === 'object') {
+    const data = node.data as EditorRuntimeObjectData | undefined;
 
-  const data = node.data as EditorRuntimeObjectData | undefined;
+    return typeof data?.name === 'string' ? data.name : '';
+  }
 
-  return typeof data?.name === 'string' ? data.name : '';
+  return node.type ?? '';
 }
 
 function getRuntimeObjectDescriptorFromNode(
   nodeId: string,
   objectType: string,
-  data?: EditorRuntimeObjectData,
-  objectClass?: TextObjectClass
+  data?: EditorRuntimeObjectData
 ) {
   const rawParams = getRawObjectParamsFromExpr(data?.expr);
+
   const runtimeData =
-    data?.name === objectType
-      ? getTextObjectData(objectType, data, rawParams)
-      : { ...(data ?? {}) };
+    data?.name === objectType ? getTextObjectData(objectType, data, rawParams) : { ...data };
 
   return { id: nodeId, objectType, data: runtimeData, rawParams };
 }

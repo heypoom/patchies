@@ -1,4 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
+
 import type { AudioNodeClass, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -121,7 +122,7 @@ export class RuntimeAudioObjectAdapter {
   }
 
   destroy(): void {
-    for (const nodeId of [...this.audioObjects.keys()]) {
+    for (const nodeId of this.audioObjects.keys()) {
       this.destroyAudioObject(nodeId);
     }
   }

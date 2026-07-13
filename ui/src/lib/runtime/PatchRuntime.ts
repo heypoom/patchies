@@ -20,9 +20,10 @@ export type {
   RuntimeAudioObjectService,
   RuntimeAudioObjectDescriptor
 } from './RuntimeAudioObjectAdapter';
+
 export type {
   RuntimeObjectService as PatchRuntimeObjectService,
-  RuntimeObjectDescriptor as RuntimeObjectDescriptor
+  RuntimeObjectDescriptor
 } from './PatchMessageRuntime';
 
 export type PatchRuntimeOptions = {

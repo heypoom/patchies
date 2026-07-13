@@ -26,6 +26,7 @@ export class LoadbangObject implements TextObjectV2 {
 
   readonly nodeId: string;
   readonly context: ObjectContext;
+  private loadTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
@@ -34,8 +35,16 @@ export class LoadbangObject implements TextObjectV2 {
 
   create(): void {
     // Send bang after a short delay to ensure connections are established
-    setTimeout(() => {
+    this.loadTimer = setTimeout(() => {
+      this.loadTimer = null;
       this.context.send({ type: 'bang' });
     }, 500);
+  }
+
+  destroy(): void {
+    if (this.loadTimer) {
+      clearTimeout(this.loadTimer);
+      this.loadTimer = null;
+    }
   }
 }
