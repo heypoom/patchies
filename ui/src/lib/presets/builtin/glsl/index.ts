@@ -60,6 +60,7 @@ import { preset as preset58 } from './convolve';
 import { preset as preset59 } from './math';
 import { preset as preset60 } from './chromatic-aberration';
 import { preset as preset61 } from './blob-detect';
+import { PAPER_SHADER_PRESETS } from './paper-shaders';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -124,7 +125,8 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   Convolve: preset58,
   Math: preset59,
   'Chromatic Aberration': preset60,
-  'Blob Detect': preset61
+  'Blob Detect': preset61,
+  ...PAPER_SHADER_PRESETS
 };
 
 export type { GLSLPreset } from './types';

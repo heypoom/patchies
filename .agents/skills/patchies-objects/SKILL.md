@@ -1,6 +1,6 @@
 ---
 name: patchies-objects
-description: Use when adding, editing, or migrating Patchies nodes, objects, handles, object modules, schemas, object docs, AI prompts, preset packs, file drag/drop support, or node data settings.
+description: Use when adding, editing, or migrating Patchies nodes, objects, handles, object modules, schemas, object docs, AI prompts, file drag/drop support, or node data settings.
 ---
 
 # Patchies Objects
@@ -151,12 +151,3 @@ When adding file drag/drop support:
 - Add extension and MIME mappings in `CanvasDragDropManager`.
 - Add VFS file handling in `getVfsFileNodeData()`.
 - Add direct file handling in `getFileNodeData()`.
-
-## Preset Packs
-
-When adding a built-in preset pack:
-
-- Create the preset file in `ui/src/lib/presets/builtin/`.
-- Update the builtin preset index.
-- Add the pack to `ui/src/lib/extensions/preset-packs.ts`.
-- Add a lucide icon in `ui/src/lib/extensions/pack-icons.ts`.

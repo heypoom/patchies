@@ -151,6 +151,19 @@ Patchies' GLSL Operators preset pack is inspired by [TouchDesigner](https://deri
 
 Patchies does not include or port TouchDesigner source code, shaders, assets, documentation, or proprietary implementations. This attribution is included because several GLSL presets intentionally follow TouchDesigner TOP naming and behavior patterns, reimplemented independently for Patchies.
 
+#### Paper Shaders
+
+Patchies' Paper Shaders preset pack contains GLSL presets adapted from [Paper Shaders](https://shaders.paper.design) by Paper / Lost Coast Labs, Inc.
+
+- **Original Project**: Paper Shaders
+- **Authors**: Paper / Lost Coast Labs, Inc.
+- **Repository**: <https://github.com/paper-design/shaders>
+- **Website**: <https://shaders.paper.design>
+- **License**: Apache-2.0
+- **Copyright**: © 2026 Paper; © Lost Coast Labs, Inc.
+
+The presets were adapted to Patchies' GLSL preset format, including `mainImage` entry points, Patchies-provided uniforms, and texture inputs for shaders that use Paper's noise texture. The original Paper Shaders license and NOTICE are preserved in `.references/paper-design-shaders/packages/shaders/`.
+
 #### Superdough (Package Patch)
 
 Patchies uses a patched version of [Superdough](https://codeberg.org/uzu/strudel), which is part of the Strudel ecosystem.

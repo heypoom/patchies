@@ -565,6 +565,17 @@ export const portedCode: PortedCode[] = [
       'Patchies does not include or port TouchDesigner source code, shaders, assets, documentation, or proprietary implementations. The attribution is included because several GLSL presets intentionally follow TouchDesigner TOP naming and behavior patterns, reimplemented independently for Patchies.'
   },
   {
+    name: 'Paper Shaders',
+    description:
+      "Patchies' Paper Shaders preset pack contains GLSL presets adapted from Paper Shaders.",
+    authors: 'Paper / Lost Coast Labs, Inc.',
+    repository: 'https://github.com/paper-design/shaders',
+    license: 'Apache-2.0',
+    copyright: '© 2026 Paper; © Lost Coast Labs, Inc.',
+    notes:
+      "Adapted to Patchies' GLSL preset format with mainImage entry points, Patchies-provided uniforms, and texture inputs for shaders that use Paper's noise texture. Original project website: https://shaders.paper.design"
+  },
+  {
     name: 'Array Box (Uiua WASM)',
     description:
       'The Uiua node uses a WASM build approach adapted from Array Box, an interactive playground for array programming languages.',
