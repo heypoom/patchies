@@ -63,19 +63,13 @@ export const TEXT_OBJECTS = [
   AdsrObject,
   ClipObject,
   BeatObject,
-  ButtonObject,
   DebounceObject,
   DelayObject,
   FloatObject,
   IntObject,
   KVObject,
-  KnobObject,
-  LabelObject,
-  LinkObject,
-  LoadbangObject,
   MetroObject,
   MtofObject,
-  NoteObject,
   AddObject,
   SubtractObject,
   MultiplyObject,
@@ -93,11 +87,8 @@ export const TEXT_OBJECTS = [
   PatchbayObject,
   SelectObject,
   ScaleObject,
-  SliderObject,
   SpigotObject,
   ThrottleObject,
-  TitleObject,
-  ToggleObject,
   UniqbyObject,
   WebMidiLinkObject,
   SendObject,
@@ -105,17 +96,34 @@ export const TEXT_OBJECTS = [
   SamplerateObject,
   UnpackObject,
   StackObject,
-  QueueObject,
+  QueueObject
+] as const satisfies TextObjectClass[];
+
+export const VISUAL_OBJECTS = [
+  ButtonObject,
+  KnobObject,
+  LabelObject,
+  LinkObject,
+  LoadbangObject,
+  NoteObject,
+  SliderObject,
+  TitleObject,
+  ToggleObject,
   SwitchObject,
   TextboxObject
 ] as const satisfies TextObjectClass[];
 
+export const RUNTIME_OBJECTS = [
+  ...TEXT_OBJECTS,
+  ...VISUAL_OBJECTS
+] as const satisfies TextObjectClass[];
+
 /**
- * Register all V2 text objects with the ObjectRegistry.
+ * Register all runtime objects with the ObjectRegistry.
  * This should be called during application initialization.
  */
 export function registerTextObjects(): void {
   const registry = ObjectRegistry.getInstance();
 
-  TEXT_OBJECTS.forEach((object) => registry.register(object));
+  RUNTIME_OBJECTS.forEach((object) => registry.register(object));
 }

@@ -3,7 +3,7 @@ import { hash } from 'ohash';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectMetadata, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 type ObjectParamsChangedEvent = {
@@ -12,10 +12,17 @@ type ObjectParamsChangedEvent = {
   params: unknown[];
 };
 
+type ObjectDataChangedEvent = {
+  type: 'objectDataChanged';
+  nodeId: string;
+  data: Record<string, unknown>;
+  updates: Record<string, unknown>;
+};
+
 export type RuntimeObjectDescriptor = {
   id: string;
   objectType: string;
-  params: unknown[];
+  data: Record<string, unknown>;
   rawParams: string[];
 };
 
@@ -31,11 +38,12 @@ export type RuntimeObjectService = {
     nodeId: string,
     objectType: string,
     messageContext: MessageContext,
-    params?: unknown[],
+    data?: Record<string, unknown>,
     rawParams?: string[]
   ): Promise<TextObjectV2 | null>;
 
   isObjectInRegistry(objectType: string): boolean;
+  getObjectClass(objectType: string): TextObjectClass | undefined;
   getObjectById(nodeId: string): TextObjectV2 | null;
   removeObjectById(nodeId: string): void;
 };
@@ -45,10 +53,18 @@ export type RuntimeEventBus = {
     type: 'objectParamsChanged',
     listener: (event: ObjectParamsChangedEvent) => void
   ): void;
+  addEventListener(
+    type: 'objectDataChanged',
+    listener: (event: ObjectDataChangedEvent) => void
+  ): void;
 
   removeEventListener(
     type: 'objectParamsChanged',
     listener: (event: ObjectParamsChangedEvent) => void
+  ): void;
+  removeEventListener(
+    type: 'objectDataChanged',
+    listener: (event: ObjectDataChangedEvent) => void
   ): void;
 };
 
@@ -62,12 +78,14 @@ export type PatchMessageRuntimeOptions = {
   objectService: RuntimeObjectService;
   eventBus?: RuntimeEventBus;
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
+  onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 };
 
 export class PatchMessageRuntime {
   private objectService: RuntimeObjectService;
   private eventBus: RuntimeEventBus;
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
+  private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
   private objects = new Map<string, RuntimeObjectRecord>();
   private objectMessageContexts = new SvelteMap<string, MessageContext>();
   private objectViewRevisions = new SvelteMap<string, number>();
@@ -75,14 +93,20 @@ export class PatchMessageRuntime {
 
   constructor(options: PatchMessageRuntimeOptions) {
     this.objectService = options.objectService;
-    this.eventBus = options.eventBus ?? PatchiesEventBus.getInstance();
+    this.eventBus = (options.eventBus ?? PatchiesEventBus.getInstance()) as RuntimeEventBus;
 
     this.onObjectParamsChange = options.onObjectParamsChange;
+    this.onObjectDataChange = options.onObjectDataChange;
     this.eventBus.addEventListener('objectParamsChanged', this.handleObjectParamsChanged);
+    this.eventBus.addEventListener('objectDataChanged', this.handleObjectDataChanged);
   }
 
   isObjectInRegistry(objectType: string): boolean {
     return this.objectService.isObjectInRegistry(objectType);
+  }
+
+  getObjectClass(objectType: string): TextObjectClass | undefined {
+    return this.objectService.getObjectClass(objectType);
   }
 
   async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {
@@ -108,7 +132,7 @@ export class PatchMessageRuntime {
       descriptor.id,
       descriptor.objectType,
       messageContext,
-      descriptor.params,
+      descriptor.data,
       descriptor.rawParams
     );
 
@@ -122,9 +146,15 @@ export class PatchMessageRuntime {
     }
 
     const params = object.context.getParams();
+    const data = object.context.getData();
 
-    if (hasParamChanges(descriptor.params, params)) {
+    if (Array.isArray(descriptor.data.params) && hasParamChanges(descriptor.data.params, params)) {
       this.onObjectParamsChange?.(descriptor.id, params);
+    }
+
+    const dataUpdates = getDataUpdates(descriptor.data, data);
+    if (Object.keys(dataUpdates).length > 0) {
+      this.onObjectDataChange?.(descriptor.id, dataUpdates);
     }
 
     this.bumpObjectViewRevision(descriptor.id);
@@ -139,7 +169,13 @@ export class PatchMessageRuntime {
       existing.objectType === descriptor.objectType &&
       existing.lifecycleKey === lifecycleKey;
 
-    if (canSkipUpdate) return;
+    if (canSkipUpdate) {
+      const object = this.objectService.getObjectById(nodeId);
+      object?.context.setData(descriptor.data);
+      object?.update?.(descriptor.data);
+
+      return;
+    }
 
     await this.createObject(descriptor);
   }
@@ -215,6 +251,7 @@ export class PatchMessageRuntime {
 
   destroy(): void {
     this.eventBus.removeEventListener('objectParamsChanged', this.handleObjectParamsChanged);
+    this.eventBus.removeEventListener('objectDataChanged', this.handleObjectDataChanged);
 
     for (const nodeId of [...this.objects.keys()]) {
       this.destroyObject(nodeId);
@@ -223,6 +260,11 @@ export class PatchMessageRuntime {
 
   private handleObjectParamsChanged = (event: ObjectParamsChangedEvent) => {
     this.onObjectParamsChange?.(event.nodeId, event.params);
+    this.bumpObjectViewRevision(event.nodeId);
+  };
+
+  private handleObjectDataChanged = (event: ObjectDataChangedEvent) => {
+    this.onObjectDataChange?.(event.nodeId, event.updates);
     this.bumpObjectViewRevision(event.nodeId);
   };
 
@@ -253,3 +295,18 @@ const hasParamChanges = (currentParams: unknown[], objectParams: unknown[]): boo
 
 const getObjectLifecycleKey = (descriptor: RuntimeObjectDescriptor): string =>
   hash([descriptor.objectType, descriptor.rawParams]);
+
+function getDataUpdates(
+  currentData: Record<string, unknown>,
+  objectData: Record<string, unknown>
+): Record<string, unknown> {
+  const updates: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(objectData)) {
+    if (!Object.is(currentData[key], value)) {
+      updates[key] = value;
+    }
+  }
+
+  return updates;
+}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { getKnobParams, KNOB_PARAM_INDEX, KnobObject } from '$objects/knob/KnobObject';
+  import { getKnobData, KnobObject } from '$objects/knob/KnobObject';
   import KnobSettings from '$lib/components/settings/KnobSettings.svelte';
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
@@ -27,7 +27,6 @@
       locked?: boolean;
       showInlet?: boolean;
       showOutlet?: boolean;
-      params?: unknown[];
     };
     selected: boolean;
   } = $props();
@@ -52,18 +51,18 @@
   let dragStartValue = $state(0);
 
   // Configuration values with defaults
-  const params = $derived(getKnobParams(node.data));
-  const min = $derived((params[KNOB_PARAM_INDEX.min] as number) ?? 0);
-  const isFloat = $derived(params[KNOB_PARAM_INDEX.isFloat] === true);
-  const max = $derived((params[KNOB_PARAM_INDEX.max] as number) ?? (isFloat ? 1 : 100));
+  const controlData = $derived(getKnobData(node.data));
+  const min = $derived(controlData.min ?? 0);
+  const isFloat = $derived(controlData.isFloat === true);
+  const max = $derived(controlData.max ?? (isFloat ? 1 : 100));
   const step = $derived(
     getControlStep({
-      step: params[KNOB_PARAM_INDEX.step] as number | undefined,
+      step: controlData.step ?? undefined,
       isFloat
     })
   );
-  const defaultValue = $derived((params[KNOB_PARAM_INDEX.defaultValue] as number) ?? min);
-  const currentValue = $derived((params[KNOB_PARAM_INDEX.value] as number) ?? defaultValue);
+  const defaultValue = $derived(controlData.defaultValue ?? min);
+  const currentValue = $derived(controlData.value ?? defaultValue);
   const size = $derived(node.data.size ?? 50);
 
   // Combined lock state: internal lock OR global interactivity disabled
@@ -122,7 +121,7 @@
   function updateControlData(updates: Partial<typeof node.data>) {
     const nextData = { ...node.data, ...updates };
 
-    updateNodeData(node.id, { ...nextData, params: getKnobParams(nextData) });
+    updateNodeData(node.id, getKnobData(nextData));
   }
 
   function handlePointerDown(event: PointerEvent) {
@@ -181,7 +180,7 @@
       }
     }
 
-    updateNodeData(node.id, { ...newData, params: getKnobParams(newData) });
+    updateNodeData(node.id, getKnobData(newData));
   }
 
   // Handle visibility: 3 states

@@ -1,7 +1,7 @@
 /**
  * Schema generator script — run via `bun run generate:schemas`
  *
- * Imports AUDIO_NODES and TEXT_OBJECTS, generates schemas via schemasFromNodes(),
+ * Imports AUDIO_NODES and RUNTIME_OBJECTS, generates schemas via schemasFromNodes(),
  * then emits a TypeScript file with Type.xxx() calls so the schemas can be
  * imported without pulling in the full node class dependency tree.
  */
@@ -11,7 +11,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 import { AUDIO_NODES } from '$lib/audio/v2/nodes';
-import { TEXT_OBJECTS } from '$lib/objects/v2/nodes';
+import { RUNTIME_OBJECTS } from '$lib/objects/v2/nodes';
 import { schemasFromNodes } from '$lib/objects/schemas/from-v2-node';
 import type {
   ObjectSchema,
@@ -29,7 +29,7 @@ const audioSchemas = schemasFromNodes(
   AUDIO_NODES.filter((node) => node.includeInGeneratedSchemas !== false),
   'audio'
 );
-const controlSchemas = schemasFromNodes(TEXT_OBJECTS, 'control');
+const controlSchemas = schemasFromNodes(RUNTIME_OBJECTS, 'control');
 const allSchemas: Record<string, ObjectSchema> = { ...audioSchemas, ...controlSchemas };
 
 // --- Code emitters ---

@@ -8,7 +8,7 @@
     useEdges
   } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { getSliderParams, SLIDER_PARAM_INDEX, SliderObject } from '$objects/slider/SliderObject';
+  import { getSliderData, SliderObject } from '$objects/slider/SliderObject';
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
@@ -31,7 +31,6 @@
       runOnMount?: boolean;
       resizable?: boolean;
       locked?: boolean;
-      params?: unknown[];
     };
     selected: boolean;
     width?: number;
@@ -57,18 +56,18 @@
   let sliderElement: HTMLInputElement;
 
   // Configuration values with defaults
-  const params = $derived(getSliderParams(node.data));
-  const min = $derived((params[SLIDER_PARAM_INDEX.min] as number) ?? 0);
-  const isFloat = $derived(params[SLIDER_PARAM_INDEX.isFloat] === true);
-  const max = $derived((params[SLIDER_PARAM_INDEX.max] as number) ?? (isFloat ? 1 : 100));
+  const controlData = $derived(getSliderData(node.data));
+  const min = $derived(controlData.min ?? 0);
+  const isFloat = $derived(controlData.isFloat === true);
+  const max = $derived(controlData.max ?? (isFloat ? 1 : 100));
   const step = $derived(
     getControlStep({
-      step: params[SLIDER_PARAM_INDEX.step] as number | undefined,
+      step: controlData.step ?? undefined,
       isFloat
     })
   );
-  const defaultValue = $derived((params[SLIDER_PARAM_INDEX.defaultValue] as number) ?? min);
-  const currentValue = $derived((params[SLIDER_PARAM_INDEX.value] as number) ?? defaultValue);
+  const defaultValue = $derived(controlData.defaultValue ?? min);
+  const currentValue = $derived(controlData.value ?? defaultValue);
   const sliderWidth = $derived(node.width ?? 130);
   const sliderHeight = $derived(node.height ?? 140);
   const isResizable = $derived(node.data.resizable ?? false);
@@ -89,7 +88,7 @@
   function updateControlData(updates: Partial<typeof node.data>) {
     const nextData = { ...node.data, ...updates };
 
-    updateNodeData(node.id, { ...nextData, params: getSliderParams(nextData) });
+    updateNodeData(node.id, getSliderData(nextData));
   }
 
   function handleSliderChange(event: Event) {
@@ -137,7 +136,7 @@
       }
     }
 
-    updateNodeData(node.id, { ...newData, params: getSliderParams(newData) });
+    updateNodeData(node.id, getSliderData(newData));
 
     setTimeout(() => {
       updateNodeInternals();

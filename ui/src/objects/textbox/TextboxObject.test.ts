@@ -9,20 +9,20 @@ import { resolveMessageInlet } from '$lib/objects/v2/resolve-message-inlet';
 function createTextbox(initialText = '') {
   const sent: unknown[] = [];
   const values: Record<string, unknown> = {
-    message: initialText
+    text: initialText
   };
-  const updates: Array<{ name: string | number; value: unknown; options: unknown }> = [];
+  const updates: Array<{ updates: Record<string, unknown>; options: unknown }> = [];
 
   const context = {
     send(data: unknown) {
       sent.push(data);
     },
-    setParam(indexOrName: number | string, value: unknown, options?: unknown) {
-      values[String(indexOrName)] = value;
-      updates.push({ name: indexOrName, value, options });
+    setData(nextValues: Record<string, unknown>, options?: unknown) {
+      Object.assign(values, nextValues);
+      updates.push({ updates: nextValues, options });
     },
-    getParam(indexOrName: number | string) {
-      return values[String(indexOrName)];
+    getData() {
+      return values;
     }
   } as ObjectContext;
 
@@ -39,10 +39,8 @@ describe('TextboxObject', () => {
 
     object.onMessage('hello patch', meta());
 
-    expect(values.message).toBe('hello patch');
-    expect(updates).toEqual([
-      { name: 'message', value: 'hello patch', options: { notifyUI: true } }
-    ]);
+    expect(values.text).toBe('hello patch');
+    expect(updates).toEqual([{ updates: { text: 'hello patch' }, options: { notifyUI: true } }]);
     expect(sent).toEqual([]);
   });
 
@@ -51,7 +49,7 @@ describe('TextboxObject', () => {
 
     object.onMessage({ type: 'bang' }, meta());
 
-    expect(values.message).toBe('stored text');
+    expect(values.text).toBe('stored text');
     expect(sent).toEqual(['stored text']);
   });
 
@@ -60,8 +58,8 @@ describe('TextboxObject', () => {
 
     object.onMessage({ type: 'clear' }, meta());
 
-    expect(values.message).toBe('');
-    expect(updates).toEqual([{ name: 'message', value: '', options: { notifyUI: true } }]);
+    expect(values.text).toBe('');
+    expect(updates).toEqual([{ updates: { text: '' }, options: { notifyUI: true } }]);
     expect(sent).toEqual([]);
   });
 
@@ -78,7 +76,7 @@ describe('TextboxObject', () => {
 
     object.onMessage('typed locally', { source: 'textbox-1' });
 
-    expect(values.message).toBe('typed locally');
+    expect(values.text).toBe('typed locally');
   });
 
   it('resolves edge messages sent through the legacy message-in handle', () => {

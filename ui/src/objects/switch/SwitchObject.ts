@@ -44,7 +44,7 @@ export class SwitchObject implements TextObjectV2 {
   }
 
   private setAndSend(value: boolean): void {
-    this.context.setParam(0, value, { notifyUI: true });
+    this.context.setData({ value }, { notifyUI: true });
     this.context.send(value);
   }
 }

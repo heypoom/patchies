@@ -6,6 +6,11 @@ import { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { ButtonObject } from '$objects/button/ButtonObject';
+import { KnobObject } from '$objects/knob/KnobObject';
+import { SliderObject } from '$objects/slider/SliderObject';
+import { SwitchObject } from '$objects/switch/SwitchObject';
+import { TextboxObject } from '$objects/textbox/TextboxObject';
+import { ToggleObject } from '$objects/toggle/ToggleObject';
 
 import type { EditorRuntime } from './EditorRuntimeReconciler';
 import type { RuntimeObjectService } from './PatchMessageRuntime';
@@ -68,19 +73,25 @@ export class FakeObjectService implements RuntimeObjectService {
     return objectType === TEST_OBJECT_TYPE || objectType === ButtonObject.type;
   }
 
+  getObjectClass(objectType: string): TextObjectClass | undefined {
+    if (objectType === ButtonObject.type) return ButtonObject;
+    if (objectType === TEST_OBJECT_TYPE) return PatchRuntimeTestObject;
+
+    return undefined;
+  }
+
   async createObject(
     nodeId: string,
     objectType: string,
     messageContext: MessageContext,
-    params: unknown[] = [],
+    data: Record<string, unknown> = {},
     rawParams: string[] = []
   ): Promise<TextObjectV2 | null> {
     if (!this.isObjectInRegistry(objectType)) return null;
 
     const ObjectClass: TextObjectClass =
       objectType === ButtonObject.type ? ButtonObject : PatchRuntimeTestObject;
-    const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets);
-    context.initParams(params);
+    const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets, data);
 
     const object = new ObjectClass(nodeId, context);
     this.objectsById.set(nodeId, object);
@@ -209,6 +220,19 @@ export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) 
       objectType === 'textbox' ||
       objectType === 'toggle'
   ),
+  getMessageObjectClass: vi.fn((objectType: string) => {
+    const objectClasses = [
+      ButtonObject,
+      KnobObject,
+      PatchRuntimeTestObject,
+      SliderObject,
+      SwitchObject,
+      TextboxObject,
+      ToggleObject
+    ];
+
+    return objectClasses.find((objectClass) => objectClass.type === objectType);
+  }),
   isAudioObjectInRegistry: vi.fn(() => false),
   createObject: vi.fn(),
   updateObject: vi.fn(),

@@ -16,12 +16,12 @@
   const viewMessageContext = useNodeViewMessageContext(untrack(() => nodeId), () => {});
 
   // Get toggle state from node data, default to false
-  let isOn = $derived((data.params?.[0] ?? data.value) === true);
+  let isOn = $derived(data.value === true);
   const switchOutlet = SwitchObject.outlets[0];
 
   const handleCheckedChange = (checked: boolean) => {
     const oldValue = isOn;
-    updateNodeData(nodeId, { value: checked, params: [checked] });
+    updateNodeData(nodeId, { value: checked });
     tracker.commit('value', oldValue, checked);
     viewMessageContext.send(checked);
   };

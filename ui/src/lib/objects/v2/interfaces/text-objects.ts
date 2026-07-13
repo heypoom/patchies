@@ -27,6 +27,11 @@ export interface TextObjectV2 {
   create?(params: unknown[]): void | Promise<void>;
 
   /**
+   * Apply new editor/runtime data without recreating the object.
+   */
+  update?(data: Record<string, unknown>): void;
+
+  /**
    * Clean up resources when the object is destroyed.
    * Called when the object is explicitly removed from the patch.
    */
@@ -53,6 +58,14 @@ export interface TextObjectV2 {
    * If not defined, static `inlets` from the class is used.
    */
   getInlets?(): ObjectInlet[];
+}
+
+export interface RuntimeObject<
+  TData extends Record<string, unknown> = Record<string, unknown>
+> extends TextObjectV2 {
+  readonly data?: TData;
+
+  update?(data: TData): void;
 }
 
 /**
@@ -85,4 +98,10 @@ export type TextObjectClass = {
 
   /** Outlet definitions (used as default if instance doesn't implement getOutlets) */
   outlets?: ObjectOutlet[];
+
+  /**
+   * Optional adapter from the visual node's data shape to runtime params.
+   * Use this when a visual object's stored node data does not map 1:1 to inlet names.
+   */
+  getRuntimeDataFromNodeData?(data: Record<string, unknown> | undefined): Record<string, unknown>;
 } & TextObjectConstructor;

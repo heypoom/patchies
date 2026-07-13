@@ -66,12 +66,12 @@ export class TextboxObject implements TextObjectV2 {
   }
 
   private getText(): string {
-    const text = this.context.getParam('message');
+    const text = this.context.getData<{ text?: unknown }>().text;
 
     return typeof text === 'string' ? text : '';
   }
 
   private setText(text: string): void {
-    this.context.setParam('message', text, { notifyUI: true });
+    this.context.setData({ text }, { notifyUI: true });
   }
 }

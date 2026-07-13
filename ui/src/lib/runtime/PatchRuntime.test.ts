@@ -48,7 +48,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.createObject({
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: { params: ['initial'] },
       rawParams: ['initial']
     });
 
@@ -60,7 +60,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.updateObject(nodeId, {
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['display-only update'],
+      data: { params: ['display-only update'] },
       rawParams: ['initial']
     });
 
@@ -88,7 +88,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.createObject({
       id: sourceNodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: { params: ['initial'] },
       rawParams: ['initial']
     });
 
@@ -111,7 +111,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.updateObject(sourceNodeId, {
       id: sourceNodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['next'],
+      data: { params: ['next'] },
       rawParams: ['next']
     });
 
@@ -148,7 +148,7 @@ describe('PatchMessageRuntime', () => {
     const createPromise = runtime.createObject({
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: { params: ['initial'] },
       rawParams: ['initial']
     });
 
@@ -201,7 +201,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.createObject({
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: { params: ['initial'] },
       rawParams: ['initial']
     });
 
@@ -226,7 +226,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.createObject({
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: { params: ['initial'] },
       rawParams: ['initial']
     });
 
@@ -258,7 +258,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.createObject({
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: { params: ['initial'] },
       rawParams: ['initial']
     });
 
@@ -267,7 +267,7 @@ describe('PatchMessageRuntime', () => {
     await runtime.updateObject(nodeId, {
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['next'],
+      data: { params: ['next'] },
       rawParams: ['next']
     });
 
@@ -417,7 +417,7 @@ describe('PatchRuntime', () => {
     await runtime.createObject({
       id: buttonNodeId,
       objectType: 'button',
-      params: [],
+      data: {},
       rawParams: []
     });
 
@@ -525,7 +525,7 @@ describe('PatchRuntime', () => {
     await runtime.createObject({
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: { params: ['initial'] },
       rawParams: ['initial']
     });
     runtime.upsertAudioObject({
@@ -802,7 +802,7 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledWith({
       id: nodeId,
       objectType: 'button',
-      params: [],
+      data: {},
       rawParams: []
     });
 
@@ -814,7 +814,7 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
   });
 
-  it('translates legacy XYFlow toggle value into runtime params', async () => {
+  it('translates XYFlow toggle value into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'toggle-editor-runtime-test';
@@ -824,12 +824,12 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledWith({
       id: nodeId,
       objectType: 'toggle',
-      params: [true],
+      data: { value: true },
       rawParams: []
     });
   });
 
-  it('translates legacy XYFlow switch value into runtime params', async () => {
+  it('translates XYFlow switch value into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'switch-editor-runtime-test';
@@ -839,12 +839,12 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledWith({
       id: nodeId,
       objectType: 'switch',
-      params: [true],
+      data: { value: true },
       rawParams: []
     });
   });
 
-  it('translates legacy XYFlow textbox text into runtime params', async () => {
+  it('translates XYFlow textbox text into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'textbox-editor-runtime-test';
@@ -854,12 +854,12 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledWith({
       id: nodeId,
       objectType: 'textbox',
-      params: ['saved text'],
+      data: { text: 'saved text' },
       rawParams: []
     });
   });
 
-  it('translates legacy XYFlow slider data into runtime params', async () => {
+  it('translates XYFlow slider data into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'slider-editor-runtime-test';
@@ -878,12 +878,20 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledWith({
       id: nodeId,
       objectType: 'slider',
-      params: [null, 7, -10, 10, 2, true, 0.5, true],
+      data: {
+        value: 7,
+        min: -10,
+        max: 10,
+        defaultValue: 2,
+        isFloat: true,
+        step: 0.5,
+        runOnMount: true
+      },
       rawParams: []
     });
   });
 
-  it('translates legacy XYFlow knob data into runtime params', async () => {
+  it('translates XYFlow knob data into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'knob-editor-runtime-test';
@@ -902,7 +910,15 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledWith({
       id: nodeId,
       objectType: 'knob',
-      params: [null, 7, -10, 10, 2, true, 0.5, true],
+      data: {
+        value: 7,
+        min: -10,
+        max: 10,
+        defaultValue: 2,
+        isFloat: true,
+        step: 0.5,
+        runOnMount: true
+      },
       rawParams: []
     });
   });
@@ -924,7 +940,11 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.createObject).toHaveBeenCalledWith({
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['initial'],
+      data: {
+        expr: `${TEST_OBJECT_TYPE} initial`,
+        name: TEST_OBJECT_TYPE,
+        params: ['initial']
+      },
       rawParams: ['initial']
     });
 
@@ -939,7 +959,11 @@ describe('EditorRuntimeReconciler', () => {
     expect(runtime.updateObject).toHaveBeenCalledWith(nodeId, {
       id: nodeId,
       objectType: TEST_OBJECT_TYPE,
-      params: ['display-only update'],
+      data: {
+        expr: `${TEST_OBJECT_TYPE} initial`,
+        name: TEST_OBJECT_TYPE,
+        params: ['display-only update']
+      },
       rawParams: ['initial']
     });
 

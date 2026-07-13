@@ -1,11 +1,10 @@
 import type { Node } from '@xyflow/svelte';
 import { hash } from 'ohash';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 import { logger } from '$lib/utils/logger';
-import { getKnobParams } from '$objects/knob/KnobObject';
-import { getSliderParams } from '$objects/slider/SliderObject';
 
 import type { RuntimeObjectDescriptor, RuntimeAudioObjectDescriptor } from './PatchRuntime';
 
@@ -13,14 +12,7 @@ interface EditorRuntimeObjectData {
   expr?: unknown;
   name?: unknown;
   params?: unknown;
-  value?: unknown;
-  text?: unknown;
-  min?: unknown;
-  max?: unknown;
-  defaultValue?: unknown;
-  isFloat?: unknown;
-  step?: unknown;
-  runOnMount?: unknown;
+  [key: string]: unknown;
 }
 
 interface RuntimeObjectSnapshot {
@@ -32,6 +24,7 @@ type NextRuntimeObjectSnapshot = RuntimeObjectSnapshot & { pendingIds: Set<strin
 
 export interface EditorRuntime {
   isMessageObjectInRegistry(objectType: string): boolean;
+  getMessageObjectClass(objectType: string): TextObjectClass | undefined;
   isAudioObjectInRegistry(objectType: string): boolean;
   createObject(descriptor: RuntimeObjectDescriptor): Promise<void>;
   updateObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void>;
@@ -128,8 +121,10 @@ export class EditorRuntimeReconciler {
     if (!objectType || !this.runtime.isMessageObjectInRegistry(objectType)) return null;
 
     const data = node.data as EditorRuntimeObjectData | undefined;
+    const objectClass = this.runtime.getMessageObjectClass(objectType);
+    if (!objectClass) return null;
 
-    return getRuntimeObjectDescriptorFromNode(node.id, objectType, data);
+    return getRuntimeObjectDescriptorFromNode(node.id, objectType, data, objectClass);
   }
 
   private getRuntimeAudioObjectDescriptorFromEditorNode(
@@ -144,7 +139,7 @@ export class EditorRuntimeReconciler {
       return {
         id: node.id,
         objectType,
-        params: getRuntimeObjectDescriptorFromNode(node.id, objectType, data).params
+        params: getRuntimeObjectParamsFromNode(objectType, data)
       };
     }
 
@@ -220,7 +215,7 @@ export class EditorRuntimeReconciler {
 }
 
 const getRuntimeObjectDescriptorKey = (descriptor: RuntimeObjectDescriptor): string =>
-  hash([descriptor.objectType, descriptor.params, descriptor.rawParams]);
+  hash([descriptor.objectType, descriptor.data, descriptor.rawParams]);
 
 const getRuntimeAudioObjectDescriptorKey = (descriptor: RuntimeAudioObjectDescriptor): string =>
   hash([descriptor.objectType, descriptor.params]);
@@ -236,60 +231,56 @@ function getRuntimeObjectType(node: Node): string {
 function getRuntimeObjectDescriptorFromNode(
   nodeId: string,
   objectType: string,
-  data?: EditorRuntimeObjectData
+  data?: EditorRuntimeObjectData,
+  objectClass?: TextObjectClass
 ) {
   const rawParams = getRawObjectParamsFromExpr(data?.expr);
+  const runtimeData =
+    data?.name === objectType
+      ? getTextObjectData(objectType, data, rawParams)
+      : getVisualObjectData(objectClass, data);
+
+  return { id: nodeId, objectType, data: runtimeData, rawParams };
+}
+
+function getTextObjectData(
+  objectType: string,
+  data: EditorRuntimeObjectData | undefined,
+  rawParams: string[]
+): Record<string, unknown> {
+  const params = getRuntimeObjectParamsFromNode(objectType, data, rawParams);
+
+  return {
+    expr: typeof data?.expr === 'string' ? data.expr : '',
+    name: objectType,
+    params
+  };
+}
+
+function getRuntimeObjectParamsFromNode(
+  objectType: string,
+  data?: EditorRuntimeObjectData,
+  rawParams = getRawObjectParamsFromExpr(data?.expr)
+): unknown[] {
   const expectedParams = parseObjectParamFromString(objectType, rawParams);
   const hasSavedParams = Array.isArray(data?.params);
   const savedParams: unknown[] = hasSavedParams ? (data.params as unknown[]) : [];
 
-  const params =
-    hasSavedParams && savedParams.length === expectedParams.length
-      ? savedParams
-      : (getLegacyRuntimeParams(objectType, data) ?? expectedParams);
-
-  return { id: nodeId, objectType, params, rawParams };
+  return hasSavedParams && savedParams.length === expectedParams.length
+    ? savedParams
+    : expectedParams;
 }
 
-function getLegacyRuntimeParams(
-  objectType: string,
+function getVisualObjectData(
+  objectClass: TextObjectClass | undefined,
   data?: EditorRuntimeObjectData
-): unknown[] | null {
-  if ((objectType === 'switch' || objectType === 'toggle') && typeof data?.value === 'boolean') {
-    return [data.value];
-  }
+): Record<string, unknown> {
+  if (!objectClass) return { ...(data ?? {}) };
 
-  if (objectType === 'textbox' && typeof data?.text === 'string') {
-    return [data.text];
-  }
+  const objectData = objectClass.getRuntimeDataFromNodeData?.(data);
+  if (objectData) return objectData;
 
-  if (objectType === 'slider') {
-    return getSliderParams({
-      params: Array.isArray(data?.params) ? data.params : undefined,
-      value: typeof data?.value === 'number' ? data.value : undefined,
-      min: typeof data?.min === 'number' ? data.min : undefined,
-      max: typeof data?.max === 'number' ? data.max : undefined,
-      defaultValue: typeof data?.defaultValue === 'number' ? data.defaultValue : undefined,
-      isFloat: typeof data?.isFloat === 'boolean' ? data.isFloat : undefined,
-      step: typeof data?.step === 'number' ? data.step : undefined,
-      runOnMount: typeof data?.runOnMount === 'boolean' ? data.runOnMount : undefined
-    });
-  }
-
-  if (objectType === 'knob') {
-    return getKnobParams({
-      params: Array.isArray(data?.params) ? data.params : undefined,
-      value: typeof data?.value === 'number' ? data.value : undefined,
-      min: typeof data?.min === 'number' ? data.min : undefined,
-      max: typeof data?.max === 'number' ? data.max : undefined,
-      defaultValue: typeof data?.defaultValue === 'number' ? data.defaultValue : undefined,
-      isFloat: typeof data?.isFloat === 'boolean' ? data.isFloat : undefined,
-      step: typeof data?.step === 'number' ? data.step : undefined,
-      runOnMount: typeof data?.runOnMount === 'boolean' ? data.runOnMount : undefined
-    });
-  }
-
-  return null;
+  return { ...(data ?? {}) };
 }
 
 function getRawObjectParamsFromExpr(expr: unknown): string[] {

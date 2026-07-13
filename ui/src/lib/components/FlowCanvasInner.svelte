@@ -315,6 +315,7 @@
     objectService,
     audioService,
     onObjectParamsChange: (nodeId, params) => updateNodeData(nodeId, { params }),
+    onObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates),
     onAudioObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates)
   });
 

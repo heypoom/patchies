@@ -68,11 +68,11 @@ export class ToggleObject implements TextObjectV2 {
   }
 
   private getValue(): boolean {
-    return this.context.getParam('value') === true;
+    return this.context.getData<{ value?: unknown }>().value === true;
   }
 
   private setAndSend(value: boolean): void {
-    this.context.setParam('value', value, { notifyUI: true });
+    this.context.setData({ value }, { notifyUI: true });
     this.context.send(value);
   }
 }

@@ -39,9 +39,14 @@ port metadata, and docs/search schema should live in the object definition under
 
 3. Register the object.
 
-   Add the class to `TEXT_OBJECTS` in
-   `ui/src/lib/objects/v2/nodes/index.ts`. Run `bun run generate:schemas` from
-   `ui/` so `ui/src/lib/generated/object-schemas.generated.ts` includes it.
+   Add dedicated Svelte-node-backed controls to `VISUAL_OBJECTS` in
+   `ui/src/lib/objects/v2/nodes/index.ts`, not `TEXT_OBJECTS`. `TEXT_OBJECTS`
+   is only for objects that can be created through the object-box editor.
+   `RUNTIME_OBJECTS` combines both lists for runtime registration and schema
+   generation.
+
+   Run `bun run generate:schemas` from `ui/` so
+   `ui/src/lib/generated/object-schemas.generated.ts` includes it.
 
 4. Remove the manual schema.
 
@@ -54,6 +59,11 @@ port metadata, and docs/search schema should live in the object definition under
    Import schema metadata from `objectSchemas` only if the view needs handle
    specs. Move message behavior into the object class. The view may keep local
    UI state such as hover, flash, focus, dimensions, and editor controls.
+
+   Keep visual-node state in the same object-shaped `node.data` that the Svelte
+   component receives. Do not add hidden positional params just to feed the
+   runtime. If the runtime needs defaults or compatibility handling, put that in
+   the object definition with `getRuntimeDataFromNodeData`.
 
 6. Add a view-local message context when the UI needs message feedback.
 
@@ -89,8 +99,11 @@ port metadata, and docs/search schema should live in the object definition under
 
 - Runtime behavior is in `<ObjectName>Object.ts`, not the Svelte view.
 - Static object metadata replaces `schema.ts`.
+- Dedicated visual objects are registered in `VISUAL_OBJECTS`, not
+  `TEXT_OBJECTS`.
 - Generated schema preserves existing handle IDs.
 - Message matchers use the TypeBox schemas declared in metadata.
+- Visual runtime state uses object-shaped node data instead of hidden params.
 - Runtime message dispatch handles UI-local sends and edge-routed `inletKey`
   metadata for preserved handle IDs.
 - `schema.ts` is deleted and removed from `schemas/index.ts`.

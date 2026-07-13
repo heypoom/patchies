@@ -2,7 +2,7 @@
   import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
-  import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
+  import { getObjectNameFromExpr, isTextObjectName } from '$lib/objects/object-definitions';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -103,7 +103,11 @@
   const objectMeta = $derived.by(() => {
     if (!expr || expr.trim() === '') return null;
 
-    return getCombinedMetadata(getObjectNameFromExpr(expr));
+    const objectName = getObjectNameFromExpr(expr);
+    const isObjectBoxObject =
+      isTextObjectName(objectName) || getAudioObjectNames().includes(objectName);
+
+    return isObjectBoxObject ? getCombinedMetadata(objectName) : null;
   });
 
   const objectPorts = useObjectPorts({
@@ -803,9 +807,7 @@
               onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
             >
               <div class="object-node-font flex items-center gap-1.5 text-xs">
-                <span class={[!getCombinedMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
-                  >{data.name}</span
-                >
+                <span class={[!objectMeta ? 'text-red-300' : 'text-zinc-200']}>{data.name}</span>
 
                 {#if hasDynamicOutlets && rawParamsFromExpr}
                   <!-- For objects with dynamic outlets, show the raw params from expr -->

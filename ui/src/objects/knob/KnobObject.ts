@@ -14,39 +14,50 @@ const knobMessages = {
   numberControl: schema(NumberControl)
 };
 
-export const KNOB_PARAM_INDEX = {
-  message: 0,
-  value: 1,
-  min: 2,
-  max: 3,
-  defaultValue: 4,
-  isFloat: 5,
-  step: 6,
-  runOnMount: 7
-} as const;
-
-export type KnobParamName = keyof typeof KNOB_PARAM_INDEX;
-
-export function getKnobParams(data: {
-  params?: unknown[];
+export type KnobData = {
   value?: number;
   min?: number;
   max?: number;
   defaultValue?: number;
   isFloat?: boolean;
-  step?: number;
+  step?: number | null;
   runOnMount?: boolean;
-}): unknown[] {
-  return [
-    null,
-    data.params?.[KNOB_PARAM_INDEX.value] ?? data.value ?? 0,
-    data.params?.[KNOB_PARAM_INDEX.min] ?? data.min ?? 0,
-    data.params?.[KNOB_PARAM_INDEX.max] ?? data.max ?? (data.isFloat ? 1 : 100),
-    data.params?.[KNOB_PARAM_INDEX.defaultValue] ?? data.defaultValue ?? data.min ?? 0,
-    data.params?.[KNOB_PARAM_INDEX.isFloat] ?? data.isFloat ?? false,
-    data.params?.[KNOB_PARAM_INDEX.step] ?? data.step ?? null,
-    data.params?.[KNOB_PARAM_INDEX.runOnMount] ?? data.runOnMount ?? true
-  ];
+};
+
+export function getKnobData(data: {
+  value?: unknown;
+  min?: unknown;
+  max?: unknown;
+  defaultValue?: unknown;
+  isFloat?: unknown;
+  step?: unknown;
+  runOnMount?: unknown;
+}): KnobData {
+  const value = getNumber(data.value, 0);
+  const min = getNumber(data.min, 0);
+  const isFloat = data.isFloat === true;
+
+  return {
+    value,
+    min,
+    max: getNumber(data.max, isFloat ? 1 : 100),
+    defaultValue: getNumber(data.defaultValue, min),
+    isFloat,
+    step: getOptionalNumber(data.step),
+    runOnMount: getBoolean(data.runOnMount, true)
+  };
+}
+
+function getNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function getOptionalNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function getBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
 }
 
 export class KnobObject implements TextObjectV2 {
@@ -70,14 +81,7 @@ export class KnobObject implements TextObjectV2 {
         { schema: SetValue, description: 'Set value silently without triggering output' }
       ],
       handle: { handleType: 'message' }
-    },
-    { name: 'value', type: 'float', defaultValue: 0, hideInlet: true, hideDocs: true },
-    { name: 'min', type: 'float', defaultValue: 0, hideInlet: true, hideDocs: true },
-    { name: 'max', type: 'float', defaultValue: 100, hideInlet: true, hideDocs: true },
-    { name: 'defaultValue', type: 'float', defaultValue: 0, hideInlet: true, hideDocs: true },
-    { name: 'isFloat', type: 'bool', defaultValue: false, hideInlet: true, hideDocs: true },
-    { name: 'step', type: 'float', defaultValue: null, hideInlet: true, hideDocs: true },
-    { name: 'runOnMount', type: 'bool', defaultValue: true, hideInlet: true, hideDocs: true }
+    }
   ];
 
   static outlets: ObjectOutlet[] = [
@@ -90,6 +94,18 @@ export class KnobObject implements TextObjectV2 {
     }
   ];
 
+  static getRuntimeDataFromNodeData(data: Record<string, unknown> | undefined): KnobData {
+    return getKnobData({
+      value: data?.value,
+      min: data?.min,
+      max: data?.max,
+      defaultValue: data?.defaultValue,
+      isFloat: data?.isFloat,
+      step: data?.step,
+      runOnMount: data?.runOnMount
+    });
+  }
+
   private runOnMountTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -98,7 +114,7 @@ export class KnobObject implements TextObjectV2 {
   ) {}
 
   create(): void {
-    if (this.getBooleanParam('runOnMount', true)) {
+    if (this.getData().runOnMount ?? true) {
       this.runOnMountTimer = setTimeout(() => this.context.send(this.getValue()), 100);
     }
   }
@@ -140,19 +156,23 @@ export class KnobObject implements TextObjectV2 {
   }
 
   private getValue(): number {
-    return this.getNumberParam('value', this.getDefaultValue());
+    return this.getData().value ?? this.getDefaultValue();
   }
 
   private getDefaultValue(): number {
-    return this.getNumberParam('defaultValue', this.getNumberParam('min', 0));
+    const data = this.getData();
+
+    return data.defaultValue ?? data.min ?? 0;
   }
 
   private snapValue(value: number): number {
+    const data = this.getData();
+
     return snapControlValue(value, {
-      min: this.getNumberParam('min', 0),
-      max: this.getNumberParam('max', this.getBooleanParam('isFloat', false) ? 1 : 100),
-      step: this.getOptionalNumberParam('step'),
-      isFloat: this.getBooleanParam('isFloat', false)
+      min: data.min ?? 0,
+      max: data.max ?? (data.isFloat ? 1 : 100),
+      step: data.step ?? undefined,
+      isFloat: data.isFloat ?? false
     });
   }
 
@@ -164,28 +184,14 @@ export class KnobObject implements TextObjectV2 {
   }
 
   private setValue(value: number): void {
-    this.context.setParam('value', value, { notifyUI: true });
+    this.context.setData({ value }, { notifyUI: true });
   }
 
-  private setConfigParam(name: KnobParamName, value: unknown): void {
-    this.context.setParam(name, value, { notifyUI: true });
+  private setConfigParam(name: keyof KnobData, value: unknown): void {
+    this.context.setData({ [name]: value }, { notifyUI: true });
   }
 
-  private getNumberParam(name: KnobParamName, fallback: number): number {
-    const value = this.context.getParam(name);
-
-    return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-  }
-
-  private getOptionalNumberParam(name: KnobParamName): number | undefined {
-    const value = this.context.getParam(name);
-
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-  }
-
-  private getBooleanParam(name: KnobParamName, fallback: boolean): boolean {
-    const value = this.context.getParam(name);
-
-    return typeof value === 'boolean' ? value : fallback;
+  private getData(): KnobData {
+    return getKnobData(this.context.getData());
   }
 }

@@ -14,7 +14,7 @@
 
   let node: {
     id: string;
-    data: { text: string; locked?: boolean; params?: unknown[] };
+    data: { text: string; locked?: boolean };
     selected: boolean;
     width?: number;
     height?: number;
@@ -33,13 +33,10 @@
 
   const tracker = $derived.by(() => useNodeDataTracker(node.id));
   let textOnFocus: string | null = null;
-  let paramsOnFocus: unknown[] | null = null;
 
   let textareaElement: HTMLTextAreaElement;
 
-  const text = $derived(
-    typeof node.data.params?.[0] === 'string' ? node.data.params[0] : node.data.text || ''
-  );
+  const text = $derived(node.data.text || '');
   const width = $derived(node.width ?? defaultWidth);
   const height = $derived(node.height ?? defaultHeight);
   const isLocked = $derived((node.data.locked ?? false) || !store.nodesDraggable);
@@ -57,13 +54,12 @@
   );
 
   function setText(text: string) {
-    updateNodeData(node.id, { text, params: [text] });
+    updateNodeData(node.id, { text });
     viewMessageContext.send(text);
   }
 
   function handleTextFocus() {
     textOnFocus = text;
-    paramsOnFocus = [...(node.data.params ?? [])];
   }
 
   function handleTextBlur() {
@@ -72,19 +68,12 @@
     const currentText = text;
     if (textOnFocus === currentText) {
       textOnFocus = null;
-      paramsOnFocus = null;
       return;
     }
 
-    const nextParams = [currentText];
-
-    tracker.commitMany('textbox text change', [
-      { dataKey: 'text', oldValue: textOnFocus, newValue: currentText },
-      { dataKey: 'params', oldValue: paramsOnFocus ?? [], newValue: nextParams }
-    ]);
+    tracker.commit('text', textOnFocus, currentText);
 
     textOnFocus = null;
-    paramsOnFocus = null;
   }
 
   function handleTextChange(event: Event) {

@@ -11,18 +11,18 @@ function createToggle(initialValue = false) {
   const values: Record<string, unknown> = {
     value: initialValue
   };
-  const updates: Array<{ name: string | number; value: unknown; options: unknown }> = [];
+  const updates: Array<{ updates: Record<string, unknown>; options: unknown }> = [];
 
   const context = {
     send(data: unknown) {
       sent.push(data);
     },
-    setParam(indexOrName: number | string, value: unknown, options?: unknown) {
-      values[String(indexOrName)] = value;
-      updates.push({ name: indexOrName, value, options });
+    setData(nextValues: Record<string, unknown>, options?: unknown) {
+      Object.assign(values, nextValues);
+      updates.push({ updates: nextValues, options });
     },
-    getParam(indexOrName: number | string) {
-      return values[String(indexOrName)];
+    getData() {
+      return values;
     }
   } as ObjectContext;
 
@@ -40,7 +40,7 @@ describe('ToggleObject', () => {
     object.onMessage({ type: 'bang' }, meta());
 
     expect(values.value).toBe(true);
-    expect(updates).toEqual([{ name: 'value', value: true, options: { notifyUI: true } }]);
+    expect(updates).toEqual([{ updates: { value: true }, options: { notifyUI: true } }]);
     expect(sent).toEqual([true]);
   });
 

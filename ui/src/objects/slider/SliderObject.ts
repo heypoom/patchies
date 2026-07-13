@@ -14,39 +14,50 @@ const sliderMessages = {
   numberControl: schema(NumberControl)
 };
 
-export const SLIDER_PARAM_INDEX = {
-  message: 0,
-  value: 1,
-  min: 2,
-  max: 3,
-  defaultValue: 4,
-  isFloat: 5,
-  step: 6,
-  runOnMount: 7
-} as const;
-
-export type SliderParamName = keyof typeof SLIDER_PARAM_INDEX;
-
-export function getSliderParams(data: {
-  params?: unknown[];
+export type SliderData = {
   value?: number;
   min?: number;
   max?: number;
   defaultValue?: number;
   isFloat?: boolean;
-  step?: number;
+  step?: number | null;
   runOnMount?: boolean;
-}): unknown[] {
-  return [
-    null,
-    data.params?.[SLIDER_PARAM_INDEX.value] ?? data.value ?? 0,
-    data.params?.[SLIDER_PARAM_INDEX.min] ?? data.min ?? 0,
-    data.params?.[SLIDER_PARAM_INDEX.max] ?? data.max ?? (data.isFloat ? 1 : 100),
-    data.params?.[SLIDER_PARAM_INDEX.defaultValue] ?? data.defaultValue ?? data.min ?? 0,
-    data.params?.[SLIDER_PARAM_INDEX.isFloat] ?? data.isFloat ?? false,
-    data.params?.[SLIDER_PARAM_INDEX.step] ?? data.step ?? null,
-    data.params?.[SLIDER_PARAM_INDEX.runOnMount] ?? data.runOnMount ?? true
-  ];
+};
+
+export function getSliderData(data: {
+  value?: unknown;
+  min?: unknown;
+  max?: unknown;
+  defaultValue?: unknown;
+  isFloat?: unknown;
+  step?: unknown;
+  runOnMount?: unknown;
+}): SliderData {
+  const value = getNumber(data.value, 0);
+  const min = getNumber(data.min, 0);
+  const isFloat = data.isFloat === true;
+
+  return {
+    value,
+    min,
+    max: getNumber(data.max, isFloat ? 1 : 100),
+    defaultValue: getNumber(data.defaultValue, min),
+    isFloat,
+    step: getOptionalNumber(data.step),
+    runOnMount: getBoolean(data.runOnMount, true)
+  };
+}
+
+function getNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function getOptionalNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function getBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
 }
 
 export class SliderObject implements TextObjectV2 {
@@ -70,14 +81,7 @@ export class SliderObject implements TextObjectV2 {
         { schema: SetValue, description: 'Set value silently without triggering output' }
       ],
       handle: { handleType: 'message' }
-    },
-    { name: 'value', type: 'float', defaultValue: 0, hideInlet: true, hideDocs: true },
-    { name: 'min', type: 'float', defaultValue: 0, hideInlet: true, hideDocs: true },
-    { name: 'max', type: 'float', defaultValue: 100, hideInlet: true, hideDocs: true },
-    { name: 'defaultValue', type: 'float', defaultValue: 0, hideInlet: true, hideDocs: true },
-    { name: 'isFloat', type: 'bool', defaultValue: false, hideInlet: true, hideDocs: true },
-    { name: 'step', type: 'float', defaultValue: null, hideInlet: true, hideDocs: true },
-    { name: 'runOnMount', type: 'bool', defaultValue: true, hideInlet: true, hideDocs: true }
+    }
   ];
 
   static outlets: ObjectOutlet[] = [
@@ -90,6 +94,18 @@ export class SliderObject implements TextObjectV2 {
     }
   ];
 
+  static getRuntimeDataFromNodeData(data: Record<string, unknown> | undefined): SliderData {
+    return getSliderData({
+      value: data?.value,
+      min: data?.min,
+      max: data?.max,
+      defaultValue: data?.defaultValue,
+      isFloat: data?.isFloat,
+      step: data?.step,
+      runOnMount: data?.runOnMount
+    });
+  }
+
   private runOnMountTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -98,7 +114,7 @@ export class SliderObject implements TextObjectV2 {
   ) {}
 
   create(): void {
-    if (this.getBooleanParam('runOnMount', true)) {
+    if (this.getData().runOnMount ?? true) {
       this.runOnMountTimer = setTimeout(() => this.context.send(this.getValue()), 100);
     }
   }
@@ -140,19 +156,23 @@ export class SliderObject implements TextObjectV2 {
   }
 
   private getValue(): number {
-    return this.getNumberParam('value', this.getDefaultValue());
+    return this.getData().value ?? this.getDefaultValue();
   }
 
   private getDefaultValue(): number {
-    return this.getNumberParam('defaultValue', this.getNumberParam('min', 0));
+    const data = this.getData();
+
+    return data.defaultValue ?? data.min ?? 0;
   }
 
   private snapValue(value: number): number {
+    const data = this.getData();
+
     return snapControlValue(value, {
-      min: this.getNumberParam('min', 0),
-      max: this.getNumberParam('max', this.getBooleanParam('isFloat', false) ? 1 : 100),
-      step: this.getOptionalNumberParam('step'),
-      isFloat: this.getBooleanParam('isFloat', false)
+      min: data.min ?? 0,
+      max: data.max ?? (data.isFloat ? 1 : 100),
+      step: data.step ?? undefined,
+      isFloat: data.isFloat ?? false
     });
   }
 
@@ -164,28 +184,14 @@ export class SliderObject implements TextObjectV2 {
   }
 
   private setValue(value: number): void {
-    this.context.setParam('value', value, { notifyUI: true });
+    this.context.setData({ value }, { notifyUI: true });
   }
 
-  private setConfigParam(name: SliderParamName, value: unknown): void {
-    this.context.setParam(name, value, { notifyUI: true });
+  private setConfigParam(name: keyof SliderData, value: unknown): void {
+    this.context.setData({ [name]: value }, { notifyUI: true });
   }
 
-  private getNumberParam(name: SliderParamName, fallback: number): number {
-    const value = this.context.getParam(name);
-
-    return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-  }
-
-  private getOptionalNumberParam(name: SliderParamName): number | undefined {
-    const value = this.context.getParam(name);
-
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-  }
-
-  private getBooleanParam(name: SliderParamName, fallback: boolean): boolean {
-    const value = this.context.getParam(name);
-
-    return typeof value === 'boolean' ? value : fallback;
+  private getData(): SliderData {
+    return getSliderData(this.context.getData());
   }
 }

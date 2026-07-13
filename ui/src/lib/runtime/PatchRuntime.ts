@@ -1,5 +1,6 @@
 import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
 import {
@@ -29,6 +30,7 @@ export type PatchRuntimeOptions = {
   audioService: RuntimeAudioObjectService;
   isAudioObject?: (objectType: string) => boolean;
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
+  onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 };
 
@@ -39,7 +41,8 @@ export class PatchRuntime {
   constructor(options: PatchRuntimeOptions) {
     this.message = new PatchMessageRuntime({
       objectService: options.objectService,
-      onObjectParamsChange: options.onObjectParamsChange
+      onObjectParamsChange: options.onObjectParamsChange,
+      onObjectDataChange: options.onObjectDataChange
     });
 
     this.audio = new RuntimeAudioObjectAdapter({
@@ -55,6 +58,10 @@ export class PatchRuntime {
 
   isMessageObjectInRegistry(objectType: string): boolean {
     return this.message.isObjectInRegistry(objectType);
+  }
+
+  getMessageObjectClass(objectType: string): TextObjectClass | undefined {
+    return this.message.getObjectClass(objectType);
   }
 
   isAudioObjectInRegistry(objectType: string): boolean {

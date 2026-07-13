@@ -23,7 +23,7 @@
     };
   });
 
-  let isOn = $derived((data.params?.[0] ?? data.value) === true);
+  let isOn = $derived(data.value === true);
 
   const borderColor = $derived(selected ? '!border-zinc-400' : '!border-zinc-600');
 
