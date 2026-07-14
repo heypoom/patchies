@@ -41,7 +41,10 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useObjectDataTracker } from '$lib/history';
   import { editorFontFamily } from '../../stores/editor.store';
-  import { getPatchRuntime } from '$lib/runtime/patch-runtime-context';
+  import {
+    getPatchRuntime,
+    getPatchRuntimeViewRevisionTracker
+  } from '$lib/runtime/patch-runtime-context';
   import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
   import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
 
@@ -92,6 +95,7 @@
 
   const eventBus = PatchiesEventBus.getInstance();
   const patchRuntime = getPatchRuntime();
+  const viewRevisionTracker = getPatchRuntimeViewRevisionTracker();
 
   // Composable for searching disabled objects
   const { searchDisabledObject } = useDisabledObjectSuggestion(
@@ -113,7 +117,7 @@
   const objectPorts = useObjectPorts({
     nodeId: (() => nodeId)(),
     getObjectMeta: () => objectMeta,
-    trackObjectInstanceVersion: () => patchRuntime?.trackObjectViewRevision(nodeId) ?? 0
+    trackObjectInstanceVersion: () => viewRevisionTracker?.trackObjectViewRevision(nodeId) ?? 0
   });
 
   const inlets = $derived(objectPorts.inlets);
@@ -694,7 +698,7 @@
   const dynamicIconComponent = $derived.by(() => {
     // Re-evaluate when params change or when audio node is created
     void data.params;
-    patchRuntime?.trackObjectViewRevision(nodeId);
+    viewRevisionTracker?.trackObjectViewRevision(nodeId);
 
     const audioNode = patchRuntime?.getAudioObject(nodeId);
     if (!audioNode?.getIcon) return null;
@@ -708,7 +712,7 @@
   // Get the param index that the icon represents (to hide it from display)
   const iconParamIndex = $derived.by(() => {
     void data.params;
-    patchRuntime?.trackObjectViewRevision(nodeId);
+    viewRevisionTracker?.trackObjectViewRevision(nodeId);
 
     const audioNode = patchRuntime?.getAudioObject(nodeId);
     return audioNode?.getIconParamIndex?.() ?? null;

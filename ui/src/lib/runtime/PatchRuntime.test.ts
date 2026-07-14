@@ -273,6 +273,42 @@ describe('PatchMessageRuntime', () => {
 
     expect(runtime.trackObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
   });
+
+  it('notifies view revision subscribers without Svelte reactivity', async () => {
+    const objectService = new FakeObjectService();
+    const runtime = new PatchMessageRuntime({ objectService });
+    const nodeId = 'object-revision-subscription-test';
+    const revisionUpdates: string[] = [];
+
+    await runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      data: { params: ['initial'] },
+      rawParams: ['initial']
+    });
+
+    const unsubscribe = runtime.subscribeObjectViewRevisions((changedNodeId) => {
+      revisionUpdates.push(changedNodeId);
+    });
+
+    await runtime.updateObject(nodeId, {
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      data: { params: ['next'] },
+      rawParams: ['next']
+    });
+
+    unsubscribe();
+
+    await runtime.updateObject(nodeId, {
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      data: { params: ['final'] },
+      rawParams: ['final']
+    });
+
+    expect(revisionUpdates).toEqual([nodeId]);
+  });
 });
 
 describe('RuntimeAudioObjectAdapter', () => {

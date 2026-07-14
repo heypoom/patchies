@@ -1,5 +1,3 @@
-import { SvelteMap } from 'svelte/reactivity';
-
 import type { AudioNodeClass, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -25,6 +23,8 @@ export type RuntimeAudioObjectDescriptor = {
   params: unknown[];
 };
 
+export type RuntimeAudioObjectViewRevisionListener = (nodeId: string) => void;
+
 type RuntimeAudioObjectRecord = {
   messageContext: MessageContext;
 };
@@ -41,8 +41,9 @@ export class RuntimeAudioObjectAdapter {
   /** Node ids whose next editor-state sync should be ignored because runtime messaging already applied it. */
   private suppressedAudioObjectSyncs = new Set<string>();
 
-  /** Reactive revision counter used by views that read runtime-derived audio node state. */
-  private audioObjectViewRevisions = new SvelteMap<string, number>();
+  /** Revision counter used by views that read runtime-derived audio node state. */
+  private audioObjectViewRevisions = new Map<string, number>();
+  private audioObjectViewRevisionListeners = new Set<RuntimeAudioObjectViewRevisionListener>();
 
   constructor(options: RuntimeAudioObjectAdapterOptions) {
     this.audioService = options.audioService;
@@ -121,8 +122,16 @@ export class RuntimeAudioObjectAdapter {
     return this.audioObjectViewRevisions.get(nodeId) ?? 0;
   }
 
+  subscribeAudioObjectViewRevisions(listener: RuntimeAudioObjectViewRevisionListener): () => void {
+    this.audioObjectViewRevisionListeners.add(listener);
+
+    return () => {
+      this.audioObjectViewRevisionListeners.delete(listener);
+    };
+  }
+
   destroy(): void {
-    for (const nodeId of this.audioObjects.keys()) {
+    for (const nodeId of [...this.audioObjects.keys()]) {
       this.destroyAudioObject(nodeId);
     }
   }
@@ -177,5 +186,9 @@ export class RuntimeAudioObjectAdapter {
 
   private bumpAudioObjectViewRevision(nodeId: string): void {
     this.audioObjectViewRevisions.set(nodeId, (this.audioObjectViewRevisions.get(nodeId) ?? 0) + 1);
+
+    for (const listener of this.audioObjectViewRevisionListeners) {
+      listener(nodeId);
+    }
   }
 }

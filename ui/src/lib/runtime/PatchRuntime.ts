@@ -13,7 +13,8 @@ import {
   PatchMessageRuntime,
   type RuntimeObjectPorts,
   type RuntimeObjectService,
-  type RuntimeObjectDescriptor
+  type RuntimeObjectDescriptor,
+  type RuntimeObjectViewRevisionListener
 } from './PatchMessageRuntime';
 
 export type {
@@ -99,6 +100,16 @@ export class PatchRuntime {
     return (
       this.message.trackObjectViewRevision(nodeId) + this.audio.trackAudioObjectViewRevision(nodeId)
     );
+  }
+
+  subscribeObjectViewRevisions(listener: RuntimeObjectViewRevisionListener): () => void {
+    const unsubscribeMessage = this.message.subscribeObjectViewRevisions(listener);
+    const unsubscribeAudio = this.audio.subscribeAudioObjectViewRevisions(listener);
+
+    return () => {
+      unsubscribeMessage();
+      unsubscribeAudio();
+    };
   }
 
   suppressNextAudioObjectSync(nodeId: string): void {

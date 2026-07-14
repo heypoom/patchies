@@ -2,7 +2,7 @@
 
 Status: Active architecture target, partially implemented through runtime services.
 
-Last verified against code: 2026-07-07.
+Last verified against code: 2026-07-14.
 
 ## Goal
 
@@ -31,6 +31,10 @@ The codebase does have several headless runtime primitives:
 - `ui/src/lib/runtime/RuntimeAudioObjectAdapter.ts` owns audio object identity sync,
   duplicate recreation suppression, message forwarding to audio parameters, and
   cleanup for runtime-created audio objects.
+- The core runtime files use plain TypeScript data structures and callback
+  subscriptions. Svelte reactivity belongs in editor adapters such as
+  `ui/src/lib/runtime/patch-runtime-context.ts`, not in `PatchRuntime`,
+  `PatchMessageRuntime`, or `RuntimeAudioObjectAdapter`.
 - `ui/src/lib/runtime/EditorRuntimeReconciler.ts` translates XYFlow object nodes
   into runtime object create/update/destroy calls. It may understand editor node
   shape; `PatchRuntime` itself should not.

@@ -1,4 +1,3 @@
-import { SvelteMap } from 'svelte/reactivity';
 import { hash } from 'ohash';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageContext } from '$lib/messages/MessageContext';
@@ -74,6 +73,8 @@ export type RuntimeObjectPorts = {
   hasDynamicOutlets: boolean;
 };
 
+export type RuntimeObjectViewRevisionListener = (nodeId: string) => void;
+
 export type PatchMessageRuntimeOptions = {
   objectService: RuntimeObjectService;
   eventBus?: RuntimeEventBus;
@@ -87,8 +88,9 @@ export class PatchMessageRuntime {
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
   private objects = new Map<string, RuntimeObjectRecord>();
-  private objectMessageContexts = new SvelteMap<string, MessageContext>();
-  private objectViewRevisions = new SvelteMap<string, number>();
+  private objectMessageContexts = new Map<string, MessageContext>();
+  private objectViewRevisions = new Map<string, number>();
+  private objectViewRevisionListeners = new Set<RuntimeObjectViewRevisionListener>();
   private objectLifecycleTokens = new Map<string, number>();
 
   constructor(options: PatchMessageRuntimeOptions) {
@@ -242,19 +244,23 @@ export class PatchMessageRuntime {
     };
   }
 
-  /**
-   * Reads the object's view revision from a SvelteMap so callers inside
-   * `$derived`/`$effect` track runtime object changes as a reactive dependency.
-   */
   trackObjectViewRevision(nodeId: string): number {
     return this.objectViewRevisions.get(nodeId) ?? 0;
+  }
+
+  subscribeObjectViewRevisions(listener: RuntimeObjectViewRevisionListener): () => void {
+    this.objectViewRevisionListeners.add(listener);
+
+    return () => {
+      this.objectViewRevisionListeners.delete(listener);
+    };
   }
 
   destroy(): void {
     this.eventBus.removeEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.removeEventListener('objectDataChanged', this.handleObjectDataChanged);
 
-    for (const nodeId of this.objects.keys()) {
+    for (const nodeId of [...this.objects.keys()]) {
       this.destroyObject(nodeId);
     }
   }
@@ -271,6 +277,10 @@ export class PatchMessageRuntime {
 
   private bumpObjectViewRevision(nodeId: string): void {
     this.objectViewRevisions.set(nodeId, (this.objectViewRevisions.get(nodeId) ?? 0) + 1);
+
+    for (const listener of this.objectViewRevisionListeners) {
+      listener(nodeId);
+    }
   }
 
   private nextObjectLifecycleToken(nodeId: string): number {

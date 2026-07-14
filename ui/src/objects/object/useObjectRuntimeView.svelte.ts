@@ -1,5 +1,8 @@
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-import { getPatchRuntime } from '$lib/runtime/patch-runtime-context';
+import {
+  getPatchRuntime,
+  getPatchRuntimeViewRevisionTracker
+} from '$lib/runtime/patch-runtime-context';
 
 type ObjectRuntimeViewOptions = {
   nodeId: string;
@@ -9,13 +12,14 @@ type ObjectRuntimeViewOptions = {
 
 export function useObjectRuntimeView(options: ObjectRuntimeViewOptions) {
   const patchRuntime = getPatchRuntime();
+  const viewRevisionTracker = getPatchRuntimeViewRevisionTracker();
 
   $effect(() => {
     return patchRuntime?.subscribeObjectMessages(options.nodeId, options.onMessage) ?? undefined;
   });
 
   $effect(() => {
-    patchRuntime?.trackObjectViewRevision(options.nodeId);
+    viewRevisionTracker?.trackObjectViewRevision(options.nodeId);
     options.updateNodeInternals(options.nodeId);
   });
 }
