@@ -49,6 +49,14 @@
     selected: boolean;
   } = $props();
 
+  function initialUniformValues() {
+    return data.uniformValues ?? {};
+  }
+
+  function initialShaderName() {
+    return parseShaderName(data.code || '');
+  }
+
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -62,9 +70,9 @@
 
   let isPaused = $state(false);
   let editorReady = $state(false);
-  let uniformValues = $state<Record<string, unknown>>(data.uniformValues ?? {});
+  let uniformValues = $state<Record<string, unknown>>(initialUniformValues());
   let consoleRef = $state<{ clearConsole: () => void } | null>(null);
-  let shaderName = $state<string | undefined>(parseShaderName(data.code || ''));
+  let shaderName = $state<string | undefined>(initialShaderName());
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
   const code = $derived(data.code || '');
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));

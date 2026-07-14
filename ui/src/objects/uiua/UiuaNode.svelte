@@ -54,7 +54,8 @@
     selected: boolean;
   } = $props();
 
-  let isEditing = $state(!data.expr);
+  const getInitialIsEditing = () => !data.expr;
+  let isEditing = $state(getInitialIsEditing());
   let inletValues = $state<unknown[]>([]);
   let hasError = $state(false);
   let isLoading = $state(false);
@@ -92,8 +93,8 @@
   // Track measured image dimensions
   let imageDimensions = $state<Map<number, { width: number; height: number }>>(new Map());
 
-  const messageContext = new MessageContext(nodeId);
-  const customConsole = createCustomConsole(nodeId);
+  let messageContext: MessageContext;
+  const customConsole = $derived.by(() => createCustomConsole(nodeId));
   const uiuaService = UiuaService.getInstance();
   const glSystem = GLSystem.getInstance();
 
@@ -468,6 +469,7 @@
   }
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     uiuaService.init();
     messageContext.queue.addCallback(handleMessage);
     inletValues = new Array(inletCount).fill(0);
@@ -478,8 +480,8 @@
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
     // Clean up blob URLs
     currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
     // Clean up GIF playback and GLSystem registration

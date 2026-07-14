@@ -36,14 +36,23 @@
 
   const { updateNodeData } = useSvelteFlow();
 
+  function getInitialState() {
+    return {
+      consoleOutput: data.consoleOutput || '',
+      showConsole: data.showConsole ?? false,
+      showEditor: data.showEditor ?? false,
+      compact: data.compact ?? false
+    };
+  }
+
   let canvas: HTMLCanvasElement | undefined = $state();
   let previewContainer: HTMLDivElement | null = $state(null);
   let emulator: UxnEmulator | null = $state(null);
-  let consoleOutput = $state(data.consoleOutput || '');
-  let showConsole = $state(data.showConsole ?? false);
-  let showEditor = $state(data.showEditor ?? false);
+  let consoleOutput = $state(getInitialState().consoleOutput);
+  let showConsole = $state(getInitialState().showConsole);
+  let showEditor = $state(getInitialState().showEditor);
   let isPaused = $state(false);
-  let isCompact = $state(data.compact ?? false);
+  let isCompact = $state(getInitialState().compact);
   let errorMessage = $state<string | null>(null);
   let cleanupEventHandlers: (() => void) | null | undefined = null;
   let messageContext: MessageContext;

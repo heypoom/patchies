@@ -30,7 +30,15 @@
     selected: boolean;
   } = $props();
 
-  let isEditing = $state(!data.expr);
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialIsEditing() {
+    return !data.expr;
+  }
+
+  let isEditing = $state(getInitialIsEditing());
   let layoutRef = $state<any>();
   let showSettings = $state(false);
   let expressionInternalsTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -40,7 +48,7 @@
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const { warnIfNoOutletConnection } = useAudioOutletWarning(nodeId);
+  const { warnIfNoOutletConnection } = useAudioOutletWarning(getInitialNodeId());
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)

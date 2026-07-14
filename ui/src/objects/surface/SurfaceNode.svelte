@@ -60,6 +60,10 @@
     selected?: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   let consoleRef: VirtualConsole | null = $state(null);
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
@@ -72,7 +76,7 @@
     }
   }
 
-  const customConsole = createCustomConsole(nodeId);
+  const customConsole = createCustomConsole(initialNodeId());
   const jsRunner = JSRunner.getInstance();
   const glSystem = GLSystem.getInstance();
 

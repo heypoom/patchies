@@ -63,6 +63,10 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
   function handleReadonlyInput() {
     if (!hasShownReadonlyToast) {
       hasShownReadonlyToast = true;
@@ -71,7 +75,7 @@
   }
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   let inletCount = $derived(data.inletCount ?? ASM_DEFAULT_INLET_COUNT);
   let outletCount = $derived(data.outletCount ?? ASM_DEFAULT_OUTLET_COUNT);
@@ -100,7 +104,7 @@
   });
 
   // Machine ID is derived from node ID
-  const machineId = parseInt(nodeId.replace(/\D/g, '')) || 0;
+  const machineId = parseInt(getInitialNodeId().replace(/\D/g, '')) || 0;
 
   const setCodeAndUpdate = (newCode: string) => {
     updateNodeData(nodeId, { code: newCode });

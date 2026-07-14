@@ -39,7 +39,7 @@
 
   const { updateNodeData } = useSvelteFlow();
   const bridge = BufferBridgeService.getInstance();
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   let messageContext: MessageContext;
   let canvas = $state<HTMLCanvasElement | undefined>();
@@ -94,7 +94,7 @@
   }
 
   const vfsMedia = useVfsMedia({
-    nodeId,
+    nodeId: (() => nodeId)(),
     acceptMimePrefix: 'audio/',
     onFileLoaded: handleFileLoaded,
     updateNodeData: (d) => updateNodeData(nodeId, { ...data, ...d }),

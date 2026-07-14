@@ -84,7 +84,7 @@
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   let messageContext: MessageContext;
   let columnsBeforeEdit: string[] | null = null;

@@ -36,6 +36,10 @@
     class?: string;
   } = $props();
 
+  function initialDataFormat() {
+    return data.dataFormat ?? 'r';
+  }
+
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
   let width = $state(0);
@@ -60,7 +64,7 @@
     );
   });
 
-  let dataFormat = $state<FloatTextureDataFormat>(data.dataFormat ?? 'r');
+  let dataFormat = $state<FloatTextureDataFormat>(initialDataFormat());
 
   const containerClass = $derived(
     errorMessage

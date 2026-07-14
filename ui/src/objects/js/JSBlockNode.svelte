@@ -42,6 +42,10 @@
     selected: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   // Get flow utilities to update node data
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -54,15 +58,15 @@
   // Settings manager — persists across code re-runs
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
   );
   const settingsAPI = createSettingsAPI(settingsManager);
 
   const code = $derived(data.code || '');
 
   // Create custom console for routing output to VirtualConsole
-  const customConsole = createCustomConsole(nodeId);
+  const customConsole = createCustomConsole(initialNodeId());
 
   // Reference to base component for flash
   let baseRef: CodeBlockBase | null = $state(null);
@@ -148,7 +152,11 @@
     }
   }
 
-  useNodeSetPaused(nodeId, () => isPaused, togglePlayback);
+  useNodeSetPaused(
+    () => nodeId,
+    () => isPaused,
+    togglePlayback
+  );
 
   async function executeCode() {
     isRunning = true;

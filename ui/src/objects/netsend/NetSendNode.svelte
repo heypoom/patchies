@@ -17,7 +17,7 @@
   }: { id: string; data: { channel: string }; selected: boolean } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  const messageContext = new MessageContext(nodeId);
+  let messageContext: MessageContext;
   const p2pManager = P2PManager.getInstance();
 
   let channel = $derived(data.channel || 'foo');
@@ -27,6 +27,7 @@
 
   // Initialize P2P manager
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     p2pManager.initialize();
     messageContext.queue.addCallback(handleMessage);
 
@@ -42,8 +43,8 @@
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 
   const handleMessage: MessageCallbackFn = (message) => {

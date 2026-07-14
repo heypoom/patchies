@@ -23,12 +23,14 @@
 
   const { updateNodeData } = useSvelteFlow();
 
-  const tracker = useNodeDataTracker(nodeId);
-  const modelTracker = tracker.track('model', () => data.model ?? '');
-  const temperatureTracker = tracker.track('temperature', () => data.temperature ?? '');
-  const topKTracker = tracker.track('topK', () => data.topK ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const modelTracker = $derived.by(() => tracker.track('model', () => data.model ?? ''));
+  const temperatureTracker = $derived.by(() =>
+    tracker.track('temperature', () => data.temperature ?? '')
+  );
+  const topKTracker = $derived.by(() => tracker.track('topK', () => data.topK ?? ''));
 
-  const messageContext = new MessageContext(nodeId);
+  let messageContext: MessageContext;
 
   let errorMessage = $state<string | null>(null);
   let isLoading = $state(false);
@@ -46,7 +48,7 @@
       : $aiSettings.geminiTextModel
   );
 
-  const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });
+  const targetConnections = useNodeConnections({ id: (() => nodeId)(), handleType: 'target' });
 
   const handleMessage: MessageCallbackFn = (message) => {
     try {
@@ -71,12 +73,13 @@
   };
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 
   async function generateText() {

@@ -40,6 +40,10 @@
     selected: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 
   const updateNodeInternals = useUpdateNodeInternals();
@@ -47,8 +51,8 @@
 
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
   );
 
   let glSystem: GLSystem;

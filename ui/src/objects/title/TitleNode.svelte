@@ -57,10 +57,9 @@
 
   const { updateNodeData } = useSvelteFlow();
 
-  const tracker = useNodeDataTracker(node.id);
-  const customFontFamilyTracker = tracker.track(
-    'customFontFamily',
-    () => node.data.customFontFamily ?? ''
+  const tracker = $derived.by(() => useNodeDataTracker(node.id));
+  const customFontFamilyTracker = $derived.by(() =>
+    tracker.track('customFontFamily', () => node.data.customFontFamily ?? '')
   );
 
   let showSettings = $state(false);

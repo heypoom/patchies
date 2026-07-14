@@ -26,7 +26,15 @@
     selected: boolean;
   } = $props();
 
-  let isEditing = $state(!data.expr);
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialIsEditing() {
+    return !data.expr;
+  }
+
+  let isEditing = $state(getInitialIsEditing());
   let layoutRef = $state<any>();
   let isPlaying = $state(false);
   let showSettings = $state(false);
@@ -37,8 +45,8 @@
   let audioService = AudioService.getInstance();
 
   const { updateNodeData } = useSvelteFlow();
-  const { warnIfNoAudioConnection } = useAudioOutletWarning(nodeId);
-  const tracker = useNodeDataTracker(nodeId);
+  const { warnIfNoAudioConnection } = useAudioOutletWarning(getInitialNodeId());
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   const syncTransport = $derived(data.syncTransport ?? false);
   const PlaybackIcon = $derived(isPlaying ? Pause : Play);

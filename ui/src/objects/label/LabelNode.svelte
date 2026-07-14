@@ -20,7 +20,7 @@
 
   const { updateNodeData } = useSvelteFlow();
   const store = useStore();
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   let showTextInput = $state(false);
   let msgText = $derived(data.message || '');

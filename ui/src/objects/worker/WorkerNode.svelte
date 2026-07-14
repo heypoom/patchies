@@ -48,10 +48,13 @@
   const eventBus = PatchiesEventBus.getInstance();
 
   // Settings manager — persists across code re-runs
-  const settingsManager = new SettingsManager(
-    () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+  const settingsManager = $derived.by(
+    () =>
+      new SettingsManager(
+        () => data.settings ?? {},
+        (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+        createKVStore(nodeId)
+      )
   );
 
   let isRunning = $state(false);
@@ -169,7 +172,11 @@
     }
   }
 
-  useNodeSetPaused(nodeId, () => isPaused, togglePlayback);
+  useNodeSetPaused(
+    () => nodeId,
+    () => isPaused,
+    togglePlayback
+  );
 
   async function executeCode() {
     isRunning = true;

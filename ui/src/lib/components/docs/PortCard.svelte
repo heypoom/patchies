@@ -11,7 +11,11 @@
 
   let { port, defaultOpen = true, compact = false }: Props = $props();
 
-  let isOpen = $state(defaultOpen);
+  function getInitialOpenState() {
+    return defaultOpen;
+  }
+
+  let isOpen = $state(getInitialOpenState());
 
   const hasMessages = $derived(port.messages && port.messages.length > 0);
   const isAudioParam = $derived('isAudioParam' in port && port.isAudioParam);

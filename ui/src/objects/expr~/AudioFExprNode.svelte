@@ -24,10 +24,18 @@
     selected: boolean;
   } = $props();
 
-  let isEditing = $state(!data.expr); // Start in editing mode if no expression
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialIsEditing() {
+    return !data.expr;
+  }
+
+  let isEditing = $state(getInitialIsEditing()); // Start in editing mode if no expression
   let inletValues = $state<number[]>([]);
 
-  const messageContext = new MessageContext(nodeId);
+  const messageContext = new MessageContext(getInitialNodeId());
   let audioService = AudioService.getInstance();
   let layoutRef = $state<any>();
 

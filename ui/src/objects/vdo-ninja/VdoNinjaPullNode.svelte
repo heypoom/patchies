@@ -35,8 +35,20 @@
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialVdoSettings() {
+    return {
+      room: data.room ?? '',
+      streamId: data.streamId ?? '',
+      dataOnly: data.dataOnly ?? false
+    };
+  }
+
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   let showSettings = $state(false);
   let connectionStatus = $state<ConnectionStatus>('disconnected');
@@ -47,9 +59,9 @@
   let sdkLoaded = $state(false);
 
   // Local state
-  let room = $state(data.room ?? '');
-  let streamId = $state(data.streamId ?? '');
-  let dataOnly = $state(data.dataOnly ?? false);
+  let room = $state(getInitialVdoSettings().room);
+  let streamId = $state(getInitialVdoSettings().streamId);
+  let dataOnly = $state(getInitialVdoSettings().dataOnly);
 
   // Message context
   let messageContext: MessageContext;

@@ -18,7 +18,11 @@
     initialCategory?: SettingsCategory;
   } = $props();
 
-  let activeCategory = $state<SettingsCategory>(initialCategory);
+  function getInitialCategory() {
+    return initialCategory;
+  }
+
+  let activeCategory = $state<SettingsCategory>(getInitialCategory());
 
   $effect(() => {
     if (open && initialCategory) {

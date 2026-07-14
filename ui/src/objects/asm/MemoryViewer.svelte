@@ -33,7 +33,11 @@
     regions = []
   }: Props = $props();
 
-  const { columns = 8, rows = 8, hex = true, showAddress = false, minDigits = 4 } = config ?? {};
+  const columns = $derived(config?.columns ?? 8);
+  const rows = $derived(config?.rows ?? 8);
+  const hex = $derived(config?.hex ?? true);
+  const showAddress = $derived(config?.showAddress ?? false);
+  const minDigits = $derived(config?.minDigits ?? 4);
 
   let start = $state<number | null>(null);
   let end = $state<number | null>(null);
@@ -44,8 +48,8 @@
   const HOLD_MS = 100;
 
   // Computed values
-  const base = hex ? 16 : 10;
-  const pad = hex ? minDigits : minDigits + 1;
+  const base = $derived(hex ? 16 : 10);
+  const pad = $derived(hex ? minDigits : minDigits + 1);
   const hasSelection = $derived(start !== null && end !== null && !selecting);
 
   const activeRegions = $derived(() => {

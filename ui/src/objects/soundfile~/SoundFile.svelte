@@ -35,13 +35,17 @@
   let messageSystem = MessageSystem.getInstance();
   let v2Node: SoundfileNodeV2 | null = null;
 
+  function getInitialNodeId() {
+    return node.id;
+  }
+
   // Table name dialog state
   let showTableNameDialog = $state(false);
   let tableNameInput = $state('');
 
   // Use VFS media composable for file handling
   const vfsMedia = useVfsMedia({
-    nodeId: node.id,
+    nodeId: getInitialNodeId(),
     acceptMimePrefix: 'audio/',
     onFileLoaded: handleFileLoaded,
     updateNodeData: (data) => updateNodeData(node.id, { ...node.data, ...data }),

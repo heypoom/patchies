@@ -47,6 +47,10 @@
     selected?: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   let consoleRef: VirtualConsole | null = $state(null);
 
   // Track error line numbers for code highlighting
@@ -64,7 +68,7 @@
   }
 
   // Create custom console for routing output to VirtualConsole
-  const customConsole = createCustomConsole(nodeId);
+  const customConsole = createCustomConsole(initialNodeId());
 
   const jsRunner = JSRunner.getInstance();
   let glSystem = GLSystem.getInstance();
@@ -85,8 +89,8 @@
 
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
   );
 
   const [defaultOutputWidth, defaultOutputHeight] = DEFAULT_OUTPUT_SIZE;
@@ -213,7 +217,11 @@
     });
   }
 
-  useNodeSetPaused(nodeId, () => !!data.paused, togglePlayback);
+  useNodeSetPaused(
+    () => nodeId,
+    () => !!data.paused,
+    togglePlayback
+  );
 
   async function runCode() {
     if (!canvas) return;

@@ -50,7 +50,12 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const store = useStore();
-  const tracker = useNodeDataTracker(nodeId);
+
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  const tracker = useNodeDataTracker(getInitialNodeId());
   const swingTracker = tracker.track('swing', () => data.swing ?? 0);
 
   let messageContext: MessageContext | null = null;

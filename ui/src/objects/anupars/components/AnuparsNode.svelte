@@ -29,7 +29,7 @@
     selected: boolean;
   } = $props();
 
-  const messageContext = new MessageContext(nodeId);
+  let messageContext: MessageContext | null = null;
   const viewport = useViewport();
 
   let terminalElement: HTMLDivElement | undefined = $state();
@@ -41,7 +41,11 @@
     postWorker({ type: 'setFrozen', frozen });
   }
 
-  useNodeSetPaused(nodeId, () => frozen, toggleFrozen);
+  useNodeSetPaused(
+    () => nodeId,
+    () => frozen,
+    toggleFrozen
+  );
 
   let term: any = null;
   let worker: Worker | null = null;
@@ -129,16 +133,16 @@
     match(status)
       .with(0x90, () => {
         if (bytes[2] > 0) {
-          messageContext.send({ type: 'noteOn', note: bytes[1], velocity: bytes[2], channel });
+          messageContext?.send({ type: 'noteOn', note: bytes[1], velocity: bytes[2], channel });
         } else {
-          messageContext.send({ type: 'noteOff', note: bytes[1], channel });
+          messageContext?.send({ type: 'noteOff', note: bytes[1], channel });
         }
       })
       .with(0x80, () => {
-        messageContext.send({ type: 'noteOff', note: bytes[1], channel });
+        messageContext?.send({ type: 'noteOff', note: bytes[1], channel });
       })
       .with(0xb0, () => {
-        messageContext.send({
+        messageContext?.send({
           type: 'controlChange',
           control: bytes[1],
           value: bytes[2],
@@ -149,6 +153,8 @@
   }
 
   onMount(async () => {
+    messageContext = new MessageContext(nodeId);
+
     if (!terminalElement) return;
 
     // Lazy-load xterm.js (WASM loads in the worker)
@@ -313,7 +319,7 @@
     window.addEventListener('mouseup', handleGlobalMouseUp);
 
     // Message handler
-    messageContext.queue.addCallback(handleMessage);
+    messageContext?.queue.addCallback(handleMessage);
   });
 
   onDestroy(() => {
@@ -325,7 +331,7 @@
       rafId = 0;
     }
 
-    messageContext.queue.removeCallback(handleMessage);
+    messageContext?.queue.removeCallback(handleMessage);
     window.removeEventListener('mouseup', handleGlobalMouseUp);
 
     unsubProfiler?.();
@@ -340,7 +346,8 @@
     term?.dispose();
     term = null;
 
-    messageContext.destroy();
+    messageContext?.destroy();
+    messageContext = null;
   });
 
   const handleMessage: MessageCallbackFn = (message) => {

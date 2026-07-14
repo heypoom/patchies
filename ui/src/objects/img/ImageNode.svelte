@@ -42,7 +42,7 @@
 
   // Use VFS media composable for all file handling
   const vfsMedia = useVfsMedia({
-    nodeId: node.id,
+    nodeId: (() => node.id)(),
     acceptMimePrefix: 'image/',
     onFileLoaded: displayImage,
     updateNodeData: (data) => updateNode(node.id, { data: { ...node.data, ...data } }),

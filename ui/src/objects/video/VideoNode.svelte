@@ -84,6 +84,10 @@
     height?: number;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   const { updateNode } = useSvelteFlow();
 
   let glSystem = GLSystem.getInstance();
@@ -164,7 +168,7 @@
 
   // Use VFS media composable for file handling
   const vfsMedia = useVfsMedia({
-    nodeId,
+    nodeId: initialNodeId(),
     acceptMimePrefix: 'video/',
     onFileLoaded: handleFileLoaded,
     updateNodeData: (newData) => updateNode(nodeId, { data: { ...data, ...newData } }),

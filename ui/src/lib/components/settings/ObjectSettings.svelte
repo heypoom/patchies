@@ -48,9 +48,21 @@
 
   const VECTOR_AXES = ['x', 'y'] as const;
 
-  const tracker = useNodeDataTracker(nodeId);
-  const comboboxOpen = $state(createComboboxOpenState(schema));
-  const comboboxQuery = $state(createComboboxQueryState(schema));
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function createInitialComboboxOpenState() {
+    return createComboboxOpenState(schema);
+  }
+
+  function createInitialComboboxQueryState() {
+    return createComboboxQueryState(schema);
+  }
+
+  const tracker = useNodeDataTracker(getInitialNodeId());
+  const comboboxOpen = $state(createInitialComboboxOpenState());
+  const comboboxQuery = $state(createInitialComboboxQueryState());
 
   function trackingKey(key: string): string {
     return settingsPrefix ? `${settingsPrefix}.${key}` : key;

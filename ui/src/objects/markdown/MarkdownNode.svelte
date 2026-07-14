@@ -41,8 +41,10 @@
   const connections = $derived(checkMessageConnections(edges.current, props.id));
 
   // Undo/redo tracking for markdown content
-  const tracker = useNodeDataTracker(props.id);
-  const markdownTracker = tracker.track('markdown', () => props.data.markdown ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(props.id));
+  const markdownTracker = $derived.by(() =>
+    tracker.track('markdown', () => props.data.markdown ?? '')
+  );
 
   const handleInletClass = $derived(
     props.selected || $shouldShowHandles || connections.hasInlet

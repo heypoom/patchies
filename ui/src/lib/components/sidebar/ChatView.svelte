@@ -65,9 +65,21 @@
 
   // getSession creates the session if needed.
   // must not be called inside $derived
-  const session = chatStreamStore.getSession(sessionId);
+  function getInitialSessionId() {
+    return sessionId;
+  }
 
-  let inputText = $state(getDraft(sessionId));
+  function getInitialInputText() {
+    return getDraft(sessionId);
+  }
+
+  function getInitialStagedYouTubeUrls() {
+    return getStagedYouTubeUrls(sessionId);
+  }
+
+  const session = chatStreamStore.getSession(getInitialSessionId());
+
+  let inputText = $state(getInitialInputText());
 
   // React to drafts set externally (e.g. from /sparks page via localStorage handoff)
   $effect(() => {
@@ -140,7 +152,7 @@
   let newPersonaName = $state('');
   let newPersonaPrompt = $state('');
   let addFilesOpen = $state(false);
-  let stagedYouTubeUrls = $state<string[]>(getStagedYouTubeUrls(sessionId));
+  let stagedYouTubeUrls = $state<string[]>(getInitialStagedYouTubeUrls());
   let addingYouTubeUrl = $state(false);
   let slashSelectedIndex = $state(0);
 

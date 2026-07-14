@@ -34,8 +34,12 @@
 
   const { updateNodeData } = useSvelteFlow();
 
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   let assemblySystem = AssemblySystem.getInstance();
   let messageContext: MessageContext;

@@ -18,7 +18,11 @@
     onLoadPatch?: (patchId: string) => Promise<void>;
   } = $props();
 
-  let activeTab = $state<Tab>(initialTab);
+  function getInitialTab() {
+    return initialTab;
+  }
+
+  let activeTab = $state<Tab>(getInitialTab());
 
   $effect(() => {
     if (open && initialTab) {

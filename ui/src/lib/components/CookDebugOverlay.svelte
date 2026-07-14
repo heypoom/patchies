@@ -13,7 +13,11 @@
     cookStatus?: RenderCookStatus;
   } = $props();
 
-  let showCookDebug = $state(visible);
+  function getInitialCookDebugVisibility() {
+    return visible;
+  }
+
+  let showCookDebug = $state(getInitialCookDebugVisibility());
 
   $effect(() => {
     showCookDebug = visible;

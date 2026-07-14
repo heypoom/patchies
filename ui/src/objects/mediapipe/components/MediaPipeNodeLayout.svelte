@@ -51,7 +51,7 @@
   const totalOutlets = $derived(messageOutletCount + (hasVideoOutlet ? 1 : 0));
 
   useNodeSetPaused(
-    nodeId,
+    () => nodeId,
     () => !enabled,
     () => onToggleEnabled?.()
   );

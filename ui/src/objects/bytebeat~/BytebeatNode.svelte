@@ -41,7 +41,15 @@
     selected: boolean;
   } = $props();
 
-  let isEditing = $state(!data.expr);
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialIsEditing() {
+    return !data.expr;
+  }
+
+  let isEditing = $state(getInitialIsEditing());
   let layoutRef = $state<ReturnType<typeof CommonExprLayout>>();
   let showSettings = $state(false);
   let errorMessage = $state<string | null>(null);
@@ -50,8 +58,8 @@
   const audioService = AudioService.getInstance();
 
   const { updateNodeData } = useSvelteFlow();
-  const { warnIfNoOutletConnection } = useAudioOutletWarning(nodeId);
-  const tracker = useNodeDataTracker(nodeId);
+  const { warnIfNoOutletConnection } = useAudioOutletWarning(getInitialNodeId());
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   // Derived values
   const expr = $derived(data.expr ?? '((t >> 10) & 42) * t');

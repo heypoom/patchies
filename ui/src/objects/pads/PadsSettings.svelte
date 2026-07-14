@@ -38,7 +38,7 @@
     onClose
   }: Props = $props();
 
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 </script>
 
 <div class="relative">

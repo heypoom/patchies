@@ -113,12 +113,16 @@
   } = $props();
 
   useNodeSetPaused(
-    nodeId ?? '',
+    () => nodeId ?? '',
     () => paused,
     () => onPlaybackToggle?.()
   );
 
-  const includeState = useIncludeProcessing(nodeId ?? '');
+  function getInitialNodeId() {
+    return nodeId ?? '';
+  }
+
+  const includeState = useIncludeProcessing(getInitialNodeId());
 
   const editorGap = 10;
 

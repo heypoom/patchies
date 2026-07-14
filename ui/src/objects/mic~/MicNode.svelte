@@ -26,17 +26,30 @@
   const { updateNodeData } = useSvelteFlow();
   let audioService = AudioService.getInstance();
 
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialMicSettings() {
+    return {
+      deviceId: data.deviceId ?? '',
+      echoCancellation: data.echoCancellation ?? true,
+      noiseSuppression: data.noiseSuppression ?? true,
+      autoGainControl: data.autoGainControl ?? true
+    };
+  }
+
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   let showSettings = $state(false);
   let micNode: MicNode | null = $state(null);
 
   // Local form state
-  let deviceId = $state(data.deviceId ?? '');
-  let echoCancellation = $state(data.echoCancellation ?? true);
-  let noiseSuppression = $state(data.noiseSuppression ?? true);
-  let autoGainControl = $state(data.autoGainControl ?? true);
+  let deviceId = $state(getInitialMicSettings().deviceId);
+  let echoCancellation = $state(getInitialMicSettings().echoCancellation);
+  let noiseSuppression = $state(getInitialMicSettings().noiseSuppression);
+  let autoGainControl = $state(getInitialMicSettings().autoGainControl);
 
   const containerClass = $derived.by(() => {
     return selected ? 'object-container-selected' : 'object-container';

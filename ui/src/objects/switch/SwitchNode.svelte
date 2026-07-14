@@ -14,7 +14,7 @@
   const { updateNodeData } = useSvelteFlow();
 
   // Undo/redo tracking
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   // Get toggle state from node data, default to false
   let isOn = $derived(data.value ?? false);

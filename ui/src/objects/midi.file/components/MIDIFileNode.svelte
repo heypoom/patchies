@@ -48,7 +48,19 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  const tracker = useNodeDataTracker(nodeId);
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialPositionSeconds() {
+    return data.positionSeconds ?? 0;
+  }
+
+  function getInitialPlayState() {
+    return data.playState ?? 'stopped';
+  }
+
+  const tracker = useNodeDataTracker(getInitialNodeId());
   const vfs = VirtualFilesystem.getInstance();
 
   let messageContext: MessageContext;
@@ -56,8 +68,8 @@
   let showSettings = $state(false);
   let errorMessage = $state<string | null>(null);
   let parsedFile = $state<ParsedMidiFile | null>(null);
-  let positionSeconds = $state(data.positionSeconds ?? 0);
-  let playState = $state<'stopped' | 'playing' | 'paused'>(data.playState ?? 'stopped');
+  let positionSeconds = $state(getInitialPositionSeconds());
+  let playState = $state<'stopped' | 'playing' | 'paused'>(getInitialPlayState());
   let isDragging = $state(false);
   let positionTimer: ReturnType<typeof setInterval> | null = null;
   let lastTransportState: TransportPlayState | null = null;

@@ -30,9 +30,11 @@
 
   const { updateNodeData } = useSvelteFlow();
 
-  const tracker = useNodeDataTracker(nodeId);
-  const languageHintTracker = tracker.track('languageHint', () => data.languageHint ?? '');
-  const promptTracker = tracker.track('prompt', () => data.prompt ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const languageHintTracker = $derived.by(() =>
+    tracker.track('languageHint', () => data.languageHint ?? '')
+  );
+  const promptTracker = $derived.by(() => tracker.track('prompt', () => data.prompt ?? ''));
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();

@@ -34,7 +34,25 @@
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const edges = useEdges();
-  const tracker = useNodeDataTracker(node.id);
+
+  function getInitialNodeId() {
+    return node.id;
+  }
+
+  function getInitialScopeSettings() {
+    return {
+      mode: node.data.mode ?? 'waveform',
+      bufferSize: node.data.bufferSize ?? 512,
+      xScale: node.data.xScale ?? 1,
+      yScale: node.data.yScale ?? 1,
+      fps: node.data.fps ?? 0,
+      plotType: node.data.plotType ?? 'line',
+      decay: node.data.decay ?? 1,
+      unipolar: node.data.unipolar ?? false
+    };
+  }
+
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   // Check if handles have connections (for smart auto mode)
   const connections = $derived(checkAudioConnections(edges.current, node.id));
@@ -47,14 +65,14 @@
 
   let showSettings = $state(false);
   let advancedOpen = $state(false);
-  let mode = $state<ScopeMode>(node.data.mode ?? 'waveform');
-  let bufferSize = $state(node.data.bufferSize ?? 512);
-  let xScale = $state(node.data.xScale ?? 1);
-  let yScale = $state(node.data.yScale ?? 1);
-  let fps = $state(node.data.fps ?? 0);
-  let plotType = $state<PlotType>(node.data.plotType ?? 'line');
-  let decay = $state(node.data.decay ?? 1);
-  let unipolar = $state(node.data.unipolar ?? false);
+  let mode = $state<ScopeMode>(getInitialScopeSettings().mode);
+  let bufferSize = $state(getInitialScopeSettings().bufferSize);
+  let xScale = $state(getInitialScopeSettings().xScale);
+  let yScale = $state(getInitialScopeSettings().yScale);
+  let fps = $state(getInitialScopeSettings().fps);
+  let plotType = $state<PlotType>(getInitialScopeSettings().plotType);
+  let decay = $state(getInitialScopeSettings().decay);
+  let unipolar = $state(getInitialScopeSettings().unipolar);
 
   const DEFAULT_WIDTH = 200;
   const DEFAULT_HEIGHT = 120;

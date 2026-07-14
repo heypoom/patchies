@@ -5,15 +5,16 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
  * if the requested state differs from the current state.
  */
 export function useNodeSetPaused(
-  nodeId: string,
+  nodeId: string | (() => string),
   getCurrentPaused: () => boolean,
   toggle: () => void
 ) {
   $effect(() => {
     const eventBus = PatchiesEventBus.getInstance();
+    const getNodeId = typeof nodeId === 'function' ? nodeId : () => nodeId;
 
     const handle = (event: { nodeId: string; paused: boolean }) => {
-      if (event.nodeId !== nodeId) return;
+      if (event.nodeId !== getNodeId()) return;
 
       if (event.paused !== getCurrentPaused()) toggle();
     };

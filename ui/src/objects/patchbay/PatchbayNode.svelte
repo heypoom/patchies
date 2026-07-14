@@ -53,7 +53,7 @@
   } = $props();
 
   const { updateNodeData, getNodes } = useSvelteFlow();
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
   const [defaultWidth, defaultHeight] = [320, 220];
   const channelRegistry = MessageChannelRegistry.getInstance();
   const audioChannelRegistry = AudioChannelRegistry.getInstance();

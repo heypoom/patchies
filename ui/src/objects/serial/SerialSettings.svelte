@@ -42,7 +42,7 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
   const serialSystem = SerialSystem.getInstance();
 
   const isConnected = $derived($serialPorts.some((p) => p.portId === portId && p.connected));

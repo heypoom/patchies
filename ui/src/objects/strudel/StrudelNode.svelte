@@ -43,9 +43,13 @@
     };
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   // Get flow utilities to update node data
   const { updateNodeData } = useSvelteFlow();
-  const { warnIfNoAudioConnection } = useAudioOutletWarning(nodeId);
+  const { warnIfNoAudioConnection } = useAudioOutletWarning(initialNodeId());
 
   let strudelEditor: StrudelEditor | null = null;
   let messageContext: MessageContext | undefined = $state();
@@ -58,7 +62,7 @@
   let menuOpen = $state(false);
 
   const code = $derived(data.code || '');
-  const customConsole = createCustomConsole(nodeId);
+  const customConsole = createCustomConsole(initialNodeId());
 
   const setCode = (newCode: string) => {
     updateNodeData(nodeId, { code: newCode });
@@ -227,7 +231,7 @@
   );
 
   const detachedBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(initialNodeId());
 
   function setSyncTransport(value: boolean) {
     const oldValue = syncTransport;

@@ -63,20 +63,24 @@
   let inputElement = $state<HTMLInputElement>();
   let nodeElement = $state<HTMLDivElement>();
   let resultsContainer = $state<HTMLDivElement>();
-  let expr = $state(data.expr || '');
-  let isEditing = $state(!data.expr); // Start in editing mode if no name;
+  const getInitialExpr = () => data.expr || '';
+  const hasInitialExpr = () => !!data.expr;
+  let expr = $state(getInitialExpr());
+  let isEditing = $state(!hasInitialExpr()); // Start in editing mode if no name;
   let showAutocomplete = $state(false);
   let selectedSuggestion = $state(0);
-  let originalName = data.expr || ''; // Store original name for escape functionality
-  const isQuickAdd = !data.expr; // True if created via Quick Add (no initial name)
-  let finalNodeId = nodeId; // Tracks the final node ID after potential transformation
+  let originalName = getInitialExpr(); // Store original name for escape functionality
+  const isQuickAdd = !hasInitialExpr(); // True if created via Quick Add (no initial name)
+  let finalNodeId = (() => nodeId)(); // Tracks the final node ID after potential transformation
 
   // Undo tracking for object data changes (only for existing nodes)
-  const objectDataTracker = useObjectDataTracker(nodeId, () => ({
-    expr: data.expr,
-    name: data.name,
-    params: data.params
-  }));
+  const objectDataTracker = $derived.by(() =>
+    useObjectDataTracker(nodeId, () => ({
+      expr: data.expr,
+      name: data.name,
+      params: data.params
+    }))
+  );
 
   let isAutomated = $state<Record<number, boolean>>({});
 
@@ -103,7 +107,7 @@
   });
 
   const objectPorts = useObjectPorts({
-    nodeId,
+    nodeId: (() => nodeId)(),
     getObjectMeta: () => objectMeta,
     trackObjectInstanceVersion: () => patchRuntime?.trackObjectViewRevision(nodeId) ?? 0
   });
@@ -586,7 +590,7 @@
   });
 
   useObjectRuntimeView({
-    nodeId,
+    nodeId: (() => nodeId)(),
     onMessage: handleObjectMessage,
     updateNodeInternals
   });

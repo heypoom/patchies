@@ -24,7 +24,8 @@
   } = $props();
 
   let isEditing = $state(false);
-  let expr = $state(data.expr || '');
+  const getInitialExpr = () => data.expr || '';
+  let expr = $state(getInitialExpr());
   let hasError = $state(false);
   let layoutRef = $state<CommonExprLayout | null>(null);
   let consoleRef: VirtualConsole | null = $state(null);
@@ -34,8 +35,8 @@
   let hasReceivedFirstValue = $state(false);
 
   const { updateNodeData } = useSvelteFlow();
-  const messageContext = new MessageContext(nodeId);
-  const customConsole = createCustomConsole(nodeId);
+  let messageContext: MessageContext;
+  const customConsole = $derived.by(() => createCustomConsole(nodeId));
   const jsRunner = JSRunner.getInstance();
 
   function toggleConsole() {
@@ -152,12 +153,13 @@
   }
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 </script>
 

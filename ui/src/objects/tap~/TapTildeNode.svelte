@@ -33,18 +33,32 @@
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const tracker = useNodeDataTracker(node.id);
+
+  function getInitialNodeId() {
+    return node.id;
+  }
+
+  function getInitialTapSettings() {
+    return {
+      mode: node.data.mode ?? DEFAULTS.mode,
+      bufferSize: node.data.bufferSize ?? DEFAULTS.bufferSize,
+      fps: node.data.fps ?? DEFAULTS.fps,
+      zeroCrossing: node.data.zeroCrossing ?? DEFAULTS.zeroCrossing
+    };
+  }
+
+  const tracker = useNodeDataTracker(getInitialNodeId());
   const patchRuntime = getPatchRuntime();
 
   let showSettings = $state(false);
   let nodeButton: HTMLButtonElement | null = $state(null);
   let resizeObserver: ResizeObserver | null = null;
   let settingsOffset = $state(90);
-  let mode = $state<TapMode>(node.data.mode ?? DEFAULTS.mode);
-  let bufferSize = $state(node.data.bufferSize ?? DEFAULTS.bufferSize);
-  let sampleDigitCount = $state(String(node.data.bufferSize ?? DEFAULTS.bufferSize).length);
-  let fps = $state(node.data.fps ?? DEFAULTS.fps);
-  let zeroCrossing = $state(node.data.zeroCrossing ?? DEFAULTS.zeroCrossing);
+  let mode = $state<TapMode>(getInitialTapSettings().mode);
+  let bufferSize = $state(getInitialTapSettings().bufferSize);
+  let sampleDigitCount = $state(String(getInitialTapSettings().bufferSize).length);
+  let fps = $state(getInitialTapSettings().fps);
+  let zeroCrossing = $state(getInitialTapSettings().zeroCrossing);
 
   const audioInletCount = $derived(mode === 'xy' ? 2 : 1);
   const topInletCount = $derived(audioInletCount + 1);

@@ -23,19 +23,22 @@
     selected: boolean;
   } = $props();
 
-  let isEditing = $state(!data.expr);
-  let expr = $state(data.expr || '');
+  const getInitialIsEditing = () => !data.expr;
+  const getInitialExpr = () => data.expr || '';
+  let isEditing = $state(getInitialIsEditing());
+  let expr = $state(getInitialExpr());
   let hasError = $state(false);
   let layoutRef = $state<CommonExprLayout | null>(null);
   let consoleRef: VirtualConsole | null = $state(null);
 
   // Accumulator state - persists between messages
-  let accumulator = $state<unknown>(data.initialValue ?? 0);
+  const getInitialAccumulator = () => data.initialValue ?? 0;
+  let accumulator = $state<unknown>(getInitialAccumulator());
   let hasReceivedFirstValue = $state(false);
 
   const { updateNodeData } = useSvelteFlow();
-  const messageContext = new MessageContext(nodeId);
-  const customConsole = createCustomConsole(nodeId);
+  let messageContext: MessageContext;
+  const customConsole = $derived.by(() => createCustomConsole(nodeId));
   const jsRunner = JSRunner.getInstance();
 
   function toggleConsole() {
@@ -143,6 +146,7 @@
   }
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
     if (isEditing) {
@@ -151,8 +155,8 @@
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 </script>
 

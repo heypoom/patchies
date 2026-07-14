@@ -55,6 +55,10 @@
     selected?: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   let consoleRef: VirtualConsole | null = $state(null);
 
   // Track error line numbers for code highlighting
@@ -73,8 +77,8 @@
 
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
   );
 
   let audioAnalysisSystem: AudioAnalysisSystem;

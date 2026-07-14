@@ -34,7 +34,12 @@
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const glSystem = GLSystem.getInstance();
-  const tracker = useNodeDataTracker(node.id);
+
+  function initialNodeId() {
+    return node.id;
+  }
+
+  const tracker = useNodeDataTracker(initialNodeId());
 
   const [outputWidth, outputHeight] = glSystem.outputSize;
   const outputAspect = outputWidth / outputHeight;

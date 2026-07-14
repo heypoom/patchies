@@ -36,7 +36,7 @@
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const tracker = useNodeDataTracker(node.id);
+  const tracker = $derived.by(() => useNodeDataTracker(node.id));
 
   let messageContext: MessageContext;
   let showSettings = $state(false);

@@ -42,7 +42,7 @@
 
   let baseRef: CodeBlockBase | null = $state(null);
 
-  const nodeLogger = logger.ofNode(nodeId);
+  const nodeLogger = $derived.by(() => logger.ofNode(nodeId));
   const code = $derived(data.code || '');
 
   const runQueue = new PeppermintRunQueue<PeppermintInput>(runPeppermint);

@@ -26,14 +26,22 @@
   const { updateNodeData } = useSvelteFlow();
   let audioService = AudioService.getInstance();
 
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  function getInitialDeviceId() {
+    return data.deviceId ?? '';
+  }
+
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   let showSettings = $state(false);
   let audioOutputNode: AudioOutputNode | null = $state(null);
 
   // Local form state
-  let deviceId = $state(data.deviceId ?? '');
+  let deviceId = $state(getInitialDeviceId());
 
   // Check browser capabilities - only Chrome 110+ supports AudioContext.setSinkId
   const supportsDeviceSelection = AudioOutputNode.supportsOutputDeviceSelection;

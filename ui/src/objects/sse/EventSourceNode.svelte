@@ -28,7 +28,7 @@
   const { updateNodeData } = useSvelteFlow();
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   let showSettings = $state(false);
   let connectionStatus = $state<ConnectionStatus>('disconnected');

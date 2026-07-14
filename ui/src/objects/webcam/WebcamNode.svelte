@@ -61,12 +61,20 @@
     selected: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
+  function initialDeviceId() {
+    return data.deviceId ?? '';
+  }
+
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
   const { updateNodeData } = useSvelteFlow();
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(initialNodeId());
 
   let videoElement = $state<HTMLVideoElement | undefined>();
   let isCapturing = $state(false);
@@ -79,7 +87,7 @@
   let currentPipeline = $state<'webcodecs' | 'fallback'>('fallback');
 
   // Local form state for device selection
-  let deviceId = $state(data.deviceId ?? '');
+  let deviceId = $state(initialDeviceId());
   let bitmapFrameId: number | undefined;
   let videoFrameCallbackId: number | undefined;
   let useVideoFrameCallback = false;

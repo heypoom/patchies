@@ -53,10 +53,10 @@
 
   // ── Controller ────────────────────────────────────────────────────────────
   const ctrl = createAiPromptController({
-    onInsertObject,
-    onInsertMultipleObjects: onInsertMultipleObjects ?? (() => {}),
-    onEditObject: onEditObject ?? (() => {}),
-    onReplaceObject: onReplaceObject ?? (() => {}),
+    onInsertObject: (...args) => onInsertObject(...args),
+    onInsertMultipleObjects: (...args) => onInsertMultipleObjects?.(...args),
+    onEditObject: (...args) => onEditObject?.(...args),
+    onReplaceObject: (...args) => onReplaceObject?.(...args),
     onConnectEdges: () => {},
     onDisconnectEdges: () => {},
     onDeleteObjects: () => {},
@@ -67,9 +67,13 @@
   let promptInput: HTMLTextAreaElement | undefined = $state();
   let isDragging = $state(false);
   let dragOffset = $state({ x: 0, y: 0 });
-  let dialogPosition = $state({ x: position.x, y: position.y });
+  let dialogPosition = $state(getInitialDialogPosition());
   let isPromptExpanded = $state(false);
   let modeDropdownOpen = $state(false);
+
+  function getInitialDialogPosition() {
+    return { x: position.x, y: position.y };
+  }
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const descriptor = $derived(ctrl.descriptor);

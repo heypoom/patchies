@@ -39,10 +39,10 @@
   const { updateNodeData } = useSvelteFlow();
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
-  const rateTracker = tracker.track('rate', () => data.rate ?? 1);
-  const pitchTracker = tracker.track('pitch', () => data.pitch ?? 1);
-  const volumeTracker = tracker.track('volume', () => data.volume ?? 1);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const rateTracker = $derived.by(() => tracker.track('rate', () => data.rate ?? 1));
+  const pitchTracker = $derived.by(() => tracker.track('pitch', () => data.pitch ?? 1));
+  const volumeTracker = $derived.by(() => tracker.track('volume', () => data.volume ?? 1));
 
   let showSettings = $state(false);
   let voices = $state<SpeechSynthesisVoice[]>([]);

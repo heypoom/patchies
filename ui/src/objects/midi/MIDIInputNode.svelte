@@ -35,8 +35,12 @@
   const { updateNodeData } = useSvelteFlow();
   const midiSystem = MIDISystem.getInstance();
 
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   let messageContext: MessageContext;
   let isListening = $state(false);

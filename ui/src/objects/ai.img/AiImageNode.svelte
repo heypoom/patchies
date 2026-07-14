@@ -29,8 +29,7 @@
 
   const { updateNodeData } = useSvelteFlow();
 
-  const messageContext = new MessageContext(nodeId);
-  const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });
+  const targetConnections = useNodeConnections({ id: (() => nodeId)(), handleType: 'target' });
 
   let canvasElement: HTMLCanvasElement;
   let glSystem = GLSystem.getInstance();
@@ -41,8 +40,8 @@
   let editorReady = $state(false);
   let showModelSettings = $state(false);
 
-  const tracker = useNodeDataTracker(nodeId);
-  const modelTracker = tracker.track('model', () => data.model ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const modelTracker = $derived.by(() => tracker.track('model', () => data.model ?? ''));
 
   const prompt = $derived(data.prompt || '');
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
@@ -59,6 +58,8 @@
     width / PREVIEW_SCALE_FACTOR,
     height / PREVIEW_SCALE_FACTOR
   ];
+
+  let messageContext: MessageContext;
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
@@ -77,14 +78,15 @@
   };
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     glSystem.upsertNode(nodeId, 'img', {});
     messageContext.queue.addCallback(handleMessage);
   });
 
   onDestroy(() => {
     glSystem.removeNode(nodeId);
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 
   async function generateImage() {

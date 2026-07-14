@@ -50,6 +50,10 @@
     selected: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   const { getNodes, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
@@ -57,8 +61,8 @@
   // Settings manager — persists across code re-runs
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
   );
   const settingsAPI = createSettingsAPI(settingsManager);
 
@@ -89,7 +93,7 @@
   let preservedFrameCanvas: HTMLCanvasElement | null = null;
 
   const surfaceMode = createP5SurfaceMode({
-    nodeId,
+    nodeId: initialNodeId(),
     getNodes,
     getGlSystem: () => glSystem,
     getP5Manager: () => p5Manager,
@@ -169,7 +173,7 @@
   }
 
   // Create custom console for routing output to VirtualConsole
-  const customConsole = createCustomConsole(nodeId);
+  const customConsole = createCustomConsole(initialNodeId());
 
   // Track error line numbers for code highlighting
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);

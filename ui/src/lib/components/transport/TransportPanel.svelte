@@ -66,6 +66,24 @@
     target.addEventListener('lostpointercapture', cleanup);
   }
 
+  function handleResizeKeydown(e: KeyboardEvent) {
+    const step = e.shiftKey ? 40 : 10;
+
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      rulerWidth = Math.min(MAX_RULER_WIDTH, rulerWidth + step);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      rulerWidth = Math.max(MIN_RULER_WIDTH, rulerWidth - step);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      rulerWidth = MIN_RULER_WIDTH;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      rulerWidth = MAX_RULER_WIDTH;
+    }
+  }
+
   // Transport state (updated via polling)
   let isPlaying = $state(false);
   let seconds = $state(0);
@@ -380,13 +398,16 @@
 >
   <!-- Resize handle (left edge, desktop only, only when timeline visible) -->
   {#if $transportStore.timelineVisible}
-    <div
-      class="absolute top-0 -left-2 hidden h-full w-2 cursor-col-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100 sm:flex"
+    <button
+      type="button"
+      class="absolute top-0 -left-2 hidden h-full w-2 cursor-col-resize items-center justify-center border-none bg-transparent p-0 opacity-0 transition-opacity hover:opacity-100 sm:flex"
       class:opacity-100={isResizing}
+      aria-label="Resize timeline"
       onpointerdown={onResizePointerDown}
+      onkeydown={handleResizeKeydown}
     >
       <div class="h-4 w-px bg-zinc-500"></div>
-    </div>
+    </button>
   {/if}
 
   <div class="flex flex-wrap items-center gap-2">

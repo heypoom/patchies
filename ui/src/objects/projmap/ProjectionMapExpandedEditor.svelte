@@ -178,6 +178,7 @@
 
     <svg
       bind:this={svg}
+      role="application"
       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
       style="cursor: {svgCursor}; width: min(100vw, {outputWidth}px); height: min(calc(100vh - 48px), {outputHeight}px);"
       viewBox="0 0 {outputWidth} {outputHeight}"

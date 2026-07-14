@@ -19,9 +19,13 @@
   const base = hex ? 16 : 10;
   const pad = hex ? minDigits : minDigits + 1;
 
+  function getInitialMachineId() {
+    return machineId;
+  }
+
   // Get reactive stores for this machine
-  const memoryPage = getMemoryPage(machineId);
-  const memoryRange = getMemoryRange(machineId);
+  const memoryPage = getMemoryPage(getInitialMachineId());
+  const memoryRange = getMemoryRange(getInitialMachineId());
 
   // Computed values from stores
   const memStart = $derived($memoryRange.start);

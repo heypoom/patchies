@@ -43,12 +43,16 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
   let audioService = AudioService.getInstance();
 
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
     (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    createKVStore(getInitialNodeId())
   );
   let eventBus = PatchiesEventBus.getInstance();
   let previousExecuteCode = $state<number | undefined>(undefined);

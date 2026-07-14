@@ -103,10 +103,13 @@
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
 
-  const settingsManager = new SettingsManager(
-    () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+  const settingsManager = $derived.by(
+    () =>
+      new SettingsManager(
+        () => data.settings ?? {},
+        (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+        createKVStore(nodeId)
+      )
   );
 
   let consoleRef: VirtualConsole | null = $state(null);
@@ -114,7 +117,7 @@
 
   const eventBus = PatchiesEventBus.getInstance();
   const jsRunner = JSRunner.getInstance();
-  const customConsole = createCustomConsole(nodeId);
+  const customConsole = $derived.by(() => createCustomConsole(nodeId));
 
   let rootContainer = $state<HTMLDivElement | undefined>();
   let previewContainer = $state<HTMLDivElement | undefined>();

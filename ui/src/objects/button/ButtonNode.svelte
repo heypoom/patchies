@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { MessageContext } from '$lib/messages/MessageContext';
   import { objectSchemas } from '$lib/objects/schemas';
-  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
 
   import { shouldShowHandles } from '../../stores/ui.store';
 
@@ -11,6 +11,7 @@
 
   let isFlashing = $state(false);
   let flashTimeout: ReturnType<typeof setTimeout> | null = null;
+  let messageContext: MessageContext | null = null;
 
   const flash = () => {
     isFlashing = true;
@@ -23,9 +24,19 @@
     }, 150);
   };
 
-  const viewMessageContext = useNodeViewMessageContext(nodeId, flash);
-  const handleClick = () => viewMessageContext.send({ type: 'bang' });
+  const handleClick = () =>
+    messageContext?.queue.sendMessage({ data: { type: 'bang' }, source: nodeId });
   const buttonSchema = objectSchemas.button;
+
+  onMount(() => {
+    messageContext = new MessageContext(nodeId);
+    messageContext.messageCallbacks = [flash];
+
+    return () => {
+      messageContext?.destroy({ unregisterNode: false });
+      messageContext = null;
+    };
+  });
 
   onDestroy(() => {
     if (flashTimeout) {

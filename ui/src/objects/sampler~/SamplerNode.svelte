@@ -50,8 +50,12 @@
 
   const { updateNodeData } = useSvelteFlow();
 
+  function getInitialNodeId() {
+    return node.id;
+  }
+
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(node.id);
+  const tracker = useNodeDataTracker(getInitialNodeId());
   const loopStartTracker = tracker.track('loopStart', () => node.data.loopStart ?? 0);
   const loopEndTracker = tracker.track('loopEnd', () => node.data.loopEnd ?? recordingDuration);
   const gainTracker = tracker.track('gain', () => node.data.gain ?? 1);
@@ -75,7 +79,7 @@
 
   // Use VFS media composable for file handling (drag/drop, persistence, relink)
   const vfsMedia = useVfsMedia({
-    nodeId: node.id,
+    nodeId: getInitialNodeId(),
     acceptMimePrefix: 'audio/',
     onFileLoaded: handleFileLoaded,
     updateNodeData: (data) => updateNodeData(node.id, { ...node.data, ...data }),

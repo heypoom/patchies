@@ -73,6 +73,14 @@
     class?: string;
   } = $props();
 
+  function initialUniformValues() {
+    return data.uniformValues ?? {};
+  }
+
+  function initialShaderParkTitle() {
+    return parseShaderParkTitle(data.code) ?? data.title;
+  }
+
   let consoleRef: VirtualConsole | null = $state(null);
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
   const eventBus = PatchiesEventBus.getInstance();
@@ -84,8 +92,8 @@
   let previewBitmapContext: ImageBitmapRenderingContext | null = null;
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
-  let uniformValues = $state<Record<string, unknown>>(data.uniformValues ?? {});
-  let shaderParkTitle = $state<string | undefined>(parseShaderParkTitle(data.code) ?? data.title);
+  let uniformValues = $state<Record<string, unknown>>(initialUniformValues());
+  let shaderParkTitle = $state<string | undefined>(initialShaderParkTitle());
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();

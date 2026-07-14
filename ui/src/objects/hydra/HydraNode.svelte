@@ -43,6 +43,10 @@
     };
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -52,8 +56,8 @@
   // Settings manager — persists across code re-runs
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
   );
 
   let audioAnalysisSystem: AudioAnalysisSystem;

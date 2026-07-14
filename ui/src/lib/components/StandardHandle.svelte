@@ -50,15 +50,19 @@
   const handleId = $derived(deriveHandleId({ port, type, id }));
 
   // Determine handle type and position using ts-pattern
-  const handleType = match(port)
-    .with('inlet', () => 'target' as const)
-    .with('outlet', () => 'source' as const)
-    .exhaustive();
+  const handleType = $derived(
+    match(port)
+      .with('inlet', () => 'target' as const)
+      .with('outlet', () => 'source' as const)
+      .exhaustive()
+  );
 
-  const handlePosition = match(port)
-    .with('inlet', () => Position.Top)
-    .with('outlet', () => Position.Bottom)
-    .exhaustive();
+  const handlePosition = $derived(
+    match(port)
+      .with('inlet', () => Position.Top)
+      .with('outlet', () => Position.Bottom)
+      .exhaustive()
+  );
 
   // Calculate position using getPortPosition
   const positionStyle = $derived(`left: ${getPortPosition(total, index)}`);

@@ -1,15 +1,27 @@
 <script lang="ts">
   import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { onMount } from 'svelte';
+  import { MessageContext } from '$lib/messages/MessageContext';
   import { objectSchemas } from '$lib/objects/schemas';
-  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
 
   import { shouldShowHandles } from '../../stores/ui.store';
 
   let { id: nodeId, selected, data }: { id: string; selected: boolean; data: any } = $props();
 
   const toggleSchema = objectSchemas.toggle;
-  const viewMessageContext = useNodeViewMessageContext(nodeId, () => {});
-  const toggleValue = () => viewMessageContext.send({ type: 'bang' });
+  let messageContext: MessageContext | null = null;
+  const toggleValue = () =>
+    messageContext?.queue.sendMessage({ data: { type: 'bang' }, source: nodeId });
+
+  onMount(() => {
+    messageContext = new MessageContext(nodeId);
+    messageContext.messageCallbacks = [() => {}];
+
+    return () => {
+      messageContext?.destroy({ unregisterNode: false });
+      messageContext = null;
+    };
+  });
 
   let isOn = $derived((data.params?.[0] ?? data.value) === true);
 

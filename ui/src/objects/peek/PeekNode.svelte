@@ -21,7 +21,7 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  const messageContext = new MessageContext(nodeId);
+  let messageContext: MessageContext;
   const jsRunner = JSRunner.getInstance();
 
   let showEditor = $state(false);
@@ -77,12 +77,13 @@
   };
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 
   const containerClass = $derived(

@@ -32,10 +32,10 @@
   // Check if handles have connections (for smart auto mode)
   const connections = $derived(checkMessageConnections(edges.current, node.id));
 
-  const messageContext = new MessageContext(node.id);
+  let messageContext: MessageContext;
 
-  const tracker = useNodeDataTracker(node.id);
-  const textTracker = tracker.track('text', () => node.data.text ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(node.id));
+  const textTracker = $derived.by(() => tracker.track('text', () => node.data.text ?? ''));
 
   let textareaElement: HTMLTextAreaElement;
 
@@ -72,12 +72,13 @@
   };
 
   onMount(() => {
+    messageContext = new MessageContext(node.id);
     messageContext.queue.addCallback(handleMessage);
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 
   function handleTextChange(event: Event) {

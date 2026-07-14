@@ -29,8 +29,10 @@
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 
-  let isEditing = $state(!data.expr); // Start in editing mode if no expression
-  let expr = $state(data.expr || ''); // Active expression being evaluated
+  const getInitialIsEditing = () => !data.expr;
+  const getInitialExpr = () => data.expr || '';
+  let isEditing = $state(getInitialIsEditing()); // Start in editing mode if no expression
+  let expr = $state(getInitialExpr()); // Active expression being evaluated
 
   // Doesn't have to only be numbers! Could be arrays and objects!
   let inletValues = $state<unknown[]>([]);
@@ -43,8 +45,8 @@
     outletCount: 1
   });
 
-  const messageContext = new MessageContext(nodeId);
-  const customConsole = createCustomConsole(nodeId);
+  let messageContext: MessageContext;
+  const customConsole = $derived.by(() => createCustomConsole(nodeId));
 
   const inletCount = $derived.by(() => {
     if (!expr.trim()) return 1;
@@ -125,6 +127,7 @@
   }
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
     // Initialize inlet values array
@@ -137,8 +140,8 @@
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 </script>
 

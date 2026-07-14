@@ -46,7 +46,7 @@
   const { updateNodeData, getNode } = useSvelteFlow();
 
   // Track outgoing connections reactively
-  const sourceConnections = useNodeConnections({ id: nodeId, handleType: 'source' });
+  const sourceConnections = useNodeConnections({ id: (() => nodeId)(), handleType: 'source' });
 
   // Memoization: avoid rebuilding the filtered map when types haven't changed
   let cachedTypesKey = '';
@@ -84,7 +84,7 @@
     return cachedMap;
   });
 
-  const messageContext = new MessageContext(nodeId);
+  let messageContext: MessageContext;
 
   let showTextInput = $state(false);
   let msgText = $derived(data.message || '');
@@ -217,12 +217,13 @@
   };
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 
   const send = (data: unknown) => messageContext.send(data);

@@ -48,6 +48,10 @@
     selected?: boolean;
   } = $props();
 
+  function initialNodeId() {
+    return nodeId;
+  }
+
   let consoleRef: VirtualConsole | null = $state(null);
 
   // Track error line numbers for code highlighting
@@ -64,7 +68,7 @@
   }
 
   // Create custom console for routing output to VirtualConsole
-  const customConsole = createCustomConsole(nodeId);
+  const customConsole = createCustomConsole(initialNodeId());
 
   let glSystem = GLSystem.getInstance();
   let canvas = $state<HTMLCanvasElement | undefined>();
@@ -82,8 +86,8 @@
 
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
-    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
-    createKVStore(nodeId)
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
   );
 
   let hasCustomResolution = false;
@@ -321,7 +325,11 @@
     });
   }
 
-  useNodeSetPaused(nodeId, () => !!data.paused, togglePlayback);
+  useNodeSetPaused(
+    () => nodeId,
+    () => !!data.paused,
+    togglePlayback
+  );
 
   async function sendBitmap() {
     if (!canvas) return;

@@ -28,8 +28,8 @@
 
   const { updateNodeData } = useSvelteFlow();
 
-  const tracker = useNodeDataTracker(nodeId);
-  const langTracker = tracker.track('lang', () => data.lang ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const langTracker = $derived.by(() => tracker.track('lang', () => data.lang ?? ''));
 
   let messageContext: MessageContext;
   let showSettings = $state(false);

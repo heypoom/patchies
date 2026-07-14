@@ -50,8 +50,10 @@
   const connections = $derived(checkMessageConnections(edges.current, node.id));
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(node.id);
-  const valueTracker = tracker.track('value', () => node.data.value ?? defaultValue);
+  const tracker = $derived.by(() => useNodeDataTracker(node.id));
+  const valueTracker = $derived.by(() =>
+    tracker.track('value', () => node.data.value ?? defaultValue)
+  );
 
   let messageContext: MessageContext;
   let showSettings = $state(false);

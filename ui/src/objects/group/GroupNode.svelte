@@ -31,8 +31,8 @@
 
   const { updateNode, updateNodeData } = useSvelteFlow();
   const eventBus = PatchiesEventBus.getInstance();
-  const tracker = useNodeDataTracker(node.id);
-  const titleTracker = tracker.track('title', () => node.data.title ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(node.id));
+  const titleTracker = $derived.by(() => tracker.track('title', () => node.data.title ?? ''));
 
   let showSettings = $state(false);
 

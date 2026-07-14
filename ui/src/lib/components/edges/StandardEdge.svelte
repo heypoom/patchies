@@ -38,7 +38,11 @@
     });
   });
 
-  const nodesData = useNodesData([source, target]);
+  function getInitialEdgeNodeIds() {
+    return [source, target];
+  }
+
+  const nodesData = useNodesData(getInitialEdgeNodeIds());
 
   let [edgePath] = $derived(
     getBezierPath({

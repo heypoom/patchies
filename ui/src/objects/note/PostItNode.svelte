@@ -43,8 +43,8 @@
   const store = useStore();
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(node.id);
-  const textTracker = tracker.track('text', () => node.data.text ?? '');
+  const tracker = $derived.by(() => useNodeDataTracker(node.id));
+  const textTracker = $derived.by(() => tracker.track('text', () => node.data.text ?? ''));
 
   let showSettings = $state(false);
   let isEditing = $state(false);

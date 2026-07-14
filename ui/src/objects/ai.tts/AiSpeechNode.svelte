@@ -50,10 +50,14 @@
   const { updateNodeData } = useSvelteFlow();
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
-  const speakingRateTracker = tracker.track('speakingRate', () => data.speakingRate ?? 1);
-  const pitchTracker = tracker.track('pitch', () => data.pitch ?? 0);
-  const volumeGainDbTracker = tracker.track('volumeGainDb', () => data.volumeGainDb ?? 0);
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const speakingRateTracker = $derived.by(() =>
+    tracker.track('speakingRate', () => data.speakingRate ?? 1)
+  );
+  const pitchTracker = $derived.by(() => tracker.track('pitch', () => data.pitch ?? 0));
+  const volumeGainDbTracker = $derived.by(() =>
+    tracker.track('volumeGainDb', () => data.volumeGainDb ?? 0)
+  );
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();

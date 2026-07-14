@@ -35,7 +35,7 @@
   } = $props();
 
   const updateNodeInternals = useUpdateNodeInternals();
-  const customConsole = createCustomConsole(id);
+  const customConsole = $derived.by(() => createCustomConsole(id));
 
   let rootElement = $state<HTMLElement | undefined>();
   let htmlCanvasElement = $state<HTMLCanvasElement | undefined>();
@@ -49,20 +49,22 @@
     height: 1
   });
 
-  const htmlCanvasAdapter = createHtmlCanvasRuntimeAdapter({
-    nodeId: id,
-    objectName: 'dom',
-    getRootElement: () => rootElement,
-    getCanvasElement: () => htmlCanvasElement,
-    getExplicitSize: () => ({ width: data.width, height: data.height }),
-    getOutputSize: () => ({ width: $outputWidth, height: $outputHeight }),
-    warn: (message) => customConsole.warn(message),
-    updateNodeInternals: () => updateNodeInternals(id),
-    scheduleRun: () => setTimeout(() => runCode()),
-    onHtmlCanvasStateChange: (state) => (htmlCanvasState = state),
-    onHtmlLayerStateChange: (state) => (htmlLayerState = state),
-    onHtmlGlslLayerStateChange: (state) => (htmlGlslLayerState = state)
-  });
+  const htmlCanvasAdapter = $derived.by(() =>
+    createHtmlCanvasRuntimeAdapter({
+      nodeId: id,
+      objectName: 'dom',
+      getRootElement: () => rootElement,
+      getCanvasElement: () => htmlCanvasElement,
+      getExplicitSize: () => ({ width: data.width, height: data.height }),
+      getOutputSize: () => ({ width: $outputWidth, height: $outputHeight }),
+      warn: (message) => customConsole.warn(message),
+      updateNodeInternals: () => updateNodeInternals(id),
+      scheduleRun: () => setTimeout(() => runCode()),
+      onHtmlCanvasStateChange: (state) => (htmlCanvasState = state),
+      onHtmlLayerStateChange: (state) => (htmlLayerState = state),
+      onHtmlGlslLayerStateChange: (state) => (htmlGlslLayerState = state)
+    })
+  );
 
   const createRuntimeRoot: CreateDomRuntimeRoot = ({ containerRoot }) => ({
     root: containerRoot

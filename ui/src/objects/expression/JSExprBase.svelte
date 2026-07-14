@@ -40,8 +40,10 @@
     onResult: ResultHandler;
   } = $props();
 
-  let isEditing = $state(!data.expr);
-  let expr = $state(data.expr || '');
+  const getInitialIsEditing = () => !data.expr;
+  const getInitialExpr = () => data.expr || '';
+  let isEditing = $state(getInitialIsEditing());
+  let expr = $state(getInitialExpr());
   let inletValues = $state<unknown[]>([]);
   let populatedInlets = $state(new Set<number>());
   let hasError = $state(false);
@@ -49,8 +51,8 @@
   let consoleRef: VirtualConsole | null = $state(null);
 
   const { updateNodeData } = useSvelteFlow();
-  const messageContext = new MessageContext(nodeId);
-  const customConsole = createCustomConsole(nodeId);
+  let messageContext: MessageContext;
+  const customConsole = $derived.by(() => createCustomConsole(nodeId));
   const jsRunner = JSRunner.getInstance();
 
   function toggleConsole() {
@@ -169,6 +171,7 @@
   }
 
   onMount(() => {
+    messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
     inletValues = new Array(inletCount).fill(undefined);
 
@@ -178,8 +181,8 @@
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
   });
 </script>
 

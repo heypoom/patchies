@@ -60,10 +60,14 @@
 
   const { updateNodeData } = useSvelteFlow();
   const viewport = useViewport();
-  let messageContext = new MessageContext(nodeId);
+  function getInitialNodeId() {
+    return nodeId;
+  }
+
+  let messageContext = new MessageContext(getInitialNodeId());
 
   // Undo/redo tracking for node data changes
-  const tracker = useNodeDataTracker(nodeId);
+  const tracker = useNodeDataTracker(getInitialNodeId());
 
   // Orca engine
   let orca: Orca | null = $state(null);
