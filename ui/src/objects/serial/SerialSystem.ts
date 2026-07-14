@@ -55,7 +55,7 @@ export class SerialSystem {
     const baudRate = options?.baudRate ?? 9600;
     const dataBits = options?.dataBits ?? (8 as 7 | 8);
     const stopBits = options?.stopBits ?? (1 as 1 | 2);
-    const parity: ParityType = options?.parity ?? 'none';
+    const parity: SerialParity = options?.parity ?? 'none';
     const port = await navigator.serial.requestPort();
 
     // If this physical port is already managed, reuse if still connected with matching baud

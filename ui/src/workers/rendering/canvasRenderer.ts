@@ -47,17 +47,19 @@ export class CanvasRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
     this.ensureDrawCommand();
 
-    // @ts-expect-error -- regl type is wrong
-    this.canvasTexture?.({ data: this.offscreenCanvas, flipY: true });
+    this.canvasTexture?.({
+      data: this.offscreenCanvas as unknown as regl.TextureImageData,
+      flipY: true
+    });
+
     this.drawCommand?.();
   }
 
   ensureDrawCommand() {
     if (this.drawCommand || !this.ctx) return;
 
-    // @ts-expect-error -- regl type is wrong
     this.canvasTexture = this.renderer.regl.texture({
-      data: this.offscreenCanvas,
+      data: this.offscreenCanvas as unknown as regl.TextureImageData,
       flipY: true
     });
 

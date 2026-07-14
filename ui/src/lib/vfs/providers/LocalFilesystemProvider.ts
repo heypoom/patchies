@@ -321,7 +321,6 @@ export class LocalFilesystemProvider implements VFSProvider {
     const entries: Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }> =
       [];
 
-    // @ts-expect-error - TypeScript doesn't have full types for File System Access API iterators
     for await (const entryHandle of handle.values()) {
       entries.push({
         name: entryHandle.name,
