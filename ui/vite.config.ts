@@ -19,6 +19,7 @@ import { glslModulesDev, glslModulesCopy } from './vite-plugin-glsl-modules';
 import { minifyExceptShaderParkCore } from './vite-plugin-minify-except-shader-park';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
+const MAX_PRECACHE_FILE_SIZE_BYTES = 12 * 1024 * 1024;
 
 export function viteStaticCopyPyodide() {
   const pyodideDir = dirname(fileURLToPath(import.meta.resolve('pyodide')));
@@ -67,6 +68,9 @@ export default defineConfig(() => ({
     minifyExceptShaderParkCore(),
     SvelteKitPWA({
       outDir: '.svelte-kit/output/client',
+      workbox: {
+        maximumFileSizeToCacheInBytes: MAX_PRECACHE_FILE_SIZE_BYTES
+      },
       manifest: {
         name: 'Patchies',
         short_name: 'Patchies',

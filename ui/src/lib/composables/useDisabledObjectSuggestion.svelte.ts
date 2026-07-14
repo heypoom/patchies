@@ -68,7 +68,9 @@ export function useDisabledObjectSuggestion(
   }
 
   return {
-    disabledObjects,
+    get disabledObjects() {
+      return disabledObjects;
+    },
     searchDisabledObject
   };
 }
