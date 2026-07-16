@@ -1,32 +1,34 @@
+import type { AudioService } from '$lib/audio/v2/AudioService';
 import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
+
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
-import { MessageRuntime } from './MessageRuntime';
-import { AudioRuntime } from './AudioRuntime';
+import { AudioAdapter } from '../adapters/AudioAdapter';
+import { MessageAdapter } from '../adapters/MessageAdapter';
 
-import { RuntimeObjectReconciler } from '../services/RuntimeObjectReconciler';
-import { RuntimeObjectResolver } from '../services/RuntimeObjectResolver';
+import { RuntimeObjectReconciler } from './RuntimeObjectReconciler';
+import { RuntimeObjectResolver } from './RuntimeObjectResolver';
 
-import type {
-  RuntimeAudioObjectDescriptor,
-  RuntimeAudioObjectService
-} from '../types/audio-adapter';
+import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 
 import type {
-  RuntimeObjectDescriptor,
   RuntimeGraphSpec,
   RuntimeObjectPorts,
   RuntimeObjectService,
   RuntimeObjectSpec,
+  RuntimeObjectDescriptor,
   RuntimeObjectViewRevisionListener
 } from '../types/runtime-object';
-import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+
+type RuntimeObjectDescriptorOrSpec = RuntimeObjectDescriptor | RuntimeObjectSpec;
 
 interface PatchRuntimeOptions {
+  audioService: AudioService;
   objectService: RuntimeObjectService;
-  audioService: RuntimeAudioObjectService;
 
   isAudioObject?: (objectType: string) => boolean;
 
@@ -35,23 +37,21 @@ interface PatchRuntimeOptions {
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-type RuntimeObjectInput = RuntimeObjectDescriptor | RuntimeObjectSpec;
-
 export class PatchRuntime {
-  private message: MessageRuntime;
-  private audio: AudioRuntime;
+  private message: MessageAdapter;
+  private audio: AudioAdapter;
   private objectResolver: RuntimeObjectResolver;
   private objectReconciler: RuntimeObjectReconciler;
 
   constructor(options: PatchRuntimeOptions) {
-    this.message = new MessageRuntime({
+    this.message = new MessageAdapter({
       objectService: options.objectService,
       onObjectParamsChange: options.onObjectParamsChange,
       onObjectDataChange: options.onObjectDataChange,
       eventBus: PatchiesEventBus.getInstance()
     });
 
-    this.audio = new AudioRuntime({
+    this.audio = new AudioAdapter({
       audioService: options.audioService,
       isAudioObject: options.isAudioObject,
       onAudioObjectDataChange: options.onAudioObjectDataChange
@@ -97,13 +97,13 @@ export class PatchRuntime {
     await this.objectReconciler.reconcile(objects);
   }
 
-  async createObject(object: RuntimeObjectInput): Promise<void> {
-    if ('objectType' in object) {
-      await this.message.createObject(object);
+  async createObject(descriptor: RuntimeObjectDescriptorOrSpec): Promise<void> {
+    if ('objectType' in descriptor) {
+      await this.message.createObject(descriptor);
       return;
     }
 
-    const spec = normalizeRuntimeObjectSpec(object);
+    const spec = transformObjectDescriptionToSpec(descriptor);
     const resolved = this.objectResolver.resolve(spec);
 
     if (resolved.kind === 'audio') {
@@ -116,13 +116,13 @@ export class PatchRuntime {
     }
   }
 
-  async updateObject(nodeId: string, object: RuntimeObjectInput): Promise<void> {
-    if ('objectType' in object) {
-      await this.message.updateObject(nodeId, object);
+  async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptorOrSpec): Promise<void> {
+    if ('objectType' in descriptor) {
+      await this.message.updateObject(nodeId, descriptor);
       return;
     }
 
-    const spec = normalizeRuntimeObjectSpec(object);
+    const spec = transformObjectDescriptionToSpec(descriptor);
     const resolved = this.objectResolver.resolve(spec);
 
     if (resolved.kind === 'audio') {
@@ -200,12 +200,14 @@ export class PatchRuntime {
   }
 }
 
-function normalizeRuntimeObjectSpec(object: RuntimeObjectInput): RuntimeObjectSpec {
-  if ('type' in object) return object;
+function transformObjectDescriptionToSpec(
+  descriptor: RuntimeObjectDescriptorOrSpec
+): RuntimeObjectSpec {
+  if ('type' in descriptor) return descriptor;
 
   return {
-    id: object.id,
-    type: object.objectType,
-    data: object.data
+    id: descriptor.id,
+    type: descriptor.objectType,
+    data: descriptor.data
   };
 }

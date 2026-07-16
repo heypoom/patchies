@@ -3,13 +3,17 @@ import { vi } from 'vitest';
 
 import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { MessageContext } from '$lib/messages/MessageContext';
-import { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
-import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+
 import { ButtonObject } from '$objects/button/ButtonObject';
+import { ObjectContext } from '$lib/objects/v2/ObjectContext';
+
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 
 import type { EditorRuntime } from '../types/editor-runtime';
 import type { RuntimeObjectService } from '../types/runtime-object';
+import type { AudioService } from '$lib/audio';
+import type { PatchiesEventBus } from '$lib/eventbus';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
 
@@ -92,6 +96,7 @@ export class FakeObjectService implements RuntimeObjectService {
 
     const object = new ObjectClass(nodeId, context);
     this.objectsById.set(nodeId, object);
+
     context.addMessageCallback((data, meta) => {
       object.onMessage?.(data, meta);
     });
@@ -116,20 +121,18 @@ export class FakeObjectService implements RuntimeObjectService {
   }
 }
 
-export class FakeAudioService {
-  removeNodeById = vi.fn();
-  createNode = vi.fn(() => Promise.resolve(this.audioNode));
-  send = vi.fn();
-
-  audioNode: AudioNodeV2 = {
-    nodeId: 'object-audio-runtime-test',
-    audioNode: null
-  };
-
-  getNodeById = vi.fn<() => AudioNodeV2 | null>(() => this.audioNode);
+class FakeAudioService {
+  audioNode: AudioNodeV2 = { nodeId: 'object-audio-runtime-test', audioNode: null };
+  removeNodeById = vi.fn<AudioService['removeNodeById']>();
+  createNode = vi.fn<AudioService['createNode']>(() => Promise.resolve(this.audioNode));
+  send = vi.fn<AudioService['send']>();
+  getNodeById = vi.fn<AudioService['getNodeById']>(() => this.audioNode);
 }
 
-export class FakeEventBus {
+export const createFakeAudioService = () =>
+  new FakeAudioService() as FakeAudioService & AudioService;
+
+class FakeEventBus {
   listeners = new Map<string, Array<(event: never) => void>>();
 
   addEventListener = vi.fn((type: string, listener: (event: never) => void) => {
@@ -149,6 +152,9 @@ export class FakeEventBus {
     }
   }
 }
+
+export const createFakeEventBus = (): PatchiesEventBus =>
+  new FakeEventBus() as unknown as PatchiesEventBus;
 
 export const objectNode = (id: string, data: Record<string, unknown>): Node => ({
   id,

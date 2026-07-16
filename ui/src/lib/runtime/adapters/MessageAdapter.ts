@@ -1,7 +1,8 @@
 import type { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
+
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
+import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 
 import { MessageObjectLifecycle } from '../services/MessageObjectLifecycle';
 import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
@@ -26,7 +27,7 @@ type ObjectDataChangedEvent = {
   updates: Record<string, unknown>;
 };
 
-interface MessageRuntimeOptions {
+interface MessageAdapterOptions {
   objectService: RuntimeObjectService;
   eventBus: PatchiesEventBus;
 
@@ -34,16 +35,17 @@ interface MessageRuntimeOptions {
   onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-export class MessageRuntime {
+export class MessageAdapter {
   private objectService: RuntimeObjectService;
   private eventBus: PatchiesEventBus;
+
   private lifecycle: MessageObjectLifecycle;
   private viewRevisions = new RuntimeViewRevisionTracker();
 
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 
-  constructor(options: MessageRuntimeOptions) {
+  constructor(options: MessageAdapterOptions) {
     this.objectService = options.objectService;
     this.eventBus = options.eventBus;
 
@@ -91,9 +93,7 @@ export class MessageRuntime {
 
     messageContext.queue.addCallback(callback);
 
-    return () => {
-      messageContext.queue.removeCallback(callback);
-    };
+    return () => messageContext.queue.removeCallback(callback);
   }
 
   getObjectPorts(
@@ -114,6 +114,7 @@ export class MessageRuntime {
   destroy(): void {
     this.eventBus.removeEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.removeEventListener('objectDataChanged', this.handleObjectDataChanged);
+
     this.lifecycle.destroy();
   }
 

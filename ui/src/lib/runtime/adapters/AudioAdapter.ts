@@ -1,28 +1,27 @@
-import type { AudioNodeClass, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
+import type { AudioService, AudioNodeClass, AudioNodeV2 } from '$lib/audio';
+
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-import { validateMessageToObject } from '$lib/objects/validate-object-message';
+
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { validateMessageToObject } from '$lib/objects/validate-object-message';
 
 import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
 
-import type {
-  RuntimeAudioObjectDescriptor,
-  RuntimeAudioObjectService
-} from '../types/audio-adapter';
+import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 
 import type { RuntimeObjectViewRevisionListener } from '../types/runtime-object';
 
-interface AudioRuntimeOptions {
-  audioService: RuntimeAudioObjectService;
+interface AudioAdapterOptions {
+  audioService: AudioService;
   isAudioObject?: (objectType: string) => boolean;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
 type RuntimeAudioObjectEntry = { messageContext: MessageContext };
 
-export class AudioRuntime {
-  private audioService: RuntimeAudioObjectService;
+export class AudioAdapter {
+  private audioService: AudioService;
 
   private isAudioObject: (objectType: string) => boolean;
   private onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
@@ -35,7 +34,7 @@ export class AudioRuntime {
 
   private viewRevisions = new RuntimeViewRevisionTracker();
 
-  constructor(options: AudioRuntimeOptions) {
+  constructor(options: AudioAdapterOptions) {
     this.audioService = options.audioService;
 
     this.isAudioObject =

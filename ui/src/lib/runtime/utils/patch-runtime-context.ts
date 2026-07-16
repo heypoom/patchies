@@ -1,7 +1,7 @@
 import { getContext, onDestroy, setContext } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 
-import type { PatchRuntime } from '../runtimes/PatchRuntime';
+import type { PatchRuntime } from '../services/PatchRuntime';
 
 const PATCH_RUNTIME_KEY = Symbol('patch-runtime');
 const PATCH_RUNTIME_VIEW_REVISIONS_KEY = Symbol('patch-runtime-view-revisions');

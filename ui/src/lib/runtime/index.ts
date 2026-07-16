@@ -1,7 +1,4 @@
-export type {
-  RuntimeAudioObjectDescriptor,
-  RuntimeAudioObjectService
-} from './types/audio-adapter';
+export type { RuntimeAudioObjectDescriptor } from './types/audio-adapter';
 
 export type {
   RuntimeConnectionSpec,
@@ -10,7 +7,8 @@ export type {
   RuntimeObjectSpec
 } from './types/runtime-object';
 
-export { PatchRuntime } from './runtimes/PatchRuntime';
+export { PatchRuntime } from './services/PatchRuntime';
+
 export { reconcileEditorRuntime } from './editor/editor-reconciler';
 export { useNodeViewMessageContext } from './editor/useNodeViewMessageContext.svelte';
 
