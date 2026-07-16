@@ -10,7 +10,6 @@ The pack includes standalone procedural shaders that can run inside the existing
 
 - Paper Mesh Gradient
 - Paper Dot Grid
-- Paper Waves
 - Paper Spiral
 - Paper Static Mesh Gradient
 - Paper Static Radial Gradient

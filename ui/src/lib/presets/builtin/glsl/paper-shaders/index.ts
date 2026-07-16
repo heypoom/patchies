@@ -1,6 +1,5 @@
 import { preset as meshGradientPreset } from './mesh-gradient';
 import { preset as dotGridPreset } from './dot-grid';
-import { preset as wavesPreset } from './waves';
 import { preset as spiralPreset } from './spiral';
 import { preset as staticMeshGradientPreset } from './static-mesh-gradient';
 import { preset as staticRadialGradientPreset } from './static-radial-gradient';
@@ -25,7 +24,6 @@ import type { GLSLPreset } from '../types';
 export const PAPER_SHADER_PRESETS: Record<string, GLSLPreset> = {
   'Paper Mesh Gradient': meshGradientPreset,
   'Paper Dot Grid': dotGridPreset,
-  'Paper Waves': wavesPreset,
   'Paper Spiral': spiralPreset,
   'Paper Static Mesh Gradient': staticMeshGradientPreset,
   'Paper Static Radial Gradient': staticRadialGradientPreset,
