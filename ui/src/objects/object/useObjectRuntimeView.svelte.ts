@@ -2,7 +2,7 @@ import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import {
   getPatchRuntime,
   getPatchRuntimeViewRevisionTracker
-} from '$lib/runtime/patch-runtime-context';
+} from '$lib/runtime/context/patch-runtime-context';
 
 type ObjectRuntimeViewOptions = {
   nodeId: string;

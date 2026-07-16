@@ -3,38 +3,31 @@ import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
-import {
-  RuntimeAudioObjectAdapter,
-  type RuntimeAudioObjectService,
-  type RuntimeAudioObjectDescriptor
-} from './RuntimeAudioObjectAdapter';
+import { PatchMessageRuntime } from './PatchMessageRuntime';
+import { RuntimeAudioObjectAdapter } from './RuntimeAudioObjectAdapter';
 
-import {
-  PatchMessageRuntime,
-  type RuntimeObjectPorts,
-  type RuntimeObjectService,
-  type RuntimeObjectDescriptor,
-  type RuntimeObjectViewRevisionListener
-} from './PatchMessageRuntime';
+import type {
+  RuntimeAudioObjectDescriptor,
+  RuntimeAudioObjectService
+} from './types/audio-adapter';
 
-export type {
-  RuntimeAudioObjectService,
-  RuntimeAudioObjectDescriptor
-} from './RuntimeAudioObjectAdapter';
+import type {
+  RuntimeObjectDescriptor,
+  RuntimeObjectPorts,
+  RuntimeObjectService,
+  RuntimeObjectViewRevisionListener
+} from './types/runtime-object';
 
-export type {
-  RuntimeObjectService as PatchRuntimeObjectService,
-  RuntimeObjectDescriptor
-} from './PatchMessageRuntime';
-
-export type PatchRuntimeOptions = {
+interface PatchRuntimeOptions {
   objectService: RuntimeObjectService;
   audioService: RuntimeAudioObjectService;
+
   isAudioObject?: (objectType: string) => boolean;
+
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
-};
+}
 
 export class PatchRuntime {
   private message: PatchMessageRuntime;

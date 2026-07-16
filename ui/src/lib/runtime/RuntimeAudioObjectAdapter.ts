@@ -3,31 +3,19 @@ import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { validateMessageToObject } from '$lib/objects/validate-object-message';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import type {
+  RuntimeAudioObjectDescriptor,
+  RuntimeAudioObjectService
+} from './types/audio-adapter';
 
-export interface RuntimeAudioObjectService {
-  removeNodeById(nodeId: string): void;
-  createNode(nodeId: string, objectType: string, params: unknown[]): Promise<AudioNodeV2 | null>;
-  send(nodeId: string, key: string, message: unknown): void;
-  getNodeById(nodeId: string): AudioNodeV2 | null;
-}
-
-export interface RuntimeAudioObjectAdapterOptions {
+interface RuntimeAudioObjectAdapterOptions {
   audioService: RuntimeAudioObjectService;
   isAudioObject?: (objectType: string) => boolean;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-export type RuntimeAudioObjectDescriptor = {
-  id: string;
-  objectType: string;
-  params: unknown[];
-};
-
-export type RuntimeAudioObjectViewRevisionListener = (nodeId: string) => void;
-
-type RuntimeAudioObjectRecord = {
-  messageContext: MessageContext;
-};
+type RuntimeAudioObjectViewRevisionListener = (nodeId: string) => void;
+type RuntimeAudioObjectEntry = { messageContext: MessageContext };
 
 export class RuntimeAudioObjectAdapter {
   private audioService: RuntimeAudioObjectService;
@@ -36,7 +24,7 @@ export class RuntimeAudioObjectAdapter {
   private onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 
   /** Runtime-owned audio objects and their message contexts. */
-  private audioObjects = new Map<string, RuntimeAudioObjectRecord>();
+  private audioObjects = new Map<string, RuntimeAudioObjectEntry>();
 
   /** Node ids whose next editor-state sync should be ignored because runtime messaging already applied it. */
   private suppressedAudioObjectSyncs = new Set<string>();
@@ -131,13 +119,14 @@ export class RuntimeAudioObjectAdapter {
   }
 
   destroy(): void {
-    for (const nodeId of [...this.audioObjects.keys()]) {
+    for (const nodeId of this.audioObjects.keys()) {
       this.destroyAudioObject(nodeId);
     }
   }
 
   private createAudioObjectMessageContext(nodeId: string, objectType: string): MessageContext {
     const nodeClass = AudioRegistry.getInstance().get(objectType);
+
     const messageContext = new MessageContext(nodeId);
     const callback = this.createAudioObjectMessageCallback(nodeId, nodeClass);
 

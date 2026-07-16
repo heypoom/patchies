@@ -6,7 +6,8 @@ import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 import { logger } from '$lib/utils/logger';
 
-import type { RuntimeObjectDescriptor, RuntimeAudioObjectDescriptor } from './PatchRuntime';
+import type { RuntimeAudioObjectDescriptor } from './types/audio-adapter';
+import type { RuntimeObjectDescriptor } from './types/runtime-object';
 
 interface EditorRuntimeObjectData {
   expr?: unknown;

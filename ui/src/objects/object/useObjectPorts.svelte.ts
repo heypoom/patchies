@@ -2,7 +2,7 @@ import type { ObjectInlet, ObjectOutlet, ObjectMetadata } from '$lib/objects/v2/
 import {
   getPatchRuntime,
   getPatchRuntimeViewRevisionTracker
-} from '$lib/runtime/patch-runtime-context';
+} from '$lib/runtime/context/patch-runtime-context';
 
 type ObjectPortsOptions = {
   nodeId: string;

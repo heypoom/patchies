@@ -1,6 +1,6 @@
 import { getContext, onDestroy, setContext } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
-import type { PatchRuntime } from './PatchRuntime';
+import type { PatchRuntime } from '../PatchRuntime';
 
 const PATCH_RUNTIME_KEY = Symbol('patch-runtime');
 const PATCH_RUNTIME_VIEW_REVISIONS_KEY = Symbol('patch-runtime-view-revisions');
@@ -11,11 +11,13 @@ type PatchRuntimeViewRevisionTracker = {
 
 export const setPatchRuntime = (runtime: PatchRuntime) => {
   const revisions = new SvelteMap<string, number>();
-  const unsubscribe = runtime.subscribeObjectViewRevisions((nodeId) => {
+
+  const unsubscribe = runtime.subscribeObjectViewRevisions((nodeId: string) => {
     revisions.set(nodeId, runtime.trackObjectViewRevision(nodeId));
   });
 
   setContext(PATCH_RUNTIME_KEY, runtime);
+
   setContext(PATCH_RUNTIME_VIEW_REVISIONS_KEY, {
     trackObjectViewRevision(nodeId: string) {
       return revisions.get(nodeId) ?? runtime.trackObjectViewRevision(nodeId);

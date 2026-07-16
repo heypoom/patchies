@@ -13,7 +13,7 @@ import { TextboxObject } from '$objects/textbox/TextboxObject';
 import { ToggleObject } from '$objects/toggle/ToggleObject';
 
 import type { EditorRuntime } from './EditorRuntimeReconciler';
-import type { RuntimeObjectService } from './PatchMessageRuntime';
+import type { RuntimeObjectService } from './types/runtime-object';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
 

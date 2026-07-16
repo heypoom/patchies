@@ -2,8 +2,14 @@ import { hash } from 'ohash';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
-import type { ObjectInlet, ObjectMetadata, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
+import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
+import type {
+  RuntimeObjectDescriptor,
+  RuntimeObjectPorts,
+  RuntimeObjectService,
+  RuntimeObjectViewRevisionListener
+} from './types/runtime-object';
 
 type ObjectParamsChangedEvent = {
   type: 'objectParamsChanged';
@@ -18,33 +24,11 @@ type ObjectDataChangedEvent = {
   updates: Record<string, unknown>;
 };
 
-export type RuntimeObjectDescriptor = {
-  id: string;
-  objectType: string;
-  data: Record<string, unknown>;
-  rawParams: string[];
-};
-
 type RuntimeObjectRecord = {
   objectType: string;
   lifecycleKey: string;
   messageContext: MessageContext;
   lifecycleToken: number;
-};
-
-export type RuntimeObjectService = {
-  createObject(
-    nodeId: string,
-    objectType: string,
-    messageContext: MessageContext,
-    data?: Record<string, unknown>,
-    rawParams?: string[]
-  ): Promise<TextObjectV2 | null>;
-
-  isObjectInRegistry(objectType: string): boolean;
-  getObjectClass(objectType: string): TextObjectClass | undefined;
-  getObjectById(nodeId: string): TextObjectV2 | null;
-  removeObjectById(nodeId: string): void;
 };
 
 export type RuntimeEventBus = {
@@ -66,14 +50,6 @@ export type RuntimeEventBus = {
     listener: (event: ObjectDataChangedEvent) => void
   ): void;
 };
-
-export type RuntimeObjectPorts = {
-  inlets: ObjectInlet[];
-  outlets: ObjectOutlet[];
-  hasDynamicOutlets: boolean;
-};
-
-export type RuntimeObjectViewRevisionListener = (nodeId: string) => void;
 
 export type PatchMessageRuntimeOptions = {
   objectService: RuntimeObjectService;
