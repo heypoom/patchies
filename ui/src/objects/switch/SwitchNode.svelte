@@ -3,7 +3,6 @@
   import { SwitchObject } from '$objects/switch/SwitchObject';
   import { Switch } from '$lib/components/ui/switch';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { untrack } from 'svelte';
   import { useNodeDataTracker } from '$lib/history';
   import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
 
@@ -13,7 +12,11 @@
 
   // Undo/redo tracking
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
-  const viewMessageContext = useNodeViewMessageContext(untrack(() => nodeId), () => {});
+
+  const viewMessageContext = useNodeViewMessageContext(
+    () => nodeId,
+    () => {}
+  );
 
   // Get toggle state from node data, default to false
   let isOn = $derived(data.value === true);

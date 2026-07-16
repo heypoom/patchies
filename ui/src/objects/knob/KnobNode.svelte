@@ -44,7 +44,11 @@
     tracker.track('value', () => node.data.value ?? defaultValue)
   );
 
-  const viewMessageContext = useNodeViewMessageContext(node.id, () => {});
+  const viewMessageContext = useNodeViewMessageContext(
+    () => node.id,
+    () => {}
+  );
+
   let showSettings = $state(false);
   let isDragging = $state(false);
   let dragStartY = $state(0);

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
-  import { untrack } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { TextboxObject } from '$objects/textbox/TextboxObject';
   import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
@@ -25,7 +24,12 @@
   const { updateNodeData } = useSvelteFlow();
   const store = useStore();
   const edges = useEdges();
-  const viewMessageContext = useNodeViewMessageContext(untrack(() => node.id), () => {});
+
+  const viewMessageContext = useNodeViewMessageContext(
+    () => node.id,
+    () => {}
+  );
+
   const textboxObject = TextboxObject;
 
   // Check if handles have connections (for smart auto mode)
