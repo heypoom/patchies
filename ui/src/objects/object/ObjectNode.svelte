@@ -41,10 +41,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useObjectDataTracker } from '$lib/history';
   import { editorFontFamily } from '../../stores/editor.store';
-  import {
-    getPatchRuntime,
-    getPatchRuntimeViewRevisionTracker
-  } from '$lib/runtime/patch-runtime-context';
+  import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
   import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
 

@@ -14,19 +14,36 @@ The runtime should accept both as runtime object data.
 
 ## Decision
 
-Use one runtime lifecycle contract, with separate editor definition kinds.
+Use one public runtime object shape, with separate editor definition kinds.
 
 ```ts
-type RuntimeNodeDescriptor<TData = Record<string, unknown>> = {
+type RuntimeObjectSpec<TData = Record<string, unknown>> = {
   id: string;
   type: string;
   data: TData;
 };
 ```
 
-`RuntimeNodeDescriptor` is the public `PatchRuntime` object shape. The editor,
+`RuntimeObjectSpec` is the public `PatchRuntime` object shape. The editor,
 tests, host applications, and headless scripts should all be able to construct
 the same descriptor shape.
+
+`PatchRuntime` is the public graph module. Its interface should converge on
+object and connection operations:
+
+```ts
+runtime.reconcileObjects(objects);
+runtime.createObject(object);
+runtime.updateObject(object);
+runtime.destroyObject(id);
+runtime.connect(connection);
+runtime.disconnect(connectionId);
+runtime.send(id, message);
+```
+
+Message, audio, rendering, and editor compatibility details belong behind that
+interface. The editor reconciler is only one adapter that feeds this public
+runtime shape from XYFlow state.
 
 Runtime objects implement a common lifecycle and message interface:
 
@@ -85,30 +102,35 @@ spec. That can remain a future migration.
 
 `EditorRuntimeReconciler` is an adapter from XYFlow state into public
 `PatchRuntime` calls. It may understand editor representation kinds, but it
-must not mention concrete object names or own object-specific data conversion.
+must not mention concrete object names, message/audio runtime lanes, or
+object-specific data conversion.
 
 For visual nodes:
 
 ```ts
-runtime.createObject({
-  id: node.id,
-  type: node.type,
-  data: node.data
-});
+runtime.reconcileObjects([
+  {
+    id: node.id,
+    type: node.type,
+    data: node.data,
+  },
+]);
 ```
 
 For object-box nodes:
 
 ```ts
-runtime.createObject({
-  id: node.id,
-  type: node.data.name,
-  data: {
-    expr: node.data.expr,
-    name: node.data.name,
-    params: node.data.params
-  }
-});
+runtime.reconcileObjects([
+  {
+    id: node.id,
+    type: node.data.name,
+    data: {
+      expr: node.data.expr,
+      name: node.data.name,
+      params: node.data.params,
+    },
+  },
+]);
 ```
 
 Object-specific defaults, migrations, and compatibility logic belong to object
@@ -131,7 +153,11 @@ Object-box text objects may keep param helpers through an adapter:
 ```ts
 interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
   getParam(indexOrName: number | string): unknown;
-  setParam(indexOrName: number | string, value: unknown, options?: { notifyUI?: boolean }): void;
+  setParam(
+    indexOrName: number | string,
+    value: unknown,
+    options?: { notifyUI?: boolean },
+  ): void;
 }
 ```
 
@@ -140,14 +166,15 @@ interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
 1. Keep `TEXT_OBJECTS`, `VISUAL_OBJECTS`, and `RUNTIME_OBJECTS` separate.
 2. Pass visual `node.data` directly into runtime descriptors.
 3. Pass object-box `{ expr, name, params }` as runtime data for text objects.
-4. Move object-specific compatibility handling out of `EditorRuntimeReconciler`.
-5. Prefer data-first runtime objects; keep param helpers only for text-object compatibility.
+4. Move message/audio runtime lane selection out of `EditorRuntimeReconciler`.
+5. Move edge updates behind `PatchRuntime` connection methods.
+6. Prefer data-first runtime objects; keep param helpers only for text-object compatibility.
 
 ## Success Criteria
 
 - Visual objects run headlessly from the same object-shaped data their Svelte views receive.
 - `ObjectNode` cannot accidentally load visual-only objects.
-- `EditorRuntimeReconciler` does not mention concrete object names.
+- `EditorRuntimeReconciler` does not mention concrete object names or runtime lanes.
 - Headless callers can create the same runtime graph the editor creates through reconciliation.
 - Text-object `params[]` continue to work for object-box expressions.
 

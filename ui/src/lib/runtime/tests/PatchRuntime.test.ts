@@ -1,14 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { RuntimeAudioObjectAdapter } from './RuntimeAudioObjectAdapter';
-import { PatchMessageRuntime } from './PatchMessageRuntime';
-import { PatchRuntime } from './PatchRuntime';
-import { EditorRuntimeReconciler } from './EditorRuntimeReconciler';
-import { logger } from '$lib/utils/logger';
+
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+
 import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
 import { ScopeAudioNode } from '$objects/scope~/ScopeAudioNode';
+
+import { AudioRuntime } from '../runtimes/AudioRuntime';
+import { PatchRuntime } from '../runtimes/PatchRuntime';
+import { MessageRuntime } from '../runtimes/MessageRuntime';
+
+import { reconcileEditorRuntime } from '../editor/editor-reconciler';
+
 import {
   buttonNode,
   createFakeEditorRuntime,
@@ -25,7 +29,7 @@ import {
   TEST_OBJECT_TYPE,
   textboxNode,
   toggleNode
-} from './PatchRuntime.test-helpers';
+} from './test-utils';
 
 beforeEach(() => {
   resetPatchRuntimeTestObject();
@@ -39,10 +43,10 @@ const isScope = (objectType: string) => objectType === 'scope~';
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
 
-describe('PatchMessageRuntime', () => {
+describe('MessageRuntime', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new PatchMessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService });
     const nodeId = 'object-patch-runtime-test';
 
     await runtime.createObject({
@@ -76,7 +80,7 @@ describe('PatchMessageRuntime', () => {
 
   it('keeps message edges routable after replacing an object with the same node id', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new PatchMessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService });
     const messageSystem = MessageSystem.getInstance();
     const sourceNodeId = 'object-message-replace-source';
     const targetNodeId = 'object-message-replace-target';
@@ -138,7 +142,7 @@ describe('PatchMessageRuntime', () => {
     const objectService = new FakeObjectService();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
 
-    const runtime = new PatchMessageRuntime({
+    const runtime = new MessageRuntime({
       objectService,
       onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params })
     });
@@ -166,7 +170,7 @@ describe('PatchMessageRuntime', () => {
     const eventBus = new FakeEventBus();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
 
-    const runtime = new PatchMessageRuntime({
+    const runtime = new MessageRuntime({
       objectService,
       eventBus,
       onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params })
@@ -192,7 +196,7 @@ describe('PatchMessageRuntime', () => {
 
   it('resolves runtime object ports without exposing ObjectService to the view', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new PatchMessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService });
     const nodeId = 'object-port-runtime-test';
 
     PatchRuntimeTestObject.dynamicInlets = [{ name: 'dynamic-in', type: 'float' }];
@@ -219,7 +223,7 @@ describe('PatchMessageRuntime', () => {
 
   it('subscribes view callbacks to runtime object messages', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new PatchMessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService });
     const nodeId = 'object-message-subscription-test';
     const onMessage = vi.fn();
 
@@ -252,7 +256,7 @@ describe('PatchMessageRuntime', () => {
 
   it('bumps object revision once when replacing an existing object', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new PatchMessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService });
     const nodeId = 'object-revision-replace-test';
 
     await runtime.createObject({
@@ -276,7 +280,7 @@ describe('PatchMessageRuntime', () => {
 
   it('notifies view revision subscribers without Svelte reactivity', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new PatchMessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService });
     const nodeId = 'object-revision-subscription-test';
     const revisionUpdates: string[] = [];
 
@@ -311,10 +315,10 @@ describe('PatchMessageRuntime', () => {
   });
 });
 
-describe('RuntimeAudioObjectAdapter', () => {
+describe('AudioRuntime', () => {
   it('owns audio object service interactions', () => {
     const audioService = new FakeAudioService();
-    const runtime = new RuntimeAudioObjectAdapter({ audioService });
+    const runtime = new AudioRuntime({ audioService });
     const nodeId = 'object-audio-runtime-test';
 
     runtime.upsertAudioObject({
@@ -337,7 +341,7 @@ describe('RuntimeAudioObjectAdapter', () => {
 
   it('consumes suppressed audio sync markers once', () => {
     const audioService = new FakeAudioService();
-    const runtime = new RuntimeAudioObjectAdapter({ audioService });
+    const runtime = new AudioRuntime({ audioService });
     const nodeId = 'object-audio-sync-test';
 
     runtime.suppressNextAudioObjectSync(nodeId);
@@ -348,7 +352,7 @@ describe('RuntimeAudioObjectAdapter', () => {
 
   it('handles async audio node creation failures as fire-and-forget work', () => {
     const audioService = new FakeAudioService();
-    const runtime = new RuntimeAudioObjectAdapter({ audioService });
+    const runtime = new AudioRuntime({ audioService });
     const nodeId = 'object-audio-create-rejection-test';
     const catchHandlers: Array<(error: unknown) => unknown> = [];
 
@@ -377,7 +381,7 @@ describe('RuntimeAudioObjectAdapter', () => {
     const audioService = new FakeAudioService();
     const onAudioObjectDataChange = vi.fn();
 
-    const runtime = new RuntimeAudioObjectAdapter({
+    const runtime = new AudioRuntime({
       audioService,
       isAudioObject: isTap,
       onAudioObjectDataChange
@@ -589,13 +593,11 @@ describe('EditorRuntimeReconciler', () => {
       audioService,
       isAudioObject: isTap
     });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'tap-tilde-editor-runtime-test';
 
     AudioRegistry.getInstance().register(TapNode);
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       tapTildeNode(nodeId, {
         bufferSize: 1024,
         mode: 'xy',
@@ -613,7 +615,7 @@ describe('EditorRuntimeReconciler', () => {
       false
     ]);
 
-    await reconciler.reconcile([]);
+    await reconcileEditorRuntime(runtime, []);
 
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
 
@@ -621,12 +623,13 @@ describe('EditorRuntimeReconciler', () => {
   });
 
   it('diffs runtime-managed audio nodes before calling the audio runtime', async () => {
-    const runtime = createFakeEditorRuntime({
-      isAudioObjectInRegistry: vi.fn(isTap),
-      getAudioObject: vi.fn(() => ({ nodeId: 'tap-tilde-runtime-noop-test', audioNode: null }))
-    });
+    const audioService = new FakeAudioService();
 
-    const reconciler = new EditorRuntimeReconciler(runtime);
+    const runtime = new PatchRuntime({
+      objectService: new FakeObjectService(),
+      audioService,
+      isAudioObject: isTap
+    });
     const nodeId = 'tap-tilde-runtime-noop-test';
 
     const node = tapTildeNode(nodeId, {
@@ -638,19 +641,24 @@ describe('EditorRuntimeReconciler', () => {
 
     AudioRegistry.getInstance().register(TapNode);
 
-    await reconciler.reconcile([node]);
-    await reconciler.reconcile([node]);
+    await reconcileEditorRuntime(runtime, [node]);
+    await reconcileEditorRuntime(runtime, [node]);
 
-    expect(runtime.upsertAudioObject).toHaveBeenCalledTimes(1);
-    expect(runtime.upsertAudioObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: 'tap~',
-      params: [null, null, 1024, 'xy', 30, false]
-    });
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
+      null,
+      null,
+      1024,
+      'xy',
+      30,
+      false
+    ]);
 
-    await reconciler.reconcile([]);
+    await reconcileEditorRuntime(runtime, []);
 
-    expect(runtime.destroyAudioObject).toHaveBeenCalledWith(nodeId);
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+
+    runtime.destroy();
   });
 
   it('does not sync dedicated audio UI nodes that still own their view runtime', async () => {
@@ -661,13 +669,11 @@ describe('EditorRuntimeReconciler', () => {
       audioService,
       isAudioObject: isScope
     });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'scope-editor-runtime-test';
 
     AudioRegistry.getInstance().register(ScopeAudioNode);
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       {
         id: nodeId,
         type: 'scope~',
@@ -691,11 +697,9 @@ describe('EditorRuntimeReconciler', () => {
       audioService,
       isAudioObject: isOsc
     });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'object-box-audio-reconciler-test';
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 440',
         name: 'osc~',
@@ -706,7 +710,7 @@ describe('EditorRuntimeReconciler', () => {
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
     expect(createObject).not.toHaveBeenCalled();
 
-    await reconciler.reconcile([]);
+    await reconcileEditorRuntime(runtime, []);
 
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
 
@@ -722,11 +726,9 @@ describe('EditorRuntimeReconciler', () => {
       audioService,
       isAudioObject: isOsc
     });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'object-box-audio-to-message-test';
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 440',
         name: 'osc~',
@@ -734,7 +736,7 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: `${TEST_OBJECT_TYPE} next`,
         name: TEST_OBJECT_TYPE,
@@ -756,11 +758,9 @@ describe('EditorRuntimeReconciler', () => {
       audioService,
       isAudioObject: isOsc
     });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'object-box-audio-suppressed-reconcile-test';
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 440',
         name: 'osc~',
@@ -770,7 +770,7 @@ describe('EditorRuntimeReconciler', () => {
 
     runtime.suppressNextAudioObjectSync(nodeId);
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 220',
         name: 'osc~',
@@ -778,7 +778,7 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 220',
         name: 'osc~',
@@ -788,7 +788,7 @@ describe('EditorRuntimeReconciler', () => {
 
     expect(audioService.createNode).toHaveBeenCalledTimes(1);
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 330',
         name: 'osc~',
@@ -809,98 +809,83 @@ describe('EditorRuntimeReconciler', () => {
       audioService,
       isAudioObject: isOsc
     });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const node = objectNode('object-box-audio-undo-test', {
       expr: 'osc~ 440',
       name: 'osc~',
       params: [440]
     });
 
-    await reconciler.reconcile([node]);
+    await reconcileEditorRuntime(runtime, [node]);
 
     audioService.getNodeById.mockReturnValueOnce(null);
-    await reconciler.reconcile([node]);
+    await reconcileEditorRuntime(runtime, [node]);
 
     expect(audioService.createNode).toHaveBeenCalledTimes(2);
 
     runtime.destroy();
   });
 
-  it('translates XYFlow button nodes into runtime object lifecycle calls', async () => {
+  it('translates XYFlow button nodes into public runtime object specs', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'button-editor-runtime-test';
 
-    await reconciler.reconcile([buttonNode(nodeId)]);
-    await reconciler.reconcile([buttonNode(nodeId)]);
+    await reconcileEditorRuntime(runtime, [buttonNode(nodeId)]);
 
-    expect(runtime.createObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: 'button',
-      data: {},
-      rawParams: []
-    });
-
-    expect(runtime.createObject).toHaveBeenCalledTimes(1);
-    expect(runtime.destroyObject).not.toHaveBeenCalled();
-
-    await reconciler.reconcile([]);
-
-    expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
+      { id: nodeId, type: 'button', data: {} }
+    ]);
   });
 
   it('translates XYFlow toggle value into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'toggle-editor-runtime-test';
 
-    await reconciler.reconcile([toggleNode(nodeId, { value: true })]);
+    await reconcileEditorRuntime(runtime, [toggleNode(nodeId, { value: true })]);
 
-    expect(runtime.createObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: 'toggle',
-      data: { value: true },
-      rawParams: []
-    });
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
+      {
+        id: nodeId,
+        type: 'toggle',
+        data: { value: true }
+      }
+    ]);
   });
 
   it('translates XYFlow switch value into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'switch-editor-runtime-test';
 
-    await reconciler.reconcile([switchNode(nodeId, { value: true })]);
+    await reconcileEditorRuntime(runtime, [switchNode(nodeId, { value: true })]);
 
-    expect(runtime.createObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: 'switch',
-      data: { value: true },
-      rawParams: []
-    });
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
+      {
+        id: nodeId,
+        type: 'switch',
+        data: { value: true }
+      }
+    ]);
   });
 
   it('translates XYFlow textbox text into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'textbox-editor-runtime-test';
 
-    await reconciler.reconcile([textboxNode(nodeId, { text: 'saved text' })]);
+    await reconcileEditorRuntime(runtime, [textboxNode(nodeId, { text: 'saved text' })]);
 
-    expect(runtime.createObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: 'textbox',
-      data: { text: 'saved text' },
-      rawParams: []
-    });
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
+      {
+        id: nodeId,
+        type: 'textbox',
+        data: { text: 'saved text' }
+      }
+    ]);
   });
 
   it('translates XYFlow slider data into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'slider-editor-runtime-test';
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       sliderNode(nodeId, {
         value: 7,
         min: -10,
@@ -911,27 +896,27 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(runtime.createObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: 'slider',
-      data: {
-        value: 7,
-        min: -10,
-        max: 10,
-        defaultValue: 2,
-        isFloat: true,
-        step: 0.5
-      },
-      rawParams: []
-    });
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
+      {
+        id: nodeId,
+        type: 'slider',
+        data: {
+          value: 7,
+          min: -10,
+          max: 10,
+          defaultValue: 2,
+          isFloat: true,
+          step: 0.5
+        }
+      }
+    ]);
   });
 
   it('translates XYFlow knob data into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
     const nodeId = 'knob-editor-runtime-test';
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       knobNode(nodeId, {
         value: 7,
         min: -10,
@@ -942,28 +927,28 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(runtime.createObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: 'knob',
-      data: {
-        value: 7,
-        min: -10,
-        max: 10,
-        defaultValue: 2,
-        isFloat: true,
-        step: 0.5
-      },
-      rawParams: []
-    });
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
+      {
+        id: nodeId,
+        type: 'knob',
+        data: {
+          value: 7,
+          min: -10,
+          max: 10,
+          defaultValue: 2,
+          isFloat: true,
+          step: 0.5
+        }
+      }
+    ]);
   });
 
-  it('translates XYFlow object nodes into PatchRuntime object calls', async () => {
+  it('translates XYFlow object nodes into public runtime object specs', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
 
     const nodeId = 'object-editor-runtime-test';
 
-    await reconciler.reconcile([
+    await reconcileEditorRuntime(runtime, [
       objectNode(nodeId, {
         expr: `${TEST_OBJECT_TYPE} initial`,
         name: TEST_OBJECT_TYPE,
@@ -971,148 +956,24 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(runtime.createObject).toHaveBeenCalledWith({
-      id: nodeId,
-      objectType: TEST_OBJECT_TYPE,
-      data: {
-        expr: `${TEST_OBJECT_TYPE} initial`,
-        name: TEST_OBJECT_TYPE,
-        params: ['initial']
-      },
-      rawParams: ['initial']
-    });
-
-    await reconciler.reconcile([
-      objectNode(nodeId, {
-        expr: `${TEST_OBJECT_TYPE} initial`,
-        name: TEST_OBJECT_TYPE,
-        params: ['display-only update']
-      })
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
+      {
+        id: nodeId,
+        type: TEST_OBJECT_TYPE,
+        data: {
+          expr: `${TEST_OBJECT_TYPE} initial`,
+          name: TEST_OBJECT_TYPE,
+          params: ['initial']
+        }
+      }
     ]);
-
-    expect(runtime.updateObject).toHaveBeenCalledWith(nodeId, {
-      id: nodeId,
-      objectType: TEST_OBJECT_TYPE,
-      data: {
-        expr: `${TEST_OBJECT_TYPE} initial`,
-        name: TEST_OBJECT_TYPE,
-        params: ['display-only update']
-      },
-      rawParams: ['initial']
-    });
-
-    await reconciler.reconcile([]);
-
-    expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
   });
 
-  it('skips updates when the runtime object descriptor has not changed', async () => {
+  it('passes an empty runtime object list when editor nodes are removed', async () => {
     const runtime = createFakeEditorRuntime();
-    const reconciler = new EditorRuntimeReconciler(runtime);
 
-    const node = objectNode('object-editor-runtime-skip-test', {
-      expr: `${TEST_OBJECT_TYPE} initial`,
-      name: TEST_OBJECT_TYPE,
-      params: ['initial']
-    });
+    await reconcileEditorRuntime(runtime, []);
 
-    await reconciler.reconcile([node]);
-    await reconciler.reconcile([node]);
-
-    expect(runtime.createObject).toHaveBeenCalledTimes(1);
-    expect(runtime.updateObject).not.toHaveBeenCalled();
-  });
-
-  it('retries failed creates as creates on the next reconcile', async () => {
-    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
-
-    const runtime = createFakeEditorRuntime({
-      createObject: vi
-        .fn()
-        .mockRejectedValueOnce(new Error('create failed'))
-        .mockResolvedValueOnce(undefined)
-    });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
-
-    const node = objectNode('object-editor-runtime-create-retry-test', {
-      expr: `${TEST_OBJECT_TYPE} initial`,
-      name: TEST_OBJECT_TYPE,
-      params: ['initial']
-    });
-
-    await expect(reconciler.reconcile([node])).resolves.toBeUndefined();
-    await reconciler.reconcile([node]);
-
-    expect(runtime.createObject).toHaveBeenCalledTimes(2);
-    expect(runtime.updateObject).not.toHaveBeenCalled();
-
-    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error));
-  });
-
-  it('retries failed updates on the next reconcile', async () => {
-    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
-
-    const runtime = createFakeEditorRuntime({
-      updateObject: vi
-        .fn()
-        .mockRejectedValueOnce(new Error('update failed'))
-        .mockResolvedValueOnce(undefined)
-    });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
-    const nodeId = 'object-editor-runtime-update-retry-test';
-
-    await reconciler.reconcile([
-      objectNode(nodeId, {
-        expr: `${TEST_OBJECT_TYPE} initial`,
-        name: TEST_OBJECT_TYPE,
-        params: ['initial']
-      })
-    ]);
-
-    const updatedNode = objectNode(nodeId, {
-      expr: `${TEST_OBJECT_TYPE} initial`,
-      name: TEST_OBJECT_TYPE,
-      params: ['updated']
-    });
-
-    await expect(reconciler.reconcile([updatedNode])).resolves.toBeUndefined();
-    await reconciler.reconcile([updatedNode]);
-
-    expect(runtime.updateObject).toHaveBeenCalledTimes(2);
-
-    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error));
-  });
-
-  it('destroys runtime objects removed while an earlier create is still pending', async () => {
-    let releaseCreate!: () => void;
-
-    const runtime = createFakeEditorRuntime({
-      createObject: vi.fn(
-        () =>
-          new Promise<void>((resolve) => {
-            releaseCreate = resolve;
-          })
-      )
-    });
-
-    const reconciler = new EditorRuntimeReconciler(runtime);
-    const nodeId = 'object-editor-runtime-pending-create-test';
-
-    const firstReconcile = reconciler.reconcile([
-      objectNode(nodeId, {
-        expr: `${TEST_OBJECT_TYPE} initial`,
-        name: TEST_OBJECT_TYPE,
-        params: ['initial']
-      })
-    ]);
-
-    await reconciler.reconcile([]);
-    releaseCreate();
-
-    await firstReconcile;
-
-    expect(runtime.destroyObject).toHaveBeenCalledWith(nodeId);
+    expect(runtime.reconcileObjects).toHaveBeenCalledWith([]);
   });
 });

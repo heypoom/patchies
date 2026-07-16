@@ -3,20 +3,25 @@ import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
-import { PatchMessageRuntime } from './PatchMessageRuntime';
-import { RuntimeAudioObjectAdapter } from './RuntimeAudioObjectAdapter';
+import { MessageRuntime } from './MessageRuntime';
+import { AudioRuntime } from './AudioRuntime';
+
+import { RuntimeObjectReconciler } from '../services/RuntimeObjectReconciler';
+import { RuntimeObjectResolver } from '../services/RuntimeObjectResolver';
 
 import type {
   RuntimeAudioObjectDescriptor,
   RuntimeAudioObjectService
-} from './types/audio-adapter';
+} from '../types/audio-adapter';
 
 import type {
   RuntimeObjectDescriptor,
+  RuntimeGraphSpec,
   RuntimeObjectPorts,
   RuntimeObjectService,
+  RuntimeObjectSpec,
   RuntimeObjectViewRevisionListener
-} from './types/runtime-object';
+} from '../types/runtime-object';
 
 interface PatchRuntimeOptions {
   objectService: RuntimeObjectService;
@@ -29,21 +34,40 @@ interface PatchRuntimeOptions {
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
+type RuntimeObjectInput = RuntimeObjectDescriptor | RuntimeObjectSpec;
+
 export class PatchRuntime {
-  private message: PatchMessageRuntime;
-  private audio: RuntimeAudioObjectAdapter;
+  private message: MessageRuntime;
+  private audio: AudioRuntime;
+  private objectResolver: RuntimeObjectResolver;
+  private objectReconciler: RuntimeObjectReconciler;
 
   constructor(options: PatchRuntimeOptions) {
-    this.message = new PatchMessageRuntime({
+    this.message = new MessageRuntime({
       objectService: options.objectService,
       onObjectParamsChange: options.onObjectParamsChange,
       onObjectDataChange: options.onObjectDataChange
     });
 
-    this.audio = new RuntimeAudioObjectAdapter({
+    this.audio = new AudioRuntime({
       audioService: options.audioService,
       isAudioObject: options.isAudioObject,
       onAudioObjectDataChange: options.onAudioObjectDataChange
+    });
+
+    this.objectResolver = new RuntimeObjectResolver({
+      isMessageObject: (objectType) => this.message.isObjectInRegistry(objectType),
+      isAudioObject: (objectType) => this.audio.isObjectInRegistry(objectType)
+    });
+
+    this.objectReconciler = new RuntimeObjectReconciler(this.objectResolver, {
+      createMessageObject: (descriptor) => this.message.createObject(descriptor),
+      updateMessageObject: (nodeId, descriptor) => this.message.updateObject(nodeId, descriptor),
+      destroyMessageObject: (nodeId) => this.message.destroyObject(nodeId),
+      upsertAudioObject: (descriptor) => this.upsertAudioObject(descriptor),
+      destroyAudioObject: (nodeId) => this.destroyAudioObject(nodeId),
+      getAudioObject: (nodeId) => this.getAudioObject(nodeId),
+      consumeSuppressedAudioObjectSync: (nodeId) => this.consumeSuppressedAudioObjectSync(nodeId)
     });
   }
 
@@ -63,16 +87,55 @@ export class PatchRuntime {
     return this.audio.isObjectInRegistry(objectType);
   }
 
-  async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {
-    await this.message.createObject(descriptor);
+  async reconcileGraph(graph: RuntimeGraphSpec): Promise<void> {
+    await this.reconcileObjects(graph.objects);
   }
 
-  async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void> {
-    await this.message.updateObject(nodeId, descriptor);
+  async reconcileObjects(objects: RuntimeObjectSpec[]): Promise<void> {
+    await this.objectReconciler.reconcile(objects);
+  }
+
+  async createObject(object: RuntimeObjectInput): Promise<void> {
+    if ('objectType' in object) {
+      await this.message.createObject(object);
+      return;
+    }
+
+    const spec = normalizeRuntimeObjectSpec(object);
+    const resolved = this.objectResolver.resolve(spec);
+
+    if (resolved.kind === 'audio') {
+      this.upsertAudioObject(resolved.descriptor);
+      return;
+    }
+
+    if (resolved.kind === 'message') {
+      await this.message.createObject(resolved.descriptor);
+    }
+  }
+
+  async updateObject(nodeId: string, object: RuntimeObjectInput): Promise<void> {
+    if ('objectType' in object) {
+      await this.message.updateObject(nodeId, object);
+      return;
+    }
+
+    const spec = normalizeRuntimeObjectSpec(object);
+    const resolved = this.objectResolver.resolve(spec);
+
+    if (resolved.kind === 'audio') {
+      this.upsertAudioObject(resolved.descriptor);
+      return;
+    }
+
+    if (resolved.kind === 'message') {
+      await this.message.updateObject(nodeId, resolved.descriptor);
+    }
   }
 
   destroyObject(nodeId: string): void {
     this.message.destroyObject(nodeId);
+    this.destroyAudioObject(nodeId);
   }
 
   subscribeObjectMessages(nodeId: string, callback: MessageCallbackFn): (() => void) | null {
@@ -133,4 +196,14 @@ export class PatchRuntime {
     this.message.destroy();
     this.audio.destroy();
   }
+}
+
+function normalizeRuntimeObjectSpec(object: RuntimeObjectInput): RuntimeObjectSpec {
+  if ('type' in object) return object;
+
+  return {
+    id: object.id,
+    type: object.objectType,
+    data: object.data
+  };
 }

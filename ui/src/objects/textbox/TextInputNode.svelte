@@ -3,7 +3,7 @@
   import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { TextboxObject } from '$objects/textbox/TextboxObject';
-  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
+  import { useNodeViewMessageContext } from '$lib/runtime';
   import { useNodeDataTracker } from '$lib/history';
   import { shouldShowHandles } from '../../stores/ui.store';
   import { editorFontFamily } from '../../stores/editor.store';

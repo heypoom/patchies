@@ -35,7 +35,7 @@ should not be synced by the editor reconciler.
 
 If incoming message commands should update editor-visible node data, implement
 `getMessageSettingsUpdate` on the audio node. Keep that behavior object-owned;
-do not add object-name branches to `AudioService`, `RuntimeAudioObjectAdapter`,
+do not add object-name branches to `AudioService`, `AudioRuntime`,
 or `EditorRuntimeReconciler`.
 
 ## New Audio Node Checklist
@@ -65,35 +65,35 @@ ui/src/objects/<name~>/
 Processor pattern:
 
 ```ts
-import { defineDSP } from '../define-dsp';
+import { defineDSP } from "../define-dsp";
 
 defineDSP({
-  name: 'mynode~',
+  name: "mynode~",
   audioInlets: 1,
   audioOutlets: 1,
   inletDefaults: { 1: 0 },
   state: () => ({}),
   recv(state, data, inlet, send) {},
-  process(state, inputs, outputs, send, parameters) {}
+  process(state, inputs, outputs, send, parameters) {},
 });
 ```
 
 Node definition pattern:
 
 ```ts
-import { createWorkletDspNode } from '../create-worklet-dsp-node';
-import workletUrl from '../processors/mynode.processor?worker&url';
+import { createWorkletDspNode } from "../create-worklet-dsp-node";
+import workletUrl from "../processors/mynode.processor?worker&url";
 
 export const MyNode = createWorkletDspNode({
-  type: 'mynode~',
-  group: 'processors',
-  description: '...',
+  type: "mynode~",
+  group: "processors",
+  description: "...",
   workletUrl,
   audioInlets: 1,
   audioOutlets: 1,
-  inlets: [{ name: 'signal', type: 'signal', description: '...' }],
-  outlets: [{ name: 'out', type: 'signal', description: '...' }],
-  tags: ['audio']
+  inlets: [{ name: "signal", type: "signal", description: "..." }],
+  outlets: [{ name: "out", type: "signal", description: "..." }],
+  tags: ["audio"],
 });
 ```
 
@@ -102,17 +102,17 @@ For nodes with AudioParams or larger port metadata, define a shared `DspPortSche
 ```ts
 export const ClipPortSchema: DspPortSchema = {
   inlets: [
-    { name: 'signal', type: 'signal', description: 'Audio input' },
+    { name: "signal", type: "signal", description: "Audio input" },
     {
-      name: 'min',
-      type: 'float',
-      description: 'Minimum value',
+      name: "min",
+      type: "float",
+      description: "Minimum value",
       defaultValue: -1,
       isAudioParam: true,
-      messages: [{ schema: Type.Number(), description: 'Minimum clamp value' }]
-    }
+      messages: [{ schema: Type.Number(), description: "Minimum clamp value" }],
+    },
   ],
-  outlets: [{ name: 'out', type: 'signal', description: 'Output' }]
+  outlets: [{ name: "out", type: "signal", description: "Output" }],
 };
 ```
 

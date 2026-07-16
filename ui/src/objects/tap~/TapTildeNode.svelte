@@ -6,7 +6,7 @@
   import TapSettings from '$lib/components/settings/TapSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
-  import { getPatchRuntime } from '$lib/runtime/patch-runtime-context';
+  import { getPatchRuntime } from '$lib/runtime';
   import { editorFontFamily } from '../../stores/editor.store';
 
   type TapMode = 'wave' | 'xy';

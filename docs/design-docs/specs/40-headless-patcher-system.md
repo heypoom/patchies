@@ -28,13 +28,13 @@ The codebase does have several headless runtime primitives:
 - `ui/src/lib/runtime/PatchMessageRuntime.ts` owns runtime `MessageContext`
   lifecycle, parameter-change forwarding, message subscriptions for views,
   runtime-derived object ports, and view revision bumps.
-- `ui/src/lib/runtime/RuntimeAudioObjectAdapter.ts` owns audio object identity sync,
+- `ui/src/lib/runtime/AudioRuntime.ts` owns audio object identity sync,
   duplicate recreation suppression, message forwarding to audio parameters, and
   cleanup for runtime-created audio objects.
 - The core runtime files use plain TypeScript data structures and callback
   subscriptions. Svelte reactivity belongs in editor adapters such as
   `ui/src/lib/runtime/patch-runtime-context.ts`, not in `PatchRuntime`,
-  `PatchMessageRuntime`, or `RuntimeAudioObjectAdapter`.
+  `PatchMessageRuntime`, or `AudioRuntime`.
 - `ui/src/lib/runtime/EditorRuntimeReconciler.ts` translates XYFlow object nodes
   into runtime object create/update/destroy calls. It may understand editor node
   shape; `PatchRuntime` itself should not.
@@ -77,20 +77,20 @@ await runtime.loadPatch(patchJson);
 await runtime.createObject({
   id: "toggle-1",
   type: "toggle",
-  data: { value: false }
+  data: { value: false },
 });
 
 await runtime.createObject({
   id: "print-1",
   type: "print",
-  data: { expr: "print", name: "print", params: [] }
+  data: { expr: "print", name: "print", params: [] },
 });
 
 runtime.connect({
   source: "toggle-1",
   outlet: "message",
   target: "print-1",
-  inlet: "message"
+  inlet: "message",
 });
 
 runtime.send("toggle-1", { type: "bang" });

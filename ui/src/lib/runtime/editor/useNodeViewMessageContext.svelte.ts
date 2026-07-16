@@ -1,4 +1,5 @@
 import { onMount, untrack } from 'svelte';
+
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 

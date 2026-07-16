@@ -3,12 +3,13 @@ import { MessageContext } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { validateMessageToObject } from '$lib/objects/validate-object-message';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+
 import type {
   RuntimeAudioObjectDescriptor,
   RuntimeAudioObjectService
-} from './types/audio-adapter';
+} from '../types/audio-adapter';
 
-interface RuntimeAudioObjectAdapterOptions {
+interface AudioRuntimeOptions {
   audioService: RuntimeAudioObjectService;
   isAudioObject?: (objectType: string) => boolean;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
@@ -17,7 +18,7 @@ interface RuntimeAudioObjectAdapterOptions {
 type RuntimeAudioObjectViewRevisionListener = (nodeId: string) => void;
 type RuntimeAudioObjectEntry = { messageContext: MessageContext };
 
-export class RuntimeAudioObjectAdapter {
+export class AudioRuntime {
   private audioService: RuntimeAudioObjectService;
 
   private isAudioObject: (objectType: string) => boolean;
@@ -33,7 +34,7 @@ export class RuntimeAudioObjectAdapter {
   private audioObjectViewRevisions = new Map<string, number>();
   private audioObjectViewRevisionListeners = new Set<RuntimeAudioObjectViewRevisionListener>();
 
-  constructor(options: RuntimeAudioObjectAdapterOptions) {
+  constructor(options: AudioRuntimeOptions) {
     this.audioService = options.audioService;
 
     this.isAudioObject =

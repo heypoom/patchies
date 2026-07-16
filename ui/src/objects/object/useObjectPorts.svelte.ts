@@ -1,8 +1,5 @@
 import type { ObjectInlet, ObjectOutlet, ObjectMetadata } from '$lib/objects/v2/object-metadata';
-import {
-  getPatchRuntime,
-  getPatchRuntimeViewRevisionTracker
-} from '$lib/runtime/context/patch-runtime-context';
+import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
 
 type ObjectPortsOptions = {
   nodeId: string;

@@ -9,6 +9,25 @@ export type RuntimeObjectDescriptor = {
   rawParams: string[];
 };
 
+export type RuntimeObjectSpec<TData = Record<string, unknown>> = {
+  id: string;
+  type: string;
+  data: TData;
+};
+
+export type RuntimeConnectionSpec = {
+  id?: string;
+  source: string;
+  outlet?: string;
+  target: string;
+  inlet?: string;
+};
+
+export type RuntimeGraphSpec = {
+  objects: RuntimeObjectSpec[];
+  connections?: RuntimeConnectionSpec[];
+};
+
 export type RuntimeObjectService = {
   createObject(
     nodeId: string,

@@ -141,9 +141,7 @@
   import { NodeOperationsService } from '$lib/services/NodeOperationsService';
   import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
   import { AiOperationsService } from '$lib/services/AiOperationsService';
-  import { PatchRuntime } from '$lib/runtime/PatchRuntime';
-  import { EditorRuntimeReconciler } from '$lib/runtime/EditorRuntimeReconciler';
-  import { setPatchRuntime } from '$lib/runtime/patch-runtime-context';
+  import { PatchRuntime, reconcileEditorRuntime, setPatchRuntime } from '$lib/runtime';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { SvelteSet } from 'svelte/reactivity';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
@@ -320,8 +318,6 @@
   });
 
   setPatchRuntime(runtime);
-
-  const reconciler = new EditorRuntimeReconciler(runtime);
 
   const detachedCodeEditor = useDetachedCodeEditorOverlay({
     getNodes: () => nodes,
@@ -527,9 +523,9 @@
   });
 
   $effect(() => {
-    reconciler
-      .reconcile(nodes)
-      .catch((error) => logger.error('failed to reconcile editor graph with patch runtime', error));
+    reconcileEditorRuntime(runtime, nodes).catch((error) =>
+      logger.error('failed to reconcile editor graph with patch runtime', error)
+    );
   });
 
   $effect(() => {

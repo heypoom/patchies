@@ -3,10 +3,15 @@
   import { SwitchObject } from '$objects/switch/SwitchObject';
   import { Switch } from '$lib/components/ui/switch';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { useNodeDataTracker } from '$lib/history';
-  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
 
-  let { id: nodeId, selected, data }: { id: string; selected: boolean; data: any } = $props();
+  import { useNodeDataTracker } from '$lib/history';
+  import { useNodeViewMessageContext } from '$lib/runtime';
+
+  let {
+    id: nodeId,
+    selected,
+    data
+  }: { id: string; selected: boolean; data: { value: boolean } } = $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -25,6 +30,7 @@
   const handleCheckedChange = (checked: boolean) => {
     const oldValue = isOn;
     updateNodeData(nodeId, { value: checked });
+
     tracker.commit('value', oldValue, checked);
     viewMessageContext.send(checked);
   };

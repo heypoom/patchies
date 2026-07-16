@@ -1,8 +1,5 @@
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-import {
-  getPatchRuntime,
-  getPatchRuntimeViewRevisionTracker
-} from '$lib/runtime/context/patch-runtime-context';
+import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
 
 type ObjectRuntimeViewOptions = {
   nodeId: string;

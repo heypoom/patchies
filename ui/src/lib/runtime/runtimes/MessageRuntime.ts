@@ -1,15 +1,18 @@
 import { hash } from 'ohash';
+
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageContext } from '$lib/messages/MessageContext';
+
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
+
 import type {
   RuntimeObjectDescriptor,
   RuntimeObjectPorts,
   RuntimeObjectService,
   RuntimeObjectViewRevisionListener
-} from './types/runtime-object';
+} from '../types/runtime-object';
 
 type ObjectParamsChangedEvent = {
   type: 'objectParamsChanged';
@@ -51,25 +54,28 @@ export type RuntimeEventBus = {
   ): void;
 };
 
-export type PatchMessageRuntimeOptions = {
+export type MessageRuntimeOptions = {
   objectService: RuntimeObjectService;
   eventBus?: RuntimeEventBus;
+
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 };
 
-export class PatchMessageRuntime {
+export class MessageRuntime {
   private objectService: RuntimeObjectService;
   private eventBus: RuntimeEventBus;
+
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
+
   private objects = new Map<string, RuntimeObjectRecord>();
   private objectMessageContexts = new Map<string, MessageContext>();
   private objectViewRevisions = new Map<string, number>();
   private objectViewRevisionListeners = new Set<RuntimeObjectViewRevisionListener>();
   private objectLifecycleTokens = new Map<string, number>();
 
-  constructor(options: PatchMessageRuntimeOptions) {
+  constructor(options: MessageRuntimeOptions) {
     this.objectService = options.objectService;
     this.eventBus = (options.eventBus ?? PatchiesEventBus.getInstance()) as RuntimeEventBus;
 
@@ -132,6 +138,7 @@ export class PatchMessageRuntime {
     }
 
     const dataUpdates = getDataUpdates(descriptor.data, data);
+
     if (Object.keys(dataUpdates).length > 0) {
       this.onObjectDataChange?.(descriptor.id, dataUpdates);
     }
@@ -236,7 +243,7 @@ export class PatchMessageRuntime {
     this.eventBus.removeEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.removeEventListener('objectDataChanged', this.handleObjectDataChanged);
 
-    for (const nodeId of [...this.objects.keys()]) {
+    for (const nodeId of this.objects.keys()) {
       this.destroyObject(nodeId);
     }
   }

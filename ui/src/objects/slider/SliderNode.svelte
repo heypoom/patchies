@@ -15,7 +15,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SliderSettings from '$lib/components/settings/SliderSettings.svelte';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
-  import { useNodeViewMessageContext } from '$lib/runtime/useNodeViewMessageContext.svelte';
+  import { useNodeViewMessageContext } from '$lib/runtime';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
