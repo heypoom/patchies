@@ -1,7 +1,8 @@
-import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { PatchiesEventBus } from '$lib/eventbus';
+
+import type { MessageContext, MessageCallbackFn, SendMessageOptions } from '$lib/messages';
+
 import type { ObjectInlet } from './object-metadata';
-import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 type ParamsChangeCallback = (params: unknown[], index: number, value: unknown) => void;
 type DataChangeCallback = (data: Record<string, unknown>, updates: Record<string, unknown>) => void;
@@ -197,6 +198,7 @@ export class ObjectContext {
 
     return () => {
       const index = this.paramsChangeCallbacks.indexOf(callback);
+
       if (index > -1) {
         this.paramsChangeCallbacks.splice(index, 1);
       }

@@ -1,2 +1,2 @@
-export { MessageContext } from './MessageContext';
+export { MessageContext, type SendMessageOptions } from './MessageContext';
 export { MessageSystem, type MessageCallbackFn } from './MessageSystem';

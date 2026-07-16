@@ -1,19 +1,23 @@
 import type { Node } from '@xyflow/svelte';
 import { vi } from 'vitest';
 
-import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
-import type { MessageContext } from '$lib/messages/MessageContext';
+import type { MessageContext } from '$lib/messages';
+import type { AudioService, AudioNodeV2 } from '$lib/audio';
+
+import {
+  type ObjectService,
+  type TextObjectClass,
+  type TextObjectV2,
+  type ObjectInlet,
+  type ObjectOutlet,
+  ObjectContext
+} from '$lib/objects';
+
+import type { PatchiesEventBus } from '$lib/eventbus';
 
 import { ButtonObject } from '$objects/button/ButtonObject';
-import { ObjectContext } from '$lib/objects/v2/ObjectContext';
-
-import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
-import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 
 import type { EditorRuntime } from '../types/editor-runtime';
-import type { AudioService } from '$lib/audio';
-import type { ObjectService } from '$lib/objects/v2/ObjectService';
-import type { PatchiesEventBus } from '$lib/eventbus';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
 
