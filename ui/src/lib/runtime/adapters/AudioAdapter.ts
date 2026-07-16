@@ -14,6 +14,7 @@ import type { RuntimeObjectViewRevisionListener } from '../types/runtime-object'
 
 interface AudioAdapterOptions {
   audioService: AudioService;
+
   isAudioObject?: (objectType: string) => boolean;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }

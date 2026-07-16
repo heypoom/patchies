@@ -11,8 +11,8 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 import type { TextObjectClass, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 
 import type { EditorRuntime } from '../types/editor-runtime';
-import type { RuntimeObjectService } from '../types/runtime-object';
 import type { AudioService } from '$lib/audio';
+import type { ObjectService } from '$lib/objects/v2/ObjectService';
 import type { PatchiesEventBus } from '$lib/eventbus';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
@@ -66,8 +66,8 @@ export function resetPatchRuntimeTestObject(): void {
   PatchRuntimeTestObject.dynamicOutlets = null;
 }
 
-export class FakeObjectService implements RuntimeObjectService {
-  private objectsById = new Map<string, TextObjectV2>();
+export class FakeObjectService {
+  private fakeObjectsById = new Map<string, TextObjectV2>();
 
   isObjectInRegistry(objectType: string): boolean {
     return objectType === TEST_OBJECT_TYPE || objectType === ButtonObject.type;
@@ -95,7 +95,7 @@ export class FakeObjectService implements RuntimeObjectService {
     const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets, data);
 
     const object = new ObjectClass(nodeId, context);
-    this.objectsById.set(nodeId, object);
+    this.fakeObjectsById.set(nodeId, object);
 
     context.addMessageCallback((data, meta) => {
       object.onMessage?.(data, meta);
@@ -107,19 +107,22 @@ export class FakeObjectService implements RuntimeObjectService {
   }
 
   removeObjectById(nodeId: string): void {
-    const object = this.objectsById.get(nodeId);
+    const object = this.fakeObjectsById.get(nodeId);
     if (!object) return;
 
     object.destroy?.();
     object.context.destroy();
 
-    this.objectsById.delete(nodeId);
+    this.fakeObjectsById.delete(nodeId);
   }
 
   getObjectById(nodeId: string): TextObjectV2 | null {
-    return this.objectsById.get(nodeId) ?? null;
+    return this.fakeObjectsById.get(nodeId) ?? null;
   }
 }
+
+export const createFakeObjectService = () =>
+  new FakeObjectService() as unknown as FakeObjectService & ObjectService;
 
 class FakeAudioService {
   audioNode: AudioNodeV2 = { nodeId: 'object-audio-runtime-test', audioNode: null };

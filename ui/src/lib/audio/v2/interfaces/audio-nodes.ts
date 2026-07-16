@@ -1,4 +1,4 @@
-import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
+import type { ObjectMetadata } from '$lib/objects';
 
 /**
  * Node group type for v2 audio nodes.

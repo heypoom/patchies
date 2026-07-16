@@ -4,6 +4,7 @@ import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 
+import type { ObjectService } from '$lib/objects/v2/ObjectService';
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
@@ -18,7 +19,6 @@ import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 import type {
   RuntimeGraphSpec,
   RuntimeObjectPorts,
-  RuntimeObjectService,
   RuntimeObjectSpec,
   RuntimeObjectDescriptor,
   RuntimeObjectViewRevisionListener
@@ -28,7 +28,7 @@ type RuntimeObjectDescriptorOrSpec = RuntimeObjectDescriptor | RuntimeObjectSpec
 
 interface PatchRuntimeOptions {
   audioService: AudioService;
-  objectService: RuntimeObjectService;
+  objectService: ObjectService;
 
   isAudioObject?: (objectType: string) => boolean;
 

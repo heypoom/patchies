@@ -1,8 +1,6 @@
-import type { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-
-import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
-import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
+import type { PatchiesEventBus } from '$lib/eventbus';
+import type { MessageCallbackFn } from '$lib/messages';
+import type { ObjectMetadata, ObjectService, TextObjectClass } from '$lib/objects';
 
 import { MessageObjectLifecycle } from '../services/MessageObjectLifecycle';
 import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
@@ -10,7 +8,6 @@ import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTrack
 import type {
   RuntimeObjectDescriptor,
   RuntimeObjectPorts,
-  RuntimeObjectService,
   RuntimeObjectViewRevisionListener
 } from '../types/runtime-object';
 
@@ -28,7 +25,7 @@ type ObjectDataChangedEvent = {
 };
 
 interface MessageAdapterOptions {
-  objectService: RuntimeObjectService;
+  objectService: ObjectService;
   eventBus: PatchiesEventBus;
 
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
@@ -36,7 +33,7 @@ interface MessageAdapterOptions {
 }
 
 export class MessageAdapter {
-  private objectService: RuntimeObjectService;
+  private objectService: ObjectService;
   private eventBus: PatchiesEventBus;
 
   private lifecycle: MessageObjectLifecycle;

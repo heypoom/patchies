@@ -1,4 +1,4 @@
-import type { ObjectDataType } from '$lib/objects/v2/object-metadata';
+import type { ObjectDataType } from '$lib/objects';
 
 /**
  * Name of the type used by fft nodes to indicate where to get the FFT data from.

@@ -1,31 +1,28 @@
 import { hash } from 'ohash';
 
-import { MessageContext } from '$lib/messages/MessageContext';
+import { MessageContext } from '$lib/messages';
+import type { ObjectService, ObjectMetadata } from '$lib/objects';
 
-import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
-
-import type {
-  RuntimeObjectDescriptor,
-  RuntimeObjectPorts,
-  RuntimeObjectService
-} from '../types/runtime-object';
+import type { RuntimeObjectDescriptor, RuntimeObjectPorts } from '../types/runtime-object';
 
 interface RuntimeObjectRecord {
+  messageContext: MessageContext;
+
   objectType: string;
   lifecycleKey: string;
-  messageContext: MessageContext;
   lifecycleToken: number;
 }
 
 interface MessageObjectLifecycleOptions {
-  objectService: RuntimeObjectService;
+  objectService: ObjectService;
+
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
   onViewRevision?: (nodeId: string) => void;
 }
 
 export class MessageObjectLifecycle {
-  private objectService: RuntimeObjectService;
+  private objectService: ObjectService;
 
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
@@ -37,6 +34,7 @@ export class MessageObjectLifecycle {
 
   constructor(options: MessageObjectLifecycleOptions) {
     this.objectService = options.objectService;
+
     this.onObjectParamsChange = options.onObjectParamsChange;
     this.onObjectDataChange = options.onObjectDataChange;
     this.onViewRevision = options.onViewRevision;
@@ -48,8 +46,9 @@ export class MessageObjectLifecycle {
       unregisterMessageNode: false
     });
 
-    const lifecycleToken = this.nextObjectLifecycleToken(descriptor.id);
     const messageContext = new MessageContext(descriptor.id);
+
+    const lifecycleToken = this.nextObjectLifecycleToken(descriptor.id);
     const lifecycleKey = getObjectLifecycleKey(descriptor);
 
     this.objects.set(descriptor.id, {

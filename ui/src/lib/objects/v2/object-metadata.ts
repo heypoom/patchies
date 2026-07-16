@@ -1,4 +1,5 @@
 import type { TSchema } from '@sinclair/typebox';
+
 import type { HandleSpec } from '$lib/objects/schemas/types';
 
 /**

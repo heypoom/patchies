@@ -21,7 +21,7 @@ import {
   createFakeEditorRuntime,
   createFakeAudioService,
   createFakeEventBus,
-  FakeObjectService,
+  createFakeObjectService,
   knobNode,
   objectNode,
   PatchRuntimeTestObject,
@@ -48,7 +48,7 @@ const isTap = (objectType: string) => objectType === 'tap~';
 
 describe('MessageAdapter', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
     const runtime = new MessageAdapter({ objectService, eventBus });
     const nodeId = 'object-patch-runtime-test';
@@ -83,7 +83,7 @@ describe('MessageAdapter', () => {
   });
 
   it('keeps message edges routable after replacing an object with the same node id', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
     const runtime = new MessageAdapter({ objectService, eventBus });
     const messageSystem = MessageSystem.getInstance();
@@ -145,7 +145,7 @@ describe('MessageAdapter', () => {
 
     PatchRuntimeTestObject.normalizeParamOnCreate = true;
 
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
 
     const runtime = new MessageAdapter({
@@ -173,7 +173,7 @@ describe('MessageAdapter', () => {
   });
 
   it('forwards object param events through the runtime callback', () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const eventBus = createFakeEventBus();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
 
@@ -202,7 +202,7 @@ describe('MessageAdapter', () => {
   });
 
   it('resolves runtime object ports without exposing ObjectService to the view', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
     const runtime = new MessageAdapter({ objectService, eventBus });
     const nodeId = 'object-port-runtime-test';
@@ -230,7 +230,7 @@ describe('MessageAdapter', () => {
   });
 
   it('subscribes view callbacks to runtime object messages', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
     const runtime = new MessageAdapter({ objectService, eventBus });
     const nodeId = 'object-message-subscription-test';
@@ -264,7 +264,7 @@ describe('MessageAdapter', () => {
   });
 
   it('bumps object revision once when replacing an existing object', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const runtime = new MessageAdapter({ objectService, eventBus: PatchiesEventBus.getInstance() });
     const nodeId = 'object-revision-replace-test';
 
@@ -288,7 +288,7 @@ describe('MessageAdapter', () => {
   });
 
   it('notifies view revision subscribers without Svelte reactivity', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const runtime = new MessageAdapter({ objectService, eventBus: PatchiesEventBus.getInstance() });
     const nodeId = 'object-revision-subscription-test';
     const revisionUpdates: string[] = [];
@@ -431,7 +431,7 @@ describe('AudioAdapter', () => {
 describe('PatchRuntime', () => {
   it('owns button message routing outside the Svelte view lifecycle', async () => {
     const runtime = new PatchRuntime({
-      objectService: new FakeObjectService(),
+      objectService: createFakeObjectService(),
       audioService: createFakeAudioService()
     });
 
@@ -506,7 +506,7 @@ describe('PatchRuntime', () => {
   });
 
   it('creates a message endpoint for audio objects', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
@@ -564,7 +564,7 @@ describe('PatchRuntime', () => {
   it('keeps a facade over message and audio runtime helpers', async () => {
     const nodeId = 'object-patch-runtime-facade-test';
 
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
@@ -602,7 +602,7 @@ describe('EditorRuntimeReconciler', () => {
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
-      objectService: new FakeObjectService(),
+      objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isTap
     });
@@ -639,7 +639,7 @@ describe('EditorRuntimeReconciler', () => {
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
-      objectService: new FakeObjectService(),
+      objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isTap
     });
@@ -678,7 +678,7 @@ describe('EditorRuntimeReconciler', () => {
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
-      objectService: new FakeObjectService(),
+      objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isScope
     });
@@ -702,7 +702,7 @@ describe('EditorRuntimeReconciler', () => {
   it('syncs object-box audio nodes through the audio runtime lifecycle', async () => {
     const nodeId = 'object-box-audio-reconciler-test';
 
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
     const createObject = vi.spyOn(objectService, 'createObject');
@@ -732,7 +732,7 @@ describe('EditorRuntimeReconciler', () => {
   });
 
   it('replaces object-box audio nodes with message objects when the object type changes', async () => {
-    const objectService = new FakeObjectService();
+    const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
@@ -769,7 +769,7 @@ describe('EditorRuntimeReconciler', () => {
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
-      objectService: new FakeObjectService(),
+      objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isOsc
     });
@@ -819,7 +819,7 @@ describe('EditorRuntimeReconciler', () => {
     const audioService = createFakeAudioService();
 
     const runtime = new PatchRuntime({
-      objectService: new FakeObjectService(),
+      objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isOsc
     });

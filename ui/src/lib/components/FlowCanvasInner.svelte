@@ -49,8 +49,8 @@
   import { edgeTypes } from '$lib/components/edges/edge-types';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
-  import { AudioService } from '$lib/audio/v2/AudioService';
-  import { ObjectService } from '$lib/objects/v2/ObjectService';
+  import { AudioService } from '$lib/audio';
+  import { ObjectService } from '$lib/objects';
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
