@@ -2,7 +2,7 @@
 
 Status: Active architecture target, partially implemented through runtime services.
 
-Last verified against code: 2026-07-14.
+Last verified against code: 2026-07-17.
 
 ## Goal
 
@@ -60,20 +60,49 @@ The editor still owns too much:
 
 ## Target Runtime Boundary
 
-Introduce a `PatchRuntime` or equivalent object that owns graph execution independently of the editor.
+Introduce a `PatchRuntime` or equivalent runtime object that owns graph execution independently of the editor.
+
+`PatchRuntime` is the public runtime interface for both headless consumers and
+the editor. A host application, unit test, web component, plugin harness, or the
+Patchies editor should all be able to create and mutate the same kind of runtime
+graph through this interface.
 
 The runtime should provide graph-level APIs:
 
 ```ts
-runtime.loadPatch(patchJson);
-runtime.createObject(node);
-runtime.updateObject(id, data);
-runtime.removeObject(id);
-runtime.connect(edge);
-runtime.disconnect(edge);
-runtime.send(nodeId, message, meta);
-runtime.destroy();
+const runtime = new PatchRuntime({ objects, audio, video, messages });
+
+await runtime.loadPatch(patchJson);
+
+await runtime.createObject({
+  id: "toggle-1",
+  type: "toggle",
+  data: { value: false }
+});
+
+await runtime.createObject({
+  id: "print-1",
+  type: "print",
+  data: { expr: "print", name: "print", params: [] }
+});
+
+runtime.connect({
+  source: "toggle-1",
+  outlet: "message",
+  target: "print-1",
+  inlet: "message"
+});
+
+runtime.send("toggle-1", { type: "bang" });
+runtime.destroyObject("toggle-1");
+await runtime.destroy();
 ```
+
+The exact TypeScript names can evolve, but the shape should stay graph-oriented
+and editor-independent: runtime object ids, object types, object data, ports,
+connections, messages, lifecycle, diagnostics, and subscriptions. The runtime
+should not expose or require XYFlow positions, viewport state, selection,
+handles as editor DOM concerns, Svelte lifecycle, or editor history.
 
 The runtime should also expose service surfaces:
 
@@ -84,7 +113,41 @@ The runtime should also expose service surfaces:
 - `runtime.plugins` for loading/registering plugin bundles;
 - `runtime.subpatches` for nested patch runtimes.
 
-The editor should become a client of this runtime. It may own selection, canvas gestures, panels, history UI, and visual layout state, but object execution should not depend on Svelte component lifetime.
+The editor should become a client of this runtime. It may own selection, canvas
+gestures, panels, history UI, and visual layout state, but object execution
+should not depend on Svelte component lifetime.
+
+`EditorRuntimeReconciler` is the editor adapter. It reads the current XYFlow
+nodes and edges, diffs them against the last synchronized runtime graph, and
+calls the same public `PatchRuntime` methods that a headless consumer would
+call:
+
+```ts
+for (const node of addedNodes) {
+  runtime.createObject(toRuntimeObject(node));
+}
+
+for (const node of changedNodes) {
+  runtime.updateObject(node.id, toRuntimeObject(node));
+}
+
+for (const node of removedNodes) {
+  runtime.destroyObject(node.id);
+}
+
+for (const edge of addedEdges) {
+  runtime.connect(toRuntimeConnection(edge));
+}
+
+for (const edge of removedEdges) {
+  runtime.disconnect(toRuntimeConnection(edge));
+}
+```
+
+The reconciler may understand editor representation kinds, such as object-box
+nodes versus dedicated visual nodes, because it is adapting editor state. It
+must not know concrete object names or own object-specific data conversion.
+Object definitions and migrations own object-specific data shape.
 
 ## Object Lifecycle
 
@@ -108,11 +171,12 @@ This split is required before enabling XYFlow `onlyRenderVisibleElements` as the
 
 1. Keep the existing `ObjectService` and `AudioService` patterns as the first runtime services.
 2. Add a small `PatchRuntime` around one low-risk message-only object path.
-3. Route editor graph changes through runtime APIs instead of letting individual views instantiate runtime behavior.
+3. Route editor graph changes through runtime APIs by making `EditorRuntimeReconciler` an adapter from XYFlow state into `PatchRuntime`, instead of letting individual views instantiate runtime behavior.
 4. Move view-owned message/audio/video side effects into runtime object classes one object family at a time.
 5. Add mount/unmount hooks for optional preview surfaces and editor-only UI.
 6. Make representative objects remount-safe, then enable `onlyRenderVisibleElements` behind a feature flag.
-7. Use nested `PatchRuntime` instances for subpatch objects.
+7. Ship a playable subpatch object backed by a nested `PatchRuntime`, scoped to current built-in objects and explicit message ports.
+8. Expand nested `PatchRuntime` instances into reusable external abstractions.
 
 ## Success Criteria
 
