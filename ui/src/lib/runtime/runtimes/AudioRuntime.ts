@@ -4,10 +4,14 @@ import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { validateMessageToObject } from '$lib/objects/validate-object-message';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
+import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
+
 import type {
   RuntimeAudioObjectDescriptor,
   RuntimeAudioObjectService
 } from '../types/audio-adapter';
+
+import type { RuntimeObjectViewRevisionListener } from '../types/runtime-object';
 
 interface AudioRuntimeOptions {
   audioService: RuntimeAudioObjectService;
@@ -15,7 +19,6 @@ interface AudioRuntimeOptions {
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-type RuntimeAudioObjectViewRevisionListener = (nodeId: string) => void;
 type RuntimeAudioObjectEntry = { messageContext: MessageContext };
 
 export class AudioRuntime {
@@ -30,9 +33,7 @@ export class AudioRuntime {
   /** Node ids whose next editor-state sync should be ignored because runtime messaging already applied it. */
   private suppressedAudioObjectSyncs = new Set<string>();
 
-  /** Revision counter used by views that read runtime-derived audio node state. */
-  private audioObjectViewRevisions = new Map<string, number>();
-  private audioObjectViewRevisionListeners = new Set<RuntimeAudioObjectViewRevisionListener>();
+  private viewRevisions = new RuntimeViewRevisionTracker();
 
   constructor(options: AudioRuntimeOptions) {
     this.audioService = options.audioService;
@@ -76,7 +77,7 @@ export class AudioRuntime {
     this.audioObjects.set(descriptor.id, { messageContext });
     this.suppressedAudioObjectSyncs.delete(descriptor.id);
 
-    this.bumpAudioObjectViewRevision(descriptor.id);
+    this.viewRevisions.bump(descriptor.id);
   }
 
   destroyAudioObject(nodeId: string): void {
@@ -85,7 +86,7 @@ export class AudioRuntime {
     this.removeAudioObjectMessageContext(nodeId, true);
 
     this.suppressedAudioObjectSyncs.delete(nodeId);
-    this.bumpAudioObjectViewRevision(nodeId);
+    this.viewRevisions.bump(nodeId);
   }
 
   sendAudioObjectMessage(nodeId: string, key: string, message: unknown): void {
@@ -108,15 +109,11 @@ export class AudioRuntime {
   }
 
   trackAudioObjectViewRevision(nodeId: string): number {
-    return this.audioObjectViewRevisions.get(nodeId) ?? 0;
+    return this.viewRevisions.track(nodeId);
   }
 
-  subscribeAudioObjectViewRevisions(listener: RuntimeAudioObjectViewRevisionListener): () => void {
-    this.audioObjectViewRevisionListeners.add(listener);
-
-    return () => {
-      this.audioObjectViewRevisionListeners.delete(listener);
-    };
+  subscribeAudioObjectViewRevisions(listener: RuntimeObjectViewRevisionListener): () => void {
+    return this.viewRevisions.subscribe(listener);
   }
 
   destroy(): void {
@@ -172,13 +169,5 @@ export class AudioRuntime {
     messageContext.destroy({ unregisterNode: unregisterMessageNode });
 
     this.audioObjects.delete(nodeId);
-  }
-
-  private bumpAudioObjectViewRevision(nodeId: string): void {
-    this.audioObjectViewRevisions.set(nodeId, (this.audioObjectViewRevisions.get(nodeId) ?? 0) + 1);
-
-    for (const listener of this.audioObjectViewRevisionListeners) {
-      listener(nodeId);
-    }
   }
 }

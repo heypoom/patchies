@@ -22,6 +22,7 @@ import type {
   RuntimeObjectSpec,
   RuntimeObjectViewRevisionListener
 } from '../types/runtime-object';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 interface PatchRuntimeOptions {
   objectService: RuntimeObjectService;
@@ -46,7 +47,8 @@ export class PatchRuntime {
     this.message = new MessageRuntime({
       objectService: options.objectService,
       onObjectParamsChange: options.onObjectParamsChange,
-      onObjectDataChange: options.onObjectDataChange
+      onObjectDataChange: options.onObjectDataChange,
+      eventBus: PatchiesEventBus.getInstance()
     });
 
     this.audio = new AudioRuntime({

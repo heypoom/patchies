@@ -1,11 +1,10 @@
-import { hash } from 'ohash';
-
-import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import { MessageContext } from '$lib/messages/MessageContext';
-
+import type { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
+
+import { MessageObjectLifecycle } from '../services/MessageObjectLifecycle';
+import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
 
 import type {
   RuntimeObjectDescriptor,
@@ -27,60 +26,36 @@ type ObjectDataChangedEvent = {
   updates: Record<string, unknown>;
 };
 
-type RuntimeObjectRecord = {
-  objectType: string;
-  lifecycleKey: string;
-  messageContext: MessageContext;
-  lifecycleToken: number;
-};
-
-export type RuntimeEventBus = {
-  addEventListener(
-    type: 'objectParamsChanged',
-    listener: (event: ObjectParamsChangedEvent) => void
-  ): void;
-  addEventListener(
-    type: 'objectDataChanged',
-    listener: (event: ObjectDataChangedEvent) => void
-  ): void;
-
-  removeEventListener(
-    type: 'objectParamsChanged',
-    listener: (event: ObjectParamsChangedEvent) => void
-  ): void;
-  removeEventListener(
-    type: 'objectDataChanged',
-    listener: (event: ObjectDataChangedEvent) => void
-  ): void;
-};
-
-export type MessageRuntimeOptions = {
+interface MessageRuntimeOptions {
   objectService: RuntimeObjectService;
-  eventBus?: RuntimeEventBus;
+  eventBus: PatchiesEventBus;
 
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
-};
+}
 
 export class MessageRuntime {
   private objectService: RuntimeObjectService;
-  private eventBus: RuntimeEventBus;
+  private eventBus: PatchiesEventBus;
+  private lifecycle: MessageObjectLifecycle;
+  private viewRevisions = new RuntimeViewRevisionTracker();
 
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 
-  private objects = new Map<string, RuntimeObjectRecord>();
-  private objectMessageContexts = new Map<string, MessageContext>();
-  private objectViewRevisions = new Map<string, number>();
-  private objectViewRevisionListeners = new Set<RuntimeObjectViewRevisionListener>();
-  private objectLifecycleTokens = new Map<string, number>();
-
   constructor(options: MessageRuntimeOptions) {
     this.objectService = options.objectService;
-    this.eventBus = (options.eventBus ?? PatchiesEventBus.getInstance()) as RuntimeEventBus;
+    this.eventBus = options.eventBus;
 
     this.onObjectParamsChange = options.onObjectParamsChange;
     this.onObjectDataChange = options.onObjectDataChange;
+
+    this.lifecycle = new MessageObjectLifecycle({
+      objectService: options.objectService,
+      onObjectParamsChange: options.onObjectParamsChange,
+      onObjectDataChange: options.onObjectDataChange,
+      onViewRevision: (nodeId) => this.viewRevisions.bump(nodeId)
+    });
 
     this.eventBus.addEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.addEventListener('objectDataChanged', this.handleObjectDataChanged);
@@ -95,116 +70,23 @@ export class MessageRuntime {
   }
 
   async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {
-    this.removeObject(descriptor.id, {
-      bumpRevision: false,
-      unregisterMessageNode: false
-    });
-
-    const lifecycleToken = this.nextObjectLifecycleToken(descriptor.id);
-    const messageContext = new MessageContext(descriptor.id);
-    const lifecycleKey = getObjectLifecycleKey(descriptor);
-
-    this.objects.set(descriptor.id, {
-      objectType: descriptor.objectType,
-      lifecycleKey,
-      messageContext,
-      lifecycleToken
-    });
-
-    this.objectMessageContexts.set(descriptor.id, messageContext);
-
-    const object = await this.objectService.createObject(
-      descriptor.id,
-      descriptor.objectType,
-      messageContext,
-      descriptor.data,
-      descriptor.rawParams
-    );
-
-    if (!this.isCurrentObjectLifecycleToken(descriptor.id, lifecycleToken)) {
-      return;
-    }
-
-    if (!object) {
-      this.bumpObjectViewRevision(descriptor.id);
-      return;
-    }
-
-    const params = object.context.getParams();
-    const data = object.context.getData();
-
-    if (Array.isArray(descriptor.data.params) && hasParamChanges(descriptor.data.params, params)) {
-      this.onObjectParamsChange?.(descriptor.id, params);
-    }
-
-    const dataUpdates = getDataUpdates(descriptor.data, data);
-
-    if (Object.keys(dataUpdates).length > 0) {
-      this.onObjectDataChange?.(descriptor.id, dataUpdates);
-    }
-
-    this.bumpObjectViewRevision(descriptor.id);
+    await this.lifecycle.createObject(descriptor);
   }
 
   async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void> {
-    const existing = this.objects.get(nodeId);
-    const lifecycleKey = getObjectLifecycleKey(descriptor);
-
-    const canSkipUpdate =
-      existing &&
-      existing.objectType === descriptor.objectType &&
-      existing.lifecycleKey === lifecycleKey;
-
-    if (canSkipUpdate) {
-      const object = this.objectService.getObjectById(nodeId);
-      object?.context.setData(descriptor.data);
-      object?.update?.(descriptor.data);
-
-      return;
-    }
-
-    await this.createObject(descriptor);
+    await this.lifecycle.updateObject(nodeId, descriptor);
   }
 
   destroyObject(nodeId: string): void {
-    const record = this.objects.get(nodeId);
-    if (!record) return;
-
-    this.objectService.removeObjectById(nodeId);
-    record.messageContext.destroy();
-
-    this.objects.delete(nodeId);
-    this.objectMessageContexts.delete(nodeId);
-
-    this.nextObjectLifecycleToken(nodeId);
-    this.bumpObjectViewRevision(nodeId);
+    this.lifecycle.destroyObject(nodeId);
   }
 
-  private removeObject(
-    nodeId: string,
-    options: { bumpRevision: boolean; unregisterMessageNode?: boolean }
-  ): void {
-    const record = this.objects.get(nodeId);
-    if (!record) return;
-
-    this.objectService.removeObjectById(nodeId);
-    record.messageContext.destroy({ unregisterNode: options.unregisterMessageNode ?? true });
-
-    this.objects.delete(nodeId);
-    this.objectMessageContexts.delete(nodeId);
-
-    if (options.bumpRevision) {
-      this.nextObjectLifecycleToken(nodeId);
-      this.bumpObjectViewRevision(nodeId);
-    }
-  }
-
-  getObjectMessageContext(nodeId: string): MessageContext | null {
-    return this.objectMessageContexts.get(nodeId) ?? null;
+  getObjectMessageContext(nodeId: string) {
+    return this.lifecycle.getObjectMessageContext(nodeId);
   }
 
   subscribeObjectMessages(nodeId: string, callback: MessageCallbackFn): (() => void) | null {
-    const messageContext = this.getObjectMessageContext(nodeId);
+    const messageContext = this.lifecycle.getObjectMessageContext(nodeId);
     if (!messageContext) return null;
 
     messageContext.queue.addCallback(callback);
@@ -218,89 +100,30 @@ export class MessageRuntime {
     nodeId: string,
     objectMeta: Pick<ObjectMetadata, 'inlets' | 'outlets'> | null | undefined
   ): RuntimeObjectPorts {
-    const objectInstance = this.objectService.getObjectById(nodeId);
-
-    return {
-      inlets: objectInstance?.getInlets?.() ?? objectMeta?.inlets ?? [],
-      outlets: objectInstance?.getOutlets?.() ?? objectMeta?.outlets ?? [],
-      hasDynamicOutlets: !!objectInstance?.getOutlets
-    };
+    return this.lifecycle.getObjectPorts(nodeId, objectMeta);
   }
 
   trackObjectViewRevision(nodeId: string): number {
-    return this.objectViewRevisions.get(nodeId) ?? 0;
+    return this.viewRevisions.track(nodeId);
   }
 
   subscribeObjectViewRevisions(listener: RuntimeObjectViewRevisionListener): () => void {
-    this.objectViewRevisionListeners.add(listener);
-
-    return () => {
-      this.objectViewRevisionListeners.delete(listener);
-    };
+    return this.viewRevisions.subscribe(listener);
   }
 
   destroy(): void {
     this.eventBus.removeEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.removeEventListener('objectDataChanged', this.handleObjectDataChanged);
-
-    for (const nodeId of this.objects.keys()) {
-      this.destroyObject(nodeId);
-    }
+    this.lifecycle.destroy();
   }
 
   private handleObjectParamsChanged = (event: ObjectParamsChangedEvent) => {
     this.onObjectParamsChange?.(event.nodeId, event.params);
-    this.bumpObjectViewRevision(event.nodeId);
+    this.viewRevisions.bump(event.nodeId);
   };
 
   private handleObjectDataChanged = (event: ObjectDataChangedEvent) => {
     this.onObjectDataChange?.(event.nodeId, event.updates);
-    this.bumpObjectViewRevision(event.nodeId);
+    this.viewRevisions.bump(event.nodeId);
   };
-
-  private bumpObjectViewRevision(nodeId: string): void {
-    this.objectViewRevisions.set(nodeId, (this.objectViewRevisions.get(nodeId) ?? 0) + 1);
-
-    for (const listener of this.objectViewRevisionListeners) {
-      listener(nodeId);
-    }
-  }
-
-  private nextObjectLifecycleToken(nodeId: string): number {
-    const lifecycleToken = (this.objectLifecycleTokens.get(nodeId) ?? 0) + 1;
-    this.objectLifecycleTokens.set(nodeId, lifecycleToken);
-
-    return lifecycleToken;
-  }
-
-  private isCurrentObjectLifecycleToken(nodeId: string, lifecycleToken: number): boolean {
-    const record = this.objects.get(nodeId);
-
-    return (
-      record?.lifecycleToken === lifecycleToken &&
-      this.objectLifecycleTokens.get(nodeId) === lifecycleToken
-    );
-  }
-}
-
-const hasParamChanges = (currentParams: unknown[], objectParams: unknown[]): boolean =>
-  currentParams.length !== objectParams.length ||
-  objectParams.some((param, index) => !Object.is(param, currentParams[index]));
-
-const getObjectLifecycleKey = (descriptor: RuntimeObjectDescriptor): string =>
-  hash([descriptor.objectType, descriptor.rawParams]);
-
-function getDataUpdates(
-  currentData: Record<string, unknown>,
-  objectData: Record<string, unknown>
-): Record<string, unknown> {
-  const updates: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(objectData)) {
-    if (!Object.is(currentData[key], value)) {
-      updates[key] = value;
-    }
-  }
-
-  return updates;
 }

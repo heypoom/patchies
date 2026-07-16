@@ -30,6 +30,7 @@ import {
   textboxNode,
   toggleNode
 } from './test-utils';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 beforeEach(() => {
   resetPatchRuntimeTestObject();
@@ -46,7 +47,8 @@ const isTap = (objectType: string) => objectType === 'tap~';
 describe('MessageRuntime', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new MessageRuntime({ objectService });
+    const eventBus = PatchiesEventBus.getInstance();
+    const runtime = new MessageRuntime({ objectService, eventBus });
     const nodeId = 'object-patch-runtime-test';
 
     await runtime.createObject({
@@ -80,7 +82,8 @@ describe('MessageRuntime', () => {
 
   it('keeps message edges routable after replacing an object with the same node id', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new MessageRuntime({ objectService });
+    const eventBus = PatchiesEventBus.getInstance();
+    const runtime = new MessageRuntime({ objectService, eventBus });
     const messageSystem = MessageSystem.getInstance();
     const sourceNodeId = 'object-message-replace-source';
     const targetNodeId = 'object-message-replace-target';
@@ -144,7 +147,8 @@ describe('MessageRuntime', () => {
 
     const runtime = new MessageRuntime({
       objectService,
-      onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params })
+      onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params }),
+      eventBus: PatchiesEventBus.getInstance()
     });
 
     const nodeId = 'object-patch-runtime-async-test';
@@ -167,7 +171,7 @@ describe('MessageRuntime', () => {
 
   it('forwards object param events through the runtime callback', () => {
     const objectService = new FakeObjectService();
-    const eventBus = new FakeEventBus();
+    const eventBus = new FakeEventBus() as unknown as PatchiesEventBus;
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
 
     const runtime = new MessageRuntime({
@@ -196,7 +200,8 @@ describe('MessageRuntime', () => {
 
   it('resolves runtime object ports without exposing ObjectService to the view', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new MessageRuntime({ objectService });
+    const eventBus = PatchiesEventBus.getInstance();
+    const runtime = new MessageRuntime({ objectService, eventBus });
     const nodeId = 'object-port-runtime-test';
 
     PatchRuntimeTestObject.dynamicInlets = [{ name: 'dynamic-in', type: 'float' }];
@@ -223,7 +228,8 @@ describe('MessageRuntime', () => {
 
   it('subscribes view callbacks to runtime object messages', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new MessageRuntime({ objectService });
+    const eventBus = PatchiesEventBus.getInstance();
+    const runtime = new MessageRuntime({ objectService, eventBus });
     const nodeId = 'object-message-subscription-test';
     const onMessage = vi.fn();
 
@@ -256,7 +262,7 @@ describe('MessageRuntime', () => {
 
   it('bumps object revision once when replacing an existing object', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new MessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService, eventBus: PatchiesEventBus.getInstance() });
     const nodeId = 'object-revision-replace-test';
 
     await runtime.createObject({
@@ -280,7 +286,7 @@ describe('MessageRuntime', () => {
 
   it('notifies view revision subscribers without Svelte reactivity', async () => {
     const objectService = new FakeObjectService();
-    const runtime = new MessageRuntime({ objectService });
+    const runtime = new MessageRuntime({ objectService, eventBus: PatchiesEventBus.getInstance() });
     const nodeId = 'object-revision-subscription-test';
     const revisionUpdates: string[] = [];
 
@@ -809,6 +815,7 @@ describe('EditorRuntimeReconciler', () => {
       audioService,
       isAudioObject: isOsc
     });
+
     const node = objectNode('object-box-audio-undo-test', {
       expr: 'osc~ 440',
       name: 'osc~',
