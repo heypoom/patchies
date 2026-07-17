@@ -13,6 +13,10 @@ import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
 
 import { PatchRuntime } from './PatchRuntime';
+import {
+  createDefaultRuntimeDependencies,
+  type CreatePatchRuntimeOptions
+} from '../utils/runtime-dependencies';
 
 import { setRuntimeGraphFromEditorGraph } from '../editor/editor-reconciler';
 
@@ -47,11 +51,43 @@ const isScope = (objectType: string) => objectType === 'scope~';
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
 
-const createTestPatchRuntime = (options: ConstructorParameters<typeof PatchRuntime>[0]) =>
-  new PatchRuntime({
-    connectionServices: createFakeRuntimeConnectionServices(),
-    ...options
+type TestPatchRuntimeOptions = Omit<CreatePatchRuntimeOptions, 'dependencies'> &
+  NonNullable<CreatePatchRuntimeOptions['dependencies']>;
+
+const createTestPatchRuntime = ({
+  objectService = createFakeObjectService(),
+  audioService = createFakeAudioService(),
+  eventBus,
+  messageSystem,
+  profilerCoordinator,
+  glSystem,
+  audioAnalysisSystem,
+  workerNodeSystem,
+  mediaPipeNodeSystem,
+  directChannelService,
+  workletDirectChannelService,
+  ...options
+}: TestPatchRuntimeOptions = {}) => {
+  const fakeConnectionServices = createFakeRuntimeConnectionServices();
+
+  return new PatchRuntime({
+    ...options,
+    dependencies: createDefaultRuntimeDependencies({
+      objectService,
+      audioService,
+      eventBus,
+      messageSystem,
+      profilerCoordinator,
+      glSystem: glSystem ?? fakeConnectionServices.glSystem,
+      audioAnalysisSystem: audioAnalysisSystem ?? fakeConnectionServices.audioAnalysisSystem,
+      workerNodeSystem: workerNodeSystem ?? fakeConnectionServices.workerNodeSystem,
+      mediaPipeNodeSystem: mediaPipeNodeSystem ?? fakeConnectionServices.mediaPipeNodeSystem,
+      directChannelService: directChannelService ?? fakeConnectionServices.directChannelService,
+      workletDirectChannelService:
+        workletDirectChannelService ?? fakeConnectionServices.workletDirectChannelService
+    })
   });
+};
 
 describe('MessageAdapter', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
@@ -533,7 +569,7 @@ describe('PatchRuntime', () => {
     const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService: createFakeAudioService(),
-      connectionServices
+      ...connectionServices
     });
 
     await runtime.setGraph({
@@ -584,7 +620,7 @@ describe('PatchRuntime', () => {
     const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService,
-      connectionServices,
+      ...connectionServices,
       messageSystem,
       profilerCoordinator
     });
@@ -602,7 +638,7 @@ describe('PatchRuntime', () => {
     const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService: createFakeAudioService(),
-      connectionServices
+      ...connectionServices
     });
 
     const connections = [

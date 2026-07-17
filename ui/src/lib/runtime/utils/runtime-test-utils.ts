@@ -18,6 +18,7 @@ import type { PatchiesEventBus } from '$lib/eventbus';
 import { ButtonObject } from '$objects/button/ButtonObject';
 
 import type { EditorRuntime } from '../types/editor-runtime';
+import type { GLSystem } from '$lib/canvas/GLSystem';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
 
@@ -141,7 +142,7 @@ export const createFakeAudioService = () =>
   new FakeAudioService() as FakeAudioService & AudioService;
 
 export const createFakeRuntimeConnectionServices = () => ({
-  glSystem: { updateEdges: vi.fn() },
+  glSystem: { updateEdges: vi.fn() } as unknown as GLSystem,
   audioAnalysisSystem: { updateEdges: vi.fn() },
   workerNodeSystem: { updateEdges: vi.fn() },
   mediaPipeNodeSystem: { updateEdges: vi.fn(), unregister: vi.fn() },

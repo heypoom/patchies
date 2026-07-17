@@ -7,7 +7,15 @@ export type {
   RuntimeObjectSpec
 } from './types/runtime-object';
 
+export type {
+  RuntimeDependencies as PatchRuntimeDependencies,
+  PatchRuntimeDependencyOverrides,
+  PatchRuntimeOptions
+} from './types/patch-runtime';
+
 export { PatchRuntime } from './services/PatchRuntime';
+export { createPatchRuntime, createDefaultRuntimeDependencies } from './utils/runtime-dependencies';
+export type { CreatePatchRuntimeOptions } from './utils/runtime-dependencies';
 
 export { useNodeViewMessageContext } from './editor/useNodeViewMessageContext.svelte';
 

@@ -52,8 +52,6 @@
   import { edgeTypes } from '$lib/components/edges/edge-types';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
-  import { AudioService } from '$lib/audio';
-  import { ObjectService } from '$lib/objects';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
 
   import {
@@ -85,7 +83,6 @@
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
-  import { PatchiesEventBus } from '$lib/eventbus';
   import BackgroundPattern from './BackgroundPattern.svelte';
   import type {
     NodeReplaceEvent,
@@ -123,6 +120,7 @@
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
+
   import {
     HistoryManager,
     AddNodeCommand,
@@ -135,13 +133,21 @@
     BatchCommand,
     type Command
   } from '$lib/history';
+
   import { CanvasContext } from '$lib/services/CanvasContext';
   import { ClipboardManager } from '$lib/services/ClipboardManager';
   import { PatchManager } from '$lib/services/PatchManager';
   import { NodeOperationsService } from '$lib/services/NodeOperationsService';
   import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
   import { AiOperationsService } from '$lib/services/AiOperationsService';
-  import { PatchRuntime, setPatchRuntime, setRuntimeGraphFromEditorGraph } from '$lib/runtime';
+
+  import {
+    createDefaultRuntimeDependencies,
+    createPatchRuntime,
+    setPatchRuntime,
+    setRuntimeGraphFromEditorGraph
+  } from '$lib/runtime';
+
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { SvelteSet } from 'svelte/reactivity';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
@@ -154,11 +160,10 @@
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
 
-  let glSystem = GLSystem.getInstance();
-  let audioService = AudioService.getInstance();
-  let objectService = ObjectService.getInstance();
-  let eventBus = PatchiesEventBus.getInstance();
-  let historyManager = HistoryManager.getInstance();
+  const runtimeDependencies = createDefaultRuntimeDependencies();
+  const { glSystem, audioService, eventBus } = runtimeDependencies;
+
+  const historyManager = HistoryManager.getInstance();
 
   // Canvas context for shared state and utilities
   const canvasContext = new CanvasContext(
@@ -172,7 +177,6 @@
 
   // Clipboard manager for copy/paste operations
   const clipboardManager = new ClipboardManager(canvasContext);
-  let hasCopiedData = $state(false);
 
   // Patch manager for save/load/restore operations
   const patchManager = new PatchManager(canvasContext);
@@ -248,9 +252,15 @@
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
 
+  // Copy & paste states
+  let hasCopiedData = $state(false);
+
   // Command palette state
   let showCommandPalette = $state(false);
   let commandPalettePosition = $state.raw({ x: 0, y: 0 });
+
+  // XYFlow canvas container element
+  // oxlint-disable-next-line no-unassigned-vars
   let flowContainer: HTMLDivElement;
 
   // AI object prompt state — supports multiple concurrent instances
@@ -303,9 +313,8 @@
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, fitView, getViewport, getNode, updateNodeData } = useSvelteFlow();
 
-  const runtime = new PatchRuntime({
-    objectService,
-    audioService,
+  const runtime = createPatchRuntime({
+    dependencies: runtimeDependencies,
     onObjectParamsChange: (nodeId, params) => updateNodeData(nodeId, { params }),
     onObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates),
     onAudioObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates)

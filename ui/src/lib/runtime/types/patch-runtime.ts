@@ -1,5 +1,4 @@
 import type { AudioService } from '$lib/audio';
-import type { AudioAnalysisSystem, WorkletDirectChannelService } from '$lib/audio';
 import type { GLSystem } from '$lib/canvas/GLSystem';
 import type { WorkerNodeSystem } from '$lib/js-runner';
 import type { MediaPipeNodeSystem } from '$lib/mediapipe';
@@ -7,13 +6,30 @@ import type { MessageSystem } from '$lib/messages';
 import type { DirectChannelService } from '$lib/messages';
 import type { ObjectService } from '$lib/objects';
 import type { ProfilerCoordinator } from '$lib/profiler';
+import type { PatchiesEventBus } from '$lib/eventbus';
+import type { AudioAnalysisSystem, WorkletDirectChannelService } from '$lib/audio';
 
 import type { RuntimeObjectDescriptor, RuntimeObjectSpec } from './runtime-object';
 
 export type RuntimeObjectDescriptorOrSpec = RuntimeObjectDescriptor | RuntimeObjectSpec;
 
-export type RuntimeConnectionServices = {
-  glSystem: Pick<GLSystem, 'updateEdges'>;
+export interface PatchRuntimeOptions {
+  dependencies: RuntimeDependencies;
+  isAudioObject?: (objectType: string) => boolean;
+
+  onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
+  onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
+  onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
+}
+
+export type RuntimeDependencies = {
+  audioService: AudioService;
+  objectService: ObjectService;
+  eventBus: PatchiesEventBus;
+  glSystem: GLSystem;
+
+  messageSystem: Pick<MessageSystem, 'unregisterNode'>;
+  profilerCoordinator: Pick<ProfilerCoordinator, 'unregister'>;
   audioAnalysisSystem: Pick<AudioAnalysisSystem, 'updateEdges'>;
   workerNodeSystem: Pick<WorkerNodeSystem, 'updateEdges'>;
   mediaPipeNodeSystem: Pick<MediaPipeNodeSystem, 'updateEdges' | 'unregister'>;
@@ -21,16 +37,4 @@ export type RuntimeConnectionServices = {
   workletDirectChannelService: Pick<WorkletDirectChannelService, 'updateEdges'>;
 };
 
-export interface PatchRuntimeOptions {
-  audioService: AudioService;
-  objectService: ObjectService;
-  connectionServices?: Partial<RuntimeConnectionServices>;
-  messageSystem?: Pick<MessageSystem, 'unregisterNode'>;
-  profilerCoordinator?: Pick<ProfilerCoordinator, 'unregister'>;
-
-  isAudioObject?: (objectType: string) => boolean;
-
-  onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
-  onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
-  onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
-}
+export type PatchRuntimeDependencyOverrides = Partial<RuntimeDependencies>;

@@ -1,15 +1,8 @@
 import type { Edge } from '@xyflow/svelte';
 
-import { GLSystem } from '$lib/canvas/GLSystem';
-import { AudioAnalysisSystem, WorkletDirectChannelService, type AudioNodeV2 } from '$lib/audio';
-
-import { PatchiesEventBus } from '$lib/eventbus';
-import { WorkerNodeSystem } from '$lib/js-runner';
-import { MediaPipeNodeSystem } from '$lib/mediapipe';
-import { ProfilerCoordinator } from '$lib/profiler';
-import { MessageSystem, DirectChannelService, type MessageCallbackFn } from '$lib/messages';
-
+import type { AudioNodeV2 } from '$lib/audio';
 import type { ObjectMetadata, TextObjectClass } from '$lib/objects';
+import type { MessageCallbackFn } from '$lib/messages';
 
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
@@ -30,7 +23,7 @@ import type {
 
 import type {
   PatchRuntimeOptions,
-  RuntimeConnectionServices,
+  RuntimeDependencies,
   RuntimeObjectDescriptorOrSpec
 } from '../types/patch-runtime';
 
@@ -39,31 +32,34 @@ export class PatchRuntime {
 
   private message: MessageAdapter;
   private audio: AudioAdapter;
-  private connectionServices: RuntimeConnectionServices;
+  private dependencies: RuntimeDependencies;
 
-  private messageSystem: Pick<MessageSystem, 'unregisterNode'>;
-  private profilerCoordinator: Pick<ProfilerCoordinator, 'unregister'>;
+  private messageSystem: RuntimeDependencies['messageSystem'];
+  private profilerCoordinator: RuntimeDependencies['profilerCoordinator'];
 
   private objectResolver: RuntimeObjectResolver;
   private objectReconciler: RuntimeObjectReconciler;
 
   constructor(options: PatchRuntimeOptions) {
+    const { objectService, audioService, eventBus, messageSystem, profilerCoordinator } =
+      options.dependencies;
+
     this.message = new MessageAdapter({
-      objectService: options.objectService,
+      objectService,
       onObjectParamsChange: options.onObjectParamsChange,
       onObjectDataChange: options.onObjectDataChange,
-      eventBus: PatchiesEventBus.getInstance()
+      eventBus
     });
 
     this.audio = new AudioAdapter({
-      audioService: options.audioService,
+      audioService,
       isAudioObject: options.isAudioObject,
       onAudioObjectDataChange: options.onAudioObjectDataChange
     });
 
-    this.connectionServices = getRuntimeConnectionServices(options.connectionServices);
-    this.messageSystem = options.messageSystem ?? MessageSystem.getInstance();
-    this.profilerCoordinator = options.profilerCoordinator ?? ProfilerCoordinator.getInstance();
+    this.dependencies = options.dependencies;
+    this.messageSystem = messageSystem;
+    this.profilerCoordinator = profilerCoordinator;
 
     this.objectResolver = new RuntimeObjectResolver({
       isMessageObject: (objectType) => this.message.objectService.isObjectInRegistry(objectType),
@@ -167,7 +163,7 @@ export class PatchRuntime {
     for (const nodeId of nodeIds) {
       this.messageSystem.unregisterNode(nodeId);
       this.audio.audioService.removeNodeById(nodeId);
-      this.connectionServices.mediaPipeNodeSystem.unregister(nodeId);
+      this.dependencies.mediaPipeNodeSystem.unregister(nodeId);
       this.profilerCoordinator.unregister(nodeId);
     }
   }
@@ -262,7 +258,7 @@ export class PatchRuntime {
       mediaPipeNodeSystem,
       directChannelService,
       workletDirectChannelService
-    } = this.connectionServices;
+    } = this.dependencies;
 
     this.message.updateEdges(edges);
     this.audio.audioService.updateEdges(edges);
@@ -297,16 +293,4 @@ const getEditorEdgeFromRuntimeConnection = (
   sourceHandle: connection.outlet,
   target: connection.target,
   targetHandle: connection.inlet
-});
-
-const getRuntimeConnectionServices = (
-  services: Partial<RuntimeConnectionServices> = {}
-): RuntimeConnectionServices => ({
-  glSystem: services.glSystem ?? GLSystem.getInstance(),
-  audioAnalysisSystem: services.audioAnalysisSystem ?? AudioAnalysisSystem.getInstance(),
-  workerNodeSystem: services.workerNodeSystem ?? WorkerNodeSystem.getInstance(),
-  mediaPipeNodeSystem: services.mediaPipeNodeSystem ?? MediaPipeNodeSystem.getInstance(),
-  directChannelService: services.directChannelService ?? DirectChannelService.getInstance(),
-  workletDirectChannelService:
-    services.workletDirectChannelService ?? WorkletDirectChannelService.getInstance()
 });
