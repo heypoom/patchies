@@ -14,7 +14,7 @@ import { MessageAdapter } from '../adapters/MessageAdapter';
 
 import { PatchRuntime } from './PatchRuntime';
 
-import { reconcileEditorRuntime } from '../editor/editor-reconciler';
+import { setRuntimeGraphFromEditorGraph } from '../editor/editor-reconciler';
 
 import {
   buttonNode,
@@ -446,28 +446,44 @@ describe('PatchRuntime', () => {
     targetQueue.addCallback(onMessage);
     messageSystem.registerNode(inputNodeId);
 
-    messageSystem.updateEdges([
-      {
-        id: 'input-to-button',
-        source: inputNodeId,
-        target: buttonNodeId,
-        sourceHandle: 'message-out',
-        targetHandle: 'message-in-0'
-      },
-      {
-        id: 'button-to-target',
-        source: buttonNodeId,
-        target: targetNodeId,
-        sourceHandle: 'message-out',
-        targetHandle: 'message-in-0'
-      }
-    ]);
+    await runtime.setGraph({
+      objects: [{ id: buttonNodeId, type: 'button', data: {} }],
+      connections: [
+        {
+          id: 'input-to-button',
+          source: inputNodeId,
+          target: buttonNodeId,
+          outlet: 'message-out',
+          inlet: 'message-in-0'
+        },
+        {
+          id: 'button-to-target',
+          source: buttonNodeId,
+          target: targetNodeId,
+          outlet: 'message-out',
+          inlet: 'message-in-0'
+        }
+      ]
+    });
 
-    await runtime.createObject({
-      id: buttonNodeId,
-      objectType: 'button',
-      data: {},
-      rawParams: []
+    expect(runtime.getGraph()).toEqual({
+      objects: [{ id: buttonNodeId, type: 'button', data: {} }],
+      connections: [
+        {
+          id: 'input-to-button',
+          source: inputNodeId,
+          target: buttonNodeId,
+          outlet: 'message-out',
+          inlet: 'message-in-0'
+        },
+        {
+          id: 'button-to-target',
+          source: buttonNodeId,
+          target: targetNodeId,
+          outlet: 'message-out',
+          inlet: 'message-in-0'
+        }
+      ]
     });
 
     const viewMessageContext = new MessageContext(buttonNodeId);
@@ -609,7 +625,7 @@ describe('EditorRuntimeReconciler', () => {
 
     AudioRegistry.getInstance().register(TapNode);
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       tapTildeNode(nodeId, {
         bufferSize: 1024,
         mode: 'xy',
@@ -627,7 +643,7 @@ describe('EditorRuntimeReconciler', () => {
       false
     ]);
 
-    await reconcileEditorRuntime(runtime, []);
+    await setRuntimeGraphFromEditorGraph(runtime, []);
 
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
 
@@ -653,8 +669,8 @@ describe('EditorRuntimeReconciler', () => {
 
     AudioRegistry.getInstance().register(TapNode);
 
-    await reconcileEditorRuntime(runtime, [node]);
-    await reconcileEditorRuntime(runtime, [node]);
+    await setRuntimeGraphFromEditorGraph(runtime, [node]);
+    await setRuntimeGraphFromEditorGraph(runtime, [node]);
 
     expect(audioService.createNode).toHaveBeenCalledTimes(1);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
@@ -666,7 +682,7 @@ describe('EditorRuntimeReconciler', () => {
       false
     ]);
 
-    await reconcileEditorRuntime(runtime, []);
+    await setRuntimeGraphFromEditorGraph(runtime, []);
 
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
 
@@ -685,7 +701,7 @@ describe('EditorRuntimeReconciler', () => {
 
     AudioRegistry.getInstance().register(ScopeAudioNode);
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       {
         id: nodeId,
         type: 'scope~',
@@ -713,7 +729,7 @@ describe('EditorRuntimeReconciler', () => {
       isAudioObject: isOsc
     });
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 440',
         name: 'osc~',
@@ -724,7 +740,7 @@ describe('EditorRuntimeReconciler', () => {
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
     expect(createObject).not.toHaveBeenCalled();
 
-    await reconcileEditorRuntime(runtime, []);
+    await setRuntimeGraphFromEditorGraph(runtime, []);
 
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
 
@@ -742,7 +758,7 @@ describe('EditorRuntimeReconciler', () => {
     });
     const nodeId = 'object-box-audio-to-message-test';
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 440',
         name: 'osc~',
@@ -750,7 +766,7 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: `${TEST_OBJECT_TYPE} next`,
         name: TEST_OBJECT_TYPE,
@@ -774,7 +790,7 @@ describe('EditorRuntimeReconciler', () => {
       isAudioObject: isOsc
     });
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 440',
         name: 'osc~',
@@ -784,7 +800,7 @@ describe('EditorRuntimeReconciler', () => {
 
     runtime.suppressNextAudioObjectSync(nodeId);
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 220',
         name: 'osc~',
@@ -792,7 +808,7 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 220',
         name: 'osc~',
@@ -802,7 +818,7 @@ describe('EditorRuntimeReconciler', () => {
 
     expect(audioService.createNode).toHaveBeenCalledTimes(1);
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: 'osc~ 330',
         name: 'osc~',
@@ -830,10 +846,10 @@ describe('EditorRuntimeReconciler', () => {
       params: [440]
     });
 
-    await reconcileEditorRuntime(runtime, [node]);
+    await setRuntimeGraphFromEditorGraph(runtime, [node]);
 
     audioService.getNodeById.mockReturnValueOnce(null);
-    await reconcileEditorRuntime(runtime, [node]);
+    await setRuntimeGraphFromEditorGraph(runtime, [node]);
 
     expect(audioService.createNode).toHaveBeenCalledTimes(2);
 
@@ -844,63 +860,73 @@ describe('EditorRuntimeReconciler', () => {
     const runtime = createFakeEditorRuntime();
     const nodeId = 'button-editor-runtime-test';
 
-    await reconcileEditorRuntime(runtime, [buttonNode(nodeId)]);
+    await setRuntimeGraphFromEditorGraph(runtime, [buttonNode(nodeId)]);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
-      { id: nodeId, type: 'button', data: {} }
-    ]);
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [{ id: nodeId, type: 'button', data: {} }],
+      connections: []
+    });
   });
 
   it('translates XYFlow toggle value into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const nodeId = 'toggle-editor-runtime-test';
 
-    await reconcileEditorRuntime(runtime, [toggleNode(nodeId, { value: true })]);
+    await setRuntimeGraphFromEditorGraph(runtime, [toggleNode(nodeId, { value: true })]);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
-      {
-        id: nodeId,
-        type: 'toggle',
-        data: { value: true }
-      }
-    ]);
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [
+        {
+          id: nodeId,
+          type: 'toggle',
+          data: { value: true }
+        }
+      ],
+      connections: []
+    });
   });
 
   it('translates XYFlow switch value into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const nodeId = 'switch-editor-runtime-test';
 
-    await reconcileEditorRuntime(runtime, [switchNode(nodeId, { value: true })]);
+    await setRuntimeGraphFromEditorGraph(runtime, [switchNode(nodeId, { value: true })]);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
-      {
-        id: nodeId,
-        type: 'switch',
-        data: { value: true }
-      }
-    ]);
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [
+        {
+          id: nodeId,
+          type: 'switch',
+          data: { value: true }
+        }
+      ],
+      connections: []
+    });
   });
 
   it('translates XYFlow textbox text into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const nodeId = 'textbox-editor-runtime-test';
 
-    await reconcileEditorRuntime(runtime, [textboxNode(nodeId, { text: 'saved text' })]);
+    await setRuntimeGraphFromEditorGraph(runtime, [textboxNode(nodeId, { text: 'saved text' })]);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
-      {
-        id: nodeId,
-        type: 'textbox',
-        data: { text: 'saved text' }
-      }
-    ]);
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [
+        {
+          id: nodeId,
+          type: 'textbox',
+          data: { text: 'saved text' }
+        }
+      ],
+      connections: []
+    });
   });
 
   it('translates XYFlow slider data into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const nodeId = 'slider-editor-runtime-test';
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       sliderNode(nodeId, {
         value: 7,
         min: -10,
@@ -911,27 +937,30 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
-      {
-        id: nodeId,
-        type: 'slider',
-        data: {
-          value: 7,
-          min: -10,
-          max: 10,
-          defaultValue: 2,
-          isFloat: true,
-          step: 0.5
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [
+        {
+          id: nodeId,
+          type: 'slider',
+          data: {
+            value: 7,
+            min: -10,
+            max: 10,
+            defaultValue: 2,
+            isFloat: true,
+            step: 0.5
+          }
         }
-      }
-    ]);
+      ],
+      connections: []
+    });
   });
 
   it('translates XYFlow knob data into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
     const nodeId = 'knob-editor-runtime-test';
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       knobNode(nodeId, {
         value: 7,
         min: -10,
@@ -942,20 +971,23 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
-      {
-        id: nodeId,
-        type: 'knob',
-        data: {
-          value: 7,
-          min: -10,
-          max: 10,
-          defaultValue: 2,
-          isFloat: true,
-          step: 0.5
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [
+        {
+          id: nodeId,
+          type: 'knob',
+          data: {
+            value: 7,
+            min: -10,
+            max: 10,
+            defaultValue: 2,
+            isFloat: true,
+            step: 0.5
+          }
         }
-      }
-    ]);
+      ],
+      connections: []
+    });
   });
 
   it('translates XYFlow object nodes into public runtime object specs', async () => {
@@ -963,7 +995,7 @@ describe('EditorRuntimeReconciler', () => {
 
     const nodeId = 'object-editor-runtime-test';
 
-    await reconcileEditorRuntime(runtime, [
+    await setRuntimeGraphFromEditorGraph(runtime, [
       objectNode(nodeId, {
         expr: `${TEST_OBJECT_TYPE} initial`,
         name: TEST_OBJECT_TYPE,
@@ -971,24 +1003,61 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([
-      {
-        id: nodeId,
-        type: TEST_OBJECT_TYPE,
-        data: {
-          expr: `${TEST_OBJECT_TYPE} initial`,
-          name: TEST_OBJECT_TYPE,
-          params: ['initial']
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [
+        {
+          id: nodeId,
+          type: TEST_OBJECT_TYPE,
+          data: {
+            expr: `${TEST_OBJECT_TYPE} initial`,
+            name: TEST_OBJECT_TYPE,
+            params: ['initial']
+          }
         }
-      }
-    ]);
+      ],
+      connections: []
+    });
+  });
+
+  it('translates XYFlow edges into public runtime connections', async () => {
+    const runtime = createFakeEditorRuntime();
+
+    await setRuntimeGraphFromEditorGraph(
+      runtime,
+      [buttonNode('button-1'), toggleNode('toggle-1')],
+      [
+        {
+          id: 'button-to-toggle',
+          source: 'button-1',
+          sourceHandle: 'message-out',
+          target: 'toggle-1',
+          targetHandle: 'message-in'
+        }
+      ]
+    );
+
+    expect(runtime.setGraph).toHaveBeenCalledWith({
+      objects: [
+        { id: 'button-1', type: 'button', data: {} },
+        { id: 'toggle-1', type: 'toggle', data: {} }
+      ],
+      connections: [
+        {
+          id: 'button-to-toggle',
+          source: 'button-1',
+          outlet: 'message-out',
+          target: 'toggle-1',
+          inlet: 'message-in'
+        }
+      ]
+    });
   });
 
   it('passes an empty runtime object list when editor nodes are removed', async () => {
     const runtime = createFakeEditorRuntime();
 
-    await reconcileEditorRuntime(runtime, []);
+    await setRuntimeGraphFromEditorGraph(runtime, []);
 
-    expect(runtime.reconcileObjects).toHaveBeenCalledWith([]);
+    expect(runtime.setGraph).toHaveBeenCalledWith({ objects: [], connections: [] });
   });
 });

@@ -1,3 +1,3 @@
-import type { RuntimeObjectSpec } from './runtime-object';
+import type { RuntimeGraphSpec } from './runtime-object';
 
-export type EditorRuntime = { reconcileObjects(objects: RuntimeObjectSpec[]): Promise<void> };
+export type EditorRuntime = { setGraph(graph: RuntimeGraphSpec): Promise<void> };

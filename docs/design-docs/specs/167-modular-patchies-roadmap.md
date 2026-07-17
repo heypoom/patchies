@@ -28,12 +28,14 @@ The core must be usable without the editor.
 
 `PatchRuntime` is the public runtime interface. The editor, headless tests,
 host applications, embeds, and plugin harnesses should all use the same
-graph-oriented runtime calls.
+graph-oriented runtime calls. It owns the runtime graph; helper modules may keep
+the implementation small, but graph state should not live in the editor adapter.
 
 The editor becomes a UI host. It renders and edits an XYFlow graph, then uses
-`EditorRuntimeReconciler` to adapt XYFlow nodes and edges into `PatchRuntime`
-calls. The reconciler may know editor representation kinds, but it should not
-own runtime semantics or object-specific data conversion.
+`EditorRuntimeReconciler` to adapt XYFlow nodes and edges into a
+`PatchRuntime.setGraph` call. The reconciler may know editor
+representation kinds, but it should not own graph diffs, runtime semantics, or
+object-specific data conversion.
 
 Objects become runtime definitions registered into the core. A definition may
 include behavior, ports, schemas, defaults, migrations, services, optional
@@ -57,8 +59,11 @@ Create a `PatchRuntime` that can instantiate objects, apply graph changes,
 route messages, and coordinate message/audio/video services without mounting
 the editor.
 
-`EditorRuntimeReconciler` translates XYFlow state into runtime calls such as
-`createObject`, `updateObject`, `connect`, `disconnect`, and `destroyObject`.
+`EditorRuntimeReconciler` translates XYFlow state into the public runtime graph
+shape and calls `PatchRuntime.setGraph`. Imperative calls such as
+`createObject`, `updateObject`, `connect`, `disconnect`, and `destroyObject`
+remain available for headless consumers and should update the same runtime-owned
+graph.
 
 Svelte views attach to existing runtime state; they do not own runtime
 lifecycle.

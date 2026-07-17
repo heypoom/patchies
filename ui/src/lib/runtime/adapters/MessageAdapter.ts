@@ -1,5 +1,7 @@
+import type { Edge } from '@xyflow/svelte';
+
 import type { PatchiesEventBus } from '$lib/eventbus';
-import type { MessageCallbackFn } from '$lib/messages';
+import { MessageSystem, type MessageCallbackFn } from '$lib/messages';
 import type { ObjectMetadata, ObjectService, TextObjectClass } from '$lib/objects';
 
 import { MessageObjectLifecycle } from '../services/MessageObjectLifecycle';
@@ -91,6 +93,10 @@ export class MessageAdapter {
     messageContext.queue.addCallback(callback);
 
     return () => messageContext.queue.removeCallback(callback);
+  }
+
+  updateConnections(edges: Edge[]): void {
+    MessageSystem.getInstance().updateEdges(edges);
   }
 
   getObjectPorts(

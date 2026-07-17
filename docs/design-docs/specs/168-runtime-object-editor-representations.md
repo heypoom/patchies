@@ -28,11 +28,25 @@ type RuntimeObjectSpec<TData = Record<string, unknown>> = {
 tests, host applications, and headless scripts should all be able to construct
 the same descriptor shape.
 
-`PatchRuntime` is the public graph module. Its interface should converge on
-object and connection operations:
+Connections use the same principle:
 
 ```ts
-runtime.reconcileObjects(objects);
+type RuntimeConnectionSpec = {
+  id?: string;
+  source: string;
+  outlet?: string;
+  target: string;
+  inlet?: string;
+};
+```
+
+`PatchRuntime` is the public graph module. It owns the runtime graph, including
+objects and connections. Its interface should converge on graph, object, and
+connection operations:
+
+```ts
+runtime.setGraph({ objects, connections });
+runtime.getGraph();
 runtime.createObject(object);
 runtime.updateObject(object);
 runtime.destroyObject(id);
@@ -43,7 +57,9 @@ runtime.send(id, message);
 
 Message, audio, rendering, and editor compatibility details belong behind that
 interface. The editor reconciler is only one adapter that feeds this public
-runtime shape from XYFlow state.
+runtime shape from XYFlow state. Internal helpers such as `PatchGraph` may store
+objects, connections, snapshots, and descriptor keys so `PatchRuntime` can stay a
+small facade, but those helpers are not the caller-facing interface.
 
 Runtime objects implement a common lifecycle and message interface:
 
@@ -100,37 +116,43 @@ spec. That can remain a future migration.
 
 ## Reconciler Role
 
-`EditorRuntimeReconciler` is an adapter from XYFlow state into public
-`PatchRuntime` calls. It may understand editor representation kinds, but it
-must not mention concrete object names, message/audio runtime lanes, or
-object-specific data conversion.
+`EditorRuntimeReconciler` is a stateless adapter from XYFlow state into the
+public `PatchRuntime` graph shape. It may understand editor representation
+kinds, but it must not own graph diffs, mention concrete object names, mention
+message/audio runtime lanes, or perform object-specific data conversion.
 
 For visual nodes:
 
 ```ts
-runtime.reconcileObjects([
-  {
-    id: node.id,
-    type: node.type,
-    data: node.data,
-  },
-]);
+runtime.setGraph({
+  objects: [
+    {
+      id: node.id,
+      type: node.type,
+      data: node.data,
+    },
+  ],
+  connections,
+});
 ```
 
 For object-box nodes:
 
 ```ts
-runtime.reconcileObjects([
-  {
-    id: node.id,
-    type: node.data.name,
-    data: {
-      expr: node.data.expr,
-      name: node.data.name,
-      params: node.data.params,
+runtime.setGraph({
+  objects: [
+    {
+      id: node.id,
+      type: node.data.name,
+      data: {
+        expr: node.data.expr,
+        name: node.data.name,
+        params: node.data.params,
+      },
     },
-  },
-]);
+  ],
+  connections,
+});
 ```
 
 Object-specific defaults, migrations, and compatibility logic belong to object
@@ -167,14 +189,15 @@ interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
 2. Pass visual `node.data` directly into runtime descriptors.
 3. Pass object-box `{ expr, name, params }` as runtime data for text objects.
 4. Move message/audio runtime lane selection out of `EditorRuntimeReconciler`.
-5. Move edge updates behind `PatchRuntime` connection methods.
-6. Prefer data-first runtime objects; keep param helpers only for text-object compatibility.
+5. Move object and connection diffs into `PatchRuntime.setGraph`.
+6. Move edge updates behind `PatchRuntime` connection methods.
+7. Prefer data-first runtime objects; keep param helpers only for text-object compatibility.
 
 ## Success Criteria
 
 - Visual objects run headlessly from the same object-shaped data their Svelte views receive.
 - `ObjectNode` cannot accidentally load visual-only objects.
-- `EditorRuntimeReconciler` does not mention concrete object names or runtime lanes.
+- `EditorRuntimeReconciler` does not maintain graph state, mention concrete object names, or mention runtime lanes.
 - Headless callers can create the same runtime graph the editor creates through reconciliation.
 - Text-object `params[]` continue to work for object-box expressions.
 

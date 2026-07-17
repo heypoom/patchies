@@ -134,6 +134,7 @@ class FakeAudioService {
   createNode = vi.fn<AudioService['createNode']>(() => Promise.resolve(this.audioNode));
   send = vi.fn<AudioService['send']>();
   getNodeById = vi.fn<AudioService['getNodeById']>(() => this.audioNode);
+  updateEdges = vi.fn<AudioService['updateEdges']>();
 }
 
 export const createFakeAudioService = () =>
@@ -220,6 +221,6 @@ export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): No
 });
 
 export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) => ({
-  reconcileObjects: vi.fn(() => Promise.resolve()),
+  setGraph: vi.fn(() => Promise.resolve()),
   ...overrides
 });

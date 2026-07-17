@@ -1,3 +1,5 @@
+import type { Edge } from '@xyflow/svelte';
+
 import type { AudioService } from '$lib/audio/v2/AudioService';
 import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 
@@ -11,12 +13,14 @@ import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
 
+import { PatchGraph } from './PatchGraph';
 import { RuntimeObjectReconciler } from './RuntimeObjectReconciler';
 import { RuntimeObjectResolver } from './RuntimeObjectResolver';
 
 import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 
 import type {
+  RuntimeConnectionSpec,
   RuntimeGraphSpec,
   RuntimeObjectPorts,
   RuntimeObjectSpec,
@@ -38,8 +42,11 @@ interface PatchRuntimeOptions {
 }
 
 export class PatchRuntime {
+  private graph = new PatchGraph();
+
   private message: MessageAdapter;
   private audio: AudioAdapter;
+
   private objectResolver: RuntimeObjectResolver;
   private objectReconciler: RuntimeObjectReconciler;
 
@@ -89,21 +96,25 @@ export class PatchRuntime {
     return this.audio.isObjectInRegistry(objectType);
   }
 
-  async reconcileGraph(graph: RuntimeGraphSpec): Promise<void> {
-    await this.reconcileObjects(graph.objects);
+  async setGraph(graph: RuntimeGraphSpec): Promise<void> {
+    this.graph.setGraph(graph);
+    await this.syncObjects();
+    this.syncConnections();
   }
 
-  async reconcileObjects(objects: RuntimeObjectSpec[]): Promise<void> {
-    await this.objectReconciler.reconcile(objects);
+  getGraph(): RuntimeGraphSpec {
+    return this.graph.getGraph();
   }
 
   async createObject(descriptor: RuntimeObjectDescriptorOrSpec): Promise<void> {
+    const spec = transformObjectDescriptionToSpec(descriptor);
+    this.graph.upsertObject(spec);
+
     if ('objectType' in descriptor) {
       await this.message.createObject(descriptor);
       return;
     }
 
-    const spec = transformObjectDescriptionToSpec(descriptor);
     const resolved = this.objectResolver.resolve(spec);
 
     if (resolved.kind === 'audio') {
@@ -117,12 +128,14 @@ export class PatchRuntime {
   }
 
   async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptorOrSpec): Promise<void> {
+    const spec = { ...transformObjectDescriptionToSpec(descriptor), id: nodeId };
+    this.graph.upsertObject(spec);
+
     if ('objectType' in descriptor) {
       await this.message.updateObject(nodeId, descriptor);
       return;
     }
 
-    const spec = transformObjectDescriptionToSpec(descriptor);
     const resolved = this.objectResolver.resolve(spec);
 
     if (resolved.kind === 'audio') {
@@ -136,8 +149,22 @@ export class PatchRuntime {
   }
 
   destroyObject(nodeId: string): void {
+    this.graph.removeObject(nodeId);
     this.message.destroyObject(nodeId);
     this.destroyAudioObject(nodeId);
+    this.syncConnections();
+  }
+
+  connect(connection: RuntimeConnectionSpec): string {
+    const connectionId = this.graph.upsertConnection(connection);
+    this.syncConnections();
+
+    return connectionId;
+  }
+
+  disconnect(connectionId: string): void {
+    this.graph.removeConnection(connectionId);
+    this.syncConnections();
   }
 
   subscribeObjectMessages(nodeId: string, callback: MessageCallbackFn): (() => void) | null {
@@ -198,6 +225,17 @@ export class PatchRuntime {
     this.message.destroy();
     this.audio.destroy();
   }
+
+  private async syncObjects(): Promise<void> {
+    await this.objectReconciler.reconcile(this.graph.getObjects());
+  }
+
+  private syncConnections(): void {
+    const edges = this.graph.getConnections().map(getEditorEdgeFromRuntimeConnection);
+
+    this.message.updateConnections(edges);
+    this.audio.updateConnections(edges);
+  }
 }
 
 function transformObjectDescriptionToSpec(
@@ -211,3 +249,13 @@ function transformObjectDescriptionToSpec(
     data: descriptor.data
   };
 }
+
+const getEditorEdgeFromRuntimeConnection = (
+  connection: RuntimeConnectionSpec & { id: string }
+): Edge => ({
+  id: connection.id,
+  source: connection.source,
+  sourceHandle: connection.outlet,
+  target: connection.target,
+  targetHandle: connection.inlet
+});

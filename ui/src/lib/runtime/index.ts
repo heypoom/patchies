@@ -9,7 +9,6 @@ export type {
 
 export { PatchRuntime } from './services/PatchRuntime';
 
-export { reconcileEditorRuntime } from './editor/editor-reconciler';
 export { useNodeViewMessageContext } from './editor/useNodeViewMessageContext.svelte';
 
 export {

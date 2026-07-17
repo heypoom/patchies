@@ -1,3 +1,5 @@
+import type { Edge } from '@xyflow/svelte';
+
 import type { AudioService, AudioNodeClass, AudioNodeV2 } from '$lib/audio';
 
 import { MessageContext } from '$lib/messages/MessageContext';
@@ -91,6 +93,10 @@ export class AudioAdapter {
 
   sendAudioObjectMessage(nodeId: string, key: string, message: unknown): void {
     this.audioService.send(nodeId, key, message);
+  }
+
+  updateConnections(edges: Edge[]): void {
+    this.audioService.updateEdges(edges);
   }
 
   getAudioObject(nodeId: string): AudioNodeV2 | null {
