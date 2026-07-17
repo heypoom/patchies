@@ -1,8 +1,9 @@
 import type { Edge } from '@xyflow/svelte';
 
 import type { AudioNodeV2 } from '$lib/audio';
+import type { ProfilerCoordinator } from '$lib/profiler';
 import type { ObjectMetadata, TextObjectClass } from '$lib/objects';
-import type { MessageCallbackFn } from '$lib/messages';
+import type { MessageCallbackFn, MessageSystem } from '$lib/messages';
 
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
@@ -23,7 +24,7 @@ import type {
 
 import type {
   PatchRuntimeOptions,
-  RuntimeDependencies,
+  RuntimeServices,
   RuntimeObjectDescriptorOrSpec
 } from '../types/patch-runtime';
 
@@ -32,23 +33,23 @@ export class PatchRuntime {
 
   private message: MessageAdapter;
   private audio: AudioAdapter;
-  private dependencies: RuntimeDependencies;
+  private services: RuntimeServices;
 
-  private messageSystem: RuntimeDependencies['messageSystem'];
-  private profilerCoordinator: RuntimeDependencies['profilerCoordinator'];
+  private messageSystem: MessageSystem;
+  private profilerCoordinator: ProfilerCoordinator;
 
   private objectResolver: RuntimeObjectResolver;
   private objectReconciler: RuntimeObjectReconciler;
 
   constructor(options: PatchRuntimeOptions) {
     const { objectService, audioService, eventBus, messageSystem, profilerCoordinator } =
-      options.dependencies;
+      options.services;
 
     this.message = new MessageAdapter({
+      eventBus,
       objectService,
       onObjectParamsChange: options.onObjectParamsChange,
-      onObjectDataChange: options.onObjectDataChange,
-      eventBus
+      onObjectDataChange: options.onObjectDataChange
     });
 
     this.audio = new AudioAdapter({
@@ -57,7 +58,7 @@ export class PatchRuntime {
       onAudioObjectDataChange: options.onAudioObjectDataChange
     });
 
-    this.dependencies = options.dependencies;
+    this.services = options.services;
     this.messageSystem = messageSystem;
     this.profilerCoordinator = profilerCoordinator;
 
@@ -163,7 +164,7 @@ export class PatchRuntime {
     for (const nodeId of nodeIds) {
       this.messageSystem.unregisterNode(nodeId);
       this.audio.audioService.removeNodeById(nodeId);
-      this.dependencies.mediaPipeNodeSystem.unregister(nodeId);
+      this.services.mediaPipeNodeSystem.unregister(nodeId);
       this.profilerCoordinator.unregister(nodeId);
     }
   }
@@ -258,7 +259,7 @@ export class PatchRuntime {
       mediaPipeNodeSystem,
       directChannelService,
       workletDirectChannelService
-    } = this.dependencies;
+    } = this.services;
 
     this.message.updateEdges(edges);
     this.audio.audioService.updateEdges(edges);

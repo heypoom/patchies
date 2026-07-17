@@ -14,9 +14,9 @@ import { MessageAdapter } from '../adapters/MessageAdapter';
 
 import { PatchRuntime } from './PatchRuntime';
 import {
-  createDefaultRuntimeDependencies,
+  createDefaultRuntimeServices,
   type CreatePatchRuntimeOptions
-} from '../utils/runtime-dependencies';
+} from '../utils/runtime-services';
 
 import { setRuntimeGraphFromEditorGraph } from '../editor/editor-reconciler';
 
@@ -38,6 +38,7 @@ import {
   textboxNode,
   toggleNode
 } from '../utils/runtime-test-utils';
+import type { ProfilerCoordinator } from '$lib/profiler';
 
 beforeEach(() => {
   resetPatchRuntimeTestObject();
@@ -51,8 +52,8 @@ const isScope = (objectType: string) => objectType === 'scope~';
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
 
-type TestPatchRuntimeOptions = Omit<CreatePatchRuntimeOptions, 'dependencies'> &
-  NonNullable<CreatePatchRuntimeOptions['dependencies']>;
+type TestPatchRuntimeOptions = Omit<CreatePatchRuntimeOptions, 'services'> &
+  NonNullable<CreatePatchRuntimeOptions['services']>;
 
 const createTestPatchRuntime = ({
   objectService = createFakeObjectService(),
@@ -72,7 +73,7 @@ const createTestPatchRuntime = ({
 
   return new PatchRuntime({
     ...options,
-    dependencies: createDefaultRuntimeDependencies({
+    services: createDefaultRuntimeServices({
       objectService,
       audioService,
       eventBus,
@@ -615,8 +616,10 @@ describe('PatchRuntime', () => {
   it('cleans up deleted nodes through runtime-owned services', () => {
     const connectionServices = createFakeRuntimeConnectionServices();
     const audioService = createFakeAudioService();
-    const messageSystem = { unregisterNode: vi.fn() };
-    const profilerCoordinator = { unregister: vi.fn() };
+
+    const messageSystem = { unregisterNode: vi.fn() } as unknown as MessageSystem;
+    const profilerCoordinator = { unregister: vi.fn() } as unknown as ProfilerCoordinator;
+
     const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService,
@@ -625,12 +628,13 @@ describe('PatchRuntime', () => {
       profilerCoordinator
     });
 
-    runtime.cleanupDeletedNodes(['deleted-node']);
+    const nodeId = 'deleted-node';
+    runtime.cleanupDeletedNodes([nodeId]);
 
-    expect(messageSystem.unregisterNode).toHaveBeenCalledWith('deleted-node');
-    expect(audioService.removeNodeById).toHaveBeenCalledWith('deleted-node');
-    expect(connectionServices.mediaPipeNodeSystem.unregister).toHaveBeenCalledWith('deleted-node');
-    expect(profilerCoordinator.unregister).toHaveBeenCalledWith('deleted-node');
+    expect(messageSystem.unregisterNode).toHaveBeenCalledWith(nodeId);
+    expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
+    expect(profilerCoordinator.unregister).toHaveBeenCalledWith(nodeId);
+    expect(connectionServices.mediaPipeNodeSystem.unregister).toHaveBeenCalledWith(nodeId);
   });
 
   it('does not fan out edges when setGraph changes only object data', async () => {

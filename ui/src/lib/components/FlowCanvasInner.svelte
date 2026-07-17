@@ -50,7 +50,6 @@
 
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
-  import { GLSystem } from '$lib/canvas/GLSystem';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
 
@@ -142,7 +141,7 @@
   import { AiOperationsService } from '$lib/services/AiOperationsService';
 
   import {
-    createDefaultRuntimeDependencies,
+    createDefaultRuntimeServices,
     createPatchRuntime,
     setPatchRuntime,
     setRuntimeGraphFromEditorGraph
@@ -160,8 +159,8 @@
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
 
-  const runtimeDependencies = createDefaultRuntimeDependencies();
-  const { glSystem, audioService, eventBus } = runtimeDependencies;
+  const runtimeServices = createDefaultRuntimeServices();
+  const { glSystem, audioService, eventBus } = runtimeServices;
 
   const historyManager = HistoryManager.getInstance();
 
@@ -314,7 +313,7 @@
   const { screenToFlowPosition, fitView, getViewport, getNode, updateNodeData } = useSvelteFlow();
 
   const runtime = createPatchRuntime({
-    dependencies: runtimeDependencies,
+    services: runtimeServices,
     onObjectParamsChange: (nodeId, params) => updateNodeData(nodeId, { params }),
     onObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates),
     onAudioObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates)
@@ -497,7 +496,7 @@
   let _patchSettingsInit = false;
 
   $effect(() => {
-    // Read reactive values to register as dependencies
+    // Read reactive values to register as services
     void $isCablesVisible;
     void $transportStore.bpm;
     void $transportStore.timeSignature;

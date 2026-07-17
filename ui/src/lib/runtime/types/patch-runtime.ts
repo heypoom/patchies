@@ -5,8 +5,8 @@ import type { MediaPipeNodeSystem } from '$lib/mediapipe';
 import type { MessageSystem } from '$lib/messages';
 import type { DirectChannelService } from '$lib/messages';
 import type { ObjectService } from '$lib/objects';
-import type { ProfilerCoordinator } from '$lib/profiler';
 import type { PatchiesEventBus } from '$lib/eventbus';
+import type { ProfilerCoordinator } from '$lib/profiler';
 import type { AudioAnalysisSystem, WorkletDirectChannelService } from '$lib/audio';
 
 import type { RuntimeObjectDescriptor, RuntimeObjectSpec } from './runtime-object';
@@ -14,7 +14,8 @@ import type { RuntimeObjectDescriptor, RuntimeObjectSpec } from './runtime-objec
 export type RuntimeObjectDescriptorOrSpec = RuntimeObjectDescriptor | RuntimeObjectSpec;
 
 export interface PatchRuntimeOptions {
-  dependencies: RuntimeDependencies;
+  services: RuntimeServices;
+
   isAudioObject?: (objectType: string) => boolean;
 
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
@@ -22,14 +23,15 @@ export interface PatchRuntimeOptions {
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-export type RuntimeDependencies = {
+export type RuntimeServices = {
+  glSystem: GLSystem;
   audioService: AudioService;
+
   objectService: ObjectService;
   eventBus: PatchiesEventBus;
-  glSystem: GLSystem;
+  messageSystem: MessageSystem;
+  profilerCoordinator: ProfilerCoordinator;
 
-  messageSystem: Pick<MessageSystem, 'unregisterNode'>;
-  profilerCoordinator: Pick<ProfilerCoordinator, 'unregister'>;
   audioAnalysisSystem: Pick<AudioAnalysisSystem, 'updateEdges'>;
   workerNodeSystem: Pick<WorkerNodeSystem, 'updateEdges'>;
   mediaPipeNodeSystem: Pick<MediaPipeNodeSystem, 'updateEdges' | 'unregister'>;
@@ -37,4 +39,4 @@ export type RuntimeDependencies = {
   workletDirectChannelService: Pick<WorkletDirectChannelService, 'updateEdges'>;
 };
 
-export type PatchRuntimeDependencyOverrides = Partial<RuntimeDependencies>;
+export type PatchRuntimeServiceOverrides = Partial<RuntimeServices>;

@@ -8,14 +8,14 @@ export type {
 } from './types/runtime-object';
 
 export type {
-  RuntimeDependencies as PatchRuntimeDependencies,
-  PatchRuntimeDependencyOverrides,
+  RuntimeServices as PatchRuntimeServices,
+  PatchRuntimeServiceOverrides,
   PatchRuntimeOptions
 } from './types/patch-runtime';
 
 export { PatchRuntime } from './services/PatchRuntime';
-export { createPatchRuntime, createDefaultRuntimeDependencies } from './utils/runtime-dependencies';
-export type { CreatePatchRuntimeOptions } from './utils/runtime-dependencies';
+export { createPatchRuntime, createDefaultRuntimeServices } from './utils/runtime-services';
+export type { CreatePatchRuntimeOptions } from './utils/runtime-services';
 
 export { useNodeViewMessageContext } from './editor/useNodeViewMessageContext.svelte';
 
