@@ -1,9 +1,6 @@
-import type { Edge } from '@xyflow/svelte';
+import type { AudioService, AudioNodeClass } from '$lib/audio';
 
-import type { AudioService, AudioNodeClass, AudioNodeV2 } from '$lib/audio';
-
-import { MessageContext } from '$lib/messages/MessageContext';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { MessageContext, type MessageCallbackFn } from '$lib/messages';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import { validateMessageToObject } from '$lib/objects/validate-object-message';
@@ -24,7 +21,7 @@ interface AudioAdapterOptions {
 type RuntimeAudioObjectEntry = { messageContext: MessageContext };
 
 export class AudioAdapter {
-  private audioService: AudioService;
+  public readonly audioService: AudioService;
 
   private isAudioObject: (objectType: string) => boolean;
   private onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
@@ -91,18 +88,6 @@ export class AudioAdapter {
     this.viewRevisions.bump(nodeId);
   }
 
-  sendAudioObjectMessage(nodeId: string, key: string, message: unknown): void {
-    this.audioService.send(nodeId, key, message);
-  }
-
-  updateConnections(edges: Edge[]): void {
-    this.audioService.updateEdges(edges);
-  }
-
-  getAudioObject(nodeId: string): AudioNodeV2 | null {
-    return this.audioService.getNodeById(nodeId);
-  }
-
   subscribeAudioObjectMessages(nodeId: string, callback: MessageCallbackFn): (() => void) | null {
     const messageContext = this.audioObjects.get(nodeId)?.messageContext;
     if (!messageContext) return null;
@@ -148,7 +133,7 @@ export class AudioAdapter {
 
       if (settingsUpdate) {
         for (const [key, value] of Object.entries(settingsUpdate)) {
-          this.sendAudioObjectMessage(nodeId, key, value);
+          this.audioService.send(nodeId, key, value);
         }
 
         this.suppressNextAudioObjectSync(nodeId);
@@ -164,7 +149,7 @@ export class AudioAdapter {
       if (!inletDefinition?.name) return;
       if (!validateMessageToObject(message, inletDefinition)) return;
 
-      this.sendAudioObjectMessage(nodeId, inletDefinition.name, message);
+      this.audioService.send(nodeId, inletDefinition.name, message);
     };
   }
 

@@ -140,6 +140,15 @@ class FakeAudioService {
 export const createFakeAudioService = () =>
   new FakeAudioService() as FakeAudioService & AudioService;
 
+export const createFakeRuntimeConnectionServices = () => ({
+  glSystem: { updateEdges: vi.fn() },
+  audioAnalysisSystem: { updateEdges: vi.fn() },
+  workerNodeSystem: { updateEdges: vi.fn() },
+  mediaPipeNodeSystem: { updateEdges: vi.fn(), unregister: vi.fn() },
+  directChannelService: { updateNodeTypes: vi.fn(), updateEdges: vi.fn() },
+  workletDirectChannelService: { updateEdges: vi.fn() }
+});
+
 class FakeEventBus {
   listeners = new Map<string, Array<(event: never) => void>>();
 

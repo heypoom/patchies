@@ -198,7 +198,7 @@ export class MediaPipeNodeSystem {
     this.statusCallbacks.delete(nodeId);
   }
 
-  updateConnections(edges: SimpleEdge[]): void {
+  updateEdges(edges: SimpleEdge[]): void {
     this.currentEdges = edges;
 
     for (const [nodeId, state] of this.nodes) {

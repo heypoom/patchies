@@ -1,2 +1,4 @@
 export { MessageContext, type SendMessageOptions } from './MessageContext';
-export { MessageSystem, type MessageCallbackFn } from './MessageSystem';
+export { MessageSystem, type Message, type MessageCallbackFn } from './MessageSystem';
+export { DirectChannelService } from './DirectChannelService';
+export { MessageChannelRegistry } from './MessageChannelRegistry';

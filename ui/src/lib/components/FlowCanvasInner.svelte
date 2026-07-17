@@ -10,7 +10,9 @@
     type IsValidConnection,
     useOnSelectionChange
   } from '@xyflow/svelte';
+
   import { onDestroy, onMount, tick } from 'svelte';
+
   import CommandPalette from './CommandPalette.svelte';
   import CodeEditor from './CodeEditor.svelte';
   import DetachedCodeEditorOverlay from './DetachedCodeEditorOverlay.svelte';
@@ -19,8 +21,8 @@
   import BottomToolbar from './BottomToolbar.svelte';
   import AiObjectPrompt from './AiObjectPrompt.svelte';
   import AiActivityTray from './AiActivityTray.svelte';
-  import { MessageSystem } from '$lib/messages/MessageSystem';
   import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
+
   import {
     isAiFeaturesVisible,
     isBottomBarVisible,
@@ -45,23 +47,24 @@
     requestFocusNodeId,
     requestFitView
   } from '../../stores/ui.store';
+
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
   import { AudioService } from '$lib/audio';
   import { ObjectService } from '$lib/objects';
-  import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
-  import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
+
   import {
     hasSomeAudioNode,
     isBackgroundOutputCanvasEnabled,
     snapGridSize
   } from '../../stores/canvas.store';
+
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import { deleteSearchParam } from '$lib/utils/search-params';
-  import BackgroundPattern from './BackgroundPattern.svelte';
+
   import { Toaster } from '$lib/components/ui/sonner';
   import {
     isAudioParamInlet,
@@ -82,7 +85,8 @@
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
-  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { PatchiesEventBus } from '$lib/eventbus';
+  import BackgroundPattern from './BackgroundPattern.svelte';
   import type {
     NodeReplaceEvent,
     VfsPathRenamedEvent,
@@ -93,10 +97,6 @@
     VisualGroupResizeStartedEvent,
     VisualGroupSyncRequestedEvent
   } from '$lib/eventbus/events';
-  import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
-  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
-  import { DirectChannelService } from '$lib/messages/DirectChannelService';
-  import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
   import {
@@ -154,16 +154,10 @@
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
 
-  let messageSystem = MessageSystem.getInstance();
   let glSystem = GLSystem.getInstance();
   let audioService = AudioService.getInstance();
   let objectService = ObjectService.getInstance();
-  let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
   let eventBus = PatchiesEventBus.getInstance();
-  let workerNodeSystem = WorkerNodeSystem.getInstance();
-  let mediaPipeNodeSystem = MediaPipeNodeSystem.getInstance();
-  let directChannelService = DirectChannelService.getInstance();
-  let workletDirectChannelService = WorkletDirectChannelService.getInstance();
   let historyManager = HistoryManager.getInstance();
 
   // Canvas context for shared state and utilities
@@ -513,28 +507,16 @@
     const currentNodes = new Set(nodes.map((n) => n.id));
     const deletedNodes = patchManager.updatePreviousNodes(currentNodes);
 
-    // Cleanup deleted nodes
-    for (const nodeId of deletedNodes) {
-      messageSystem.unregisterNode(nodeId);
-      audioService.removeNodeById(nodeId);
-      mediaPipeNodeSystem.unregister(nodeId);
-      ProfilerCoordinator.getInstance().unregister(nodeId);
-    }
+    runtime.cleanupDeletedNodes(deletedNodes);
   });
 
   $effect(() => {
     setRuntimeGraphFromEditorGraph(runtime, nodes, edges).catch((error) =>
-      logger.error('failed to reconcile editor graph with atch runtime', error)
+      logger.error('failed to reconcile editor graph with patch runtime', error)
     );
   });
 
   $effect(() => {
-    glSystem.updateEdges(edges);
-    audioAnalysisSystem.updateEdges(edges);
-    workerNodeSystem.updateVideoConnections(edges);
-    mediaPipeNodeSystem.updateConnections(edges);
-    directChannelService.updateEdges(edges);
-    workletDirectChannelService.updateEdges(edges);
     audioSourceConnections.set(buildAudioSourceConnections(edges));
   });
 
@@ -549,15 +531,6 @@
       surfaceMouseForwardingKey = _forwardingKey;
       eventBus.dispatch({ type: 'surfaceMouseForwardingGraphChanged', nodes });
     }
-  });
-
-  // Keep DirectChannelService informed of node types for direct messaging
-  $effect(() => {
-    directChannelService.updateNodeTypes(
-      nodes
-        .filter((n): n is typeof n & { type: string } => n.type !== undefined)
-        .map((n) => ({ id: n.id, type: n.type }))
-    );
   });
 
   // Update patchObjectTypes store for components outside the flow context (e.g., ObjectBrowserModal)
@@ -971,11 +944,7 @@
 
   onDestroy(() => {
     runtime.destroy();
-
-    // Clean up all nodes when component is destroyed
-    for (const node of nodes) {
-      messageSystem.unregisterNode(node.id);
-    }
+    runtime.cleanupDeletedNodes(nodes.map((node) => node.id));
 
     eventBus.removeEventListener('nodeReplace', handleNodeReplace);
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
@@ -1033,6 +1002,7 @@
       // Handle UI state based on result
       if (result.mode === 'help' || result.mode === 'src') {
         showStartupModal = false;
+
         if (result.error) {
           urlLoadError = result.error;
         }
@@ -1065,13 +1035,8 @@
     return dragDropManager;
   }
 
-  function onDrop(event: DragEvent) {
-    getDragDropManager().onDrop(event);
-  }
-
-  function onDragOver(event: DragEvent) {
-    getDragDropManager().onDragOver(event);
-  }
+  const onDrop = (event: DragEvent) => getDragDropManager().onDrop(event);
+  const onDragOver = (event: DragEvent) => getDragDropManager().onDragOver(event);
 
   // Get the center of the viewport in flow coordinates
   function getViewportCenter(): { x: number; y: number } {
@@ -1086,6 +1051,7 @@
     const center = getViewportCenter();
     const cols = Math.ceil(Math.sqrt(event.nodeNames.length));
     const spacing = 180;
+
     event.nodeNames.forEach((name, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
@@ -1316,7 +1282,7 @@
 
     if (audioContext.state === 'suspended') {
       audioContext.resume();
-      audioService.updateEdges(edges);
+      runtime.refreshConnections();
     }
 
     if (showAudioHint) {

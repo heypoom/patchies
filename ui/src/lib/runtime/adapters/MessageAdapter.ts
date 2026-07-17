@@ -95,7 +95,7 @@ export class MessageAdapter {
     return () => messageContext.queue.removeCallback(callback);
   }
 
-  updateConnections(edges: Edge[]): void {
+  updateEdges(edges: Edge[]): void {
     MessageSystem.getInstance().updateEdges(edges);
   }
 

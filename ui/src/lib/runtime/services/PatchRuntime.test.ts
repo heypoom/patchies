@@ -22,6 +22,7 @@ import {
   createFakeAudioService,
   createFakeEventBus,
   createFakeObjectService,
+  createFakeRuntimeConnectionServices,
   knobNode,
   objectNode,
   PatchRuntimeTestObject,
@@ -45,6 +46,12 @@ afterEach(() => {
 const isScope = (objectType: string) => objectType === 'scope~';
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
+
+const createTestPatchRuntime = (options: ConstructorParameters<typeof PatchRuntime>[0]) =>
+  new PatchRuntime({
+    connectionServices: createFakeRuntimeConnectionServices(),
+    ...options
+  });
 
 describe('MessageAdapter', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
@@ -339,10 +346,10 @@ describe('AudioAdapter', () => {
     expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
 
-    runtime.sendAudioObjectMessage(nodeId, 'frequency', 220);
+    runtime.audioService.send(nodeId, 'frequency', 220);
     expect(audioService.send).toHaveBeenCalledWith(nodeId, 'frequency', 220);
 
-    expect(runtime.getAudioObject(nodeId)).toBe(audioService.audioNode);
+    expect(runtime.audioService.getNodeById(nodeId)).toBe(audioService.audioNode);
 
     runtime.destroyAudioObject(nodeId);
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
@@ -430,7 +437,7 @@ describe('AudioAdapter', () => {
 
 describe('PatchRuntime', () => {
   it('owns button message routing outside the Svelte view lifecycle', async () => {
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService: createFakeAudioService()
     });
@@ -521,11 +528,124 @@ describe('PatchRuntime', () => {
     messageSystem.updateEdges([]);
   });
 
+  it('fans runtime graph connections out to headless graph services', async () => {
+    const connectionServices = createFakeRuntimeConnectionServices();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService: createFakeAudioService(),
+      connectionServices
+    });
+
+    await runtime.setGraph({
+      objects: [
+        { id: 'worker-1', type: 'worker', data: {} },
+        { id: 'canvas-1', type: 'canvas', data: {} }
+      ],
+      connections: [
+        {
+          id: 'worker-to-canvas',
+          source: 'worker-1',
+          outlet: 'video-out',
+          target: 'canvas-1',
+          inlet: 'video-in-0'
+        }
+      ]
+    });
+
+    const expectedEdges = [
+      {
+        id: 'worker-to-canvas',
+        source: 'worker-1',
+        sourceHandle: 'video-out',
+        target: 'canvas-1',
+        targetHandle: 'video-in-0'
+      }
+    ];
+
+    expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledWith(expectedEdges);
+    expect(connectionServices.audioAnalysisSystem.updateEdges).toHaveBeenCalledWith(expectedEdges);
+    expect(connectionServices.workerNodeSystem.updateEdges).toHaveBeenCalledWith(expectedEdges);
+    expect(connectionServices.mediaPipeNodeSystem.updateEdges).toHaveBeenCalledWith(expectedEdges);
+    expect(connectionServices.directChannelService.updateNodeTypes).toHaveBeenCalledWith([
+      { id: 'worker-1', type: 'worker' },
+      { id: 'canvas-1', type: 'canvas' }
+    ]);
+    expect(connectionServices.directChannelService.updateEdges).toHaveBeenCalledWith(expectedEdges);
+    expect(connectionServices.workletDirectChannelService.updateEdges).toHaveBeenCalledWith(
+      expectedEdges
+    );
+  });
+
+  it('cleans up deleted nodes through runtime-owned services', () => {
+    const connectionServices = createFakeRuntimeConnectionServices();
+    const audioService = createFakeAudioService();
+    const messageSystem = { unregisterNode: vi.fn() };
+    const profilerCoordinator = { unregister: vi.fn() };
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      connectionServices,
+      messageSystem,
+      profilerCoordinator
+    });
+
+    runtime.cleanupDeletedNodes(['deleted-node']);
+
+    expect(messageSystem.unregisterNode).toHaveBeenCalledWith('deleted-node');
+    expect(audioService.removeNodeById).toHaveBeenCalledWith('deleted-node');
+    expect(connectionServices.mediaPipeNodeSystem.unregister).toHaveBeenCalledWith('deleted-node');
+    expect(profilerCoordinator.unregister).toHaveBeenCalledWith('deleted-node');
+  });
+
+  it('does not fan out edges when setGraph changes only object data', async () => {
+    const connectionServices = createFakeRuntimeConnectionServices();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService: createFakeAudioService(),
+      connectionServices
+    });
+
+    const connections = [
+      {
+        id: 'button-to-toggle',
+        source: 'button-1',
+        outlet: 'message-out',
+        target: 'toggle-1',
+        inlet: 'message-in'
+      }
+    ];
+
+    await runtime.setGraph({
+      objects: [
+        { id: 'button-1', type: 'button', data: {} },
+        { id: 'toggle-1', type: 'toggle', data: { value: false } }
+      ],
+      connections
+    });
+
+    expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledTimes(1);
+
+    await runtime.setGraph({
+      objects: [
+        { id: 'button-1', type: 'button', data: {} },
+        { id: 'toggle-1', type: 'toggle', data: { value: true } }
+      ],
+      connections
+    });
+
+    expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledTimes(1);
+    expect(connectionServices.audioAnalysisSystem.updateEdges).toHaveBeenCalledTimes(1);
+    expect(connectionServices.workerNodeSystem.updateEdges).toHaveBeenCalledTimes(1);
+    expect(connectionServices.mediaPipeNodeSystem.updateEdges).toHaveBeenCalledTimes(1);
+    expect(connectionServices.directChannelService.updateEdges).toHaveBeenCalledTimes(1);
+    expect(connectionServices.workletDirectChannelService.updateEdges).toHaveBeenCalledTimes(1);
+  });
+
   it('creates a message endpoint for audio objects', async () => {
     const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService,
       audioService,
       isAudioObject: isOsc
@@ -583,7 +703,7 @@ describe('PatchRuntime', () => {
     const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService,
       audioService,
       isAudioObject: (objectType) => objectType === 'osc~'
@@ -617,7 +737,7 @@ describe('EditorRuntimeReconciler', () => {
     const nodeId = 'tap-tilde-editor-runtime-test';
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isTap
@@ -654,7 +774,7 @@ describe('EditorRuntimeReconciler', () => {
     const nodeId = 'tap-tilde-runtime-noop-test';
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isTap
@@ -693,7 +813,7 @@ describe('EditorRuntimeReconciler', () => {
     const nodeId = 'scope-editor-runtime-test';
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isScope
@@ -723,7 +843,7 @@ describe('EditorRuntimeReconciler', () => {
 
     const createObject = vi.spyOn(objectService, 'createObject');
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService,
       audioService,
       isAudioObject: isOsc
@@ -751,7 +871,7 @@ describe('EditorRuntimeReconciler', () => {
     const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService,
       audioService,
       isAudioObject: isOsc
@@ -784,7 +904,7 @@ describe('EditorRuntimeReconciler', () => {
     const nodeId = 'object-box-audio-suppressed-reconcile-test';
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isOsc
@@ -834,7 +954,7 @@ describe('EditorRuntimeReconciler', () => {
   it('recreates an audio object when reconciler state outlives the service node', async () => {
     const audioService = createFakeAudioService();
 
-    const runtime = new PatchRuntime({
+    const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService,
       isAudioObject: isOsc

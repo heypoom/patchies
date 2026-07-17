@@ -1,25 +1,42 @@
-import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import type { PrimaryButton } from '$lib/eventbus/events';
-import type { SendMessageOptions } from '$lib/messages/MessageContext';
-import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messages/MessageSystem';
-import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { match } from 'ts-pattern';
-import { JSRunner } from './JSRunner';
-import { profiler, ProfilerCoordinator } from '$lib/profiler';
-import type { ProfilerCategory, TimingStats } from '$lib/profiler';
+import { get } from 'svelte/store';
+
+import { PatchiesEventBus } from '$lib/eventbus';
+import type { PrimaryButton } from '$lib/eventbus/events';
+import type { SendMessageOptions } from '$lib/messages';
+
 import {
+  MessageSystem,
+  MessageChannelRegistry,
+  DirectChannelService,
+  type MessageCallbackFn,
+  type Message
+} from '$lib/messages';
+
+import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+
+import {
+  profiler,
+  ProfilerCoordinator,
+  type ProfilerCategory,
+  type TimingStats
+} from '$lib/profiler';
+
+import {
+  AudioService,
   AudioAnalysisSystem,
+  SuperSonicManager,
   type AudioAnalysisFormat,
   type AudioAnalysisType
-} from '$lib/audio/AudioAnalysisSystem';
-import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+} from '$lib/audio';
+
+import { JSRunner } from './JSRunner';
 import { WorkerLLMProxy } from './WorkerLLMProxy';
-import { DirectChannelService } from '$lib/messages/DirectChannelService';
-import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
-import { AudioService } from '$lib/audio/v2/AudioService';
+
 import JsWorker from '../../workers/js/jsWorker?worker';
-import { get } from 'svelte/store';
 import { currentPatchId } from '../../stores/ui.store';
+
+type Edge = { source: string; target: string; targetHandle?: string | null };
 
 /** Render connection for direct worker→render messaging */
 export interface RenderConnection {
@@ -438,7 +455,7 @@ export class WorkerNodeSystem {
     videoState.outletCount = outletCount;
 
     // Update connections from stored edges (handles case where edges existed before setVideoCount was called)
-    this.updateVideoConnectionsForNode(nodeId, videoState, this.currentEdges);
+    this.updateEdgesForNode(nodeId, videoState, this.currentEdges);
 
     // Dispatch event for UI to update ports
     this.eventBus.dispatch({
@@ -677,14 +694,12 @@ export class WorkerNodeSystem {
    * Update video connections based on current edges.
    * Called when edges change to keep source node mappings up to date.
    */
-  updateVideoConnections(
-    edges: Array<{ source: string; target: string; targetHandle?: string | null }>
-  ) {
+  updateEdges(edges: Edge[]) {
     // Store edges for later use when video states are created
     this.currentEdges = edges;
 
     for (const [nodeId, videoState] of this.videoStates) {
-      this.updateVideoConnectionsForNode(nodeId, videoState, edges);
+      this.updateEdgesForNode(nodeId, videoState, edges);
     }
 
     // Restart global loop if any nodes now have valid connections
@@ -697,12 +712,10 @@ export class WorkerNodeSystem {
   /**
    * Update video connections for a specific node.
    */
-  private updateVideoConnectionsForNode(
-    nodeId: string,
-    videoState: WorkerVideoState,
-    edges: Array<{ source: string; target: string; targetHandle?: string | null }>
-  ) {
-    const sourceNodeIds: (string | null)[] = new Array(videoState.inletCount).fill(null);
+  private updateEdgesForNode(nodeId: string, videoState: WorkerVideoState, edges: Edge[]) {
+    const sourceNodeIds = Array.from<string | null>({
+      length: videoState.inletCount
+    }).fill(null);
 
     for (let i = 0; i < videoState.inletCount; i++) {
       const edge = edges.find((e) => e.target === nodeId && e.targetHandle === `video-in-${i}`);
