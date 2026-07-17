@@ -1,6 +1,5 @@
 import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { MessageContext } from '$lib/messages/MessageContext';
-import { createLLMFunction } from '$lib/ai/google';
 import { profiler, typeFromNodeId } from '$lib/profiler';
 import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
@@ -10,7 +9,11 @@ import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler, type ClockState } from '$lib/transport/ClockScheduler';
 import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
+
 import type { FBOFormat } from '$lib/rendering/types';
+import type { createLLMFunction } from '$lib/ai/google';
+
+type LLMFunction = ReturnType<typeof createLLMFunction>;
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -471,6 +474,7 @@ export class JSRunner {
       setTimeSignature: (numerator: number, denominator = 4) =>
         Transport.setTimeSignature(numerator, denominator),
       seek: (time: number) => Transport.seek(time),
+
       // Scheduling methods
       onBeat: (...args: Parameters<typeof scheduler.onBeat>) => {
         onSchedulerCallbackRegistered?.();
@@ -493,6 +497,14 @@ export class JSRunner {
       setTimelineStyle: scheduler.setTimelineStyle.bind(scheduler)
     };
 
+    async function llm(...args: Parameters<LLMFunction>) {
+      const { createLLMFunction } = await import('$lib/ai/google');
+
+      const llmFn = createLLMFunction();
+
+      return llmFn(...args);
+    }
+
     const functionArgs = [
       customConsole,
       messageSystemContext.send,
@@ -503,7 +515,7 @@ export class JSRunner {
       messageSystemContext.requestAnimationFrame,
       messageSystemContext.onCleanup,
       messageSystemContext.fft,
-      createLLMFunction(),
+      llm,
       createKVStore(nodeId),
       setPortCount,
       setRunOnMount,

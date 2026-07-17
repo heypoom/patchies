@@ -1,12 +1,15 @@
 import { match } from 'ts-pattern';
 
-import type { RenderGraph } from '../../lib/rendering/types.js';
-import { FBORenderer } from './fboRenderer.js';
-import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem.js';
-import { handleVfsUrlResolved } from './vfsWorkerUtils.js';
-import { handleVfsTextResolved } from '$lib/glsl-include/vfs-resolver.js';
-import { MediaBunnyService } from './MediaBunnyService.js';
-import { PatchStorageService } from '$lib/storage/PatchStorageService.js';
+import { PatchStorageService } from '$lib/storage/PatchStorageService';
+import { handleVfsTextResolved } from '$lib/glsl-include/vfs-resolver';
+import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
+
+import { FBORenderer } from './fboRenderer';
+import { handleVfsUrlResolved } from './vfsWorkerUtils';
+import { MediaBunnyService } from './MediaBunnyService';
+import { RenderWorkerLifecycle } from './RenderWorkerLifecycle';
+
+import type { RenderGraph } from '../../lib/rendering/types';
 
 const fboRenderer: FBORenderer = new FBORenderer();
 
@@ -15,7 +18,7 @@ const mediaBunnyService = new MediaBunnyService({
   postMessage: (message, transfer) => self.postMessage(message, { transfer: transfer ?? [] })
 });
 
-let isRunning: boolean = false;
+const lifecycle = new RenderWorkerLifecycle();
 
 /** Map of source worker nodeId → MessagePort for direct messaging */
 const workerRenderPorts = new Map<string, MessagePort>();
@@ -83,6 +86,7 @@ self.onmessage = (event) => {
           textureData,
           textureFormat
         );
+
         return;
       }
 
@@ -108,7 +112,7 @@ self.onmessage = (event) => {
     .with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
     .with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
     .with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
-    .with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
+    .with('toggleNodePause', () => fboRenderer.toggleNodePause(data.nodeId))
     .with('capturePreview', () =>
       handleCapturePreview(data.nodeId, data.requestId, data.customSize)
     )
@@ -119,8 +123,6 @@ self.onmessage = (event) => {
     .with('setRenderFpsCap', () => fboRenderer.setRenderFpsCap(data.fps))
     .with('setCookStatsEnabled', () => fboRenderer.setCookStatsEnabled(data.enabled))
     .with('setMaxPreviewsPerFrame', () => {
-      console.log('setMax::hasOutputNode', fboRenderer.isOutputEnabled);
-
       if (data.max !== undefined) {
         fboRenderer.previewRenderer.maxPreviewsPerFrame = data.max;
       }
@@ -201,6 +203,8 @@ async function handleBuildRenderGraph(
 
   try {
     await fboRenderer.buildFBOs(graph, connectedVideoOutputNodeIds);
+
+    startRenderLoopIfReady();
   } catch (error) {
     if (error instanceof Error) {
       self.postMessage({
@@ -222,15 +226,12 @@ async function handleBuildRenderGraph(
 }
 
 function handleStartAnimation() {
-  if (!fboRenderer.renderGraph) {
-    return;
-  }
+  lifecycle.requestStart();
+  startRenderLoopIfReady();
+}
 
-  if (isRunning) {
-    return;
-  }
-
-  isRunning = true;
+function startRenderLoopIfReady() {
+  if (!lifecycle.takeStart(Boolean(fboRenderer.renderGraph))) return;
 
   fboRenderer.startRenderLoop(() => {
     // do not render if there are no nodes and edges
@@ -274,6 +275,7 @@ function handleStartAnimation() {
       if (completedBatches.length > 0) {
         // Collect all bitmaps for transfer
         const transferList: ImageBitmap[] = [];
+
         for (const batch of completedBatches) {
           for (const frame of batch.frames) {
             if (frame) transferList.push(frame);
@@ -300,7 +302,7 @@ function handleStartAnimation() {
 }
 
 function handleStopAnimation() {
-  isRunning = false;
+  lifecycle.stop();
   fboRenderer.stopRenderLoop();
 }
 
@@ -308,10 +310,6 @@ function handleSetPreviewEnabled(nodeId: string, enabled: boolean) {
   fboRenderer.setPreviewEnabled(nodeId, enabled);
 
   self.postMessage({ type: 'previewToggled', nodeId, enabled });
-}
-
-function handleToggleNodePause(nodeId: string) {
-  fboRenderer.toggleNodePause(nodeId);
 }
 
 function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
@@ -517,6 +515,7 @@ function handleRegisterWorkerRenderPort(nodeId: string, port: MessagePort) {
  */
 function handleUnregisterWorkerRenderPort(nodeId: string) {
   const port = workerRenderPorts.get(nodeId);
+
   if (port) {
     port.close();
     workerRenderPorts.delete(nodeId);
