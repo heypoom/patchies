@@ -19,8 +19,48 @@ import { ButtonObject } from '$objects/button/ButtonObject';
 
 import type { EditorRuntime } from '../types/editor-runtime';
 import type { GLSystem } from '$lib/canvas/GLSystem';
+import { createDefaultRuntimeServices, type CreatePatchRuntimeOptions } from './runtime-services';
+import { PatchRuntime } from '../services/PatchRuntime';
 
 export const TEST_OBJECT_TYPE = 'patch-runtime-test';
+
+type TestPatchRuntimeOptions = Omit<CreatePatchRuntimeOptions, 'services'> &
+  NonNullable<CreatePatchRuntimeOptions['services']>;
+
+export const createTestPatchRuntime = ({
+  objectService = createFakeObjectService(),
+  audioService = createFakeAudioService(),
+  eventBus,
+  messageSystem,
+  profilerCoordinator,
+  glSystem,
+  audioAnalysisSystem,
+  workerNodeSystem,
+  mediaPipeNodeSystem,
+  directChannelService,
+  workletDirectChannelService,
+  ...options
+}: TestPatchRuntimeOptions = {}) => {
+  const fakeConnectionServices = createFakeRuntimeConnectionServices();
+
+  return new PatchRuntime({
+    ...options,
+    services: createDefaultRuntimeServices({
+      objectService,
+      audioService,
+      eventBus,
+      messageSystem,
+      profilerCoordinator,
+      glSystem: glSystem ?? fakeConnectionServices.glSystem,
+      audioAnalysisSystem: audioAnalysisSystem ?? fakeConnectionServices.audioAnalysisSystem,
+      workerNodeSystem: workerNodeSystem ?? fakeConnectionServices.workerNodeSystem,
+      mediaPipeNodeSystem: mediaPipeNodeSystem ?? fakeConnectionServices.mediaPipeNodeSystem,
+      directChannelService: directChannelService ?? fakeConnectionServices.directChannelService,
+      workletDirectChannelService:
+        workletDirectChannelService ?? fakeConnectionServices.workletDirectChannelService
+    })
+  });
+};
 
 export class PatchRuntimeTestObject implements TextObjectV2 {
   static type = TEST_OBJECT_TYPE;
@@ -31,6 +71,7 @@ export class PatchRuntimeTestObject implements TextObjectV2 {
   static destroyedNodeIds: string[] = [];
   static createGate: Promise<void> | null = null;
   static normalizeParamOnCreate = false;
+  static normalizeDataOnUpdate = false;
   static dynamicInlets: ObjectInlet[] | null = null;
   static dynamicOutlets: ObjectOutlet[] | null = null;
 
@@ -53,6 +94,12 @@ export class PatchRuntimeTestObject implements TextObjectV2 {
     PatchRuntimeTestObject.destroyedNodeIds.push(this.nodeId);
   }
 
+  update() {
+    if (PatchRuntimeTestObject.normalizeDataOnUpdate) {
+      this.context.setData({ value: 'normalized' });
+    }
+  }
+
   getInlets() {
     return PatchRuntimeTestObject.dynamicInlets ?? PatchRuntimeTestObject.inlets;
   }
@@ -67,6 +114,7 @@ export function resetPatchRuntimeTestObject(): void {
   PatchRuntimeTestObject.destroyedNodeIds = [];
   PatchRuntimeTestObject.createGate = null;
   PatchRuntimeTestObject.normalizeParamOnCreate = false;
+  PatchRuntimeTestObject.normalizeDataOnUpdate = false;
   PatchRuntimeTestObject.dynamicInlets = null;
   PatchRuntimeTestObject.dynamicOutlets = null;
 }

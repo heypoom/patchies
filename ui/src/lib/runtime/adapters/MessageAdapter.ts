@@ -1,6 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
 
 import type { PatchiesEventBus } from '$lib/eventbus';
+import type { ObjectDataChangedEvent } from '$lib/eventbus/events';
 import type { ObjectMetadata, ObjectService } from '$lib/objects';
 import { MessageContext, type MessageCallbackFn, type MessageSystem } from '$lib/messages';
 
@@ -19,13 +20,6 @@ type ObjectParamsChangedEvent = {
   type: 'objectParamsChanged';
   nodeId: string;
   params: unknown[];
-};
-
-type ObjectDataChangedEvent = {
-  type: 'objectDataChanged';
-  nodeId: string;
-  data: Record<string, unknown>;
-  updates: Record<string, unknown>;
 };
 
 type RuntimeObject = {
@@ -139,6 +133,16 @@ export class MessageAdapter {
 
       object?.context.setData(descriptor.data);
       object?.update?.(descriptor.data);
+
+      if (object) {
+        const dataDiffs = diffNodeData(descriptor.data, object.context.getData());
+
+        if (Object.keys(dataDiffs).length > 0) {
+          this.onObjectDataChange?.(nodeId, dataDiffs);
+        }
+      }
+
+      this.viewRevisions.bump(nodeId);
 
       return;
     }

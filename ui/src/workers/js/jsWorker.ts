@@ -5,10 +5,10 @@
 
 import { match } from 'ts-pattern';
 
-import type { WorkerMessage, WorkerResponse } from '$lib/js-runner';
+import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/js-worker-types';
 import type { PrimaryButton } from '$lib/eventbus/events';
-import type { Message } from '$lib/messages';
-import { FFTAnalysis } from '$lib/audio';
+import type { Message } from '$lib/messages/MessageSystem';
+import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 

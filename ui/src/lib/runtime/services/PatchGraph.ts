@@ -90,6 +90,7 @@ const areConnectionMapsEqual = (
 
   for (const [id, connection] of left) {
     const nextConnection = right.get(id);
+
     if (!nextConnection) return false;
     if (getConnectionKey(connection) !== getConnectionKey(nextConnection)) return false;
   }

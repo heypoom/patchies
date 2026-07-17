@@ -12,13 +12,6 @@ import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
 
-import { PatchRuntime } from './PatchRuntime';
-
-import {
-  createDefaultRuntimeServices,
-  type CreatePatchRuntimeOptions
-} from '../utils/runtime-services';
-
 import { setRuntimeGraphFromEditorGraph } from '../utils/editor-reconciler';
 
 import {
@@ -37,8 +30,10 @@ import {
   tapTildeNode,
   TEST_OBJECT_TYPE,
   textboxNode,
-  toggleNode
+  toggleNode,
+  createTestPatchRuntime
 } from '../utils/runtime-test-utils';
+
 import type { ProfilerCoordinator } from '$lib/profiler';
 
 beforeEach(() => {
@@ -52,44 +47,6 @@ afterEach(() => {
 const isScope = (objectType: string) => objectType === 'scope~';
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
-
-type TestPatchRuntimeOptions = Omit<CreatePatchRuntimeOptions, 'services'> &
-  NonNullable<CreatePatchRuntimeOptions['services']>;
-
-const createTestPatchRuntime = ({
-  objectService = createFakeObjectService(),
-  audioService = createFakeAudioService(),
-  eventBus,
-  messageSystem,
-  profilerCoordinator,
-  glSystem,
-  audioAnalysisSystem,
-  workerNodeSystem,
-  mediaPipeNodeSystem,
-  directChannelService,
-  workletDirectChannelService,
-  ...options
-}: TestPatchRuntimeOptions = {}) => {
-  const fakeConnectionServices = createFakeRuntimeConnectionServices();
-
-  return new PatchRuntime({
-    ...options,
-    services: createDefaultRuntimeServices({
-      objectService,
-      audioService,
-      eventBus,
-      messageSystem,
-      profilerCoordinator,
-      glSystem: glSystem ?? fakeConnectionServices.glSystem,
-      audioAnalysisSystem: audioAnalysisSystem ?? fakeConnectionServices.audioAnalysisSystem,
-      workerNodeSystem: workerNodeSystem ?? fakeConnectionServices.workerNodeSystem,
-      mediaPipeNodeSystem: mediaPipeNodeSystem ?? fakeConnectionServices.mediaPipeNodeSystem,
-      directChannelService: directChannelService ?? fakeConnectionServices.directChannelService,
-      workletDirectChannelService:
-        workletDirectChannelService ?? fakeConnectionServices.workletDirectChannelService
-    })
-  });
-};
 
 type TestMessageAdapterOptions = Omit<
   ConstructorParameters<typeof MessageAdapter>[0],
@@ -121,6 +78,7 @@ describe('MessageAdapter', () => {
     const createdObject = objectService.getObjectById(nodeId);
     expect(createdObject).toBeInstanceOf(PatchRuntimeTestObject);
     expect(createdObject?.context.getParams()).toEqual(['initial']);
+
     expect(PatchRuntimeTestObject.createdRawParams).toEqual([['initial']]);
 
     await runtime.updateObject(nodeId, {
@@ -260,10 +218,11 @@ describe('MessageAdapter', () => {
   });
 
   it('resolves runtime object ports without exposing ObjectService to the view', async () => {
+    const nodeId = 'object-port-runtime-test';
+
     const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
     const runtime = createTestMessageAdapter({ objectService, eventBus });
-    const nodeId = 'object-port-runtime-test';
 
     PatchRuntimeTestObject.dynamicInlets = [{ name: 'dynamic-in', type: 'float' }];
     PatchRuntimeTestObject.dynamicOutlets = [{ name: 'dynamic-out', type: 'string' }];
@@ -288,11 +247,11 @@ describe('MessageAdapter', () => {
   });
 
   it('subscribes view callbacks to runtime object messages', async () => {
+    const nodeId = 'object-message-subscription-test';
+
     const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
     const runtime = createTestMessageAdapter({ objectService, eventBus });
-    const nodeId = 'object-message-subscription-test';
-    const onMessage = vi.fn();
 
     await runtime.createObject({
       id: nodeId,
@@ -301,6 +260,7 @@ describe('MessageAdapter', () => {
       rawParams: ['initial']
     });
 
+    const onMessage = vi.fn();
     const unsubscribe = runtime.subscribeObjectMessages(nodeId, onMessage);
     expect(unsubscribe).toEqual(expect.any(Function));
 
@@ -314,6 +274,7 @@ describe('MessageAdapter', () => {
     });
 
     unsubscribe?.();
+
     runtime
       .getObjectMessageContext(nodeId)
       ?.queue.sendMessage({ source: 'source-node', data: 'after-unsubscribe' });
@@ -322,12 +283,13 @@ describe('MessageAdapter', () => {
   });
 
   it('bumps object revision once when replacing an existing object', async () => {
+    const nodeId = 'object-revision-replace-test';
     const objectService = createFakeObjectService();
+
     const runtime = createTestMessageAdapter({
       objectService,
       eventBus: PatchiesEventBus.getInstance()
     });
-    const nodeId = 'object-revision-replace-test';
 
     await runtime.createObject({
       id: nodeId,
@@ -348,13 +310,55 @@ describe('MessageAdapter', () => {
     expect(runtime.trackObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
   });
 
-  it('notifies view revision subscribers without Svelte reactivity', async () => {
+  it('notifies data subscribers when updating an object with the same lifecycle key', async () => {
+    const nodeId = 'object-data-update-same-lifecycle-test';
     const objectService = createFakeObjectService();
+
+    const dataUpdates: { nodeId: string; updates: Record<string, unknown> }[] = [];
+
+    const runtime = createTestMessageAdapter({
+      objectService,
+      eventBus: PatchiesEventBus.getInstance(),
+      onObjectDataChange: (nodeId, updates) => dataUpdates.push({ nodeId, updates })
+    });
+
+    await runtime.createObject({
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      data: { params: ['stable'], value: 'initial' },
+      rawParams: ['stable']
+    });
+
+    const revisionAfterCreate = runtime.trackObjectViewRevision(nodeId);
+    dataUpdates.length = 0;
+    PatchRuntimeTestObject.normalizeDataOnUpdate = true;
+
+    await runtime.updateObject(nodeId, {
+      id: nodeId,
+      objectType: TEST_OBJECT_TYPE,
+      data: { params: ['stable'], value: 'incoming' },
+      rawParams: ['stable']
+    });
+
+    expect(dataUpdates).toEqual([
+      {
+        nodeId,
+        updates: expect.objectContaining({ value: 'normalized' })
+      }
+    ]);
+
+    expect(runtime.trackObjectViewRevision(nodeId)).toBe(revisionAfterCreate + 1);
+  });
+
+  it('notifies view revision subscribers without Svelte reactivity', async () => {
+    const nodeId = 'object-revision-subscription-test';
+    const objectService = createFakeObjectService();
+
     const runtime = createTestMessageAdapter({
       objectService,
       eventBus: PatchiesEventBus.getInstance()
     });
-    const nodeId = 'object-revision-subscription-test';
+
     const revisionUpdates: string[] = [];
 
     await runtime.createObject({
@@ -451,6 +455,9 @@ describe('AudioAdapter', () => {
   });
 
   it('routes audio object command messages through runtime-owned message contexts', () => {
+    const tapNodeId = 'tap-command-target';
+    const sourceNodeId = 'tap-command-source';
+
     const audioService = createFakeAudioService();
     const onAudioObjectDataChange = vi.fn();
 
@@ -461,11 +468,10 @@ describe('AudioAdapter', () => {
     });
 
     const messageSystem = MessageSystem.getInstance();
-    const sourceNodeId = 'tap-command-source';
-    const tapNodeId = 'tap-command-target';
 
     AudioRegistry.getInstance().register(TapNode);
     messageSystem.registerNode(sourceNodeId);
+
     messageSystem.updateEdges([
       {
         id: 'source-to-tap-command',
@@ -481,6 +487,7 @@ describe('AudioAdapter', () => {
       objectType: 'tap~',
       params: [null, null, 512, 'wave', 0, true]
     });
+
     messageSystem.sendMessage(sourceNodeId, { type: 'setSamples', value: 1024 });
 
     expect(audioService.send).toHaveBeenCalledWith(tapNodeId, 'bufferSize', 1024);
@@ -587,6 +594,7 @@ describe('PatchRuntime', () => {
 
   it('fans runtime graph connections out to headless graph services', async () => {
     const connectionServices = createFakeRuntimeConnectionServices();
+
     const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService: createFakeAudioService(),
@@ -623,11 +631,14 @@ describe('PatchRuntime', () => {
     expect(connectionServices.audioAnalysisSystem.updateEdges).toHaveBeenCalledWith(expectedEdges);
     expect(connectionServices.workerNodeSystem.updateEdges).toHaveBeenCalledWith(expectedEdges);
     expect(connectionServices.mediaPipeNodeSystem.updateEdges).toHaveBeenCalledWith(expectedEdges);
+
     expect(connectionServices.directChannelService.updateNodeTypes).toHaveBeenCalledWith([
       { id: 'worker-1', type: 'worker' },
       { id: 'canvas-1', type: 'canvas' }
     ]);
+
     expect(connectionServices.directChannelService.updateEdges).toHaveBeenCalledWith(expectedEdges);
+
     expect(connectionServices.workletDirectChannelService.updateEdges).toHaveBeenCalledWith(
       expectedEdges
     );
@@ -702,6 +713,9 @@ describe('PatchRuntime', () => {
   });
 
   it('creates a message endpoint for audio objects', async () => {
+    const audioNodeId = 'osc-target';
+    const sourceNodeId = 'slider-source';
+
     const objectService = createFakeObjectService();
     const audioService = createFakeAudioService();
 
@@ -711,8 +725,6 @@ describe('PatchRuntime', () => {
       isAudioObject: isOsc
     });
 
-    const sourceNodeId = 'slider-source';
-    const audioNodeId = 'osc-target';
     const callback = vi.fn();
     const messageSystem = MessageSystem.getInstance();
 
@@ -853,6 +865,7 @@ describe('EditorRuntimeReconciler', () => {
     await setRuntimeGraphFromEditorGraph(runtime, [node]);
 
     expect(audioService.createNode).toHaveBeenCalledTimes(1);
+
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
       null,
       null,

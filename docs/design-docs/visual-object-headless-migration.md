@@ -12,9 +12,11 @@ port metadata, and docs/search schema should live in the object definition under
 
 1. Create an object class next to the view.
 
-   Add `ui/src/objects/<object>/<ObjectName>Object.ts` implementing
-   `TextObjectV2`. Put runtime behavior there: `create`, `onMessage`,
+   Add `ui/src/objects/<object>/<ObjectName>Object.ts` implementing the common
+   runtime object contract. Put runtime behavior there: `create`, `onMessage`,
    `destroy`, timers, subscriptions, and outgoing `context.send(...)` calls.
+   Dedicated visual objects should use object-shaped node data and should not
+   keep text-object-only APIs or hidden positional params.
 
 2. Move schema metadata into the object class.
 

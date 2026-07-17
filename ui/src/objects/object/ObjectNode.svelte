@@ -63,7 +63,16 @@
   let inputElement = $state<HTMLInputElement>();
   let nodeElement = $state<HTMLDivElement>();
   let resultsContainer = $state<HTMLDivElement>();
-  const getInitialExpr = () => data.expr || '';
+  const getDataExpr = () => {
+    const exprName = data.expr ? getObjectNameFromExpr(data.expr) : '';
+
+    if (data.name && data.name !== exprName) {
+      return data.name;
+    }
+
+    return data.expr || '';
+  };
+  const getInitialExpr = () => getDataExpr();
   const hasInitialExpr = () => !!data.expr;
   let expr = $state(getInitialExpr());
   let isEditing = $state(!hasInitialExpr()); // Start in editing mode if no name;
@@ -72,6 +81,15 @@
   let originalName = getInitialExpr(); // Store original name for escape functionality
   const isQuickAdd = !hasInitialExpr(); // True if created via Quick Add (no initial name)
   let finalNodeId = (() => nodeId)(); // Tracks the final node ID after potential transformation
+
+  $effect(() => {
+    const nextExpr = getDataExpr();
+
+    if (!isEditing && expr !== nextExpr) {
+      expr = nextExpr;
+      originalName = nextExpr;
+    }
+  });
 
   // Undo tracking for object data changes (only for existing nodes)
   const objectDataTracker = $derived.by(() =>

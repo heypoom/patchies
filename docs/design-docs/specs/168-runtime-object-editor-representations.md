@@ -77,14 +77,17 @@ interface RuntimeObject<TData = Record<string, unknown>> {
 Keep editor-facing registries distinct:
 
 - `TEXT_OBJECTS`: object-box objects loadable through `ObjectNode`
-- `VISUAL_OBJECTS`: dedicated Svelte-node-backed visual objects
+- `VISUAL_OBJECTS`: dedicated Svelte-node-backed visual objects that keep their
+  own Svelte node type
 - `AUDIO_OBJECTS`: audio definitions and adapters
 - `RUNTIME_OBJECTS`: combined registration surface for runtime execution and schema generation
 
 Important rules:
 
-- `ObjectNode` searches only text objects plus audio object names where needed.
-- Dedicated visual nodes are not text objects.
+- `ObjectNode` searches and instantiates `TEXT_OBJECTS`, plus supported
+  object-box audio names resolved through `AudioRegistry`.
+- `ObjectNode` must exclude dedicated `VISUAL_OBJECTS`; those stay dedicated
+  Svelte node types.
 - Schema/docs generation may include visual objects without making them object-box loadable.
 
 ## Data Ownership

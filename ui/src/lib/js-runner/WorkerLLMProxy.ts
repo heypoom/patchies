@@ -1,5 +1,5 @@
 import { capturePreviewFrame, bitmapToBase64Image } from '$lib/ai/google';
-import type { WorkerMessage } from './WorkerNodeSystem';
+import type { WorkerMessage } from './js-worker-types';
 
 /**
  * Proxies llm() calls from worker threads to the main-thread AI provider.

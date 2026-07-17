@@ -15,7 +15,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SliderSettings from '$lib/components/settings/SliderSettings.svelte';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
-  import { useNodeViewMessageContext } from '$lib/runtime';
+  import { useNodeViewMessageContext } from '$lib/messages';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
@@ -334,10 +334,11 @@
         {tracker}
         onUpdate={updateConfig}
         onReset={() => {
-          updateControlData({ value: defaultValue });
+          const resetValue = snapValue(defaultValue);
+          updateControlData({ value: resetValue });
 
           if (sliderElement) {
-            sliderElement.value = defaultValue.toString();
+            sliderElement.value = resetValue.toString();
           }
 
           viewMessageContext.send({ type: 'reset' });

@@ -365,7 +365,7 @@
         {tracker}
         onUpdate={updateConfig}
         onReset={() => {
-          updateControlData({ value: defaultValue });
+          updateControlData({ value: snapValue(defaultValue) });
           viewMessageContext.send({ type: 'reset' });
         }}
       />
