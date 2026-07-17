@@ -28,6 +28,16 @@ export const setRuntimeGraphFromEditorGraph = async (
     connections: edges.map(getRuntimeConnectionSpecFromEditorEdge)
   });
 
+export const setRuntimeObjectsFromEditorNodes = async (
+  runtime: EditorRuntime,
+  nodes: Node[]
+): Promise<void> => runtime.setObjects(nodes.flatMap(getRuntimeObjectSpecFromEditorNode));
+
+export const setRuntimeConnectionsFromEditorEdges = (
+  runtime: EditorRuntime,
+  edges: Edge[]
+): Promise<void> => runtime.setConnections(edges.map(getRuntimeConnectionSpecFromEditorEdge));
+
 const getRuntimeConnectionSpecFromEditorEdge = (edge: Edge): RuntimeConnectionSpec => ({
   id: edge.id,
   source: edge.source,

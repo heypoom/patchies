@@ -12,7 +12,10 @@ import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
 
-import { setRuntimeGraphFromEditorGraph } from '../utils/editor-reconciler';
+import {
+  setRuntimeGraphFromEditorGraph,
+  setRuntimeObjectsFromEditorNodes
+} from '../utils/editor-reconciler';
 
 import {
   buttonNode,
@@ -712,6 +715,77 @@ describe('PatchRuntime', () => {
     expect(connectionServices.workletDirectChannelService.updateEdges).toHaveBeenCalledTimes(1);
   });
 
+  it('updates connections separately from objects', async () => {
+    const connectionServices = createFakeRuntimeConnectionServices();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService: createFakeAudioService(),
+      ...connectionServices
+    });
+
+    await runtime.setObjects([
+      { id: 'button-1', type: 'button', data: {} },
+      { id: 'toggle-1', type: 'toggle', data: { value: false } }
+    ]);
+
+    expect(connectionServices.glSystem.updateEdges).not.toHaveBeenCalled();
+
+    await runtime.setConnections([
+      {
+        id: 'button-to-toggle',
+        source: 'button-1',
+        outlet: 'message-out',
+        target: 'toggle-1',
+        inlet: 'message-in'
+      }
+    ]);
+
+    expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledTimes(1);
+
+    await runtime.setObjects([
+      { id: 'button-1', type: 'button', data: {} },
+      { id: 'toggle-1', type: 'toggle', data: { value: true } }
+    ]);
+
+    expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for object synchronization before updating connections', async () => {
+    let releaseCreate!: () => void;
+    PatchRuntimeTestObject.createGate = new Promise((resolve) => {
+      releaseCreate = resolve;
+    });
+
+    const connectionServices = createFakeRuntimeConnectionServices();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService: createFakeAudioService(),
+      ...connectionServices
+    });
+
+    const objectSync = runtime.setObjects([
+      { id: 'object-1', type: TEST_OBJECT_TYPE, data: { params: [] } }
+    ]);
+    const connectionSync = runtime.setConnections([
+      {
+        id: 'object-to-target',
+        source: 'object-1',
+        outlet: 'out',
+        target: 'target-1',
+        inlet: 'value'
+      }
+    ]);
+
+    await Promise.resolve();
+
+    expect(connectionServices.glSystem.updateEdges).not.toHaveBeenCalled();
+
+    releaseCreate();
+    await Promise.all([objectSync, connectionSync]);
+
+    expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledTimes(1);
+  });
+
   it('creates a message endpoint for audio objects', async () => {
     const audioNodeId = 'osc-target';
     const sourceNodeId = 'slider-source';
@@ -1077,6 +1151,17 @@ describe('EditorRuntimeReconciler', () => {
       ],
       connections: []
     });
+  });
+
+  it('excludes editor position from runtime object data', async () => {
+    const runtime = createFakeEditorRuntime();
+    const node = toggleNode('toggle-editor-runtime-test', { value: true });
+
+    await setRuntimeObjectsFromEditorNodes(runtime, [{ ...node, position: { x: 100, y: 200 } }]);
+
+    expect(runtime.setObjects).toHaveBeenCalledWith([
+      { id: 'toggle-editor-runtime-test', type: 'toggle', data: { value: true } }
+    ]);
   });
 
   it('translates XYFlow switch value into runtime data', async () => {

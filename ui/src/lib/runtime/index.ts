@@ -14,7 +14,12 @@ export type {
 } from './types/patch-runtime';
 
 export { PatchRuntime } from './services/PatchRuntime';
-export { setRuntimeGraphFromEditorGraph } from './utils/editor-reconciler';
+
+export {
+  setRuntimeGraphFromEditorGraph,
+  setRuntimeObjectsFromEditorNodes,
+  setRuntimeConnectionsFromEditorEdges
+} from './utils/editor-reconciler';
 
 export {
   createPatchRuntime,

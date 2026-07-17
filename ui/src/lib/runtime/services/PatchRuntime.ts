@@ -9,8 +9,8 @@ import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
 
 import { PatchGraph } from './PatchGraph';
-import { RuntimeObjectReconciler } from './RuntimeObjectReconciler';
 import { RuntimeObjectResolver } from './RuntimeObjectResolver';
+import { RuntimeObjectReconciler } from './RuntimeObjectReconciler';
 
 import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 
@@ -40,6 +40,7 @@ export class PatchRuntime {
 
   private objectResolver: RuntimeObjectResolver;
   private objectReconciler: RuntimeObjectReconciler;
+  private objectSync = Promise.resolve();
 
   constructor(options: PatchRuntimeOptions) {
     const { objectService, audioService, eventBus, messageSystem, profilerCoordinator } =
@@ -101,11 +102,24 @@ export class PatchRuntime {
   async setGraph(graph: RuntimeGraphSpec): Promise<void> {
     const { connectionsChanged } = this.graph.setGraph(graph);
 
-    await this.syncObjects();
+    await this.startObjectSync();
 
     if (connectionsChanged) {
       this.syncConnections();
     }
+  }
+
+  async setObjects(objects: RuntimeObjectSpec[]): Promise<void> {
+    if (!this.graph.setObjects(objects)) return;
+
+    await this.startObjectSync();
+  }
+
+  async setConnections(connections: RuntimeConnectionSpec[]): Promise<void> {
+    if (!this.graph.setConnections(connections)) return;
+
+    await this.waitForObjectSync();
+    this.syncConnections();
   }
 
   getGraph(): RuntimeGraphSpec {
@@ -249,6 +263,22 @@ export class PatchRuntime {
     await this.objectReconciler.reconcile(this.graph.getObjects());
   }
 
+  private startObjectSync(): Promise<void> {
+    const sync = this.syncObjects();
+    this.objectSync = sync;
+
+    return sync;
+  }
+
+  private async waitForObjectSync(): Promise<void> {
+    let sync: Promise<void>;
+
+    do {
+      sync = this.objectSync;
+      await sync;
+    } while (sync !== this.objectSync);
+  }
+
   private syncConnections(): void {
     const edges = this.graph.getConnections().map(getEditorEdgeFromRuntimeConnection);
     const nodeTypes = this.graph.getObjects().map(({ id, type }) => ({ id, type }));
@@ -264,8 +294,8 @@ export class PatchRuntime {
 
     this.message.updateEdges(edges);
     this.audio.audioService.updateEdges(edges);
-
     glSystem.updateEdges(edges);
+
     audioAnalysisSystem.updateEdges(edges);
     workerNodeSystem.updateEdges(edges);
     mediaPipeNodeSystem.updateEdges(edges);
@@ -280,11 +310,7 @@ function transformObjectDescriptionToSpec(
 ): RuntimeObjectSpec {
   if ('type' in descriptor) return descriptor;
 
-  return {
-    id: descriptor.id,
-    type: descriptor.objectType,
-    data: descriptor.data
-  };
+  return { id: descriptor.id, type: descriptor.objectType, data: descriptor.data };
 }
 
 const getEditorEdgeFromRuntimeConnection = (

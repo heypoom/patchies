@@ -280,5 +280,7 @@ export const tapTildeNode = (id: string, data: Record<string, unknown> = {}): No
 
 export const createFakeEditorRuntime = (overrides: Partial<EditorRuntime> = {}) => ({
   setGraph: vi.fn(() => Promise.resolve()),
+  setObjects: vi.fn(() => Promise.resolve()),
+  setConnections: vi.fn(() => Promise.resolve()),
   ...overrides
 });

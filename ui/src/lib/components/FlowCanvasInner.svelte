@@ -144,7 +144,8 @@
     createDefaultRuntimeServices,
     createPatchRuntime,
     setPatchRuntime,
-    setRuntimeGraphFromEditorGraph
+    setRuntimeConnectionsFromEditorEdges,
+    setRuntimeObjectsFromEditorNodes
   } from '$lib/runtime';
 
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
@@ -515,8 +516,14 @@
   });
 
   $effect(() => {
-    setRuntimeGraphFromEditorGraph(runtime, nodes, edges).catch((error) =>
-      logger.error('failed to reconcile editor graph with patch runtime', error)
+    setRuntimeObjectsFromEditorNodes(runtime, nodes).catch((error) =>
+      logger.error('failed to reconcile editor nodes with patch runtime', error)
+    );
+  });
+
+  $effect(() => {
+    setRuntimeConnectionsFromEditorEdges(runtime, edges).catch((error) =>
+      logger.error('failed to reconcile editor edges with patch runtime', error)
     );
   });
 
