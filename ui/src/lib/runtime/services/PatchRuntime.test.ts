@@ -90,11 +90,24 @@ const createTestPatchRuntime = ({
   });
 };
 
+type TestMessageAdapterOptions = Omit<
+  ConstructorParameters<typeof MessageAdapter>[0],
+  'messageSystem'
+> & {
+  messageSystem?: ConstructorParameters<typeof MessageAdapter>[0]['messageSystem'];
+};
+
+const createTestMessageAdapter = (options: TestMessageAdapterOptions) =>
+  new MessageAdapter({
+    ...options,
+    messageSystem: options.messageSystem ?? MessageSystem.getInstance()
+  });
+
 describe('MessageAdapter', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
     const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
-    const runtime = new MessageAdapter({ objectService, eventBus });
+    const runtime = createTestMessageAdapter({ objectService, eventBus });
     const nodeId = 'object-patch-runtime-test';
 
     await runtime.createObject({
@@ -129,7 +142,7 @@ describe('MessageAdapter', () => {
   it('keeps message edges routable after replacing an object with the same node id', async () => {
     const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
-    const runtime = new MessageAdapter({ objectService, eventBus });
+    const runtime = createTestMessageAdapter({ objectService, eventBus });
     const messageSystem = MessageSystem.getInstance();
     const sourceNodeId = 'object-message-replace-source';
     const targetNodeId = 'object-message-replace-target';
@@ -192,7 +205,7 @@ describe('MessageAdapter', () => {
     const objectService = createFakeObjectService();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
 
-    const runtime = new MessageAdapter({
+    const runtime = createTestMessageAdapter({
       objectService,
       onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params }),
       eventBus: PatchiesEventBus.getInstance()
@@ -221,7 +234,7 @@ describe('MessageAdapter', () => {
     const eventBus = createFakeEventBus();
     const paramUpdates: Array<{ nodeId: string; params: unknown[] }> = [];
 
-    const runtime = new MessageAdapter({
+    const runtime = createTestMessageAdapter({
       objectService,
       eventBus,
       onObjectParamsChange: (nodeId, params) => paramUpdates.push({ nodeId, params })
@@ -248,7 +261,7 @@ describe('MessageAdapter', () => {
   it('resolves runtime object ports without exposing ObjectService to the view', async () => {
     const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
-    const runtime = new MessageAdapter({ objectService, eventBus });
+    const runtime = createTestMessageAdapter({ objectService, eventBus });
     const nodeId = 'object-port-runtime-test';
 
     PatchRuntimeTestObject.dynamicInlets = [{ name: 'dynamic-in', type: 'float' }];
@@ -276,7 +289,7 @@ describe('MessageAdapter', () => {
   it('subscribes view callbacks to runtime object messages', async () => {
     const objectService = createFakeObjectService();
     const eventBus = PatchiesEventBus.getInstance();
-    const runtime = new MessageAdapter({ objectService, eventBus });
+    const runtime = createTestMessageAdapter({ objectService, eventBus });
     const nodeId = 'object-message-subscription-test';
     const onMessage = vi.fn();
 
@@ -309,7 +322,10 @@ describe('MessageAdapter', () => {
 
   it('bumps object revision once when replacing an existing object', async () => {
     const objectService = createFakeObjectService();
-    const runtime = new MessageAdapter({ objectService, eventBus: PatchiesEventBus.getInstance() });
+    const runtime = createTestMessageAdapter({
+      objectService,
+      eventBus: PatchiesEventBus.getInstance()
+    });
     const nodeId = 'object-revision-replace-test';
 
     await runtime.createObject({
@@ -333,7 +349,10 @@ describe('MessageAdapter', () => {
 
   it('notifies view revision subscribers without Svelte reactivity', async () => {
     const objectService = createFakeObjectService();
-    const runtime = new MessageAdapter({ objectService, eventBus: PatchiesEventBus.getInstance() });
+    const runtime = createTestMessageAdapter({
+      objectService,
+      eventBus: PatchiesEventBus.getInstance()
+    });
     const nodeId = 'object-revision-subscription-test';
     const revisionUpdates: string[] = [];
 

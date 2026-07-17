@@ -47,6 +47,7 @@ export class PatchRuntime {
 
     this.message = new MessageAdapter({
       eventBus,
+      messageSystem,
       objectService,
       onObjectParamsChange: options.onObjectParamsChange,
       onObjectDataChange: options.onObjectDataChange
