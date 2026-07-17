@@ -2,7 +2,7 @@ import type { Edge } from '@xyflow/svelte';
 
 import type { PatchiesEventBus } from '$lib/eventbus';
 import { MessageSystem, type MessageCallbackFn } from '$lib/messages';
-import type { ObjectMetadata, ObjectService, TextObjectClass } from '$lib/objects';
+import type { ObjectMetadata, ObjectService } from '$lib/objects';
 
 import { MessageObjectLifecycle } from '../services/MessageObjectLifecycle';
 import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
@@ -35,7 +35,7 @@ interface MessageAdapterOptions {
 }
 
 export class MessageAdapter {
-  private objectService: ObjectService;
+  readonly objectService: ObjectService;
   private eventBus: PatchiesEventBus;
 
   private lifecycle: MessageObjectLifecycle;
@@ -60,14 +60,6 @@ export class MessageAdapter {
 
     this.eventBus.addEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.addEventListener('objectDataChanged', this.handleObjectDataChanged);
-  }
-
-  isObjectInRegistry(objectType: string): boolean {
-    return this.objectService.isObjectInRegistry(objectType);
-  }
-
-  getObjectClass(objectType: string): TextObjectClass | undefined {
-    return this.objectService.getObjectClass(objectType);
   }
 
   async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {

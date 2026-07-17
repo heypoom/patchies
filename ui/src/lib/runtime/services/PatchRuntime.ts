@@ -40,6 +40,7 @@ export class PatchRuntime {
   private message: MessageAdapter;
   private audio: AudioAdapter;
   private connectionServices: RuntimeConnectionServices;
+
   private messageSystem: Pick<MessageSystem, 'unregisterNode'>;
   private profilerCoordinator: Pick<ProfilerCoordinator, 'unregister'>;
 
@@ -65,7 +66,7 @@ export class PatchRuntime {
     this.profilerCoordinator = options.profilerCoordinator ?? ProfilerCoordinator.getInstance();
 
     this.objectResolver = new RuntimeObjectResolver({
-      isMessageObject: (objectType) => this.message.isObjectInRegistry(objectType),
+      isMessageObject: (objectType) => this.message.objectService.isObjectInRegistry(objectType),
       isAudioObject: (objectType) => this.audio.isObjectInRegistry(objectType)
     });
 
@@ -81,15 +82,18 @@ export class PatchRuntime {
   }
 
   isObjectInRegistry(objectType: string): boolean {
-    return this.message.isObjectInRegistry(objectType) || this.audio.isObjectInRegistry(objectType);
+    return (
+      this.message.objectService.isObjectInRegistry(objectType) ||
+      this.audio.isObjectInRegistry(objectType)
+    );
   }
 
   isMessageObjectInRegistry(objectType: string): boolean {
-    return this.message.isObjectInRegistry(objectType);
+    return this.message.objectService.isObjectInRegistry(objectType);
   }
 
   getMessageObjectClass(objectType: string): TextObjectClass | undefined {
-    return this.message.getObjectClass(objectType);
+    return this.message.objectService.getObjectClass(objectType);
   }
 
   isAudioObjectInRegistry(objectType: string): boolean {
