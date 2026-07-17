@@ -28,11 +28,13 @@ type ObjectDataChangedEvent = {
   updates: Record<string, unknown>;
 };
 
-type RuntimeObjectRecord = {
-  messageContext: MessageContext;
+type RuntimeObject = {
   objectType: string;
+
   lifecycleKey: string;
   lifecycleToken: number;
+
+  messageContext: MessageContext;
 };
 
 type MessageAdapterOptions = {
@@ -55,8 +57,9 @@ export class MessageAdapter {
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 
-  private objects = new Map<string, RuntimeObjectRecord>();
-  private objectMessageContexts = new Map<string, MessageContext>();
+  private objects = new Map<string, RuntimeObject>();
+
+  // Kept outside objects so an async create can be invalidated after its entry is removed.
   private objectLifecycleTokens = new Map<string, number>();
 
   constructor(options: MessageAdapterOptions) {
@@ -74,7 +77,7 @@ export class MessageAdapter {
   async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {
     this.removeObject(descriptor.id, {
       bumpRevision: false,
-      unregisterMessageNode: false
+      unregisterNodeFromMessageSystem: false
     });
 
     const messageContext = new MessageContext(descriptor.id);
@@ -88,8 +91,6 @@ export class MessageAdapter {
       messageContext,
       lifecycleToken
     });
-
-    this.objectMessageContexts.set(descriptor.id, messageContext);
 
     const object = await this.objectService.createObject(
       descriptor.id,
@@ -115,10 +116,10 @@ export class MessageAdapter {
       this.onObjectParamsChange?.(descriptor.id, params);
     }
 
-    const dataUpdates = diffNodeData(descriptor.data, data);
+    const dataDiffs = diffNodeData(descriptor.data, data);
 
-    if (Object.keys(dataUpdates).length > 0) {
-      this.onObjectDataChange?.(descriptor.id, dataUpdates);
+    if (Object.keys(dataDiffs).length > 0) {
+      this.onObjectDataChange?.(descriptor.id, dataDiffs);
     }
 
     this.viewRevisions.bump(descriptor.id);
@@ -146,25 +147,24 @@ export class MessageAdapter {
   }
 
   destroyObject(nodeId: string): void {
-    const record = this.objects.get(nodeId);
-    if (!record) return;
+    const object = this.objects.get(nodeId);
+    if (!object) return;
 
     this.objectService.removeObjectById(nodeId);
-    record.messageContext.destroy();
+    object.messageContext.destroy();
 
     this.objects.delete(nodeId);
-    this.objectMessageContexts.delete(nodeId);
 
     this.nextObjectLifecycleToken(nodeId);
     this.viewRevisions.bump(nodeId);
   }
 
   getObjectMessageContext(nodeId: string): MessageContext | null {
-    return this.objectMessageContexts.get(nodeId) ?? null;
+    return this.objects.get(nodeId)?.messageContext ?? null;
   }
 
   subscribeObjectMessages(nodeId: string, callback: MessageCallbackFn): (() => void) | null {
-    const messageContext = this.objectMessageContexts.get(nodeId);
+    const messageContext = this.objects.get(nodeId)?.messageContext;
     if (!messageContext) return null;
 
     messageContext.queue.addCallback(callback);
@@ -208,16 +208,18 @@ export class MessageAdapter {
 
   private removeObject(
     nodeId: string,
-    options: { bumpRevision: boolean; unregisterMessageNode?: boolean }
+    options: { bumpRevision: boolean; unregisterNodeFromMessageSystem?: boolean }
   ): void {
-    const record = this.objects.get(nodeId);
-    if (!record) return;
+    const object = this.objects.get(nodeId);
+    if (!object) return;
 
     this.objectService.removeObjectById(nodeId);
-    record.messageContext.destroy({ unregisterNode: options.unregisterMessageNode ?? true });
+
+    object.messageContext.destroy({
+      unregisterNode: options.unregisterNodeFromMessageSystem ?? true
+    });
 
     this.objects.delete(nodeId);
-    this.objectMessageContexts.delete(nodeId);
 
     if (options.bumpRevision) {
       this.nextObjectLifecycleToken(nodeId);
@@ -233,10 +235,10 @@ export class MessageAdapter {
   }
 
   private isCurrentObjectLifecycleToken(nodeId: string, lifecycleToken: number): boolean {
-    const record = this.objects.get(nodeId);
+    const object = this.objects.get(nodeId);
 
     return (
-      record?.lifecycleToken === lifecycleToken &&
+      object?.lifecycleToken === lifecycleToken &&
       this.objectLifecycleTokens.get(nodeId) === lifecycleToken
     );
   }

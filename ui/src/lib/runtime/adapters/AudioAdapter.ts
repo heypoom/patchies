@@ -153,11 +153,14 @@ export class AudioAdapter {
     };
   }
 
-  private removeAudioObjectMessageContext(nodeId: string, unregisterMessageNode: boolean): void {
+  private removeAudioObjectMessageContext(
+    nodeId: string,
+    unregisterNodeFromMessageSystem: boolean
+  ): void {
     const messageContext = this.audioObjects.get(nodeId)?.messageContext;
     if (!messageContext) return;
 
-    messageContext.destroy({ unregisterNode: unregisterMessageNode });
+    messageContext.destroy({ unregisterNode: unregisterNodeFromMessageSystem });
 
     this.audioObjects.delete(nodeId);
   }
