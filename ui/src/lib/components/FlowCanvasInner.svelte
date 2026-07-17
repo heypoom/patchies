@@ -141,8 +141,7 @@
   import { NodeOperationsService } from '$lib/services/NodeOperationsService';
   import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
   import { AiOperationsService } from '$lib/services/AiOperationsService';
-  import { PatchRuntime, setPatchRuntime } from '$lib/runtime';
-  import { setRuntimeGraphFromEditorGraph } from '$lib/runtime/editor/editor-reconciler';
+  import { PatchRuntime, setPatchRuntime, setRuntimeGraphFromEditorGraph } from '$lib/runtime';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { SvelteSet } from 'svelte/reactivity';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
@@ -525,7 +524,7 @@
 
   $effect(() => {
     setRuntimeGraphFromEditorGraph(runtime, nodes, edges).catch((error) =>
-      logger.error('failed to reconcile editor graph with patch runtime', error)
+      logger.error('failed to reconcile editor graph with atch runtime', error)
     );
   });
 

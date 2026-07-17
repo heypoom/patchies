@@ -16,3 +16,5 @@ export {
   getPatchRuntime,
   getPatchRuntimeViewRevisionTracker
 } from './utils/patch-runtime-context';
+
+export { setRuntimeGraphFromEditorGraph } from './editor/editor-reconciler';
