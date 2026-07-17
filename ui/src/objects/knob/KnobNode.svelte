@@ -9,7 +9,7 @@
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
-  import { useNodeViewMessageContext } from '$lib/runtime';
+  import { useNodeViewMessageContext } from '$lib/messages';
 
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 

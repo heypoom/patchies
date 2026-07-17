@@ -14,15 +14,16 @@ export type {
 } from './types/patch-runtime';
 
 export { PatchRuntime } from './services/PatchRuntime';
-export { createPatchRuntime, createDefaultRuntimeServices } from './utils/runtime-services';
-export type { CreatePatchRuntimeOptions } from './utils/runtime-services';
+export { setRuntimeGraphFromEditorGraph } from './utils/editor-reconciler';
 
-export { useNodeViewMessageContext } from './editor/useNodeViewMessageContext.svelte';
+export {
+  createPatchRuntime,
+  createDefaultRuntimeServices,
+  type CreatePatchRuntimeOptions
+} from './utils/runtime-services';
 
 export {
   setPatchRuntime,
   getPatchRuntime,
   getPatchRuntimeViewRevisionTracker
 } from './utils/patch-runtime-context';
-
-export { setRuntimeGraphFromEditorGraph } from './editor/editor-reconciler';

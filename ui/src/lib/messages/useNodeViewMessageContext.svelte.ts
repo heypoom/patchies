@@ -1,7 +1,7 @@
 import { onMount, untrack } from 'svelte';
 
-import { MessageContext } from '$lib/messages/MessageContext';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { MessageContext } from './MessageContext';
+import type { MessageCallbackFn } from './MessageSystem';
 
 export function useNodeViewMessageContext(getNodeId: () => string, onMessage: MessageCallbackFn) {
   const nodeId = untrack(getNodeId);

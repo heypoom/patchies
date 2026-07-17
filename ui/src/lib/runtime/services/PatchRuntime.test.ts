@@ -13,12 +13,13 @@ import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
 
 import { PatchRuntime } from './PatchRuntime';
+
 import {
   createDefaultRuntimeServices,
   type CreatePatchRuntimeOptions
 } from '../utils/runtime-services';
 
-import { setRuntimeGraphFromEditorGraph } from '../editor/editor-reconciler';
+import { setRuntimeGraphFromEditorGraph } from '../utils/editor-reconciler';
 
 import {
   buttonNode,

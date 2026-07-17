@@ -1,14 +1,17 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
+
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { TextboxObject } from '$objects/textbox/TextboxObject';
-  import { useNodeViewMessageContext } from '$lib/runtime';
+  import { useNodeViewMessageContext } from '$lib/messages';
   import { useNodeDataTracker } from '$lib/history';
+
   import { shouldShowHandles } from '../../stores/ui.store';
   import { editorFontFamily } from '../../stores/editor.store';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
+
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {

@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { useSvelteFlow } from '@xyflow/svelte';
+
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { SwitchObject } from '$objects/switch/SwitchObject';
   import { Switch } from '$lib/components/ui/switch';
-  import { useSvelteFlow } from '@xyflow/svelte';
 
   import { useNodeDataTracker } from '$lib/history';
-  import { useNodeViewMessageContext } from '$lib/runtime';
+  import { useNodeViewMessageContext } from '$lib/messages';
 
   let {
     id: nodeId,
