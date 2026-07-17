@@ -393,10 +393,6 @@
   let dragStartNodes: Node[] | null = null;
   let groupResizeStartNodes: Node[] | null = null;
 
-  function cloneNodesForHistory(source: Node[]): Node[] {
-    return structuredClone(source);
-  }
-
   function haveNodesChangedForHistory(before: Node[], after: Node[]): boolean {
     if (before.length !== after.length) return true;
 
@@ -616,13 +612,14 @@
 
   function handleVisualGroupResizeStarted(event: VisualGroupResizeStartedEvent) {
     if (!nodes.some((node) => node.id === event.groupId && node.type === 'group')) return;
-    groupResizeStartNodes = cloneNodesForHistory(nodes);
+
+    groupResizeStartNodes = structuredClone(nodes);
   }
 
   async function handleVisualGroupSyncRequested(event: VisualGroupSyncRequestedEvent) {
     await tick();
 
-    const beforeSyncNodes = cloneNodesForHistory(nodes);
+    const beforeSyncNodes = structuredClone(nodes);
     const oldNodes = groupResizeStartNodes ?? beforeSyncNodes;
     groupResizeStartNodes = null;
 
@@ -633,7 +630,7 @@
       nodes = nextNodes;
     }
 
-    const nextSnapshot = cloneNodesForHistory(nextNodes);
+    const nextSnapshot = structuredClone(nextNodes);
     if (!haveNodesChangedForHistory(oldNodes, nextSnapshot)) return;
 
     historyManager.record(
@@ -1549,7 +1546,7 @@
         clickConnect={$isConnectionMode}
         {isValidConnection}
         onnodedragstart={() => {
-          dragStartNodes = cloneNodesForHistory(nodes);
+          dragStartNodes = structuredClone(nodes);
         }}
         onnodedragstop={(event) => {
           if (!dragStartNodes) return;
@@ -1562,7 +1559,8 @@
             nodes = nextNodes;
           }
 
-          const nextSnapshot = cloneNodesForHistory(nextNodes);
+          const nextSnapshot = structuredClone(nextNodes);
+
           if (haveNodesChangedForHistory(dragStartNodes, nextSnapshot)) {
             historyManager.record(
               new ReplaceNodesCommand(
