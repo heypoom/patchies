@@ -1,9 +1,8 @@
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 
-export function isObjectBoxData(objectType: string, data: Record<string, unknown>): boolean {
-  return data.name === objectType;
-}
+export const isObjectBoxData = (objectType: string, data: Record<string, unknown>): boolean =>
+  data.name === objectType;
 
 export function getTextObjectData(
   objectType: string,
@@ -26,6 +25,7 @@ export function getRuntimeObjectParamsFromData(
 ): unknown[] {
   const expectedParams = parseObjectParamFromString(objectType, rawParams);
   const hasSavedParams = Array.isArray(data.params);
+
   const savedParams: unknown[] = hasSavedParams ? (data.params as unknown[]) : [];
 
   return hasSavedParams && savedParams.length === expectedParams.length
@@ -42,11 +42,11 @@ export function getRawObjectParamsFromExpr(expr: unknown): string[] {
   return trimmed.split(/\s+/).slice(1);
 }
 
-export function getAudioParamsFromData(
+export const getAudioParamsFromData = (
   inlets: ObjectInlet[],
   data: Record<string, unknown> | undefined
-): unknown[] {
-  return inlets.map((inlet) => {
+): unknown[] =>
+  inlets.map((inlet) => {
     if (inlet.type === 'signal' && !inlet.acceptsFloat && !inlet.messages?.length) {
       return null;
     }
@@ -57,4 +57,3 @@ export function getAudioParamsFromData(
 
     return inlet.defaultValue ?? null;
   });
-}
