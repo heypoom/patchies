@@ -98,6 +98,11 @@ runtime.destroyObject("toggle-1");
 await runtime.destroy();
 ```
 
+All public object mutations use the same `{ id, type, data }` runtime graph
+specification. Message-object descriptors such as parsed raw parameters are
+internal resolver details, so `PatchRuntime` remains the single lifecycle seam
+for message and audio objects.
+
 The exact TypeScript names can evolve, but the shape should stay graph-oriented
 and editor-independent: runtime object ids, object types, object data, ports,
 connections, messages, lifecycle, diagnostics, and subscriptions. The runtime
@@ -126,7 +131,7 @@ destroy, connect, and disconnect operations as needed.
 ```ts
 runtime.setGraph({
   objects: nodes.map(toRuntimeObject),
-  connections: edges.map(toRuntimeConnection)
+  connections: edges.map(toRuntimeConnection),
 });
 ```
 

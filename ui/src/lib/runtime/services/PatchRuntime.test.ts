@@ -929,7 +929,7 @@ describe('PatchRuntime', () => {
     messageSystem.updateEdges([]);
   });
 
-  it('keeps a facade over message and audio runtime helpers', async () => {
+  it('creates message objects from public runtime graph specs', async () => {
     const nodeId = 'object-patch-runtime-facade-test';
 
     const objectService = createFakeObjectService();
@@ -943,10 +943,15 @@ describe('PatchRuntime', () => {
 
     await runtime.createObject({
       id: nodeId,
-      objectType: TEST_OBJECT_TYPE,
-      data: { params: ['initial'] },
-      rawParams: ['initial']
+      type: TEST_OBJECT_TYPE,
+      data: {
+        name: TEST_OBJECT_TYPE,
+        expr: `${TEST_OBJECT_TYPE} initial`,
+        params: ['initial']
+      }
     });
+
+    expect(PatchRuntimeTestObject.createdRawParams).toContainEqual(['initial']);
 
     runtime.upsertAudioObject({
       id: nodeId,

@@ -50,6 +50,14 @@ export class RuntimeObjectReconciler {
     private runtime: RuntimeObjectReconcilerRuntime
   ) {}
 
+  /**
+   * Reconcile a graph snapshot after any earlier reconciliation settles.
+   *
+   * Each operation reads and updates shared lifecycle state, so concurrent
+   * reconciliations could otherwise destroy an object while its older async
+   * creation is still in flight. A rejected operation is deliberately ignored
+   * for queueing purposes so a later snapshot can still recover the runtime.
+   */
   reconcile(objects: RuntimeObjectSpec[]): Promise<void> {
     const reconciliation = this.reconciliation
       .catch(() => undefined)

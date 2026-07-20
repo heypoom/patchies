@@ -22,11 +22,7 @@ import type {
   RuntimeObjectViewRevisionListener
 } from '../types/runtime-object';
 
-import type {
-  PatchRuntimeOptions,
-  RuntimeServices,
-  RuntimeObjectDescriptorOrSpec
-} from '../types/patch-runtime';
+import type { PatchRuntimeOptions, RuntimeServices } from '../types/patch-runtime';
 
 export class PatchRuntime {
   private graph = new PatchGraph();
@@ -124,6 +120,7 @@ export class PatchRuntime {
     if (!this.graph.setConnections(connections)) return;
 
     await this.waitForObjectSync();
+
     this.syncConnections();
   }
 
@@ -131,31 +128,27 @@ export class PatchRuntime {
     return this.graph.getGraph();
   }
 
-  async createObject(descriptor: RuntimeObjectDescriptorOrSpec): Promise<void> {
-    const spec = transformObjectDescriptionToSpec(descriptor);
+  /**
+   * Add one object through the public runtime API.
+   *
+   * All public object changes use graph specs, so the reconciler is the single
+   * owner of message/audio lifecycle selection and transitions.
+   */
+  async createObject(spec: RuntimeObjectSpec): Promise<void> {
     this.graph.upsertObject(spec);
 
-    if ('objectType' in descriptor) {
-      this.destroyAudioObject(descriptor.id);
-      await this.message.createObject(descriptor);
-      return;
-    }
-
-    this.removeOppositeRuntimeObject(spec);
     await this.startObjectSync();
   }
 
-  async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptorOrSpec): Promise<void> {
-    const spec = { ...transformObjectDescriptionToSpec(descriptor), id: nodeId };
-    this.graph.upsertObject(spec);
+  /**
+   * Update one object through the public runtime API.
+   *
+   * The id argument identifies the existing graph entry; its type and data are
+   * taken from the new graph spec and reconciled with the current runtime.
+   */
+  async updateObject(nodeId: string, spec: RuntimeObjectSpec): Promise<void> {
+    this.graph.upsertObject({ ...spec, id: nodeId });
 
-    if ('objectType' in descriptor) {
-      this.destroyAudioObject(nodeId);
-      await this.message.updateObject(nodeId, descriptor);
-      return;
-    }
-
-    this.removeOppositeRuntimeObject(spec);
     await this.startObjectSync();
   }
 
@@ -254,6 +247,13 @@ export class PatchRuntime {
     await this.objectReconciler.reconcile(this.graph.getObjects());
   }
 
+  /**
+   * Queue graph reconciliation after the prior attempt settles.
+   *
+   * A failed sync must not prevent a later editor update from applying, and
+   * serializing here prevents older async object creation from racing newer
+   * graph state.
+   */
   private startObjectSync(): Promise<void> {
     const sync = this.objectSync.catch(() => undefined).then(() => this.syncObjects());
     this.objectSync = sync;
@@ -295,26 +295,9 @@ export class PatchRuntime {
 
   private syncNodeTypes(): void {
     const nodeTypes = this.graph.getObjects().map(({ id, type }) => ({ id, type }));
+
     this.services.directChannelService.updateNodeTypes(nodeTypes);
   }
-
-  private removeOppositeRuntimeObject(spec: RuntimeObjectSpec): void {
-    const resolved = this.objectResolver.resolve(spec);
-
-    if (resolved.kind === 'audio') {
-      this.message.destroyObject(spec.id);
-    } else if (resolved.kind === 'message') {
-      this.destroyAudioObject(spec.id);
-    }
-  }
-}
-
-function transformObjectDescriptionToSpec(
-  descriptor: RuntimeObjectDescriptorOrSpec
-): RuntimeObjectSpec {
-  if ('type' in descriptor) return descriptor;
-
-  return { id: descriptor.id, type: descriptor.objectType, data: descriptor.data };
 }
 
 const getEditorEdgeFromRuntimeConnection = (

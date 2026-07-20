@@ -9,10 +9,6 @@ import type { PatchiesEventBus } from '$lib/eventbus';
 import type { ProfilerCoordinator } from '$lib/profiler';
 import type { AudioAnalysisSystem, WorkletDirectChannelService } from '$lib/audio';
 
-import type { RuntimeObjectDescriptor, RuntimeObjectSpec } from './runtime-object';
-
-export type RuntimeObjectDescriptorOrSpec = RuntimeObjectDescriptor | RuntimeObjectSpec;
-
 export interface PatchRuntimeOptions {
   services: RuntimeServices;
 
