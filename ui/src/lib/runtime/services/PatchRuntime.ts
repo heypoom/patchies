@@ -100,9 +100,13 @@ export class PatchRuntime {
   }
 
   async setGraph(graph: RuntimeGraphSpec): Promise<void> {
-    const { connectionsChanged } = this.graph.setGraph(graph);
+    const { objectsChanged, connectionsChanged } = this.graph.setGraph(graph);
 
     await this.startObjectSync();
+
+    if (objectsChanged) {
+      this.syncNodeTypes();
+    }
 
     if (connectionsChanged) {
       this.syncConnections();
@@ -113,6 +117,7 @@ export class PatchRuntime {
     if (!this.graph.setObjects(objects)) return;
 
     await this.startObjectSync();
+    this.syncNodeTypes();
   }
 
   async setConnections(connections: RuntimeConnectionSpec[]): Promise<void> {
@@ -131,20 +136,13 @@ export class PatchRuntime {
     this.graph.upsertObject(spec);
 
     if ('objectType' in descriptor) {
+      this.destroyAudioObject(descriptor.id);
       await this.message.createObject(descriptor);
       return;
     }
 
-    const resolved = this.objectResolver.resolve(spec);
-
-    if (resolved.kind === 'audio') {
-      this.upsertAudioObject(resolved.descriptor);
-      return;
-    }
-
-    if (resolved.kind === 'message') {
-      await this.message.createObject(resolved.descriptor);
-    }
+    this.removeOppositeRuntimeObject(spec);
+    await this.startObjectSync();
   }
 
   async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptorOrSpec): Promise<void> {
@@ -152,20 +150,13 @@ export class PatchRuntime {
     this.graph.upsertObject(spec);
 
     if ('objectType' in descriptor) {
+      this.destroyAudioObject(nodeId);
       await this.message.updateObject(nodeId, descriptor);
       return;
     }
 
-    const resolved = this.objectResolver.resolve(spec);
-
-    if (resolved.kind === 'audio') {
-      this.upsertAudioObject(resolved.descriptor);
-      return;
-    }
-
-    if (resolved.kind === 'message') {
-      await this.message.updateObject(nodeId, resolved.descriptor);
-    }
+    this.removeOppositeRuntimeObject(spec);
+    await this.startObjectSync();
   }
 
   destroyObject(nodeId: string): void {
@@ -264,7 +255,7 @@ export class PatchRuntime {
   }
 
   private startObjectSync(): Promise<void> {
-    const sync = this.syncObjects();
+    const sync = this.objectSync.catch(() => undefined).then(() => this.syncObjects());
     this.objectSync = sync;
 
     return sync;
@@ -281,7 +272,6 @@ export class PatchRuntime {
 
   private syncConnections(): void {
     const edges = this.graph.getConnections().map(getEditorEdgeFromRuntimeConnection);
-    const nodeTypes = this.graph.getObjects().map(({ id, type }) => ({ id, type }));
 
     const {
       glSystem,
@@ -299,9 +289,23 @@ export class PatchRuntime {
     audioAnalysisSystem.updateEdges(edges);
     workerNodeSystem.updateEdges(edges);
     mediaPipeNodeSystem.updateEdges(edges);
-    directChannelService.updateNodeTypes(nodeTypes);
     directChannelService.updateEdges(edges);
     workletDirectChannelService.updateEdges(edges);
+  }
+
+  private syncNodeTypes(): void {
+    const nodeTypes = this.graph.getObjects().map(({ id, type }) => ({ id, type }));
+    this.services.directChannelService.updateNodeTypes(nodeTypes);
+  }
+
+  private removeOppositeRuntimeObject(spec: RuntimeObjectSpec): void {
+    const resolved = this.objectResolver.resolve(spec);
+
+    if (resolved.kind === 'audio') {
+      this.message.destroyObject(spec.id);
+    } else if (resolved.kind === 'message') {
+      this.destroyAudioObject(spec.id);
+    }
   }
 }
 

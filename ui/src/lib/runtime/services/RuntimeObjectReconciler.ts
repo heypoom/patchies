@@ -27,6 +27,8 @@ export interface RuntimeObjectReconcilerRuntime {
 }
 
 export class RuntimeObjectReconciler {
+  private reconciliation = Promise.resolve();
+
   private current: RuntimeObjectSnapshot = {
     ids: new Set(),
     descriptorKeys: new Map()
@@ -48,7 +50,17 @@ export class RuntimeObjectReconciler {
     private runtime: RuntimeObjectReconcilerRuntime
   ) {}
 
-  async reconcile(objects: RuntimeObjectSpec[]): Promise<void> {
+  reconcile(objects: RuntimeObjectSpec[]): Promise<void> {
+    const reconciliation = this.reconciliation
+      .catch(() => undefined)
+      .then(() => this.reconcileObjects(objects));
+
+    this.reconciliation = reconciliation;
+
+    return reconciliation;
+  }
+
+  private async reconcileObjects(objects: RuntimeObjectSpec[]): Promise<void> {
     const nextObjectDescriptors = new Map<string, RuntimeObjectDescriptor>();
     const nextAudioDescriptors = new Map<string, RuntimeAudioObjectDescriptor>();
     const pendingRuntimeUpdates: Promise<void>[] = [];

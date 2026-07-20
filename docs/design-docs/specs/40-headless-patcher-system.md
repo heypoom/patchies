@@ -117,31 +117,17 @@ The editor should become a client of this runtime. It may own selection, canvas
 gestures, panels, history UI, and visual layout state, but object execution
 should not depend on Svelte component lifetime.
 
-`EditorRuntimeReconciler` is the editor adapter. It reads the current XYFlow
-nodes and edges, diffs them against the last synchronized runtime graph, and
-calls the same public `PatchRuntime` methods that a headless consumer would
-call:
+`EditorRuntimeReconciler` is the editor adapter. It translates the current
+XYFlow nodes and edges into runtime representations, then passes complete graph
+snapshots to `PatchRuntime`. `PatchRuntime` owns graph-diff and lifecycle
+synchronization: it tracks the previous graph and performs create, update,
+destroy, connect, and disconnect operations as needed.
 
 ```ts
-for (const node of addedNodes) {
-  runtime.createObject(toRuntimeObject(node));
-}
-
-for (const node of changedNodes) {
-  runtime.updateObject(node.id, toRuntimeObject(node));
-}
-
-for (const node of removedNodes) {
-  runtime.destroyObject(node.id);
-}
-
-for (const edge of addedEdges) {
-  runtime.connect(toRuntimeConnection(edge));
-}
-
-for (const edge of removedEdges) {
-  runtime.disconnect(toRuntimeConnection(edge));
-}
+runtime.setGraph({
+  objects: nodes.map(toRuntimeObject),
+  connections: edges.map(toRuntimeConnection)
+});
 ```
 
 The reconciler may understand editor representation kinds, such as object-box

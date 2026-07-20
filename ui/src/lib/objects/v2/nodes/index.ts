@@ -96,7 +96,8 @@ export const TEXT_OBJECTS = [
   SamplerateObject,
   UnpackObject,
   StackObject,
-  QueueObject
+  QueueObject,
+  LoadbangObject
 ] as const satisfies TextObjectClass[];
 
 export const VISUAL_OBJECTS = [
@@ -104,7 +105,6 @@ export const VISUAL_OBJECTS = [
   KnobObject,
   LabelObject,
   LinkObject,
-  LoadbangObject,
   NoteObject,
   SliderObject,
   TitleObject,

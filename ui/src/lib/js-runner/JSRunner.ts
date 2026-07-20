@@ -497,10 +497,13 @@ export class JSRunner {
       setTimelineStyle: scheduler.setTimelineStyle.bind(scheduler)
     };
 
-    async function llm(...args: Parameters<LLMFunction>) {
-      const { createLLMFunction } = await import('$lib/ai/google');
+    let llmFn: LLMFunction | undefined;
 
-      const llmFn = createLLMFunction();
+    async function llm(...args: Parameters<LLMFunction>) {
+      if (!llmFn) {
+        const { createLLMFunction } = await import('$lib/ai/google');
+        llmFn = createLLMFunction();
+      }
 
       return llmFn(...args);
     }

@@ -750,6 +750,92 @@ describe('PatchRuntime', () => {
     expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledTimes(1);
   });
 
+  it('updates direct-channel node types when objects change without connection changes', async () => {
+    const connectionServices = createFakeRuntimeConnectionServices();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService: createFakeAudioService(),
+      ...connectionServices
+    });
+
+    await runtime.setGraph({
+      objects: [{ id: 'worker-1', type: 'worker', data: {} }],
+      connections: []
+    });
+
+    connectionServices.directChannelService.updateNodeTypes.mockClear();
+    connectionServices.directChannelService.updateEdges.mockClear();
+
+    await runtime.setGraph({
+      objects: [{ id: 'worker-1', type: 'js', data: {} }],
+      connections: []
+    });
+
+    expect(connectionServices.directChannelService.updateNodeTypes).toHaveBeenCalledWith([
+      { id: 'worker-1', type: 'js' }
+    ]);
+    expect(connectionServices.directChannelService.updateEdges).not.toHaveBeenCalled();
+  });
+
+  it('reconciles direct API object-kind transitions', async () => {
+    const nodeId = 'direct-object-kind-transition';
+    const objectService = createFakeObjectService();
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService,
+      audioService,
+      isAudioObject: isOsc
+    });
+
+    await runtime.createObject({
+      id: nodeId,
+      type: 'osc~',
+      data: { name: 'osc~', expr: 'osc~', params: [] }
+    });
+    await runtime.updateObject(nodeId, {
+      id: nodeId,
+      type: TEST_OBJECT_TYPE,
+      data: { params: ['message'] }
+    });
+
+    expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+    expect(objectService.getObjectById(nodeId)).toBeInstanceOf(PatchRuntimeTestObject);
+
+    await runtime.updateObject(nodeId, {
+      id: nodeId,
+      type: 'osc~',
+      data: { name: 'osc~', expr: 'osc~', params: [] }
+    });
+
+    expect(objectService.getObjectById(nodeId)).toBeNull();
+    expect(audioService.createNode).toHaveBeenLastCalledWith(nodeId, 'osc~', []);
+  });
+
+  it('serializes overlapping object synchronization and retains the latest descriptor', async () => {
+    let releaseCreate!: () => void;
+    PatchRuntimeTestObject.createGate = new Promise((resolve) => {
+      releaseCreate = resolve;
+    });
+
+    const objectService = createFakeObjectService();
+    const runtime = createTestPatchRuntime({
+      objectService,
+      audioService: createFakeAudioService()
+    });
+
+    const firstSync = runtime.setObjects([
+      { id: 'object-1', type: TEST_OBJECT_TYPE, data: { params: ['first'] } }
+    ]);
+    const secondSync = runtime.setObjects([
+      { id: 'object-1', type: TEST_OBJECT_TYPE, data: { params: ['second'] } }
+    ]);
+
+    releaseCreate();
+    await Promise.all([firstSync, secondSync]);
+
+    expect(objectService.getObjectById('object-1')?.context.getParams()).toEqual(['second']);
+  });
+
   it('waits for object synchronization before updating connections', async () => {
     let releaseCreate!: () => void;
     PatchRuntimeTestObject.createGate = new Promise((resolve) => {
