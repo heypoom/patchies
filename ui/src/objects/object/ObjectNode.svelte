@@ -2,7 +2,7 @@
   import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
-  import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
+  import { getObjectNameFromExpr, isTextObjectName } from '$lib/objects/object-definitions';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -41,7 +41,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useObjectDataTracker } from '$lib/history';
   import { editorFontFamily } from '../../stores/editor.store';
-  import { getPatchRuntime } from '$lib/runtime/patch-runtime-context';
+  import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
   import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
 
@@ -63,7 +63,16 @@
   let inputElement = $state<HTMLInputElement>();
   let nodeElement = $state<HTMLDivElement>();
   let resultsContainer = $state<HTMLDivElement>();
-  const getInitialExpr = () => data.expr || '';
+  const getDataExpr = () => {
+    const exprName = data.expr ? getObjectNameFromExpr(data.expr) : '';
+
+    if (data.name && data.name !== exprName) {
+      return data.name;
+    }
+
+    return data.expr || '';
+  };
+  const getInitialExpr = () => getDataExpr();
   const hasInitialExpr = () => !!data.expr;
   let expr = $state(getInitialExpr());
   let isEditing = $state(!hasInitialExpr()); // Start in editing mode if no name;
@@ -72,6 +81,15 @@
   let originalName = getInitialExpr(); // Store original name for escape functionality
   const isQuickAdd = !hasInitialExpr(); // True if created via Quick Add (no initial name)
   let finalNodeId = (() => nodeId)(); // Tracks the final node ID after potential transformation
+
+  $effect(() => {
+    const nextExpr = getDataExpr();
+
+    if (!isEditing && expr !== nextExpr) {
+      expr = nextExpr;
+      originalName = nextExpr;
+    }
+  });
 
   // Undo tracking for object data changes (only for existing nodes)
   const objectDataTracker = $derived.by(() =>
@@ -92,6 +110,7 @@
 
   const eventBus = PatchiesEventBus.getInstance();
   const patchRuntime = getPatchRuntime();
+  const viewRevisionTracker = getPatchRuntimeViewRevisionTracker();
 
   // Composable for searching disabled objects
   const { searchDisabledObject } = useDisabledObjectSuggestion(
@@ -103,13 +122,17 @@
   const objectMeta = $derived.by(() => {
     if (!expr || expr.trim() === '') return null;
 
-    return getCombinedMetadata(getObjectNameFromExpr(expr));
+    const objectName = getObjectNameFromExpr(expr);
+    const isObjectBoxObject =
+      isTextObjectName(objectName) || getAudioObjectNames().includes(objectName);
+
+    return isObjectBoxObject ? getCombinedMetadata(objectName) : null;
   });
 
   const objectPorts = useObjectPorts({
     nodeId: (() => nodeId)(),
     getObjectMeta: () => objectMeta,
-    trackObjectInstanceVersion: () => patchRuntime?.trackObjectViewRevision(nodeId) ?? 0
+    trackObjectInstanceVersion: () => viewRevisionTracker?.trackObjectViewRevision(nodeId) ?? 0
   });
 
   const inlets = $derived(objectPorts.inlets);
@@ -690,7 +713,7 @@
   const dynamicIconComponent = $derived.by(() => {
     // Re-evaluate when params change or when audio node is created
     void data.params;
-    patchRuntime?.trackObjectViewRevision(nodeId);
+    viewRevisionTracker?.trackObjectViewRevision(nodeId);
 
     const audioNode = patchRuntime?.getAudioObject(nodeId);
     if (!audioNode?.getIcon) return null;
@@ -704,7 +727,7 @@
   // Get the param index that the icon represents (to hide it from display)
   const iconParamIndex = $derived.by(() => {
     void data.params;
-    patchRuntime?.trackObjectViewRevision(nodeId);
+    viewRevisionTracker?.trackObjectViewRevision(nodeId);
 
     const audioNode = patchRuntime?.getAudioObject(nodeId);
     return audioNode?.getIconParamIndex?.() ?? null;
@@ -803,9 +826,7 @@
               onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
             >
               <div class="object-node-font flex items-center gap-1.5 text-xs">
-                <span class={[!getCombinedMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
-                  >{data.name}</span
-                >
+                <span class={[!objectMeta ? 'text-red-300' : 'text-zinc-200']}>{data.name}</span>
 
                 {#if hasDynamicOutlets && rawParamsFromExpr}
                   <!-- For objects with dynamic outlets, show the raw params from expr -->

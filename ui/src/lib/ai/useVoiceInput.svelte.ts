@@ -1,6 +1,6 @@
 import { toast } from 'svelte-sonner';
 import { selectMimeType, arrayBufferToBase64, transcribeAudio } from './stt';
-import { AudioService } from '$lib/audio/v2/AudioService';
+import { AudioService } from '$lib/audio';
 
 export function useVoiceInput(onTranscribed: (text: string) => void) {
   let isRecording = $state(false);

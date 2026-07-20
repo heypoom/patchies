@@ -7,7 +7,7 @@ import { MessageContext } from '$lib/messages/MessageContext';
 import { profiler } from '$lib/profiler';
 import { resolveMessageInlet } from './resolve-message-inlet';
 
-import type { TextObjectV2, MessageMeta } from './interfaces/text-objects';
+import type { TextObjectClass, TextObjectV2, MessageMeta } from './interfaces/text-objects';
 import { getObjectType } from '../get-type';
 
 /**
@@ -31,7 +31,7 @@ export class ObjectService {
    * @param nodeId - Unique identifier for the object
    * @param objectType - The type of object to create
    * @param messageContext - The MessageContext to use for message routing
-   * @param params - Parsed parameters for initializing inlet values
+   * @param data - Runtime object data
    * @param rawParams - Raw string arguments for dynamic object configuration (e.g., trigger types)
    * @returns The created object instance, or null if type not defined
    */
@@ -39,7 +39,7 @@ export class ObjectService {
     nodeId: string,
     objectType: string,
     messageContext: MessageContext,
-    params: unknown[] = [],
+    data: Record<string, unknown> = {},
     rawParams: string[] = []
   ): Promise<TextObjectV2 | null> {
     const ObjectClass = this.registry.get(objectType);
@@ -49,8 +49,7 @@ export class ObjectService {
     }
 
     // Create ObjectContext with inlet definitions from the class
-    const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets);
-    context.initParams(params);
+    const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets, data);
 
     const object = new ObjectClass(nodeId, context);
     this.objectsById.set(nodeId, object);
@@ -138,6 +137,10 @@ export class ObjectService {
    */
   isObjectInRegistry(objectType: string): boolean {
     return this.registry.isDefined(objectType);
+  }
+
+  getObjectClass(objectType: string): TextObjectClass | undefined {
+    return this.registry.get(objectType);
   }
 
   /**

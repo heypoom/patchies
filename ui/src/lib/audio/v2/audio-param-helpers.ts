@@ -1,4 +1,4 @@
-import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
+import type { ObjectInlet } from '$lib/objects';
 
 /** Given an audio node, grab the audio param by name */
 export function getAudioParamValue(

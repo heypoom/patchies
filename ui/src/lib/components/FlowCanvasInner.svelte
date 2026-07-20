@@ -10,7 +10,9 @@
     type IsValidConnection,
     useOnSelectionChange
   } from '@xyflow/svelte';
+
   import { onDestroy, onMount, tick } from 'svelte';
+
   import CommandPalette from './CommandPalette.svelte';
   import CodeEditor from './CodeEditor.svelte';
   import DetachedCodeEditorOverlay from './DetachedCodeEditorOverlay.svelte';
@@ -19,8 +21,8 @@
   import BottomToolbar from './BottomToolbar.svelte';
   import AiObjectPrompt from './AiObjectPrompt.svelte';
   import AiActivityTray from './AiActivityTray.svelte';
-  import { MessageSystem } from '$lib/messages/MessageSystem';
   import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
+
   import {
     isAiFeaturesVisible,
     isBottomBarVisible,
@@ -45,23 +47,21 @@
     requestFocusNodeId,
     requestFitView
   } from '../../stores/ui.store';
+
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
-  import { GLSystem } from '$lib/canvas/GLSystem';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
-  import { AudioService } from '$lib/audio/v2/AudioService';
-  import { ObjectService } from '$lib/objects/v2/ObjectService';
-  import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
-  import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
+
   import {
     hasSomeAudioNode,
     isBackgroundOutputCanvasEnabled,
     snapGridSize
   } from '../../stores/canvas.store';
+
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import { deleteSearchParam } from '$lib/utils/search-params';
-  import BackgroundPattern from './BackgroundPattern.svelte';
+
   import { Toaster } from '$lib/components/ui/sonner';
   import {
     isAudioParamInlet,
@@ -82,7 +82,7 @@
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
-  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import BackgroundPattern from './BackgroundPattern.svelte';
   import type {
     NodeReplaceEvent,
     VfsPathRenamedEvent,
@@ -93,10 +93,6 @@
     VisualGroupResizeStartedEvent,
     VisualGroupSyncRequestedEvent
   } from '$lib/eventbus/events';
-  import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
-  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
-  import { DirectChannelService } from '$lib/messages/DirectChannelService';
-  import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
   import {
@@ -123,6 +119,7 @@
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
+
   import {
     HistoryManager,
     AddNodeCommand,
@@ -135,15 +132,22 @@
     BatchCommand,
     type Command
   } from '$lib/history';
+
   import { CanvasContext } from '$lib/services/CanvasContext';
   import { ClipboardManager } from '$lib/services/ClipboardManager';
   import { PatchManager } from '$lib/services/PatchManager';
   import { NodeOperationsService } from '$lib/services/NodeOperationsService';
   import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
   import { AiOperationsService } from '$lib/services/AiOperationsService';
-  import { PatchRuntime } from '$lib/runtime/PatchRuntime';
-  import { EditorRuntimeReconciler } from '$lib/runtime/EditorRuntimeReconciler';
-  import { setPatchRuntime } from '$lib/runtime/patch-runtime-context';
+
+  import {
+    createDefaultRuntimeServices,
+    createPatchRuntime,
+    setPatchRuntime,
+    setRuntimeConnectionsFromEditorEdges,
+    setRuntimeObjectsFromEditorNodes
+  } from '$lib/runtime';
+
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { SvelteSet } from 'svelte/reactivity';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
@@ -156,17 +160,10 @@
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
 
-  let messageSystem = MessageSystem.getInstance();
-  let glSystem = GLSystem.getInstance();
-  let audioService = AudioService.getInstance();
-  let objectService = ObjectService.getInstance();
-  let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
-  let eventBus = PatchiesEventBus.getInstance();
-  let workerNodeSystem = WorkerNodeSystem.getInstance();
-  let mediaPipeNodeSystem = MediaPipeNodeSystem.getInstance();
-  let directChannelService = DirectChannelService.getInstance();
-  let workletDirectChannelService = WorkletDirectChannelService.getInstance();
-  let historyManager = HistoryManager.getInstance();
+  const runtimeServices = createDefaultRuntimeServices();
+  const { glSystem, audioService, eventBus } = runtimeServices;
+
+  const historyManager = HistoryManager.getInstance();
 
   // Canvas context for shared state and utilities
   const canvasContext = new CanvasContext(
@@ -180,7 +177,6 @@
 
   // Clipboard manager for copy/paste operations
   const clipboardManager = new ClipboardManager(canvasContext);
-  let hasCopiedData = $state(false);
 
   // Patch manager for save/load/restore operations
   const patchManager = new PatchManager(canvasContext);
@@ -256,9 +252,15 @@
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
 
+  // Copy & paste states
+  let hasCopiedData = $state(false);
+
   // Command palette state
   let showCommandPalette = $state(false);
   let commandPalettePosition = $state.raw({ x: 0, y: 0 });
+
+  // XYFlow canvas container element
+  // oxlint-disable-next-line no-unassigned-vars
   let flowContainer: HTMLDivElement;
 
   // AI object prompt state — supports multiple concurrent instances
@@ -311,16 +313,14 @@
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, fitView, getViewport, getNode, updateNodeData } = useSvelteFlow();
 
-  const runtime = new PatchRuntime({
-    objectService,
-    audioService,
+  const runtime = createPatchRuntime({
+    services: runtimeServices,
     onObjectParamsChange: (nodeId, params) => updateNodeData(nodeId, { params }),
+    onObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates),
     onAudioObjectDataChange: (nodeId, updates) => updateNodeData(nodeId, updates)
   });
 
   setPatchRuntime(runtime);
-
-  const reconciler = new EditorRuntimeReconciler(runtime);
 
   const detachedCodeEditor = useDetachedCodeEditorOverlay({
     getNodes: () => nodes,
@@ -393,10 +393,6 @@
   // Track node positions at drag start for undo/redo
   let dragStartNodes: Node[] | null = null;
   let groupResizeStartNodes: Node[] | null = null;
-
-  function cloneNodesForHistory(source: Node[]): Node[] {
-    return structuredClone(source);
-  }
 
   function haveNodesChangedForHistory(before: Node[], after: Node[]): boolean {
     if (before.length !== after.length) return true;
@@ -497,7 +493,7 @@
   let _patchSettingsInit = false;
 
   $effect(() => {
-    // Read reactive values to register as dependencies
+    // Read reactive values to register as services
     void $isCablesVisible;
     void $transportStore.bpm;
     void $transportStore.timeSignature;
@@ -516,30 +512,22 @@
     const currentNodes = new Set(nodes.map((n) => n.id));
     const deletedNodes = patchManager.updatePreviousNodes(currentNodes);
 
-    // Cleanup deleted nodes
-    for (const nodeId of deletedNodes) {
-      messageSystem.unregisterNode(nodeId);
-      audioService.removeNodeById(nodeId);
-      mediaPipeNodeSystem.unregister(nodeId);
-      ProfilerCoordinator.getInstance().unregister(nodeId);
-    }
+    runtime.cleanupDeletedNodes(deletedNodes);
   });
 
   $effect(() => {
-    reconciler
-      .reconcile(nodes)
-      .catch((error) => logger.error('failed to reconcile editor graph with patch runtime', error));
+    setRuntimeObjectsFromEditorNodes(runtime, nodes).catch((error) =>
+      logger.error('failed to reconcile editor nodes with patch runtime', error)
+    );
   });
 
   $effect(() => {
-    messageSystem.updateEdges(edges);
-    glSystem.updateEdges(edges);
-    audioService.updateEdges(edges);
-    audioAnalysisSystem.updateEdges(edges);
-    workerNodeSystem.updateVideoConnections(edges);
-    mediaPipeNodeSystem.updateConnections(edges);
-    directChannelService.updateEdges(edges);
-    workletDirectChannelService.updateEdges(edges);
+    setRuntimeConnectionsFromEditorEdges(runtime, edges).catch((error) =>
+      logger.error('failed to reconcile editor edges with patch runtime', error)
+    );
+  });
+
+  $effect(() => {
     audioSourceConnections.set(buildAudioSourceConnections(edges));
   });
 
@@ -554,15 +542,6 @@
       surfaceMouseForwardingKey = _forwardingKey;
       eventBus.dispatch({ type: 'surfaceMouseForwardingGraphChanged', nodes });
     }
-  });
-
-  // Keep DirectChannelService informed of node types for direct messaging
-  $effect(() => {
-    directChannelService.updateNodeTypes(
-      nodes
-        .filter((n): n is typeof n & { type: string } => n.type !== undefined)
-        .map((n) => ({ id: n.id, type: n.type }))
-    );
   });
 
   // Update patchObjectTypes store for components outside the flow context (e.g., ObjectBrowserModal)
@@ -640,13 +619,14 @@
 
   function handleVisualGroupResizeStarted(event: VisualGroupResizeStartedEvent) {
     if (!nodes.some((node) => node.id === event.groupId && node.type === 'group')) return;
-    groupResizeStartNodes = cloneNodesForHistory(nodes);
+
+    groupResizeStartNodes = structuredClone(nodes);
   }
 
   async function handleVisualGroupSyncRequested(event: VisualGroupSyncRequestedEvent) {
     await tick();
 
-    const beforeSyncNodes = cloneNodesForHistory(nodes);
+    const beforeSyncNodes = structuredClone(nodes);
     const oldNodes = groupResizeStartNodes ?? beforeSyncNodes;
     groupResizeStartNodes = null;
 
@@ -657,7 +637,7 @@
       nodes = nextNodes;
     }
 
-    const nextSnapshot = cloneNodesForHistory(nextNodes);
+    const nextSnapshot = structuredClone(nextNodes);
     if (!haveNodesChangedForHistory(oldNodes, nextSnapshot)) return;
 
     historyManager.record(
@@ -976,11 +956,7 @@
 
   onDestroy(() => {
     runtime.destroy();
-
-    // Clean up all nodes when component is destroyed
-    for (const node of nodes) {
-      messageSystem.unregisterNode(node.id);
-    }
+    runtime.cleanupDeletedNodes(nodes.map((node) => node.id));
 
     eventBus.removeEventListener('nodeReplace', handleNodeReplace);
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
@@ -1038,6 +1014,7 @@
       // Handle UI state based on result
       if (result.mode === 'help' || result.mode === 'src') {
         showStartupModal = false;
+
         if (result.error) {
           urlLoadError = result.error;
         }
@@ -1070,13 +1047,8 @@
     return dragDropManager;
   }
 
-  function onDrop(event: DragEvent) {
-    getDragDropManager().onDrop(event);
-  }
-
-  function onDragOver(event: DragEvent) {
-    getDragDropManager().onDragOver(event);
-  }
+  const onDrop = (event: DragEvent) => getDragDropManager().onDrop(event);
+  const onDragOver = (event: DragEvent) => getDragDropManager().onDragOver(event);
 
   // Get the center of the viewport in flow coordinates
   function getViewportCenter(): { x: number; y: number } {
@@ -1091,6 +1063,7 @@
     const center = getViewportCenter();
     const cols = Math.ceil(Math.sqrt(event.nodeNames.length));
     const spacing = 180;
+
     event.nodeNames.forEach((name, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
@@ -1321,7 +1294,7 @@
 
     if (audioContext.state === 'suspended') {
       audioContext.resume();
-      audioService.updateEdges(edges);
+      runtime.refreshConnections();
     }
 
     if (showAudioHint) {
@@ -1580,7 +1553,7 @@
         clickConnect={$isConnectionMode}
         {isValidConnection}
         onnodedragstart={() => {
-          dragStartNodes = cloneNodesForHistory(nodes);
+          dragStartNodes = structuredClone(nodes);
         }}
         onnodedragstop={(event) => {
           if (!dragStartNodes) return;
@@ -1593,7 +1566,8 @@
             nodes = nextNodes;
           }
 
-          const nextSnapshot = cloneNodesForHistory(nextNodes);
+          const nextSnapshot = structuredClone(nextNodes);
+
           if (haveNodesChangedForHistory(dragStartNodes, nextSnapshot)) {
             historyManager.record(
               new ReplaceNodesCommand(

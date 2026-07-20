@@ -38,6 +38,7 @@ export type PatchiesEvent =
   | MediaBunnyErrorEvent
   | AsmMachineStateChangedEvent
   | ObjectParamsChangedEvent
+  | ObjectDataChangedEvent
   | QuickAddConfirmedEvent
   | QuickAddCancelledEvent
   | CodeCommitEvent
@@ -350,6 +351,13 @@ export interface ObjectParamsChangedEvent {
   params: unknown[];
   index: number;
   value: unknown;
+}
+
+export interface ObjectDataChangedEvent {
+  type: 'objectDataChanged';
+  nodeId: string;
+  data: Record<string, unknown>;
+  updates: Record<string, unknown>;
 }
 
 // Quick Add events - for recording history after Quick Add node is confirmed

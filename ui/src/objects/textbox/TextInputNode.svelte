@@ -1,18 +1,17 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
+
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { textboxSchema } from '$objects/textbox/schema';
-  import { onMount, onDestroy } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
-  import { messages } from '$lib/objects/schemas/common';
+  import { TextboxObject } from '$objects/textbox/TextboxObject';
+  import { useNodeViewMessageContext } from '$lib/messages';
   import { useNodeDataTracker } from '$lib/history';
+
   import { shouldShowHandles } from '../../stores/ui.store';
   import { editorFontFamily } from '../../stores/editor.store';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
+
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
@@ -29,13 +28,18 @@
   const store = useStore();
   const edges = useEdges();
 
+  const viewMessageContext = useNodeViewMessageContext(
+    () => node.id,
+    () => {}
+  );
+
+  const textboxObject = TextboxObject;
+
   // Check if handles have connections (for smart auto mode)
   const connections = $derived(checkMessageConnections(edges.current, node.id));
 
-  let messageContext: MessageContext;
-
   const tracker = $derived.by(() => useNodeDataTracker(node.id));
-  const textTracker = $derived.by(() => tracker.track('text', () => node.data.text ?? ''));
+  let textOnFocus: string | null = null;
 
   let textareaElement: HTMLTextAreaElement;
 
@@ -56,30 +60,28 @@
     node.selected || $shouldShowHandles || connections.hasOutlet ? '' : HIDDEN_HANDLE_CLASS
   );
 
-  const setText = (text: string) => updateNodeData(node.id, { text });
+  function setText(text: string) {
+    updateNodeData(node.id, { text });
+    viewMessageContext.send(text);
+  }
 
-  const handleMessage: MessageCallbackFn = (message) => {
-    match(message)
-      .with(P.string, (text) => {
-        setText(text);
-      })
-      .with(messages.bang, () => {
-        messageContext.send(text);
-      })
-      .with(messages.clear, () => {
-        setText('');
-      });
-  };
+  function handleTextFocus() {
+    textOnFocus = text;
+  }
 
-  onMount(() => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
-  });
+  function handleTextBlur() {
+    if (textOnFocus === null) return;
 
-  onDestroy(() => {
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-  });
+    const currentText = text;
+    if (textOnFocus === currentText) {
+      textOnFocus = null;
+      return;
+    }
+
+    tracker.commit('text', textOnFocus, currentText);
+
+    textOnFocus = null;
+  }
 
   function handleTextChange(event: Event) {
     const target = event.target as HTMLTextAreaElement;
@@ -87,7 +89,7 @@
   }
 
   function sendText() {
-    messageContext.send(text);
+    viewMessageContext.send({ type: 'bang' });
   }
 </script>
 
@@ -156,7 +158,7 @@
       {#if showInlet}
         <TypedHandle
           port="inlet"
-          spec={textboxSchema.inlets[0].handle!}
+          spec={textboxObject.inlets[0].handle!}
           total={1}
           index={0}
           class={handleInletClass}
@@ -169,8 +171,8 @@
         bind:this={textareaElement}
         value={text}
         oninput={handleTextChange}
-        onfocus={textTracker.onFocus}
-        onblur={textTracker.onBlur}
+        onfocus={handleTextFocus}
+        onblur={handleTextBlur}
         placeholder="Enter text here..."
         style="width: {width}px; height: {height}px;"
         class={[
@@ -193,7 +195,7 @@
       {#if showOutlet}
         <TypedHandle
           port="outlet"
-          spec={textboxSchema.outlets[0].handle!}
+          spec={textboxObject.outlets[0].handle!}
           total={1}
           index={0}
           class={handleOutletClass}

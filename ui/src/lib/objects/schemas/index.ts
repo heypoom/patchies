@@ -20,11 +20,7 @@ export * from '$objects/video/schema';
 export * from '$objects/webcam/schema';
 export * from '$objects/screen/schema';
 export * from '$objects/iframe/schema';
-export * from '$objects/switch/schema';
 export * from '$objects/msg/schema';
-export * from '$objects/slider/schema';
-export * from '$objects/knob/schema';
-export * from '$objects/textbox/schema';
 export * from '$objects/keyboard/schema';
 export * from '$objects/soundfile~/schema';
 export * from '$objects/sampler~/schema';
@@ -63,7 +59,6 @@ export * from '$objects/tap/schema';
 export * from '$objects/scan/schema';
 export * from '$objects/uniq/schema';
 export * from '$objects/peek/schema';
-export * from '$objects/loadbang/schema';
 export * from '$objects/markdown/schema';
 export * from '$objects/tone~/schema';
 export * from '$objects/elem~/schema';
@@ -80,11 +75,7 @@ export * from '$objects/wgpu.compute/schema';
 export * from '$objects/bg.out/schema';
 export * from '$objects/send.vdo/schema';
 export * from '$objects/recv.vdo/schema';
-export * from '$objects/note/schema';
 export * from '$objects/group/schema';
-export * from '$objects/label/schema';
-export * from '$objects/title/schema';
-export * from '$objects/link/schema';
 export * from '$objects/meter~/schema';
 export * from '$objects/sequencer/schema';
 export * from '$objects/bytebeat~/schema';
@@ -117,11 +108,7 @@ import { videoSchema } from '$objects/video/schema';
 import { webcamSchema } from '$objects/webcam/schema';
 import { screenSchema } from '$objects/screen/schema';
 import { iframeSchema } from '$objects/iframe/schema';
-import { switchSchema } from '$objects/switch/schema';
 import { msgSchema } from '$objects/msg/schema';
-import { sliderSchema } from '$objects/slider/schema';
-import { knobSchema } from '$objects/knob/schema';
-import { textboxSchema } from '$objects/textbox/schema';
 import { keyboardSchema } from '$objects/keyboard/schema';
 import { soundfileSchema } from '$objects/soundfile~/schema';
 import { samplerSchema } from '$objects/sampler~/schema';
@@ -161,7 +148,6 @@ import { tapSchema } from '$objects/tap/schema';
 import { scanSchema } from '$objects/scan/schema';
 import { uniqSchema } from '$objects/uniq/schema';
 import { peekSchema } from '$objects/peek/schema';
-import { loadbangSchema } from '$objects/loadbang/schema';
 import { markdownSchema } from '$objects/markdown/schema';
 import { toneSchema } from '$objects/tone~/schema';
 import { elemSchema } from '$objects/elem~/schema';
@@ -178,11 +164,7 @@ import { wgpuComputeSchema } from '$objects/wgpu.compute/schema';
 import { bgOutSchema } from '$objects/bg.out/schema';
 import { sendVdoSchema } from '$objects/send.vdo/schema';
 import { recvVdoSchema } from '$objects/recv.vdo/schema';
-import { noteSchema } from '$objects/note/schema';
 import { groupSchema } from '$objects/group/schema';
-import { labelSchema } from '$objects/label/schema';
-import { titleSchema } from '$objects/title/schema';
-import { linkSchema } from '$objects/link/schema';
 import { meterSchema } from '$objects/meter~/schema';
 import { sequencerSchema } from '$objects/sequencer/schema';
 import { bytebeatSchema } from '$objects/bytebeat~/schema';
@@ -245,11 +227,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   webcam: webcamSchema,
   screen: screenSchema,
   iframe: iframeSchema,
-  switch: switchSchema,
   msg: msgSchema,
-  slider: sliderSchema,
-  knob: knobSchema,
-  textbox: textboxSchema,
   keyboard: keyboardSchema,
   'soundfile~': soundfileSchema,
   'sampler~': samplerSchema,
@@ -289,7 +267,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   scan: scanSchema,
   uniq: uniqSchema,
   peek: peekSchema,
-  loadbang: loadbangSchema,
   markdown: markdownSchema,
   'tone~': toneSchema,
   'elem~': elemSchema,
@@ -306,11 +283,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'bg.out': bgOutSchema,
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
-  note: noteSchema,
   group: groupSchema,
-  label: labelSchema,
-  title: titleSchema,
-  link: linkSchema,
   'meter~': meterSchema,
   sequencer: sequencerSchema,
   'bytebeat~': bytebeatSchema,

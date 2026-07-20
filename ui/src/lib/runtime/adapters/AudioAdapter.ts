@@ -1,49 +1,40 @@
-import { SvelteMap } from 'svelte/reactivity';
-import type { AudioNodeClass, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
-import { MessageContext } from '$lib/messages/MessageContext';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-import { validateMessageToObject } from '$lib/objects/validate-object-message';
+import type { AudioService, AudioNodeClass } from '$lib/audio';
+
+import { MessageContext, type MessageCallbackFn } from '$lib/messages';
+
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { validateMessageToObject } from '$lib/objects/validate-object-message';
 
-export interface RuntimeAudioObjectService {
-  removeNodeById(nodeId: string): void;
-  createNode(nodeId: string, objectType: string, params: unknown[]): Promise<AudioNodeV2 | null>;
-  send(nodeId: string, key: string, message: unknown): void;
-  getNodeById(nodeId: string): AudioNodeV2 | null;
-}
+import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
 
-export interface RuntimeAudioObjectAdapterOptions {
-  audioService: RuntimeAudioObjectService;
+import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
+
+import type { RuntimeObjectViewRevisionListener } from '../types/runtime-object';
+
+interface AudioAdapterOptions {
+  audioService: AudioService;
+
   isAudioObject?: (objectType: string) => boolean;
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-export type RuntimeAudioObjectDescriptor = {
-  id: string;
-  objectType: string;
-  params: unknown[];
-};
+type RuntimeAudioObjectEntry = { messageContext: MessageContext };
 
-type RuntimeAudioObjectRecord = {
-  messageContext: MessageContext;
-};
-
-export class RuntimeAudioObjectAdapter {
-  private audioService: RuntimeAudioObjectService;
+export class AudioAdapter {
+  public readonly audioService: AudioService;
 
   private isAudioObject: (objectType: string) => boolean;
   private onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 
   /** Runtime-owned audio objects and their message contexts. */
-  private audioObjects = new Map<string, RuntimeAudioObjectRecord>();
+  private audioObjects = new Map<string, RuntimeAudioObjectEntry>();
 
   /** Node ids whose next editor-state sync should be ignored because runtime messaging already applied it. */
   private suppressedAudioObjectSyncs = new Set<string>();
 
-  /** Reactive revision counter used by views that read runtime-derived audio node state. */
-  private audioObjectViewRevisions = new SvelteMap<string, number>();
+  private viewRevisions = new RuntimeViewRevisionTracker();
 
-  constructor(options: RuntimeAudioObjectAdapterOptions) {
+  constructor(options: AudioAdapterOptions) {
     this.audioService = options.audioService;
 
     this.isAudioObject =
@@ -85,7 +76,7 @@ export class RuntimeAudioObjectAdapter {
     this.audioObjects.set(descriptor.id, { messageContext });
     this.suppressedAudioObjectSyncs.delete(descriptor.id);
 
-    this.bumpAudioObjectViewRevision(descriptor.id);
+    this.viewRevisions.bump(descriptor.id);
   }
 
   destroyAudioObject(nodeId: string): void {
@@ -94,15 +85,7 @@ export class RuntimeAudioObjectAdapter {
     this.removeAudioObjectMessageContext(nodeId, true);
 
     this.suppressedAudioObjectSyncs.delete(nodeId);
-    this.bumpAudioObjectViewRevision(nodeId);
-  }
-
-  sendAudioObjectMessage(nodeId: string, key: string, message: unknown): void {
-    this.audioService.send(nodeId, key, message);
-  }
-
-  getAudioObject(nodeId: string): AudioNodeV2 | null {
-    return this.audioService.getNodeById(nodeId);
+    this.viewRevisions.bump(nodeId);
   }
 
   subscribeAudioObjectMessages(nodeId: string, callback: MessageCallbackFn): (() => void) | null {
@@ -117,17 +100,22 @@ export class RuntimeAudioObjectAdapter {
   }
 
   trackAudioObjectViewRevision(nodeId: string): number {
-    return this.audioObjectViewRevisions.get(nodeId) ?? 0;
+    return this.viewRevisions.track(nodeId);
+  }
+
+  subscribeAudioObjectViewRevisions(listener: RuntimeObjectViewRevisionListener): () => void {
+    return this.viewRevisions.subscribe(listener);
   }
 
   destroy(): void {
-    for (const nodeId of [...this.audioObjects.keys()]) {
+    for (const nodeId of this.audioObjects.keys()) {
       this.destroyAudioObject(nodeId);
     }
   }
 
   private createAudioObjectMessageContext(nodeId: string, objectType: string): MessageContext {
     const nodeClass = AudioRegistry.getInstance().get(objectType);
+
     const messageContext = new MessageContext(nodeId);
     const callback = this.createAudioObjectMessageCallback(nodeId, nodeClass);
 
@@ -145,7 +133,7 @@ export class RuntimeAudioObjectAdapter {
 
       if (settingsUpdate) {
         for (const [key, value] of Object.entries(settingsUpdate)) {
-          this.sendAudioObjectMessage(nodeId, key, value);
+          this.audioService.send(nodeId, key, value);
         }
 
         this.suppressNextAudioObjectSync(nodeId);
@@ -161,20 +149,19 @@ export class RuntimeAudioObjectAdapter {
       if (!inletDefinition?.name) return;
       if (!validateMessageToObject(message, inletDefinition)) return;
 
-      this.sendAudioObjectMessage(nodeId, inletDefinition.name, message);
+      this.audioService.send(nodeId, inletDefinition.name, message);
     };
   }
 
-  private removeAudioObjectMessageContext(nodeId: string, unregisterMessageNode: boolean): void {
+  private removeAudioObjectMessageContext(
+    nodeId: string,
+    unregisterNodeFromMessageSystem: boolean
+  ): void {
     const messageContext = this.audioObjects.get(nodeId)?.messageContext;
     if (!messageContext) return;
 
-    messageContext.destroy({ unregisterNode: unregisterMessageNode });
+    messageContext.destroy({ unregisterNode: unregisterNodeFromMessageSystem });
 
     this.audioObjects.delete(nodeId);
-  }
-
-  private bumpAudioObjectViewRevision(nodeId: string): void {
-    this.audioObjectViewRevisions.set(nodeId, (this.audioObjectViewRevisions.get(nodeId) ?? 0) + 1);
   }
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
+  import { WorkerNodeSystem } from '$lib/js-runner';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type {
     WorkerCallbackRegisteredEvent,

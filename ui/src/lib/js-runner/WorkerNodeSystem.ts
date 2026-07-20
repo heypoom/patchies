@@ -1,108 +1,25 @@
-import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import type { PrimaryButton } from '$lib/eventbus/events';
-import type { SendMessageOptions } from '$lib/messages/MessageContext';
-import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messages/MessageSystem';
-import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { match } from 'ts-pattern';
-import { JSRunner } from './JSRunner';
-import { profiler, ProfilerCoordinator } from '$lib/profiler';
-import type { ProfilerCategory, TimingStats } from '$lib/profiler';
-import {
-  AudioAnalysisSystem,
-  type AudioAnalysisFormat,
-  type AudioAnalysisType
-} from '$lib/audio/AudioAnalysisSystem';
-import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
-import { WorkerLLMProxy } from './WorkerLLMProxy';
+import { get } from 'svelte/store';
+
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
+import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
+import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
+import { isVFSPath } from '$lib/vfs/types';
+import { profiler, ProfilerCoordinator } from '$lib/profiler';
+import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
 import { AudioService } from '$lib/audio/v2/AudioService';
+
+import { JSRunner } from './JSRunner';
+import { WorkerLLMProxy } from './WorkerLLMProxy';
+import type { WorkerMessage, WorkerResponse } from './js-worker-types';
+
 import JsWorker from '../../workers/js/jsWorker?worker';
-import { get } from 'svelte/store';
 import { currentPatchId } from '../../stores/ui.store';
 
-/** Render connection for direct worker→render messaging */
-export interface RenderConnection {
-  outlet: number;
-  targetNodeId: string;
-  inlet: number;
-  inletKey?: string;
-}
-
-// Message types sent from main thread to worker
-export type WorkerMessage = { nodeId: string } & (
-  | { type: 'setPatchId'; patchId: string }
-  | { type: 'executeCode'; code: string; processedCode: string }
-  | { type: 'incomingMessage'; data: unknown; meta: Omit<Message, 'data'> }
-  | { type: 'updateModule'; moduleName: string; code: string | null }
-  | { type: 'cleanup' }
-  | { type: 'destroy' }
-  // Responses for proxied features
-  | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
-  | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
-  | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
-  // Video frame delivery
-  | { type: 'videoFramesReady'; frames: (ImageBitmap | null)[]; timestamp: number }
-  // Direct render channel (port transferred via transfer list)
-  | { type: 'setRenderPort' }
-  | { type: 'updateRenderConnections'; connections: RenderConnection[] }
-  // Direct worker-to-worker channel (port transferred via transfer list)
-  | { type: 'setWorkerPort'; targetNodeId?: string; sourceNodeId?: string }
-  | { type: 'updateWorkerConnections'; connections: RenderConnection[] }
-  // Named channel messages
-  | { type: 'channelMessage'; channel: string; data: unknown; sourceNodeId: string }
-  // Profiler control
-  | { type: 'profilerEnable'; enabled: boolean }
-  // Settings API responses (main → worker)
-  | { type: 'settingsValuesInit'; requestId: string; values: Record<string, unknown> }
-  | { type: 'settingsValueChanged'; key: string; value: unknown }
-  // SuperSonic OscChannel (main → worker, channel transferred via transfer list)
-  | { type: 'superSonicChannelReady'; requestId: string; error?: string }
-);
-
-// Message types sent from worker to main thread
-export type WorkerResponse = { nodeId: string } & (
-  | { type: 'ready' }
-  | {
-      type: 'executionComplete';
-      success: boolean;
-      error?: string;
-      initDurationMs?: number;
-    }
-  | { type: 'profilerStats'; category: ProfilerCategory; stats: TimingStats }
-  | {
-      type: 'consoleOutput';
-      level: 'log' | 'warn' | 'error' | 'debug' | 'info';
-      args: unknown[];
-      lineErrors?: Record<number, string[]>;
-    }
-  | { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
-  | { type: 'setPortCount'; inletCount: number; outletCount: number }
-  | { type: 'setTitle'; title: string }
-  | { type: 'setPrimaryButton'; primaryButton: PrimaryButton }
-  | { type: 'setRunOnMount'; runOnMount: boolean }
-  | { type: 'callbackRegistered'; callbackType: 'message' | 'interval' | 'timeout' }
-  | { type: 'flash' }
-  // Requests for proxied features
-  | { type: 'fftEnabled'; enabled: boolean }
-  | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
-  | { type: 'resolveVfsUrl'; requestId: string; path: string }
-  | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
-  // Video frame APIs
-  | { type: 'setVideoCount'; inletCount: number; outletCount: number }
-  | { type: 'videoFrameCallbackRegistered'; resolution?: [number, number] }
-  | { type: 'requestVideoFrames'; requestId: string; resolution?: [number, number] }
-  // Named channel APIs
-  | { type: 'sendToChannel'; channel: string; data: unknown }
-  | { type: 'subscribeChannel'; channel: string }
-  | { type: 'unsubscribeChannel'; channel: string }
-  // Settings API requests (worker → main)
-  | { type: 'settingsDefine'; requestId: string; schema: unknown[] }
-  | { type: 'settingsSet'; key: string; value: unknown }
-  | { type: 'settingsClear' }
-  // SuperSonic OscChannel request (worker → main)
-  | { type: 'requestSuperSonicChannel'; requestId: string }
-);
+type Edge = { source: string; target: string; targetHandle?: string | null };
 
 interface WorkerInstance {
   worker: Worker;
@@ -438,7 +355,7 @@ export class WorkerNodeSystem {
     videoState.outletCount = outletCount;
 
     // Update connections from stored edges (handles case where edges existed before setVideoCount was called)
-    this.updateVideoConnectionsForNode(nodeId, videoState, this.currentEdges);
+    this.updateEdgesForNode(nodeId, videoState, this.currentEdges);
 
     // Dispatch event for UI to update ports
     this.eventBus.dispatch({
@@ -677,14 +594,12 @@ export class WorkerNodeSystem {
    * Update video connections based on current edges.
    * Called when edges change to keep source node mappings up to date.
    */
-  updateVideoConnections(
-    edges: Array<{ source: string; target: string; targetHandle?: string | null }>
-  ) {
+  updateEdges(edges: Edge[]) {
     // Store edges for later use when video states are created
     this.currentEdges = edges;
 
     for (const [nodeId, videoState] of this.videoStates) {
-      this.updateVideoConnectionsForNode(nodeId, videoState, edges);
+      this.updateEdgesForNode(nodeId, videoState, edges);
     }
 
     // Restart global loop if any nodes now have valid connections
@@ -697,12 +612,10 @@ export class WorkerNodeSystem {
   /**
    * Update video connections for a specific node.
    */
-  private updateVideoConnectionsForNode(
-    nodeId: string,
-    videoState: WorkerVideoState,
-    edges: Array<{ source: string; target: string; targetHandle?: string | null }>
-  ) {
-    const sourceNodeIds: (string | null)[] = new Array(videoState.inletCount).fill(null);
+  private updateEdgesForNode(nodeId: string, videoState: WorkerVideoState, edges: Edge[]) {
+    const sourceNodeIds = Array.from<string | null>({
+      length: videoState.inletCount
+    }).fill(null);
 
     for (let i = 0; i < videoState.inletCount; i++) {
       const edge = edges.find((e) => e.target === nodeId && e.targetHandle === `video-in-${i}`);

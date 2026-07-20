@@ -1,7 +1,8 @@
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
-import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 
-import { ObjectShorthandRegistry } from '../registry/ObjectShorthandRegistry';
+import { TEXT_OBJECTS } from '$lib/objects/v2/nodes';
+import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
 
 export const getObjectNameFromExpr = (expr: string): string =>
   expr.trim().toLowerCase().split(' ')?.[0];
@@ -13,7 +14,7 @@ export const getObjectNameFromExpr = (expr: string): string =>
 export function getObjectNames(): string[] {
   const shorthandNames = ObjectShorthandRegistry.getInstance().getShorthandNames();
   const v2AudioObjectNames = AudioRegistry.getInstance().getVisibleNodeTypes();
-  const v2TextObjectNames = ObjectRegistry.getInstance().getObjectTypes();
+  const v2TextObjectNames = getTextObjectNames();
 
   return [...shorthandNames, ...v2AudioObjectNames, ...v2TextObjectNames];
 }
@@ -24,11 +25,21 @@ export function getObjectNames(): string[] {
  * @returns Array of aliases, or empty array if none
  */
 export function getObjectAliases(objectName: string): string[] {
-  const objectClass = ObjectRegistry.getInstance().get(objectName);
-  if (objectClass?.aliases) return objectClass.aliases;
+  const objectClass = getTextObjectClasses().find((object) => object.type === objectName);
+  if (objectClass?.aliases) return [...objectClass.aliases];
 
   const audioClass = AudioRegistry.getInstance().get(objectName);
   if (audioClass?.aliases) return audioClass.aliases;
 
   return [];
 }
+
+export const getTextObjectNames = (): string[] =>
+  getTextObjectClasses().flatMap((object) => [object.type, ...(object.aliases ?? [])]);
+
+export const isTextObjectName = (objectName: string): boolean =>
+  getTextObjectClasses().some(
+    (object) => object.type === objectName || object.aliases?.includes(objectName)
+  );
+
+const getTextObjectClasses = (): readonly TextObjectClass[] => TEXT_OBJECTS;

@@ -1,40 +1,40 @@
 <script lang="ts">
-  import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { switchSchema } from '$objects/switch/schema';
-  import { Switch } from '$lib/components/ui/switch';
-  import { onMount } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { shouldShowHandles } from '../../stores/ui.store';
+
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { SwitchObject } from '$objects/switch/SwitchObject';
+  import { Switch } from '$lib/components/ui/switch';
+
   import { useNodeDataTracker } from '$lib/history';
+  import { useNodeViewMessageContext } from '$lib/messages';
 
-  let { id: nodeId, selected, data }: { id: string; selected: boolean; data: any } = $props();
+  let {
+    id: nodeId,
+    selected,
+    data
+  }: { id: string; selected: boolean; data: { value: boolean } } = $props();
 
-  let messageContext: MessageContext;
   const { updateNodeData } = useSvelteFlow();
 
   // Undo/redo tracking
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
+  const viewMessageContext = useNodeViewMessageContext(
+    () => nodeId,
+    () => {}
+  );
+
   // Get toggle state from node data, default to false
-  let isOn = $derived(data.value ?? false);
+  let isOn = $derived(data.value === true);
+  const switchOutlet = SwitchObject.outlets[0];
 
   const handleCheckedChange = (checked: boolean) => {
     const oldValue = isOn;
     updateNodeData(nodeId, { value: checked });
+
     tracker.commit('value', oldValue, checked);
-    setTimeout(() => {
-      messageContext.send(checked);
-    }, 0);
+    viewMessageContext.send(checked);
   };
-
-  onMount(() => {
-    messageContext = new MessageContext(nodeId);
-
-    return () => {
-      messageContext.destroy();
-    };
-  });
 </script>
 
 <div class="relative">
@@ -51,7 +51,7 @@
 
       <TypedHandle
         port="outlet"
-        spec={switchSchema.outlets[0].handle!}
+        spec={switchOutlet.handle!}
         total={1}
         index={0}
         class="!top-6"

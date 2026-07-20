@@ -4,20 +4,25 @@
  */
 
 import { match } from 'ts-pattern';
-import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/WorkerNodeSystem';
+
+import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/js-worker-types';
 import type { PrimaryButton } from '$lib/eventbus/events';
 import type { Message } from '$lib/messages/MessageSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
+
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+
+import { PatchStorageService } from '$lib/storage/PatchStorageService';
+import { createKVStore } from '$lib/storage/KVStore';
+
+import { WorkerProfiler } from '../shared/WorkerProfiler';
+import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+
 import {
   createDirectChannelHandler,
   type DirectChannelHandler,
   type RenderConnection
 } from '../shared/directChannelHandler';
-import { PatchStorageService } from '$lib/storage/PatchStorageService';
-import { createKVStore } from '$lib/storage/KVStore';
-import { WorkerProfiler } from '../shared/WorkerProfiler';
-import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 // Module storage (synced from main thread)
 const modules = new Map<string, string>();
@@ -752,6 +757,7 @@ function handleFFTData(
   if (!state) return;
 
   const cacheKey = `${payload.analysisType}-${payload.format}`;
+
   state.fftDataCache.set(cacheKey, {
     data: payload.array,
     timestamp: performance.now()

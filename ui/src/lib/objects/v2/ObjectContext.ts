@@ -1,9 +1,11 @@
-import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { PatchiesEventBus } from '$lib/eventbus';
+
+import type { MessageContext, MessageCallbackFn, SendMessageOptions } from '$lib/messages';
+
 import type { ObjectInlet } from './object-metadata';
-import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 type ParamsChangeCallback = (params: unknown[], index: number, value: unknown) => void;
+type DataChangeCallback = (data: Record<string, unknown>, updates: Record<string, unknown>) => void;
 
 /**
  * ObjectContext provides a clean API for text objects to interact with
@@ -15,18 +17,32 @@ export class ObjectContext {
   readonly nodeId: string;
 
   private messageContext: MessageContext;
+
+  private data: Record<string, unknown> = {};
   private params: unknown[] = [];
   private inlets: ObjectInlet[] = [];
+
   private paramsChangeCallbacks: ParamsChangeCallback[] = [];
+  private dataChangeCallbacks: DataChangeCallback[] = [];
   private messageCallbacks: MessageCallbackFn[] = [];
 
-  constructor(nodeId: string, messageContext: MessageContext, inlets: ObjectInlet[] = []) {
+  constructor(
+    nodeId: string,
+    messageContext: MessageContext,
+    inlets: ObjectInlet[] = [],
+    data: Record<string, unknown> = {}
+  ) {
     this.nodeId = nodeId;
     this.messageContext = messageContext;
     this.inlets = inlets;
+    this.data = { ...data };
 
     // Initialize params with default values from inlets
     this.params = inlets.map((inlet) => inlet.defaultValue ?? null);
+
+    if (Array.isArray(data.params)) {
+      this.initParams(data.params);
+    }
   }
 
   /**
@@ -74,7 +90,6 @@ export class ObjectContext {
    */
   setParam(indexOrName: number | string, value: unknown, options?: { notifyUI?: boolean }): void {
     const index = typeof indexOrName === 'string' ? this.getInletIndex(indexOrName) : indexOrName;
-
     if (index === -1) return;
 
     // Expand params array if needed
@@ -83,6 +98,7 @@ export class ObjectContext {
     }
 
     this.params[index] = value;
+    this.data = { ...this.data, params: [...this.params] };
 
     // Notify all subscribers
     for (const callback of this.paramsChangeCallbacks) {
@@ -115,6 +131,31 @@ export class ObjectContext {
     return [...this.params];
   }
 
+  getData<TData extends Record<string, unknown> = Record<string, unknown>>(): TData {
+    return { ...this.data } as TData;
+  }
+
+  setData(updates: Record<string, unknown>, options?: { notifyUI?: boolean }): void {
+    this.data = { ...this.data, ...updates };
+
+    if (Array.isArray(updates.params)) {
+      this.initParams(updates.params);
+    }
+
+    for (const callback of this.dataChangeCallbacks) {
+      callback({ ...this.data }, updates);
+    }
+
+    if (options?.notifyUI) {
+      PatchiesEventBus.getInstance().dispatch({
+        type: 'objectDataChanged',
+        nodeId: this.nodeId,
+        data: { ...this.data },
+        updates
+      });
+    }
+  }
+
   /**
    * Set all parameters at once (used during initialization).
    * Merges with default values - explicit values override defaults.
@@ -127,6 +168,8 @@ export class ObjectContext {
     for (let i = 0; i < params.length; i++) {
       this.params[i] = params[i];
     }
+
+    this.data = { ...this.data, params: [...this.params] };
   }
 
   /**
@@ -155,8 +198,21 @@ export class ObjectContext {
 
     return () => {
       const index = this.paramsChangeCallbacks.indexOf(callback);
+
       if (index > -1) {
         this.paramsChangeCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  onDataChange(callback: DataChangeCallback): () => void {
+    this.dataChangeCallbacks.push(callback);
+
+    return () => {
+      const index = this.dataChangeCallbacks.indexOf(callback);
+
+      if (index > -1) {
+        this.dataChangeCallbacks.splice(index, 1);
       }
     };
   }
@@ -172,5 +228,6 @@ export class ObjectContext {
 
     this.messageCallbacks = [];
     this.paramsChangeCallbacks = [];
+    this.dataChangeCallbacks = [];
   }
 }

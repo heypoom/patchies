@@ -2,8 +2,8 @@ import type { Edge as XYEdge } from '@xyflow/svelte';
 
 // Utilities for building and analyzing render graphs
 
-import type { RenderNode, RenderEdge, RenderGraph } from './types.js';
-import { isFBOCompatible } from './types.js';
+import type { RenderNode, RenderEdge, RenderGraph } from './types';
+import { isFBOCompatible } from './types';
 
 export type RNode = {
   id: string;

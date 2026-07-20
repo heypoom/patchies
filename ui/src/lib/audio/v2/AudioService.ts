@@ -307,6 +307,7 @@ export class AudioService {
   /** Suspend the AudioContext (DSP OFF). */
   suspendDsp(): void {
     if (!this.audioContext || this._dspSuspendedByUser) return;
+
     this._dspSuspendedByUser = true;
     this.audioContext.suspend();
   }
