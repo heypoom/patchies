@@ -11,6 +11,7 @@ import { MessageAdapter } from '../adapters/MessageAdapter';
 import { PatchGraph } from './PatchGraph';
 import { RuntimeObjectResolver } from './RuntimeObjectResolver';
 import { RuntimeObjectReconciler } from './RuntimeObjectReconciler';
+import { createSerialQueue } from '../utils/serial-queue';
 
 import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 
@@ -36,7 +37,7 @@ export class PatchRuntime {
 
   private objectResolver: RuntimeObjectResolver;
   private objectReconciler: RuntimeObjectReconciler;
-  private objectSync = Promise.resolve();
+  private objectSyncQueue = createSerialQueue();
 
   constructor(options: PatchRuntimeOptions) {
     const { objectService, audioService, eventBus, messageSystem, profilerCoordinator } =
@@ -138,6 +139,7 @@ export class PatchRuntime {
     this.graph.upsertObject(spec);
 
     await this.startObjectSync();
+    this.syncNodeTypes();
   }
 
   /**
@@ -150,12 +152,14 @@ export class PatchRuntime {
     this.graph.upsertObject({ ...spec, id: nodeId });
 
     await this.startObjectSync();
+    this.syncNodeTypes();
   }
 
   destroyObject(nodeId: string): void {
     this.graph.removeObject(nodeId);
     this.message.destroyObject(nodeId);
     this.destroyAudioObject(nodeId);
+    this.syncNodeTypes();
     this.syncConnections();
   }
 
@@ -255,19 +259,16 @@ export class PatchRuntime {
    * graph state.
    */
   private startObjectSync(): Promise<void> {
-    const sync = this.objectSync.catch(() => undefined).then(() => this.syncObjects());
-    this.objectSync = sync;
-
-    return sync;
+    return this.objectSyncQueue.runSerialized(() => this.syncObjects());
   }
 
   private async waitForObjectSync(): Promise<void> {
     let sync: Promise<void>;
 
     do {
-      sync = this.objectSync;
+      sync = this.objectSyncQueue.current;
       await sync;
-    } while (sync !== this.objectSync);
+    } while (sync !== this.objectSyncQueue.current);
   }
 
   private syncConnections(): void {

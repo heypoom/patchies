@@ -777,6 +777,31 @@ describe('PatchRuntime', () => {
     expect(connectionServices.directChannelService.updateEdges).not.toHaveBeenCalled();
   });
 
+  it('updates direct channel node types for direct object lifecycle changes', async () => {
+    const connectionServices = createFakeRuntimeConnectionServices();
+
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService: createFakeAudioService(),
+      ...connectionServices
+    });
+
+    await runtime.createObject({ id: 'worker-1', type: 'worker', data: {} });
+
+    expect(connectionServices.directChannelService.updateNodeTypes).toHaveBeenLastCalledWith([
+      { id: 'worker-1', type: 'worker' }
+    ]);
+
+    await runtime.updateObject('worker-1', { id: 'worker-1', type: 'js', data: {} });
+
+    expect(connectionServices.directChannelService.updateNodeTypes).toHaveBeenLastCalledWith([
+      { id: 'worker-1', type: 'js' }
+    ]);
+
+    runtime.destroyObject('worker-1');
+    expect(connectionServices.directChannelService.updateNodeTypes).toHaveBeenLastCalledWith([]);
+  });
+
   it('reconciles direct API object-kind transitions', async () => {
     const nodeId = 'direct-object-kind-transition';
     const objectService = createFakeObjectService();

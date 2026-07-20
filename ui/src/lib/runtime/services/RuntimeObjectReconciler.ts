@@ -5,6 +5,7 @@ import {
   getRuntimeAudioObjectDescriptorKey,
   getRuntimeObjectDescriptorKey
 } from '../utils/runtime-object-keys';
+import { createSerialQueue } from '../utils/serial-queue';
 
 import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 import type { RuntimeObjectDescriptor, RuntimeObjectSpec } from '../types/runtime-object';
@@ -27,7 +28,7 @@ export interface RuntimeObjectReconcilerRuntime {
 }
 
 export class RuntimeObjectReconciler {
-  private reconciliation = Promise.resolve();
+  private reconcileQueue = createSerialQueue();
 
   private current: RuntimeObjectSnapshot = {
     ids: new Set(),
@@ -59,18 +60,13 @@ export class RuntimeObjectReconciler {
    * for queueing purposes so a later snapshot can still recover the runtime.
    */
   reconcile(objects: RuntimeObjectSpec[]): Promise<void> {
-    const reconciliation = this.reconciliation
-      .catch(() => undefined)
-      .then(() => this.reconcileObjects(objects));
-
-    this.reconciliation = reconciliation;
-
-    return reconciliation;
+    return this.reconcileQueue.runSerialized(() => this.reconcileObjects(objects));
   }
 
   private async reconcileObjects(objects: RuntimeObjectSpec[]): Promise<void> {
     const nextObjectDescriptors = new Map<string, RuntimeObjectDescriptor>();
     const nextAudioDescriptors = new Map<string, RuntimeAudioObjectDescriptor>();
+
     const pendingRuntimeUpdates: Promise<void>[] = [];
 
     for (const object of objects) {
