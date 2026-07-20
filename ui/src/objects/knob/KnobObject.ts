@@ -33,7 +33,7 @@ export function getKnobData(data: {
   step?: unknown;
   runOnMount?: unknown;
 }): KnobData {
-  const value = getNumber(data.value, 0);
+  const value = getOptionalValue(data.value);
   const min = getNumber(data.min, 0);
   const isFloat = data.isFloat === true;
 
@@ -50,6 +50,10 @@ export function getKnobData(data: {
 
 function getNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function getOptionalValue(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function getOptionalNumber(value: unknown): number | null {

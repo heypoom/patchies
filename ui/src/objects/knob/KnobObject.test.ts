@@ -7,7 +7,6 @@ import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 function createKnob(initialData: Record<string, unknown> = {}) {
   const sent: unknown[] = [];
   const values: Record<string, unknown> = {
-    value: 0,
     min: 0,
     max: 100,
     defaultValue: 0,
@@ -51,6 +50,15 @@ describe('KnobObject', () => {
     vi.advanceTimersByTime(100);
 
     expect(sent).toEqual([12]);
+  });
+
+  it('outputs the default value on create when no value is saved', () => {
+    const { object, sent } = createKnob({ defaultValue: 64 });
+
+    object.create();
+    vi.advanceTimersByTime(100);
+
+    expect(sent).toEqual([64]);
   });
 
   it('snaps numeric messages, stores the value, and emits it', () => {
