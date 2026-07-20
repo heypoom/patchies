@@ -48,18 +48,20 @@ connection operations:
 runtime.setGraph({ objects, connections });
 runtime.getGraph();
 runtime.createObject(object);
-runtime.updateObject(object);
+runtime.updateObject(id, object);
 runtime.destroyObject(id);
 runtime.connect(connection);
 runtime.disconnect(connectionId);
 runtime.send(id, message);
 ```
 
-Message, audio, rendering, and editor compatibility details belong behind that
-interface. The editor reconciler is only one adapter that feeds this public
-runtime shape from XYFlow state. Internal helpers such as `PatchGraph` may store
-objects, connections, snapshots, and descriptor keys so `PatchRuntime` can stay a
-small facade, but those helpers are not the caller-facing interface.
+All public object mutations use `RuntimeObjectSpec`; parsed message-object
+descriptors and raw parameter lists are internal resolver details. Message,
+audio, rendering, and editor compatibility details belong behind that interface.
+The editor reconciler is only one adapter that feeds this public runtime shape
+from XYFlow state. Internal helpers such as `PatchGraph` may store objects,
+connections, snapshots, and descriptor keys so `PatchRuntime` can stay a small
+facade, but those helpers are not the caller-facing interface.
 
 Runtime objects implement a common lifecycle and message interface:
 
@@ -114,6 +116,11 @@ Object-box text objects can keep the expression shape:
 }
 ```
 
+For controls with both `value` and `defaultValue`, absence is meaningful:
+`value` remains optional, and an unset value means the view and runtime use
+`defaultValue`. Normalization must not replace an absent value with `0`, because
+presets may intentionally provide only a default value.
+
 Do not normalize text-object `params[]` into named object data as part of this
 spec. That can remain a future migration.
 
@@ -161,6 +168,26 @@ runtime.setGraph({
 Object-specific defaults, migrations, and compatibility logic belong to object
 definitions or registry entries, not the reconciler.
 
+## Runtime Synchronization
+
+`PatchRuntime` is the sole owner of graph-diff and runtime lifecycle work. It
+tracks the previous graph and resolves each public object spec to its message or
+audio runtime implementation. A kind change for one id destroys the previous
+implementation before the new one becomes active.
+
+Object synchronization is serialized. Each reconciliation waits for the prior
+one to settle before reading or mutating lifecycle state; a failed sync must not
+block a later graph update. `setGraph()` reconciles even when the supplied graph
+is unchanged, because an underlying runtime service node may have disappeared
+independently of the graph snapshot.
+
+Object and connection fan-out have separate responsibilities:
+
+- Object additions, removals, or type changes update direct-channel node types.
+- Connection changes update message, audio, rendering, and other edge consumers.
+- `setConnections()` waits for the latest object synchronization before sending
+  edges, so endpoints exist before they are wired.
+
 ## Runtime Context
 
 Runtime objects should use a data-first context:
@@ -193,8 +220,10 @@ interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
 3. Pass object-box `{ expr, name, params }` as runtime data for text objects.
 4. Move message/audio runtime lane selection out of `EditorRuntimeReconciler`.
 5. Move object and connection diffs into `PatchRuntime.setGraph`.
-6. Move edge updates behind `PatchRuntime` connection methods.
-7. Prefer data-first runtime objects; keep param helpers only for text-object compatibility.
+6. Serialize runtime reconciliation and keep node-type propagation separate from
+   connection fan-out.
+7. Move edge updates behind `PatchRuntime` connection methods.
+8. Prefer data-first runtime objects; keep param helpers only for text-object compatibility.
 
 ## Success Criteria
 
@@ -202,6 +231,10 @@ interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
 - `ObjectNode` cannot accidentally load visual-only objects.
 - `EditorRuntimeReconciler` does not maintain graph state, mention concrete object names, or mention runtime lanes.
 - Headless callers can create the same runtime graph the editor creates through reconciliation.
+- All public object mutations use `{ id, type, data }`; message descriptors are
+  internal runtime details.
+- Overlapping editor updates cannot leave a stale runtime object active, and
+  unchanged graph snapshots can restore missing service-owned nodes.
 - Text-object `params[]` continue to work for object-box expressions.
 
 ## Non-Goals
