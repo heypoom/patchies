@@ -53,11 +53,27 @@ describe('MicNode', () => {
     expect(constraints.deviceId).toHaveProperty('exact', 'test-device-id');
   });
 
-  it('should not include deviceId constraint when deviceId is not set', async () => {
+  it('requests the persisted device only when runtime creation starts', async () => {
     const micNode = new MicNode('test-node', audioContext);
 
-    // Wait for initial mic setup
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mockGetUserMedia).not.toHaveBeenCalled();
+
+    await micNode.create?.([null, 'test-device-id', false, false, false]);
+
+    expect(mockGetUserMedia).toHaveBeenCalledTimes(1);
+    expect(mockGetUserMedia).toHaveBeenCalledWith({
+      audio: expect.objectContaining({
+        deviceId: { exact: 'test-device-id' },
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      })
+    });
+  });
+
+  it('should not include deviceId constraint when deviceId is not set', async () => {
+    const micNode = new MicNode('test-node', audioContext);
+    await micNode.create?.([null, '', true, true, true]);
 
     const callArgs = mockGetUserMedia.mock.calls[mockGetUserMedia.mock.calls.length - 1];
     const constraints = callArgs[0].audio as MediaTrackConstraints;
@@ -69,9 +85,7 @@ describe('MicNode', () => {
 
   it('should include other constraint properties', async () => {
     const micNode = new MicNode('test-node', audioContext);
-
-    // Wait for initial mic setup
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await micNode.create?.([null, '', true, true, true]);
 
     const callArgs = mockGetUserMedia.mock.calls[mockGetUserMedia.mock.calls.length - 1];
     const constraints = callArgs[0].audio as MediaTrackConstraints;

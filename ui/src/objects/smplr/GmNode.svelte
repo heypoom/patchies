@@ -3,13 +3,12 @@
   import { onDestroy, onMount } from 'svelte';
   import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { GM_DEFAULT_SETTINGS, GM_SETTINGS_SCHEMA } from './gm-settings';
-  import type { GmAudioNode, GmMonitorSnapshot, GmRuntimeStatus } from './GmAudioNode';
+  import { GmAudioNode, type GmMonitorSnapshot, type GmRuntimeStatus } from './GmAudioNode';
 
   type GmNodeData = {
     settings?: Record<string, unknown>;
@@ -39,10 +38,9 @@
 
   const { updateNodeData } = useSvelteFlow();
   const audioService = AudioService.getInstance();
+  const runtimeViewRevisionTracker = getPatchRuntimeViewRevisionTracker();
 
-  let messageContext: MessageContext | null = null;
   let runtimeNode: GmAudioNode | null = null;
-  let disposed = false;
   let showSettings = $state(false);
   let status = $state<GmRuntimeStatus>({ state: 'idle' });
   let monitor = $state<GmMonitorSnapshot>({ channels: createInitialMonitorChannels() });
@@ -50,10 +48,6 @@
     ...GM_DEFAULT_SETTINGS,
     ...(node.data.settings ?? {})
   });
-
-  const handleMessage: MessageCallbackFn = (message) => {
-    audioService.send(node.id, 'message', message);
-  };
 
   function persistSettings(nextSettings: Record<string, unknown>) {
     settings = nextSettings;
@@ -89,51 +83,42 @@
     }));
   }
 
-  onMount(async () => {
-    disposed = false;
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
+  function detachRuntimeNode() {
+    if (!runtimeNode) return;
 
+    runtimeNode.onStatusChange = undefined;
+    runtimeNode.onMonitorChange = undefined;
+    runtimeNode = null;
+  }
+
+  $effect(() => {
+    runtimeViewRevisionTracker?.trackObjectViewRevision(node.id);
+
+    const nextRuntimeNode = audioService.getNodeById(node.id);
+    const gmNode = nextRuntimeNode instanceof GmAudioNode ? nextRuntimeNode : null;
+    if (gmNode === runtimeNode) return;
+
+    detachRuntimeNode();
+    if (!gmNode) return;
+
+    runtimeNode = gmNode;
+    runtimeNode.onStatusChange = (nextStatus) => {
+      status = nextStatus;
+    };
+    runtimeNode.onMonitorChange = (snapshot) => {
+      monitor = snapshot;
+    };
+    monitor = runtimeNode.getMonitorSnapshot();
+  });
+
+  onMount(async () => {
     if (!node.data.settings || !node.data.settingsSchema) {
       persistSettings(settings);
     }
-
-    await audioService.createNode(node.id, 'gm~', []);
-
-    if (disposed) {
-      audioService.removeNodeById(node.id);
-      return;
-    }
-
-    runtimeNode = audioService.getNodeById(node.id) as GmAudioNode | null;
-
-    if (runtimeNode) {
-      runtimeNode.onStatusChange = (nextStatus) => {
-        status = nextStatus;
-      };
-
-      runtimeNode.onMonitorChange = (snapshot) => {
-        monitor = snapshot;
-      };
-    }
-
-    audioService.send(node.id, 'settings', settings);
-
-    if (disposed) {
-      audioService.removeNodeById(node.id);
-      return;
-    }
-
-    monitor = runtimeNode?.getMonitorSnapshot() ?? monitor;
   });
 
   onDestroy(() => {
-    disposed = true;
-    runtimeNode = null;
-
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-    audioService.removeNodeById(node.id);
+    detachRuntimeNode();
   });
 </script>
 

@@ -3,18 +3,17 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import CommonExprLayout from '$objects/expression/CommonExprLayout.svelte';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import { useNodeDataTracker } from '$lib/history';
   import {
     bytebeatMessages,
+    BytebeatNode as BytebeatAudioNode,
     type BytebeatType,
-    type BytebeatSyntax,
-    type BytebeatNode as BytebeatAudioNode
+    type BytebeatSyntax
   } from '$objects/bytebeat~/BytebeatNode';
   import BytebeatSettings from '$objects/bytebeat~/BytebeatSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -54,8 +53,10 @@
   let showSettings = $state(false);
   let errorMessage = $state<string | null>(null);
 
-  let messageContext: MessageContext;
   const audioService = AudioService.getInstance();
+  const patchRuntime = getPatchRuntime();
+  const runtimeViewRevisionTracker = getPatchRuntimeViewRevisionTracker();
+  let attachedRuntimeNode: BytebeatAudioNode | null = null;
 
   const { updateNodeData } = useSvelteFlow();
   const { warnIfNoOutletConnection } = useAudioOutletWarning(getInitialNodeId());
@@ -70,37 +71,46 @@
   const autoEval = $derived(data.autoEval ?? true);
   const syncTransport = $derived(data.syncTransport ?? false);
 
-  const handleMessage: MessageCallbackFn = async (message) => {
-    await match(message)
-      .with(bytebeatMessages.play, async () => {
-        await play();
-      })
-      .with(bytebeatMessages.pause, () => {
-        pause();
-      })
-      .with(bytebeatMessages.stop, () => {
-        stop();
-      })
-      .with(bytebeatMessages.bang, async () => {
-        await bang();
-      })
+  const handleRuntimeMessage = (message: unknown) => {
+    match(message)
       .with(bytebeatMessages.expand, () => {
         layoutRef?.openExpandedEditor();
       })
       .with(bytebeatMessages.collapse, () => {
         layoutRef?.closeExpandedEditor();
       })
-      .with(bytebeatMessages.setType, async (msg) => {
-        await setType(msg.value);
-      })
-      .with(bytebeatMessages.setSyntax, async (msg) => {
-        await setSyntax(msg.value);
-      })
-      .with(bytebeatMessages.setSampleRate, async (msg) => {
-        await setSampleRate(msg.value);
-      })
       .otherwise(() => {});
   };
+
+  function detachRuntimeNode() {
+    if (!attachedRuntimeNode) return;
+
+    attachedRuntimeNode.onPlayStateChange = () => {};
+    attachedRuntimeNode.onError = () => {};
+    attachedRuntimeNode = null;
+  }
+
+  $effect(() => {
+    runtimeViewRevisionTracker?.trackObjectViewRevision(nodeId);
+
+    const runtimeNode = audioService.getNodeById(nodeId);
+    const bytebeatNode = runtimeNode instanceof BytebeatAudioNode ? runtimeNode : null;
+    if (bytebeatNode === attachedRuntimeNode) return;
+
+    detachRuntimeNode();
+    if (!bytebeatNode) return;
+
+    attachedRuntimeNode = bytebeatNode;
+    isPlaying = bytebeatNode.getIsPlaying();
+    bytebeatNode.onPlayStateChange = (playing) => {
+      isPlaying = playing;
+    };
+    bytebeatNode.onError = (error) => {
+      errorMessage = error;
+    };
+  });
+
+  $effect(() => patchRuntime?.subscribeObjectMessages(nodeId, handleRuntimeMessage) ?? undefined);
 
   async function play() {
     warnIfNoOutletConnection();
@@ -168,9 +178,6 @@
     const oldValue = syncTransport;
     updateNodeData(nodeId, { syncTransport: value });
     tracker.commit('syncTransport', oldValue, value);
-
-    const bytebeatNode = audioService.getNodeById(nodeId) as BytebeatAudioNode | undefined;
-    bytebeatNode?.setSyncTransport(value);
   }
 
   function togglePlay() {
@@ -187,28 +194,6 @@
   }
 
   onMount(() => {
-    messageContext = new MessageContext(nodeId);
-    messageContext.queue.addCallback(handleMessage);
-
-    audioService.createNode(nodeId, 'bytebeat~', [expr, bytebeatType, syntax, sampleRate]);
-
-    // Set up callbacks for state updates
-    const bytebeatNode = audioService.getNodeById(nodeId) as BytebeatAudioNode | undefined;
-    if (bytebeatNode) {
-      bytebeatNode.onPlayStateChange = (playing: boolean) => {
-        isPlaying = playing;
-      };
-
-      bytebeatNode.onError = (error: string | null) => {
-        errorMessage = error;
-      };
-
-      // Sync initial syncTransport state from node data
-      if (syncTransport) {
-        bytebeatNode.setSyncTransport(true);
-      }
-    }
-
     if (isEditing) {
       setTimeout(() => layoutRef?.focus(), 10);
     }
@@ -229,9 +214,7 @@
   });
 
   onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
-    audioService.removeNodeById(nodeId);
+    detachRuntimeNode();
   });
 </script>
 

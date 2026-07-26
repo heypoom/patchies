@@ -4,11 +4,8 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import WaveformDisplay from '$objects/sampler~/WaveformDisplay.svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match } from 'ts-pattern';
-  import { samplerMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import { downloadAsWav } from '$lib/audio/wav-encoder';
   import {
     createSamplerPlaybackMessage,
@@ -20,8 +17,8 @@
     removeSamplerPlaybackProgressVoice,
     type SamplerPlaybackProgressVoice
   } from '$objects/sampler~/sampler-playback-progress';
+  import { SamplerNode as SamplerNodeV2 } from '$objects/sampler~/SamplerNode';
   import type {
-    SamplerNode as SamplerNodeV2,
     SamplerPlaybackStartEvent,
     SamplerPlaybackStopEvent
   } from '$objects/sampler~/SamplerNode';
@@ -64,8 +61,9 @@
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(10);
-  let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
+  const patchRuntime = getPatchRuntime();
+  const runtimeViewRevisionTracker = getPatchRuntimeViewRevisionTracker();
   let v2Node: SamplerNodeV2 | null = null;
   let isRecording = $state(false);
   let recordingInterval: ReturnType<typeof setInterval> | null = null;
@@ -108,11 +106,6 @@
 
       const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
 
-      // Set the audio buffer on the V2 node
-      if (v2Node) {
-        v2Node.audioBuffer = decodedBuffer;
-      }
-
       audioBuffer = decodedBuffer;
       const duration = decodedBuffer.duration;
 
@@ -124,8 +117,6 @@
         loopEnd: duration
       });
 
-      // Update AudioService's loop end point
-      audioService.send(node.id, 'message', { type: 'setEnd', value: duration });
       vfsMedia.markLoaded();
     } catch (error) {
       console.error('Failed to load audio file:', error);
@@ -137,9 +128,6 @@
    * Creates AudioBuffer for UI display and sends to audio node.
    */
   function handleFloat32ArrayInput(samples: Float32Array) {
-    // Send to audio node first
-    audioService.send(node.id, 'message', samples);
-
     // Create AudioBuffer for UI waveform display
     const sampleRate = audioService.getAudioContext().sampleRate;
     const buffer = audioService.getAudioContext().createBuffer(1, samples.length, sampleRate);
@@ -149,16 +137,7 @@
     audioBuffer = buffer;
     const duration = buffer.duration;
 
-    updateNodeData(node.id, {
-      ...node.data,
-      hasRecording: true,
-      duration: duration,
-      loopStart: 0,
-      loopEnd: duration
-    });
-
-    // Update AudioService's loop end point
-    audioService.send(node.id, 'message', { type: 'setEnd', value: duration });
+    persistRuntimeBufferMetadata(buffer, duration);
   }
 
   // Derive all state from node.data instead of duplicating
@@ -180,78 +159,42 @@
   const width = $derived(node.width || 190);
   const height = $derived(node.height || 35);
 
-  const handleMessage: MessageCallbackFn = (message) => {
-    // Handle Float32Array directly - update UI state
+  const handleRuntimeMessage = (message: unknown) => {
     if (message instanceof Float32Array) {
       handleFloat32ArrayInput(message);
-      return;
     }
-
-    if (typeof message === 'number' && Number.isFinite(message) && message >= 0) {
-      playRecording({ type: 'bang', value: message });
-      return;
-    }
-
-    match(message)
-      .with(samplerMessages.record, () => startRecording())
-      .with(samplerMessages.end, () => stopRecording())
-      .with(samplerMessages.bang, (msg) => playRecording(msg))
-      .with(samplerMessages.stop, () => stopPlayback())
-      .with(samplerMessages.loopWithOptionalPoints, (msg) => {
-        updateNodeData(node.id, {
-          ...node.data,
-          ...(msg.start !== undefined ? { loopStart: msg.start } : {}),
-          ...(msg.end !== undefined ? { loopEnd: msg.end } : {})
-        });
-
-        toggleLoop();
-      })
-      .with(samplerMessages.loopOnWithOptionalPoints, (msg) => {
-        updateNodeData(node.id, {
-          ...node.data,
-          loop: true,
-          ...(msg.start !== undefined ? { loopStart: msg.start } : {}),
-          ...(msg.end !== undefined ? { loopEnd: msg.end } : {})
-        });
-
-        audioService.send(node.id, 'message', {
-          type: 'loop',
-          ...(msg.start !== undefined ? { start: msg.start } : {}),
-          ...(msg.end !== undefined ? { end: msg.end } : {})
-        });
-      })
-      .with(samplerMessages.loopOff, (msg) => {
-        updateNodeData(node.id, { ...node.data, loop: false });
-        audioService.send(node.id, 'message', msg);
-      })
-      .with(samplerMessages.setStart, (msg) => {
-        updateNodeData(node.id, { ...node.data, loopStart: msg.value });
-        audioService.send(node.id, 'message', msg);
-      })
-      .with(samplerMessages.setEnd, (msg) => {
-        updateNodeData(node.id, { ...node.data, loopEnd: msg.value });
-        audioService.send(node.id, 'message', msg);
-      })
-      .with(samplerMessages.setGain, (msg) => {
-        updateNodeData(node.id, { ...node.data, gain: msg.value });
-        audioService.send(node.id, 'message', msg);
-      })
-      .with(samplerMessages.setPlaybackRate, (msg) => {
-        updateNodeData(node.id, { ...node.data, playbackRate: msg.value });
-        audioService.send(node.id, 'message', msg);
-      })
-      .with(samplerMessages.setDetune, (msg) => {
-        updateNodeData(node.id, { ...node.data, detune: msg.value });
-        audioService.send(node.id, 'message', msg);
-      })
-      .with(samplerMessages.setNoteOffMode, (msg) => {
-        updateNodeData(node.id, { ...node.data, noteOffMode: msg.value });
-        audioService.send(node.id, 'message', msg);
-      })
-      .with(samplerMessages.download, (msg) => downloadBuffer(msg.name))
-      .with(samplerMessages.load, ({ src }) => vfsMedia.loadFromPath(src))
-      .otherwise(() => audioService.send(node.id, 'message', message));
   };
+
+  $effect(() => {
+    runtimeViewRevisionTracker?.trackObjectViewRevision(node.id);
+
+    const runtimeNode = audioService.getNodeById(node.id);
+    const samplerNode = runtimeNode instanceof SamplerNodeV2 ? runtimeNode : null;
+    if (samplerNode === v2Node) return;
+
+    if (v2Node) {
+      v2Node.onPlaybackStart = undefined;
+      v2Node.onPlaybackStop = undefined;
+      v2Node.onRecordingComplete = undefined;
+    }
+
+    v2Node = samplerNode;
+    if (!v2Node) return;
+
+    v2Node.onPlaybackStart = startPlaybackProgressBar;
+    v2Node.onPlaybackStop = stopPlaybackProgressBar;
+    v2Node.onRecordingComplete = (recordedBuffer) => {
+      audioBuffer = recordedBuffer;
+      persistRuntimeBufferMetadata(recordedBuffer, recordedBuffer.duration);
+    };
+    audioBuffer = v2Node.audioBuffer;
+
+    if (audioBuffer && !hasRecording) {
+      persistRuntimeBufferMetadata(audioBuffer, audioBuffer.duration);
+    }
+  });
+
+  $effect(() => patchRuntime?.subscribeObjectMessages(node.id, handleRuntimeMessage) ?? undefined);
 
   function startRecording() {
     if (isRecording) return;
@@ -265,7 +208,10 @@
     // Clear old audio buffer and waveform
     audioBuffer = null;
 
-    // Reset start/end points for new recording
+    audioService.send(node.id, 'message', { type: 'record' });
+    patchRuntime?.suppressNextAudioObjectSync(node.id);
+
+    // Reset start/end points for the new recording without recreating its runtime node.
     updateNodeData(node.id, {
       ...node.data,
       hasRecording: false,
@@ -285,7 +231,6 @@
       source.connect(recordingAnalyser);
     }
 
-    audioService.send(node.id, 'message', { type: 'record' });
     isRecording = true;
 
     // Start duration timer
@@ -296,7 +241,7 @@
     }, 100);
   }
 
-  async function stopRecording() {
+  function stopRecording() {
     if (!isRecording) return;
 
     audioService.send(node.id, 'message', { type: 'end' });
@@ -316,38 +261,20 @@
       recordingAnalyser.disconnect();
       recordingAnalyser = null;
     }
+  }
 
-    // Wait for the MediaRecorder to process the recording
-    // Poll for the audioBuffer to be available
-    let attempts = 0;
-    const maxAttempts = 50; // 5 seconds max wait
+  function persistRuntimeBufferMetadata(buffer: AudioBuffer, duration: number) {
+    audioBuffer = buffer;
+    audioService.send(node.id, 'message', { type: 'setEnd', value: duration });
+    patchRuntime?.suppressNextAudioObjectSync(node.id);
 
-    while (attempts < maxAttempts) {
-      if (v2Node && v2Node.audioBuffer) {
-        audioBuffer = v2Node.audioBuffer;
-        const duration = audioBuffer.duration;
-
-        updateNodeData(node.id, {
-          ...node.data,
-          hasRecording: true,
-          duration: duration,
-          loopEnd: duration
-        });
-
-        // Update AudioSystem's loop end point as well
-        audioService.send(node.id, 'message', {
-          type: 'setEnd',
-          value: duration
-        });
-
-        return;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      attempts++;
-    }
-
-    console.error('Failed to retrieve audio buffer after recording');
+    updateNodeData(node.id, {
+      ...node.data,
+      hasRecording: true,
+      duration,
+      loopStart: 0,
+      loopEnd: duration
+    });
   }
 
   function playRecording(trigger: SamplerPlaybackTrigger = { type: 'bang' }) {
@@ -433,36 +360,41 @@
 
   function updateLoopStart(value: number) {
     const newLoopStart = Math.max(0, Math.min(value, loopEnd));
-    updateNodeData(node.id, { ...node.data, loopStart: newLoopStart });
     audioService.send(node.id, 'message', { type: 'setStart', value: newLoopStart });
+    persistRuntimeSettings({ loopStart: newLoopStart });
   }
 
   function updateLoopEnd(value: number) {
     const newLoopEnd = Math.max(loopStart, Math.min(value, recordingDuration));
-    updateNodeData(node.id, { ...node.data, loopEnd: newLoopEnd });
     audioService.send(node.id, 'message', { type: 'setEnd', value: newLoopEnd });
+    persistRuntimeSettings({ loopEnd: newLoopEnd });
   }
 
   function updateGain(value: number) {
-    updateNodeData(node.id, { ...node.data, gain: value });
     audioService.send(node.id, 'message', { type: 'setGain', value });
+    persistRuntimeSettings({ gain: value });
   }
 
   function updatePlaybackRate(value: number) {
-    updateNodeData(node.id, { ...node.data, playbackRate: value });
     audioService.send(node.id, 'message', { type: 'setPlaybackRate', value });
+    persistRuntimeSettings({ playbackRate: value });
   }
 
   function updateDetune(value: number) {
-    updateNodeData(node.id, { ...node.data, detune: value });
     audioService.send(node.id, 'message', { type: 'setDetune', value });
+    persistRuntimeSettings({ detune: value });
   }
 
   function updateNoteOffMode(value: 'one-shot' | 'held') {
     const oldValue = noteOffMode;
-    updateNodeData(node.id, { ...node.data, noteOffMode: value });
     audioService.send(node.id, 'message', { type: 'setNoteOffMode', value });
+    persistRuntimeSettings({ noteOffMode: value });
     tracker.commit('noteOffMode', oldValue, value);
+  }
+
+  function persistRuntimeSettings(updates: Record<string, unknown>) {
+    patchRuntime?.suppressNextAudioObjectSync(node.id);
+    updateNodeData(node.id, { ...node.data, ...updates });
   }
 
   function downloadBuffer(name?: string) {
@@ -499,9 +431,7 @@
       }
     ]);
 
-    updateNodeData(node.id, nextSettings);
-
-    // Update AudioService
+    // Update the live audio node before persisting its matching runtime settings.
     audioService.send(node.id, 'message', { type: 'setStart', value: 0 });
     audioService.send(node.id, 'message', { type: 'setEnd', value: recordingDuration });
     audioService.send(node.id, 'message', { type: 'loopOff' });
@@ -509,54 +439,10 @@
     audioService.send(node.id, 'message', { type: 'setPlaybackRate', value: 1 });
     audioService.send(node.id, 'message', { type: 'setDetune', value: 0 });
     audioService.send(node.id, 'message', { type: 'setNoteOffMode', value: 'one-shot' });
+    persistRuntimeSettings(nextSettings);
   }
 
   onMount(async () => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
-
-    audioService.createNode(node.id, 'sampler~', []);
-
-    // Get the V2 node reference from AudioService
-    v2Node = audioService.getNodeById(node.id) as SamplerNodeV2;
-
-    // Initialize with playbackRate and detune from node.data
-    if (v2Node) {
-      v2Node.onPlaybackStart = startPlaybackProgressBar;
-      v2Node.onPlaybackStop = stopPlaybackProgressBar;
-
-      if (node.data.gain !== undefined) {
-        audioService.send(node.id, 'message', { type: 'setGain', value: node.data.gain });
-      }
-
-      // Send initialization messages for playbackRate and detune
-      if (node.data.playbackRate) {
-        audioService.send(node.id, 'message', {
-          type: 'setPlaybackRate',
-          value: node.data.playbackRate
-        });
-      }
-
-      if (node.data.detune) {
-        audioService.send(node.id, 'message', { type: 'setDetune', value: node.data.detune });
-      }
-
-      audioService.send(node.id, 'message', {
-        type: 'setNoteOffMode',
-        value: node.data.noteOffMode ?? 'one-shot'
-      });
-
-      // Get audio buffer if it exists
-      if (v2Node.audioBuffer) {
-        audioBuffer = v2Node.audioBuffer;
-      }
-    }
-
-    // Load audio from VFS path (handles permissions, relink, etc.)
-    if (node.data.vfsPath) {
-      await vfsMedia.loadFromVfsPath(node.data.vfsPath);
-    }
-
     if (contentContainer) {
       resizeObserver = new ResizeObserver(updateContentWidth);
       resizeObserver.observe(contentContainer);
@@ -571,23 +457,11 @@
     if (recordingInterval) clearInterval(recordingInterval);
     if (playbackInterval) clearInterval(playbackInterval);
 
-    // Stop any active recording/playback before cleanup
-    if (isRecording) {
-      audioService.send(node.id, 'message', { type: 'end' });
-    }
-
-    if (isPlaying) {
-      audioService.send(node.id, 'message', { type: 'stop' });
-    }
-
     if (v2Node) {
       v2Node.onPlaybackStart = undefined;
       v2Node.onPlaybackStop = undefined;
+      v2Node = null;
     }
-
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-    audioService.removeNodeById(node.id);
   });
 
   function updateContentWidth() {

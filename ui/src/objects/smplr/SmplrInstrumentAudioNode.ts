@@ -13,10 +13,19 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   static type = 'smplr-instrument~';
   static group: AudioNodeGroup = 'processors';
   static headless = true;
+  static runtimeManaged = true;
   static description = 'Shared smplr sampled-instrument runtime';
 
   static inlets: ObjectInlet[] = [
-    { name: 'message', type: 'message', description: 'MIDI and trigger messages' }
+    { name: 'message', type: 'message', description: 'MIDI and trigger messages' },
+    {
+      name: 'settings',
+      type: 'any',
+      description: 'Persisted instrument settings',
+      defaultValue: {},
+      hideInlet: true,
+      hideDocs: true
+    }
   ];
 
   static outlets: ObjectOutlet[] = [
@@ -43,9 +52,7 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   }
 
   async create(params: unknown[]): Promise<void> {
-    const [settings] = params;
-    if (settings === undefined) return;
-
+    const settings = params.length === 1 ? params[0] : params[1];
     await this.reload(asSettings(settings));
   }
 
@@ -201,6 +208,7 @@ export function createSmplrAudioNodeClass(descriptor: SmplrInstrumentDescriptor)
     static type = descriptor.type;
     static group: AudioNodeGroup = 'processors';
     static description = descriptor.description;
+    static runtimeManaged = true;
     static inlets = SmplrInstrumentAudioNode.inlets;
     static outlets = SmplrInstrumentAudioNode.outlets;
 

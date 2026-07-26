@@ -84,6 +84,18 @@ Keep editor-facing registries distinct:
 - `AUDIO_OBJECTS`: audio definitions and adapters
 - `RUNTIME_OBJECTS`: combined registration surface for runtime execution and schema generation
 
+A dedicated audio Svelte node opts into runtime ownership only when its object
+must continue producing or consuming graph-visible behavior while the view is
+unmounted. Audio monitors whose data is consumed solely by their own canvas stay
+view-owned and may pause when culled. A runtime-managed audio class owns graph
+messages, audio lifecycle, persisted runtime state, and downstream output; its
+Svelte view owns only drawing and editor-local interaction state.
+
+Audio I/O nodes follow the same boundary: a runtime-managed microphone owns the
+capture stream and its constraints, while a runtime-managed output owns the
+patch-to-device route and selected sink. Their Svelte views may enumerate
+devices and persist user selections, but must not create or destroy audio nodes.
+
 Important rules:
 
 - `ObjectNode` searches and instantiates `TEXT_OBJECTS`, plus supported
@@ -91,6 +103,10 @@ Important rules:
 - `ObjectNode` must exclude dedicated `VISUAL_OBJECTS`; those stay dedicated
   Svelte node types.
 - Schema/docs generation may include visual objects without making them object-box loadable.
+- When a legacy message handle does not provide numeric inlet metadata, the
+  audio adapter may route it only when the audio definition has exactly one
+  message inlet. Definitions with multiple message inlets must keep explicit
+  inlet handle IDs.
 
 ## Data Ownership
 

@@ -1,9 +1,8 @@
 <script lang="ts">
   import { Settings, X, Volume2 } from '@lucide/svelte/icons';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { AudioService } from '$lib/audio/v2/AudioService';
   import { AudioOutputNode, type AudioOutputSettings } from '$objects/out~/AudioOutputNode';
   import {
     audioOutputDevices,
@@ -24,7 +23,6 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  let audioService = AudioService.getInstance();
 
   function getInitialNodeId() {
     return nodeId;
@@ -38,7 +36,6 @@
   const tracker = useNodeDataTracker(getInitialNodeId());
 
   let showSettings = $state(false);
-  let audioOutputNode: AudioOutputNode | null = $state(null);
 
   // Local form state
   let deviceId = $state(getInitialDeviceId());
@@ -55,28 +52,10 @@
     if (supportsDeviceSelection && !$hasEnumeratedOutputDevices) {
       await enumerateAudioOutputDevices();
     }
-
-    const node = await audioService.createNode(nodeId, 'out~');
-
-    if (node && node instanceof AudioOutputNode) {
-      audioOutputNode = node;
-
-      // Apply saved settings
-      if (data.deviceId) {
-        audioOutputNode.updateSettings({ deviceId: data.deviceId });
-      }
-    }
-  });
-
-  onDestroy(() => {
-    audioService.removeNodeById(nodeId);
   });
 
   function applySettings() {
-    if (!audioOutputNode) return;
-
     const settings = { deviceId };
-    audioOutputNode.updateSettings(settings);
     updateNodeData(nodeId, settings);
   }
 
@@ -167,7 +146,7 @@
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:border-zinc-400 focus:outline-none"
             >
               <option value="">Default</option>
-              {#each $audioOutputDevices as device}
+              {#each $audioOutputDevices as device (device.id)}
                 <option value={device.id}>{device.name}</option>
               {/each}
             </select>

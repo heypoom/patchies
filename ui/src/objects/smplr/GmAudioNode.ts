@@ -76,10 +76,19 @@ const GM_PERCUSSION_CHANNEL = 10;
 export class GmAudioNode implements AudioNodeV2 {
   static type = 'gm~';
   static group: AudioNodeGroup = 'processors';
+  static runtimeManaged = true;
   static description = 'Multi-channel General MIDI sampled instrument';
 
   static inlets: ObjectInlet[] = [
-    { name: 'message', type: 'message', description: 'Channel-aware MIDI messages' }
+    { name: 'message', type: 'message', description: 'Channel-aware MIDI messages' },
+    {
+      name: 'settings',
+      type: 'any',
+      description: 'Persisted General MIDI settings',
+      defaultValue: {},
+      hideInlet: true,
+      hideDocs: true
+    }
   ];
 
   static outlets: ObjectOutlet[] = [
@@ -117,7 +126,7 @@ export class GmAudioNode implements AudioNodeV2 {
   }
 
   async create(params: unknown[]): Promise<void> {
-    const [settings] = params;
+    const settings = params.length === 1 ? params[0] : params[1];
     await this.applySettings(asGmSettings(settings));
   }
 

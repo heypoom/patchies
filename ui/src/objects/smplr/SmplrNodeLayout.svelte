@@ -6,8 +6,7 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import type { SettingsSchema } from '$lib/settings';
 
   import type { SmplrRuntimeStatus } from './SmplrInstrumentAudioNode';
@@ -41,8 +40,8 @@
 
   const { updateNodeData } = useSvelteFlow();
   const audioService = AudioService.getInstance();
+  const runtimeViewRevisionTracker = getPatchRuntimeViewRevisionTracker();
 
-  let messageContext: MessageContext | null = null;
   let runtimeNode: SmplrLayoutRuntime | null = null;
 
   let status = $state<SmplrRuntimeStatus | GmRuntimeStatus>({ state: 'idle' });
@@ -68,9 +67,6 @@
 
     return instrumentName;
   });
-
-  const handleMessage: MessageCallbackFn = (message) =>
-    audioService.send(node.id, 'message', message);
 
   function persistSettings(nextSettings: Record<string, unknown>) {
     settings = nextSettings;
@@ -155,10 +151,55 @@
     }
   }
 
-  onMount(async () => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
+  function detachRuntimeNode() {
+    if (!runtimeNode) return;
 
+    runtimeNode.onStatusChange = undefined;
+    runtimeNode.onSettingsPatch = undefined;
+    runtimeNode = null;
+  }
+
+  $effect(() => {
+    runtimeViewRevisionTracker?.trackObjectViewRevision(node.id);
+
+    const nextRuntimeNode = audioService.getNodeById(node.id) as SmplrLayoutRuntime | null;
+    if (nextRuntimeNode === runtimeNode) return;
+
+    detachRuntimeNode();
+    if (!nextRuntimeNode) return;
+
+    runtimeNode = nextRuntimeNode;
+    runtimeNode.onStatusChange = (nextStatus) => {
+      status = nextStatus;
+
+      if (
+        nextStatus.state === 'ready' &&
+        'instrumentNames' in nextStatus &&
+        nextStatus.instrumentNames?.length
+      ) {
+        const current = node.data.settings ?? {};
+        const currentInstrumentNames = Array.isArray(current.instrumentNames)
+          ? current.instrumentNames
+          : [];
+
+        const hasSameInstrumentNames =
+          currentInstrumentNames.length === nextStatus.instrumentNames.length &&
+          currentInstrumentNames.every(
+            (name, index) => name === nextStatus.instrumentNames?.[index]
+          );
+
+        if (!hasSameInstrumentNames) {
+          persistSettings({ ...current, instrumentNames: nextStatus.instrumentNames });
+        }
+      }
+    };
+
+    runtimeNode.onSettingsPatch = (patch) => {
+      void applySettingsPatch(patch);
+    };
+  });
+
+  onMount(async () => {
     const catalogPatch = await loadInstrumentCatalogPatch();
     const initialSettings = { ...settings, ...catalogPatch };
     const hasCatalogPatch = Object.keys(catalogPatch).length > 0;
@@ -166,39 +207,10 @@
     if (!node.data.settings || !node.data.settingsSchema || hasCatalogPatch) {
       persistSettings(initialSettings);
     }
-
-    await audioService.createNode(node.id, descriptor.type, []);
-
-    runtimeNode = audioService.getNodeById(node.id) as SmplrLayoutRuntime | null;
-
-    if (runtimeNode) {
-      runtimeNode.onStatusChange = (nextStatus) => {
-        status = nextStatus;
-
-        if (
-          nextStatus.state === 'ready' &&
-          'instrumentNames' in nextStatus &&
-          nextStatus.instrumentNames?.length
-        ) {
-          const current = node.data.settings ?? {};
-
-          persistSettings({ ...current, instrumentNames: nextStatus.instrumentNames });
-        }
-      };
-
-      runtimeNode.onSettingsPatch = (patch) => {
-        applySettingsPatch(patch);
-      };
-    }
-
-    audioService.send(node.id, 'settings', initialSettings);
   });
 
   onDestroy(() => {
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-
-    audioService.removeNodeById(node.id);
+    detachRuntimeNode();
   });
 </script>
 

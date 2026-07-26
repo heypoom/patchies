@@ -18,6 +18,7 @@ export const DEFAULT_MIC_SETTINGS: MicSettings = {
 export class MicNode implements AudioNodeV2 {
   static type = 'mic~';
   static group: AudioNodeGroup = 'sources';
+  static runtimeManaged = true;
   static description = 'Captures audio from microphone with bang to restart';
 
   static inlets: ObjectInlet[] = [
@@ -26,6 +27,38 @@ export class MicNode implements AudioNodeV2 {
       type: 'message',
       description: 'Control messages',
       messages: [{ schema: Bang, description: 'Restart microphone input' }]
+    },
+    {
+      name: 'deviceId',
+      type: 'string',
+      description: 'Preferred microphone device identifier',
+      defaultValue: '',
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'echoCancellation',
+      type: 'bool',
+      description: 'Enable echo cancellation',
+      defaultValue: true,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'noiseSuppression',
+      type: 'bool',
+      description: 'Enable noise suppression',
+      defaultValue: true,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'autoGainControl',
+      type: 'bool',
+      description: 'Enable automatic gain control',
+      defaultValue: true,
+      hideInlet: true,
+      hideDocs: true
     }
   ];
 
@@ -47,9 +80,28 @@ export class MicNode implements AudioNodeV2 {
     this.audioContext = audioContext;
     this.audioNode = audioContext.createGain();
     this.audioNode.gain.value = 1.0;
+  }
 
-    // Request microphone on creation
-    this.restartMic();
+  async create(params: unknown[]): Promise<void> {
+    const [, deviceId, echoCancellation, noiseSuppression, autoGainControl] = params;
+
+    this.settings = {
+      deviceId: typeof deviceId === 'string' ? deviceId : undefined,
+      echoCancellation:
+        typeof echoCancellation === 'boolean'
+          ? echoCancellation
+          : DEFAULT_MIC_SETTINGS.echoCancellation,
+      noiseSuppression:
+        typeof noiseSuppression === 'boolean'
+          ? noiseSuppression
+          : DEFAULT_MIC_SETTINGS.noiseSuppression,
+      autoGainControl:
+        typeof autoGainControl === 'boolean'
+          ? autoGainControl
+          : DEFAULT_MIC_SETTINGS.autoGainControl
+    };
+
+    await this.restartMic();
   }
 
   send(key: string, message: unknown): void {

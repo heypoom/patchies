@@ -8,6 +8,11 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 import { ScopeAudioNode } from '$objects/scope~/ScopeAudioNode';
 import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
+import { BytebeatNode } from '$objects/bytebeat~/BytebeatNode';
+import { SamplerNode } from '$objects/sampler~/SamplerNode';
+import { PianoAudioNode } from '$objects/smplr/audio-nodes';
+import { AudioOutputNode } from '$objects/out~/AudioOutputNode';
+import { MicNode } from '$objects/mic~/MicNode';
 
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
@@ -48,6 +53,10 @@ afterEach(() => {
 });
 
 const isScope = (objectType: string) => objectType === 'scope~';
+const isBytebeat = (objectType: string) => objectType === 'bytebeat~';
+const isSampler = (objectType: string) => objectType === 'sampler~';
+const isPiano = (objectType: string) => objectType === 'piano~';
+const isAudioIo = (objectType: string) => objectType === 'out~' || objectType === 'mic~';
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
 
@@ -495,6 +504,35 @@ describe('AudioAdapter', () => {
 
     expect(audioService.send).toHaveBeenCalledWith(tapNodeId, 'bufferSize', 1024);
     expect(onAudioObjectDataChange).toHaveBeenCalledWith(tapNodeId, { bufferSize: 1024 });
+
+    runtime.destroy();
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
+  });
+
+  it('routes legacy single-message-inlet edges to audio objects', () => {
+    const nodeId = 'bytebeat-command-target';
+    const sourceNodeId = 'bytebeat-command-source';
+    const audioService = createFakeAudioService();
+    const runtime = new AudioAdapter({ audioService, isAudioObject: isBytebeat });
+    const messageSystem = MessageSystem.getInstance();
+
+    AudioRegistry.getInstance().register(BytebeatNode);
+    messageSystem.registerNode(sourceNodeId);
+    messageSystem.updateEdges([
+      {
+        id: 'source-to-bytebeat-command',
+        source: sourceNodeId,
+        target: nodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in'
+      }
+    ]);
+
+    runtime.upsertAudioObject({ id: nodeId, objectType: 'bytebeat~', params: [] });
+    messageSystem.sendMessage(sourceNodeId, { type: 'play' });
+
+    expect(audioService.send).toHaveBeenCalledWith(nodeId, 'control', { type: 'play' });
 
     runtime.destroy();
     messageSystem.unregisterNode(sourceNodeId);
@@ -1094,6 +1132,160 @@ describe('EditorRuntimeReconciler', () => {
     ]);
 
     expect(audioService.createNode).not.toHaveBeenCalled();
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated bytebeat nodes with persisted runtime data', async () => {
+    const nodeId = 'bytebeat-editor-runtime-test';
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isBytebeat
+    });
+
+    AudioRegistry.getInstance().register(BytebeatNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: nodeId,
+        type: 'bytebeat~',
+        position: { x: 0, y: 0 },
+        data: {
+          expr: 't * 3',
+          type: 'floatbeat',
+          syntax: 'function',
+          sampleRate: 11025,
+          syncTransport: true
+        }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'bytebeat~', [
+      null,
+      't * 3',
+      'floatbeat',
+      'function',
+      11025,
+      true
+    ]);
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated samplers with persisted playback data', async () => {
+    const nodeId = 'sampler-editor-runtime-test';
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isSampler
+    });
+
+    AudioRegistry.getInstance().register(SamplerNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: nodeId,
+        type: 'sampler~',
+        position: { x: 0, y: 0 },
+        data: {
+          vfsPath: 'user://samples/kick.wav',
+          loopStart: 0.25,
+          loopEnd: 1.5,
+          gain: 0.8,
+          playbackRate: 1.25,
+          detune: -50,
+          noteOffMode: 'held'
+        }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'sampler~', [
+      null,
+      'user://samples/kick.wav',
+      0.25,
+      1.5,
+      0.8,
+      1.25,
+      -50,
+      'held'
+    ]);
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated smplr instruments with persisted settings', async () => {
+    const nodeId = 'piano-editor-runtime-test';
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isPiano
+    });
+
+    AudioRegistry.getInstance().register(PianoAudioNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: nodeId,
+        type: 'piano~',
+        position: { x: 0, y: 0 },
+        data: { settings: { velocity: 88, volume: 72 } }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'piano~', [
+      null,
+      { velocity: 88, volume: 72 }
+    ]);
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated audio I/O nodes with persisted device settings', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isAudioIo
+    });
+
+    AudioRegistry.getInstance().register(AudioOutputNode);
+    AudioRegistry.getInstance().register(MicNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'output-editor-runtime-test',
+        type: 'out~',
+        position: { x: 0, y: 0 },
+        data: { deviceId: 'speakers-1' }
+      },
+      {
+        id: 'mic-editor-runtime-test',
+        type: 'mic~',
+        position: { x: 0, y: 0 },
+        data: {
+          deviceId: 'microphone-1',
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith('output-editor-runtime-test', 'out~', [
+      null,
+      'speakers-1'
+    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith('mic-editor-runtime-test', 'mic~', [
+      null,
+      'microphone-1',
+      false,
+      false,
+      false
+    ]);
 
     runtime.destroy();
   });

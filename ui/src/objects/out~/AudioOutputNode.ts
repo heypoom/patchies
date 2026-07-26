@@ -19,10 +19,19 @@ export const DEFAULT_AUDIO_OUTPUT_SETTINGS: AudioOutputSettings = {
 export class AudioOutputNode implements AudioNodeV2 {
   static type = 'out~';
   static group: AudioNodeGroup = 'destinations';
+  static runtimeManaged = true;
   static description = 'Audio output to speakers';
 
   static inlets: ObjectInlet[] = [
-    { name: 'in', type: 'signal', description: 'Audio signal to output' }
+    { name: 'in', type: 'signal', description: 'Audio signal to output' },
+    {
+      name: 'deviceId',
+      type: 'string',
+      description: 'Preferred output device identifier',
+      defaultValue: '',
+      hideInlet: true,
+      hideDocs: true
+    }
   ];
 
   static outlets: ObjectOutlet[] = [];
@@ -40,7 +49,14 @@ export class AudioOutputNode implements AudioNodeV2 {
     this.audioNode.gain.value = 1.0;
   }
 
-  create(): void {}
+  async create(params: unknown[]): Promise<void> {
+    const [, deviceId] = params;
+
+    if (typeof deviceId === 'string') {
+      await this.updateSettings({ deviceId });
+    }
+  }
+
   send(): void {}
 
   /**
@@ -51,14 +67,14 @@ export class AudioOutputNode implements AudioNodeV2 {
   async updateSettings(newSettings: Partial<AudioOutputSettings>): Promise<void> {
     this.settings = { ...this.settings, ...newSettings };
 
-    if (!newSettings.deviceId) return;
+    if (newSettings.deviceId === undefined) return;
 
     // setSinkId is available on AudioContext in Chrome 110+
     if ('setSinkId' in this.audioContext) {
       try {
         await (
           this.audioContext as AudioContext & { setSinkId: (id: string) => Promise<void> }
-        ).setSinkId(newSettings.deviceId);
+        ).setSinkId(newSettings.deviceId || 'default');
       } catch (error) {
         console.error('Failed to set audio output device:', error);
       }

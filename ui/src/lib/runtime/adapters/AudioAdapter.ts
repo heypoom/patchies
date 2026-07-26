@@ -142,10 +142,7 @@ export class AudioAdapter {
         return;
       }
 
-      const inlet = meta.inlet;
-      if (inlet === undefined) return;
-
-      const inletDefinition = nodeClass?.inlets?.[inlet];
+      const inletDefinition = getAudioMessageInlet(nodeClass, meta.inlet);
       if (!inletDefinition?.name) return;
       if (!validateMessageToObject(message, inletDefinition)) return;
 
@@ -165,3 +162,12 @@ export class AudioAdapter {
     this.audioObjects.delete(nodeId);
   }
 }
+
+const getAudioMessageInlet = (nodeClass: AudioNodeClass | undefined, inlet: number | undefined) => {
+  if (!nodeClass?.inlets) return undefined;
+  if (inlet !== undefined) return nodeClass.inlets[inlet];
+
+  const messageInlets = nodeClass.inlets.filter((candidate) => candidate.type === 'message');
+
+  return messageInlets.length === 1 ? messageInlets[0] : undefined;
+};

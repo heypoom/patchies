@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SamplerNode } from '$objects/sampler~/SamplerNode';
+import { downloadAsWav } from '$lib/audio/wav-encoder';
+
+vi.mock('$lib/audio/wav-encoder', () => ({ downloadAsWav: vi.fn() }));
 
 function createFakeSource() {
   return {
@@ -34,7 +37,8 @@ function createFakeAudioContext(sources = [createFakeSource()], gains = [createF
       stream: {} as MediaStream,
       disconnect: vi.fn()
     }),
-    createBufferSource: () => sources[sourceIndex++] ?? createFakeSource()
+    createBufferSource: () => sources[sourceIndex++] ?? createFakeSource(),
+    decodeAudioData: vi.fn()
   } as unknown as AudioContext;
 }
 
@@ -79,6 +83,81 @@ describe('SamplerNode', () => {
     node.send('message', { type: 'setGain', value: 0.25 });
 
     expect(node.audioNode.gain.value).toBe(0.25);
+  });
+
+  it('downloads the current buffer from a graph message', () => {
+    const audioContext = createFakeAudioContext();
+    const node = new SamplerNode('sampler-1', audioContext);
+    const audioBuffer = { duration: 2 } as AudioBuffer;
+    node.audioBuffer = audioBuffer;
+
+    node.send('message', { type: 'download', name: 'recording.wav' });
+
+    expect(downloadAsWav).toHaveBeenCalledWith(audioBuffer, 'recording.wav');
+  });
+
+  it('publishes the decoded buffer when recording stops', async () => {
+    const audioContext = createFakeAudioContext();
+    const decodedBuffer = {
+      duration: 2,
+      length: 2,
+      numberOfChannels: 1,
+      sampleRate: 1,
+      getChannelData: () => new Float32Array([1, 1])
+    } as unknown as AudioBuffer;
+    vi.mocked(audioContext.decodeAudioData).mockResolvedValue(decodedBuffer);
+
+    const recorder = {
+      state: 'inactive',
+      ondataavailable: null as ((event: BlobEvent) => void) | null,
+      onstop: null as (() => void) | null,
+      start() {
+        this.state = 'recording';
+      },
+      stop() {
+        this.state = 'inactive';
+        this.ondataavailable?.({ data: new Blob(['recording']) } as BlobEvent);
+        this.onstop?.();
+      }
+    };
+
+    vi.stubGlobal(
+      'MediaRecorder',
+      class {
+        constructor() {
+          return recorder;
+        }
+      }
+    );
+
+    const node = new SamplerNode('sampler-1', audioContext);
+    const completion = new Promise<AudioBuffer>((resolve) => {
+      node.onRecordingComplete = resolve;
+    });
+
+    node.send('message', { type: 'record' });
+    await Promise.resolve();
+    node.send('message', { type: 'end' });
+
+    await expect(completion).resolves.toBe(decodedBuffer);
+    expect(node.audioBuffer).toBe(decodedBuffer);
+  });
+
+  it('initializes persisted playback settings without a Svelte view', async () => {
+    const source = createFakeSource();
+    const outputGain = createFakeGain();
+    const voiceGain = createFakeGain();
+    const audioContext = createFakeAudioContext([source], [outputGain, voiceGain]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    await node.create?.([null, null, 1, 3, 0.25, 1.5, -120, 'held']);
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'bang' });
+
+    expect(outputGain.gain.value).toBe(0.25);
+    expect(source.playbackRate.value).toBe(1.5);
+    expect(source.detune.value).toBe(-120);
+    expect(source.start).toHaveBeenCalledWith(0, 1, 2);
   });
 
   it('plays bang value messages as gain-scaled triggers', () => {

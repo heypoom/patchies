@@ -77,6 +77,7 @@ export class BytebeatNode implements AudioNodeV2 {
   static group: AudioNodeGroup = 'sources';
   static description = 'Bytebeat algorithmic synthesis';
   static tags = ['audio', 'generator', 'synthesis', 'algorithmic', 'bytebeat'];
+  static runtimeManaged = true;
 
   static inlets: ObjectInlet[] = [
     {
@@ -94,6 +95,46 @@ export class BytebeatNode implements AudioNodeV2 {
         { schema: ExpandMsg, description: 'Open the expanded editor' },
         { schema: CollapseMsg, description: 'Close the expanded editor' }
       ]
+    },
+    {
+      name: 'expr',
+      type: 'string',
+      description: 'Bytebeat expression',
+      defaultValue: '((t >> 10) & 42) * t',
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'type',
+      type: 'string',
+      description: 'Bytebeat output type',
+      defaultValue: 'bytebeat',
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'syntax',
+      type: 'string',
+      description: 'Bytebeat expression syntax',
+      defaultValue: 'infix',
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'sampleRate',
+      type: 'int',
+      description: 'Desired bytebeat sample rate',
+      defaultValue: 8000,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'syncTransport',
+      type: 'bool',
+      description: 'Synchronize playback with transport',
+      defaultValue: false,
+      hideInlet: true,
+      hideDocs: true
     }
   ];
 
@@ -141,18 +182,22 @@ export class BytebeatNode implements AudioNodeV2 {
   }
 
   async create(params: unknown[]): Promise<void> {
-    // params could include initial expression, type, syntax, sampleRate
-    const [expression, type, syntax, sampleRate] = params as [
-      string | undefined,
-      BytebeatType | undefined,
-      BytebeatSyntax | undefined,
-      number | undefined
-    ];
+    const [, expression, type, syntax, sampleRate, syncTransport] = params;
 
-    if (expression) this.expr = expression;
-    if (type) this.bytebeatType = type;
-    if (syntax) this.syntax = syntax;
-    if (sampleRate) this.sampleRate = sampleRate;
+    if (typeof expression === 'string') this.expr = expression;
+    if (type === 'bytebeat' || type === 'floatbeat' || type === 'signedBytebeat') {
+      this.bytebeatType = type;
+    }
+    if (
+      syntax === 'infix' ||
+      syntax === 'postfix' ||
+      syntax === 'glitch' ||
+      syntax === 'function'
+    ) {
+      this.syntax = syntax;
+    }
+    if (typeof sampleRate === 'number') this.sampleRate = sampleRate;
+    if (typeof syncTransport === 'boolean') this.setSyncTransport(syncTransport);
 
     await this.ensureBytebeat();
     this.subscribeTransport();

@@ -1,9 +1,11 @@
 import { match, P } from 'ts-pattern';
 
 import type { AudioNodeV2, AudioNodeGroup } from '$lib/audio/v2/interfaces/audio-nodes';
+import { downloadAsWav } from '$lib/audio/wav-encoder';
 import { SamplerNoteVoiceManager } from '$objects/sampler~/SamplerNoteVoiceManager';
 import { samplerMessages } from '$lib/objects/schemas';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
 
 type BangMessage = {
   type: 'bang';
@@ -47,6 +49,7 @@ export class SamplerNode implements AudioNodeV2 {
 
   static description =
     'Records audio into a buffer and plays it back with loop points, playback rate, and detune control';
+  static runtimeManaged = true;
 
   static inlets: ObjectInlet[] = [
     {
@@ -54,6 +57,61 @@ export class SamplerNode implements AudioNodeV2 {
       type: 'message',
       description:
         'Control messages: record, end, bang, stop, loop, loopOff, setStart, setEnd, setGain, setPlaybackRate, setDetune, noteOn, noteOff, setNoteOffMode. Also accepts Float32Array directly to set buffer.'
+    },
+    {
+      name: 'vfsPath',
+      type: 'string',
+      description: 'Persisted audio-file path',
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'loopStart',
+      type: 'float',
+      description: 'Playback loop start in seconds',
+      defaultValue: 0,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'loopEnd',
+      type: 'float',
+      description: 'Playback loop end in seconds',
+      defaultValue: 0,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'gain',
+      type: 'float',
+      description: 'Default playback gain',
+      defaultValue: 1,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'playbackRate',
+      type: 'float',
+      description: 'Default playback rate',
+      defaultValue: 1,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'detune',
+      type: 'float',
+      description: 'Default detune in cents',
+      defaultValue: 0,
+      hideInlet: true,
+      hideDocs: true
+    },
+    {
+      name: 'noteOffMode',
+      type: 'string',
+      description: 'MIDI note-off behavior',
+      defaultValue: 'one-shot',
+      hideInlet: true,
+      hideDocs: true
     }
   ];
 
@@ -84,6 +142,7 @@ export class SamplerNode implements AudioNodeV2 {
 
   onPlaybackStart?: (event: SamplerPlaybackStartEvent) => void;
   onPlaybackStop?: (event: SamplerPlaybackStopEvent) => void;
+  onRecordingComplete?: (audioBuffer: AudioBuffer) => void;
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -102,6 +161,24 @@ export class SamplerNode implements AudioNodeV2 {
       play: (message) => this.handleBang(message),
       stop: (source, time) => this.stopSource(source, time)
     });
+  }
+
+  async create(params: unknown[]): Promise<void> {
+    const [, vfsPath, loopStart, loopEnd, gain, playbackRate, detune, noteOffMode] = params;
+
+    this.loopStart = getNonNegativeNumber(loopStart) ?? 0;
+    this.loopEnd = getNonNegativeNumber(loopEnd) ?? 0;
+    this.audioNode.gain.value = getNonNegativeNumber(gain) ?? 1;
+    this.playbackRate = getNonNegativeNumber(playbackRate) ?? 1;
+    this.detune = typeof detune === 'number' && Number.isFinite(detune) ? detune : 0;
+
+    if (noteOffMode === 'held' || noteOffMode === 'one-shot') {
+      this.noteVoices.setNoteOffMode(noteOffMode);
+    }
+
+    if (typeof vfsPath === 'string' && vfsPath) {
+      await this.loadBufferFromVfsPath(vfsPath);
+    }
   }
 
   send(key: string, message: unknown): void {
@@ -146,6 +223,11 @@ export class SamplerNode implements AudioNodeV2 {
       .with(samplerMessages.setNoteOffMode, ({ value }) => {
         if (value === 'one-shot' || value === 'held') {
           this.noteVoices.setNoteOffMode(value);
+        }
+      })
+      .with(samplerMessages.download, ({ name }) => {
+        if (this.audioBuffer) {
+          downloadAsWav(this.audioBuffer, name);
         }
       })
       .with({ type: 'stop' }, this.stopPlayback.bind(this))
@@ -237,6 +319,24 @@ export class SamplerNode implements AudioNodeV2 {
     return this.recordingDestination.stream;
   }
 
+  private async loadBufferFromVfsPath(vfsPath: string): Promise<void> {
+    const vfs = VirtualFilesystem.getInstance();
+    const entry = vfs.getEntry(vfsPath);
+    let arrayBuffer: ArrayBuffer;
+
+    if (entry?.provider === 'url' && entry.url) {
+      const response = await fetch(entry.url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${entry.url}: ${response.status}`);
+      }
+      arrayBuffer = await response.arrayBuffer();
+    } else {
+      arrayBuffer = await (await vfs.resolve(vfsPath)).arrayBuffer();
+    }
+
+    this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+  }
+
   connectFrom(source: AudioNodeV2): void {
     // Custom handler for when another node connects TO sampler~
     // Route incoming audio to our recordingDestination for capture
@@ -323,7 +423,7 @@ export class SamplerNode implements AudioNodeV2 {
     this.loopStart = 0;
     this.loopEnd = 0;
 
-    // Clear old audio buffer so polling can detect the new one
+    // Clear the old recording before the recorder starts.
     this.audioBuffer = null;
 
     const recorder = new MediaRecorder(this.recordingDestination.stream);
@@ -342,6 +442,7 @@ export class SamplerNode implements AudioNodeV2 {
         const decoded = await this.audioContext.decodeAudioData(arrayBuffer);
         this.audioBuffer = this.trimSilence(decoded);
         this.mediaRecorder = null;
+        this.onRecordingComplete?.(this.audioBuffer);
       } catch (error) {
         console.error('Failed to process recorded audio:', error);
         this.mediaRecorder = null;

@@ -1,10 +1,9 @@
 <script lang="ts">
   import { Settings, X, Mic } from '@lucide/svelte/icons';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { AudioService } from '$lib/audio/v2/AudioService';
-  import { MicNode, DEFAULT_MIC_SETTINGS, type MicSettings } from '$objects/mic~/MicNode';
+  import type { MicSettings } from '$objects/mic~/MicNode';
   import {
     audioInputDevices,
     enumerateAudioDevices,
@@ -24,7 +23,6 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  let audioService = AudioService.getInstance();
 
   function getInitialNodeId() {
     return nodeId;
@@ -43,7 +41,6 @@
   const tracker = useNodeDataTracker(getInitialNodeId());
 
   let showSettings = $state(false);
-  let micNode: MicNode | null = $state(null);
 
   // Local form state
   let deviceId = $state(getInitialMicSettings().deviceId);
@@ -59,28 +56,9 @@
     if (!$hasEnumeratedDevices) {
       await enumerateAudioDevices();
     }
-
-    const node = await audioService.createNode(nodeId, 'mic~');
-
-    if (node && node instanceof MicNode) {
-      micNode = node;
-
-      micNode.updateSettings({
-        deviceId: data.deviceId ?? '',
-        echoCancellation: data.echoCancellation ?? true,
-        noiseSuppression: data.noiseSuppression ?? true,
-        autoGainControl: data.autoGainControl ?? true
-      });
-    }
-  });
-
-  onDestroy(() => {
-    audioService.removeNodeById(nodeId);
   });
 
   function applySettings() {
-    if (!micNode) return;
-
     const settings = {
       deviceId,
       echoCancellation,
@@ -88,7 +66,6 @@
       autoGainControl
     };
 
-    micNode.updateSettings(settings);
     updateNodeData(nodeId, settings);
   }
 
@@ -185,7 +162,7 @@
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:border-zinc-400 focus:outline-none"
             >
               <option value="">Default</option>
-              {#each $audioInputDevices as device}
+              {#each $audioInputDevices as device (device.id)}
                 <option value={device.id}>{device.name}</option>
               {/each}
             </select>
