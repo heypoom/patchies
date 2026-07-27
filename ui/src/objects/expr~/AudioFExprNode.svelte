@@ -1,10 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { onMount, onDestroy } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { onMount } from 'svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import {
     parseInletCount,
@@ -24,18 +21,11 @@
     selected: boolean;
   } = $props();
 
-  function getInitialNodeId() {
-    return nodeId;
-  }
-
   function getInitialIsEditing() {
     return !data.expr;
   }
 
   let isEditing = $state(getInitialIsEditing()); // Start in editing mode if no expression
-  let inletValues = $state<number[]>([]);
-
-  const messageContext = new MessageContext(getInitialNodeId());
   let audioService = AudioService.getInstance();
   let layoutRef = $state<any>();
 
@@ -66,32 +56,10 @@
   // Remove stale edges when outlet count decreases
   $effect(() => {
     removeExcessAudioOutletEdges(nodeId, outletCount, getEdges, deleteElements);
+    signalInletCount;
+    controlInletCount;
+    updateNodeInternals(nodeId);
   });
-
-  const handleMessage: MessageCallbackFn = (message, meta) => {
-    const nextInletValues = [...inletValues];
-
-    match(message)
-      .with(P.union(P.number), (value) => {
-        if (meta?.inlet === undefined) return;
-
-        nextInletValues[meta.inlet] = value;
-        inletValues = nextInletValues;
-
-        updateAudioInletValues(nextInletValues);
-      })
-      .with(P.string, (newExpr) => {
-        updateNodeData(nodeId, { expr: newExpr });
-        updateAudioExpression(newExpr);
-      });
-  };
-
-  const updateAudioExpression = (expression: string) =>
-    audioService.send(nodeId, 'expression', expression);
-
-  // Use `Array.from` to avoid sending Svelte proxies
-  const updateAudioInletValues = (values: number[]) =>
-    audioService.send(nodeId, 'inletValues', Array.from(values));
 
   function handleExpressionChange(newExpr: string) {
     updateNodeData(nodeId, { expr: newExpr });
@@ -106,42 +74,12 @@
       outletExpressions: parsed.outletExpressions,
       outletCount: parsed.outletCount
     });
-
-    // Update control inlet count when expression changes
-    const newControlInletCount = parseInletCount(data.expr || '');
-
-    if (newControlInletCount !== inletValues.length) {
-      const prevValues = Array.from(inletValues);
-
-      // Copy old values to the new resized list.
-      inletValues = Array.from({ length: newControlInletCount }, (_, i) =>
-        i < prevValues.length ? prevValues[i] : 0
-      );
-
-      updateAudioInletValues(inletValues);
-    }
-
-    // Notify xyflow about handle changes (signal inlets or outlets may have changed)
-    updateNodeInternals(nodeId);
   }
 
   onMount(() => {
-    messageContext.queue.addCallback(handleMessage);
-
-    inletValues = new Array(controlInletCount).fill(0);
-    audioService.createNode(nodeId, 'fexpr~', [null, data.expr]);
-    updateAudioInletValues(inletValues);
-
     if (isEditing) {
       setTimeout(() => layoutRef?.focus(), 10);
     }
-  });
-
-  onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
-
-    audioService.removeNodeById(nodeId);
   });
 </script>
 
@@ -150,7 +88,7 @@
   {@const totalInlets = signalInletCount + controlInletCount}
 
   <!-- Audio signal inputs (x1/s1, x2/s2, etc.) -->
-  {#each Array.from({ length: signalInletCount }) as _, index}
+  {#each Array.from({ length: signalInletCount }) as _, index (index)}
     <TypedHandle
       port="inlet"
       spec={{
@@ -167,7 +105,7 @@
 
   <!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
   {#if controlInletCount > 0}
-    {#each Array.from({ length: controlInletCount }) as _, index}
+    {#each Array.from({ length: controlInletCount }) as _, index (index)}
       <TypedHandle
         port="inlet"
         spec={{ handleType: 'message', handleId: index }}
@@ -182,7 +120,7 @@
 {/snippet}
 
 {#snippet audioOutlets()}
-  {#each Array.from({ length: outletCount }) as _, index}
+  {#each Array.from({ length: outletCount }) as _, index (index)}
     <TypedHandle
       port="outlet"
       spec={{ handleType: 'audio', handleId: index }}

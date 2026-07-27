@@ -142,6 +142,15 @@ export class AudioAdapter {
         return;
       }
 
+      if (nodeClass?.dynamicMessageTarget && meta.inlet !== undefined) {
+        this.audioService.send(nodeId, nodeClass.dynamicMessageTarget, {
+          inletIndex: meta.inlet,
+          message
+        });
+
+        return;
+      }
+
       const inletDefinition = getAudioMessageInlet(nodeClass, meta.inlet);
       if (!inletDefinition?.name) return;
       if (!validateMessageToObject(message, inletDefinition)) return;

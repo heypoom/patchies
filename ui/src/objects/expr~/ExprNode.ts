@@ -21,7 +21,13 @@ const MAX_SIGNAL_INLETS = 9;
 export class ExprNode implements AudioNodeV2 {
   static type = 'expr~';
   static group: AudioNodeGroup = 'processors';
+  static runtimeManaged = true;
+  static dynamicMessageTarget = 'messageInlet';
   static description = 'Evaluates mathematical expressions on audio samples';
+
+  static getMessageSettingsUpdate(message: unknown): Record<string, unknown> | null {
+    return typeof message === 'string' ? { expr: message } : null;
+  }
 
   // Note: Signal inlets are dynamically rendered in AudioExprNode.svelte based on expression.
   // This static definition is for documentation/object browser preview only.
@@ -32,10 +38,11 @@ export class ExprNode implements AudioNodeV2 {
       description: 'Audio signal input (use s1-s9 in expression for multiple inputs)'
     },
     {
-      name: 'expression',
+      name: 'expr',
       type: 'string',
       description:
-        'Mathematical expression (s1-s9=signal inputs, s=alias for s1, i=index, t=time, $1-$9=control values)'
+        'Mathematical expression (s1-s9=signal inputs, s=alias for s1, i=index, t=time, $1-$9=control values)',
+      hideInlet: true
     }
   ];
 
@@ -49,6 +56,7 @@ export class ExprNode implements AudioNodeV2 {
 
   private audioContext: AudioContext;
   private currentOutletCount: number = 1;
+  private inletValues: number[] = [];
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -107,7 +115,7 @@ export class ExprNode implements AudioNodeV2 {
     }
 
     match([key, msg])
-      .with(['expression', P.string], ([, expression]) => {
+      .with([P.union('expression', 'expr'), P.string], ([, expression]) => {
         port.postMessage({ type: 'set-expression', expression });
       })
       .with(['expressions', P.select()], (data) => {
@@ -131,7 +139,12 @@ export class ExprNode implements AudioNodeV2 {
         }
       })
       .with(['inletValues', P.array(P.number)], ([, values]) => {
-        port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
+        this.inletValues = Array.from(values);
+        port.postMessage({ type: 'set-inlet-values', values: this.inletValues });
+      })
+      .with(['messageInlet', { inletIndex: P.number, message: P.number }], ([, value]) => {
+        this.inletValues[value.inletIndex] = value.message;
+        port.postMessage({ type: 'set-inlet-values', values: this.inletValues });
       });
   }
 

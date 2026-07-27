@@ -5,7 +5,23 @@ import { handleToPortIndex } from '$lib/utils/get-edge-types';
 export class MergeNode implements AudioNodeV2 {
   static type = 'merge~';
   static group: AudioNodeGroup = 'processors';
+  static runtimeManaged = true;
   static description = 'Merges multiple mono channels into a single multichannel signal';
+
+  static getMessageSettingsUpdate(message: unknown): Record<string, unknown> | null {
+    if (
+      typeof message === 'object' &&
+      message !== null &&
+      (message as { type?: unknown }).type === 'set-channels' &&
+      Number.isInteger((message as { value?: unknown }).value) &&
+      (message as { value: number }).value >= 1 &&
+      (message as { value: number }).value <= 32
+    ) {
+      return { channels: (message as { value: number }).value };
+    }
+
+    return null;
+  }
 
   static inlets: ObjectInlet[] = [
     {
@@ -52,25 +68,23 @@ export class MergeNode implements AudioNodeV2 {
   }
 
   connect(
-    source: AudioNodeV2,
-    paramName?: string,
-    sourceHandle?: string,
+    target: AudioNodeV2,
+    _paramName?: string,
+    _sourceHandle?: string,
     targetHandle?: string
   ): void {
-    if (!source.audioNode) return;
+    if (!target.audioNode) return;
 
-    // For merge~, targetHandle indicates which input channel to connect to
+    // For merge~, targetHandle indicates which target input channel to use.
     if (targetHandle) {
       const inputIndex = handleToPortIndex(targetHandle);
       if (inputIndex !== null && !isNaN(inputIndex)) {
-        // If source is split~, it already specifies output index, just connect
-        source.audioNode.connect(this.audioNode, 0, inputIndex);
+        this.audioNode.connect(target.audioNode, 0, inputIndex);
         return;
       }
     }
 
-    // Default: connect source to first input
-    source.audioNode.connect(this.audioNode);
+    this.audioNode.connect(target.audioNode);
   }
 
   private updateChannelCount(newChannels: number): void {

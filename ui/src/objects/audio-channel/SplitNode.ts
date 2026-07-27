@@ -5,7 +5,23 @@ import { handleToPortIndex } from '$lib/utils/get-edge-types';
 export class SplitNode implements AudioNodeV2 {
   static type = 'split~';
   static group: AudioNodeGroup = 'processors';
+  static runtimeManaged = true;
   static description = 'Splits a multichannel signal into separate mono channels';
+
+  static getMessageSettingsUpdate(message: unknown): Record<string, unknown> | null {
+    if (
+      typeof message === 'object' &&
+      message !== null &&
+      (message as { type?: unknown }).type === 'set-channels' &&
+      Number.isInteger((message as { value?: unknown }).value) &&
+      (message as { value: number }).value >= 1 &&
+      (message as { value: number }).value <= 32
+    ) {
+      return { channels: (message as { value: number }).value };
+    }
+
+    return null;
+  }
 
   static inlets: ObjectInlet[] = [
     {

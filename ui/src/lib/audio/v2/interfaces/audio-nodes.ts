@@ -38,6 +38,12 @@ export type AudioNodeClass = {
 
   /** Map public message-inlet commands to audio-service setting messages. */
   getMessageSettingsUpdate?: (message: unknown) => Record<string, unknown> | null;
+
+  /**
+   * Audio-service key that receives `{ inletIndex, message }` for dynamic
+   * message handles whose indices are determined by the object runtime.
+   */
+  dynamicMessageTarget?: string;
 } & ObjectMetadata &
   AudioNodeConstructor;
 

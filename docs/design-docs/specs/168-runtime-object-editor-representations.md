@@ -107,6 +107,11 @@ Important rules:
   audio adapter may route it only when the audio definition has exactly one
   message inlet. Definitions with multiple message inlets must keep explicit
   inlet handle IDs.
+- A runtime-managed audio class with expression- or code-derived message ports
+  may declare an object-owned dynamic message target. The audio adapter forwards
+  the edge's numeric inlet index with the message, without learning the object
+  name or its port grammar; the audio class owns translating that index into its
+  dynamic runtime state. Its Svelte view owns only matching handle redraws.
 
 ## Data Ownership
 

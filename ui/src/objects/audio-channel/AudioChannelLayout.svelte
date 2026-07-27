@@ -2,11 +2,9 @@
   import { Settings, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { onMount, onDestroy } from 'svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { onMount } from 'svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { getPatchRuntime } from '$lib/runtime';
   let contentContainer: HTMLDivElement | null = null;
 
   // Props
@@ -32,8 +30,8 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
-  let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
+  const patchRuntime = getPatchRuntime();
   let contentWidth = $state(100);
   let showChannelEditor = $state(false);
   let channelInput = $state('');
@@ -45,29 +43,9 @@
     return 'object-container';
   });
 
-  const handleMessage: MessageCallbackFn = (message) => {
-    match(message)
-      .with({ type: 'set-channels', value: P.number }, (m) => {
-        updateChannels(m.value);
-      })
-      .otherwise(() => {});
-  };
-
   onMount(() => {
-    messageContext = new MessageContext(nodeId);
-    messageContext.queue.addCallback(handleMessage);
-
-    audioService.createNode(nodeId, audioType, [channels]);
-
     updateContentWidth();
     channelInput = channels.toString();
-  });
-
-  onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
-
-    audioService.removeNodeById(nodeId);
   });
 
   function updateContentWidth() {
@@ -80,8 +58,9 @@
     const channelCount = newChannels ?? parseInt(channelInput);
 
     if (channelCount >= 1 && channelCount <= 32 && channelCount !== channels) {
-      updateNodeData(nodeId, { channels: channelCount });
       audioService.send(nodeId, 'channels', channelCount);
+      patchRuntime?.suppressNextAudioObjectSync(nodeId);
+      updateNodeData(nodeId, { channels: channelCount });
 
       setTimeout(() => {
         updateNodeInternals(nodeId);
@@ -138,7 +117,7 @@
         {#if audioType === 'merge~'}
           <!-- Channel inputs for merger -->
           <div>
-            {#each Array.from({ length: channels }) as _, index}
+            {#each Array.from({ length: channels }) as _, index (index)}
               <TypedHandle
                 port="inlet"
                 spec={{ handleType: 'audio', handleId: index }}
@@ -192,7 +171,7 @@
         {:else}
           <!-- Channel outputs for splitter -->
           <div>
-            {#each Array.from({ length: channels }) as _, index}
+            {#each Array.from({ length: channels }) as _, index (index)}
               <TypedHandle
                 port="outlet"
                 spec={{ handleType: 'audio', handleId: index }}

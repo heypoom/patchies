@@ -1924,7 +1924,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         handle: { handleType: 'audio', handleId: 0 }
       },
       {
-        id: 'expression',
+        id: 'expr',
         type: 'string',
         description:
           'Mathematical expression (s1-s9=signal inputs, s=alias for s1, i=index, t=time, $1-$9=control values)',
@@ -1934,8 +1934,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description:
               'Mathematical expression (s1-s9=signal inputs, s=alias for s1, i=index, t=time, $1-$9=control values)'
           }
-        ],
-        handle: { handleType: 'message', handleId: 1 }
+        ]
       }
     ],
     outlets: [
@@ -1992,6 +1991,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'signal',
         description: 'Audio signal input',
         handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'expr',
+        type: 'string',
+        description: 'Filter expression source',
+        messages: [{ schema: Type.String(), description: 'Filter expression source' }]
       }
     ],
     outlets: [

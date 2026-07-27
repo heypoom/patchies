@@ -13,6 +13,10 @@ import { SamplerNode } from '$objects/sampler~/SamplerNode';
 import { PianoAudioNode } from '$objects/smplr/audio-nodes';
 import { AudioOutputNode } from '$objects/out~/AudioOutputNode';
 import { MicNode } from '$objects/mic~/MicNode';
+import { MergeNode } from '$objects/audio-channel/MergeNode';
+import { SplitNode } from '$objects/audio-channel/SplitNode';
+import { ExprNode } from '$objects/expr~/ExprNode';
+import { FExprNode } from '$objects/expr~/FExprNode';
 
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
@@ -57,6 +61,8 @@ const isBytebeat = (objectType: string) => objectType === 'bytebeat~';
 const isSampler = (objectType: string) => objectType === 'sampler~';
 const isPiano = (objectType: string) => objectType === 'piano~';
 const isAudioIo = (objectType: string) => objectType === 'out~' || objectType === 'mic~';
+const isAudioChannel = (objectType: string) => objectType === 'merge~' || objectType === 'split~';
+const isAudioExpression = (objectType: string) => objectType === 'expr~' || objectType === 'fexpr~';
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
 
@@ -533,6 +539,38 @@ describe('AudioAdapter', () => {
     messageSystem.sendMessage(sourceNodeId, { type: 'play' });
 
     expect(audioService.send).toHaveBeenCalledWith(nodeId, 'control', { type: 'play' });
+
+    runtime.destroy();
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
+  });
+
+  it('routes indexed dynamic message handles to audio objects', () => {
+    const nodeId = 'expr-command-target';
+    const sourceNodeId = 'expr-command-source';
+    const audioService = createFakeAudioService();
+    const runtime = new AudioAdapter({ audioService, isAudioObject: isAudioExpression });
+    const messageSystem = MessageSystem.getInstance();
+
+    AudioRegistry.getInstance().register(ExprNode);
+    messageSystem.registerNode(sourceNodeId);
+    messageSystem.updateEdges([
+      {
+        id: 'source-to-expr-command',
+        source: sourceNodeId,
+        target: nodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-2'
+      }
+    ]);
+
+    runtime.upsertAudioObject({ id: nodeId, objectType: 'expr~', params: [null, 's + $3'] });
+    messageSystem.sendMessage(sourceNodeId, 0.75);
+
+    expect(audioService.send).toHaveBeenCalledWith(nodeId, 'messageInlet', {
+      inletIndex: 2,
+      message: 0.75
+    });
 
     runtime.destroy();
     messageSystem.unregisterNode(sourceNodeId);
@@ -1285,6 +1323,82 @@ describe('EditorRuntimeReconciler', () => {
       false,
       false,
       false
+    ]);
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated channel processors with persisted channel counts', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isAudioChannel
+    });
+
+    AudioRegistry.getInstance().register(MergeNode);
+    AudioRegistry.getInstance().register(SplitNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'merge-editor-runtime-test',
+        type: 'merge~',
+        position: { x: 0, y: 0 },
+        data: { channels: 4 }
+      },
+      {
+        id: 'split-editor-runtime-test',
+        type: 'split~',
+        position: { x: 0, y: 0 },
+        data: { channels: 3 }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith('merge-editor-runtime-test', 'merge~', [
+      null,
+      4
+    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith('split-editor-runtime-test', 'split~', [
+      null,
+      3
+    ]);
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated audio expressions with their persisted source', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isAudioExpression
+    });
+
+    AudioRegistry.getInstance().register(ExprNode);
+    AudioRegistry.getInstance().register(FExprNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'expr-editor-runtime-test',
+        type: 'expr~',
+        position: { x: 0, y: 0 },
+        data: { expr: 's * 0.5' }
+      },
+      {
+        id: 'fexpr-editor-runtime-test',
+        type: 'fexpr~',
+        position: { x: 0, y: 0 },
+        data: { expr: '(x1 + x1[-1]) / 2' }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith('expr-editor-runtime-test', 'expr~', [
+      null,
+      's * 0.5'
+    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith('fexpr-editor-runtime-test', 'fexpr~', [
+      null,
+      '(x1 + x1[-1]) / 2'
     ]);
 
     runtime.destroy();
