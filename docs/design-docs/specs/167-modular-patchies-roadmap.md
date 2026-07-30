@@ -19,6 +19,7 @@ Move Patchies toward a small, headless, extensible core that can:
 - [134. Viewport Pause Culling for Main-Thread Nodes](134-viewport-pause-culling-for-main-thread-nodes.md)
 - [168. Runtime Object And Editor Representations](168-runtime-object-editor-representations.md)
 - [169. Build Your Own Patcher Vision](169-build-your-own-patcher-vision.md)
+- [170. Agent-Extensible Patchies Vision](170-agent-extensible-patchies-vision.md)
 - [Visual Object Headless Migration](../visual-object-headless-migration.md)
 
 ## End State

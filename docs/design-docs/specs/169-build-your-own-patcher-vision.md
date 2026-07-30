@@ -16,6 +16,13 @@ The advantage is Patchies already ships with a lot of nodes that are pretty usef
 
 My inspiration is the [TLDraw SDK](https://tldraw.dev) where people can "Build infinite canvas apps in React with the tldraw SDK". TLDraw is an excellent editor on its own, but the SDK makes it extensible.
 
+## Related Vision
+
+[170. Agent-Extensible Patchies Vision](170-agent-extensible-patchies-vision.md)
+describes how people and external agent harnesses can create the objects,
+presets, packs, and extensions that run in both the default editor and custom
+Patchies host applications.
+
 ## Product Direction
 
 Patchies should be a creative-patching runtime and object ecosystem.
