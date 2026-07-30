@@ -2,28 +2,34 @@
 
 ## Poom's Vision
 
-Another vision complementary to [Build Your Own Patcher](169-build-your-own-patcher-vision.md) is to let external agent harnesses (e.g. Codex, Claude Code, OpenCode, Pi) write code for Patchies objects and presets, as well as modifying a patch graph.
+This vision complements [Build Your Own Patcher](169-build-your-own-patcher-vision.md).
+External agent tools, such as Codex, Claude Code, OpenCode, and Pi, can create
+Patchies objects and presets and change a patch graph.
 
 For example:
 
-- Vibe coding your own objects using Patchies' Headless API
-- Vibe coding your own presets & preset packs
-- Creating an extension or bundle for these objects, presets, preset packs, etc.
-- Vibe coding your patch graph, perhaps by creating an MCP that exposes the tools similar to the tool calls we already have in [edge-tool-handlers.ts](ui/src/lib/ai/chat/edge-tool-handlers.ts) and [canvas-tools.ts](ui/src/lib/ai/chat/canvas-tools.ts) for example.
-  - We sort of already have this, but its for internal AI loop and not for external harnesses.
+- Vibe-code objects with the Patchies headless API.
+- Vibe-code presets and preset packs.
+- Create an extension or bundle for objects, presets, and preset packs.
+- Vibe-code a patch graph through an MCP-like API. The API can resemble
+  [edge-tool-handlers.ts](ui/src/lib/ai/chat/edge-tool-handlers.ts) and
+  [canvas-tools.ts](ui/src/lib/ai/chat/canvas-tools.ts).
+  - Current tools support the internal AI loop, not external agent tools.
 
-The idea is similar to Raycast Extensions, Obsidian Plugins, Grist's [Vibe View widget](https://support.getgrist.com/newsletters/2026-03/#community-highlights), as the goal is for people to create custom objects using Patchies as an engine layer.
+This resembles Raycast Extensions, Obsidian Plugins, and Grist's
+[Vibe View widget](https://support.getgrist.com/newsletters/2026-03/#community-highlights).
+People create custom objects with Patchies as the engine.
 
 These two visions are complementary and should work together:
 
-- Build or "vibe code" objects that runs inside Patchies
-- Build or "vibe code" apps that consume the Patchies runtime
+- Build or vibe-code objects that run in Patchies.
+- Build or vibe-code apps that use the Patchies runtime.
 
 Then, Patchies is split into core and shell:
 
-- a **stable core**: the engine and built-in hardened objects
-- an **unstable shell**: vibe coded objects, presets, custom host apps that can break.
-  - preferably with a degree of sandboxing that doesn't crash the host and ver, where possible.
+- a **stable core**: the engine and maintained built-in objects.
+- an **experimental shell**: vibe-coded objects, presets, and host apps that can break.
+  - Use sandboxing where possible, so failures do not crash the host.
 
 ## Product Direction
 
@@ -38,8 +44,8 @@ The [Build Your Own Patcher Vision](169-build-your-own-patcher-vision.md)
 describes the second path. This vision describes the first path, and the public
 authoring surface that connects them.
 
-The result is not an AI feature bolted onto the default editor. Patchies becomes
-a creative engine that is extensible by people and by external agent harnesses.
+This is not an AI feature added to the default editor. Patchies is a creative
+engine that people and external agent tools can extend.
 
 An object or preset created through an agent should be a normal Patchies
 artifact: it can be inspected, tested, shared, installed, and used by both the
@@ -53,15 +59,13 @@ definitions, presets, preset packs, and extension bundles.
 Codex, Claude Code, the Patchies app, a CLI, and future tools are
 consumers of that same contract.
 
-MCP is a promising interaction adapter for external harnesses, but it should
-not become the only or defining interface. The underlying authoring model must
-remain usable by a person, local development tooling, automated tests, and the
-default editor without depending on a particular agent vendor or chat protocol.
+MCP is a useful interaction adapter for external tools. It is not the only or
+defining interface. People, local tools, automated tests, and the default editor
+use the authoring model without an agent vendor or chat protocol.
 
-This evolves the current internal AI loop to an external agent experience:
-internal tools can inform the public contract, but the public contract
-does not expose internal editor state or chat-specific workflow
-as its permanent shape.
+This extends the internal AI loop to external agent tools. Internal tools can
+inform the public contract. The contract does not expose internal editor state
+or chat workflows as its permanent API.
 
 ## Core And Shell
 

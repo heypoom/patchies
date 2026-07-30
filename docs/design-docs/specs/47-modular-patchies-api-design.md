@@ -6,13 +6,15 @@ Last verified against code: 2026-07-06.
 
 ## Goal
 
-Make Patchies modular enough that the core runtime can stay small while objects, renderers, audio nodes, editor views, docs metadata, and licensed integrations can be registered dynamically.
+Keep the core runtime small. Let objects, renderers, audio nodes, views, docs
+metadata, and licensed integrations register at runtime.
 
-This spec supports [167. Modular Patchies Roadmap](167-modular-patchies-roadmap.md). It focuses on the API shape for dynamic definitions and plugins.
+This spec supports [167. Modular Patchies Roadmap](167-modular-patchies-roadmap.md).
+It defines APIs for dynamic definitions and plugins.
 
 ## Current State
 
-Patchies has moved a long way from the original version of this spec:
+Patchies has made this progress since the first version of this spec:
 
 - Object-owned code is colocated under `ui/src/objects/<object-or-family>` as described in [100. Object Module Migration](100-object-module-migration.md).
 - `ObjectRegistry` supports registering V2 text object constructors and aliases.
@@ -22,7 +24,7 @@ Patchies has moved a long way from the original version of this spec:
 - The render type registry imports object-owned render-node type members from `ui/src/objects`.
 - `<x-patchies>` exists as a custom element entry point.
 
-The codebase is not yet dynamically modular in the product sense:
+The product is not yet dynamically modular:
 
 - UI node components are still statically imported in `ui/src/lib/nodes/node-types.ts`.
 - Object schemas are still collected through static imports in `ui/src/lib/objects/schemas/index.ts`.
@@ -33,7 +35,7 @@ The codebase is not yet dynamically modular in the product sense:
 
 ## API Shape
 
-The long-term API should expose one runtime object:
+The long-term API exposes one runtime object:
 
 ```ts
 const patchies = await createPatchiesRuntime({
@@ -56,7 +58,7 @@ The API should work in three contexts:
 
 ## Object Definitions
 
-An object definition should describe both runtime behavior and optional editor affordances:
+An object definition describes runtime behavior and optional editor features:
 
 ```ts
 class DelayObject {
@@ -73,7 +75,7 @@ class DelayObject {
 }
 ```
 
-Definitions may also provide or reference:
+Definitions can also provide or reference:
 
 - object schema metadata;
 - default data;
@@ -85,7 +87,8 @@ Definitions may also provide or reference:
 - settings view factories;
 - required services or permissions.
 
-The existing V2 text object classes and V2 audio node classes are the nearest current implementation. The next step is to make the surrounding metadata dynamically registerable instead of split across static files.
+V2 text object and audio node classes are the closest current implementation.
+Next, register their metadata at runtime instead of splitting it across static files.
 
 ## Service Registries
 
@@ -102,7 +105,8 @@ Patchies should expose dynamic registries for each extension point:
 - `shorthands.define(shorthand)` for object text expansion;
 - `migrations.define(migration)` for patch data upgrades.
 
-Static registry files may continue to bootstrap built-ins, but they should become generated or declarative built-in plugin manifests, not the only place an object can exist.
+Static registry files can bootstrap built-ins. They should become generated or
+declarative built-in plugin manifests. They must not be the only place an object exists.
 
 ## Plugin Contract
 
@@ -126,11 +130,13 @@ export async function register(ctx) {
 }
 ```
 
-The plugin context should expose stable service APIs. Plugins should not reach into arbitrary `ui/src/lib` internals. If a plugin needs a capability, such as a video renderer, audio node, worker channel, VFS access, or settings surface, the plugin API should expose that capability intentionally.
+The plugin context exposes stable service APIs. Plugins do not use arbitrary
+`ui/src/lib` internals. Add an explicit API when a plugin needs a renderer, audio
+node, worker channel, VFS access, or settings surface.
 
 ## Patch Loading Flow
 
-Patch loading should become dependency-aware:
+Patch loading becomes dependency-aware:
 
 1. Parse patch JSON.
 2. Read declared plugin dependencies and object types present in the graph.
@@ -140,13 +146,17 @@ Patch loading should become dependency-aware:
 6. Instantiate the graph through the headless runtime.
 7. Report unresolved types as structured diagnostics.
 
-For development, hot reload can be conservative. It is acceptable to tear down and recreate affected runtime objects when a plugin definition changes.
+Development hot reload can be conservative. It can destroy and recreate affected
+runtime objects when a plugin definition changes.
 
 ## Licensing Boundary
 
-Dynamic plugins are also the path toward cleaner licensing boundaries.
+Dynamic plugins also create clearer license boundaries.
 
-The core/editor bundle should not be forced to include every optional dependency. AGPL-dependent objects such as Strudel should move toward separately loaded plugin bundles with explicit license metadata. The app can offer a trusted source or installer, but the dependency boundary must remain visible.
+The core and editor bundle does not include every optional dependency. Move
+AGPL-dependent objects, such as Strudel, to separately loaded plugin bundles with
+explicit license metadata. The app can offer a trusted source or installer, but
+the dependency boundary stays visible.
 
 This spec is a technical design, not legal advice. Any licensing change should be reviewed separately once the bundle boundary exists.
 

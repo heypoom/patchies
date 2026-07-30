@@ -2,14 +2,14 @@
 
 ## Goal
 
-Move Patchies toward a small, headless, extensible core that can:
+Move Patchies toward a small, headless core that can:
 
 - Run patch graphs without Svelte or XYFlow;
 - Keep runtime objects alive when editor views unmount;
 - Load object and service definitions dynamically;
 - Support subpatches and external abstractions;
 - Expose a stable embeddable/API-first surface;
-- Isolate strongly licensed objects, such as Strudel, behind bundle boundaries.
+- Keep strongly licensed objects, such as Strudel, in separate bundles.
 
 ## Related Specs
 
@@ -24,51 +24,44 @@ Move Patchies toward a small, headless, extensible core that can:
 
 ## End State
 
-Patchies should have a small core package that owns the runtime graph,
-registries, message routing, scheduling, persistence, and service interfaces.
-The core must be usable without the editor.
+The core package owns the runtime graph, registries, message routing,
+scheduling, persistence, and service interfaces. It must work without the editor.
 
 `PatchRuntime` is the public runtime interface. The editor, headless tests,
-host applications, embeds, and plugin harnesses should all use the same
-graph-oriented runtime calls. It owns the runtime graph; helper modules may keep
-the implementation small, but graph state should not live in the editor adapter.
+host applications, embeds, and plugin harnesses use the same graph API. It owns
+the runtime graph. Helper modules may support it, but editor adapters do not own graph state.
 
-The editor becomes a UI host. It renders and edits an XYFlow graph, then uses
-`EditorRuntimeReconciler` to adapt XYFlow nodes and edges into a
-`PatchRuntime.setGraph` call. The reconciler may know editor
-representation kinds, but it should not own graph diffs, runtime semantics, or
-object-specific data conversion.
+The editor is a UI host. It renders and edits an XYFlow graph. Then,
+`EditorRuntimeReconciler` converts nodes and edges into a `PatchRuntime.setGraph` call.
+The reconciler may know editor representation kinds. It does not own graph diffs,
+runtime behavior, or object-specific data conversion.
 
-Objects become runtime definitions registered into the core. A definition may
-include behavior, ports, schemas, defaults, migrations, services, optional
-editor views, settings views, docs metadata, prompt metadata, and licensing
-metadata.
+Objects are runtime definitions registered with the core. A definition can include
+behavior, ports, schemas, defaults, migrations, services, views, settings, docs,
+prompts, and license metadata.
 
 ## Principles
 
 - Runtime objects outlive views.
 - The editor uses the same runtime interface as headless consumers.
-- Ship playable vertical slices early, even if the deep migration continues underneath.
+- Ship playable vertical slices early while the deeper migration continues.
 - Registries are mutable runtime services, not only static TypeScript files.
-- Built-ins, development modules, remote bundles, and marketplace packages use one object loading model.
+- Built-ins, development modules, remote bundles, and marketplace packages use one loading model.
 - Plugins register through explicit capabilities instead of arbitrary internal imports.
 - Subpatches are nested runtimes, not XYFlow groups.
 - License boundaries follow dynamically-loaded bundle boundaries.
 
 ## Phase 1: Headless Runtime Boundary
 
-Create a `PatchRuntime` that can instantiate objects, apply graph changes,
-route messages, and coordinate message/audio/video services without mounting
-the editor.
+Create a `PatchRuntime` that instantiates objects, applies graph changes, routes
+messages, and coordinates message, audio, and video services without the editor.
 
-`EditorRuntimeReconciler` translates XYFlow state into the public runtime graph
+`EditorRuntimeReconciler` converts XYFlow state into the public runtime graph
 shape and calls `PatchRuntime.setGraph`. Imperative calls such as
 `createObject`, `updateObject`, `connect`, `disconnect`, and `destroyObject`
-remain available for headless consumers and should update the same runtime-owned
-graph.
+remain available to headless consumers. They update the same runtime graph.
 
-Svelte views attach to existing runtime state; they do not own runtime
-lifecycle.
+Svelte views attach to existing runtime state. They do not own runtime lifecycle.
 
 Success criteria:
 
@@ -79,14 +72,13 @@ Success criteria:
 
 ## Phase 2: View Lifecycle Compatibility
 
-Make XYFlow-rendered object views cheap to create and safe to destroy so
-`onlyRenderVisibleElements` can be enabled. This phase should also establish
-enough headless audio, video, and object execution that later subpatches can
-run interesting patches without depending on visible editor views.
+Make XYFlow object views cheap to create and safe to destroy. Then enable
+`onlyRenderVisibleElements`. This phase also provides headless audio, video, and
+object execution for later subpatches.
 
-Views may render controls, handles, settings, editors, and preview surfaces.
-They must not own message subscriptions, audio nodes, render nodes, timers,
-workers, media streams, graph membership, or persisted runtime state.
+Views can render controls, handles, settings, editors, and previews. They do not
+own message subscriptions, nodes, timers, workers, media streams, graph membership,
+or persisted runtime state.
 
 Success criteria:
 
@@ -98,10 +90,9 @@ Success criteria:
 
 ## Phase 3: Playable Subpatch Vertical Slice
 
-Build a small, fun subpatch object after the core view/runtime split is useful
-for audio, video, and message objects. The first version can use built-in
-objects and current patch JSON, but it should model subpatches as nested
-`PatchRuntime` instances, not XYFlow groups.
+Build a small subpatch object after the core split supports audio, video, and
+message objects. The first version can use built-ins and current patch JSON. It
+models subpatches as nested `PatchRuntime` instances, not XYFlow groups.
 
 Success criteria:
 
@@ -113,8 +104,7 @@ Success criteria:
 
 ## Phase 4: Dynamic Object And Service Registries
 
-Turn static registries into built-in manifests backed by runtime registration
-APIs.
+Turn static registries into built-in manifests with runtime registration APIs.
 
 The registry should support objects, views, audio nodes, video renderers,
 schemas, migrations, docs metadata, prompt metadata, shorthands, browser
@@ -128,8 +118,8 @@ Success criteria:
 
 ## Phase 5: Plugin Bundle Contract
 
-Define a plugin manifest and registration function for local built-ins and
-trusted remote bundles.
+Define a plugin manifest and registration function for local built-ins and trusted
+remote bundles.
 
 ```ts
 export const manifest = {
@@ -153,9 +143,8 @@ Success criteria:
 
 ## Phase 6: Full Subpatches And Abstractions
 
-Expand the playable subpatch slice into external abstractions. A subpatch
-object owns a child runtime, maps parent ports to child patch ports, and may
-render an editable nested editor or stay headless.
+Expand the playable subpatch into external abstractions. A subpatch object owns a
+child runtime, maps parent ports to child ports, and can render a nested editor or remain headless.
 
 Success criteria:
 
@@ -183,9 +172,9 @@ Success criteria:
 
 ## Licensing Direction
 
-The long-term licensing goal is a thin core that can plausibly be MIT-licensed
-while selected plugins carry stronger licenses. AGPL-dependent objects should
-not be inseparable from the core/editor artifact.
+The long-term licensing goal is a thin core that could use the MIT license while
+selected plugins use stronger licenses. AGPL-dependent objects must not be part
+of the core or editor artifact.
 
 This is not legal advice. Review the final bundle and distribution model before
 changing project licensing.

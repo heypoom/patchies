@@ -6,11 +6,17 @@ Last verified against code: 2026-07-06.
 
 ## Problem
 
-Large patches can contain many expensive DOM-backed renderers. Even when those nodes are offscreen, their main-thread loops can continue to run and make the editor sluggish.
+Large patches can contain many expensive DOM renderers. Their main-thread loops
+can continue when nodes are offscreen and make the editor slow.
 
-Worker-backed FBO rendering already has a visibility path through `ViewportCullingManager` and `glSystem.setVisibleNodes()`. DOM-backed renderers need a separate path because they are not FBO-compatible and should not be added to the render graph just to pause their local loops.
+Worker-backed FBO rendering already uses `ViewportCullingManager` and
+`glSystem.setVisibleNodes()`. DOM renderers need a separate path. They are not
+FBO-compatible, and they do not need the render graph only to pause local loops.
 
-This spec covers pausing offscreen DOM-backed renderers. It does not enable XYFlow `onlyRenderVisibleElements` by itself. Full component destruction/recreation requires the headless object lifecycle described in [40. Headless Patcher System](40-headless-patcher-system.md) and [167. Modular Patchies Roadmap](167-modular-patchies-roadmap.md).
+This spec pauses offscreen DOM renderers. It does not enable XYFlow
+`onlyRenderVisibleElements`. Full view destruction and creation needs the headless
+object lifecycle in [40. Headless Patcher System](40-headless-patcher-system.md)
+and [167. Modular Patchies Roadmap](167-modular-patchies-roadmap.md).
 
 ## Current Implementation
 
@@ -59,7 +65,7 @@ Current implementations:
 
 ## Pause Ownership Rules
 
-Viewport pause and user pause are different ownership states.
+Viewport pause and user pause have different owners.
 
 When a node goes from visible to hidden:
 
@@ -80,9 +86,11 @@ Deleted DOM-cullable nodes are pruned from `pausedByViewport` using the `liveIds
 
 ## Relationship To `onlyRenderVisibleElements`
 
-Viewport pause culling is a performance optimization for currently mounted components. It is intentionally weaker than XYFlow `onlyRenderVisibleElements`.
+Viewport pause culling improves performance for mounted components. It is less
+complete than XYFlow `onlyRenderVisibleElements`.
 
-With `onlyRenderVisibleElements`, offscreen node components may be destroyed. That means a renderer cannot rely on Svelte `onMount`/`onDestroy` to own runtime resources that should survive while the node is offscreen.
+With `onlyRenderVisibleElements`, offscreen node components can be destroyed. A
+renderer cannot use Svelte `onMount` or `onDestroy` to own resources that must survive offscreen.
 
 Before enabling that optimization broadly:
 

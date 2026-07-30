@@ -2,19 +2,26 @@
 
 ## Poom's Vision
 
-I want to make Patchies into a headless editor that people can use in their own app without the editor interface, and ultimately people should be able to build their own patcher.
+I want Patchies to provide a headless runtime that people can use in their apps.
+People should also be able to build their own patcher.
 
-Most people would prefer to have a sense of ownership in the app they're building. Some people want to build or "vibe code" their own small, self-contained, one-off, focused set of tools.
+People want ownership of the app that they build. Some want to build or vibe-code
+a small, focused, self-contained set of tools.
 
-Patchies can act as a library, a foundation, and a set of building blocks where people can compose their own infinite canvases for creative coding, with ample integrations with the rest of the creative coding ecosystem.
+Patchies can provide a library, foundation, and building blocks for creative-coding
+canvases. It can also connect to the wider creative-coding ecosystem.
 
-Patchies has systems and primitives for creative coding: messaging, audio pipeline, video pipeline, web worker management, peer-to-peer networking, virtual machines, and a whole lot more.
+Patchies has creative-coding systems for messages, audio, video, web workers,
+peer-to-peer networking, and virtual machines.
 
-The idea is that we export a set of public API that is composable. People can start with the default Patchies editor UX, or build / "vibe code" their own domain-specific editors that are more tailored into their usage patterns e.g. drag-and-drop SVG placeholders of a few focused audio nodes.
+The public API must be composable. People can use the default Patchies editor or
+build a domain-specific editor, such as SVG placeholders for focused audio nodes.
 
-The advantage is Patchies already ships with a lot of nodes that are pretty useful for creative coding. They can build their own sets of nodes, but also connect it with the rest of Patchies ecosystem e.g. sonification in ChucK, feeding their custom synth into Patchies' video synthesizer objects.
+Patchies ships useful creative-coding nodes. People can build their own nodes and
+connect them to the Patchies ecosystem, such as ChucK sonification or video synth objects.
 
-My inspiration is the [TLDraw SDK](https://tldraw.dev) where people can "Build infinite canvas apps in React with the tldraw SDK". TLDraw is an excellent editor on its own, but the SDK makes it extensible.
+The [tldraw SDK](https://tldraw.dev) is an inspiration. It is a complete editor
+and an extensible SDK for infinite-canvas apps.
 
 ## Related Vision
 
@@ -43,15 +50,14 @@ Patchies editor    is the complete default authoring experience
 Host patcher       is a custom UI that authors the same patch graph
 ```
 
-This is stronger than treating Patchies as a headless editor.
+This is more than a headless editor.
 
-The runtime owns the difficult reusable behavior: object lifecycle, graph execution,
-message routing, audio and video pipelines, workers, persistence, diagnostics, and
-plugin/object registration.
+The runtime owns reusable behavior: object lifecycle, graph execution, message
+routing, audio and video pipelines, workers, persistence, diagnostics, and
+plugin and object registration.
 
-The host owns its product language: layout,
-selection, gestures, visual representation, focused workflows, and which
-objects are available to its users.
+The host owns its product language: layout, selection, gestures, visuals,
+workflows, and available objects.
 
 ## Design Principles
 
@@ -61,8 +67,8 @@ objects are available to its users.
   not a privileged implementation.
 - Hosts may use the full object ecosystem or curate a small set of built-in and
   custom objects.
-- Object definitions own their execution behavior, ports, data, migrations, and
-  metadata; hosts choose how those objects look and are authored.
+- Object definitions own execution behavior, ports, data, migrations, and
+  metadata. Hosts choose object appearance and authoring.
 - Public capabilities must be instance-scoped and host-configurable. A host
   controls browser permissions, audio context activation, workers, persistence,
   and network/P2P configuration rather than inheriting app-global behavior.
@@ -102,7 +108,7 @@ type HostDocument = {
 ```
 
 `RuntimeGraphSpec` is the Patchies-owned executable graph. `layout` belongs to
-the host; it doesn't have to look like the default editor or even be a canvas.
+the host. It does not have to look like the default editor or be a canvas.
 
 ## Package Direction
 
@@ -118,9 +124,8 @@ The names can evolve, but the public surfaces should separate these roles:
 - `@patchies/web-component`: a quick embed of the default editor, viewer, or
   headless runtime wrapper.
 
-`editor-kit` is intentionally not an export of current editor internals. Its
-modules should **hide the behavior that is difficult to re-implement** while leaving
-the host free to own visual and interaction design.
+`editor-kit` does not export current editor internals. Its modules hide difficult
+behavior while the host owns visuals and interaction design.
 
 ## Execution Plan
 

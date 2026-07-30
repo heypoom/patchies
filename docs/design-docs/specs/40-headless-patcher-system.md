@@ -6,7 +6,8 @@ Last verified against code: 2026-07-17.
 
 ## Goal
 
-Move Patchies toward a patch runtime that can load, execute, and mutate a patch graph without mounting the XYFlow editor. This is the foundation for:
+Move Patchies toward a runtime that loads, runs, and changes a patch graph without
+the XYFlow editor. This supports:
 
 - viewport rendering with `onlyRenderVisibleElements`;
 - subpatches and Max/MSP-style abstractions;
@@ -14,14 +15,15 @@ Move Patchies toward a patch runtime that can load, execute, and mutate a patch 
 - API-first usage from host applications;
 - a stable embeddable web component.
 
-This spec is now a supporting spec for [167. Modular Patchies Roadmap](167-modular-patchies-roadmap.md). It describes the headless runtime boundary that roadmap depends on.
+This spec supports [167. Modular Patchies Roadmap](167-modular-patchies-roadmap.md).
+It defines the headless runtime boundary that the roadmap needs.
 
 ## Current State
 
-Patchies now has a small `PatchRuntime` facade, but it does not yet own the
-whole patch graph lifecycle.
+Patchies has a small `PatchRuntime` facade. It does not yet own the full patch
+graph lifecycle.
 
-The codebase does have several headless runtime primitives:
+The codebase has these headless runtime parts:
 
 - `ui/src/lib/runtime/PatchRuntime.ts` coordinates the first runtime slice for
   message/text and V2 audio object behavior.
@@ -31,25 +33,22 @@ The codebase does have several headless runtime primitives:
 - `ui/src/lib/runtime/AudioRuntime.ts` owns audio object identity sync,
   duplicate recreation suppression, message forwarding to audio parameters, and
   cleanup for runtime-created audio objects.
-- The core runtime files use plain TypeScript data structures and callback
-  subscriptions. Svelte reactivity belongs in editor adapters such as
-  `ui/src/lib/runtime/patch-runtime-context.ts`, not in `PatchRuntime`,
-  `PatchMessageRuntime`, or `AudioRuntime`.
+- Core runtime files use plain TypeScript data and callback subscriptions. Editor
+  adapters, such as `ui/src/lib/runtime/patch-runtime-context.ts`, own Svelte
+  reactivity. `PatchRuntime`, `PatchMessageRuntime`, and `AudioRuntime` do not.
 - `ui/src/lib/runtime/EditorRuntimeReconciler.ts` translates XYFlow object nodes
   into runtime object create/update/destroy calls. It may understand editor node
   shape; `PatchRuntime` itself should not.
-- The first UI-owned Svelte node runtime slice is `button`: `ButtonObject` lives
-  under `ui/src/objects/button/` and is managed by `ObjectService`, while
-  `ButtonNode.svelte` remains a view that uses a view-local `MessageContext` to
-  inject click messages and render flash feedback without owning object
-  lifecycle.
+- `button` is the first UI-owned Svelte node runtime slice. `ButtonObject` is
+  under `ui/src/objects/button/` and `ObjectService` manages it. `ButtonNode.svelte`
+  is a view. Its local `MessageContext` sends clicks and renders flash feedback.
 - `ui/src/lib/objects/v2/ObjectService.ts` owns V2 text object instances, message dispatch, creation, and destruction outside Svelte components.
 - `ui/src/lib/registry/ObjectRegistry.ts` and `ui/src/lib/registry/AudioRegistry.ts` support runtime registration of text object and audio node constructors.
 - `ui/src/lib/audio/v2/AudioService.ts` owns V2 audio node instances, audio graph updates, scheduled messages, and virtual audio routing.
 - The worker-backed video pipeline owns render graph execution outside Svelte node views.
 - `ui/src/lib/canvas/ViewportCullingManager.ts` now tracks visible FBO and DOM-backed nodes separately.
 
-The editor still owns too much:
+The editor still owns these concerns:
 
 - `ui/src/lib/components/FlowCanvasInner.svelte` owns the canonical `nodes` and `edges` arrays, history, deletion cleanup, viewport culling wiring, and many cross-system side effects.
 - Patch loading, graph-level connect/disconnect APIs, video runtime ownership,
@@ -60,14 +59,14 @@ The editor still owns too much:
 
 ## Target Runtime Boundary
 
-Introduce a `PatchRuntime` or equivalent runtime object that owns graph execution independently of the editor.
+Add a `PatchRuntime`, or an equivalent object, that owns graph execution without the editor.
 
 `PatchRuntime` is the public runtime interface for both headless consumers and
 the editor. A host application, unit test, web component, plugin harness, or the
 Patchies editor should all be able to create and mutate the same kind of runtime
 graph through this interface.
 
-The runtime should provide graph-level APIs:
+The runtime provides graph APIs:
 
 ```ts
 const runtime = new PatchRuntime({ objects, audio, video, messages });
@@ -103,11 +102,10 @@ specification. Message-object descriptors such as parsed raw parameters are
 internal resolver details, so `PatchRuntime` remains the single lifecycle seam
 for message and audio objects.
 
-The exact TypeScript names can evolve, but the shape should stay graph-oriented
-and editor-independent: runtime object ids, object types, object data, ports,
-connections, messages, lifecycle, diagnostics, and subscriptions. The runtime
-should not expose or require XYFlow positions, viewport state, selection,
-handles as editor DOM concerns, Svelte lifecycle, or editor history.
+The TypeScript names can change, but the API stays graph-based and editor-independent.
+It includes object IDs, types, data, ports, connections, messages, lifecycle,
+diagnostics, and subscriptions. It does not expose XYFlow positions, viewport
+state, selection, DOM handles, Svelte lifecycle, or editor history.
 
 The runtime should also expose service surfaces:
 
@@ -118,15 +116,13 @@ The runtime should also expose service surfaces:
 - `runtime.plugins` for loading/registering plugin bundles;
 - `runtime.subpatches` for nested patch runtimes.
 
-The editor should become a client of this runtime. It may own selection, canvas
-gestures, panels, history UI, and visual layout state, but object execution
-should not depend on Svelte component lifetime.
+The editor is a client of this runtime. It can own selection, canvas gestures,
+panels, history UI, and layout. Object execution does not depend on Svelte view lifetime.
 
-`EditorRuntimeReconciler` is the editor adapter. It translates the current
-XYFlow nodes and edges into runtime representations, then passes complete graph
-snapshots to `PatchRuntime`. `PatchRuntime` owns graph-diff and lifecycle
-synchronization: it tracks the previous graph and performs create, update,
-destroy, connect, and disconnect operations as needed.
+`EditorRuntimeReconciler` is the editor adapter. It converts XYFlow nodes and
+edges into runtime representations, then sends complete graphs to `PatchRuntime`.
+`PatchRuntime` owns graph diffs and lifecycle synchronization. It tracks the last
+graph and creates, updates, destroys, connects, or disconnects as needed.
 
 ```ts
 runtime.setGraph({
@@ -135,10 +131,9 @@ runtime.setGraph({
 });
 ```
 
-The reconciler may understand editor representation kinds, such as object-box
-nodes versus dedicated visual nodes, because it is adapting editor state. It
-must not know concrete object names or own object-specific data conversion.
-Object definitions and migrations own object-specific data shape.
+The reconciler can know editor representation kinds, such as object-box and
+dedicated visual nodes. It does not know object names or convert object-specific
+data. Object definitions and migrations own object data shape.
 
 ## Object Lifecycle
 
@@ -156,7 +151,8 @@ View lifecycle:
 - Views may attach preview canvases, controls, settings panels, CodeMirror editors, resize handles, and local UI affordances.
 - Views must not own runtime execution resources that should continue while the view is unmounted.
 
-This split is required before enabling XYFlow `onlyRenderVisibleElements` as the default behavior. With that optimization, offscreen Svelte node components can be destroyed and later recreated.
+This split is required before XYFlow `onlyRenderVisibleElements` becomes the
+default. That option can destroy and later recreate offscreen Svelte node components.
 
 ## Migration Path
 

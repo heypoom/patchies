@@ -2,19 +2,19 @@
 
 ## Goal
 
-Keep runtime object behavior separate from editor representation without forcing
-every object through the object-box `params[]` model.
+Keep runtime object behavior separate from editor representation. Do not force
+every object into the object-box `params[]` model.
 
-Patchies has two useful editor data shapes:
+Patchies uses two editor data shapes:
 
 - Object-box text objects: `{ expr, name, params }`
 - Dedicated visual nodes: object-shaped `node.data`, such as `{ value, min, max }`
 
-The runtime should accept both as runtime object data.
+The runtime accepts both as object data.
 
 ## Decision
 
-Use one public runtime object shape, with separate editor definition kinds.
+Use one public runtime object shape and separate editor definition kinds.
 
 ```ts
 type RuntimeObjectSpec<TData = Record<string, unknown>> = {
@@ -24,9 +24,8 @@ type RuntimeObjectSpec<TData = Record<string, unknown>> = {
 };
 ```
 
-`RuntimeObjectSpec` is the public `PatchRuntime` object shape. The editor,
-tests, host applications, and headless scripts should all be able to construct
-the same descriptor shape.
+`RuntimeObjectSpec` is the public `PatchRuntime` object shape. The editor, tests,
+host applications, and headless scripts use the same descriptor shape.
 
 Connections use the same principle:
 
@@ -40,9 +39,8 @@ type RuntimeConnectionSpec = {
 };
 ```
 
-`PatchRuntime` is the public graph module. It owns the runtime graph, including
-objects and connections. Its interface should converge on graph, object, and
-connection operations:
+`PatchRuntime` is the public graph module. It owns runtime objects and
+connections. Its API uses graph, object, and connection operations:
 
 ```ts
 runtime.setGraph({ objects, connections });
@@ -55,13 +53,11 @@ runtime.disconnect(connectionId);
 runtime.send(id, message);
 ```
 
-All public object mutations use `RuntimeObjectSpec`; parsed message-object
-descriptors and raw parameter lists are internal resolver details. Message,
-audio, rendering, and editor compatibility details belong behind that interface.
-The editor reconciler is only one adapter that feeds this public runtime shape
-from XYFlow state. Internal helpers such as `PatchGraph` may store objects,
-connections, snapshots, and descriptor keys so `PatchRuntime` can stay a small
-facade, but those helpers are not the caller-facing interface.
+All public object changes use `RuntimeObjectSpec`. Parsed message descriptors and
+raw parameters are internal resolver details. Message, audio, rendering, and
+editor compatibility stay behind this API. The editor reconciler is one adapter
+from XYFlow state. Internal helpers can store objects, connections, snapshots,
+and descriptor keys, but callers use `PatchRuntime`.
 
 Runtime objects implement a common lifecycle and message interface:
 
@@ -76,7 +72,7 @@ interface RuntimeObject<TData = Record<string, unknown>> {
 
 ## Editor Kinds
 
-Keep editor-facing registries distinct:
+Keep these editor registries separate:
 
 - `TEXT_OBJECTS`: object-box objects loadable through `ObjectNode`
 - `VISUAL_OBJECTS`: dedicated Svelte-node-backed visual objects that keep their
@@ -84,23 +80,22 @@ Keep editor-facing registries distinct:
 - `AUDIO_OBJECTS`: audio definitions and adapters
 - `RUNTIME_OBJECTS`: combined registration surface for runtime execution and schema generation
 
-A dedicated audio Svelte node opts into runtime ownership only when its object
-must continue producing or consuming graph-visible behavior while the view is
-unmounted. Audio monitors whose data is consumed solely by their own canvas stay
-view-owned and may pause when culled. A runtime-managed audio class owns graph
-messages, audio lifecycle, persisted runtime state, and downstream output; its
-Svelte view owns only drawing and editor-local interaction state.
+A dedicated audio Svelte node uses runtime ownership only when it must keep
+producing or consuming graph-visible behavior while unmounted. An audio monitor
+used only by its canvas stays view-owned and can pause when culled. A runtime
+audio class owns graph messages, audio lifecycle, persisted state, and downstream
+output. Its Svelte view owns drawing and editor-local interaction only.
 
-Audio I/O nodes follow the same boundary: a runtime-managed microphone owns the
-capture stream and its constraints, while a runtime-managed output owns the
-patch-to-device route and selected sink. Their Svelte views may enumerate
-devices and persist user selections, but must not create or destroy audio nodes.
+Audio I/O nodes use the same boundary. A runtime microphone owns the capture
+stream and its constraints. A runtime output owns the patch-to-device route and
+selected sink. Their Svelte views can list devices and save selections. They do
+not create or destroy audio nodes.
 
 Important rules:
 
 - `ObjectNode` searches and instantiates `TEXT_OBJECTS`, plus supported
   object-box audio names resolved through `AudioRegistry`.
-- `ObjectNode` must exclude dedicated `VISUAL_OBJECTS`; those stay dedicated
+- `ObjectNode` must exclude dedicated `VISUAL_OBJECTS`. Those stay dedicated
   Svelte node types.
 - Schema/docs generation may include visual objects without making them object-box loadable.
 - When a legacy message handle does not provide numeric inlet metadata, the
@@ -110,12 +105,12 @@ Important rules:
 - A runtime-managed audio class with expression- or code-derived message ports
   may declare an object-owned dynamic message target. The audio adapter forwards
   the edge's numeric inlet index with the message, without learning the object
-  name or its port grammar; the audio class owns translating that index into its
+  name or its port grammar. The audio class translates that index into its
   dynamic runtime state. Its Svelte view owns only matching handle redraws.
 
 ## Data Ownership
 
-Object definitions own their data shape.
+Object definitions own data shape.
 
 Visual object runtime data should match the Svelte node's `node.data` shape:
 
@@ -137,20 +132,18 @@ Object-box text objects can keep the expression shape:
 }
 ```
 
-For controls with both `value` and `defaultValue`, absence is meaningful:
-`value` remains optional, and an unset value means the view and runtime use
-`defaultValue`. Normalization must not replace an absent value with `0`, because
-presets may intentionally provide only a default value.
+For controls with `value` and `defaultValue`, an absent value has meaning.
+`value` stays optional. The view and runtime use `defaultValue` when it is absent.
+Do not replace an absent value with `0`. A preset can provide only a default value.
 
 Do not normalize text-object `params[]` into named object data as part of this
 spec. That can remain a future migration.
 
 ## Reconciler Role
 
-`EditorRuntimeReconciler` is a stateless adapter from XYFlow state into the
-public `PatchRuntime` graph shape. It may understand editor representation
-kinds, but it must not own graph diffs, mention concrete object names, mention
-message/audio runtime lanes, or perform object-specific data conversion.
+`EditorRuntimeReconciler` is a stateless adapter from XYFlow state to the public
+`PatchRuntime` graph shape. It can know editor representation kinds. It does not
+own graph diffs, name objects, select message or audio lanes, or convert object data.
 
 For visual nodes:
 
@@ -186,21 +179,19 @@ runtime.setGraph({
 });
 ```
 
-Object-specific defaults, migrations, and compatibility logic belong to object
-definitions or registry entries, not the reconciler.
+Object definitions or registry entries own defaults, migrations, and compatibility
+logic. The reconciler does not.
 
 ## Runtime Synchronization
 
-`PatchRuntime` is the sole owner of graph-diff and runtime lifecycle work. It
-tracks the previous graph and resolves each public object spec to its message or
-audio runtime implementation. A kind change for one id destroys the previous
-implementation before the new one becomes active.
+`PatchRuntime` alone owns graph diffs and runtime lifecycle. It tracks the last
+graph and resolves each public object spec to a message or audio implementation.
+When an ID changes kind, it destroys the old implementation before it starts the new one.
 
-Object synchronization is serialized. Each reconciliation waits for the prior
-one to settle before reading or mutating lifecycle state; a failed sync must not
-block a later graph update. `setGraph()` reconciles even when the supplied graph
-is unchanged, because an underlying runtime service node may have disappeared
-independently of the graph snapshot.
+Object synchronization is serialized. Each reconciliation waits for the last one
+before it reads or changes lifecycle state. A failed sync does not block a later
+graph update. `setGraph()` reconciles unchanged graphs because a runtime service
+node can disappear without a graph change.
 
 Object and connection fan-out have separate responsibilities:
 
@@ -244,7 +235,7 @@ interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
 6. Serialize runtime reconciliation and keep node-type propagation separate from
    connection fan-out.
 7. Move edge updates behind `PatchRuntime` connection methods.
-8. Prefer data-first runtime objects; keep param helpers only for text-object compatibility.
+8. Prefer data-first runtime objects. Keep param helpers only for text-object compatibility.
 
 ## Success Criteria
 
@@ -252,7 +243,7 @@ interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
 - `ObjectNode` cannot accidentally load visual-only objects.
 - `EditorRuntimeReconciler` does not maintain graph state, mention concrete object names, or mention runtime lanes.
 - Headless callers can create the same runtime graph the editor creates through reconciliation.
-- All public object mutations use `{ id, type, data }`; message descriptors are
+- All public object mutations use `{ id, type, data }`. Message descriptors are
   internal runtime details.
 - Overlapping editor updates cannot leave a stale runtime object active, and
   unchanged graph snapshots can restore missing service-owned nodes.
