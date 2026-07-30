@@ -1,39 +1,36 @@
 # Visual Object Headless Migration
 
-Use this when moving a UI-owned Svelte object toward the headless runtime model.
+Use this guide to move a UI-owned Svelte object to the headless runtime model.
 
 ## Goal
 
-The Svelte node should become a view only. Runtime behavior, message handling,
-port metadata, and docs/search schema should live in the object definition under
-`ui/src/objects/<object>/`.
+The Svelte node becomes a view only. Put runtime behavior, message handling, port
+metadata, and docs and search schemas in `ui/src/objects/<object>/`.
 
 ## Migration Steps
 
 1. Create an object class next to the view.
 
-   Add `ui/src/objects/<object>/<ObjectName>Object.ts` implementing the common
-   runtime object contract. Put runtime behavior there: `create`, `onMessage`,
-   `destroy`, timers, subscriptions, and outgoing `context.send(...)` calls.
-   Dedicated visual objects should use object-shaped node data and should not
-   keep text-object-only APIs or hidden positional params.
+   Add `ui/src/objects/<object>/<ObjectName>Object.ts` with the common runtime
+   object contract. Put `create`, `onMessage`, `destroy`, timers, subscriptions,
+   and `context.send(...)` calls there. Dedicated visual objects use object-shaped
+   node data. Do not keep text-object-only APIs or hidden positional parameters.
 
 2. Move schema metadata into the object class.
 
-   Replace the old `schema.ts` duplication with static metadata on the object:
+   Replace duplicated `schema.ts` data with static object metadata:
    `type`, `category`, `description`, `tags`, `inlets`, and `outlets`.
    Include TypeBox `messages` and explicit `handle` specs when existing handle
    IDs must be preserved.
 
-   Match incoming message variants with the same TypeBox schemas used in the
-   metadata. Prefer `schema(Type.Boolean())`, `schema(Type.Number())`, or
-   pre-wrapped common matchers such as `messages.bang` over raw `ts-pattern`
-   primitive patterns like `P.boolean` and `P.number`.
+   Match incoming message variants with the TypeBox schemas in the metadata. Use
+   `schema(Type.Boolean())`, `schema(Type.Number())`, or `messages.bang`. Do not
+   use raw `ts-pattern` primitives such as `P.boolean` and `P.number`.
 
-   For native DSP/audio-backed visual nodes, put public docs/handle ports in
-   `schemaInlets` when they differ from the worklet's actual parameter inlet
-   array. Keep hidden worklet parameters in `inlets` with `hideDocs` /
-   `hideInlet` so processor inlet indices remain stable.
+   For native DSP or audio visual nodes, put public docs and handles in
+   `schemaInlets` when they differ from worklet parameter inlets. Keep hidden
+   worklet parameters in `inlets` with `hideDocs` or `hideInlet`. This keeps
+   processor inlet indexes stable.
 
    For one message inlet/outlet that previously used `{ handleType: 'message' }`,
    keep that exact handle spec. Do not let generation add `handleId: 0` unless
@@ -81,10 +78,9 @@ port metadata, and docs/search schema should live in the object definition under
 
    A view-local send may arrive without inlet metadata because it goes directly
    to the node's queue. Edge-routed messages may also arrive with `inletKey`
-   only (for example legacy `message-in` handles do not produce numeric
-   `meta.inlet`). Do not rely on `meta.inletName` being present unless the
-   runtime resolves it from the object metadata; for single-inlet objects,
-   defaulting missing inlet metadata to that inlet is acceptable.
+   only (for example, legacy `message-in` handles do not produce numeric
+   `meta.inlet`). Do not rely on `meta.inletName` unless the runtime resolves it
+   from object metadata. For single-inlet objects, a missing inlet can use that inlet.
 
 8. Verify headless and remount behavior.
 
