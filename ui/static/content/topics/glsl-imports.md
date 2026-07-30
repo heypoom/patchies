@@ -1,12 +1,12 @@
 # GLSL Imports
 
-Import GLSL functions from NPM packages, your files, or URLs using `#include` — no copy-pasting shader code between nodes.
+Use `#include` to import GLSL functions from NPM packages, your files, or URLs. You do not need to copy shader code between nodes.
 
-`#include` works across most visual objects: [glsl](/docs/objects/glsl), [swgl](/docs/objects/swgl), [regl](/docs/objects/regl), [hydra](/docs/objects/hydra) (inside `setFunction`), and [three](/docs/objects/three) (via `await glsl` tagged template). Write a utility once, use it everywhere.
+`#include` works in [glsl](/docs/objects/glsl), [swgl](/docs/objects/swgl), [regl](/docs/objects/regl), and [hydra](/docs/objects/hydra) inside `setFunction`. It also works in [three](/docs/objects/three) through the `await glsl` tagged template.
 
 ## How It Works
 
-The `#include` directive inlines GLSL source code at the include site before shader compilation. It works like the C preprocessor: resolve the path, fetch the source, paste it in.
+Before shader compilation, `#include` inserts GLSL source code at the include site. Patchies resolves the path, gets the source, and inserts it.
 
 ```glsl
 #include <lygia/generative/snoise>
@@ -17,15 +17,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-This fetches the `snoise` function from the [lygia](https://lygia.xyz) shader library and makes it available in your code. No setup needed — includes are resolved automatically.
+This example gets the `snoise` function from the [lygia](https://lygia.xyz) shader library. Patchies resolves includes automatically.
 
 ## Import Sources
 
-There are three ways to import GLSL code:
+You can import GLSL code from three sources:
 
 ### NPM Packages
 
-Use angle brackets to import from shader libraries like lygia:
+Use angle brackets to import from shader libraries, such as lygia:
 
 ```glsl
 #include <lygia/generative/snoise>
@@ -33,32 +33,32 @@ Use angle brackets to import from shader libraries like lygia:
 #include <lygia/color/space/hsv2rgb>
 ```
 
-The `.glsl` extension is optional — `<lygia/generative/snoise>` and `<lygia/generative/snoise.glsl>` are equivalent.
+The `.glsl` extension is optional. `<lygia/generative/snoise>` and `<lygia/generative/snoise.glsl>` are equivalent.
 
 ### Your Files
 
-Use double quotes with a `user://` path to import from your [Virtual Filesystem](/docs/virtual-filesystem) files:
+Use double quotes and a `user://` path to import from [Virtual Filesystem](/docs/virtual-filesystem) files:
 
 ```glsl
 #include "user://my-shaders/utils.glsl"
 #include "user://sdf-functions.glsl"
 ```
 
-Upload `.glsl` files through the sidebar (`Ctrl/Cmd + B > Files`), then include them in any shader node.
+Add `.glsl` files in the sidebar (`Ctrl/Cmd + B > Files`). Then include them in any shader node.
 
 ### URLs
 
-Use double quotes with a full URL to import from anywhere on the web:
+Use double quotes and a complete URL to import GLSL from the web:
 
 ```glsl
 #include "https://raw.githubusercontent.com/stegu/psrdnoise/main/src/psrdnoise2.glsl"
 ```
 
-URL imports are cached in memory for the session, so they only fetch once.
+Patchies caches URL imports in memory for the session. It gets each URL once.
 
 ## Supported Objects
 
-`#include` works in five visual objects — most of them auto-preprocess your shaders, so you just write `#include` and it works:
+`#include` works in five visual objects. Most of them preprocess your shaders automatically.
 
 | Object | How it works |
 | --- | --- |
@@ -70,7 +70,7 @@ URL imports are cached in memory for the session, so they only fetch once.
 
 ### Hydra Usage
 
-Use `#include` inside `setFunction` to bring external GLSL into Hydra's shader pipeline:
+Use `#include` inside `setFunction` to add external GLSL to the Hydra shader pipeline:
 
 ```javascript
 osc()
@@ -90,7 +90,7 @@ osc()
 
 ### Three.js Usage
 
-Three.js nodes can't auto-preprocess because Patchies doesn't control `THREE.ShaderMaterial`. Use the `await glsl` tagged template instead:
+Three.js nodes cannot preprocess shaders because Patchies does not control `THREE.ShaderMaterial`. Use the `await glsl` tagged template:
 
 ```javascript
 const material = new THREE.ShaderMaterial({
@@ -105,13 +105,13 @@ const material = new THREE.ShaderMaterial({
 })
 ```
 
-The `glsl` tag and `processIncludes()` function are available in all JavaScript-based visual objects.
+All JavaScript visual objects provide the `glsl` tag and `processIncludes()` function.
 
 ## Try It
 
-### Exercise — Use lygia noise in a GLSL shader
+### Exercise — Use Lygia Noise in a GLSL Shader
 
-1. Create a `glsl` object (`Enter` > type `glsl`)
+1. Create a `glsl` object (`Enter` > type `glsl`).
 2. Paste this code:
 
 ```glsl
@@ -123,12 +123,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-3. Connect to `bg.out` — you should see animated simplex noise
+3. Connect the object to `bg.out`. You should see animated simplex noise.
 
-### Exercise — Share a utility across nodes
+### Exercise — Share a Utility Across Nodes
 
-1. Open the sidebar (`Ctrl/Cmd + B > Files`) and create a file called `utils.glsl`
-2. Add a helper function:
+1. Open the sidebar (`Ctrl/Cmd + B > Files`).
+2. Create a file named `utils.glsl`.
+3. Add this helper function:
 
 ```glsl
 vec3 palette(float t) {
@@ -136,7 +137,7 @@ vec3 palette(float t) {
 }
 ```
 
-3. In a `glsl` object, include and use it:
+4. In a `glsl` object, include and use the file:
 
 ```glsl
 #include "user://utils.glsl"
@@ -146,30 +147,31 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-4. Create a second `glsl` object and include the same file — both nodes share the function
+5. Create a second `glsl` object.
+6. Include the same file. Both nodes share the function.
 
 ## Nested Includes
 
-Included files can contain their own `#include` directives. Resolution is recursive up to 32 levels deep. Circular includes are detected and produce an error.
+Included files can contain `#include` directives. Patchies resolves includes up to 32 levels deep. Circular includes produce an error.
 
 ## Caching
 
-- **NPM packages** are fetched from a CDN and cached for the session
-- **VFS files** are re-read when changed, so edits are reflected immediately
-- **URLs** are cached for the session (reload the page to re-fetch)
+- **NPM packages:** Patchies gets packages from a CDN and caches them for the session.
+- **VFS files:** Patchies reads files again after they change.
+- **URLs:** Patchies caches URLs for the session. Reload the page to get them again.
 
 ## Licensing: Lygia Shader Library
 
-Lygia is dual licensed under the [Prosperity License](https://prosperitylicense.com/versions/3.0.0) and the [Lygia Patron License](https://lygia.xyz/license).
+Lygia uses the [Prosperity License](https://prosperitylicense.com/versions/3.0.0) and the [Lygia Patron License](https://lygia.xyz/license).
 
-This means that Lygia is free for non-commercial use, i.e. for personal use and usage in non-commercial organizations. For _commercial_ use, please purchase a license from the creator, Patricio Gonzalez Vivo on [GitHub Sponsors](https://github.com/sponsors/patriciogonzalezvivo).
+Lygia is free for non-commercial use, including personal use and use in non-commercial organizations. For commercial use, purchase a license from Patricio Gonzalez Vivo on [GitHub Sponsors](https://github.com/sponsors/patriciogonzalezvivo).
 
-This does NOT apply to you if you do not import the Lygia package by using `#include <lygia/...>` in your shaders. You can still use Patchies and all its features without importing Lygia.
+These requirements do not apply if your shaders do not import Lygia with `#include <lygia/...>`. You can use Patchies without importing Lygia.
 
 ## See Also
 
-- [glsl](/docs/objects/glsl) — fragment shaders with Shadertoy-compatible uniforms
-- [swgl](/docs/objects/swgl) — SwissGL shaders
-- [regl](/docs/objects/regl) — WebGL with REGL
-- [three](/docs/objects/three) — Three.js scenes
-- [Virtual Filesystem](/docs/virtual-filesystem) — managing files for `user://` imports
+- [glsl](/docs/objects/glsl) — Create fragment shaders with Shadertoy-compatible uniforms.
+- [swgl](/docs/objects/swgl) — Create SwissGL shaders.
+- [regl](/docs/objects/regl) — Use WebGL with REGL.
+- [three](/docs/objects/three) — Create Three.js scenes.
+- [Virtual Filesystem](/docs/virtual-filesystem) — Manage files for `user://` imports.

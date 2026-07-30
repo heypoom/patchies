@@ -1,10 +1,15 @@
 # Sharing Links
 
-To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be done from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
+A sharing link puts your complete patch in a URL. People can open the link without an account or server.
 
-Shared links contain your entire patch encoded in the URL, making it easy to share your work with others without needing an account or server.
+## Create a sharing link
+
+1. Click the three dots in the lower-right corner.
+2. Select **Share Patch Link**.
+
+You can also use the command palette: `Ctrl/Cmd + K > Share Patch Link`.
 
 ## See Also
 
-- [Saves](/docs/manage-saves)
-- [Demos](/docs/demos)
+- [Saves](/docs/manage-saves) — Save patches for later use.
+- [Demos](/docs/demos) — Open example patches.

@@ -1,12 +1,18 @@
 # Object Settings
 
-The `settings` API lets user code expose a configurable settings panel directly on a node. Call `settings.define()` with a schema and a gear icon appears — clicking it opens a floating panel with the defined controls.
+Use the `settings` API to show a configurable settings panel for an object. Call `settings.define()` with a schema to add a gear icon. Click the icon to open a panel with the defined controls.
 
 ![Object settings panel showing a hydra node with BPM slider, Mode select, Mute toggle, Color picker and API key field](/content/images/user-defined-settings.webp)
 
+The panel shows the controls defined in the settings schema.
+
 ## Supported Objects
 
-`settings` is available in: [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [swgl](/docs/objects/swgl), [dom](/docs/objects/dom), and [vue](/docs/objects/vue).
+Use `settings` in these objects:
+
+- [js](/docs/objects/js), [worker](/docs/objects/worker), and [p5](/docs/objects/p5)
+- [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), and [textmode.dom](/docs/objects/textmode.dom)
+- [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [swgl](/docs/objects/swgl), [dom](/docs/objects/dom), and [vue](/docs/objects/vue)
 
 ## Basic Usage
 
@@ -28,19 +34,19 @@ const speed = settings.get('speed');
 const color = settings.get('color');
 ```
 
-`define()` is async — it loads any persisted values before resolving. Always `await` it before calling `get()`.
+`define()` is asynchronous. It loads saved values before it resolves. Always `await` it before you call `get()`.
 
 ## API Reference
 
 ### `settings.define(schema)`
 
-Defines the settings schema. Opens the settings panel UI. Returns a Promise that resolves once persisted values are loaded.
+Define the settings schema. This function opens the settings panel. It returns a Promise after it loads saved values.
 
-Call once at the top level of your code. Re-running the code redefines the schema.
+Call this function once at the top level of the code. Running the code again defines the schema again.
 
 ### `settings.get(key)`
 
-Returns the current value for a field. Synchronous after `define()` has resolved.
+Get the current field value. This function is synchronous after `define()` resolves.
 
 ```javascript
 const opacity = settings.get('opacity'); // number
@@ -50,7 +56,7 @@ const active = settings.get('active');   // boolean
 
 ### `settings.getAll()`
 
-Returns all current values as a plain object.
+Get all current values in a plain object.
 
 ```javascript
 const { speed, color, mode } = settings.getAll();
@@ -58,14 +64,14 @@ const { speed, color, mode } = settings.getAll();
 
 ### `settings.set(key, value)`
 
-Programmatically updates a setting value from code. The new value is persisted using the field's `persistence` setting and fires any registered `onChange` callbacks — so the panel updates in real time.
+Set a value from code. The field `persistence` setting saves the new value. Registered `onChange` callbacks run, and the panel updates immediately.
 
 ```javascript
 settings.set('gain', 0.8);
 settings.set('mode', 'loop');
 ```
 
-Useful for updating settings from received messages or internal computations:
+Use this function to update settings from received messages or internal values:
 
 ```javascript
 recv((msg) => {
@@ -75,7 +81,7 @@ recv((msg) => {
 
 ### `settings.onChange(callback)`
 
-Registers a callback that fires whenever a value changes — either from user interaction in the panel or from a `settings.set()` call.
+Register a callback that runs when a value changes. The change can come from the panel or a `settings.set()` call.
 
 ```javascript
 settings.onChange((key, value, allValues) => {
@@ -84,17 +90,17 @@ settings.onChange((key, value, allValues) => {
 });
 ```
 
-Registering `onChange` marks the node as active (green border). Callbacks are automatically cleared when code is re-run, so re-registering each run is intentional.
+Registering `onChange` marks the object as active with a green border. Patchies clears callbacks when the code runs again. Register the callback each time the code runs.
 
 ### `settings.clear()`
 
-Resets all settings to defaults and clears persisted values.
+Reset all settings to their default values. Clear saved values.
 
 ## Field Types
 
 ### `slider`
 
-A range slider. `min` and `max` are required.
+Use a range slider. `min` and `max` are required.
 
 ```javascript
 { key: 'speed', type: 'slider', label: 'Speed', min: 0, max: 5, step: 0.1, default: 1 }
@@ -109,7 +115,7 @@ A range slider. `min` and `max` are required.
 
 ### `number`
 
-A numeric input field.
+Use a numeric input field.
 
 ```javascript
 { key: 'count', type: 'number', label: 'Count', min: 1, max: 100, default: 10 }
@@ -124,7 +130,7 @@ A numeric input field.
 
 ### `boolean`
 
-A toggle switch.
+Use a toggle switch.
 
 ```javascript
 { key: 'loop', type: 'boolean', label: 'Loop', default: true }
@@ -132,7 +138,7 @@ A toggle switch.
 
 ### `string`
 
-A text input.
+Use a text input.
 
 ```javascript
 { key: 'label', type: 'string', label: 'Label', placeholder: 'Enter text...', default: 'Hello' }
@@ -140,7 +146,7 @@ A text input.
 
 ### `select`
 
-A dropdown with predefined options.
+Use a select menu with predefined options.
 
 ```javascript
 {
@@ -156,24 +162,24 @@ A dropdown with predefined options.
 }
 ```
 
-Options can also be a plain string array — each string becomes both the label and value:
+You can also use a plain string array. Each string becomes the label and value:
 
 ```javascript
 { key: 'shape', type: 'select', label: 'Shape', default: 'circle',
   options: ['circle', 'square', 'triangle'] }
 ```
 
-Option `description` shows as a tooltip (object form only).
+An option `description` appears as a tooltip. Use the object form to add it.
 
 ### `color`
 
-A color picker. Value is a hex string (e.g. `'#ff6600'`).
+Use a color picker. The value is a hex string, such as `'#ff6600'`.
 
 ```javascript
 { key: 'bg', type: 'color', label: 'Background', default: '#000000' }
 ```
 
-Optionally provide `presets` to show a swatch grid above the picker:
+Use `presets` to show a swatch grid above the picker:
 
 ```javascript
 {
@@ -187,7 +193,7 @@ Optionally provide `presets` to show a swatch grid above the picker:
 
 ## Common Field Properties
 
-All field types share these properties:
+All field types use these properties:
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
@@ -200,7 +206,7 @@ All field types share these properties:
 
 ## Persistence
 
-Control where values are stored using the `persistence` field property:
+Use the `persistence` field property to control where Patchies stores values:
 
 | Value | Behavior |
 | ----- | -------- |
@@ -225,7 +231,7 @@ settings.define([
 
 ## Reacting to Changes
 
-Use `onChange` to update visuals or behavior in real time when the user adjusts a setting:
+Use `onChange` to update visuals or behavior when the user changes a setting:
 
 ```javascript
 await settings.define([
@@ -249,7 +255,7 @@ function draw() {
 
 ## Examples
 
-### Canvas — parametric animation
+### Canvas — Parameter animation
 
 ```javascript
 await settings.define([
@@ -281,7 +287,7 @@ function draw(ts) {
 requestAnimationFrame(draw);
 ```
 
-### Hydra — tunable shader
+### Hydra — Adjustable shader
 
 ```javascript
 await settings.define([
@@ -296,7 +302,7 @@ settings.onChange((k, v) => { if (k === 'freq') freq = v; if (k === 'sync') sync
 osc(() => freq, () => sync, 0.8).rotate(0.1).out();
 ```
 
-### Worker — message-driven with live config
+### Worker — Message-driven live configuration
 
 ```javascript
 await settings.define([
@@ -323,7 +329,7 @@ settings.onChange((key, value) => {
 startTimer();
 ```
 
-### JS — update settings from incoming messages
+### JS — Update settings from incoming messages
 
 ```javascript
 await settings.define([
@@ -347,11 +353,11 @@ clock.every('4:0:0', () => {
 
 ## Make Settings the Primary Button
 
-Once you've defined a settings panel, the gear icon lives in the overflow menu by default — `<code>` is what sits in the rightmost slot.
+After you define a settings panel, the gear icon is in the overflow menu by default. The `<code>` icon is in the rightmost slot.
 
-For code-stable patches where you mostly reach for the sliders and rarely the editor, swap them with `setPrimaryButton('settings')`.
+For a code-stable patch, use `setPrimaryButton('settings')` to make the gear icon the primary button.
 
-After this runs, the gear icon becomes the primary action and `Edit code` moves into the overflow menu. See [JS Integrations](/docs/js-integrations) for the full `setPrimaryButton()` reference.
+After this code runs, the gear icon is the primary button. `Edit code` moves to the overflow menu. See [JS Integrations](/docs/js-integrations) for the full `setPrimaryButton()` reference.
 
 For `glsl`, use the comment directive instead:
 
@@ -361,12 +367,13 @@ For `glsl`, use the comment directive instead:
 
 ## Notes
 
-- `define()` must be called at the **top level** of your code (not inside a callback or loop). Re-running the code resets the schema.
-- The settings panel only appears after `define()` is called with a non-empty schema. If the schema is empty or `define()` is never called, no gear icon is shown.
-- **Revert All** appears in the panel when any field has a `default` and the current value differs from it. Clicking it restores all fields to their defaults.
+- Call `define()` at the **top level** of the code. Do not call it in a callback or loop. Running the code again resets the schema.
+- The settings panel appears only after `define()` receives a non-empty schema. An empty schema does not show a gear icon.
+- If you do not call `define()`, Patchies does not show a gear icon.
+- **Revert All** appears when a field has a `default` and a different current value. Click it to restore every field default.
 
 ## See Also
 
-- [JavaScript Runner](/docs/javascript-runner) — Full JSRunner documentation
-- [Data Storage](/docs/data-storage) — General-purpose persistent key-value storage
-- [Canvas Interaction](/docs/canvas-interaction) — Mouse and keyboard events in visual objects
+- [JavaScript Runner](/docs/javascript-runner) — Use the full JSRunner API.
+- [Data Storage](/docs/data-storage) — Store general key-value data.
+- [Canvas Interaction](/docs/canvas-interaction) — Handle pointer and keyboard events in visual objects.

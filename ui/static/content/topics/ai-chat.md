@@ -1,90 +1,95 @@
 # Chat
 
-Chat is an AI assistant that can read your patch, explain what is happening, and queue safe canvas changes for you to review.
+Chat is an AI assistant that reads your patch, explains it, and queues canvas changes for you to review.
 
-Open the sidebar and switch to **Chat**. Ask a question, describe a change, or ask it to build something on the canvas.
+Open the sidebar. Select **Chat**. Ask a question, describe a change, or ask Chat to build something on the canvas.
 
 ## How It Works
 
-Chat works like a collaborator sitting next to your patch. It can inspect the canvas, read selected object data, check object errors, search the docs, and look up object-specific instructions before it suggests a change.
+Chat acts like a collaborator beside your patch. It inspects the canvas, reads selected object data, checks errors, and searches the documentation.
 
-When you ask Chat to modify the canvas, it creates an action card. Nothing changes until you choose **Apply**. If the suggestion is not right, choose **Dismiss** and ask for a different version.
+Chat also reads object instructions before it proposes a change. When you ask Chat to change the canvas, it creates an action card.
+
+Nothing changes until you select **Apply**. If a suggestion is not right, select **Dismiss** and ask for another version.
 
 ## Try It
 
-### Ask About The Selected Object
+### Ask About the Selected Object
 
-1. Select an object on the canvas
-2. Open **Chat**
+1. Select an object on the canvas.
+2. Open **Chat**.
 3. Ask:
 
 ```text
 What does this object do?
 ```
 
-Chat includes the selected object's type, data, and recent errors as context.
+Chat includes the selected object type, data, and recent errors as context.
 
-### Make A Small Edit
+### Make a Small Edit
 
-Select a code object and ask:
+1. Select a code object.
+2. Ask:
 
 ```text
 Make this animation slower and use warmer colors.
 ```
 
-Chat can read the current object data, rewrite the relevant fields, and queue an edit card for you to apply.
+Chat reads the current object data, changes the related fields, and queues an edit card for you to apply.
 
-### Build From A Preset
+### Build From a Preset
 
-Ask:
+Ask Chat:
 
 ```text
 Find texture presets that would work well for a soft background.
 ```
 
-Chat can search built-in and user presets, read the full contents of a preset, and insert a preset by name. If you ask for something in the current view, Chat can read your viewport and place the preset where you are looking.
+Chat searches built-in and user presets, reads the complete preset, and inserts a preset by name. For a request in the current view, Chat reads your viewport and places the preset there.
 
 ## What Chat Can Do
 
-Chat can queue these canvas actions:
+Chat queues these canvas actions:
 
-- Create one object from generated data
-- Create multiple connected objects
-- Insert an existing preset
-- Edit an object's data or code
-- Replace an object with another type
-- Delete objects
-- Move objects around the canvas
-- Connect objects with edges
-- Disconnect existing edges
+- Create one object from generated data.
+- Create multiple connected objects.
+- Insert an existing preset.
+- Edit object data or code.
+- Replace an object with another type.
+- Delete objects.
+- Move objects on the canvas.
+- Connect objects with edges.
+- Disconnect existing edges.
 
-For bigger creative requests, Chat may use a generation step first, then queue the final canvas change. For example, "make a kick and snare patch" can become a generated object graph, followed by one action card that inserts the objects and connections.
+For a large creative request, Chat may generate content before it queues the canvas change. For example, a request for a kick and snare patch can generate an object graph.
+
+Chat then shows one action card that adds the objects and connections.
 
 ## What Chat Can Read
 
-Chat can use context tools behind the scenes:
+Chat uses these context sources:
 
-- The current canvas objects and edges
-- Your current viewport, zoom level, visible bounds, and canvas center
-- A specific object's full data and connected edges
-- Recent object errors and warnings
-- Object-specific instructions, handles, inlets, and outlets
-- Topic docs and object reference pages
-- Built-in object packs and preset packs
-- Preset search results and full preset contents
-- Built-in sample libraries, plus Freesound when configured
+- The current canvas objects and edges.
+- Your current viewport, zoom level, visible bounds, and canvas center.
+- The complete data and connected edges for a specific object.
+- Recent object errors and warnings.
+- Object instructions, handles, inlets, and outlets.
+- Topic documentation and object reference pages.
+- Built-in object packs and preset packs.
+- Preset search results and complete preset contents.
+- Built-in sample libraries and Freesound, when configured.
 
-This context helps Chat avoid guessing. If something is failing, ask it to check the errors before changing the patch.
+This context helps Chat avoid assumptions. If a patch fails, ask Chat to check its errors before it changes the patch.
 
 ## Working With Action Cards
 
-Action cards are proposed changes.
+Action cards show proposed changes.
 
-- **Apply** runs the change on your canvas
-- **Dismiss** leaves your patch unchanged
-- Applied actions use Patchies history, so you can undo them
+- **Apply** changes the canvas.
+- **Dismiss** leaves the patch unchanged.
+- Applied actions use Patchies history. You can undo them.
 
-You can also enable auto-approve in the chat controls when you want faster iteration. Keep it off when you are asking for broad changes or working in a patch you care about.
+Enable auto-approve in the chat controls to make changes faster. Keep it off for broad changes or for a patch you care about.
 
 ## Useful Prompts
 
@@ -122,11 +127,11 @@ Connect the slider to the oscillator frequency.
 
 ## Current Limits
 
-Chat is strongest when you ask for concrete, reviewable changes. A few operations are still easier to do manually or with a follow-up prompt:
+Ask for clear changes that you can review. Some operations are easier to do yourself or with another prompt:
 
-- Object titles are usually set through object code, such as `setTitle`
-- Deep nested settings edits are handled as normal object data edits
-- Duplicating objects can be approximated, but there is no dedicated duplicate action yet
+- Object code usually sets object titles, such as `setTitle`.
+- Chat handles deep nested settings as normal object data edits.
+- Chat can approximate duplicated objects, but it has no dedicated duplicate action.
 
 ## See Also
 

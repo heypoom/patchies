@@ -2,9 +2,11 @@
 
 ![Shortcuts](/content/images/startup-modal-shortcut.webp)
 
-Patchies is designed to be keyboard-first so you can get in the flow. Go to [Help > Shortcuts](/?startup=shortcuts) to see the full list of keyboard and mouse shortcuts.
+The Shortcuts screen lists keyboard and mouse shortcuts.
+
+Use [Help > Shortcuts](/?startup=shortcuts) to view the full list of shortcuts.
 
 ## See Also
 
-- [Adding Objects](/docs/adding-objects)
-- [Demos](/docs/demos)
+- [Adding Objects](/docs/adding-objects) — Add objects to a patch.
+- [Demos](/docs/demos) — Open example patches.

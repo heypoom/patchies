@@ -1,32 +1,37 @@
 # Canvas Interaction
 
-Visual objects provide methods to control how mouse/touch interactions behave inside the node. By default, interactions pass through to the canvas for panning and dragging. Use these methods to capture interactions for your own UI.
+Visual objects provide methods that control mouse and touch interaction inside the node. By default, these interactions pass to the canvas for panning and dragging.
 
-## Supported Nodes
+Use these methods when an object needs its own controls.
 
-These methods are available in: `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `vue`, `dom`
+## Supported Objects
+
+These objects support the interaction methods:
+
+- `p5`, `canvas`, `canvas.dom`, `textmode`, and `textmode.dom`
+- `three`, `three.dom`, `vue`, and `dom`
 
 ## Methods
 
-`noDrag()`
+### `noDrag()`
 
-Disables dragging the object when clicking/touching inside it. Use this when you need mouse/touch interactivity like sliders, buttons, or drawing.
+Call `noDrag()` to stop object dragging when you click or touch inside it. Use it for sliders, buttons, or drawing.
 
-`noPan()`
+### `noPan()`
 
-Disables panning the canvas when dragging inside the object. Useful for objects with internal drag behavior that shouldn't move the canvas view.
+Call `noPan()` to stop canvas panning when you drag inside the object. Use it for objects with internal drag behavior.
 
-`noWheel()`
+### `noWheel()`
 
-Disables wheel zoom when scrolling inside the object. Useful for scrollable content or objects that respond to wheel events.
+Call `noWheel()` to stop wheel zoom inside the object. Use it for scrollable content or wheel controls.
 
-`noInteract()`
+### `noInteract()`
 
-Convenience method that calls all three: `noDrag()`, `noPan()`, and `noWheel()`. Use this for fully interactive objects.
+Call `noInteract()` to disable all three default canvas interactions. Use it for fully interactive objects.
 
 ## Usage
 
-Call these in your setup code. In P5.js, call them in `setup()`:
+Call these methods in setup code. In P5.js, call them in `setup()`:
 
 ```javascript
 function setup() {
@@ -45,14 +50,12 @@ function mousePressed() {
 }
 ```
 
-For other objects, call at the top level of your code.
+In other objects, call the methods at the top level of your code.
 
-## Note
-
-You can still drag the object by its title bar even when `noDrag()` is enabled.
+> **Note**: You can still drag an object by its title bar when `noDrag()` is enabled.
 
 ## See Also
 
-- [p5](/docs/objects/p5) - P5.js sketches
-- [canvas](/docs/objects/canvas) - Canvas API
-- [JavaScript Runner](/docs/javascript-runner) - Full runtime reference
+- [p5](/docs/objects/p5) — Create P5.js sketches.
+- [canvas](/docs/objects/canvas) — Use the Canvas API.
+- [JavaScript Runner](/docs/javascript-runner) — Read the full runtime reference.

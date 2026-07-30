@@ -2,31 +2,36 @@
 
 ![Presets sidebar](/content/images/presets-sidebar.webp)
 
-Presets are saved configurations of objects that you can reuse across patches.
+The Presets sidebar lists your saved presets.
+
+Presets store object settings that you can reuse in other patches.
 
 ## Opening the Presets Panel
 
-Use `Ctrl/Cmd + B > Presets` to browse and manage your presets.
+Use `Ctrl/Cmd + B > Presets` to browse and manage presets.
 
 ## Saving Presets
 
-Select an object on the canvas, then use the overflow menu (`...`) in the bottom toolbar and choose "Save as Preset".
+1. Select an object on the canvas.
+2. Open the overflow menu (`...`) in the bottom toolbar.
+3. Select **Save as Preset**.
 
 ## Organization
 
-- Presets are organized into libraries and can be filtered by category
+Libraries organize presets. You can filter presets by category.
 
 ## Custom Libraries
 
-You can create your own preset libraries to organize your presets:
-- Libraries can be imported and exported as files for sharing
-- Use folders within libraries to organize presets by category or project
+Create a library to organize your presets:
+
+- Import or export a library as a file to share it.
+- Use folders to organize presets by category or project.
 
 ## Built-in Preset Packs
 
-Patchies includes [preset packs](/docs/manage-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
+Patchies includes [preset packs](/docs/manage-packs) with objects for utilities, effects, and visualizations.
 
 ## See Also
 
-- [Packs](/docs/manage-packs)
-- [Adding Objects](/docs/adding-objects)
+- [Packs](/docs/manage-packs) — Install and manage preset packs.
+- [Adding Objects](/docs/adding-objects) — Add objects to a patch.

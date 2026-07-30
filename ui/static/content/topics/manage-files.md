@@ -1,38 +1,42 @@
 # Files
 
+The Files panel lets you use virtual and linked files in a patch.
+
 ![Files sidebar](/content/images/files-sidebar.webp)
 
-The Files panel in the sidebar lets you work with virtual files in your patches.
+Use the Files panel from the sidebar.
 
-## Opening the Files Panel
+## Open the Files Panel
 
-Use `Ctrl/Cmd + B > Files` to show the files panel.
+Press `Ctrl/Cmd + B > Files`.
 
-## Adding Files
+## Add Files
 
-You can add files to your patch in two ways:
+Add files in one of two ways:
 
-- **Drop into file tree**: Drag files from your system into the Files panel to add them as linked files
-- **Drop into patcher**: Drag files directly onto the canvas to create virtual files that are embedded in your patch
+- **Drop into the file tree:** Drag files from your system into the Files panel. Patchies adds them as linked files.
+- **Drop into the patcher:** Drag files onto the canvas. Patchies creates virtual files in the patch.
 
-## Linking Folders
+## Link Folders
 
-Click the folder icon to link a local folder. This gives your patch read access to files in that folder, useful for loading images, audio samples, or data files.
+Click the folder icon to link a local folder. Your patch can then read files in that folder.
 
-**Note**: Linking folders is only supported in Chromium browsers.
+Use a linked folder to load images, audio samples, or data files.
+
+> **Note**: You can link folders only in Chromium browsers.
 
 ## Virtual Files
 
-Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
+Patchies stores files dropped into the patcher as virtual files. The files stay in the patch when you save or share it.
 
-You can also store URLs as virtual files by using the "add link" button.
+Click the **add link** button to store a URL as a virtual file.
 
-## Using Files in Code
+## Use Files in Code
 
-See [Virtual Filesystem](/docs/virtual-filesystem) for how to load files in your objects with `getVfsUrl()`.
+Use `getVfsUrl()` to load files in an object. See [Virtual Filesystem](/docs/virtual-filesystem) for details.
 
 ## See Also
 
-- [Virtual Filesystem](/docs/virtual-filesystem) - Loading files in code
-- [JavaScript Runner](/docs/javascript-runner)
-- [Saves](/docs/manage-saves)
+- [Virtual Filesystem](/docs/virtual-filesystem) — Load files in object code.
+- [JavaScript Runner](/docs/javascript-runner) — Run JavaScript in an object.
+- [Saves](/docs/manage-saves) — Save patches for later use.

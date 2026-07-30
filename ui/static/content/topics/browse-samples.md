@@ -2,26 +2,28 @@
 
 ![Browse samples](/content/images/browse-samples.webp)
 
-Sample Browser lets you search and preview audio samples from a curated collection of open-source sample libraries, then drag them directly into your patch.
+The Samples panel lets you search and preview audio samples from open-source libraries. You can add a sample to a patch.
 
-Open the sidebar (`Ctrl/Cmd + B`), click on expand (rightmost button), then "Samples" (music icon).
+1. Open the sidebar with `Ctrl/Cmd + B`.
+2. Select the expand button at the far right.
+3. Select **Samples** with the music icon.
 
 ## Searching
 
-Type in the search bar to filter samples by name or category. Results are grouped by category and update as you type.
+Type in the search bar to filter samples by name or category. The panel groups results by category and updates them as you type.
 
-- Click the **play** button next to any sample to preview it
-- Click again (or click another sample) to stop playback
-- Drag any result row onto the canvas to create a node pre-loaded with that sample URL.
+- Select the **play** button next to a sample to preview it.
+- Select the button again, or select another sample, to stop playback.
+- Drag a result row to the canvas to create a node with that sample URL.
 
 ## Filtering Sources
 
-Click the filter icon in the bottom-right of the panel to toggle individual sample libraries on or off.
+Select the filter icon in the bottom-right corner of the panel to enable or disable sample libraries.
 
 ## Sample Libraries
 
 | Badge | Library | Author |
-| ----- | --------- | --------- |
+| ----- | ------- | ------ |
 | TDM | Tidal Drum Machines | geikha |
 | DS | Dough Samples | felixroos |
 | SPC | Spicule | yaxu |
@@ -36,11 +38,11 @@ Click the filter icon in the bottom-right of the panel to toggle individual samp
 | SCD | SuperSonic SynthDefs | Sam Aaron |
 | FS | Freesound | community |
 
-Most libraries are fetched from their public GitHub repositories.
+Patchies gets most libraries from their public GitHub repositories.
 
-The freesound library is powered by the [Freesound API](https://freesound.org/docs/api/), so results are dynamic and may vary based on your search query and their current database.
+The Freesound library uses the [Freesound API](https://freesound.org/docs/api/). Results change with your search query and the current Freesound database.
 
 ## See Also
 
-- [Adding Objects](/docs/adding-objects)
-- [Virtual Filesystem](/docs/virtual-filesystem)
+- [Adding Objects](/docs/adding-objects) — Add objects to a patch.
+- [Virtual Filesystem](/docs/virtual-filesystem) — Manage files in a patch.

@@ -1,21 +1,21 @@
 # JS Integrations
 
-Call external AI providers, control how objects appear in your patch, and configure GPU texture precision — all from JavaScript.
+Use JavaScript to call an AI provider, control object presentation, and set GPU texture precision.
 
 ## Virtual Filesystem
 
-Load images, videos, fonts, and other files from the patch's virtual filesystem:
+Load images, videos, fonts, and other files from the patch virtual filesystem:
 
 ```javascript
 const url = await getVfsUrl("my-image.png");
 const img = loadImage(url); // works in p5, for example
 ```
 
-See [Virtual Filesystem](/docs/virtual-filesystem) for how to add files to your patch.
+See [Virtual Filesystem](/docs/virtual-filesystem) to add files to a patch.
 
 ## Persistent Storage
 
-Use `kv` to store data that survives page reloads:
+Use `kv` to store data after the page reloads:
 
 ```javascript
 // Save a value
@@ -29,11 +29,11 @@ const settings = kv.store("settings");
 await settings.set("theme", "dark");
 ```
 
-See [Data Storage](/docs/data-storage) for more.
+See [Data Storage](/docs/data-storage) for the full API.
 
 ## Audio Reactivity
 
-Connect an `fft~` object to your js object and call `fft()` to read audio analysis data:
+Connect an `fft~` object to a js object. Then call `fft()` to read the audio analysis data:
 
 ```javascript
 const analysis = fft({ type: "freq" });
@@ -44,13 +44,13 @@ const treble = analysis.getEnergy("treble");
 const firstBin = analysis.f[0];
 ```
 
-`fft()` returns an `FFTAnalysis` instance. See [Audio Reactivity](/docs/audio-reactivity) for waveform mode, raw bins, normalized bins, and the full walkthrough.
+`fft()` returns an `FFTAnalysis` instance. See [Audio Reactivity](/docs/audio-reactivity) for waveforms, raw bins, normalized bins, and examples.
 
 ## Primary Button
 
-Each visual object has a primary button next to its overflow menu; by default it's the `<code>` icon.
+Each visual object has a primary button beside its overflow menu. The default button uses the `<code>` icon.
 
-For code-stable patches, you might prefer to surface the settings panel or a re-run button instead. Call `setPrimaryButton()` from your object's own code:
+For a code-stable patch, you can show the settings panel or a run button. Call `setPrimaryButton()` in the object code:
 
 ```javascript
 setPrimaryButton('settings'); // gear icon — opens the settings panel
@@ -58,7 +58,7 @@ setPrimaryButton('run');      // play icon — re-runs the code
 setPrimaryButton('code');     // default — opens the code editor
 ```
 
-The displaced button moves into the overflow menu, so it's still one click away. The choice is saved with the patch. See [Object Settings](/docs/object-settings) for how to set up the settings panel.
+The previous button moves to the overflow menu. You can still select it with one click. The patch saves this choice. See [Object Settings](/docs/object-settings) to set up the settings panel.
 
 For `glsl` shaders, use the comment directive instead:
 
@@ -68,9 +68,7 @@ For `glsl` shaders, use the comment directive instead:
 
 ## Output Resolution
 
-Visual objects (`three`, `regl`, `canvas`, `p5`, etc.) render at full
-window resolution by default. For data textures or lightweight renders,
-reduce the texture size:
+By default, visual objects such as `three`, `regl`, `canvas`, and `p5` render at the full window resolution. For data textures or light renders, reduce the texture size:
 
 ```javascript
 setResolution(256)       // 256×256
@@ -80,34 +78,32 @@ setResolution('1/4')     // quarter resolution
 setResolution('1/8')     // any 1/n divisor works
 ```
 
-Downstream nodes sample the smaller texture with bilinear filtering —
-upscaling is automatic. Combine with `setTextureFormat('rgba32f')` for
-GPGPU workflows like texture-encoded geometry.
+Downstream nodes use bilinear filtering to sample the smaller texture. Patchies automatically enlarges it. Use `setTextureFormat('rgba32f')` for GPGPU tasks such as texture-encoded geometry.
 
 > **Note**: GLSL and SwissGL nodes use the `// @resolution 256`
 > directive instead of `setResolution()`, see [glsl](/docs/objects/glsl).
 
 ## Float Texture Format
 
-Visual objects (`hydra`, `canvas`, `three`, `regl`, `swgl`, `textmode`) output 8-bit RGBA textures by default, clamping values to 0–1. Call `setTextureFormat()` to switch to float precision:
+By default, visual objects such as `hydra`, `canvas`, `three`, `regl`, `swgl`, and `textmode` output 8-bit RGBA textures. They limit values to 0–1. Call `setTextureFormat()` to use float precision:
 
 ```javascript
 setTextureFormat('rgba32f');
 ```
 
 | Format | Precision | Range | Use case |
-| --- | --- | --- | --- |
+| -------- | -------- | -------- | -------- |
 | `rgba8` | 8-bit | 0–1 | Default. Color, visual output |
 | `rgba16f` | 16-bit float | ±65504 | HDR, moderate-precision data |
 | `rgba32f` | 32-bit float | full float | GPGPU, physics, positions |
 
-Call once at init — not per-frame. Downstream nodes sample the texture the same way regardless of format.
+Call this function once when the object starts. Do not call it for each frame. Downstream nodes sample every texture in the same way.
 
 > **Tip**: For `glsl` and `swgl` nodes, you can also use the `// @format rgba32f` comment directive instead.
 
 ## Clock & Beat Sync
 
-The `clock` object gives you access to the global transport for beat-synced animations and scheduling:
+The `clock` object gives you the global transport for beat-synced animation and scheduling:
 
 ```javascript
 // Read transport state at any time
@@ -127,13 +123,13 @@ clock.every('1:0:0', () => {
 });
 ```
 
-See [Clock API](/docs/clock-api) for the full scheduling reference.
+See [Clock API](/docs/clock-api) for the full scheduling API.
 
 
 
 ## AI
 
-Call the configured AI provider directly from your patch:
+Call the configured AI provider from a patch:
 
 ```javascript
 const result = await llm("Generate a JSON list of 5 colors");
@@ -157,11 +153,11 @@ const haiku = await llm("Write a haiku about recursion", {
 });
 ```
 
-Requires an API key — configure your provider via `Ctrl/Cmd + K > AI Provider Settings`.
+An API key is required. Configure the provider with `Ctrl/Cmd + K > AI Provider Settings`.
 
 ## Presentation
 
-Control how other objects appear in the patch. Use `Ctrl/Cmd + Shift + C` to copy an object's ID, and `Shift + Drag` to select multiple.
+Control how other objects appear in the patch. Use `Ctrl/Cmd + Shift + C` to copy an object ID. Use `Shift + Drag` to select multiple objects.
 
 ```javascript
 // Pan and zoom the canvas to focus on specific objects
@@ -178,10 +174,10 @@ unpauseObject('p5-1');
 
 ## See Also
 
-- [JavaScript](/docs/javascript-runner) — Core JS API: messaging, timers, and more
-- [JS Modules](/docs/js-modules) — Importing npm packages and sharing code between objects
-- [Virtual Filesystem](/docs/virtual-filesystem) — Managing files in your patch
-- [Data Storage](/docs/data-storage) — Full `kv` API reference
-- [Audio Reactivity](/docs/audio-reactivity) — Full FFT walkthrough
-- [Clock API](/docs/clock-api) — Beat-synced timing and scheduling
-- [Enabling AI](/docs/enabling-ai) — How to configure an AI provider
+- [JavaScript](/docs/javascript-runner) — Use the core JS API for messages and timers.
+- [JS Modules](/docs/js-modules) — Import npm packages and share code between objects.
+- [Virtual Filesystem](/docs/virtual-filesystem) — Add and manage patch files.
+- [Data Storage](/docs/data-storage) — Use the full `kv` API.
+- [Audio Reactivity](/docs/audio-reactivity) — Read the complete FFT guide.
+- [Clock API](/docs/clock-api) — Use beat-synced timing and scheduling.
+- [Enabling AI](/docs/enabling-ai) — Configure an AI provider.

@@ -1,30 +1,36 @@
 # Packs
 
-Patchies starts with a few objects enabled by default. Packs let you enable more — grouping related objects and presets by use case so you only see what's relevant to your work.
+Patchies enables some objects by default. Packs group related objects and presets by use case. Enable a pack to show its objects or presets.
 
 ![Object browser packs panel](/content/images/object-browser-packs.webp)
 
+The packs panel shows object packs and preset packs.
+
 ## Accessing Packs
 
-Open the object browser (`Ctrl/Cmd + O`) and click the **packs** chip in the top-right corner. This opens the packs panel inline, showing both object packs and preset packs. You can also reach it from the sidebar via the **Packs** tab.
+1. Open the object browser with `Ctrl/Cmd + O`.
+2. Select the **packs** chip in the top-right corner.
+
+The packs panel opens in the object browser. You can also open it from the **Packs** sidebar tab.
 
 ## Object Packs
 
-Object packs are curated groups of related objects organized by use case. Enabling a pack adds those objects to the object browser and quick-insert menu.
+Object packs group related objects by use case. Enable an object pack to add its objects to the object browser and quick-insert menu.
 
 ## Preset Packs
 
-Preset packs are collections of pre-configured presets grouped by use case. Each preset is a ready-to-use object with code already written for common tasks.
+Preset packs group configured presets by use case. Each preset has code for a common task.
 
-> **Note**: To use a preset, its required object pack must be enabled. A warning indicator will appear with a one-click fix to enable the missing pack.
+> **Note**: Enable a preset's required object pack before you use the preset. Patchies shows a warning with a one-click control to enable a missing pack.
 
 ## Tips
 
-- Search filters both object and preset packs by name, description, or contained objects
-- Press **All** to enable every pack in a section; **Reset** to return to defaults
-- If you search for a disabled object in the browser, a suggestion will appear to enable the relevant pack directly
+- Search packs by name, description, or included objects.
+- Select **All** to enable every pack in a section.
+- Select **Reset** to return to the default packs.
+- Search for a disabled object to get a suggestion that enables its pack.
 
 ## See Also
 
-- [Adding Objects](/docs/adding-objects)
-- [Presets](/docs/manage-presets)
+- [Adding Objects](/docs/adding-objects) — Add objects to a patch.
+- [Presets](/docs/manage-presets) — Save and use object presets.

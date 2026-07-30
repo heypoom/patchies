@@ -1,20 +1,21 @@
 # JavaScript
 
-Patchies provides a JavaScript API available in all JS-enabled objects — from `js` and `worker` to visual objects like `p5`, `canvas`, `hydra`, and `three`. Use it to send and receive messages, run timers, react to audio, and add custom logic to any part of your patch.
+Patchies provides a JavaScript API for all JavaScript-enabled objects, including `js`, `worker`, `p5`, `canvas`, `hydra`, and `three`. Use the API to send and receive messages, run timers, react to audio, and add custom logic to a patch.
 
 > ✨ [Try the starter patch](/?id=9c5ytrchpoazlez) to see message passing in action.
 
 ## Supported Objects
 
-These objects all run JavaScript and share the same API described on this page:
+These objects run JavaScript and share the API on this page:
 
 [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [regl](/docs/objects/regl), [swgl](/docs/objects/swgl), [dom](/docs/objects/dom), [vue](/docs/objects/vue), [sonic~](/docs/objects/sonic~), [tone~](/docs/objects/tone~), [elem~](/docs/objects/elem~)
 
-Expression objects like [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), and [scan](/docs/objects/scan) evaluate code *once per incoming message* and cannot use messaging or timer functions.
+Expression objects, such as [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), and [scan](/docs/objects/scan), evaluate code for each incoming message. They cannot use messaging or timer functions.
 
 ## Your First JS Object
 
-Create a `js` object (press `Enter` and type `js`). You'll see a code editor. Try this:
+1. Press `Enter` and type `js` to create a `js` object.
+2. Enter this code in the editor:
 
 ```javascript
 // Receive a message and send back its double
@@ -23,9 +24,9 @@ recv((data) => {
 });
 ```
 
-Connect a `slider` to the inlet, and a `peek` to the outlet. Drag the slider — the doubled value appears in `peek`.
+Connect a `slider` to the inlet. Connect a `peek` to the outlet. Drag the slider to show the doubled value in `peek`.
 
-> **Tip**: Use `console.log()` to print values to the virtual console (open it with the console button in the toolbar). It shows output from your JS objects, separate from the browser console.
+> **Tip**: Use `console.log()` to print values to the virtual console. Open it with the console button in the toolbar. It shows output from JavaScript objects, separate from the browser console.
 
 ## Essentials
 
@@ -36,11 +37,11 @@ console.log("Hello!");
 console.log("The value is:", 42);
 ```
 
-Output appears in the virtual console inside Patchies, not the browser's DevTools console.
+Patchies shows this output in the virtual console, not the browser DevTools console.
 
 ### Sending & Receiving Messages
 
-Use `send()` to output a value from your object, and `recv()` to listen for incoming messages:
+Use `send()` to send a value from an object. Use `recv()` to receive messages:
 
 ```javascript
 // Send a message out of the default outlet
@@ -55,7 +56,7 @@ recv((data) => {
 });
 ```
 
-You can check which inlet a message came from using `meta.inlet`:
+Use `meta.inlet` to check which inlet sent a message:
 
 ```javascript
 recv((data, meta) => {
@@ -89,7 +90,7 @@ send("second", { to: 1 }); // outlet 1
 
 #### Named Channels (Wireless Messaging)
 
-Connect objects without drawing cables by using named channels. This is handy for sending data across a large patch.
+Use named channels to connect objects without cables. This helps you send data across a large patch.
 
 ```javascript
 // Send to a named channel from one object
@@ -103,18 +104,18 @@ recv((data, meta) => {
 }, { from: 'position' });
 ```
 
-The `to` option handles both cables and channels:
+The `to` option sends data through cables and channels:
 
 ```javascript
 send(data, { to: 0 });          // outlet 0 (cable)
 send(data, { to: 'position' }); // named channel (wireless)
 ```
 
-Named channels work between `js`, `worker`, and the visual [send](/docs/objects/send)/[recv](/docs/objects/recv) objects.
+Named channels work with `js`, `worker`, and the visual [send](/docs/objects/send) and [recv](/docs/objects/recv) objects.
 
 ### Timers
 
-All timers clean up automatically when you edit the code or remove the object — no memory leaks:
+Patchies cleans up timers when you edit the code or remove the object:
 
 ```javascript
 // Run every 500ms
@@ -137,22 +138,22 @@ requestAnimationFrame(() => {
 });
 ```
 
-> **Important**: Always use the Patchies versions (`setInterval`, `setTimeout`, `requestAnimationFrame`) — not `window.setInterval` etc. The Patchies versions clean up automatically; the window versions will keep running even after you change your code.
+> **Important**: Use the Patchies versions of `setInterval`, `setTimeout`, and `requestAnimationFrame`. Do not use `window.setInterval` and similar browser APIs. Patchies cleans up its versions. Browser timers continue after you change the code.
 
 ### Top-Level Await
 
-You can use `await` directly at the top level of your script:
+Use `await` directly at the top level of a script:
 
 ```javascript
 await delay(1000);
 send("started after 1 second");
 ```
 
-This is useful for sequencing things or waiting for data before starting.
+Use this to control sequence or wait for data.
 
 ### Custom Cleanup
 
-Register code that runs when your object is removed or the code is re-executed:
+Register code that runs when Patchies removes an object or runs its code again:
 
 ```javascript
 const socket = new WebSocket("wss://example.com");
@@ -165,7 +166,7 @@ onCleanup(() => {
 
 ### Display Title
 
-Change the label shown on the object in the patch:
+Change the label that Patchies shows on an object:
 
 ```javascript
 setTitle("counter: 0");
@@ -181,7 +182,7 @@ setInterval(() => {
 
 ## See Also
 
-- [JS Modules](/docs/js-modules) — Importing npm packages and sharing code between objects
-- [JS Integrations](/docs/js-integrations) — VFS, storage, audio reactivity, clock, AI, and more
-- [Message Passing](/docs/message-passing) — How objects exchange data
-- [Canvas Interaction](/docs/canvas-interaction)
+- [JS Modules](/docs/js-modules) — Import npm packages and share code between objects.
+- [JS Integrations](/docs/js-integrations) — Use VFS, storage, audio, clock, AI, and other APIs.
+- [Message Passing](/docs/message-passing) — Learn how objects exchange data.
+- [Canvas Interaction](/docs/canvas-interaction) — Handle pointer input on the canvas.

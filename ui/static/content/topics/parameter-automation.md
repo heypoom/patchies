@@ -1,14 +1,14 @@
 # Parameter Automation
 
-Automate audio parameters with sample-accurate timing from any `js` node with scheduled audio parameter messages.
+Use scheduled audio-parameter messages from any `js` node to automate audio parameters with sample-accurate timing.
 
-They work with any audio node that has an audio parameter inlet (`gain~`, `osc~`, `pan~`, `delay~`, filters, etc.). When you drag from an audio signal outlet, the audio parameter inlets will turn blue to indicate that it can be automated.
+These messages work with audio nodes that have an audio-parameter inlet, such as `gain~`, `osc~`, `pan~`, and `delay~`. Drag from an audio signal outlet to see eligible inlets turn blue.
 
 ## Message Types
 
 ### Set
 
-Set a parameter value immediately, or at a specific time.
+Set a parameter value now or at a selected time.
 
 ```js
 // Set immediately
@@ -21,7 +21,7 @@ send({ type: 'set', value: 0.5, time: 1.0 });
 send({ type: 'set', value: 0.5, time: 0.5, timeMode: 'relative' });
 ```
 
-The `time` field uses absolute time by default, which works naturally with [clock scheduling](/docs/clock-api) — pass `{ audio: true }` for lookahead scheduling, then pass the `time` argument from the callback directly:
+The `time` field uses absolute time unless you set `timeMode: 'relative'`. Use it with [clock scheduling](/docs/clock-api) for precise future changes. Pass `{ audio: true }` for lookahead scheduling. Then pass the callback `time` argument directly:
 
 ```js
 // Schedule a parameter change on beat 0 with audio-precise timing
@@ -58,11 +58,11 @@ send({
 });
 ```
 
-`values.start` defaults to `0`. The `attack` and `decay` fields accept a number (seconds with linear curve) or a full config object `{ time, curve, ... }` for custom curves. See the curve types section below.
+If you omit `values.start`, it defaults to `0`. The `attack` and `decay` fields accept a number or a config object. A number sets seconds with a linear curve. See the curve types section for custom curves.
 
 ### Release
 
-Trigger a release phase (ramp down from current value).
+Trigger a release phase that ramps down from the current value.
 
 ```js
 // Release immediately
@@ -72,11 +72,11 @@ send({ type: 'release', release: 0.3, endValue: 0 });
 send({ type: 'release', release: 0.3, endValue: 0, time });
 ```
 
-Like `attack`/`decay`, the `release` field accepts a number (seconds) or a full config object.
+Like `attack` and `decay`, the `release` field accepts a duration or a config object.
 
-### Trigger + Release Example
+### Trigger and Release Example
 
-A common pattern — trigger on noteOn, release on noteOff:
+Trigger on `noteOn` and release on `noteOff`:
 
 ```js
 recv((m) => {
@@ -93,18 +93,18 @@ recv((m) => {
 });
 ```
 
-The [adsr](/docs/objects/adsr) object wraps this pattern with convenient inlets for each parameter.
+The [adsr](/docs/objects/adsr) object provides an inlet for each parameter in this pattern.
 
 ## Curve Types
 
-When you pass a number for `attack`, `decay`, or `release`, it uses a linear curve. For custom curves, pass an object with `time` and `curve`:
+When you pass a number for `attack`, `decay`, or `release`, Patchies uses a linear curve. For a custom curve, pass an object with `time` and `curve`:
 
-| Curve            | Description                                                       |
-|------------------|-------------------------------------------------------------------|
-| `'linear'`       | Straight-line ramp (default)                                      |
-| `'exponential'`  | Exponential ramp (target must not be 0)                           |
-| `'targetAtTime'` | Asymptotic approach — eases toward target, never fully reaches it |
-| `'valueCurve'`   | Custom curve from an array of absolute values                     |
+| Curve | Description |
+| ----- | ----------- |
+| `'linear'` | Straight-line ramp. This is the default. |
+| `'exponential'` | Exponential ramp. The target must not be `0`. |
+| `'targetAtTime'` | Approaches the target without fully reaching it. |
+| `'valueCurve'` | Uses an array of absolute values for a custom curve. |
 
 The full config object shape is `{ time, curve, timeConstant?, values? }`:
 
@@ -143,21 +143,21 @@ send({
 });
 ```
 
-The `values` array defines the exact shape of the curve over the phase duration. Values are absolute (not normalized) — the first element is the start value and the last is the end value. Requires at least 2 values.
+The `values` array defines the curve shape over the phase duration. Its values are absolute, not normalized. The first element is the start value. The last element is the end value. The array must contain at least two values.
 
 ## Compatible Nodes
 
-Any audio node with an AudioParam inlet accepts scheduled messages. Common targets:
+Any audio node with an AudioParam inlet accepts scheduled messages. Common targets include:
 
-- [gain~](/docs/objects/gain~) — automate volume
-- [osc~](/docs/objects/osc~) — automate frequency, detune
-- [pan~](/docs/objects/pan~) — automate stereo position
-- [delay~](/docs/objects/delay~) — automate delay time
-- [lowpass~](/docs/objects/lowpass~), [highpass~](/docs/objects/highpass~), etc. — automate filter cutoff/Q
-- [compressor~](/docs/objects/compressor~) — automate threshold, ratio, etc.
+- [gain~](/docs/objects/gain~) — Automate volume.
+- [osc~](/docs/objects/osc~) — Automate frequency and detune.
+- [pan~](/docs/objects/pan~) — Automate stereo position.
+- [delay~](/docs/objects/delay~) — Automate delay time.
+- [lowpass~](/docs/objects/lowpass~) and [highpass~](/docs/objects/highpass~) — Automate filter cutoff and Q.
+- [compressor~](/docs/objects/compressor~) — Automate threshold and ratio.
 
 ## See Also
 
-- [Clock API](/docs/clock-api) — transport-synced scheduling with `clock.schedule`
-- [adsr](/docs/objects/adsr) — envelope generator that sends scheduled messages
-- [line~](/docs/objects/line~) — control-value ramp generator (signal-based alternative)
+- [Clock API](/docs/clock-api) — Schedule changes with `clock.schedule`.
+- [adsr](/docs/objects/adsr) — Send envelope messages.
+- [line~](/docs/objects/line~) — Generate signal-based control-value ramps.

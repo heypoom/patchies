@@ -1,10 +1,10 @@
 # JS Modules
 
-Import npm packages and share code between objects to keep your patches organized and reusable.
+Import npm packages and share code between objects to organize and reuse patch logic.
 
 ## Importing Packages
 
-Use the `npm:` prefix to import any package from npm (powered by [esm.sh](https://esm.sh)):
+Use the `npm:` prefix to import packages from npm through [esm.sh](https://esm.sh):
 
 ```javascript
 import Matter from "npm:matter-js";
@@ -13,7 +13,7 @@ import { uniq } from "npm:lodash-es";
 console.log(uniq([1, 1, 2, 2, 3])); // [1, 2, 3]
 ```
 
-Or import dynamically with `await`:
+Use `await` to import a package dynamically:
 
 ```javascript
 // Using a full URL
@@ -23,13 +23,15 @@ const { uniq } = await import("https://esm.sh/lodash-es");
 const { uniq } = await esm("lodash-es");
 ```
 
-> **Note**: `import * as X from "npm:..."` is not yet supported. Use named or default imports instead.
+> **Note**: Patchies does not support `import * as X from "npm:..."`. Use named or default imports.
 
 ## Shared Libraries
 
 ![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
 
-Share code between multiple `js` objects using the `// @lib <name>` comment at the top of a js object. This turns it into a library that others can import from:
+This patch shows a shared JavaScript library.
+
+Add the `// @lib <name>` comment at the top of a `js` object to make a library. Other `js` objects can import code from the library:
 
 ```javascript
 // In a js object — add "// @lib utils" at the very top
@@ -44,12 +46,12 @@ import { rand, Vector } from 'utils';
 console.log(rand(0, 10));
 ```
 
-The library object shows a package icon in the patch. Any change to it automatically re-runs all importers.
+The library object shows a package icon in the patch. When you change it, Patchies runs all importers again.
 
-> **Note**: Top-level variables are *not* shared between objects — each object has its own isolated scope. Use message passing or named channels to communicate values between objects at runtime.
+> **Note**: Top-level variables belong to one object. Each object has its own scope. Use message passing or named channels to send values between objects at runtime.
 
 ## See Also
 
-- [JavaScript](/docs/javascript-runner) — Core JS API: messaging, timers, and more
-- [JS Integrations](/docs/js-integrations) — AI, presentation controls, and GPU texture formats
-- [Message Passing](/docs/message-passing) — How objects exchange data
+- [JavaScript](/docs/javascript-runner) — Use the core JavaScript API for messages and timers.
+- [JS Integrations](/docs/js-integrations) — Use AI, presentation controls, and GPU texture formats.
+- [Message Passing](/docs/message-passing) — Learn how objects exchange data.

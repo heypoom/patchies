@@ -1,26 +1,26 @@
 # P2P Messaging
 
-Use `netsend` and `netrecv` to send and receive messages across the network using peer-to-peer WebRTC connections.
+Use `netsend` and `netrecv` to send and receive messages over peer-to-peer WebRTC connections.
 
 ## Room Configuration
 
-When you first create a [netsend](/docs/objects/netsend) or [netrecv](/docs/objects/netrecv) object, a `room` parameter is added to your URL. Users need the same `?room=` parameter to connect to each other.
+When you create a [netsend](/docs/objects/netsend) or [netrecv](/docs/objects/netrecv) object, Patchies adds a `room` parameter to the URL. Users need the same `?room=` parameter to connect.
 
-- **Remove the room parameter** from your URL to generate a different room
-- **Set manually**: Go to `Ctrl/Cmd + K > Set room for netsend/netrecv`
-- **Share with friends**: Use "Share Link" (or `Ctrl/Cmd + K > Share Patch Link`) to automatically include the room in shared links
+- **Remove the room parameter** from the URL to create a different room.
+- **Set a room manually** with `Ctrl/Cmd + K > Set room for netsend/netrecv`.
+- **Share a room** with "Share Link" or `Ctrl/Cmd + K > Share Patch Link`. Patchies adds the room to the shared link.
 
 ## How It Works
 
-Uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) with public relay servers for peer-to-peer mesh discovery. No central server stores your messages.
+Patchies uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API). Public relay servers help peers find each other. No central server stores messages.
 
-## Node.js/Bun Integration
+## Node.js and Bun Integration
 
-You can send and receive messages from your own Node.js or Bun scripts using [Trystero](https://github.com/dmotz/trystero) with RTC polyfills like `node-datachannel/polyfill` or `werift`.
+Use [Trystero](https://github.com/dmotz/trystero) to send and receive messages from Node.js or Bun scripts. Use an RTC polyfill such as `node-datachannel/polyfill` or `werift`.
 
 ### OSC Bridge Example
 
-Route messages from `netsend osc` to your local OSC server:
+Route messages from `netsend osc` to a local OSC server:
 
 ```ts
 import { joinRoom } from "trystero";
@@ -50,7 +50,7 @@ netrecv((data) => {
 
 ### ArtNet DMX Bridge Example
 
-Control DMX-enabled equipment via `netsend dmx`:
+Control DMX-enabled equipment with `netsend dmx`:
 
 ```ts
 import { joinRoom } from "trystero";
@@ -88,6 +88,6 @@ netrecv((data, peerId) => {
 
 ## See Also
 
-- [netsend](/docs/objects/netsend) - send network messages
-- [netrecv](/docs/objects/netrecv) - receive network messages
-- [mqtt](/docs/objects/mqtt) - MQTT messaging
+- [netsend](/docs/objects/netsend) — Send network messages.
+- [netrecv](/docs/objects/netrecv) — Receive network messages.
+- [mqtt](/docs/objects/mqtt) — Send and receive MQTT messages.

@@ -1,15 +1,15 @@
 # Clock API
 
-The `clock` object provides beat-synced timing and scheduling for JavaScript-based objects. It reads from the global [Transport](/docs/transport-control) and works identically across all environments (main thread and workers).
+The `clock` object provides beat-synced timing and scheduling for JavaScript objects. It reads the global [Transport](/docs/transport-control) in the main thread and workers.
 
 ## Supported Objects
 
-The `clock` object is available in: [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [three](/docs/objects/three), [textmode](/docs/objects/textmode), [hydra](/docs/objects/hydra), and DOM variants.
+Use `clock` in [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), and [canvas](/docs/objects/canvas). It is also available in [three](/docs/objects/three), [textmode](/docs/objects/textmode), [hydra](/docs/objects/hydra), and DOM variants.
 
 ## Clock Properties
 
 | Property | Type | Description |
-|----------|------|-------------|
+| -------- | ---- | ----------- |
 | `clock.time` | number | Current time in seconds |
 | `clock.ticks` | number | Current time in ticks (192 PPQ) |
 | `clock.beat` | number | Current beat in measure (0 to beatsPerBar-1) |
@@ -44,10 +44,10 @@ if (clock.isPlaying) {
 
 ## Control Methods
 
-Control the transport directly from your code:
+Use these methods to control the transport from your code:
 
 | Method | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `clock.play()` | Start transport |
 | `clock.pause()` | Pause transport |
 | `clock.stop()` | Stop and reset to 0 |
@@ -57,7 +57,7 @@ Control the transport directly from your code:
 
 ## Play State Events
 
-Use `clock.onPlayStateChange()` when your code needs to react once to play, pause, or stop instead of checking `clock.isPlaying` every frame.
+Use `clock.onPlayStateChange()` to respond to play, pause, or stop events. This avoids checking `clock.isPlaying` in each frame.
 
 ```javascript
 const id = clock.onPlayStateChange((state, time) => {
@@ -113,10 +113,10 @@ clock.onBeat(2, () => snare());  // beat 3 of each bar
 
 ## Subdivision Methods
 
-Subdivisions are computed **per-node** — different nodes can use different subdivisions simultaneously (e.g., one node with triplets, another with quintuplets).
+Patchies computes subdivisions **per node**. Different nodes can use different subdivisions at the same time, such as triplets and quintuplets.
 
 | Method | Return | Description |
-|--------|--------|-------------|
+| ------ | ------ | ----------- |
 | `clock.subdiv(n)` | number | Current subdivision index (0 to n-1) within the beat |
 | `clock.subdivPhase(n)` | number | Progress within current subdivision (0.0 to 1.0) |
 
@@ -156,13 +156,17 @@ fill(colors[clock.subdiv(5)]);
 
 ## Scheduling Methods
 
-Instead of manually tracking beat changes, use these scheduling methods for cleaner code. All scheduling callbacks receive a `time` argument — the precise transport time of the event.
+Use these scheduling methods instead of tracking beat changes yourself. Each scheduling callback receives a `time` argument with the precise event transport time.
 
-By default, callbacks fire **after** the event — ideal for visuals. Pass `{ audio: true }` as the last argument for **lookahead scheduling**, where callbacks fire ~100ms early with the precise time for Web Audio API scheduling. Audio `onBeat` and `every` callbacks can also receive `eventClock` as a second argument, with `time`, `beat`, and `phase` computed for the scheduled event instead of the current poll.
+By default, callbacks fire **after** the event. This works well for visuals. Pass `{ audio: true }` as the last argument for **lookahead scheduling**.
+
+Lookahead callbacks fire about 100 ms early. Use their precise time for Web Audio API scheduling. Audio `onBeat` and `every` callbacks can also receive `eventClock` as a second argument.
+
+`eventClock` contains the scheduled event `time`, `beat`, and `phase`. It does not contain values from the current poll.
 
 ### onBeat
 
-Subscribe to beat changes. Callback fires when the specified beat is reached.
+Use `onBeat` to respond when a specified beat occurs.
 
 ```javascript
 // Fire on specific beat (0 to beatsPerBar-1)
@@ -186,9 +190,11 @@ clock.onBeat(0, (time, eventClock) => {
 
 ### schedule
 
-Schedule a one-shot callback at a specific time.
+Use `schedule` to run one callback at a specific time.
 
-The `bar:beat:sixteenth` notation is **zero-indexed** (like Tone.js) — `'0:0:0'` is the start, `'1:0:0'` is 1 bar from the start, and so on. This differs from DAWs like Ableton (which start at `1.1.1`).
+The `bar:beat:sixteenth` notation uses **zero-based indexes**, like Tone.js. `'0:0:0'` is the start. `'1:0:0'` is one bar from the start.
+
+DAWs such as Ableton use `1.1.1` for the start.
 
 ```javascript
 // Absolute time in seconds
@@ -206,7 +212,7 @@ clock.schedule('4:0:0', (time) => {
 
 ### every
 
-Schedule a repeating callback at a musical interval.
+Use `every` to run a callback at a musical interval.
 
 ```javascript
 // Bar:beat:sixteenth interval
@@ -229,12 +235,11 @@ clock.every('0:1:0', (time, eventClock) => {
 
 ### setTimelineStyle
 
-All `onBeat`, `schedule`, and `every` callbacks are automatically visualized
-in the [Timeline Viewer](/docs/transport-control) when it's open.
-Each node gets a unique color, and you'll see markers for upcoming
-events and brief flash animations when they fire.
+Patchies shows all `onBeat`, `schedule`, and `every` callbacks in the [Timeline Viewer](/docs/transport-control) when it is open. Each node gets a unique color.
 
-Use `setTimelineStyle` to customize how this node appears in the Timeline Viewer.
+The viewer shows markers for upcoming events. It also flashes when an event occurs.
+
+Use `setTimelineStyle` to change how this node appears in the Timeline Viewer.
 
 ```javascript
 // Set a custom color for this node in the timeline
@@ -248,13 +253,13 @@ clock.setTimelineStyle({ color: '#4af', visible: true });
 ```
 
 | Option    | Type    | Description                                                 |
-|-----------|---------|-------------                                                |
+| --------- | ------- | ----------------------------------------------------------- |
 | `color`   | string  | CSS color for this node's markers and label                 |
 | `visible` | boolean | Whether this node appears in the timeline (default: `true`) |
 
 ### cancel
 
-Cancel scheduled callbacks.
+Use `cancel` to remove scheduled callbacks.
 
 ```javascript
 // Cancel specific callback
@@ -305,7 +310,7 @@ clock.every('4:0:0', () => {
 
 ### Manual Beat Detection
 
-If you prefer manual control over scheduling:
+Use manual beat detection when you need direct control:
 
 ```javascript
 let lastBeat = -1;
@@ -329,7 +334,7 @@ clock.seek(8 * secondsPerBar);
 
 ## Audio-Rate Beat Sync
 
-For **continuous** beat-synced signals in the audio graph, use the [beat~](/docs/objects/beat~) object. Unlike `clock.schedule` which fires discrete callbacks, `beat~` outputs a sample-by-sample 0→1 sawtooth ramp synchronized to the transport BPM.
+For **continuous** beat-synced signals in the audio graph, use [beat~](/docs/objects/beat~). `clock.schedule` fires discrete callbacks. `beat~` outputs a sample-by-sample 0→1 sawtooth ramp synchronized to the transport BPM.
 
 ```text
 beat~       → ramp 0→1 once per beat
@@ -337,13 +342,15 @@ beat~ 4     → ramp 0→1 four times per beat (16th notes)
 beat~ 0.25  → ramp 0→1 once per bar (in 4/4)
 ```
 
-The multiply parameter scales the beat frequency: `1` = per beat (default), `2` = 8th notes, `4` = 16ths, `0.25` = per bar. It's an AudioParam, so other signals can modulate it.
+The multiply parameter sets the beat frequency. `1` is once per beat by default. `2` is eighth notes, `4` is sixteenth notes, and `0.25` is once per bar.
 
-The output follows transport play/pause/stop — it freezes when paused and resets on stop.
+The parameter is an AudioParam. Other signals can modulate it.
+
+The output follows transport play, pause, and stop. It freezes on pause and resets on stop.
 
 ## Tone.js Scheduling
 
-If you're using [Tone.js](/docs/objects/tone~), you can also schedule events through the Tone.js Transport. This is useful when working with Tone.js synths and effects, since they integrate directly with `Tone.getTransport()`.
+When you use [Tone.js](/docs/objects/tone~), you can schedule events with Tone.js Transport. Use this with Tone.js synths and effects that connect directly to `Tone.getTransport()`.
 
 ```javascript
 // In a tone~ object — Tone.js Transport is synced to the global transport
@@ -360,7 +367,7 @@ Tone.getTransport().schedule((time) => {
 
 Always use the `time` callback argument (not `Tone.now()`) for sample-accurate timing.
 
-**When to use which:**
+### Choose a Scheduling Method
 
 | Approach | Best for |
 | -------- | -------- |
@@ -371,9 +378,9 @@ Always use the `time` callback argument (not `Tone.now()`) for sample-accurate t
 
 ### Scheduling Audio Parameters
 
-Pass `{ audio: true }` to use lookahead scheduling with [parameter automation messages](/docs/parameter-automation). Then, pass the `time` argument from the callback into the `set`, `trigger` and `release` messages — this is used as an absolute time by default.
+Pass `{ audio: true }` to use lookahead scheduling with [parameter automation messages](/docs/parameter-automation). Then pass the callback `time` argument to `set`, `trigger`, and `release` messages.
 
-This lets you automate audio parameters (`gain~`, `osc~`, filters, etc.) with beat-synced, sample-accurate timing:
+Patchies uses this value as an absolute time by default. It lets you automate audio parameters, such as `gain~`, `osc~`, and filters, with beat-synced sample-accurate timing:
 
 ```javascript
 // Trigger an envelope on every downbeat
@@ -408,11 +415,11 @@ clock.every('0:1:0', (time) => {
 
 All scheduling methods (`onBeat`, `schedule`, `every`) poll every ~25ms.
 
-**Default (visual):** Callbacks fire **after** the event has occurred — accurate to ~25ms, imperceptible for visual sync.
+**Default (visual):** Callbacks fire **after** the event. They are accurate to about 25 ms, which suits visual sync.
 
-**`{ audio: true }`:** Callbacks fire **before** the event, within a ~100ms lookahead window. The `time` argument contains the precise transport time of the event.
+**`{ audio: true }`:** Callbacks fire **before** the event in a 100 ms lookahead window. The `time` argument contains the precise event transport time.
 
-In worker environments (worker, canvas), all scheduling uses frame-based polling (~16ms at 60fps).
+In worker environments, such as worker and canvas, all scheduling uses frame-based polling. At 60 fps, polling occurs about every 16 ms.
 
 For continuous audio-rate signals, use [beat~](/docs/objects/beat~).
 For Tone.js integration, use [tone~](/docs/objects/tone~).

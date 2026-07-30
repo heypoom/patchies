@@ -1,29 +1,31 @@
 # Audio Reactivity
 
+Use the `fft~` audio object to get frequency-bin arrays for visualizations in a patch.
+
 ![Audio reactive visualization](/content/images/patchies-audio-reactive.png)
+
+This patch uses audio data to control its visuals.
 
 > ✨ [Try this patch](/?id=sgov4pl7f9ku4h7) with audio-reactive visuals!
 
-The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch.
-
 ## Getting Started
 
-1. Create a `fft~` object with bin size (e.g., `fft~ 1024`)
-2. Connect the purple "analyzer" outlet to a visual object's inlet
+1. Create an `fft~` object with a bin size, for example `fft~ 1024`.
+2. Connect its purple analyzer outlet to a visual-object inlet.
 
-Supported objects: `glsl` and any objects using the [JavaScript Runner](/docs/javascript-runner) like `canvas.dom`, `hydra`, and more.
+`glsl` supports this connection. Objects that use the [JavaScript Runner](/docs/javascript-runner), such as `canvas.dom` and `hydra`, also support it.
 
 ## Usage with GLSL
 
-1. Create a `sampler2D` GLSL uniform inlet
-2. Connect the purple "analyzer" outlet of `fft~` to it
-3. Try the `FFT Frequency GL` and `FFT Waveform GL` presets
+1. Create a `sampler2D` GLSL uniform inlet.
+2. Connect the `fft~` purple analyzer outlet to the inlet.
+3. Try the `FFT Frequency GL` and `FFT Waveform GL` presets.
 
-For waveform (time-domain) instead of frequency analysis, name the uniform exactly `uniform sampler2D waveTexture;`.
+For waveform analysis instead of frequency analysis, name the uniform exactly `uniform sampler2D waveTexture;`.
 
 ## Usage with JavaScript Objects
 
-Call the `fft()` function to get audio analysis data:
+Call `fft()` to get audio-analysis data:
 
 ```javascript
 // Frequency spectrum
@@ -33,31 +35,31 @@ fft({ type: 'freq' })
 fft()  // or fft({ type: 'wave' })
 ```
 
-**Important**: Patchies does NOT use standard Hydra/P5.js audio APIs. Use `fft()` instead.
+> **Important**: Patchies does not use the standard Hydra or P5.js audio APIs. Use `fft()` instead.
 
 ## FFTAnalysis Properties
 
-The `fft()` function returns an `FFTAnalysis` instance:
+`fft()` returns an `FFTAnalysis` instance:
 
 | Property/Method | Description |
-|-----------------|-------------|
-| `fft().a` | Raw bins (Uint8Array) |
-| `fft().f` | Normalized bins (Float32Array, 0-1) |
-| `fft().rms` | RMS amplitude (float, 0-1). Uses time-domain signal for `wave` mode, spectral energy for `freq` mode |
-| `fft().avg` | Average level (float) |
-| `fft().centroid` | Spectral centroid (float) |
-| `fft().getEnergy('bass')` | Energy in frequency range (0-1) |
+| --------------- | ----------- |
+| `fft().a` | Raw bins in a Uint8Array. |
+| `fft().f` | Normalized bins in a Float32Array, from 0 to 1. |
+| `fft().rms` | RMS amplitude from 0 to 1. It uses the time-domain signal for `wave` mode and spectral energy for `freq` mode. |
+| `fft().avg` | Average level. |
+| `fft().centroid` | Spectral centroid. |
+| `fft().getEnergy('bass')` | Energy in a frequency range, from 0 to 1. |
 
-Frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`
+Use these frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, and `treble`.
 
-Custom range: `fft().getEnergy(40, 200)`
+For a custom range, use `fft().getEnergy(40, 200)`.
 
 ## Where to Call fft()
 
-- **p5**: in your `draw` function
-- **canvas/canvas.dom**: in `requestAnimationFrame` callback
-- **js**: in `setInterval` or `requestAnimationFrame`
-- **hydra**: inside arrow functions for dynamic parameters
+- **p5**: Call it in `draw`.
+- **canvas/canvas.dom**: Call it in a `requestAnimationFrame` callback.
+- **js**: Call it in `setInterval` or `requestAnimationFrame`.
+- **hydra**: Call it in arrow functions for dynamic parameters.
 
 ```javascript
 // Hydra example
@@ -67,14 +69,14 @@ osc(10, 0, () => a() * 4).out()
 
 ## Presets
 
-- `fft.hydra` - Hydra audio visualization
-- `fft.p5`, `fft-sm.p5`, `rms.p5` - P5.js visualizations
-- `fft.canvas` - Fast canvas visualization (uses `canvas.dom`)
+- `fft.hydra` — A Hydra audio visualization.
+- `fft.p5`, `fft-sm.p5`, `rms.p5` — P5.js visualizations.
+- `fft.canvas` — A canvas visualization that uses `canvas.dom`.
 
 ## Performance Tips
 
-- Use `canvas.dom` or `p5` for instant FFT reactivity
-- Worker-based `canvas` has slight delay but better video chaining performance
+- Use `canvas.dom` or `p5` for immediate FFT response.
+- Worker-based `canvas` has a short delay but improves video-chaining performance.
 
 ## Converting Existing Code
 
@@ -86,13 +88,13 @@ osc(10, 0, () => a() * 4).out()
   .out()
 ```
 
-- Replace `a.fft[0]` with `fft().a[0]` (int 0-255) or `fft().f[0]` (float 0-1)
-- Instead of `a.setBins(32)`, set bins in `fft~` object: `fft~ 32`
+- Replace `a.fft[0]` with `fft().a[0]` for integers from 0 to 255. Use `fft().f[0]` for floats from 0 to 1.
+- Instead of `a.setBins(32)`, set the bin count in the `fft~` object: `fft~ 32`.
 
 ### From P5.js
 
 | P5.js | Patchies |
-|-------|----------|
+| ----- | -------- |
 | `p5.Amplitude` | `fft().rms` |
 | `p5.FFT` | `fft()` |
 | `fft.analyze()` | (not needed) |
@@ -102,10 +104,10 @@ osc(10, 0, () => a() * 4).out()
 
 ## See Also
 
-- [JavaScript Runner](/docs/javascript-runner) - API reference
-- [Video Chaining](/docs/video-chaining) - Connect visual objects
-- [Rendering Pipeline](/docs/rendering-pipeline) - Performance details
-- [env~](/docs/objects/env~) - envelope follower for audio loudness
-- [tap~](/docs/objects/tap~) - capture waveform frames as messages for custom visualizers
-- [scope~](/docs/objects/scope~) - audio oscilloscope
-- [meter~](/docs/objects/meter~) - visual level meter
+- [JavaScript Runner](/docs/javascript-runner) — Use the JavaScript API.
+- [Video Chaining](/docs/video-chaining) — Connect visual objects.
+- [Rendering Pipeline](/docs/rendering-pipeline) — Learn about rendering performance.
+- [env~](/docs/objects/env~) — Follow audio loudness with an envelope.
+- [tap~](/docs/objects/tap~) — Send waveform frames as messages to custom visualizers.
+- [scope~](/docs/objects/scope~) — Show an audio waveform.
+- [meter~](/docs/objects/meter~) — Show an audio level.

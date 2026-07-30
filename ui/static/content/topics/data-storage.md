@@ -1,14 +1,14 @@
 # Data Storage
 
-Patchies provides persistent storage APIs for JavaScript objects. Data is stored per-patch using IndexedDB and persists across sessions.
+Patchies provides persistent storage APIs for JavaScript objects. It stores data for each patch in IndexedDB and keeps it across sessions.
 
 ## Key-Value Storage (kv)
 
-The `kv` API provides simple persistent key-value storage. It's available in [JavaScript Runner](/docs/javascript-runner) objects (e.g. `js`, `p5`, `worker`, etc.).
+The `kv` API stores persistent key-value data. It is available in [JavaScript Runner](/docs/javascript-runner) objects, such as `js`, `p5`, and `worker`.
 
 ### Node-Scoped Storage (Default)
 
-By default, `kv` is scoped to the current node. Each node has its own isolated storage:
+By default, each node owns its `kv` storage. Other nodes cannot access it:
 
 ```javascript
 // Store data - only this node can access it
@@ -25,7 +25,7 @@ const value = (await kv.get("counter")) ?? 0;
 
 ### Named Stores (Shared)
 
-Use `kv.store("name")` to create a named store that's shared across all nodes using the same name:
+Use `kv.store("name")` to create a named store. All nodes that use the same name share the store:
 
 ```javascript
 // In node A
@@ -37,17 +37,18 @@ const prefs = kv.store("prefs");
 const volume = await prefs.get("volume"); // 0.8
 ```
 
-This is useful for:
-- Sharing configuration across multiple nodes
-- Creating a central data store that multiple nodes read/write
-- Persisting UI state that affects multiple parts of your patch
+Use a named store when you need to:
+
+- Share configuration across multiple nodes.
+- Create a central store that multiple nodes read and write.
+- Store UI state that affects multiple parts of a patch.
 
 ### API Reference
 
-All methods are async and return Promises:
+All methods are asynchronous. They return Promises:
 
 | Method | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `kv.get(key)` | Get value by key (returns `undefined` if not found) |
 | `kv.set(key, value)` | Set value at key |
 | `kv.has(key)` | Check if key exists (returns boolean) |
@@ -58,7 +59,7 @@ All methods are async and return Promises:
 
 ### Binary Data
 
-KV storage supports binary data types:
+KV storage supports binary data:
 
 ```javascript
 // Store binary data
@@ -72,7 +73,7 @@ const blob = await kv.get("image");
 
 ## Interop with Visual Objects
 
-Named stores are shared between JavaScript and the visual [kv object](/docs/objects/kv):
+JavaScript and the visual [kv object](/docs/objects/kv) share named stores:
 
 ```javascript
 // In a `js` node - access data from [kv prefs]
@@ -83,9 +84,9 @@ const volume = await prefs.get("volume");
 await prefs.set("theme", "dark");
 ```
 
-This works both ways - data set via `[kv mystore]` is accessible via `kv.store("mystore")` in JavaScript, and vice versa.
+JavaScript can access data that `[kv mystore]` sets through `kv.store("mystore")`. The visual object can access data that JavaScript sets in the same store.
 
 ## See Also
 
-- [kv object](/docs/objects/kv) - Visual object for key-value storage
-- [JavaScript Runner](/docs/javascript-runner) - JSRunner features and APIs
+- [kv object](/docs/objects/kv) — Use visual key-value storage.
+- [JavaScript Runner](/docs/javascript-runner) — Read JSRunner features and APIs.

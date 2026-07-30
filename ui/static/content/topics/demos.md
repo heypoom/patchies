@@ -1,14 +1,19 @@
 # Demos
 
+Explore demo patches to learn what Patchies can do and get ideas for your own patch.
+
 ![Patchies demo modal](/content/images/startup-modal-demos.webp)
 
-Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand.
+The Demos tab lists patches that you can open and change.
 
-- Click on the [demos tab](/?startup=demos) to see the demos you can play with
-- You can always go back to this dialog by using the three dots on the bottom right, then `Getting Started`
+## Open a Demo
+
+1. Click the [Demos tab](/?startup=demos) to see the available demos.
+2. To reopen this dialog, click the three dots in the lower-right corner.
+3. Select `Getting Started`.
 
 ## See Also
 
-- [Adding Objects](/docs/adding-objects)
-- [Shortcuts](/docs/shortcuts)
-- [Connecting Objects](/docs/connecting-objects)
+- [Adding Objects](/docs/adding-objects) — Add an object to a patch.
+- [Shortcuts](/docs/shortcuts) — Use keyboard shortcuts in Patchies.
+- [Connecting Objects](/docs/connecting-objects) — Connect objects to pass data or signals.

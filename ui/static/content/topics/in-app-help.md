@@ -2,35 +2,35 @@
 
 ![In-app help panel](/content/images/sidebar-help.webp)
 
-The Help panel in the sidebar provides quick reference for any object in your patch.
+The Help panel gives you a quick reference for each object in your patch.
 
 ## Opening Help
 
-- Click the **?** button in the sidebar, or use `Ctrl/Cmd + B > Help`
-- Select any object in your patch to see its documentation
-- Or use the Object Browser's help (?) button to browse all objects
+1. Click the **?** button in the sidebar, or use `Ctrl/Cmd + B > Help`.
+2. Select an object in your patch to see its documentation.
+3. Use the Object Browser help (`?`) button to browse all objects.
 
 ## What's Shown
 
-- **Description** - What the object does
-- **Inlets** - Input ports and what messages they accept
-- **Outlets** - Output ports and what they send
-- **Usage notes** - Tips and examples
+- **Description** — The object function.
+- **Inlets** — The input ports and the messages they accept.
+- **Outlets** — The output ports and the messages they send.
+- **Usage notes** — Tips and examples.
 
 ## Help Patches
 
-Some objects have interactive help patches that demonstrate usage. Click **Open Help Patch** to load an example you can play with.
+Some objects have interactive help patches. Click **Open Help Patch** to load an example patch and try it.
 
 ## Object Browser Help
 
 ![Object browser help modal](/content/images/object-browser-help.webp)
 
-Enable the **?** help toggle to browse object documentation in the sidebar instead of inserting.
+Turn on the **?** help toggle to show object documentation in the sidebar. It does not insert an object.
 
 ## Guides
 
-The **guides** menu at the top of the help panel lets you browse guides without leaving the app - the same documentation you're reading now.
+Use the **Guides** menu at the top of the Help panel to browse guides without leaving the app.
 
 ## See Also
 
-- [Adding Objects](/docs/adding-objects)
+- [Adding Objects](/docs/adding-objects) — Add an object to a patch.

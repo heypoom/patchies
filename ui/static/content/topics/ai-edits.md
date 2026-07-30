@@ -1,39 +1,42 @@
 # Edits
 
+AI Edits creates or changes objects from a natural-language prompt.
+
 ![AI hearts demo](/content/images/patchies-ai-hearts-demo.png)
 
-> ✨ [Try this patch](/?id=rza2o6eoa7338rh) where AI generates a shader graph of starfield with hearts!
+> ✨ [Try this patch](/?id=rza2o6eoa7338rh) — Generate a starfield shader graph with hearts.
 
-Press `Ctrl/Cmd + I` to open the AI object prompt. Describe what you want in natural language and the AI will generate or modify the appropriate objects.
+Press `Ctrl/Cmd + I` to open the AI object prompt. Describe what you want. AI Edits generates or modifies the appropriate objects.
 
 ## Modes
 
-The prompt adapts based on context. Use the mode dropdown in the header or press `Ctrl/Cmd + I` again to cycle through available modes.
+The prompt mode depends on your selection. Use the mode dropdown in the header or press `Ctrl/Cmd + I` again to cycle through modes.
 
-**No object selected:**
+### No Object Selected
 
-- **Single** — Create one object at your cursor position
-- **Multi** — Create multiple connected objects at once (e.g., "slider controlling oscillator frequency")
+- **Single** — Create one object at the cursor position.
+- **Multi** — Create multiple connected objects, such as a slider that controls oscillator frequency.
 
-**Object selected:**
+### Object Selected
 
-- **Edit** — Modify the selected object's code based on your description
-- **Turn Into** — Replace the selected object with a different type, preserving connected edges
-- **Fix** — Fix errors in the selected object; automatically reads console errors and sends them as context
-- **Split** — Split the selected object into multiple focused connected objects
-- **Fork** — Create a new object derived from the selected one (e.g., "as a canvas object", "draw triangles instead")
+- **Edit** — Change the selected object code from your description.
+- **Turn Into** — Replace the selected object with another type and keep its connected edges.
+- **Fix** — Fix selected-object errors. AI Edits reads console errors and includes them as context.
+- **Split** — Split the selected object into multiple focused connected objects.
+- **Fork** — Create a new object from the selected object, such as "as a canvas object" or "draw triangles instead".
 
 ## Setup
 
-1. Create a separate API key that has strict budget limits
-2. Press `Ctrl/Cmd + I`
-3. Enter your API Key and hit `Save & Continue`
-4. Use `Ctrl/Cmd + I` or the _sparkles_ button on the bottom right to generate
+1. Create a separate API key with strict budget limits.
+2. Press `Ctrl/Cmd + I`.
+3. Enter the API key.
+4. Select `Save & Continue`.
+5. To generate, press `Ctrl/Cmd + I` or select the sparkles button in the lower-right corner.
 
-This feature uses the `gemini-3-flash-preview` model to understand your prompt and generate the object configuration.
+AI Edits uses the `gemini-3-flash-preview` model to interpret the prompt and generate object configuration.
 
 ## See Also
 
-- [Enabling AI](/docs/enabling-ai)
-- [Chat](/docs/ai-chat)
-- [Patch to App](/docs/ai-patch-to-app)
+- [Enabling AI](/docs/enabling-ai) — Enable AI features and protect your API key.
+- [Chat](/docs/ai-chat) — Ask an AI assistant about a patch.
+- [Patch to App](/docs/ai-patch-to-app) — Convert a patch into a standalone HTML app.

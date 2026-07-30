@@ -1,16 +1,17 @@
 # Offline Usage
 
-Patchies can be used even when you don't have an internet connection. Simply visit `https://patchies.app` as usual on your browser, and it will continue to work even when there is no internet.
+Use Patchies without an internet connection after you visit `https://patchies.app` in your browser.
 
 ## Preparing for Offline
 
-To ensure most features are available when you are offline, use `Ctrl/Cmd + K > Prepare for Offline` to download as many assets for offline use as possible. This lets you pre-cache most objects into disk.
+Before you go offline, select `Ctrl/Cmd + K > Prepare for Offline`.
+This command downloads and caches assets for most objects in your browser.
 
-## Behind the scenes
+## How It Works
 
-Patchies uses [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API), [Vite PWA for SvelteKit](https://github.com/vite-pwa/sveltekit) and [Workbox](https://web.dev/learn/pwa/workbox).
+Patchies uses [service workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API), [Vite PWA for SvelteKit](https://github.com/vite-pwa/sveltekit), and [Workbox](https://web.dev/learn/pwa/workbox) to cache the app and its assets.
 
 ## See Also
 
-- [Demos](/docs/demos)
-- [Saves](/docs/manage-saves)
+- [Demos](/docs/demos) — Open example patches.
+- [Saves](/docs/manage-saves) — Save and manage your patches.

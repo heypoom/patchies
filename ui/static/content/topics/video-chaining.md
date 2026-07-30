@@ -1,19 +1,19 @@
 # Video Chaining
 
-Visual objects connect together to form a video pipeline — the output of one object feeds into the input of the next, letting you layer, blend, and transform visuals in real time.
+Connect visual objects to make a video pipeline. Each object sends its output to the next object, so you can layer, blend, and transform visuals in real time.
 
 ![Video chain example](/content/images/patchies-video-chain.png)
 
-In this example, a [hydra](/docs/objects/hydra) object and a [glsl](/docs/objects/glsl) object each produce a pattern. They feed into a third hydra object which subtracts them together using `src(s0).sub(s1).out(o0)`.
+In this example, a [hydra](/docs/objects/hydra) object and a [glsl](/docs/objects/glsl) object each produce a pattern. They send their frames to a third `hydra` object. It combines them with `src(s0).sub(s1).out(o0)`.
 
 This is similar to shader graphs in TouchDesigner, Unity, Blender, and Substance Designer.
 
 ## How It Works
 
-Visual objects have **orange** inlets and outlets (circles on the top and bottom of the node):
+Visual objects use orange inlets and outlets. These are circles at the top and bottom of an object:
 
-- **Orange inlet** — accepts a video frame as input
-- **Orange outlet** — outputs a video frame to the next object
+- **Orange inlet** — Accepts a video frame.
+- **Orange outlet** — Sends a video frame to the next object.
 
 Connect orange outlet → orange inlet to chain them:
 
@@ -21,112 +21,108 @@ Connect orange outlet → orange inlet to chain them:
 [p5] → [hydra>] → [glsl>] → [bg.out]
 ```
 
-To hear — er, *see* — anything, connect the final object to `bg.out` or use **Use as output**.
+To show a visual, connect the final object to `bg.out`. You can also select **Use as output**.
 
 ## Try It
 
 ### Exercise — Visual passthrough
 
-1. Create a `p5` object and write something that draws to the canvas
-2. Create a `hydra>` preset (`Enter` → search `hydra>`)
-3. Connect the orange outlet of `p5` to the orange inlet of `hydra>`
-4. Connect `hydra>` to `bg.out` — the p5 sketch appears as the background
+1. Create a `p5` object.
+2. Write code that draws to the canvas.
+3. Create a `hydra>` preset with `Enter` → search `hydra>`.
+4. Connect the orange outlet of `p5` to the orange inlet of `hydra>`.
+5. Connect `hydra>` to `bg.out` to show the p5 sketch as the background.
 
 ### Exercise — Blend two visuals
 
-1. Create two visual objects (e.g. `p5` and `glsl`)
-2. Create a `sub.hydra` preset — it has two orange inlets
-3. Connect both visual objects to the two inlets of `sub.hydra`
-4. Connect `sub.hydra` to `bg.out` — the two visuals are subtracted together
+1. Create two visual objects, such as `p5` and `glsl`.
+2. Create a `sub.hydra` preset. It has two orange inlets.
+3. Connect each visual object to an inlet of `sub.hydra`.
+4. Connect `sub.hydra` to `bg.out` to subtract the two visuals.
 
 ## Getting Started with Presets
 
-The preset library has ready-made building blocks for video chaining. Enable them via the [Preset Packs](/docs/manage-packs) sidebar:
+The preset library contains objects for video chaining. Enable them from [Preset Packs](/docs/manage-packs):
 
-- **`hydra>`, `glsl>`, `regl>`, `swgl>`, `three>`** — pass video through unchanged; the simplest starting point for chaining
-- **`diff.hydra`, `add.hydra`, `sub.hydra`** — blend two video inputs with Hydra
-- Check the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more preset ideas
+- **`hydra>`, `glsl>`, `regl>`, `swgl>`, `three>`** — Pass video through unchanged.
+- **`diff.hydra`, `add.hydra`, `sub.hydra`** — Blend two video inputs with Hydra.
+- Read the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more presets.
 
 ## Sending to output
 
-Right-click any visual object (or use its **···** menu) and choose **Use as output** to make it the fullscreen output. This overrides any `bg.out` connection.
+1. Right-click a visual object or open its **···** menu.
+2. Select **Use as output**.
 
-- Click **Use as output** again on the same object to clear the override
-- Switching to a different object replaces the current output — only one at a time
-- This is great for live performance; it is not saved across sessions
+Patchies uses this object as the fullscreen output. It overrides any `bg.out` connection.
+
+- Select **Use as output** again on the same object to clear the override.
+- Select another object to replace the current output. Patchies uses one output object at a time.
+- Use this for live performance. Patchies does not save the setting across sessions.
 
 ## Output Screen
 
-Open a separate browser window that displays your visual output — perfect for
-projectors, second monitors, or showing visuals to an audience while you keep
-editing in the main Patchies window.
+Open a separate browser window to display visual output. Use it with a projector, a second monitor, or an audience display. Keep editing in the main Patchies window.
 
 Open it from the command palette: `Cmd+K` → "Open Output Screen".
 
-The output screen is a clean viewer. It shows the same output you would see from
-`bg.out` or **Use as output**, without the patch canvas, sidebar, object chrome,
-or editing controls.
+The output screen shows the same output as `bg.out` or **Use as output**. It hides the patch canvas, sidebar, object chrome, and editing controls.
 
-Move the output screen to your projector or second monitor, focus that window,
-then press `f` to enter browser fullscreen. Use the browser's normal fullscreen
-exit shortcut, such as `Esc`, when you want to leave fullscreen.
+1. Move the output screen to a projector or second monitor.
+2. Focus the output screen.
+3. Press `f` to enter browser fullscreen.
 
-You can switch where frames are sent without closing the output screen:
+Use the browser fullscreen exit shortcut, such as `Esc`, to leave fullscreen.
 
-- **Background** — show output behind the patch canvas in the main window
-- **Output Screen** — show output in the secondary output window
+You can change the frame destination without closing the output screen:
 
-Change this from Settings → Rendering → **Output target**, or use `Cmd+K` →
-"Toggle Output Target".
+- **Background** — Shows output behind the patch canvas in the main window.
+- **Output Screen** — Shows output in the secondary output window.
 
-The output screen stays connected even if you reload either window. Reload the output
-screen and it reconnects automatically. Reload the main patch and the output
-screen re-connects within a second.
+Change this in Settings → Rendering → **Output target**. You can also use `Cmd+K` → "Toggle Output Target".
+
+The output screen stays connected when you reload either window. Reload the output screen to reconnect it automatically. Reload the main patch to reconnect the output screen within one second.
 
 ### Exercise — Dual-screen setup
 
-1. Open the output screen (`Cmd+K` → "Open Output Screen")
-2. Create a `hydra` object and write a pattern
-3. Right-click the hydra object → **Use as output**
-4. Drag the output window to a second monitor or projector
-5. Focus the output window and press `f` — your audience sees clean fullscreen visuals while you keep editing
+1. Open the output screen with `Cmd+K` → "Open Output Screen".
+2. Create a `hydra` object.
+3. Write a pattern.
+4. Right-click the `hydra` object and select **Use as output**.
+5. Move the output window to a second monitor or projector.
+6. Focus the output window and press `f` for fullscreen output.
 
 ## Output Resolution
 
-By default, patches render at 1280×720. You can change this with
-**Set Output Size** (`Cmd+K` → "Set Output Size"):
+Patches render at 1280×720 by default. Change this with **Set Output Size** (`Cmd+K` → "Set Output Size"):
 
-| Input        | What it does                                               |
-| ------------ | ---------------------------------------------------------- |
-| `1920x1080`  | Set an explicit resolution                                 |
-| `720p`       | 1280×720                                                   |
-| `1080p`      | 1920×1080                                                  |
-| `2k`         | 2560×1440                                                  |
-| `4k`         | 3840×2160                                                  |
-| `screen`     | Match your current browser window size (without DPR)       |
-| `2x`         | Multiply your window size by 2 (or `0.5x`, `1.5x`, etc.)   |
-| `clear`      | Reset to the default 1280×720                              |
+| Input | Result |
+| ----- | ------ |
+| `1920x1080` | Sets an explicit resolution. |
+| `720p` | Sets 1280×720. |
+| `1080p` | Sets 1920×1080. |
+| `2k` | Sets 2560×1440. |
+| `4k` | Sets 3840×2160. |
+| `screen` | Matches the current browser window size without DPR. |
+| `2x` | Multiplies the window size by 2. You can also use `0.5x` or `1.5x`. |
+| `clear` | Resets to the default 1280×720. |
 
-The resolution you choose is **saved with the patch** —
-opening it on a different screen keeps that resolution.
+Patchies saves the selected resolution with the patch. The resolution stays the same when you open the patch on another screen.
 
-Higher resolutions produce sharper output but use more GPU
-memory. Use `0.5x` or `screen` for better performance on
-complex patches.
+Higher resolutions produce sharper output but use more GPU memory. Use `0.5x` or `screen` for complex patches.
 
 ## Wireless Video Routing
 
-Route video across the patch without cables using [`send.vdo <channel>`](/docs/objects/send.vdo) and [`recv.vdo <channel>`](/docs/objects/recv.vdo):
+Use [`send.vdo <channel>`](/docs/objects/send.vdo) and [`recv.vdo <channel>`](/docs/objects/recv.vdo) to route video without cables:
 
 ```text
 [p5] → [send.vdo main]          [recv.vdo main] → [bg.out]
 ```
 
-Useful for keeping large patches readable by removing long-distance orange cables.
+This keeps large patches readable by removing long orange cables.
 
 ## Performance
 
-Objects on the [rendering pipeline](/docs/rendering-pipeline) are significantly faster than main-thread objects — they avoid expensive pixel copies between GPU and CPU.
+Objects on the [rendering pipeline](/docs/rendering-pipeline) run faster than main-thread objects. They avoid expensive pixel copies between the GPU and CPU.
 
 For high-performance video chaining, prefer:
 
@@ -136,11 +132,11 @@ For high-performance video chaining, prefer:
 
 ## See Also
 
-- [hydra](/docs/objects/hydra) — Hydra video synthesizer
-- [glsl](/docs/objects/glsl) — GLSL shaders
-- [canvas](/docs/objects/canvas) — Offscreen canvas (rendering pipeline)
-- [send.vdo](/docs/objects/send.vdo) — Send video to a named channel
-- [recv.vdo](/docs/objects/recv.vdo) — Receive video from a named channel
-- [Audio Chaining](/docs/audio-chaining)
-- [Data Types](/docs/data-types)
-- [Rendering Pipeline](/docs/rendering-pipeline)
+- [hydra](/docs/objects/hydra) — Generate video with Hydra.
+- [glsl](/docs/objects/glsl) — Write GLSL shaders.
+- [canvas](/docs/objects/canvas) — Draw with an offscreen canvas.
+- [send.vdo](/docs/objects/send.vdo) — Send video to a named channel.
+- [recv.vdo](/docs/objects/recv.vdo) — Receive video from a named channel.
+- [Audio Chaining](/docs/audio-chaining) — Connect audio objects.
+- [Data Types](/docs/data-types) — Learn about Patchies data types.
+- [Rendering Pipeline](/docs/rendering-pipeline) — Learn about visual performance.

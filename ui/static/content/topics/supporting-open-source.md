@@ -2,22 +2,24 @@
 
 ![Please support open source](/content/images/startup-modal-thanks.webp)
 
-Patchies is licensed under [AGPL-3.0](https://github.com/heypoom/patchies/blob/main/LICENSE) and builds upon many amazing open source projects.
+The Help > Thanks screen recognizes people who support the project.
+
+Patchies uses the [AGPL-3.0](https://github.com/heypoom/patchies/blob/main/LICENSE) license and depends on open-source projects.
 
 ## Sponsor Creators
 
-If you enjoy using Patchies, please consider supporting the open source creators who made it possible.
+Support the open-source creators whose work Patchies uses.
 
-You can view the list of creators to sponsor in-app by going to [Help > Thanks](/?startup=thanks).
+Open [Help > Thanks](/?startup=thanks) in Patchies to see creators you can sponsor.
 
 ## Licenses and Attributions
 
-See the [complete licenses and attributions](https://github.com/heypoom/patchies/blob/main/LICENSES.md) for detailed information about all third-party libraries used.
+Read the [complete licenses and attributions](https://github.com/heypoom/patchies/blob/main/LICENSES.md) for details about the third-party libraries that Patchies uses.
 
 ## Special Thanks
 
-Special thanks to [the amazing people](/?startup=thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement!
+Thank [the people](/?startup=thanks) who support Patchies with feedback and encouragement.
 
 ## See Also
 
-- [Demos](/docs/demos)
+- [Demos](/docs/demos) — Open example patches.

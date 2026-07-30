@@ -1,34 +1,38 @@
 # Adding Objects
 
-There are two ways to add objects to your canvas: quick add and the object browser.
+Add objects to the canvas with Quick Add or the Object Browser.
 
 ## Quick Add
 
 ![Insert object with Enter](/content/images/patchies-insert-object-with-enter.png)
 
-- Press `Enter` to open the quick add menu
-- Type to search for object and preset names. Try `button` or `textbox` or `logger.js`
-- `Arrow Up/Down` navigates the list
-- `Enter` inserts the object
-- `Esc` closes the menu
+Use Quick Add to search object and preset names.
+
+1. Press `Enter` to open Quick Add.
+2. Type an object or preset name, such as `button`, `textbox`, or `logger.js`.
+3. Use `Arrow Up/Down` to move through the list.
+4. Press `Enter` to add the selected object.
+5. Press `Esc` to close Quick Add.
 
 ## Object Browser
 
 ![Object browser modal](/content/images/object-browser.webp)
 
-- Use `Ctrl/Cmd + O` or the add button on the bottom right to open the object browser
-- Objects and presets are grouped by [packs](/docs/manage-packs), with searchable names and descriptions
-- Click the **packs** chip to enable or disable packs without leaving the browser
-- Click to insert an object or preset — pick one at random and see what it can do!
-- If you search for disabled objects, a suggestion to enable the relevant pack will appear
+The Object Browser lists objects and presets by pack.
+
+1. Press `Ctrl/Cmd + O` or click the add button at the bottom right.
+2. Search object and preset names and descriptions.
+3. Click the **packs** chip to enable or disable [packs](/docs/manage-packs).
+4. Click an object or preset to add it to the canvas.
+5. If you search for a disabled object, the browser shows a suggestion to enable its pack.
 
 ## Presets
 
-Presets are pre-made objects that help you get started quickly. You can [manage your own presets](/docs/manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas, or create your own by selecting an object and using the overflow menu (`...`) > "Save as Preset".
+Presets are ready-made objects. [Manage your presets](/docs/manage-presets) in the sidebar with `Ctrl/Cmd + B > Presets`. Drag a preset to the canvas to add it. To create a preset, select an object and choose `...` > "Save as Preset".
 
 ## See Also
 
-- [Modifying Objects](/docs/modifying-objects)
-- [Shortcuts](/docs/shortcuts)
-- [Connecting Objects](/docs/connecting-objects)
-- [Packs](/docs/manage-packs)
+- [Modifying Objects](/docs/modifying-objects) — Select, move, and edit objects.
+- [Shortcuts](/docs/shortcuts) — Use Patchies keyboard shortcuts.
+- [Connecting Objects](/docs/connecting-objects) — Connect objects in a patch.
+- [Packs](/docs/manage-packs) — Enable and manage object packs.

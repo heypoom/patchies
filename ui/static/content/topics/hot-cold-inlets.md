@@ -1,17 +1,17 @@
 # Hot and Cold Inlets
 
-When an object has multiple inlets, not all of them behave the same way. The **first inlet is hot** — a message arriving there triggers the object to evaluate and send output immediately. **All other inlets are cold** — they quietly store the incoming value but produce no output on their own.
+Objects with multiple inlets do not treat each inlet the same way. The first inlet is hot. A message at this inlet evaluates the object and sends output. The other inlets are cold. They store the incoming value but do not send output.
 
-This design comes from [Max](https://docs.cycling74.com/userguide/objects/#inlets-and-outlets) and [Pure Data](https://msp.ucsd.edu/Pd_documentation/resources/chapter2.htm#s2.4.3). It gives you precise control over *when* a computation fires.
+This design comes from [Max](https://docs.cycling74.com/userguide/objects/#inlets-and-outlets) and [Pure Data](https://msp.ucsd.edu/Pd_documentation/resources/chapter2.htm#s2.4.3). It lets you control when an object evaluates.
 
 ## How It Works
 
 | Inlet | Behavior |
-| --- | --- |
-| Inlet 0 (hot) | Stores the value **and** immediately triggers output |
-| Inlet 1, 2, … (cold) | Stores the value, does **not** trigger output |
+| ----- | -------- |
+| Inlet 0 (hot) | Stores the value and immediately triggers output. |
+| Inlet 1, 2, … (cold) | Stores the value but does not trigger output. |
 
-Think of cold inlets as staging areas: you load them up with values, then fire the hot inlet when everything is ready.
+Treat cold inlets as staging areas. Set their values before you send a message to the hot inlet.
 
 ## Example: `expr $1 + $2`
 
@@ -21,18 +21,18 @@ Think of cold inlets as staging areas: you load them up with values, then fire t
 [number 5] ──► inlet 0 (hot,  $1)  ──┘
 ```
 
-Step by step:
+To get this result:
 
-1. `3` arrives at inlet 1 (cold) — stored as `$2`, no output yet
-2. `5` arrives at inlet 0 (hot) — triggers evaluation: `5 + 3 = 8` → sent to outlet
+1. Send `3` to inlet 1. The object stores it as `$2` and does not send output.
+2. Send `5` to inlet 0. The object evaluates `5 + 3 = 8` and sends the result to the outlet.
 
-If both values arrived at inlet 0, you'd get an intermediate result (`5 + 0 = 5`) before the second value even arrives — almost always the wrong behavior.
+If both values arrive at inlet 0, the object sends an intermediate result. For example, it sends `5 + 0 = 5` before it receives the second value.
 
 ## Controlling Execution Order
 
-When a single source feeds both inlets, you need to guarantee the cold inlet receives its value *before* the hot inlet fires. Use the [trigger](/docs/objects/trigger) object for this.
+When one source feeds both inlets, set the cold inlet before you trigger the hot inlet. Use the [trigger](/docs/objects/trigger) object to control this order.
 
-`trigger` (or `t`) outputs its values **right-to-left**, so the rightmost outlet fires first:
+`trigger`, or `t`, sends values from right to left. The rightmost outlet sends first:
 
 ```text
 [slider]
@@ -43,18 +43,18 @@ When a single source feeds both inlets, you need to guarantee the cold inlet rec
    └──────────────► outlet 0 (bang,  fires second) ──► expr inlet 0 (hot)
 ```
 
-1. The value reaches the cold inlet first
-2. The bang triggers the hot inlet — by then the cold inlet is already loaded
+1. The value reaches the cold inlet first.
+2. The bang triggers the hot inlet after the cold inlet stores its value.
 
-> **Tip**: Whenever you see unexpected or stale output from a multi-inlet object, check whether the cold inlets are being set before the hot inlet fires. A `trigger` object usually fixes it.
+> **Tip**: Check the message order when a multi-inlet object sends stale or unexpected output. Set cold inlets before you trigger the hot inlet. A `trigger` object can control the order.
 
 ## Objects That Use Hot/Cold Inlets
 
-- [expr](/docs/objects/expr) — expression evaluator (`$1`, `$2`, …)
-- [map](/docs/objects/map) — JavaScript transformer
-- [filter](/docs/objects/filter) — conditional message passing
+- [expr](/docs/objects/expr) — Evaluate expressions with `$1`, `$2`, and more inputs.
+- [map](/docs/objects/map) — Transform messages with JavaScript.
+- [filter](/docs/objects/filter) — Pass messages that meet a condition.
 
 ## See Also
 
-- [trigger](/docs/objects/trigger) — control message order
-- [Message Passing](/docs/message-passing) — how messages flow between objects
+- [trigger](/docs/objects/trigger) — Control message order.
+- [Message Passing](/docs/message-passing) — Learn how messages flow between objects.
