@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-31T15:35:06+07:00",
+  "title": "Design System: Patchies",
+  "extensions": {
+    "colorMeta": {
+      "canvas-ink": {
+        "role": "neutral",
+        "displayName": "Canvas Ink",
+        "canonical": "#000000",
+        "tonalRamp": ["#000000", "#09090b", "#18181b", "#27272a", "#3f3f46", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#080809",
+        "tonalRamp": ["#080809", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "panel-ink": {
+        "role": "neutral",
+        "displayName": "Panel Ink",
+        "canonical": "#09090b",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface Zinc",
+        "canonical": "#18181b",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "surface-active": {
+        "role": "neutral",
+        "displayName": "Active Zinc",
+        "canonical": "#27272a",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "boundary": {
+        "role": "neutral",
+        "displayName": "Boundary Zinc",
+        "canonical": "#3f3f46",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Zinc",
+        "canonical": "#71717a",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Secondary Text",
+        "canonical": "#a1a1aa",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Primary Text",
+        "canonical": "#e4e4e7",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#e4e4e7"]
+      },
+      "text-strong": {
+        "role": "neutral",
+        "displayName": "Strong Text",
+        "canonical": "#f4f4f5",
+        "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#f4f4f5"]
+      },
+      "ember": {
+        "role": "primary",
+        "displayName": "Ember",
+        "canonical": "#f97316",
+        "tonalRamp": ["#431407", "#7c2d12", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#ffedd5"]
+      },
+      "ember-bright": {
+        "role": "primary",
+        "displayName": "Bright Ember",
+        "canonical": "#fb923c",
+        "tonalRamp": ["#431407", "#7c2d12", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#ffedd5"]
+      },
+      "signal-blue": {
+        "role": "secondary",
+        "displayName": "Signal Blue",
+        "canonical": "#2563eb",
+        "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"]
+      },
+      "signal-green": {
+        "role": "secondary",
+        "displayName": "Signal Green",
+        "canonical": "#22c55e",
+        "tonalRamp": ["#052e16", "#14532d", "#166534", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#dcfce7"]
+      },
+      "signal-red": {
+        "role": "secondary",
+        "displayName": "Signal Red",
+        "canonical": "#ef4444",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"]
+      },
+      "running-pink": {
+        "role": "secondary",
+        "displayName": "Running Pink",
+        "canonical": "#ec4899",
+        "tonalRamp": ["#500724", "#831843", "#be185d", "#db2777", "#ec4899", "#f472b6", "#f9a8d4", "#fce7f3"]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Major onboarding or reading-surface headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Dialog, panel, and section titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Guidance, descriptions, and readable prose."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Compact controls, shortcuts, categories, and metadata."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Object names, parameters, values, and source code."
+      }
+    },
+    "shadows": [
+      {
+        "name": "node-hover",
+        "value": "0 0 15px rgba(255,255,255,0.08), 0 0 45px rgba(255,255,255,0.05)",
+        "purpose": "Faint proximity response around a hovered node."
+      },
+      {
+        "name": "node-selected",
+        "value": "0 0 15px rgba(255,255,255,0.17), 0 0 45px rgba(255,255,255,0.10)",
+        "purpose": "Confirms node selection without introducing another hue."
+      },
+      {
+        "name": "floating-control",
+        "value": "0 10px 30px rgba(0,0,0,0.35)",
+        "purpose": "Separates a compact menu, tooltip, or palette from the canvas."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "150ms ease",
+        "purpose": "Hover, focus, and compact control state changes."
+      },
+      {
+        "name": "state-standard",
+        "value": "200ms ease",
+        "purpose": "Switches, selection, and small overlay transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The clearest action inside a contained workflow.",
+      "html": "<button class=\"ds-btn-primary\">Apply Changes</button>",
+      "css": ".ds-btn-primary { height: 36px; padding: 8px 16px; border: 0; border-radius: 6px; background: #e4e4e7; color: #27272a; font: 500 14px/1.4 'IBM Plex Sans', system-ui, sans-serif; cursor: pointer; transition: background 150ms ease, box-shadow 150ms ease; } .ds-btn-primary:hover { background: #f4f4f5; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(161,161,170,0.45); } .ds-btn-primary:active { background: #d4d4d8; }"
+    },
+    {
+      "name": "Toolbar Icon Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "A compact edge-mounted action that stays quiet over the canvas.",
+      "html": "<button class=\"ds-toolbar-button\" aria-label=\"Add object\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg></button>",
+      "css": ".ds-toolbar-button { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; background: rgba(24,24,27,0.78); color: #e4e4e7; cursor: pointer; transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease; } .ds-toolbar-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; } .ds-toolbar-button:hover { background: #3f3f46; border-color: rgba(255,255,255,0.12); } .ds-toolbar-button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(161,161,170,0.4); } .ds-toolbar-button:active { background: #27272a; }"
+    },
+    {
+      "name": "Compact Technical Input",
+      "kind": "input",
+      "refersTo": "input-compact",
+      "description": "A compact field for object syntax, values, or commands.",
+      "html": "<label class=\"ds-field\"><span>Object</span><input value=\"osc~ 440\" aria-label=\"Object\" /></label>",
+      "css": ".ds-field { display: grid; gap: 6px; color: #71717a; font: 500 11px/1.4 'IBM Plex Mono', monospace; letter-spacing: 0.05em; } .ds-field input { height: 32px; min-width: 180px; padding: 6px 8px; border: 1px solid rgba(255,255,255,0.10); border-radius: 6px; background: #18181b; color: #e4e4e7; font: 400 12px/1.5 'IBM Plex Mono', monospace; transition: border-color 150ms ease, box-shadow 150ms ease; } .ds-field input:hover { border-color: #3f3f46; } .ds-field input:focus-visible { outline: none; border-color: rgba(249,115,22,0.65); box-shadow: 0 0 0 3px rgba(249,115,22,0.14); }"
+    },
+    {
+      "name": "Patch Node",
+      "kind": "custom",
+      "refersTo": "node-default",
+      "description": "The signature compact object on the infinite canvas.",
+      "html": "<button class=\"ds-patch-node\"><span>osc~</span><span class=\"ds-patch-node__value\">440</span></button>",
+      "css": ".ds-patch-node { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 8px 12px; border: 1px solid #3f3f46; border-radius: 10px; background: #18181b; color: #e4e4e7; font: 400 12px/1.5 'IBM Plex Mono', monospace; cursor: pointer; transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease; } .ds-patch-node__value { color: #a1a1aa; } .ds-patch-node:hover { box-shadow: 0 0 15px rgba(255,255,255,0.08), 0 0 45px rgba(255,255,255,0.05); } .ds-patch-node:focus-visible { outline: none; background: #27272a; border-color: #a1a1aa; box-shadow: 0 0 15px rgba(255,255,255,0.17), 0 0 45px rgba(255,255,255,0.10); }"
+    },
+    {
+      "name": "Sidebar Tab",
+      "kind": "nav",
+      "description": "An icon-led editor destination with quiet selected state.",
+      "html": "<button class=\"ds-sidebar-tab\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 6h6l2 2h10v10H3z\"/></svg><span>Files</span></button>",
+      "css": ".ds-sidebar-tab { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 6px; background: #27272a; color: #e4e4e7; font: 500 12px/1.4 'IBM Plex Sans', system-ui, sans-serif; cursor: pointer; transition: background 150ms ease, color 150ms ease; } .ds-sidebar-tab svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; } .ds-sidebar-tab:hover { background: #3f3f46; color: #f4f4f5; } .ds-sidebar-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(161,161,170,0.35); }"
+    },
+    {
+      "name": "Instrument Switch",
+      "kind": "input",
+      "description": "A small binary control with Ember reserved for its active state.",
+      "html": "<button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Show on startup\"><span></span></button>",
+      "css": ".ds-switch { position: relative; width: 36px; height: 20px; padding: 0; border: 1px solid rgba(249,115,22,0.4); border-radius: 9999px; background: rgba(249,115,22,0.25); cursor: pointer; transition: background 200ms ease, border-color 200ms ease, box-shadow 150ms ease; } .ds-switch span { position: absolute; top: 2px; left: 18px; width: 14px; height: 14px; border-radius: 9999px; background: #f97316; transition: transform 200ms ease, background 200ms ease; } .ds-switch[aria-checked='false'] { border-color: rgba(255,255,255,0.08); background: #27272a; } .ds-switch[aria-checked='false'] span { left: 2px; background: #71717a; } .ds-switch:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(249,115,22,0.18); }"
+    },
+    {
+      "name": "Command Item",
+      "kind": "nav",
+      "description": "A dense palette row with a technical shortcut label.",
+      "html": "<button class=\"ds-command-item\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg><span>Add Object</span><kbd>⌘ O</kbd></button>",
+      "css": ".ds-command-item { width: 280px; display: flex; align-items: center; gap: 8px; padding: 7px 8px; border: 0; border-radius: 6px; background: #27272a; color: #e4e4e7; font: 400 14px/1.4 'IBM Plex Sans', system-ui, sans-serif; text-align: left; cursor: pointer; } .ds-command-item svg { width: 16px; height: 16px; fill: none; stroke: #a1a1aa; stroke-width: 1.8; } .ds-command-item kbd { margin-left: auto; color: #71717a; font: 400 11px/1.4 'IBM Plex Mono', monospace; } .ds-command-item:hover { background: #3f3f46; color: #f4f4f5; } .ds-command-item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(161,161,170,0.35); }"
+    },
+    {
+      "name": "Canvas Tooltip",
+      "kind": "custom",
+      "description": "A compact opaque label that remains readable over bright content.",
+      "html": "<div class=\"ds-tooltip\" role=\"tooltip\">Browse Objects <kbd>⌘O</kbd></div>",
+      "css": ".ds-tooltip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: #e4e4e7; color: #27272a; box-shadow: 0 10px 30px rgba(0,0,0,0.35); font: 500 12px/1.4 'IBM Plex Sans', system-ui, sans-serif; } .ds-tooltip kbd { color: #52525b; font: 400 10px/1.4 'IBM Plex Mono', monospace; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Playable Circuits",
+    "overview": "Patchies is a dark, precise, technical, playful, and quietly expressive creative environment. The editor behaves like a set of dependable instruments around an open stage: controls are legible and tactile, but the patch, its media, and the user's computation carry the visual energy.\n\nThe infinite canvas is minimal Ink rather than a branded backdrop. Editor chrome uses close steps of black and zinc, compact spacing, fine boundaries, and state-driven color. Ember appears as a deliberate creative signal, not a wash over every surface. This restraint lets vivid video, graphics, code, waveforms, and patch topology shine without competing with the application shell.\n\nGlass is a limited treatment for genuinely floating UI whose backdrop changes infrequently. Opaque or nearly opaque surfaces are the default, especially over live canvas output. The onboarding modal may be more playful than the editor, but it must still feel authored rather than decorated from a generic template.",
+    "keyCharacteristics": [
+      "Content-first hierarchy on a minimal Ink canvas.",
+      "Quiet, precise, compact controls that feel like creative instruments.",
+      "Zinc tonal layering with Ember used sparingly for attention and activation.",
+      "Monospace labels for commands, object names, values, and technical metadata.",
+      "Glass and glow reserved for meaningful depth or state, never ambient excess."
+    ],
+    "rules": [
+      {
+        "name": "The Content Is the Color Rule",
+        "body": "The editor stays neutral so the user's patch, media, and runtime states can own the saturated color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ember Earns Attention Rule",
+        "body": "Use Ember for a meaningful focus, selection, or creative action; never use it as continuous decoration across the editor.",
+        "section": "colors"
+      },
+      {
+        "name": "The Instrument Type Rule",
+        "body": "Use IBM Plex Sans for human-readable interface language and IBM Plex Mono where exact values, commands, or computational identity matter.",
+        "section": "typography"
+      },
+      {
+        "name": "The Stable Glass Rule",
+        "body": "Blur only a floating layer over mostly stable content; never blur large persistent surfaces over live or animated canvas output.",
+        "section": "elevation"
+      },
+      {
+        "name": "The State Creates Depth Rule",
+        "body": "Resting surfaces remain flat. Glow and stronger shadow appear in response to hover, focus, selection, or an open overlay.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do let user-created graphics, video, waveforms, and patch structure carry the screen's strongest color.",
+      "Do use close Ink and zinc tonal steps, fine borders, and compact spacing to organize editor chrome.",
+      "Do reserve Ember for meaningful focus, selection, and creative activation.",
+      "Do use IBM Plex Mono for object syntax, values, shortcuts, and technical metadata.",
+      "Do make hover, focus, selected, running, error, and disabled states distinguishable without relying on shape alone.",
+      "Do give a redesigned onboarding experience permission to be more playful than the editor while keeping the editor itself quiet."
+    ],
+    "donts": [
+      "Don't turn the infinite canvas into a decorative branded background.",
+      "Don't put persistent backdrop blur over live canvas, video, WebGL, or other frequently changing content.",
+      "Don't spread Ember across large surfaces or use saturated gradients as editor chrome.",
+      "Don't propagate the current ornamental modal corners or the Instrument Serif plus Syne pairing as canonical Patchies identity.",
+      "Don't use the current startup, object-browser, settings, AI-settings, docs, or Sparks presentation as unquestioned design-system authority.",
+      "Don't let floating UI become unreadable over bright or high-motion user content."
+    ]
+  }
+}
