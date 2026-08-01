@@ -64,9 +64,33 @@ export class AudioAdapter {
     this.audioService.removeNodeById(descriptor.id);
 
     // insert new nodes
-    this.audioService
-      .createNode(descriptor.id, descriptor.objectType, descriptor.params)
-      .catch(() => undefined);
+    const creation =
+      descriptor.runtimeData === undefined
+        ? this.audioService.createNode(descriptor.id, descriptor.objectType, descriptor.params)
+        : this.audioService.createNode(
+            descriptor.id,
+            descriptor.objectType,
+            descriptor.params,
+            descriptor.runtimeData
+          );
+
+    const attachRuntimeDataListener = (node: Awaited<typeof creation>) => {
+      node?.setRuntimeDataChangeListener?.((updates) => {
+        if (this.audioService.getNodeById(descriptor.id) !== node) return;
+
+        this.suppressNextAudioObjectSync(descriptor.id);
+        this.onAudioObjectDataChange?.(descriptor.id, updates);
+        this.viewRevisions.bump(descriptor.id);
+      });
+    };
+
+    if (typeof (creation as Promise<unknown>).then === 'function') {
+      (creation as Promise<Awaited<typeof creation>>)
+        .then(attachRuntimeDataListener)
+        .catch(() => undefined);
+    } else {
+      (creation as { catch?: (handler: () => void) => void }).catch?.(() => undefined);
+    }
 
     const messageContext = this.createAudioObjectMessageContext(
       descriptor.id,

@@ -4,17 +4,16 @@ import { logger } from '$lib/utils/logger';
 import { createCustomConsole } from '$lib/utils/createCustomConsole';
 import { handleCodeError } from '$lib/js-runner/handleCodeError';
 import { match, P } from 'ts-pattern';
-import { MessageContext } from '$lib/messages/MessageContext';
+import { MessageSystem } from '$lib/messages/MessageSystem';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import type WebRenderer from '@elemaudio/web-renderer';
 import { ELEM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { AudioService } from '$lib/audio/v2/AudioService';
 import { createSettingsAPI } from '$lib/settings/create-settings-api';
+import { hasAudioInputUsage } from '$lib/audio/visible-audio-inputs';
+import { RuntimeAudioCodeState } from '$objects/audio-code/RuntimeAudioCodeState';
+import { isRunMessage } from '$objects/audio-code/runtime-audio-code-messages';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
-type OnSetPortCount = (inletCount: number, outletCount: number) => void;
-type OnSetTitle = (title: string) => void;
-type OnSetAudioInputVisible = (visible: boolean) => void;
 
 /**
  * ElementaryNode implements the elem~ audio node.
@@ -23,6 +22,9 @@ type OnSetAudioInputVisible = (visible: boolean) => void;
 export class ElementaryNode implements AudioNodeV2 {
   static type = 'elem~';
   static group: AudioNodeGroup = 'processors';
+  static runtimeManaged = true;
+  static acceptsRuntimeData = true;
+  static dynamicMessageTarget = 'messageInlet';
   static description = 'Elementary Audio DSP synthesis and processing node';
 
   static inlets: ObjectInlet[] = [
@@ -47,7 +49,7 @@ export class ElementaryNode implements AudioNodeV2 {
 
   private inputNode: GainNode;
   private audioContext: AudioContext;
-  private messageContext: MessageContext;
+  private runtimeState: RuntimeAudioCodeState;
   private jsRunner: JSRunner;
 
   // Elementary Audio state
@@ -59,10 +61,6 @@ export class ElementaryNode implements AudioNodeV2 {
   // Dynamic port counts for UI
   private messageInletCount = 0;
   private messageOutletCount = 0;
-
-  public onSetPortCount: OnSetPortCount = () => {};
-  public onSetTitle: OnSetTitle = () => {};
-  public onSetAudioInputVisible: OnSetAudioInputVisible = () => {};
 
   // Custom console for routing output to VirtualConsole
   private customConsole;
@@ -79,7 +77,7 @@ export class ElementaryNode implements AudioNodeV2 {
     this.inputNode = audioContext.createGain();
     this.inputNode.gain.value = 1.0;
 
-    this.messageContext = new MessageContext(nodeId);
+    this.runtimeState = new RuntimeAudioCodeState(nodeId);
     this.jsRunner = JSRunner.getInstance();
   }
 
@@ -89,6 +87,16 @@ export class ElementaryNode implements AudioNodeV2 {
     if (code) {
       await this.setCode(code);
     }
+  }
+  initializeRuntimeData(data: Record<string, unknown>): void {
+    this.runtimeState.initialize(data);
+  }
+  setRuntimeDataChangeListener(listener: (updates: Record<string, unknown>) => void): void {
+    this.runtimeState.setListener(listener);
+  }
+
+  getSettingsManager() {
+    return this.runtimeState.settingsManager;
   }
 
   async send(key: string, msg: unknown): Promise<void> {
@@ -146,6 +154,8 @@ export class ElementaryNode implements AudioNodeV2 {
   }
 
   private async setCode(code: string): Promise<void> {
+    this.runtimeState.setCode(code);
+    this.runtimeState.publish({ showAudioInput: hasAudioInputUsage('elem~', code) });
     if (!code || code.trim() === '') {
       // render silence
       await this.core?.render();
@@ -168,8 +178,8 @@ export class ElementaryNode implements AudioNodeV2 {
       this.messageOutletCount = 0;
       this.recvCallback = null;
 
-      const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
-      settingsManager?.clearCallbacks();
+      const settingsManager = this.runtimeState.settingsManager;
+      settingsManager.clearCallbacks();
 
       // Create recv function for receiving messages
       const recv = (callback: (message: unknown, meta: unknown) => void) => {
@@ -178,7 +188,7 @@ export class ElementaryNode implements AudioNodeV2 {
 
       // Create send function for sending messages
       const send = (message: unknown, options?: { to?: number }) =>
-        this.messageContext.send(message, options);
+        MessageSystem.getInstance().sendMessage(this.nodeId, message, options);
 
       // Preprocess code using JSRunner
       const processedCode = await this.jsRunner.preprocessCode(code, { nodeId: this.nodeId });
@@ -193,10 +203,14 @@ export class ElementaryNode implements AudioNodeV2 {
         setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
           this.messageInletCount = Math.max(0, inletCount);
           this.messageOutletCount = Math.max(0, outletCount);
-          this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
+
+          this.runtimeState.publish({
+            messageInletCount: this.messageInletCount,
+            messageOutletCount: this.messageOutletCount
+          });
         },
         setTitle: (title: string) => {
-          this.onSetTitle(title);
+          this.runtimeState.publish({ title });
         },
         extraContext: {
           el: elementaryCore.el,
@@ -206,7 +220,7 @@ export class ElementaryNode implements AudioNodeV2 {
           outputNode: this.audioNode,
           recv,
           send,
-          showAudioInput: () => this.onSetAudioInputVisible(true),
+          showAudioInput: () => this.runtimeState.publish({ showAudioInput: true }),
           ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
         }
       });
@@ -216,6 +230,11 @@ export class ElementaryNode implements AudioNodeV2 {
   }
 
   private handleMessageInlet(message: unknown): void {
+    if (isRunMessage(message)) {
+      this.setCode(this.runtimeState.getCode());
+      return;
+    }
+
     if (!this.recvCallback) return;
 
     const handleError = (error: unknown) => {
@@ -256,7 +275,6 @@ export class ElementaryNode implements AudioNodeV2 {
     this.cleanup();
     this.recvCallback = null;
 
-    this.messageContext.destroy();
     this.jsRunner.destroy(this.nodeId);
 
     // Disconnect audio nodes

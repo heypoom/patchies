@@ -107,6 +107,10 @@ Important rules:
   the edge's numeric inlet index with the message, without learning the object
   name or its port grammar. The audio class translates that index into its
   dynamic runtime state. Its Svelte view owns only matching handle redraws.
+- A runtime-managed audio class that defines settings or dynamic editor metadata
+  owns the settings manager and publishes persisted-data updates through the
+  audio adapter. A mounted Svelte view uses that same manager; it must not
+  create a competing settings state.
 
 ## Data Ownership
 

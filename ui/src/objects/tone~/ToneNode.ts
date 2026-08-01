@@ -4,17 +4,14 @@ import { createCustomConsole } from '$lib/utils/createCustomConsole';
 import { handleCodeError } from '$lib/js-runner/handleCodeError';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import { match, P } from 'ts-pattern';
-import { MessageContext } from '$lib/messages/MessageContext';
 import { TONE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { extractToneVarNames, injectAutoDispose } from '$objects/tone~/tone-auto-dispose';
-import { AudioService } from '$lib/audio/v2/AudioService';
 import { createSettingsAPI } from '$lib/settings/create-settings-api';
+import { hasAudioInputUsage } from '$lib/audio/visible-audio-inputs';
+import { RuntimeAudioCodeState } from '$objects/audio-code/RuntimeAudioCodeState';
+import { isRunMessage } from '$objects/audio-code/runtime-audio-code-messages';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
-
-type OnSetPortCount = (inletCount: number, outletCount: number) => void;
-type OnSetTitle = (title: string) => void;
-type OnSetAudioInputVisible = (visible: boolean) => void;
 
 /**
  * ToneNode implements the tone~ audio node.
@@ -23,6 +20,9 @@ type OnSetAudioInputVisible = (visible: boolean) => void;
 export class ToneNode implements AudioNodeV2 {
   static type = 'tone~';
   static group: AudioNodeGroup = 'processors';
+  static runtimeManaged = true;
+  static acceptsRuntimeData = true;
+  static dynamicMessageTarget = 'messageInlet';
   static description = 'Tone.js synthesis and audio processing node';
 
   static inlets: ObjectInlet[] = [
@@ -47,7 +47,7 @@ export class ToneNode implements AudioNodeV2 {
 
   private inputNode: GainNode;
   private audioContext: AudioContext;
-  private messageContext: MessageContext;
+  private runtimeState: RuntimeAudioCodeState;
 
   private cleanupFn: (() => void) | null = null;
   private recvCallback: RecvCallback | null = null;
@@ -58,10 +58,6 @@ export class ToneNode implements AudioNodeV2 {
   // Dynamic port counts for UI
   private messageInletCount = 0;
   private messageOutletCount = 0;
-
-  public onSetPortCount: OnSetPortCount = () => {};
-  public onSetTitle: OnSetTitle = () => {};
-  public onSetAudioInputVisible: OnSetAudioInputVisible = () => {};
 
   // Custom console for routing output to VirtualConsole
   private customConsole;
@@ -78,7 +74,7 @@ export class ToneNode implements AudioNodeV2 {
     this.inputNode = audioContext.createGain();
     this.inputNode.gain.value = 1.0;
 
-    this.messageContext = new MessageContext(nodeId);
+    this.runtimeState = new RuntimeAudioCodeState(nodeId);
   }
 
   async create(params: unknown[]): Promise<void> {
@@ -87,6 +83,17 @@ export class ToneNode implements AudioNodeV2 {
     if (code) {
       await this.setCode(code);
     }
+  }
+  initializeRuntimeData(data: Record<string, unknown>): void {
+    this.runtimeState.initialize(data);
+  }
+
+  setRuntimeDataChangeListener(listener: (updates: Record<string, unknown>) => void): void {
+    this.runtimeState.setListener(listener);
+  }
+
+  getSettingsManager() {
+    return this.runtimeState.settingsManager;
   }
 
   async send(key: string, msg: unknown): Promise<void> {
@@ -164,6 +171,8 @@ export class ToneNode implements AudioNodeV2 {
   }
 
   private async setCode(code: string): Promise<void> {
+    this.runtimeState.setCode(code);
+    this.runtimeState.publish({ showAudioInput: hasAudioInputUsage('tone~', code) });
     const Tone = await this.ensureTone();
 
     if (!code || code.trim() === '') {
@@ -189,14 +198,14 @@ export class ToneNode implements AudioNodeV2 {
       const toneVarNames = extractToneVarNames(processedCode);
       const toneInstances: { dispose(): void }[] = [];
 
-      const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
-      settingsManager?.clearCallbacks();
+      const settingsManager = this.runtimeState.settingsManager;
+      settingsManager.clearCallbacks();
 
       const extraContext: Record<string, unknown> = {
         Tone,
         outputNode: this.audioNode,
         inputNode: this.inputNode,
-        showAudioInput: () => this.onSetAudioInputVisible(true),
+        showAudioInput: () => this.runtimeState.publish({ showAudioInput: true }),
         ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
       };
 
@@ -214,10 +223,14 @@ export class ToneNode implements AudioNodeV2 {
         setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
           this.messageInletCount = Math.max(0, inletCount);
           this.messageOutletCount = Math.max(0, outletCount);
-          this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
+
+          this.runtimeState.publish({
+            messageInletCount: this.messageInletCount,
+            messageOutletCount: this.messageOutletCount
+          });
         },
         setTitle: (title: string) => {
-          this.onSetTitle(title);
+          this.runtimeState.publish({ title });
         }
       });
 
@@ -239,6 +252,11 @@ export class ToneNode implements AudioNodeV2 {
   }
 
   private handleMessageInlet(messageData: unknown): void {
+    if (isRunMessage(messageData)) {
+      this.setCode(this.runtimeState.getCode());
+      return;
+    }
+
     if (!this.recvCallback) return;
 
     const handleError = (error: unknown) => {
@@ -298,7 +316,6 @@ export class ToneNode implements AudioNodeV2 {
   destroy(): void {
     this.cleanup();
     this.recvCallback = null;
-    this.messageContext.destroy();
     this.audioNode.disconnect();
     this.inputNode.disconnect();
 

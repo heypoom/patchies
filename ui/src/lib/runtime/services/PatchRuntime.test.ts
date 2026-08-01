@@ -17,6 +17,9 @@ import { MergeNode } from '$objects/audio-channel/MergeNode';
 import { SplitNode } from '$objects/audio-channel/SplitNode';
 import { ExprNode } from '$objects/expr~/ExprNode';
 import { FExprNode } from '$objects/expr~/FExprNode';
+import { ToneNode } from '$objects/tone~/ToneNode';
+import { SonicNode } from '$objects/sonic~/SonicNode';
+import { ElementaryNode } from '$objects/elem~/ElementaryNode';
 
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
@@ -63,6 +66,7 @@ const isPiano = (objectType: string) => objectType === 'piano~';
 const isAudioIo = (objectType: string) => objectType === 'out~' || objectType === 'mic~';
 const isAudioChannel = (objectType: string) => objectType === 'merge~' || objectType === 'split~';
 const isAudioExpression = (objectType: string) => objectType === 'expr~' || objectType === 'fexpr~';
+const isAudioCode = (objectType: string) => ['tone~', 'sonic~', 'elem~'].includes(objectType);
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
 
@@ -470,6 +474,36 @@ describe('AudioAdapter', () => {
     expect(createPromise.catch).toHaveBeenCalledWith(expect.any(Function));
     expect(catchHandlers).toHaveLength(1);
     expect(() => catchHandlers[0](new Error('create failed'))).not.toThrow();
+  });
+
+  it('persists initial runtime-audio data emitted when a listener attaches', async () => {
+    const audioService = createFakeAudioService();
+    const onAudioObjectDataChange = vi.fn();
+    const runtime = new AudioAdapter({ audioService, onAudioObjectDataChange });
+    const node = {
+      nodeId: 'runtime-audio-initial-data-test',
+      audioNode: null,
+      setRuntimeDataChangeListener: (listener: (updates: Record<string, unknown>) => void) => {
+        listener({ messageInletCount: 1, messageOutletCount: 2 });
+      }
+    };
+
+    audioService.audioNode = node;
+
+    runtime.upsertAudioObject({
+      id: node.nodeId,
+      objectType: 'test~',
+      params: [],
+      runtimeData: {}
+    });
+    await Promise.resolve();
+
+    expect(onAudioObjectDataChange).toHaveBeenCalledWith(node.nodeId, {
+      messageInletCount: 1,
+      messageOutletCount: 2
+    });
+
+    runtime.destroy();
   });
 
   it('routes audio object command messages through runtime-owned message contexts', () => {
@@ -1400,6 +1434,61 @@ describe('EditorRuntimeReconciler', () => {
       null,
       '(x1 + x1[-1]) / 2'
     ]);
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated audio-code nodes with their persisted settings', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isAudioCode
+    });
+
+    AudioRegistry.getInstance().register(ToneNode);
+    AudioRegistry.getInstance().register(SonicNode);
+    AudioRegistry.getInstance().register(ElementaryNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'tone-runtime-test',
+        type: 'tone~',
+        position: { x: 0, y: 0 },
+        data: { code: 'outputNode.gain.value = 0.5', settings: { gain: 0.5 }, settingsSchema: [] }
+      },
+      {
+        id: 'sonic-runtime-test',
+        type: 'sonic~',
+        position: { x: 0, y: 0 },
+        data: { code: 'Out.ar(outBus, SinOsc.ar(440))', settings: {}, settingsSchema: [] }
+      },
+      {
+        id: 'elem-runtime-test',
+        type: 'elem~',
+        position: { x: 0, y: 0 },
+        data: { code: 'el.cycle(440)', settings: {}, settingsSchema: [] }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'tone-runtime-test',
+      'tone~',
+      [null, 'outputNode.gain.value = 0.5'],
+      { code: 'outputNode.gain.value = 0.5', settings: { gain: 0.5 }, settingsSchema: [] }
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'sonic-runtime-test',
+      'sonic~',
+      [null, 'Out.ar(outBus, SinOsc.ar(440))'],
+      { code: 'Out.ar(outBus, SinOsc.ar(440))', settings: {}, settingsSchema: [] }
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'elem-runtime-test',
+      'elem~',
+      [null, 'el.cycle(440)'],
+      { code: 'el.cycle(440)', settings: {}, settingsSchema: [] }
+    );
 
     runtime.destroy();
   });

@@ -329,7 +329,8 @@ export class AudioService {
   async createNode(
     nodeId: string,
     nodeType: string,
-    params: unknown[] = []
+    params: unknown[] = [],
+    runtimeData?: Record<string, unknown>
   ): Promise<AudioNodeV2 | null> {
     const NodeClass = this.registry.get(nodeType);
 
@@ -346,6 +347,7 @@ export class AudioService {
     this.nodesById.set(node.nodeId, node);
 
     try {
+      if (runtimeData) node.initializeRuntimeData?.(runtimeData);
       await node.create?.(params);
     } catch (error) {
       logger.error(`cannot create node ${nodeType}`, error);

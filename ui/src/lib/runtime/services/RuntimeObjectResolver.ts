@@ -61,10 +61,14 @@ export class RuntimeObjectResolver {
     const nodeClass = AudioRegistry.getInstance().get(object.type);
     if (!nodeClass?.runtimeManaged) return null;
 
-    return {
+    const descriptor: RuntimeAudioObjectDescriptor = {
       id: object.id,
       objectType: object.type,
       params: getAudioParamsFromData(nodeClass.inlets ?? [], object.data)
     };
+
+    if (nodeClass.acceptsRuntimeData) descriptor.runtimeData = object.data;
+
+    return descriptor;
   }
 }

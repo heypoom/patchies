@@ -33,6 +33,12 @@ export type AudioNodeClass = {
   /** If true, dedicated UI nodes of this type are owned by PatchRuntime instead of the Svelte view. */
   runtimeManaged?: boolean;
 
+  /**
+   * If true, dedicated node data is initialized on the audio node before
+   * `create(params)` runs.
+   */
+  acceptsRuntimeData?: boolean;
+
   /** Aliases for the node type (e.g. 's~' for 'send~') */
   aliases?: string[];
 
@@ -68,6 +74,9 @@ export interface AudioNodeV2 {
    */
   create?(params: unknown[]): void | Promise<void>;
 
+  /** Initialize dedicated-node data before audio creation. */
+  initializeRuntimeData?(data: Record<string, unknown>): void;
+
   /**
    * Handle incoming messages to the node.
    *
@@ -87,6 +96,8 @@ export interface AudioNodeV2 {
    * @returns The AudioParam or null if not found
    */
   getAudioParam?(name: string): AudioParam | null;
+
+  setRuntimeDataChangeListener?(listener: (updates: Record<string, unknown>) => void): void;
 
   /**
    * Connect this node to another node.
