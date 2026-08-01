@@ -77,8 +77,7 @@
           class="group flex min-w-0 flex-1 flex-col rounded-lg border border-zinc-800/80 bg-zinc-900/30 p-4 transition-all hover:border-orange-500/30 hover:bg-zinc-900/60"
         >
           <span
-            class="mb-1.5 flex items-center gap-1 text-[10px] font-bold tracking-widest text-zinc-600 uppercase transition-colors group-hover:text-orange-500/70"
-            style="font-family: 'Syne', sans-serif;"
+            class="mb-1.5 flex items-center gap-1 font-sans text-[10px] font-semibold tracking-widest text-zinc-600 uppercase transition-colors group-hover:text-orange-500/70"
           >
             <ChevronLeft class="h-3 w-3" />
             Previous
@@ -103,8 +102,7 @@
           class="group flex min-w-0 flex-1 flex-col items-end rounded-lg border border-zinc-800/80 bg-zinc-900/30 p-4 text-right transition-all hover:border-orange-500/30 hover:bg-zinc-900/60 sm:items-end"
         >
           <span
-            class="mb-1.5 flex items-center gap-1 text-[10px] font-bold tracking-widest text-zinc-600 uppercase transition-colors group-hover:text-orange-500/70"
-            style="font-family: 'Syne', sans-serif;"
+            class="mb-1.5 flex items-center gap-1 font-sans text-[10px] font-semibold tracking-widest text-zinc-600 uppercase transition-colors group-hover:text-orange-500/70"
           >
             Next
             <ChevronRight class="h-3 w-3" />

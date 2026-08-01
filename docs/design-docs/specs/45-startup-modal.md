@@ -101,6 +101,13 @@ The startup modal is implemented as a modular component system in `/ui/src/lib/c
    - Defaults to enabled for first-time users
    - Orange toggle switch with smooth animation
 
+#### Typography
+
+- Use IBM Plex Sans for interface copy and IBM Plex Mono for shortcuts, commands, and technical
+  labels.
+- Use IBM Plex Serif for expressive editorial headings and italic display copy.
+- Do not use the former display serif. The startup modal should stay within the IBM Plex family.
+
 #### Example Patches JSON Format
 
 ```json

@@ -9,6 +9,7 @@
     --prose-h1: calc(1.5rem * var(--prose-scale));
     --prose-h2: calc(1.125rem * var(--prose-scale));
     --prose-h3: calc(0.9375rem * var(--prose-scale));
+    max-width: 70ch;
   }
 
   .prose-markdown:not(.promise-markdown-app) hr {
@@ -104,31 +105,44 @@
     --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
-  .prose-markdown h1,
+  .prose-markdown h1 {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: calc(2rem * var(--prose-scale));
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
   .prose-markdown-app h1 {
     font-family: Syne, ui-sans-serif, sans-serif;
     font-size: calc(2rem * var(--prose-scale));
     font-weight: 700;
-    color: #fafafa;
     letter-spacing: -0.025em;
     line-height: 1.15;
+  }
+
+  .prose-markdown h1,
+  .prose-markdown-app h1 {
+    color: #fafafa;
     margin-bottom: 1.5rem;
     padding-bottom: 1.25rem;
     border-bottom: 1px solid #27272a;
   }
 
   .prose-markdown h2 {
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: calc(0.75rem * var(--prose-scale));
+    font-weight: 600;
   }
 
   .prose-markdown-app h2 {
     font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: calc(0.6875rem * var(--prose-scale));
+    font-weight: 700;
   }
 
   .prose-markdown h2,
   .prose-markdown-app h2 {
-    font-size: calc(0.6875rem * var(--prose-scale));
-    font-weight: 700;
     color: #a1a1aa;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -139,19 +153,21 @@
   }
 
   .prose-markdown h3 {
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: calc(1rem * var(--prose-scale));
+    letter-spacing: -0.01em;
   }
 
   .prose-markdown-app h3 {
     font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: calc(0.875rem * var(--prose-scale));
+    letter-spacing: 0.02em;
   }
 
   .prose-markdown h3,
   .prose-markdown-app h3 {
-    font-size: calc(0.875rem * var(--prose-scale));
     font-weight: 600;
     color: #d4d4d8;
-    letter-spacing: 0.02em;
     margin-top: 1.75rem;
     margin-bottom: 0.625rem;
   }
@@ -195,9 +211,16 @@
     border: none;
   }
 
-  .prose-markdown code,
+  .prose-markdown code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+
   .prose-markdown-app code {
     font-family: ui-monospace, monospace;
+  }
+
+  .prose-markdown code,
+  .prose-markdown-app code {
     font-size: var(--prose-code);
     background: #27272a;
     padding: 0.125rem 0.375rem;

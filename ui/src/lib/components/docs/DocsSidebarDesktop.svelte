@@ -85,8 +85,7 @@
       <div class="mb-4 flex items-center justify-between">
         <a
           href="/"
-          class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-orange-400"
-          style="font-family: 'Syne', sans-serif; letter-spacing: 0.04em;"
+          class="inline-flex items-center gap-1.5 font-sans text-xs font-medium tracking-[0.04em] text-zinc-600 transition-colors hover:text-orange-400"
         >
           <ArrowLeft class="h-3.5 w-3.5" />
           Patchies
@@ -112,8 +111,7 @@
       <div class="mb-6">
         <button
           onclick={() => (guidesExpanded = !guidesExpanded)}
-          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-[10px] font-bold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
-          style="font-family: 'Syne', sans-serif;"
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 font-sans text-[10px] font-semibold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
         >
           {#if guidesExpanded}
             <ChevronDown class="h-3 w-3" />
@@ -132,8 +130,7 @@
               {#if categoryTopics && categoryTopics.length > 0}
                 <div>
                   <div
-                    class="mb-1 text-[9px] font-semibold tracking-widest text-zinc-600 uppercase"
-                    style="font-family: 'Syne', sans-serif;"
+                    class="mb-1 font-sans text-[9px] font-semibold tracking-widest text-zinc-600 uppercase"
                   >
                     {category}
                   </div>
@@ -168,8 +165,7 @@
       <div>
         <button
           onclick={() => (objectsExpanded = !objectsExpanded)}
-          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-[10px] font-bold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
-          style="font-family: 'Syne', sans-serif;"
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 font-sans text-[10px] font-semibold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
         >
           {#if objectsExpanded}
             <ChevronDown class="h-3 w-3" />

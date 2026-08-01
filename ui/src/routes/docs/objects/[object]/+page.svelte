@@ -49,8 +49,7 @@
   {#if data.schema.inlets.length > 0}
     <section class="mb-6">
       <h2
-        class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
-        style="font-family: 'Syne', sans-serif;"
+        class="mb-3 border-l-2 border-orange-500 pl-2 font-sans text-[10px] font-semibold tracking-widest text-zinc-400 uppercase"
       >
         Inlets
       </h2>
@@ -66,8 +65,7 @@
   {#if data.schema.outlets.length > 0 && !data.schema.hasDynamicOutlets}
     <section class="mb-6">
       <h2
-        class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
-        style="font-family: 'Syne', sans-serif;"
+        class="mb-3 border-l-2 border-orange-500 pl-2 font-sans text-[10px] font-semibold tracking-widest text-zinc-400 uppercase"
       >
         Outlets
       </h2>
@@ -83,8 +81,7 @@
   {#if data.objectType === 'trigger'}
     <section class="mb-6">
       <h2
-        class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
-        style="font-family: 'Syne', sans-serif;"
+        class="mb-3 border-l-2 border-orange-500 pl-2 font-sans text-[10px] font-semibold tracking-widest text-zinc-400 uppercase"
       >
         Type Specifiers
       </h2>
@@ -130,8 +127,7 @@
 {#if data.schema?.tags && data.schema.tags.length > 0}
   <section class="mb-6">
     <h2
-      class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
-      style="font-family: 'Syne', sans-serif;"
+      class="mb-3 border-l-2 border-orange-500 pl-2 font-sans text-[10px] font-semibold tracking-widest text-zinc-400 uppercase"
     >
       Tags
     </h2>
