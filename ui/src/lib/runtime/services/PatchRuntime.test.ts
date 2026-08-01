@@ -427,7 +427,7 @@ describe('AudioAdapter', () => {
     });
 
     expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);
 
     runtime.audioService.send(nodeId, 'frequency', 220);
     expect(audioService.send).toHaveBeenCalledWith(nodeId, 'frequency', 220);
@@ -943,7 +943,7 @@ describe('PatchRuntime', () => {
     });
 
     expect(objectService.getObjectById(nodeId)).toBeNull();
-    expect(audioService.createNode).toHaveBeenLastCalledWith(nodeId, 'osc~', []);
+    expect(audioService.createNode).toHaveBeenLastCalledWith(nodeId, 'osc~', [], undefined);
   });
 
   it('serializes overlapping object synchronization and retains the latest descriptor', async () => {
@@ -1095,7 +1095,7 @@ describe('PatchRuntime', () => {
     });
 
     expect(objectService.getObjectById(nodeId)).toBeInstanceOf(PatchRuntimeTestObject);
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);
 
     runtime.destroy();
 
@@ -1126,14 +1126,12 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
-      null,
-      null,
-      1024,
-      'xy',
-      30,
-      false
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'tap~',
+      [null, null, 1024, 'xy', 30, false],
+      undefined
+    );
 
     await setRuntimeGraphFromEditorGraph(runtime, []);
 
@@ -1166,14 +1164,12 @@ describe('EditorRuntimeReconciler', () => {
 
     expect(audioService.createNode).toHaveBeenCalledTimes(1);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
-      null,
-      null,
-      1024,
-      'xy',
-      30,
-      false
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'tap~',
+      [null, null, 1024, 'xy', 30, false],
+      undefined
+    );
 
     await setRuntimeGraphFromEditorGraph(runtime, []);
 
@@ -1234,14 +1230,12 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'bytebeat~', [
-      null,
-      't * 3',
-      'floatbeat',
-      'function',
-      11025,
-      true
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'bytebeat~',
+      [null, 't * 3', 'floatbeat', 'function', 11025, true],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1274,16 +1268,12 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'sampler~', [
-      null,
-      'user://samples/kick.wav',
-      0.25,
-      1.5,
-      0.8,
-      1.25,
-      -50,
-      'held'
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'sampler~',
+      [null, 'user://samples/kick.wav', 0.25, 1.5, 0.8, 1.25, -50, 'held'],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1308,10 +1298,12 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'piano~', [
-      null,
-      { velocity: 88, volume: 72 }
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'piano~',
+      [null, { velocity: 88, volume: 72 }],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1347,17 +1339,18 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith('output-editor-runtime-test', 'out~', [
-      null,
-      'speakers-1'
-    ]);
-    expect(audioService.createNode).toHaveBeenCalledWith('mic-editor-runtime-test', 'mic~', [
-      null,
-      'microphone-1',
-      false,
-      false,
-      false
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'output-editor-runtime-test',
+      'out~',
+      [null, 'speakers-1'],
+      undefined
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'mic-editor-runtime-test',
+      'mic~',
+      [null, 'microphone-1', false, false, false],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1388,14 +1381,18 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith('merge-editor-runtime-test', 'merge~', [
-      null,
-      4
-    ]);
-    expect(audioService.createNode).toHaveBeenCalledWith('split-editor-runtime-test', 'split~', [
-      null,
-      3
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'merge-editor-runtime-test',
+      'merge~',
+      [null, 4],
+      undefined
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'split-editor-runtime-test',
+      'split~',
+      [null, 3],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1426,14 +1423,18 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith('expr-editor-runtime-test', 'expr~', [
-      null,
-      's * 0.5'
-    ]);
-    expect(audioService.createNode).toHaveBeenCalledWith('fexpr-editor-runtime-test', 'fexpr~', [
-      null,
-      '(x1 + x1[-1]) / 2'
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'expr-editor-runtime-test',
+      'expr~',
+      [null, 's * 0.5'],
+      undefined
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'fexpr-editor-runtime-test',
+      'fexpr~',
+      [null, '(x1 + x1[-1]) / 2'],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1515,7 +1516,7 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);
     expect(createObject).not.toHaveBeenCalled();
 
     await setRuntimeGraphFromEditorGraph(runtime, []);

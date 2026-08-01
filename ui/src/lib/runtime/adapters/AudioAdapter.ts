@@ -1,4 +1,4 @@
-import type { AudioService, AudioNodeClass } from '$lib/audio';
+import type { AudioService, AudioNodeClass, AudioNodeV2 } from '$lib/audio';
 
 import { MessageContext, type MessageCallbackFn } from '$lib/messages';
 
@@ -64,17 +64,14 @@ export class AudioAdapter {
     this.audioService.removeNodeById(descriptor.id);
 
     // insert new nodes
-    const creation =
-      descriptor.runtimeData === undefined
-        ? this.audioService.createNode(descriptor.id, descriptor.objectType, descriptor.params)
-        : this.audioService.createNode(
-            descriptor.id,
-            descriptor.objectType,
-            descriptor.params,
-            descriptor.runtimeData
-          );
+    const nodePromise = this.audioService.createNode(
+      descriptor.id,
+      descriptor.objectType,
+      descriptor.params,
+      descriptor.runtimeData
+    );
 
-    const attachRuntimeDataListener = (node: Awaited<typeof creation>) => {
+    const attachRuntimeDataListener = (node: AudioNodeV2 | null) => {
       node?.setRuntimeDataChangeListener?.((updates) => {
         if (this.audioService.getNodeById(descriptor.id) !== node) return;
 
@@ -84,12 +81,10 @@ export class AudioAdapter {
       });
     };
 
-    if (typeof (creation as Promise<unknown>).then === 'function') {
-      (creation as Promise<Awaited<typeof creation>>)
-        .then(attachRuntimeDataListener)
-        .catch(() => undefined);
+    if (typeof nodePromise.then === 'function') {
+      nodePromise.then(attachRuntimeDataListener).catch(() => undefined);
     } else {
-      (creation as { catch?: (handler: () => void) => void }).catch?.(() => undefined);
+      nodePromise.catch?.(() => undefined);
     }
 
     const messageContext = this.createAudioObjectMessageContext(
