@@ -1,6 +1,7 @@
 import type { SettingsSchema } from '$lib/settings';
 import { SettingsManager } from '$lib/settings';
 import { createKVStore } from '$lib/storage';
+import type { RuntimeDataBinding } from '$lib/audio';
 
 export class RuntimeAudioCodeState {
   private listener: (updates: Record<string, unknown>) => void = () => {};
@@ -30,25 +31,18 @@ export class RuntimeAudioCodeState {
     );
   }
 
-  initialize(data: Record<string, unknown>): void {
+  initialize(binding: RuntimeDataBinding): void {
+    const { initialData: data, update } = binding;
+
+    this.listener = update;
     this.code = typeof data.code === 'string' ? data.code : '';
     this.settings = isRecord(data.settings) ? data.settings : {};
+
     this.settingsSchema = Array.isArray(data.settingsSchema)
       ? (data.settingsSchema as SettingsSchema)
       : [];
+
     this.editorMetadata = pickEditorMetadata(data);
-  }
-
-  setCode(code: string): void {
-    this.code = code;
-  }
-
-  getCode(): string {
-    return this.code;
-  }
-
-  setListener(listener: (updates: Record<string, unknown>) => void): void {
-    this.listener = listener;
 
     this.publish({
       settings: this.settings,
@@ -60,6 +54,14 @@ export class RuntimeAudioCodeState {
   publish(updates: Record<string, unknown>): void {
     this.editorMetadata = { ...this.editorMetadata, ...pickEditorMetadata(updates) };
     this.listener(updates);
+  }
+
+  setCode(code: string): void {
+    this.code = code;
+  }
+
+  getCode(): string {
+    return this.code;
   }
 }
 

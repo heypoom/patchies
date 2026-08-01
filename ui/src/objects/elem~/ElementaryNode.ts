@@ -1,4 +1,8 @@
-import { type AudioNodeV2, type AudioNodeGroup } from '$lib/audio/v2/interfaces/audio-nodes';
+import {
+  type AudioNodeV2,
+  type AudioNodeGroup,
+  type RuntimeDataBinding
+} from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
 import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -87,18 +91,6 @@ export class ElementaryNode implements AudioNodeV2 {
     if (code) {
       await this.setCode(code);
     }
-  }
-
-  initializeRuntimeData(data: Record<string, unknown>): void {
-    this.runtimeState.initialize(data);
-  }
-
-  setRuntimeDataChangeListener(listener: (updates: Record<string, unknown>) => void): void {
-    this.runtimeState.setListener(listener);
-  }
-
-  getSettingsManager() {
-    return this.runtimeState.settingsManager;
   }
 
   async send(key: string, msg: unknown): Promise<void> {
@@ -264,6 +256,14 @@ export class ElementaryNode implements AudioNodeV2 {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  bindRuntimeData(binding: RuntimeDataBinding): void {
+    this.runtimeState.initialize(binding);
+  }
+
+  getSettingsManager() {
+    return this.runtimeState.settingsManager;
   }
 
   private cleanup(): void {

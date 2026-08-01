@@ -1,4 +1,8 @@
-import { type AudioNodeV2, type AudioNodeGroup } from '$lib/audio/v2/interfaces/audio-nodes';
+import {
+  type AudioNodeV2,
+  type AudioNodeGroup,
+  type RuntimeDataBinding
+} from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { createCustomConsole } from '$lib/utils/createCustomConsole';
 import { handleCodeError } from '$lib/js-runner/handleCodeError';
@@ -83,18 +87,6 @@ export class ToneNode implements AudioNodeV2 {
     if (code) {
       await this.setCode(code);
     }
-  }
-
-  initializeRuntimeData(data: Record<string, unknown>): void {
-    this.runtimeState.initialize(data);
-  }
-
-  setRuntimeDataChangeListener(listener: (updates: Record<string, unknown>) => void): void {
-    this.runtimeState.setListener(listener);
-  }
-
-  getSettingsManager() {
-    return this.runtimeState.settingsManager;
   }
 
   async send(key: string, msg: unknown): Promise<void> {
@@ -302,6 +294,7 @@ export class ToneNode implements AudioNodeV2 {
     if (this.toneInstances.length > 0) {
       this.customConsole.log(`auto-disposing ${this.toneInstances.length} objects`);
     }
+
     for (const instance of this.toneInstances) {
       try {
         instance.dispose();
@@ -312,6 +305,14 @@ export class ToneNode implements AudioNodeV2 {
 
     this.toneInstances = [];
     this.cleanupFn = null;
+  }
+
+  bindRuntimeData(binding: RuntimeDataBinding): void {
+    this.runtimeState.initialize(binding);
+  }
+
+  getSettingsManager() {
+    return this.runtimeState.settingsManager;
   }
 
   destroy(): void {

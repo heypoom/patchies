@@ -1,4 +1,9 @@
-import type { AudioService, AudioNodeClass, AudioNodeV2 } from '$lib/audio';
+import {
+  type AudioService,
+  type AudioNodeClass,
+  type AudioNodeV2,
+  isRuntimeDataAwareAudioNode
+} from '$lib/audio';
 
 import { MessageContext, type MessageCallbackFn } from '$lib/messages';
 
@@ -64,32 +69,31 @@ export class AudioAdapter {
     this.audioService.removeNodeById(descriptor.id);
 
     // insert new nodes
-    const beforeCreate = descriptor.runtimeData
-      ? (node: AudioNodeV2) => node.initializeRuntimeData?.(descriptor.runtimeData!)
+    const onBeforeAudioNodeCreate = descriptor.runtimeData
+      ? (node: AudioNodeV2) => {
+          if (!isRuntimeDataAwareAudioNode(node)) return;
+
+          node.bindRuntimeData({
+            initialData: descriptor.runtimeData!,
+            update: (updates) => {
+              if (this.audioService.getNodeById(descriptor.id) !== node) return;
+
+              this.suppressNextAudioObjectSync(descriptor.id);
+              this.onAudioObjectDataChange?.(descriptor.id, updates);
+              this.viewRevisions.bump(descriptor.id);
+            }
+          });
+        }
       : undefined;
 
     const nodePromise = this.audioService.createNode(
       descriptor.id,
       descriptor.objectType,
       descriptor.params,
-      beforeCreate
+      onBeforeAudioNodeCreate
     );
 
-    const attachRuntimeDataListener = (node: AudioNodeV2 | null) => {
-      node?.setRuntimeDataChangeListener?.((updates) => {
-        if (this.audioService.getNodeById(descriptor.id) !== node) return;
-
-        this.suppressNextAudioObjectSync(descriptor.id);
-        this.onAudioObjectDataChange?.(descriptor.id, updates);
-        this.viewRevisions.bump(descriptor.id);
-      });
-    };
-
-    if (typeof nodePromise.then === 'function') {
-      nodePromise.then(attachRuntimeDataListener).catch(() => undefined);
-    } else {
-      nodePromise.catch?.(() => undefined);
-    }
+    nodePromise.catch?.(() => undefined);
 
     const messageContext = this.createAudioObjectMessageContext(
       descriptor.id,

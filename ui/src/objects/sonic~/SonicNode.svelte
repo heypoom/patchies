@@ -3,7 +3,6 @@
   import { onMount, onDestroy } from 'svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import SimpleDspLayout from '$objects/audio-code/SimpleDspLayout.svelte';
-  import type { SonicNode } from '$objects/sonic~/SonicNode';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
@@ -65,6 +64,7 @@
   });
 
   const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
+  const getSettingsManager = () => audioService.getNodeById(nodeId)?.getSettingsManager?.();
 
   function handleCodeChange(newCode: string) {
     updateNodeData(nodeId, { code: newCode });
@@ -104,12 +104,12 @@
   {lineErrors}
   settingsSchema={data.settingsSchema}
   settingsValues={data.settings ?? {}}
-  onSettingsValueChange={(key, value) =>
-    (audioService.getNodeById(nodeId) as SonicNode | null)
-      ?.getSettingsManager()
-      .setValue(key, value)}
-  onSettingsRevertAll={() =>
-    (audioService.getNodeById(nodeId) as SonicNode | null)?.getSettingsManager().revertAll()}
+  onSettingsValueChange={(key, value) => {
+    getSettingsManager()?.setValue(key, value);
+  }}
+  onSettingsRevertAll={() => {
+    getSettingsManager()?.revertAll();
+  }}
 >
   {#snippet console()}
     <VirtualConsole

@@ -40,8 +40,10 @@ describe('SonicNode', () => {
     const node = new SonicNode('sonic-port-reset-test', audioContext);
     const updates: Record<string, unknown>[] = [];
 
-    node.initializeRuntimeData({ code: 'setPortCount(2, 1)' });
-    node.setRuntimeDataChangeListener((update) => updates.push(update));
+    node.bindRuntimeData({
+      initialData: { code: 'setPortCount(2, 1)' },
+      update: (update) => updates.push(update)
+    });
     await node.send('code', 'setPortCount(2, 1)');
     await node.send('code', 'outputNode.gain.value = 0.5');
 

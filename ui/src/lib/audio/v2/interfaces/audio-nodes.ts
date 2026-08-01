@@ -1,4 +1,5 @@
 import type { ObjectMetadata } from '$lib/objects';
+import type { SettingsManager } from '$lib/settings';
 
 /**
  * Node group type for v2 audio nodes.
@@ -74,9 +75,6 @@ export interface AudioNodeV2 {
    */
   create?(params: unknown[]): void | Promise<void>;
 
-  /** Initialize dedicated-node data before audio creation. */
-  initializeRuntimeData?(data: Record<string, unknown>): void;
-
   /**
    * Handle incoming messages to the node.
    *
@@ -96,8 +94,6 @@ export interface AudioNodeV2 {
    * @returns The AudioParam or null if not found
    */
   getAudioParam?(name: string): AudioParam | null;
-
-  setRuntimeDataChangeListener?(listener: (updates: Record<string, unknown>) => void): void;
 
   /**
    * Connect this node to another node.
@@ -160,4 +156,25 @@ export interface AudioNodeV2 {
    * @returns The parameter index, or undefined if the icon doesn't replace a param
    */
   getIconParamIndex?(): number | undefined;
+
+  /** Returns runtime-owned settings for audio nodes that expose a settings UI. */
+  getSettingsManager?(): SettingsManager;
 }
+
+/**
+ * Editor data provided to runtime-managed audio nodes before they create their
+ * audio graph. Nodes use `update` to persist runtime-owned changes to editor.
+ */
+export interface RuntimeDataBinding {
+  initialData: Record<string, unknown>;
+  update: (updates: Record<string, unknown>) => void;
+}
+
+/** Capability for audio nodes that own dedicated editor data. */
+export interface RuntimeDataAwareAudioNode {
+  bindRuntimeData(binding: RuntimeDataBinding): void;
+}
+
+export const isRuntimeDataAwareAudioNode = (
+  node: AudioNodeV2
+): node is AudioNodeV2 & RuntimeDataAwareAudioNode => 'bindRuntimeData' in node;

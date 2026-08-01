@@ -483,10 +483,9 @@ describe('AudioAdapter', () => {
     const node = {
       nodeId: 'runtime-audio-initial-data-test',
       audioNode: null,
-      initializeRuntimeData: vi.fn(),
-      setRuntimeDataChangeListener: (listener: (updates: Record<string, unknown>) => void) => {
-        listener({ messageInletCount: 1, messageOutletCount: 2 });
-      }
+      bindRuntimeData: vi.fn(({ update }) => {
+        update({ messageInletCount: 1, messageOutletCount: 2 });
+      })
     };
 
     audioService.audioNode = node;
@@ -504,7 +503,10 @@ describe('AudioAdapter', () => {
         messageOutletCount: 2
       });
     });
-    expect(node.initializeRuntimeData).toHaveBeenCalledWith({ settings: { gain: 0.5 } });
+    expect(node.bindRuntimeData).toHaveBeenCalledWith({
+      initialData: { settings: { gain: 0.5 } },
+      update: expect.any(Function)
+    });
 
     runtime.destroy();
   });

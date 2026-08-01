@@ -113,8 +113,8 @@ Important rules:
   create a competing settings state.
 - `AudioService` receives audio params plus an optional pre-create callback. It
   must not receive or interpret dedicated editor data such as settings or a
-  settings schema; the audio adapter passes that data directly to the audio
-  class through the callback.
+  settings schema; the audio adapter binds that data directly to an audio class
+  through its optional `bindRuntimeData` capability.
 
 ## Data Ownership
 

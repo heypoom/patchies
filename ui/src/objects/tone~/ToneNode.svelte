@@ -3,7 +3,6 @@
   import { onMount, onDestroy } from 'svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import SimpleDspLayout from '$objects/audio-code/SimpleDspLayout.svelte';
-  import type { ToneNode } from '$objects/tone~/ToneNode';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
@@ -67,6 +66,7 @@
   });
 
   const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
+  const getSettingsManager = () => audioService.getNodeById(nodeId)?.getSettingsManager?.();
   const handleCodeChange = (newCode: string) => updateNodeData(nodeId, { code: newCode });
 
   function runTone() {
@@ -104,14 +104,10 @@
   settingsSchema={data.settingsSchema}
   settingsValues={data.settings ?? {}}
   onSettingsValueChange={(key, value) => {
-    const node = audioService.getNodeById(nodeId) as ToneNode | null;
-
-    node?.getSettingsManager().setValue(key, value);
+    getSettingsManager()?.setValue(key, value);
   }}
   onSettingsRevertAll={() => {
-    const node = audioService.getNodeById(nodeId) as ToneNode | null;
-
-    node?.getSettingsManager().revertAll();
+    getSettingsManager()?.revertAll();
   }}
 >
   {#snippet console()}
