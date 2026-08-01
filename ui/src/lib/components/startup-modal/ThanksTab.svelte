@@ -350,7 +350,7 @@
   }
 
   .thanks-headline {
-    font-family: 'Instrument Serif', serif;
+    font-family: 'IBM Plex Serif', ui-serif, Georgia, serif;
     font-style: italic;
     font-size: clamp(1.8rem, 5vw, 2.6rem);
     line-height: 1.12;

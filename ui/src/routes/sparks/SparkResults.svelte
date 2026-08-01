@@ -380,7 +380,7 @@
 
 <style>
   .serif-italic {
-    font-family: 'Instrument Serif', serif;
+    font-family: 'IBM Plex Serif', ui-serif, Georgia, serif;
     font-style: italic;
   }
   .syne {

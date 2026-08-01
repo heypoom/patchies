@@ -320,7 +320,41 @@ Prose styles live in `ui/src/styles/prose.css` (imported in app.css):
 
 Don't duplicate these styles in components.
 
-### 5. Don't Forget Schema Registration
+### 5. Documentation Typography
+
+The `/docs` reading surface uses a **Plex System**:
+
+- **IBM Plex Sans** for page titles, prose, section headings, navigation, and interface labels
+- **IBM Plex Mono** for object names, code, signatures, paths, and other computational language
+- No legacy serif display face or Syne within `/docs`
+
+The typography should feel like a quiet, precise instrument. Hierarchy comes from scale, weight,
+spacing, contrast, and the existing Ember section marker rather than from an ornamental display
+face.
+
+The full documentation surface and compact in-app help share prose infrastructure, but their
+typography must remain independently tunable. A `/docs` typography change must not unintentionally
+change the denser in-app help, chat, or object-prompt variants.
+
+#### Hierarchy
+
+- Page titles are the strongest text on the page, set in Plex Sans with restrained weight and tight
+  tracking.
+- Section headings remain compact, uppercase wayfinding labels with an Ember left rule.
+- Subsection headings use sentence case and a modest increase in contrast over body copy.
+- Body copy prioritizes reading comfort with a stable measure and generous line height.
+- Technical content switches to Plex Mono without making ordinary navigation or prose feel like a
+  terminal.
+- Sidebar taxonomy and previous/next metadata use Plex Sans; object names remain Plex Mono.
+
+#### Performance and loading
+
+- Reuse the Plex families already loaded by the application.
+- Do not add a new font dependency for the documentation page.
+- IBM Plex Serif may serve expressive product surfaces, but `/docs` remains Sans and Mono only.
+- Remove Syne from the global font request only when no remaining product surface uses it.
+
+### 6. Don't Forget Schema Registration
 
 When migrating object docs, **always** complete these steps together:
 

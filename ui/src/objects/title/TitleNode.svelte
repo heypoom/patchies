@@ -79,7 +79,7 @@
   const fontFamily = $derived(
     match(font)
       .with('mono', () => $editorFontFamily)
-      .with('serif', () => "'Instrument Serif', serif")
+      .with('serif', () => "'IBM Plex Serif', ui-serif, Georgia, serif")
       .with('syne', () => "'Syne', sans-serif")
       .with('custom', () => customFontFamily.trim() || $editorFontFamily)
       .otherwise(() => 'inherit')

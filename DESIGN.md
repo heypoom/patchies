@@ -130,7 +130,7 @@ but it must still feel authored rather than decorated from a generic template.
 
 The current startup, object-browser, settings, AI-settings, documentation, and
 Sparks surfaces are provisional redesign candidates. Their ornamental corner
-brackets and Instrument Serif plus Syne pairing are not design-system authority.
+brackets and the legacy serif plus Syne pairing are not design-system authority.
 The sidebar and command palette are usable evidence but remain open to
 refinement.
 
@@ -188,7 +188,7 @@ or creative action; never use it as continuous decoration across the editor.
 with a technical mono companion. It should feel engineered without becoming
 sterile. Expressive typography may be introduced for a redesigned onboarding
 experience, but it must be chosen intentionally for Patchies rather than
-inherited from the provisional Instrument Serif and Syne treatment.
+inherited from the provisional serif and Syne treatment.
 
 ### Hierarchy
 
