@@ -155,6 +155,10 @@ export class SonicNode implements AudioNodeV2 {
       this.messageInletCount = 0;
       this.messageOutletCount = 0;
       this.recvCallback = null;
+      this.runtimeState.publish({
+        messageInletCount: this.messageInletCount,
+        messageOutletCount: this.messageOutletCount
+      });
 
       const settingsManager = this.runtimeState.settingsManager;
       settingsManager.clearCallbacks();
