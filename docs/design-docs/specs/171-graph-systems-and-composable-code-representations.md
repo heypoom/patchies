@@ -1,5 +1,21 @@
 # 171. Graph Systems And Composable Code Representations
 
+## Poom's Vision
+
+In Patchies, for code-heavy objects like Three.js, GLSL or Strudel, the code tends to be jammed into one huge object with thousands of lines of code.
+
+This defeats the purpose of Patchies, where we want people to write small and self-contained objects and compose them together. The idea is they can "break down" large programs into smaller composable ones.
+
+One idea is to do something similar to [Strudel Flow](https://xyflow.com/labs/strudel-flow), where instead of long blocks of Strudel code, they can write smaller blocks of code plus visual representations (e.g. pads, visual arpeggiators, beats) that wires together.
+
+In general, the ideal is to let people create visual representations or many small code snippets that ultimately compiles to one giant code block and executed together.
+
+For Three.js, I can imagine people writing separate "scene objects", or shaders being individual objects in TSL (Three.js Shading Language), and compose it together.
+
+For GLSL, today each GLSL node is its own FBO node in the render graph. For some use cases, simply "stitching together" code could be cheaper.
+
+People can make "visual DSLs" with this approach too, i.e. custom interfaces where people can declare data, settings or code fragments that can be interpreted by the system.
+
 ## Goal
 
 Let people make visual DSLs and small code fragments that compose into larger
