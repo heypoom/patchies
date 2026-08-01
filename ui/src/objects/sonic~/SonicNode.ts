@@ -90,9 +90,11 @@ export class SonicNode implements AudioNodeV2 {
       await this.setCode(code);
     }
   }
+
   initializeRuntimeData(data: Record<string, unknown>): void {
     this.runtimeState.initialize(data);
   }
+
   setRuntimeDataChangeListener(listener: (updates: Record<string, unknown>) => void): void {
     this.runtimeState.setListener(listener);
   }

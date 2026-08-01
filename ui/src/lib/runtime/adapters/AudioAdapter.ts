@@ -64,11 +64,15 @@ export class AudioAdapter {
     this.audioService.removeNodeById(descriptor.id);
 
     // insert new nodes
+    const beforeCreate = descriptor.runtimeData
+      ? (node: AudioNodeV2) => node.initializeRuntimeData?.(descriptor.runtimeData!)
+      : undefined;
+
     const nodePromise = this.audioService.createNode(
       descriptor.id,
       descriptor.objectType,
       descriptor.params,
-      descriptor.runtimeData
+      beforeCreate
     );
 
     const attachRuntimeDataListener = (node: AudioNodeV2 | null) => {

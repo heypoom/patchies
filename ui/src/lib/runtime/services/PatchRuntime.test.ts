@@ -483,6 +483,7 @@ describe('AudioAdapter', () => {
     const node = {
       nodeId: 'runtime-audio-initial-data-test',
       audioNode: null,
+      initializeRuntimeData: vi.fn(),
       setRuntimeDataChangeListener: (listener: (updates: Record<string, unknown>) => void) => {
         listener({ messageInletCount: 1, messageOutletCount: 2 });
       }
@@ -494,14 +495,16 @@ describe('AudioAdapter', () => {
       id: node.nodeId,
       objectType: 'test~',
       params: [],
-      runtimeData: {}
+      runtimeData: { settings: { gain: 0.5 } }
     });
-    await Promise.resolve();
 
-    expect(onAudioObjectDataChange).toHaveBeenCalledWith(node.nodeId, {
-      messageInletCount: 1,
-      messageOutletCount: 2
+    await vi.waitFor(() => {
+      expect(onAudioObjectDataChange).toHaveBeenCalledWith(node.nodeId, {
+        messageInletCount: 1,
+        messageOutletCount: 2
+      });
     });
+    expect(node.initializeRuntimeData).toHaveBeenCalledWith({ settings: { gain: 0.5 } });
 
     runtime.destroy();
   });
@@ -1476,19 +1479,19 @@ describe('EditorRuntimeReconciler', () => {
       'tone-runtime-test',
       'tone~',
       [null, 'outputNode.gain.value = 0.5'],
-      { code: 'outputNode.gain.value = 0.5', settings: { gain: 0.5 }, settingsSchema: [] }
+      expect.any(Function)
     );
     expect(audioService.createNode).toHaveBeenCalledWith(
       'sonic-runtime-test',
       'sonic~',
       [null, 'Out.ar(outBus, SinOsc.ar(440))'],
-      { code: 'Out.ar(outBus, SinOsc.ar(440))', settings: {}, settingsSchema: [] }
+      expect.any(Function)
     );
     expect(audioService.createNode).toHaveBeenCalledWith(
       'elem-runtime-test',
       'elem~',
       [null, 'el.cycle(440)'],
-      { code: 'el.cycle(440)', settings: {}, settingsSchema: [] }
+      expect.any(Function)
     );
 
     runtime.destroy();

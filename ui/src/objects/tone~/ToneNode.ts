@@ -84,6 +84,7 @@ export class ToneNode implements AudioNodeV2 {
       await this.setCode(code);
     }
   }
+
   initializeRuntimeData(data: Record<string, unknown>): void {
     this.runtimeState.initialize(data);
   }

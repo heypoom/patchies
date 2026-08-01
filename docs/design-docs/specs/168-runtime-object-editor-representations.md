@@ -111,6 +111,10 @@ Important rules:
   owns the settings manager and publishes persisted-data updates through the
   audio adapter. A mounted Svelte view uses that same manager; it must not
   create a competing settings state.
+- `AudioService` receives audio params plus an optional pre-create callback. It
+  must not receive or interpret dedicated editor data such as settings or a
+  settings schema; the audio adapter passes that data directly to the audio
+  class through the callback.
 
 ## Data Ownership
 

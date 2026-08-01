@@ -180,7 +180,11 @@ export const createFakeObjectService = () =>
 class FakeAudioService {
   audioNode: AudioNodeV2 = { nodeId: 'object-audio-runtime-test', audioNode: null };
   removeNodeById = vi.fn<AudioService['removeNodeById']>();
-  createNode = vi.fn<AudioService['createNode']>(() => Promise.resolve(this.audioNode));
+  createNode = vi.fn<AudioService['createNode']>((_nodeId, _nodeType, _params, beforeCreate) => {
+    const initialized = beforeCreate?.(this.audioNode);
+
+    return Promise.resolve(initialized).then(() => this.audioNode);
+  });
   send = vi.fn<AudioService['send']>();
   getNodeById = vi.fn<AudioService['getNodeById']>(() => this.audioNode);
   updateEdges = vi.fn<AudioService['updateEdges']>();

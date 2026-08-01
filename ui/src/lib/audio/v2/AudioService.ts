@@ -324,13 +324,14 @@ export class AudioService {
    * @param nodeId - Unique identifier for the node
    * @param nodeType - The type of node to create
    * @param params - Array of parameters for the node
+   * @param beforeCreate - Optional node initialization run before audio creation
    * @returns The created node instance, or null if type not defined
    */
   async createNode(
     nodeId: string,
     nodeType: string,
     params: unknown[] = [],
-    runtimeData?: Record<string, unknown>
+    beforeCreate?: (node: AudioNodeV2) => void | Promise<void>
   ): Promise<AudioNodeV2 | null> {
     const NodeClass = this.registry.get(nodeType);
 
@@ -347,7 +348,7 @@ export class AudioService {
     this.nodesById.set(node.nodeId, node);
 
     try {
-      if (runtimeData) node.initializeRuntimeData?.(runtimeData);
+      await beforeCreate?.(node);
       await node.create?.(params);
     } catch (error) {
       logger.error(`cannot create node ${nodeType}`, error);
