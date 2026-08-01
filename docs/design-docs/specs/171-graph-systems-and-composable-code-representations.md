@@ -24,16 +24,11 @@ work adds an authoring layer before code runtimes. It does not replace them.
 Patchies should support this flow:
 
 ```text
-Visual representation
-        edits
-        |
-Composable program data in the patch graph
-        |
-Graph system
-        |
-Generated source message
-        |
-Existing code object and runtime
+Visual representation edits
+-> Composable program data in the patch graph
+-> Graph system
+-> Generated source message
+-> Existing code object and runtime
 ```
 
 The same composed program can have more than one representation. The default
@@ -76,7 +71,7 @@ Every user-authored persisted object that executes through `JSRunner` should
 provide this function:
 
 ```js
-setTags(["shader/foo/function", "shader/foo/noise"])
+setTags(["shader/foo/function", "shader/foo/noise"]);
 ```
 
 `setTags` replaces the object's complete user tag list. It does not change its
@@ -101,9 +96,9 @@ The first API is:
 const unsubscribe = onGraphChange(
   { tags: ["shader/foo/*"] },
   ({ nodes, edges }) => {
-    send(compile(nodes, edges))
+    send(compile(nodes, edges));
   },
-)
+);
 ```
 
 `nodes` are headless runtime objects. They are not XYFlow nodes. Each node has
@@ -124,7 +119,7 @@ input, pattern order, scene relationship, or another authored relation.
 The first API accepts exact tags and a trailing `/*` namespace wildcard.
 
 ```js
-onGraphChange({ tags: ["shader/foo/*"] }, compile)
+onGraphChange({ tags: ["shader/foo/*"] }, compile);
 ```
 
 When a query provides multiple patterns, a node matches when any pattern matches
