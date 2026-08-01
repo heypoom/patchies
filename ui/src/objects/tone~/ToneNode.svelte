@@ -62,14 +62,12 @@
     void data.messageInletCount;
     void data.messageOutletCount;
     void data.showAudioInput;
+
     updateNodeInternals(nodeId);
   });
 
   const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
-
-  function handleCodeChange(newCode: string) {
-    updateNodeData(nodeId, { code: newCode });
-  }
+  const handleCodeChange = (newCode: string) => updateNodeData(nodeId, { code: newCode });
 
   function runTone() {
     // Clear previous console output and error highlighting
@@ -105,12 +103,16 @@
   {lineErrors}
   settingsSchema={data.settingsSchema}
   settingsValues={data.settings ?? {}}
-  onSettingsValueChange={(key, value) =>
-    (audioService.getNodeById(nodeId) as ToneNode | null)
-      ?.getSettingsManager()
-      .setValue(key, value)}
-  onSettingsRevertAll={() =>
-    (audioService.getNodeById(nodeId) as ToneNode | null)?.getSettingsManager().revertAll()}
+  onSettingsValueChange={(key, value) => {
+    const node = audioService.getNodeById(nodeId) as ToneNode | null;
+
+    node?.getSettingsManager().setValue(key, value);
+  }}
+  onSettingsRevertAll={() => {
+    const node = audioService.getNodeById(nodeId) as ToneNode | null;
+
+    node?.getSettingsManager().revertAll();
+  }}
 >
   {#snippet console()}
     <VirtualConsole
