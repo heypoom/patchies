@@ -1480,21 +1480,53 @@ describe('EditorRuntimeReconciler', () => {
     expect(audioService.createNode).toHaveBeenCalledWith(
       'tone-runtime-test',
       'tone~',
-      [null, 'outputNode.gain.value = 0.5'],
+      [null, null],
       expect.any(Function)
     );
     expect(audioService.createNode).toHaveBeenCalledWith(
       'sonic-runtime-test',
       'sonic~',
-      [null, 'Out.ar(outBus, SinOsc.ar(440))'],
+      [null, null],
       expect.any(Function)
     );
     expect(audioService.createNode).toHaveBeenCalledWith(
       'elem-runtime-test',
       'elem~',
-      [null, 'el.cycle(440)'],
+      [null, null],
       expect.any(Function)
     );
+
+    runtime.destroy();
+  });
+
+  it('does not recreate an audio-code node when its editor code changes', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: (objectType) => objectType === 'tone~'
+    });
+
+    AudioRegistry.getInstance().register(ToneNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'tone-code-edit-test',
+        type: 'tone~',
+        position: { x: 0, y: 0 },
+        data: { code: 'outputNode.gain.value = 0.5', settings: {}, settingsSchema: [] }
+      }
+    ]);
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'tone-code-edit-test',
+        type: 'tone~',
+        position: { x: 0, y: 0 },
+        data: { code: 'outputNode.gain.value = 0.25', settings: {}, settingsSchema: [] }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
 
     runtime.destroy();
   });

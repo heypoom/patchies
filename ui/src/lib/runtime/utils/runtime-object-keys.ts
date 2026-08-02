@@ -13,7 +13,7 @@ export const getRuntimeObjectDescriptorKey = (descriptor: RuntimeObjectDescripto
 
 export const getRuntimeAudioObjectDescriptorKey = (
   descriptor: RuntimeAudioObjectDescriptor
-): string => hash([descriptor.objectType, descriptor.params, descriptor.runtimeData]);
+): string => hash([descriptor.objectType, descriptor.params]);
 
 export const getRuntimeConnectionId = (connection: RuntimeConnectionSpec): string =>
   hash([connection.source, connection.outlet, connection.target, connection.inlet]);

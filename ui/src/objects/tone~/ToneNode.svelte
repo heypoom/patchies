@@ -65,16 +65,19 @@
     updateNodeInternals(nodeId);
   });
 
-  const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
+  const runAudioCode = (code: string) => audioService.send(nodeId, 'run', code);
   const getSettingsManager = () => audioService.getNodeById(nodeId)?.getSettingsManager?.();
-  const handleCodeChange = (newCode: string) => updateNodeData(nodeId, { code: newCode });
+
+  const handleCodeChange = (newCode: string) => {
+    updateNodeData(nodeId, { code: newCode });
+  };
 
   function runTone() {
     // Clear previous console output and error highlighting
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
-    updateAudioCode(data.code);
+    runAudioCode(data.code);
   }
 
   function handleToggleConsole() {

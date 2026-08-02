@@ -115,6 +115,9 @@ Important rules:
   must not receive or interpret dedicated editor data such as settings or a
   settings schema; the audio adapter binds that data directly to an audio class
   through its optional `bindRuntimeData` capability.
+- Runtime code editor changes remain an editor-only draft. Code reaches the
+  audio class only on runtime creation or an explicit run command from the Run
+  button, shortcut, or patch message.
 
 ## Data Ownership
 

@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe('SonicNode', () => {
-  it('clears published message ports when replacement code omits setPortCount', async () => {
+  it('clears message ports when explicit runs replace the active code', async () => {
     const gainNode = {
       gain: { value: 0 },
       connect: vi.fn(),
@@ -44,11 +44,11 @@ describe('SonicNode', () => {
       initialData: { code: 'setPortCount(2, 1)' },
       update: (update) => updates.push(update)
     });
-    await node.send('code', 'setPortCount(2, 1)');
-    await node.send('code', '');
-    await node.send('code', 'setPortCount(2, 1)');
-    await node.send('code', 'outputNode.gain.value = 0.5');
+    await node.create([]);
+    await node.send('run', 'outputNode.gain.value = 0.5');
+    await node.send('run', '');
 
+    expect(executeJavaScript).toHaveBeenCalledTimes(2);
     expect(updates).toContainEqual({ messageInletCount: 2, messageOutletCount: 1 });
     expect(updates).toContainEqual({ messageInletCount: 0, messageOutletCount: 0 });
   });

@@ -89,8 +89,8 @@ export class SonicNode implements AudioNodeV2 {
     this.jsRunner = JSRunner.getInstance();
   }
 
-  async create(params: unknown[]): Promise<void> {
-    const [, code] = params as [unknown, string];
+  async create(): Promise<void> {
+    const code = this.runtimeState.getCode();
 
     if (code) {
       await this.setCode(code);
@@ -99,7 +99,7 @@ export class SonicNode implements AudioNodeV2 {
 
   async send(key: string, msg: unknown): Promise<void> {
     return match([key, msg])
-      .with(['code', P.string], ([, code]) => {
+      .with(['run', P.string], ([, code]) => {
         return this.setCode(code);
       })
       .with(['messageInlet', P.any], ([, messageData]) => {

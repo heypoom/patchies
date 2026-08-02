@@ -65,7 +65,7 @@
     updateNodeInternals(nodeId);
   });
 
-  const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
+  const runAudioCode = (code: string) => audioService.send(nodeId, 'run', code);
   const getSettingsManager = () => audioService.getNodeById(nodeId)?.getSettingsManager?.();
 
   function handleCodeChange(newCode: string) {
@@ -77,7 +77,7 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
-    updateAudioCode(data.code);
+    runAudioCode(data.code);
   }
 
   function handleToggleConsole() {
