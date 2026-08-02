@@ -3,9 +3,14 @@ import { PatchiesEventBus } from '$lib/eventbus';
 import type { MessageContext, MessageCallbackFn, SendMessageOptions } from '$lib/messages';
 
 import type { ObjectInlet } from './object-metadata';
+import type { GraphChangeCallback, GraphChangeQuery } from '$lib/runtime/services/GraphObserver';
 
 type ParamsChangeCallback = (params: unknown[], index: number, value: unknown) => void;
 type DataChangeCallback = (data: Record<string, unknown>, updates: Record<string, unknown>) => void;
+
+export type ObjectContextOptions = {
+  subscribeGraph?: (query: GraphChangeQuery, callback: GraphChangeCallback) => () => void;
+};
 
 /**
  * ObjectContext provides a clean API for text objects to interact with
@@ -25,17 +30,20 @@ export class ObjectContext {
   private paramsChangeCallbacks: ParamsChangeCallback[] = [];
   private dataChangeCallbacks: DataChangeCallback[] = [];
   private messageCallbacks: MessageCallbackFn[] = [];
+  private options: ObjectContextOptions;
 
   constructor(
     nodeId: string,
     messageContext: MessageContext,
     inlets: ObjectInlet[] = [],
-    data: Record<string, unknown> = {}
+    data: Record<string, unknown> = {},
+    options: ObjectContextOptions = {}
   ) {
     this.nodeId = nodeId;
     this.messageContext = messageContext;
     this.inlets = inlets;
     this.data = { ...data };
+    this.options = options;
 
     // Initialize params with default values from inlets
     this.params = inlets.map((inlet) => inlet.defaultValue ?? null);
@@ -57,6 +65,14 @@ export class ObjectContext {
    */
   get queue() {
     return this.messageContext.queue;
+  }
+
+  getMessageContext(): MessageContext {
+    return this.messageContext;
+  }
+
+  subscribeGraph(query: GraphChangeQuery, callback: GraphChangeCallback): (() => void) | null {
+    return this.options.subscribeGraph?.(query, callback) ?? null;
   }
 
   /**

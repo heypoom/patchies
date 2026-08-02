@@ -39,6 +39,7 @@
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { LivePreviewExpandController } from '$lib/canvas/LivePreviewExpandController';
   import { getLivePreviewContainScale } from '$lib/canvas/live-preview-contain';
+  import { getUserTags } from '$lib/runtime/services/graph-tags';
 
   export type DomRuntimeRoot = {
     root: HTMLElement;
@@ -376,6 +377,9 @@
         setPortCount,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+        setTags(tags: string[]) {
+          updateNodeData(nodeId, { tags: getUserTags(tags) });
+        },
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           root: runtimeRoot.root,

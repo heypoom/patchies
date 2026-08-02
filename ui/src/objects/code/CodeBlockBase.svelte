@@ -51,6 +51,7 @@
 
     // Execution handlers
     onExecute,
+    onExecuteFromData = onExecute,
     onCleanup: onCleanupHandler,
     onCodeChange,
 
@@ -100,6 +101,7 @@
     };
     selected: boolean;
     onExecute: () => Promise<void>;
+    onExecuteFromData?: () => Promise<void>;
     onCleanup: () => void;
     onCodeChange?: (code: string) => void;
     isRunning: boolean;
@@ -229,7 +231,7 @@
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
 
-      executeCode();
+      onExecuteFromData();
     }
   });
 

@@ -1,4 +1,4 @@
-import { ObjectContext } from './ObjectContext';
+import { ObjectContext, type ObjectContextOptions } from './ObjectContext';
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import { logger } from '$lib/utils/logger';
 import { validateMessageToObject } from '$lib/objects/validate-object-message';
@@ -40,7 +40,8 @@ export class ObjectService {
     objectType: string,
     messageContext: MessageContext,
     data: Record<string, unknown> = {},
-    rawParams: string[] = []
+    rawParams: string[] = [],
+    contextOptions: ObjectContextOptions = {}
   ): Promise<TextObjectV2 | null> {
     const ObjectClass = this.registry.get(objectType);
 
@@ -49,7 +50,13 @@ export class ObjectService {
     }
 
     // Create ObjectContext with inlet definitions from the class
-    const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets, data);
+    const context = new ObjectContext(
+      nodeId,
+      messageContext,
+      ObjectClass.inlets,
+      data,
+      contextOptions
+    );
 
     const object = new ObjectClass(nodeId, context);
     this.objectsById.set(nodeId, object);
