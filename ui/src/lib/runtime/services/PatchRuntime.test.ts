@@ -1484,6 +1484,60 @@ describe('EditorRuntimeReconciler', () => {
     runtime.destroy();
   });
 
+  it('keeps explicit audio params alongside runtime code and settings', async () => {
+    const nodeId = 'tone-runtime-data-and-params-test';
+    const params = [null, 'initial code param'];
+    const audioService = createFakeAudioService();
+    const runtimeNode = {
+      nodeId,
+      audioNode: null,
+      bindRuntimeData: vi.fn()
+    };
+
+    audioService.audioNode = runtimeNode;
+
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: (objectType) => objectType === 'tone~'
+    });
+
+    AudioRegistry.getInstance().register(ToneNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: nodeId,
+        type: 'tone~',
+        position: { x: 0, y: 0 },
+        data: {
+          params,
+          code: 'outputNode.gain.value = 0.5',
+          settings: { gain: 0.5 },
+          settingsSchema: []
+        }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'tone~',
+      params,
+      expect.any(Function)
+    );
+
+    expect(runtimeNode.bindRuntimeData).toHaveBeenCalledWith({
+      initialData: {
+        params,
+        code: 'outputNode.gain.value = 0.5',
+        settings: { gain: 0.5 },
+        settingsSchema: []
+      },
+      update: expect.any(Function)
+    });
+
+    runtime.destroy();
+  });
+
   it('does not recreate an audio-code node when its editor code changes', async () => {
     const audioService = createFakeAudioService();
     const runtime = createTestPatchRuntime({

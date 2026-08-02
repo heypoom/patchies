@@ -44,6 +44,7 @@
   import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
   import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
+  import type { ObjectNodeData } from './types';
 
   let {
     id: nodeId,
@@ -51,7 +52,7 @@
     selected
   }: {
     id: string;
-    data: { expr: string; name: string; params: unknown[] };
+    data: ObjectNodeData;
     selected: boolean;
   } = $props();
 
