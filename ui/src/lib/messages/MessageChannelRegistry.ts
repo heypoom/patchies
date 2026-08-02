@@ -147,6 +147,25 @@ export class MessageChannelRegistry {
   }
 
   /**
+   * Get send object node IDs that broadcast to channels received by a node.
+   *
+   * This lets systems that route metadata alongside messages follow a named-channel hop.
+   */
+  getSenderNodeIdsForReceiver(receiverNodeId: string): string[] {
+    const senderNodeIds = new Set<string>();
+
+    for (const channelData of this.channels.values()) {
+      if (!channelData.receivers.has(receiverNodeId)) continue;
+
+      for (const senderNodeId of channelData.senders) {
+        senderNodeIds.add(senderNodeId);
+      }
+    }
+
+    return Array.from(senderNodeIds);
+  }
+
+  /**
    * Get real node IDs associated with a channel.
    * Synthetic patchbay subscriber IDs are excluded because they are not canvas nodes.
    */

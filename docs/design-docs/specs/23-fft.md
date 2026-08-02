@@ -23,6 +23,8 @@ We want to create a system for audio analysis, for two reasons:
     - We should not always require the user provide the `id` of the analysis object though, as that would be cumbersome.
     - We need to instead track what is the nodeId of the analysis object that the P5.js sketch is connected to. Then, we can use that id to route the audio data correctly.
     - If the `id` is specified, then we still use that object id instead.
+    - Named channels may forward this analysis marker through one `send` / `recv` hop. The runtime resolves `fft~ → send <channel> → recv <channel> → P5` to the original analyzer; it does not forward FFT sample arrays as messages.
+    - GLSL sampler routing still requires a direct `fft~` analysis edge and does not use this named-channel resolution.
   - Luckily, the `ArrayBuffer` is a transferable object, so you can postMessage with `{transfer: [buffer]}` to transfer the ownership of the buffer to the worker.
   - For Hydra and GLSL, the key challenge is that it's running in a web worker context, so we need to transfer the audio data between the main thread and the worker.
   - For Hydra, the `fft` function will work differently than P5.js as they are in a web worker context.

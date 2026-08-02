@@ -10,6 +10,7 @@ import {
 } from './v2/constants/fft';
 import { getObjectType } from '$lib/objects/get-type';
 import { BrowserFocusService } from '$lib/browser/BrowserFocusService';
+import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -66,6 +67,7 @@ export class AudioAnalysisSystem {
   private static instance: AudioAnalysisSystem;
   private audioService = AudioService.getInstance();
   private messageSystem = MessageSystem.getInstance();
+  private messageChannelRegistry = MessageChannelRegistry.getInstance();
   private browserFocus = BrowserFocusService.getInstance();
 
   // Cache for FFT node connections: nodeId -> fftNodeId
@@ -91,6 +93,12 @@ export class AudioAnalysisSystem {
 
   /** Unsubscribe function for focus listener */
   private unsubscribeFocus: (() => void) | null = null;
+
+  constructor() {
+    this.messageChannelRegistry.onChannelsChange(() => {
+      this.fftConnectionCache.clear();
+    });
+  }
 
   private getPooledArray(
     analyzerNodeId: string,
@@ -241,22 +249,45 @@ export class AudioAnalysisSystem {
     }
 
     const connectedSourceIds = this.messageSystem.getConnectedSourceNodes(nodeId);
+    const directFftNodeId = this.findFFTNodeId(connectedSourceIds);
+
+    if (directFftNodeId) {
+      this.fftConnectionCache.set(nodeId, directFftNodeId);
+
+      return directFftNodeId;
+    }
+
     let fftNodeId: string | null = null;
 
-    for (const sourceId of connectedSourceIds) {
-      if (sourceId.startsWith('object-')) {
-        const node = this.audioService.getNodeById(sourceId);
+    for (const receiverNodeId of connectedSourceIds) {
+      const senderNodeIds = this.messageChannelRegistry.getSenderNodeIdsForReceiver(receiverNodeId);
 
-        if (node && getObjectType(node) === 'fft~') {
-          fftNodeId = sourceId;
-          break;
-        }
-      }
+      fftNodeId = this.findFFTNodeId(
+        senderNodeIds.flatMap((senderNodeId) =>
+          this.messageSystem.getConnectedSourceNodes(senderNodeId)
+        )
+      );
+
+      if (fftNodeId) break;
     }
 
     this.fftConnectionCache.set(nodeId, fftNodeId);
 
     return fftNodeId;
+  }
+
+  private findFFTNodeId(nodeIds: string[]): string | null {
+    for (const nodeId of nodeIds) {
+      if (!nodeId.startsWith('object-')) continue;
+
+      const node = this.audioService.getNodeById(nodeId);
+
+      if (node && getObjectType(node) === 'fft~') {
+        return nodeId;
+      }
+    }
+
+    return null;
   }
 
   /** Enable FFT for a node */
