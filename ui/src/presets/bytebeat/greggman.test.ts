@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
-import { getPresetPackPresetNames } from '$lib/extensions/preset-pack-index';
-import { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
+import { getPresetPackPresetNames } from '$lib/presets/preset-pack-index';
+import { BUILT_IN_PRESET_PACKS } from '$lib/presets/preset-packs';
 
 import { GREGGMAN_BYTEBEAT_PRESET_KEYS, GREGGMAN_BYTEBEAT_PRESETS } from './greggman';
 

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const outputPath = new URL('../src/lib/presets/builtin/bytebeat/greggman.ts', import.meta.url);
+const outputPath = new URL('../src/presets/bytebeat/greggman.ts', import.meta.url);
 const SOURCE_URL = 'https://greggman.github.io/html5bytebeat/editor/songs.json';
 
 const BUCKETS = [

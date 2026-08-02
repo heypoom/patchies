@@ -2,7 +2,7 @@
   import ExtensionPackCard from './ExtensionPackCard.svelte';
   import SearchBar from './SearchBar.svelte';
   import PresetPackCard from './PresetPackCard.svelte';
-  import { getPresetPackPresetNames } from '$lib/extensions/preset-pack-index';
+  import { getPresetPackPresetNames } from '$lib/presets/preset-pack-index';
   import {
     BUILT_IN_PACKS,
     BUILT_IN_PRESET_PACKS,

@@ -21,13 +21,13 @@ export interface PresetPack {
 
 // Re-export pack definitions from extracted files
 export { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
-export { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
+export { BUILT_IN_PRESET_PACKS } from '$lib/presets/preset-packs';
 
 // Import for internal use
 import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
-import { isPresetPackAvailableForObjects } from '$lib/extensions/preset-pack-availability';
-import { getPresetPackPresetNames } from '$lib/extensions/preset-pack-index';
-import { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
+import { isPresetPackAvailableForObjects } from '$lib/presets/preset-pack-availability';
+import { getPresetPackPresetNames } from '$lib/presets/preset-pack-index';
+import { BUILT_IN_PRESET_PACKS } from '$lib/presets/preset-packs';
 import { getObjectAliases } from '$lib/objects/object-definitions';
 
 // ============================================================================

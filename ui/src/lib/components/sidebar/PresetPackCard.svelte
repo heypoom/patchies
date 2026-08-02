@@ -1,6 +1,6 @@
 <script lang="ts">
   import { TriangleAlert } from '@lucide/svelte/icons';
-  import { getPresetPackDisplayItems } from '$lib/extensions/preset-pack-index';
+  import { getPresetPackDisplayItems } from '$lib/presets/preset-pack-index';
   import type { PresetPack } from '../../../stores/extensions.store';
   import { enabledObjects, enabledPackIds, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import * as Tooltip from '$lib/components/ui/tooltip';

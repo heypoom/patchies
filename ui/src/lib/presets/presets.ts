@@ -1,5 +1,5 @@
 /**
  * Re-export built-in presets for backwards compatibility.
- * New code should import from './builtin' directly.
+ * New code should import from '$presets' directly.
  */
-export { BUILTIN_PRESETS as PRESETS } from './builtin';
+export { BUILTIN_PRESETS as PRESETS } from '$presets';

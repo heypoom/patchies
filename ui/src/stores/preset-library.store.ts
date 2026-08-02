@@ -15,7 +15,7 @@ import {
   getPresetByPath,
   isPreset
 } from '$lib/presets/preset-utils';
-import { buildBuiltInPresetPackFolders } from '$lib/extensions/preset-pack-index';
+import { buildBuiltInPresetPackFolders } from '$lib/presets/preset-pack-index';
 import { PRESETS } from '$lib/presets/presets';
 
 const STORAGE_KEY = 'patchies:preset-libraries';

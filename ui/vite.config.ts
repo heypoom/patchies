@@ -185,7 +185,8 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       $workers: '/src/workers',
-      $objects: '/src/objects'
+      $objects: '/src/objects',
+      $presets: '/src/presets'
     }
   },
   test: {

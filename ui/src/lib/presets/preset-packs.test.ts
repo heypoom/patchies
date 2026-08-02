@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
 
-import { BUILT_IN_PACKS } from './object-packs';
+import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
 import { isPresetPackAvailableForObjects } from './preset-pack-availability';
 import { buildBuiltInPresetPackFolders, getPresetPackPresetNames } from './preset-pack-index';
 import { BUILT_IN_PRESET_PACKS, OBJECT_PIPE_PRESETS } from './preset-packs';
-import { BUILTIN_PRESETS } from '$lib/presets/builtin';
+import { BUILTIN_PRESETS } from '$presets';
 import type { PresetFolder } from '$lib/presets/types';
 import { isPreset } from '$lib/presets/preset-utils';
 

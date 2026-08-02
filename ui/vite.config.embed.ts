@@ -107,7 +107,8 @@ export default defineConfig({
   resolve: {
     alias: {
       $lib: '/src/lib',
-      $workers: '/src/workers'
+      $workers: '/src/workers',
+      $presets: '/src/presets'
     }
   }
 });

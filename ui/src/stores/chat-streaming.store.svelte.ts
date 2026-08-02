@@ -34,7 +34,7 @@ import {
   isPackLocked,
   isPresetPackLocked
 } from './extensions.store';
-import { getBuiltInPresetPackByPresetName } from '$lib/extensions/preset-pack-index';
+import { getBuiltInPresetPackByPresetName } from '$lib/presets/preset-pack-index';
 
 class SessionState {
   messages = $state<ThreadMessage[]>([]);

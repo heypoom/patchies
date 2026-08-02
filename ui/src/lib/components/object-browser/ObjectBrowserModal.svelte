@@ -48,7 +48,7 @@
   import {
     getBuiltInPresetPackByPresetName,
     getPresetPackPresetNames
-  } from '$lib/extensions/preset-pack-index';
+  } from '$lib/presets/preset-pack-index';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
   import ExtensionPackCard from '../sidebar/ExtensionPackCard.svelte';
