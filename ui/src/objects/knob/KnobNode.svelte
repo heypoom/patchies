@@ -125,7 +125,7 @@
   function updateControlData(updates: Partial<typeof node.data>) {
     const nextData = { ...node.data, ...updates };
 
-    updateNodeData(node.id, getKnobData(nextData));
+    updateNodeData(node.id, { ...nextData, ...getKnobData(nextData) });
   }
 
   function handlePointerDown(event: PointerEvent) {
@@ -184,7 +184,7 @@
       }
     }
 
-    updateNodeData(node.id, getKnobData(newData));
+    updateNodeData(node.id, { ...newData, ...getKnobData(newData) });
   }
 
   // Handle visibility: 3 states
