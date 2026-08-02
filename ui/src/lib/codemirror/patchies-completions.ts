@@ -721,9 +721,61 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 };
 
 /**
- * Member completions for global objects (shown after `obj.`)
+ * Member completions for Patchies APIs (shown after `obj.` or `fft().`)
  */
 const memberCompletions: Record<string, Completion[]> = {
+  fft: [
+    {
+      label: 'a',
+      type: 'property',
+      detail: 'Uint8Array | Float32Array',
+      info: 'Raw audio-analysis bins. Integers from 0 to 255 by default, or floats when { format: "float" } is requested.',
+      apply: 'a'
+    },
+    {
+      label: 'f',
+      type: 'property',
+      detail: 'Float32Array',
+      info: 'Audio-analysis bins normalized to values from 0 to 1.',
+      apply: 'f'
+    },
+    {
+      label: 'sum',
+      type: 'property',
+      detail: 'number',
+      info: 'Sum of all raw audio-analysis bins.',
+      apply: 'sum'
+    },
+    {
+      label: 'avg',
+      type: 'property',
+      detail: 'number',
+      info: 'Average of all raw audio-analysis bins.',
+      apply: 'avg'
+    },
+    {
+      label: 'centroid',
+      type: 'property',
+      detail: 'number',
+      info: 'Spectral centroid calculated from normalized frequency bins.',
+      apply: 'centroid'
+    },
+    {
+      label: 'rms',
+      type: 'property',
+      detail: 'number',
+      info: 'RMS amplitude from 0 to 1.',
+      apply: 'rms'
+    },
+    {
+      label: 'getEnergy',
+      type: 'method',
+      detail: "(range: 'bass' | 'lowMid' | 'mid' | 'highMid' | 'treble') => number",
+      info: 'Get normalized energy for a named frequency range, or pass two frequency values in Hz for a custom range.',
+      apply: "getEnergy('bass')"
+    }
+  ],
+
   kv: [
     {
       label: 'get',
@@ -1081,7 +1133,21 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
     if (patchiesContext?.nodeType === 'expr') return null;
     if (patchiesContext?.nodeType === 'msg') return null;
 
-    // Check for member completions (kv., clock., settings.)
+    // Check for member completions (fft()., kv., clock., settings.)
+    const fftMemberMatch = context.matchBefore(/fft\(\)\.\w*/);
+
+    if (fftMemberMatch) {
+      const partial = fftMemberMatch.text.slice('fft().'.length).toLowerCase();
+      const methods = memberCompletions.fft;
+
+      return {
+        from: fftMemberMatch.from + 'fft().'.length,
+        options: partial
+          ? methods.filter((method) => method.label.toLowerCase().startsWith(partial))
+          : methods
+      };
+    }
+
     const memberMatch = context.matchBefore(/\w+\.\w*/);
 
     if (memberMatch) {

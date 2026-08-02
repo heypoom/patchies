@@ -95,6 +95,14 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'settings.')).toContain('define');
   });
 
+  it('shows FFTAnalysis member completions after fft()', () => {
+    expect(getCompletionLabels('hydra', 'fft().')).toEqual(
+      expect.arrayContaining(['a', 'f', 'sum', 'avg', 'centroid', 'rms', 'getEnergy'])
+    );
+
+    expect(getCompletionLabels('hydra', 'fft().get')).toEqual(['getEnergy']);
+  });
+
   it('shows the documented surface JavaScript API completions', () => {
     const labels = getCompletionLabels('surface', '');
 
