@@ -23,7 +23,10 @@ interface AudioAdapterOptions {
   onAudioObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
 }
 
-type RuntimeAudioObjectEntry = { messageContext: MessageContext };
+interface RuntimeAudioObjectEntry {
+  messageContext: MessageContext;
+  params: unknown[];
+}
 
 export class AudioAdapter {
   public readonly audioService: AudioService;
@@ -100,9 +103,12 @@ export class AudioAdapter {
       descriptor.objectType
     );
 
-    this.audioObjects.set(descriptor.id, { messageContext });
-    this.suppressedAudioObjectSyncs.delete(descriptor.id);
+    this.audioObjects.set(descriptor.id, {
+      messageContext,
+      params: [...descriptor.params]
+    });
 
+    this.suppressedAudioObjectSyncs.delete(descriptor.id);
     this.viewRevisions.bump(descriptor.id);
   }
 
@@ -183,6 +189,19 @@ export class AudioAdapter {
       if (!validateMessageToObject(message, inletDefinition)) return;
 
       this.audioService.send(nodeId, inletDefinition.name, message);
+
+      // Audio Params needs to be updated in the runtime entry
+      if (inletDefinition.isAudioParam && typeof message === 'number' && meta.inlet !== undefined) {
+        const audioObject = this.audioObjects.get(nodeId);
+        if (!audioObject) return;
+
+        const params = [...audioObject.params];
+        params[meta.inlet] = message;
+        audioObject.params = params;
+
+        this.suppressNextAudioObjectSync(nodeId);
+        this.onAudioObjectDataChange?.(nodeId, { params });
+      }
     };
   }
 

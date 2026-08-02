@@ -21,6 +21,7 @@ import { FExprNode } from '$objects/expr~/FExprNode';
 import { ToneNode } from '$objects/tone~/ToneNode';
 import { SonicNode } from '$objects/sonic~/SonicNode';
 import { ElementaryNode } from '$objects/elem~/ElementaryNode';
+import { GainNodeV2 } from '$objects/gain~/GainNode';
 
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
@@ -461,6 +462,37 @@ describe('AudioAdapter', () => {
 
     runtime.destroyAudioObject(nodeId);
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
+  });
+
+  it('persists numeric messages sent to audio parameters for the object display', () => {
+    const nodeId = 'gain-parameter-target';
+    const sourceNodeId = 'gain-parameter-source';
+    const audioService = createFakeAudioService();
+    const onAudioObjectDataChange = vi.fn();
+    const runtime = new AudioAdapter({ audioService, onAudioObjectDataChange });
+    const messageSystem = MessageSystem.getInstance();
+
+    AudioRegistry.getInstance().register(GainNodeV2);
+    messageSystem.registerNode(sourceNodeId);
+    messageSystem.updateEdges([
+      {
+        id: 'source-to-gain-parameter',
+        source: sourceNodeId,
+        target: nodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-1'
+      }
+    ]);
+
+    runtime.upsertAudioObject({ id: nodeId, objectType: 'gain~', params: [null, 1] });
+    messageSystem.sendMessage(sourceNodeId, 0.5);
+
+    expect(audioService.send).toHaveBeenCalledWith(nodeId, 'gain', 0.5);
+    expect(onAudioObjectDataChange).toHaveBeenCalledWith(nodeId, { params: [null, 0.5] });
+
+    runtime.destroy();
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
   });
 
   it('consumes suppressed audio sync markers once', () => {
