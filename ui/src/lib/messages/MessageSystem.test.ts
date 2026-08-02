@@ -1,6 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { MessageChannelRegistry } from './MessageChannelRegistry';
 import { MessageSystem } from './MessageSystem';
+
+const namedChannel = 'message-system-named-channel-test';
+const namedChannelReceiverId = 'message-system-named-channel-receiver';
+
+afterEach(() => {
+  MessageChannelRegistry.getInstance().unsubscribe(namedChannel, namedChannelReceiverId);
+});
 
 describe('MessageSystem patchbay edges', () => {
   it('routes messages across registered patchbay edges', () => {
@@ -29,6 +37,19 @@ describe('MessageSystem patchbay edges', () => {
 
     messageSystem.unregisterPatchbayEdge(routeId);
     messageSystem.unregisterNode(targetNodeId);
+  });
+});
+
+describe('MessageSystem named channels', () => {
+  it('broadcasts string targets through the named message channel', () => {
+    const receive = vi.fn();
+    MessageChannelRegistry.getInstance().subscribe(namedChannel, namedChannelReceiverId, receive);
+
+    MessageSystem.getInstance().sendMessage('message-system-named-channel-sender', 'hello', {
+      to: namedChannel
+    });
+
+    expect(receive).toHaveBeenCalledWith('hello', 'message-system-named-channel-sender');
   });
 });
 

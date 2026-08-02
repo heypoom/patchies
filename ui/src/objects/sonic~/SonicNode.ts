@@ -1,20 +1,23 @@
-import { type AudioNodeV2, type AudioNodeGroup } from '$lib/audio/v2/interfaces/audio-nodes';
+import {
+  type AudioNodeV2,
+  type AudioNodeGroup,
+  type RuntimeDataBinding
+} from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
 import { createCustomConsole } from '$lib/utils/createCustomConsole';
 import { handleCodeError } from '$lib/js-runner/handleCodeError';
 import { match, P } from 'ts-pattern';
-import { MessageContext } from '$lib/messages/MessageContext';
+import { MessageSystem } from '$lib/messages/MessageSystem';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import { SuperSonicManager, type SonicBusAllocation } from '$lib/audio/SuperSonicManager';
 import { SONIC_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { AudioService } from '$lib/audio/v2/AudioService';
 import { createSettingsAPI } from '$lib/settings/create-settings-api';
+import { hasAudioInputUsage } from '$lib/audio/visible-audio-inputs';
+import { RuntimeAudioCodeState } from '$objects/audio-code/RuntimeAudioCodeState';
+import { isRunMessage } from '$objects/audio-code/runtime-audio-code-messages';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
-type OnSetPortCount = (inletCount: number, outletCount: number) => void;
-type OnSetTitle = (title: string) => void;
-type OnSetAudioInputVisible = (visible: boolean) => void;
 
 /**
  * SonicNode implements the sonic~ audio node.
@@ -26,6 +29,11 @@ type OnSetAudioInputVisible = (visible: boolean) => void;
 export class SonicNode implements AudioNodeV2 {
   static type = 'sonic~';
   static group: AudioNodeGroup = 'processors';
+
+  static runtimeManaged = true;
+  static hasRuntimeData = true;
+
+  static dynamicMessageTarget = 'messageInlet';
   static description = 'Supersonic is SuperCollider engine for the web';
 
   static inlets: ObjectInlet[] = [
@@ -50,7 +58,7 @@ export class SonicNode implements AudioNodeV2 {
 
   private inputNode: GainNode;
   private audioContext: AudioContext;
-  private messageContext: MessageContext;
+  private runtimeState: RuntimeAudioCodeState;
   private jsRunner: JSRunner;
 
   // SuperSonic state
@@ -61,10 +69,6 @@ export class SonicNode implements AudioNodeV2 {
   // Dynamic port counts for UI
   private messageInletCount = 0;
   private messageOutletCount = 0;
-
-  public onSetPortCount: OnSetPortCount = () => {};
-  public onSetTitle: OnSetTitle = () => {};
-  public onSetAudioInputVisible: OnSetAudioInputVisible = () => {};
 
   // Custom console for routing output to VirtualConsole
   private customConsole;
@@ -81,12 +85,12 @@ export class SonicNode implements AudioNodeV2 {
     this.inputNode = audioContext.createGain();
     this.inputNode.gain.value = 1.0;
 
-    this.messageContext = new MessageContext(nodeId);
+    this.runtimeState = new RuntimeAudioCodeState(nodeId);
     this.jsRunner = JSRunner.getInstance();
   }
 
-  async create(params: unknown[]): Promise<void> {
-    const [, code] = params as [unknown, string];
+  async create(): Promise<void> {
+    const code = this.runtimeState.getCode();
 
     if (code) {
       await this.setCode(code);
@@ -95,7 +99,7 @@ export class SonicNode implements AudioNodeV2 {
 
   async send(key: string, msg: unknown): Promise<void> {
     return match([key, msg])
-      .with(['code', P.string], ([, code]) => {
+      .with(['run', P.string], ([, code]) => {
         return this.setCode(code);
       })
       .with(['messageInlet', P.any], ([, messageData]) => {
@@ -114,6 +118,10 @@ export class SonicNode implements AudioNodeV2 {
   }
 
   private async setCode(code: string): Promise<void> {
+    this.runtimeState.setCode(code);
+    this.runtimeState.publish({ showAudioInput: hasAudioInputUsage('sonic~', code) });
+    this.resetMessagePorts();
+
     if (!code || code.trim() === '') {
       return;
     }
@@ -141,13 +149,8 @@ export class SonicNode implements AudioNodeV2 {
         );
       }
 
-      // Reset message inlet count and recv callback for new code
-      this.messageInletCount = 0;
-      this.messageOutletCount = 0;
-      this.recvCallback = null;
-
-      const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
-      settingsManager?.clearCallbacks();
+      const settingsManager = this.runtimeState.settingsManager;
+      settingsManager.clearCallbacks();
 
       // Create recv function for receiving messages
       const recv = (callback: (message: unknown, meta: unknown) => void) => {
@@ -155,8 +158,8 @@ export class SonicNode implements AudioNodeV2 {
       };
 
       // Create send function for sending messages
-      const send = (message: unknown, options?: { to?: number }) =>
-        this.messageContext.send(message, options);
+      const send = (message: unknown, options?: { to?: number | string }) =>
+        MessageSystem.getInstance().sendMessage(this.nodeId, message, options);
 
       // Create event subscription function
       // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
@@ -175,10 +178,13 @@ export class SonicNode implements AudioNodeV2 {
         setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
           this.messageInletCount = Math.max(0, inletCount);
           this.messageOutletCount = Math.max(0, outletCount);
-          this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
+          this.runtimeState.publish({
+            messageInletCount: this.messageInletCount,
+            messageOutletCount: this.messageOutletCount
+          });
         },
         setTitle: (title: string) => {
-          this.onSetTitle(title);
+          this.runtimeState.publish({ title });
         },
         extraContext: {
           sonic,
@@ -190,7 +196,7 @@ export class SonicNode implements AudioNodeV2 {
           outBus: this.busAllocation?.busIndex ?? 0,
           recv,
           send,
-          showAudioInput: () => this.onSetAudioInputVisible(true),
+          showAudioInput: () => this.runtimeState.publish({ showAudioInput: true }),
           ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
         }
       });
@@ -200,6 +206,11 @@ export class SonicNode implements AudioNodeV2 {
   }
 
   private handleMessageInlet(message: unknown): void {
+    if (isRunMessage(message)) {
+      this.setCode(this.runtimeState.getCode());
+      return;
+    }
+
     if (!this.recvCallback) return;
 
     const handleError = (error: unknown) => {
@@ -229,10 +240,25 @@ export class SonicNode implements AudioNodeV2 {
     }
   }
 
+  private resetMessagePorts(): void {
+    this.messageInletCount = 0;
+    this.messageOutletCount = 0;
+    this.recvCallback = null;
+
+    this.runtimeState.publish({ messageInletCount: 0, messageOutletCount: 0 });
+  }
+
+  bindRuntimeData(binding: RuntimeDataBinding): void {
+    this.runtimeState.initialize(binding);
+  }
+
+  getSettingsManager() {
+    return this.runtimeState.settingsManager;
+  }
+
   destroy(): void {
     this.recvCallback = null;
 
-    this.messageContext.destroy();
     this.jsRunner.destroy(this.nodeId);
 
     // Release the bus pair back to the manager

@@ -107,6 +107,17 @@ Important rules:
   the edge's numeric inlet index with the message, without learning the object
   name or its port grammar. The audio class translates that index into its
   dynamic runtime state. Its Svelte view owns only matching handle redraws.
+- A runtime-managed audio class that defines settings or dynamic editor metadata
+  owns the settings manager and publishes persisted-data updates through the
+  audio adapter. A mounted Svelte view uses that same manager; it must not
+  create a competing settings state.
+- `AudioService` receives audio params plus an optional pre-create callback. It
+  must not receive or interpret dedicated editor data such as settings or a
+  settings schema; the audio adapter binds that data directly to an audio class
+  through its optional `bindRuntimeData` capability.
+- Runtime code editor changes remain an editor-only draft. Code reaches the
+  audio class only on runtime creation or an explicit run command from the Run
+  button, shortcut, or patch message.
 
 ## Data Ownership
 

@@ -1,6 +1,13 @@
 export { AudioService } from './v2/AudioService';
 
-export type { AudioNodeV2, AudioNodeClass, AudioNodeGroup } from './v2/interfaces/audio-nodes';
+export {
+  isRuntimeDataAwareAudioNode,
+  type AudioNodeV2,
+  type AudioNodeClass,
+  type AudioNodeGroup,
+  type RuntimeDataBinding,
+  type RuntimeDataAwareAudioNode
+} from './v2/interfaces/audio-nodes';
 
 export {
   AudioAnalysisSystem,

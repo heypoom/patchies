@@ -1,4 +1,9 @@
-import type { AudioService, AudioNodeClass } from '$lib/audio';
+import {
+  type AudioService,
+  type AudioNodeClass,
+  type AudioNodeV2,
+  isRuntimeDataAwareAudioNode
+} from '$lib/audio';
 
 import { MessageContext, type MessageCallbackFn } from '$lib/messages';
 
@@ -64,9 +69,31 @@ export class AudioAdapter {
     this.audioService.removeNodeById(descriptor.id);
 
     // insert new nodes
-    this.audioService
-      .createNode(descriptor.id, descriptor.objectType, descriptor.params)
-      .catch(() => undefined);
+    const onBeforeAudioNodeCreate = descriptor.runtimeData
+      ? (node: AudioNodeV2) => {
+          if (!isRuntimeDataAwareAudioNode(node)) return;
+
+          node.bindRuntimeData({
+            initialData: descriptor.runtimeData!,
+            update: (updates) => {
+              if (this.audioService.getNodeById(descriptor.id) !== node) return;
+
+              this.suppressNextAudioObjectSync(descriptor.id);
+              this.onAudioObjectDataChange?.(descriptor.id, updates);
+              this.viewRevisions.bump(descriptor.id);
+            }
+          });
+        }
+      : undefined;
+
+    const nodePromise = this.audioService.createNode(
+      descriptor.id,
+      descriptor.objectType,
+      descriptor.params,
+      onBeforeAudioNodeCreate
+    );
+
+    nodePromise.catch?.(() => undefined);
 
     const messageContext = this.createAudioObjectMessageContext(
       descriptor.id,

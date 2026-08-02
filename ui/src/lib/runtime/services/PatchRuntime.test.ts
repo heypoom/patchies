@@ -5,6 +5,7 @@ import { MessageContext } from '$lib/messages/MessageContext';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { logger } from '$lib/utils/logger';
 
 import { ScopeAudioNode } from '$objects/scope~/ScopeAudioNode';
 import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
@@ -17,6 +18,9 @@ import { MergeNode } from '$objects/audio-channel/MergeNode';
 import { SplitNode } from '$objects/audio-channel/SplitNode';
 import { ExprNode } from '$objects/expr~/ExprNode';
 import { FExprNode } from '$objects/expr~/FExprNode';
+import { ToneNode } from '$objects/tone~/ToneNode';
+import { SonicNode } from '$objects/sonic~/SonicNode';
+import { ElementaryNode } from '$objects/elem~/ElementaryNode';
 
 import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
@@ -63,6 +67,7 @@ const isPiano = (objectType: string) => objectType === 'piano~';
 const isAudioIo = (objectType: string) => objectType === 'out~' || objectType === 'mic~';
 const isAudioChannel = (objectType: string) => objectType === 'merge~' || objectType === 'split~';
 const isAudioExpression = (objectType: string) => objectType === 'expr~' || objectType === 'fexpr~';
+const isAudioCode = (objectType: string) => ['tone~', 'sonic~', 'elem~'].includes(objectType);
 const isOsc = (objectType: string) => objectType === 'osc~';
 const isTap = (objectType: string) => objectType === 'tap~';
 
@@ -411,6 +416,30 @@ describe('MessageAdapter', () => {
 });
 
 describe('AudioAdapter', () => {
+  it.each([
+    [
+      'a synchronous throw',
+      () => {
+        throw new Error('beforeCreate failed');
+      }
+    ],
+    [
+      'an asynchronous rejection',
+      async () => {
+        throw new Error('beforeCreate failed');
+      }
+    ]
+  ])('keeps fake audio creation fire-and-forget after %s', async (_description, beforeCreate) => {
+    const audioService = createFakeAudioService();
+    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+
+    await expect(audioService.createNode('node-id', 'test~', [], beforeCreate)).resolves.toBe(
+      audioService.audioNode
+    );
+
+    expect(error).toHaveBeenCalledWith('cannot create node test~', expect.any(Error));
+  });
+
   it('owns audio object service interactions', () => {
     const audioService = createFakeAudioService();
     const runtime = new AudioAdapter({ audioService });
@@ -423,7 +452,7 @@ describe('AudioAdapter', () => {
     });
 
     expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);
 
     runtime.audioService.send(nodeId, 'frequency', 220);
     expect(audioService.send).toHaveBeenCalledWith(nodeId, 'frequency', 220);
@@ -470,6 +499,41 @@ describe('AudioAdapter', () => {
     expect(createPromise.catch).toHaveBeenCalledWith(expect.any(Function));
     expect(catchHandlers).toHaveLength(1);
     expect(() => catchHandlers[0](new Error('create failed'))).not.toThrow();
+  });
+
+  it('persists initial runtime-audio data emitted when a listener attaches', async () => {
+    const audioService = createFakeAudioService();
+    const onAudioObjectDataChange = vi.fn();
+    const runtime = new AudioAdapter({ audioService, onAudioObjectDataChange });
+    const node = {
+      nodeId: 'runtime-audio-initial-data-test',
+      audioNode: null,
+      bindRuntimeData: vi.fn(({ update }) => {
+        update({ messageInletCount: 1, messageOutletCount: 2 });
+      })
+    };
+
+    audioService.audioNode = node;
+
+    runtime.upsertAudioObject({
+      id: node.nodeId,
+      objectType: 'test~',
+      params: [],
+      runtimeData: { settings: { gain: 0.5 } }
+    });
+
+    await vi.waitFor(() => {
+      expect(onAudioObjectDataChange).toHaveBeenCalledWith(node.nodeId, {
+        messageInletCount: 1,
+        messageOutletCount: 2
+      });
+    });
+    expect(node.bindRuntimeData).toHaveBeenCalledWith({
+      initialData: { settings: { gain: 0.5 } },
+      update: expect.any(Function)
+    });
+
+    runtime.destroy();
   });
 
   it('routes audio object command messages through runtime-owned message contexts', () => {
@@ -909,7 +973,7 @@ describe('PatchRuntime', () => {
     });
 
     expect(objectService.getObjectById(nodeId)).toBeNull();
-    expect(audioService.createNode).toHaveBeenLastCalledWith(nodeId, 'osc~', []);
+    expect(audioService.createNode).toHaveBeenLastCalledWith(nodeId, 'osc~', [], undefined);
   });
 
   it('serializes overlapping object synchronization and retains the latest descriptor', async () => {
@@ -1061,7 +1125,7 @@ describe('PatchRuntime', () => {
     });
 
     expect(objectService.getObjectById(nodeId)).toBeInstanceOf(PatchRuntimeTestObject);
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);
 
     runtime.destroy();
 
@@ -1092,14 +1156,12 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
-      null,
-      null,
-      1024,
-      'xy',
-      30,
-      false
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'tap~',
+      [null, null, 1024, 'xy', 30, false],
+      undefined
+    );
 
     await setRuntimeGraphFromEditorGraph(runtime, []);
 
@@ -1132,14 +1194,12 @@ describe('EditorRuntimeReconciler', () => {
 
     expect(audioService.createNode).toHaveBeenCalledTimes(1);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'tap~', [
-      null,
-      null,
-      1024,
-      'xy',
-      30,
-      false
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'tap~',
+      [null, null, 1024, 'xy', 30, false],
+      undefined
+    );
 
     await setRuntimeGraphFromEditorGraph(runtime, []);
 
@@ -1200,14 +1260,12 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'bytebeat~', [
-      null,
-      't * 3',
-      'floatbeat',
-      'function',
-      11025,
-      true
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'bytebeat~',
+      [null, 't * 3', 'floatbeat', 'function', 11025, true],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1240,16 +1298,12 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'sampler~', [
-      null,
-      'user://samples/kick.wav',
-      0.25,
-      1.5,
-      0.8,
-      1.25,
-      -50,
-      'held'
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'sampler~',
+      [null, 'user://samples/kick.wav', 0.25, 1.5, 0.8, 1.25, -50, 'held'],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1274,10 +1328,12 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'piano~', [
-      null,
-      { velocity: 88, volume: 72 }
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      nodeId,
+      'piano~',
+      [null, { velocity: 88, volume: 72 }],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1313,17 +1369,18 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith('output-editor-runtime-test', 'out~', [
-      null,
-      'speakers-1'
-    ]);
-    expect(audioService.createNode).toHaveBeenCalledWith('mic-editor-runtime-test', 'mic~', [
-      null,
-      'microphone-1',
-      false,
-      false,
-      false
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'output-editor-runtime-test',
+      'out~',
+      [null, 'speakers-1'],
+      undefined
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'mic-editor-runtime-test',
+      'mic~',
+      [null, 'microphone-1', false, false, false],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1354,14 +1411,18 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith('merge-editor-runtime-test', 'merge~', [
-      null,
-      4
-    ]);
-    expect(audioService.createNode).toHaveBeenCalledWith('split-editor-runtime-test', 'split~', [
-      null,
-      3
-    ]);
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'merge-editor-runtime-test',
+      'merge~',
+      [null, 4],
+      undefined
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'split-editor-runtime-test',
+      'split~',
+      [null, 3],
+      undefined
+    );
 
     runtime.destroy();
   });
@@ -1392,14 +1453,105 @@ describe('EditorRuntimeReconciler', () => {
       }
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith('expr-editor-runtime-test', 'expr~', [
-      null,
-      's * 0.5'
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'expr-editor-runtime-test',
+      'expr~',
+      [null, 's * 0.5'],
+      undefined
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'fexpr-editor-runtime-test',
+      'fexpr~',
+      [null, '(x1 + x1[-1]) / 2'],
+      undefined
+    );
+
+    runtime.destroy();
+  });
+
+  it('syncs dedicated audio-code nodes with their persisted settings', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isAudioCode
+    });
+
+    AudioRegistry.getInstance().register(ToneNode);
+    AudioRegistry.getInstance().register(SonicNode);
+    AudioRegistry.getInstance().register(ElementaryNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'tone-runtime-test',
+        type: 'tone~',
+        position: { x: 0, y: 0 },
+        data: { code: 'outputNode.gain.value = 0.5', settings: { gain: 0.5 }, settingsSchema: [] }
+      },
+      {
+        id: 'sonic-runtime-test',
+        type: 'sonic~',
+        position: { x: 0, y: 0 },
+        data: { code: 'Out.ar(outBus, SinOsc.ar(440))', settings: {}, settingsSchema: [] }
+      },
+      {
+        id: 'elem-runtime-test',
+        type: 'elem~',
+        position: { x: 0, y: 0 },
+        data: { code: 'el.cycle(440)', settings: {}, settingsSchema: [] }
+      }
     ]);
-    expect(audioService.createNode).toHaveBeenCalledWith('fexpr-editor-runtime-test', 'fexpr~', [
-      null,
-      '(x1 + x1[-1]) / 2'
+
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'tone-runtime-test',
+      'tone~',
+      [null, null],
+      expect.any(Function)
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'sonic-runtime-test',
+      'sonic~',
+      [null, null],
+      expect.any(Function)
+    );
+    expect(audioService.createNode).toHaveBeenCalledWith(
+      'elem-runtime-test',
+      'elem~',
+      [null, null],
+      expect.any(Function)
+    );
+
+    runtime.destroy();
+  });
+
+  it('does not recreate an audio-code node when its editor code changes', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: (objectType) => objectType === 'tone~'
+    });
+
+    AudioRegistry.getInstance().register(ToneNode);
+
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'tone-code-edit-test',
+        type: 'tone~',
+        position: { x: 0, y: 0 },
+        data: { code: 'outputNode.gain.value = 0.5', settings: {}, settingsSchema: [] }
+      }
     ]);
+    await setRuntimeGraphFromEditorGraph(runtime, [
+      {
+        id: 'tone-code-edit-test',
+        type: 'tone~',
+        position: { x: 0, y: 0 },
+        data: { code: 'outputNode.gain.value = 0.25', settings: {}, settingsSchema: [] }
+      }
+    ]);
+
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
 
     runtime.destroy();
   });
@@ -1426,7 +1578,7 @@ describe('EditorRuntimeReconciler', () => {
       })
     ]);
 
-    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440]);
+    expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);
     expect(createObject).not.toHaveBeenCalled();
 
     await setRuntimeGraphFromEditorGraph(runtime, []);

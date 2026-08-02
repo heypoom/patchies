@@ -2,10 +2,8 @@
   import { Code, Expand, Play, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { onMount, onDestroy, type Snippet } from 'svelte';
+  import { type Snippet } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
@@ -29,7 +27,6 @@
     selected,
     onCodeChange,
     onRun,
-    handleMessage,
     actionButtons,
     console: consoleSnippet,
     showConsole = false,
@@ -53,7 +50,6 @@
     selected: boolean;
     onCodeChange: (code: string) => void;
     onRun: () => void;
-    handleMessage: MessageCallbackFn;
     actionButtons?: Snippet;
     console?: Snippet;
     showConsole?: boolean;
@@ -69,7 +65,6 @@
   let showEditor = $state(false);
   let showSettings = $state(false);
   let contentWidth = $state(10);
-  let messageContext: MessageContext;
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -97,7 +92,7 @@
 
   // Update content width when title changes
   $effect(() => {
-    displayTitle;
+    void displayTitle;
     setTimeout(updateContentWidth, 0);
   });
 
@@ -134,18 +129,6 @@
       updateContentWidth();
     }, 10);
   }
-
-  onMount(() => {
-    messageContext = new MessageContext(nodeId);
-    messageContext.queue.addCallback(handleMessage);
-
-    updateContentWidth();
-  });
-
-  onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
-  });
 
   function updateContentWidth() {
     if (!contentContainer) return;
@@ -286,7 +269,7 @@
 
           <!-- Message inlets (only show if messageInletCount > 0) -->
           {#if messageInletCount > 0}
-            {#each Array.from({ length: messageInletCount }) as _, index (index)}
+            {#each Array.from({ length: messageInletCount }, (_, index) => index) as index (index)}
               <TypedHandle
                 port="inlet"
                 spec={{ handleType: 'message', handleId: index }}
@@ -329,7 +312,7 @@
 
           <!-- Message outlets (only show if messageOutletCount > 0) -->
           {#if messageOutletCount > 0}
-            {#each Array.from({ length: messageOutletCount }) as _, index (index)}
+            {#each Array.from({ length: messageOutletCount }, (_, index) => index) as index (index)}
               <TypedHandle
                 port="outlet"
                 spec={{ handleType: 'message', handleId: index }}

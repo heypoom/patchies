@@ -106,11 +106,7 @@ export class AudioService {
   removeNode(node?: AudioNodeV2 | null): void {
     if (!node) return;
 
-    if (node.destroy) {
-      node.destroy();
-    } else {
-      node.audioNode?.disconnect();
-    }
+    this.destroyNode(node);
 
     this.nodesById.delete(node.nodeId);
   }
@@ -324,12 +320,14 @@ export class AudioService {
    * @param nodeId - Unique identifier for the node
    * @param nodeType - The type of node to create
    * @param params - Array of parameters for the node
+   * @param beforeCreate - Optional node initialization run before audio creation
    * @returns The created node instance, or null if type not defined
    */
   async createNode(
     nodeId: string,
     nodeType: string,
-    params: unknown[] = []
+    params: unknown[] = [],
+    beforeCreate?: (node: AudioNodeV2) => void | Promise<void>
   ): Promise<AudioNodeV2 | null> {
     const NodeClass = this.registry.get(nodeType);
 
@@ -346,9 +344,22 @@ export class AudioService {
     this.nodesById.set(node.nodeId, node);
 
     try {
+      await beforeCreate?.(node);
+      if (!this.isCurrentNode(node)) {
+        this.discardNode(node);
+        return null;
+      }
+
       await node.create?.(params);
     } catch (error) {
       logger.error(`cannot create node ${nodeType}`, error);
+      this.discardNode(node);
+      return null;
+    }
+
+    if (!this.isCurrentNode(node)) {
+      this.discardNode(node);
+      return null;
     }
 
     // Connect destination nodes (out~) to output
@@ -367,6 +378,27 @@ export class AudioService {
     this.connectPendingEdges(nodeId);
 
     return node;
+  }
+
+  private isCurrentNode(node: AudioNodeV2): boolean {
+    return this.nodesById.get(node.nodeId) === node;
+  }
+
+  /** Dispose a creation that failed or was superseded without removing its replacement. */
+  private discardNode(node: AudioNodeV2): void {
+    this.destroyNode(node);
+
+    if (this.isCurrentNode(node)) {
+      this.nodesById.delete(node.nodeId);
+    }
+  }
+
+  private destroyNode(node: AudioNodeV2): void {
+    if (node.destroy) {
+      node.destroy();
+    } else {
+      node.audioNode?.disconnect();
+    }
   }
 
   /**
