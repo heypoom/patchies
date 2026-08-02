@@ -1,6 +1,12 @@
 import type { SettingsField, SettingsAPI } from './types';
 import type { SettingsManager } from './SettingsManager';
 
+type ChangeCallbackFn = (
+  key: string,
+  value: unknown,
+  settingsValues: Record<string, unknown>
+) => void;
+
 /**
  * Creates the `settings` object injected into JSRunner-enabled nodes.
  * Wraps a SettingsManager instance with the public API surface.
@@ -22,9 +28,7 @@ export const createSettingsAPI = (manager: SettingsManager): SettingsAPI => ({
     manager.setValue(key, value);
   },
 
-  onChange(
-    callback: (key: string, value: unknown, allValues: Record<string, unknown>) => void
-  ): void {
+  onChange(callback: ChangeCallbackFn): void {
     manager.onChange(callback);
   },
 
