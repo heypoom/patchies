@@ -13,6 +13,8 @@ export type {
 
 export { PatchRuntime } from './services/PatchRuntime';
 
+export type { GraphChangeCallback } from './services/GraphObserver';
+
 export {
   setRuntimeGraphFromEditorGraph,
   setRuntimeObjectsFromEditorNodes,

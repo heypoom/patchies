@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { MessageContext, MessageSystem } from '$lib/messages';
 import { ObjectContext } from '$lib/objects';
-import type { GraphChangeCallback } from '$lib/runtime/services/GraphObserver';
 import { logger } from '$lib/utils/logger';
+import type { GraphChangeCallback } from '$lib/runtime';
 
 import { JSObject } from './JSObject';
 
@@ -16,6 +16,7 @@ describe('JSObject', () => {
     messageSystem.unregisterNode(compilerId);
     messageSystem.unregisterNode(targetId);
     messageSystem.updateEdges([]);
+
     logger.clearNodeLogs(compilerId);
   });
 
@@ -24,7 +25,9 @@ describe('JSObject', () => {
     const compilerMessageContext = new MessageContext(compilerId);
     const targetQueue = messageSystem.registerNode(targetId);
     const received: unknown[] = [];
+
     targetQueue.addCallback((message) => received.push(message));
+
     messageSystem.updateEdges([
       {
         id: 'compiler-target',
@@ -34,6 +37,7 @@ describe('JSObject', () => {
         targetHandle: 'message-in'
       }
     ]);
+
     const context = new ObjectContext(
       compilerId,
       compilerMessageContext,
@@ -49,14 +53,12 @@ describe('JSObject', () => {
         }
       }
     );
+
     const object = new JSObject(compilerId, context);
-
     await object.create();
-
     expect(context.getData()).toMatchObject({ isGraphSubscriptionActive: true });
 
     graphCallback?.({ nodes: [{ id: 'fragment', type: 'js', data: {}, tags: [] }], edges: [] });
-
     expect(received).toEqual([['fragment']]);
 
     object.destroy();
@@ -65,17 +67,22 @@ describe('JSObject', () => {
 
   it('routes console output to the node virtual console', async () => {
     const messageContext = new MessageContext(compilerId);
+
     const context = new ObjectContext(compilerId, messageContext, [], {
       code: "console.log('hello from js')",
       runOnMount: true
     });
+
     const object = new JSObject(compilerId, context);
     const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await object.create();
 
     expect(logger.getNodeLogs(compilerId)).toMatchObject([
-      { level: 'log', args: ['hello from js'] }
+      {
+        level: 'log',
+        args: ['hello from js']
+      }
     ]);
 
     consoleLog.mockRestore();
