@@ -24,8 +24,10 @@ type RecvCallback = (message: unknown, meta: unknown) => void;
 export class ToneNode implements AudioNodeV2 {
   static type = 'tone~';
   static group: AudioNodeGroup = 'processors';
+
   static runtimeManaged = true;
-  static acceptsRuntimeData = true;
+  static hasRuntimeData = true;
+
   static dynamicMessageTarget = 'messageInlet';
   static description = 'Tone.js synthesis and audio processing node';
 

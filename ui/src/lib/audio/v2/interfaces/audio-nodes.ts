@@ -49,7 +49,7 @@ export type AudioNodeClass = {
   /**
    * Initialize runtime node data before `create(params)` runs.
    */
-  acceptsRuntimeData?: boolean;
+  hasRuntimeData?: boolean;
 } & ObjectMetadata &
   AudioNodeConstructor;
 

@@ -26,8 +26,10 @@ type RecvCallback = (message: unknown, meta: unknown) => void;
 export class ElementaryNode implements AudioNodeV2 {
   static type = 'elem~';
   static group: AudioNodeGroup = 'processors';
+
   static runtimeManaged = true;
-  static acceptsRuntimeData = true;
+  static hasRuntimeData = true;
+
   static dynamicMessageTarget = 'messageInlet';
   static description = 'Elementary Audio DSP synthesis and processing node';
 

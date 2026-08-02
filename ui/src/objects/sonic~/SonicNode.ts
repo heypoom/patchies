@@ -29,8 +29,10 @@ type RecvCallback = (message: unknown, meta: unknown) => void;
 export class SonicNode implements AudioNodeV2 {
   static type = 'sonic~';
   static group: AudioNodeGroup = 'processors';
+
   static runtimeManaged = true;
-  static acceptsRuntimeData = true;
+  static hasRuntimeData = true;
+
   static dynamicMessageTarget = 'messageInlet';
   static description = 'Supersonic is SuperCollider engine for the web';
 
