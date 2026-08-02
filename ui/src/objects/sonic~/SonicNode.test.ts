@@ -44,7 +44,7 @@ describe('SonicNode', () => {
       initialData: { code: 'setPortCount(2, 1)' },
       update: (update) => updates.push(update)
     });
-    await node.create([]);
+    await node.create();
     await node.send('run', 'outputNode.gain.value = 0.5');
     await node.send('run', '');
 

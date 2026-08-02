@@ -106,11 +106,7 @@ export class AudioService {
   removeNode(node?: AudioNodeV2 | null): void {
     if (!node) return;
 
-    if (node.destroy) {
-      node.destroy();
-    } else {
-      node.audioNode?.disconnect();
-    }
+    this.destroyNode(node);
 
     this.nodesById.delete(node.nodeId);
   }
@@ -349,9 +345,21 @@ export class AudioService {
 
     try {
       await beforeCreate?.(node);
+      if (!this.isCurrentNode(node)) {
+        this.discardNode(node);
+        return null;
+      }
+
       await node.create?.(params);
     } catch (error) {
       logger.error(`cannot create node ${nodeType}`, error);
+      this.discardNode(node);
+      return null;
+    }
+
+    if (!this.isCurrentNode(node)) {
+      this.discardNode(node);
+      return null;
     }
 
     // Connect destination nodes (out~) to output
@@ -370,6 +378,27 @@ export class AudioService {
     this.connectPendingEdges(nodeId);
 
     return node;
+  }
+
+  private isCurrentNode(node: AudioNodeV2): boolean {
+    return this.nodesById.get(node.nodeId) === node;
+  }
+
+  /** Dispose a creation that failed or was superseded without removing its replacement. */
+  private discardNode(node: AudioNodeV2): void {
+    this.destroyNode(node);
+
+    if (this.isCurrentNode(node)) {
+      this.nodesById.delete(node.nodeId);
+    }
+  }
+
+  private destroyNode(node: AudioNodeV2): void {
+    if (node.destroy) {
+      node.destroy();
+    } else {
+      node.audioNode?.disconnect();
+    }
   }
 
   /**

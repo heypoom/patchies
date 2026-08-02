@@ -5,6 +5,7 @@ import { MessageContext } from '$lib/messages/MessageContext';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { logger } from '$lib/utils/logger';
 
 import { ScopeAudioNode } from '$objects/scope~/ScopeAudioNode';
 import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
@@ -415,6 +416,30 @@ describe('MessageAdapter', () => {
 });
 
 describe('AudioAdapter', () => {
+  it.each([
+    [
+      'a synchronous throw',
+      () => {
+        throw new Error('beforeCreate failed');
+      }
+    ],
+    [
+      'an asynchronous rejection',
+      async () => {
+        throw new Error('beforeCreate failed');
+      }
+    ]
+  ])('keeps fake audio creation fire-and-forget after %s', async (_description, beforeCreate) => {
+    const audioService = createFakeAudioService();
+    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+
+    await expect(audioService.createNode('node-id', 'test~', [], beforeCreate)).resolves.toBe(
+      audioService.audioNode
+    );
+
+    expect(error).toHaveBeenCalledWith('cannot create node test~', expect.any(Error));
+  });
+
   it('owns audio object service interactions', () => {
     const audioService = createFakeAudioService();
     const runtime = new AudioAdapter({ audioService });

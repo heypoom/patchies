@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 
 import type { MessageContext } from '$lib/messages';
 import type { AudioService, AudioNodeV2 } from '$lib/audio';
+import { logger } from '$lib/utils/logger';
 
 import {
   type ObjectService,
@@ -180,11 +181,12 @@ export const createFakeObjectService = () =>
 class FakeAudioService {
   audioNode: AudioNodeV2 = { nodeId: 'object-audio-runtime-test', audioNode: null };
   removeNodeById = vi.fn<AudioService['removeNodeById']>();
-  createNode = vi.fn<AudioService['createNode']>((_nodeId, _nodeType, _params, beforeCreate) => {
-    const initialized = beforeCreate?.(this.audioNode);
-
-    return Promise.resolve(initialized).then(() => this.audioNode);
-  });
+  createNode = vi.fn<AudioService['createNode']>((_nodeId, nodeType, _params, beforeCreate) =>
+    Promise.resolve()
+      .then(() => beforeCreate?.(this.audioNode))
+      .catch((error) => logger.error(`cannot create node ${nodeType}`, error))
+      .then(() => this.audioNode)
+  );
   send = vi.fn<AudioService['send']>();
   getNodeById = vi.fn<AudioService['getNodeById']>(() => this.audioNode);
   updateEdges = vi.fn<AudioService['updateEdges']>();
