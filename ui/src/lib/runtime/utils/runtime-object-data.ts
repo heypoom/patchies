@@ -1,3 +1,4 @@
+import type { ObjectNodeData } from '$objects/object/types';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 
@@ -8,13 +9,13 @@ export function getTextObjectData(
   objectType: string,
   data: Record<string, unknown>,
   rawParams: string[]
-): Record<string, unknown> {
+): ObjectNodeData {
   const params = getRuntimeObjectParamsFromData(objectType, data, rawParams);
 
   return {
-    expr: typeof data.expr === 'string' ? data.expr : '',
     name: objectType,
-    params
+    params,
+    expr: typeof data.expr === 'string' ? data.expr : ''
   };
 }
 

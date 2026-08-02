@@ -1,9 +1,7 @@
-export type { RuntimeAudioObjectDescriptor } from './types/audio-adapter';
-
 export type {
   RuntimeConnectionSpec,
   RuntimeGraphSpec,
-  RuntimeObjectDescriptor,
+  RuntimeAudioObjectData,
   RuntimeObjectSpec
 } from './types/runtime-object';
 

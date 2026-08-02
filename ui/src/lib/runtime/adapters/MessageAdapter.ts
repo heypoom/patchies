@@ -8,12 +8,13 @@ import { MessageContext, type MessageCallbackFn, type MessageSystem } from '$lib
 import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
 
 import type {
-  RuntimeObjectDescriptor,
+  RuntimeObjectSpec,
   RuntimeObjectPorts,
   RuntimeObjectViewRevisionListener
 } from '../types/runtime-object';
 
 import { getObjectLifecycleKey } from '../utils/runtime-object-keys';
+import { getRawObjectParamsFromExpr } from '../utils/runtime-object-data';
 import { diffNodeData, hasParamChanges } from '../utils/runtime-diff-utils';
 
 type ObjectParamsChangedEvent = {
@@ -68,74 +69,74 @@ export class MessageAdapter {
     this.eventBus.addEventListener('objectDataChanged', this.handleObjectDataChanged);
   }
 
-  async createObject(descriptor: RuntimeObjectDescriptor): Promise<void> {
-    this.removeObject(descriptor.id, {
+  async createObject(spec: RuntimeObjectSpec): Promise<void> {
+    this.removeObject(spec.id, {
       bumpRevision: false,
       unregisterNodeFromMessageSystem: false
     });
 
-    const messageContext = new MessageContext(descriptor.id);
+    const messageContext = new MessageContext(spec.id);
 
-    const lifecycleToken = this.nextObjectLifecycleToken(descriptor.id);
-    const lifecycleKey = getObjectLifecycleKey(descriptor);
+    const lifecycleToken = this.nextObjectLifecycleToken(spec.id);
+    const lifecycleKey = getObjectLifecycleKey(spec);
 
-    this.objects.set(descriptor.id, {
-      objectType: descriptor.objectType,
+    this.objects.set(spec.id, {
+      objectType: spec.type,
       lifecycleKey,
       messageContext,
       lifecycleToken
     });
 
+    const rawParams = getRawObjectParamsFromExpr(spec.data.expr);
+
     const object = await this.objectService.createObject(
-      descriptor.id,
-      descriptor.objectType,
+      spec.id,
+      spec.type,
       messageContext,
-      descriptor.data,
-      descriptor.rawParams
+      spec.data,
+      rawParams
     );
 
-    if (!this.isCurrentObjectLifecycleToken(descriptor.id, lifecycleToken)) {
+    if (!this.isCurrentObjectLifecycleToken(spec.id, lifecycleToken)) {
       return;
     }
 
     if (!object) {
-      this.viewRevisions.bump(descriptor.id);
+      this.viewRevisions.bump(spec.id);
       return;
     }
 
     const params = object.context.getParams();
     const data = object.context.getData();
 
-    if (Array.isArray(descriptor.data.params) && hasParamChanges(descriptor.data.params, params)) {
-      this.onObjectParamsChange?.(descriptor.id, params);
+    if (Array.isArray(spec.data.params) && hasParamChanges(spec.data.params, params)) {
+      this.onObjectParamsChange?.(spec.id, params);
     }
 
-    const dataDiffs = diffNodeData(descriptor.data, data);
+    const dataDiffs = diffNodeData(spec.data, data);
 
     if (Object.keys(dataDiffs).length > 0) {
-      this.onObjectDataChange?.(descriptor.id, dataDiffs);
+      this.onObjectDataChange?.(spec.id, dataDiffs);
     }
 
-    this.viewRevisions.bump(descriptor.id);
+    this.viewRevisions.bump(spec.id);
   }
 
-  async updateObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void> {
+  async updateObject(nodeId: string, spec: RuntimeObjectSpec): Promise<void> {
     const existing = this.objects.get(nodeId);
-    const lifecycleKey = getObjectLifecycleKey(descriptor);
+    const lifecycleKey = getObjectLifecycleKey(spec);
 
     const canSkipUpdate =
-      existing &&
-      existing.objectType === descriptor.objectType &&
-      existing.lifecycleKey === lifecycleKey;
+      existing && existing.objectType === spec.type && existing.lifecycleKey === lifecycleKey;
 
     if (canSkipUpdate) {
       const object = this.objectService.getObjectById(nodeId);
 
-      object?.context.setData(descriptor.data);
-      object?.update?.(descriptor.data);
+      object?.context.setData(spec.data);
+      object?.update?.(spec.data);
 
       if (object) {
-        const dataDiffs = diffNodeData(descriptor.data, object.context.getData());
+        const dataDiffs = diffNodeData(spec.data, object.context.getData());
 
         if (Object.keys(dataDiffs).length > 0) {
           this.onObjectDataChange?.(nodeId, dataDiffs);
@@ -147,7 +148,7 @@ export class MessageAdapter {
       return;
     }
 
-    await this.createObject(descriptor);
+    await this.createObject(spec);
   }
 
   destroyObject(nodeId: string): void {
