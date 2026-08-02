@@ -91,6 +91,12 @@ const messageObjectSpec = (id: string, params: unknown[], data: Record<string, u
   data: { name: TEST_OBJECT_TYPE, expr: `${TEST_OBJECT_TYPE} ${params.join(' ')}`, params, ...data }
 });
 
+const audioObjectSpec = (id: string, type: string, params: unknown[], data = {}) => ({
+  id,
+  type,
+  data: { params, ...data }
+});
+
 describe('MessageAdapter', () => {
   it('owns V2 text object lifecycle independent of editor graph reconciliation', async () => {
     const objectService = createFakeObjectService();
@@ -388,11 +394,7 @@ describe('AudioAdapter', () => {
     const runtime = new AudioAdapter({ audioService });
     const nodeId = 'object-audio-runtime-test';
 
-    runtime.upsertAudioObject({
-      id: nodeId,
-      objectType: 'osc~',
-      params: [440]
-    });
+    runtime.upsertAudioObject(audioObjectSpec(nodeId, 'osc~', [440]));
 
     expect(audioService.removeNodeById).toHaveBeenCalledWith(nodeId);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);
@@ -426,7 +428,7 @@ describe('AudioAdapter', () => {
       }
     ]);
 
-    runtime.upsertAudioObject({ id: nodeId, objectType: 'gain~', params: [null, 1] });
+    runtime.upsertAudioObject(audioObjectSpec(nodeId, 'gain~', [null, 1]));
     messageSystem.sendMessage(sourceNodeId, 0.5);
 
     expect(audioService.send).toHaveBeenCalledWith(nodeId, 'gain', 0.5);
@@ -464,11 +466,7 @@ describe('AudioAdapter', () => {
 
     audioService.createNode.mockReturnValueOnce(createPromise);
 
-    runtime.upsertAudioObject({
-      id: nodeId,
-      objectType: 'osc~',
-      params: [440]
-    });
+    runtime.upsertAudioObject(audioObjectSpec(nodeId, 'osc~', [440]));
 
     expect(createPromise.catch).toHaveBeenCalledWith(expect.any(Function));
     expect(catchHandlers).toHaveLength(1);
@@ -488,13 +486,11 @@ describe('AudioAdapter', () => {
     };
 
     audioService.audioNode = node;
+    AudioRegistry.getInstance().register(ToneNode);
 
-    runtime.upsertAudioObject({
-      id: node.nodeId,
-      objectType: 'test~',
-      params: [],
-      runtimeData: { settings: { gain: 0.5 } }
-    });
+    runtime.upsertAudioObject(
+      audioObjectSpec(node.nodeId, 'tone~', [], { settings: { gain: 0.5 } })
+    );
 
     await vi.waitFor(() => {
       expect(onAudioObjectDataChange).toHaveBeenCalledWith(node.nodeId, {
@@ -503,7 +499,7 @@ describe('AudioAdapter', () => {
       });
     });
     expect(node.bindRuntimeData).toHaveBeenCalledWith({
-      initialData: { settings: { gain: 0.5 } },
+      initialData: { params: [], settings: { gain: 0.5 } },
       update: expect.any(Function)
     });
 
@@ -538,11 +534,9 @@ describe('AudioAdapter', () => {
       }
     ]);
 
-    runtime.upsertAudioObject({
-      id: tapNodeId,
-      objectType: 'tap~',
-      params: [null, null, 512, 'wave', 0, true]
-    });
+    runtime.upsertAudioObject(
+      audioObjectSpec(tapNodeId, 'tap~', [null, null, 512, 'wave', 0, true])
+    );
 
     messageSystem.sendMessage(sourceNodeId, { type: 'setSamples', value: 1024 });
 
@@ -573,7 +567,7 @@ describe('AudioAdapter', () => {
       }
     ]);
 
-    runtime.upsertAudioObject({ id: nodeId, objectType: 'bytebeat~', params: [] });
+    runtime.upsertAudioObject(audioObjectSpec(nodeId, 'bytebeat~', []));
     messageSystem.sendMessage(sourceNodeId, { type: 'play' });
 
     expect(audioService.send).toHaveBeenCalledWith(nodeId, 'control', { type: 'play' });
@@ -602,7 +596,7 @@ describe('AudioAdapter', () => {
       }
     ]);
 
-    runtime.upsertAudioObject({ id: nodeId, objectType: 'expr~', params: [null, 's + $3'] });
+    runtime.upsertAudioObject(audioObjectSpec(nodeId, 'expr~', [null, 's + $3']));
     messageSystem.sendMessage(sourceNodeId, 0.75);
 
     expect(audioService.send).toHaveBeenCalledWith(nodeId, 'messageInlet', {
@@ -950,7 +944,7 @@ describe('PatchRuntime', () => {
     expect(audioService.createNode).toHaveBeenLastCalledWith(nodeId, 'osc~', [], undefined);
   });
 
-  it('serializes overlapping object synchronization and retains the latest descriptor', async () => {
+  it('serializes overlapping object synchronization and retains the latest object', async () => {
     let releaseCreate!: () => void;
     PatchRuntimeTestObject.createGate = new Promise((resolve) => {
       releaseCreate = resolve;
@@ -1029,11 +1023,7 @@ describe('PatchRuntime', () => {
 
     expect(runtime.isObjectInRegistry('osc~')).toBe(true);
 
-    runtime.upsertAudioObject({
-      id: audioNodeId,
-      objectType: 'osc~',
-      params: [440]
-    });
+    runtime.upsertAudioObject(audioObjectSpec(audioNodeId, 'osc~', [440]));
 
     const unsubscribe = runtime.subscribeObjectMessages(audioNodeId, callback);
     expect(unsubscribe).toEqual(expect.any(Function));
@@ -1092,11 +1082,7 @@ describe('PatchRuntime', () => {
 
     expect(PatchRuntimeTestObject.createdRawParams).toContainEqual(['initial']);
 
-    runtime.upsertAudioObject({
-      id: nodeId,
-      objectType: 'osc~',
-      params: [440]
-    });
+    runtime.upsertAudioObject(audioObjectSpec(nodeId, 'osc~', [440]));
 
     expect(objectService.getObjectById(nodeId)).toBeInstanceOf(PatchRuntimeTestObject);
     expect(audioService.createNode).toHaveBeenCalledWith(nodeId, 'osc~', [440], undefined);

@@ -28,3 +28,7 @@ export interface RuntimeObjectPorts {
 }
 
 export type RuntimeObjectViewRevisionListener = (nodeId: string) => void;
+
+export type RuntimeAudioObjectData = {
+  params: unknown[];
+} & Record<string, unknown>;

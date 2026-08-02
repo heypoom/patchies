@@ -53,9 +53,11 @@ runtime.disconnect(connectionId);
 runtime.send(id, message);
 ```
 
-All message-object changes use `RuntimeObjectSpec`, including the internal
-message reconciliation and adapter boundary. Raw expression parameters are
-derived from `data.expr` only where object creation needs them. Message, audio,
+All object changes use `RuntimeObjectSpec`, including the internal message and
+audio adapter boundaries. Raw expression parameters are derived from `data.expr`
+only where text-object creation needs them. Audio resolution adds derived params
+to the object-owned data, making `data.params` the AudioService contract while
+keeping runtime-managed code and settings flat beside it. Message, audio,
 rendering, and editor compatibility stay behind this API. The editor reconciler
 is one adapter from XYFlow state. Internal helpers can store objects,
 connections, snapshots, and object keys, but callers use `PatchRuntime`.

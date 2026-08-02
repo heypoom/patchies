@@ -13,10 +13,9 @@ import { RuntimeObjectResolver } from './RuntimeObjectResolver';
 import { RuntimeObjectReconciler } from './RuntimeObjectReconciler';
 import { createSerialQueue } from '../utils/serial-queue';
 
-import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
-
 import type {
   RuntimeConnectionSpec,
+  RuntimeAudioObjectData,
   RuntimeGraphSpec,
   RuntimeObjectPorts,
   RuntimeObjectSpec,
@@ -70,7 +69,7 @@ export class PatchRuntime {
       createMessageObject: (descriptor) => this.message.createObject(descriptor),
       updateMessageObject: (nodeId, descriptor) => this.message.updateObject(nodeId, descriptor),
       destroyMessageObject: (nodeId) => this.message.destroyObject(nodeId),
-      upsertAudioObject: (descriptor) => this.upsertAudioObject(descriptor),
+      upsertAudioObject: (object) => this.upsertAudioObject(object),
       destroyAudioObject: (nodeId) => this.destroyAudioObject(nodeId),
       getAudioObject: (nodeId) => this.getAudioObject(nodeId),
       consumeSuppressedAudioObjectSync: (nodeId) => this.consumeSuppressedAudioObjectSync(nodeId)
@@ -226,8 +225,8 @@ export class PatchRuntime {
     return this.audio.consumeSuppressedAudioObjectSync(nodeId);
   }
 
-  upsertAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
-    this.audio.upsertAudioObject(descriptor);
+  upsertAudioObject(object: RuntimeObjectSpec<RuntimeAudioObjectData>): void {
+    this.audio.upsertAudioObject(object);
   }
 
   destroyAudioObject(nodeId: string): void {

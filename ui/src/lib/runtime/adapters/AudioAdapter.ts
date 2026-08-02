@@ -12,9 +12,11 @@ import { validateMessageToObject } from '$lib/objects/validate-object-message';
 
 import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
 
-import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
-
-import type { RuntimeObjectViewRevisionListener } from '../types/runtime-object';
+import type {
+  RuntimeAudioObjectData,
+  RuntimeObjectSpec,
+  RuntimeObjectViewRevisionListener
+} from '../types/runtime-object';
 
 interface AudioAdapterOptions {
   audioService: AudioService;
@@ -66,50 +68,48 @@ export class AudioAdapter {
     return isSuppressed;
   }
 
-  upsertAudioObject(descriptor: RuntimeAudioObjectDescriptor): void {
+  upsertAudioObject(object: RuntimeObjectSpec<RuntimeAudioObjectData>): void {
     // cleanup existing nodes
-    this.removeAudioObjectMessageContext(descriptor.id, false);
-    this.audioService.removeNodeById(descriptor.id);
+    this.removeAudioObjectMessageContext(object.id, false);
+    this.audioService.removeNodeById(object.id);
 
     // insert new nodes
-    const onBeforeAudioNodeCreate = descriptor.runtimeData
+    const nodeClass = AudioRegistry.getInstance().get(object.type);
+    const onBeforeAudioNodeCreate = nodeClass?.hasRuntimeData
       ? (node: AudioNodeV2) => {
           if (!isRuntimeDataAwareAudioNode(node)) return;
 
           node.bindRuntimeData({
-            initialData: descriptor.runtimeData!,
+            initialData: object.data,
             update: (updates) => {
-              if (this.audioService.getNodeById(descriptor.id) !== node) return;
+              if (this.audioService.getNodeById(object.id) !== node) return;
 
-              this.suppressNextAudioObjectSync(descriptor.id);
-              this.onAudioObjectDataChange?.(descriptor.id, updates);
-              this.viewRevisions.bump(descriptor.id);
+              this.suppressNextAudioObjectSync(object.id);
+              this.onAudioObjectDataChange?.(object.id, updates);
+              this.viewRevisions.bump(object.id);
             }
           });
         }
       : undefined;
 
     const nodePromise = this.audioService.createNode(
-      descriptor.id,
-      descriptor.objectType,
-      descriptor.params,
+      object.id,
+      object.type,
+      object.data.params,
       onBeforeAudioNodeCreate
     );
 
     nodePromise.catch?.(() => undefined);
 
-    const messageContext = this.createAudioObjectMessageContext(
-      descriptor.id,
-      descriptor.objectType
-    );
+    const messageContext = this.createAudioObjectMessageContext(object.id, object.type);
 
-    this.audioObjects.set(descriptor.id, {
+    this.audioObjects.set(object.id, {
       messageContext,
-      params: [...descriptor.params]
+      params: [...object.data.params]
     });
 
-    this.suppressedAudioObjectSyncs.delete(descriptor.id);
-    this.viewRevisions.bump(descriptor.id);
+    this.suppressedAudioObjectSyncs.delete(object.id);
+    this.viewRevisions.bump(object.id);
   }
 
   destroyAudioObject(nodeId: string): void {
