@@ -1,19 +1,17 @@
+import { uniq } from 'lodash';
+
 const RESERVED_TAG_PREFIX = 'core/';
 
 export function getUserTags(tags: unknown): string[] {
   if (!Array.isArray(tags)) return [];
 
-  return Array.from(
-    new Set(
-      tags.flatMap((tag) => {
-        if (typeof tag !== 'string') return [];
+  const normalizedTags = tags.flatMap((rawTag) => {
+    if (typeof rawTag !== 'string') return [];
 
-        const normalizedTag = tag.trim();
+    const tag = rawTag.trim();
 
-        return normalizedTag && !normalizedTag.startsWith(RESERVED_TAG_PREFIX)
-          ? [normalizedTag]
-          : [];
-      })
-    )
-  );
+    return tag && !tag.startsWith(RESERVED_TAG_PREFIX) ? [tag] : [];
+  });
+
+  return uniq(normalizedTags);
 }
