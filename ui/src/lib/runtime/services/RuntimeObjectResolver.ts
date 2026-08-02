@@ -67,7 +67,9 @@ export class RuntimeObjectResolver {
       params: getAudioParamsFromData(nodeClass.inlets ?? [], object.data)
     };
 
-    if (nodeClass.acceptsRuntimeData) descriptor.runtimeData = object.data;
+    if (nodeClass.acceptsRuntimeData) {
+      descriptor.runtimeData = object.data;
+    }
 
     return descriptor;
   }

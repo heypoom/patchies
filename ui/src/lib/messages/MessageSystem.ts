@@ -1,5 +1,6 @@
 import type { Edge } from '@xyflow/svelte';
 import type { SendMessageOptions } from './MessageContext';
+import { MessageChannelRegistry } from './MessageChannelRegistry';
 import { logger } from '$lib/utils/logger';
 import { profiler } from '$lib/profiler';
 
@@ -163,8 +164,9 @@ export class MessageSystem {
       return;
     }
 
-    // String `to` means channel-based routing - handled by ChannelRegistry, not edges
+    // String `to` means channel-based routing, not graph-edge routing.
     if (typeof options.to === 'string') {
+      MessageChannelRegistry.getInstance().broadcast(options.to, data, fromNodeId);
       return;
     }
 

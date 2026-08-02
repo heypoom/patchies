@@ -150,10 +150,13 @@ export class ElementaryNode implements AudioNodeV2 {
   private async setCode(code: string): Promise<void> {
     this.runtimeState.setCode(code);
     this.runtimeState.publish({ showAudioInput: hasAudioInputUsage('elem~', code) });
+    this.resetMessagePorts();
+
     if (!code || code.trim() === '') {
       // render silence
       await this.core?.render();
       this.cleanup();
+
       return;
     }
 
@@ -167,11 +170,6 @@ export class ElementaryNode implements AudioNodeV2 {
         throw new Error('Elementary Audio not initialized');
       }
 
-      // Reset message inlet count and recv callback for new code
-      this.messageInletCount = 0;
-      this.messageOutletCount = 0;
-      this.recvCallback = null;
-
       const settingsManager = this.runtimeState.settingsManager;
       settingsManager.clearCallbacks();
 
@@ -181,7 +179,7 @@ export class ElementaryNode implements AudioNodeV2 {
       };
 
       // Create send function for sending messages
-      const send = (message: unknown, options?: { to?: number }) =>
+      const send = (message: unknown, options?: { to?: number | string }) =>
         MessageSystem.getInstance().sendMessage(this.nodeId, message, options);
 
       // Preprocess code using JSRunner
@@ -256,6 +254,14 @@ export class ElementaryNode implements AudioNodeV2 {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  private resetMessagePorts(): void {
+    this.messageInletCount = 0;
+    this.messageOutletCount = 0;
+    this.recvCallback = null;
+
+    this.runtimeState.publish({ messageInletCount: 0, messageOutletCount: 0 });
   }
 
   bindRuntimeData(binding: RuntimeDataBinding): void {

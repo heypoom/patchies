@@ -166,6 +166,7 @@ export class ToneNode implements AudioNodeV2 {
   private async setCode(code: string): Promise<void> {
     this.runtimeState.setCode(code);
     this.runtimeState.publish({ showAudioInput: hasAudioInputUsage('tone~', code) });
+    this.resetMessagePorts();
     const Tone = await this.ensureTone();
 
     if (!code || code.trim() === '') {
@@ -176,11 +177,6 @@ export class ToneNode implements AudioNodeV2 {
     try {
       // Clean up any existing objects
       this.cleanup();
-
-      // Reset message inlet count and recv callback for new code
-      this.messageInletCount = 0;
-      this.messageOutletCount = 0;
-      this.recvCallback = null;
 
       const jsRunner = JSRunner.getInstance();
 
@@ -277,6 +273,14 @@ export class ToneNode implements AudioNodeV2 {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  private resetMessagePorts(): void {
+    this.messageInletCount = 0;
+    this.messageOutletCount = 0;
+    this.recvCallback = null;
+
+    this.runtimeState.publish({ messageInletCount: 0, messageOutletCount: 0 });
   }
 
   private cleanup() {

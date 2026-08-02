@@ -322,11 +322,7 @@ export class GLSystem {
     // Use match for early returns - most frequent messages first
     match(data)
       .with({ type: 'sendMessageFromNode' }, (data) => {
-        if (typeof data.options?.to === 'string') {
-          this.channelRegistry.broadcast(data.options.to, data.data, data.fromNodeId);
-        } else {
-          this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
-        }
+        this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
       })
       .with({ type: 'consoleOutput' }, (data) => {
         const args = data.args ?? [data.message];

@@ -34,12 +34,6 @@ export type AudioNodeClass = {
   /** If true, dedicated UI nodes of this type are owned by PatchRuntime instead of the Svelte view. */
   runtimeManaged?: boolean;
 
-  /**
-   * If true, dedicated node data is initialized on the audio node before
-   * `create(params)` runs.
-   */
-  acceptsRuntimeData?: boolean;
-
   /** Aliases for the node type (e.g. 's~' for 'send~') */
   aliases?: string[];
 
@@ -51,6 +45,11 @@ export type AudioNodeClass = {
    * message handles whose indices are determined by the object runtime.
    */
   dynamicMessageTarget?: string;
+
+  /**
+   * Initialize runtime node data before `create(params)` runs.
+   */
+  acceptsRuntimeData?: boolean;
 } & ObjectMetadata &
   AudioNodeConstructor;
 

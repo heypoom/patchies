@@ -45,6 +45,8 @@ describe('SonicNode', () => {
       update: (update) => updates.push(update)
     });
     await node.send('code', 'setPortCount(2, 1)');
+    await node.send('code', '');
+    await node.send('code', 'setPortCount(2, 1)');
     await node.send('code', 'outputNode.gain.value = 0.5');
 
     expect(updates).toContainEqual({ messageInletCount: 2, messageOutletCount: 1 });

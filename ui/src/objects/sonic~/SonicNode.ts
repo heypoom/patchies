@@ -118,6 +118,8 @@ export class SonicNode implements AudioNodeV2 {
   private async setCode(code: string): Promise<void> {
     this.runtimeState.setCode(code);
     this.runtimeState.publish({ showAudioInput: hasAudioInputUsage('sonic~', code) });
+    this.resetMessagePorts();
+
     if (!code || code.trim() === '') {
       return;
     }
@@ -145,15 +147,6 @@ export class SonicNode implements AudioNodeV2 {
         );
       }
 
-      // Reset message inlet count and recv callback for new code
-      this.messageInletCount = 0;
-      this.messageOutletCount = 0;
-      this.recvCallback = null;
-      this.runtimeState.publish({
-        messageInletCount: this.messageInletCount,
-        messageOutletCount: this.messageOutletCount
-      });
-
       const settingsManager = this.runtimeState.settingsManager;
       settingsManager.clearCallbacks();
 
@@ -163,7 +156,7 @@ export class SonicNode implements AudioNodeV2 {
       };
 
       // Create send function for sending messages
-      const send = (message: unknown, options?: { to?: number }) =>
+      const send = (message: unknown, options?: { to?: number | string }) =>
         MessageSystem.getInstance().sendMessage(this.nodeId, message, options);
 
       // Create event subscription function
@@ -243,6 +236,14 @@ export class SonicNode implements AudioNodeV2 {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  private resetMessagePorts(): void {
+    this.messageInletCount = 0;
+    this.messageOutletCount = 0;
+    this.recvCallback = null;
+
+    this.runtimeState.publish({ messageInletCount: 0, messageOutletCount: 0 });
   }
 
   bindRuntimeData(binding: RuntimeDataBinding): void {

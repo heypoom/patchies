@@ -152,12 +152,7 @@ export class MessageContext {
   };
 
   send(data: unknown, options: SendMessageOptions = {}) {
-    // If `to` is a string, it's a channel name - broadcast via ChannelRegistry
-    if (typeof options.to === 'string') {
-      this.channelRegistry.broadcast(options.to, data, this.nodeId);
-    } else {
-      this.messageSystem.sendMessage(this.nodeId, data, options);
-    }
+    this.messageSystem.sendMessage(this.nodeId, data, options);
 
     this.onSend(data, options);
   }
