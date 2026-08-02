@@ -1,5 +1,6 @@
-import type { SettingsSchema } from './types';
+import type { SettingsField, SettingsSchema } from './types';
 import type { KVStore } from '$lib/storage/KVStore';
+import { match } from 'ts-pattern';
 
 type ChangeCallback = (key: string, value: unknown, allValues: Record<string, unknown>) => void;
 
@@ -12,24 +13,43 @@ type ChangeCallback = (key: string, value: unknown, allValues: Record<string, un
  * - 'none': in-memory only (lost on reload)
  */
 export class SettingsManager {
-  private schema: SettingsSchema = [];
-  private noneValues: Map<string, unknown> = new Map();
+  /** Stores fields from define() so settings methods can find a field's persistence level. */
+  private schema: SettingsField[] = [];
+
+  /** Stores values with none persistence while the node runs. */
+  private memoryStore: Map<string, unknown> = new Map();
+
+  /** Caches KV values after the asynchronous load. */
   private kvCache: Map<string, unknown> = new Map();
+
+  /** Stores callbacks that receive setting changes. */
   private changeCallbacks: ChangeCallback[] = [];
+
+  /** Stores the last node snapshot to detect node data updates. */
+  private lastReadNodeSettings: Record<string, unknown> | undefined;
+
+  /** Holds node writes until the view provides updated node data. */
+  private pendingNodeSettings: Record<string, unknown> | undefined;
 
   constructor(
     private getNodeSettings: () => Record<string, unknown>,
-    private updateNodeSettings: (settings: Record<string, unknown>, schema: SettingsSchema) => void,
+
+    private updateNodeSettings: (
+      settings: Record<string, unknown>,
+      fields: SettingsField[]
+    ) => void,
+
     private kvStore: KVStore
   ) {}
 
-  async define(schema: SettingsSchema): Promise<void> {
-    this.schema = schema;
+  async define(fields: SettingsField[]): Promise<void> {
+    this.schema = fields;
 
-    // Load KV values asynchronously before returning
-    for (const field of schema) {
+    // Load KV-persisted field values before returning
+    for (const field of fields) {
       if (field.persistence === 'kv') {
         const value = await this.kvStore.get(`settings:${field.key}`);
+
         if (value !== undefined) {
           this.kvCache.set(field.key, value);
         }
@@ -37,43 +57,31 @@ export class SettingsManager {
     }
 
     // Preserve existing node values, fill in defaults for new fields
-    const existingSettings = this.getNodeSettings();
-    const newSettings: Record<string, unknown> = { ...existingSettings };
+    const currentSettings = this.getCurrentNodeSettings();
+    const nextSettings: Record<string, unknown> = { ...currentSettings };
 
-    for (const field of schema) {
-      const persistence = field.persistence ?? 'node';
-      if (
-        persistence === 'node' &&
-        newSettings[field.key] === undefined &&
-        field.default !== undefined
-      ) {
-        newSettings[field.key] = field.default;
+    for (const field of fields) {
+      if (!field.persistence || field.persistence === 'node') {
+        if (nextSettings[field.key] === undefined && field.default !== undefined) {
+          nextSettings[field.key] = field.default;
+        }
       }
     }
 
-    this.updateNodeSettings(newSettings, schema);
+    this.updateNodeSettingsWithCache(nextSettings, fields);
   }
 
   get(key: string): unknown {
     const field = this.schema.find((f) => f.key === key);
     if (!field) return undefined;
 
-    const persistence = field.persistence ?? 'node';
+    const value = match(field.persistence ?? 'node')
+      .with('none', () => this.memoryStore.get(key))
+      .with('kv', () => this.kvCache.get(key))
+      .with('node', () => this.getCurrentNodeSettings()[key])
+      .exhaustive();
 
-    if (persistence === 'none') {
-      const val = this.noneValues.get(key);
-      return val !== undefined ? val : field.default;
-    }
-
-    if (persistence === 'kv') {
-      const val = this.kvCache.get(key);
-      return val !== undefined ? val : field.default;
-    }
-
-    // 'node' persistence
-    const nodeSettings = this.getNodeSettings();
-    const val = nodeSettings[key];
-    return val !== undefined ? val : field.default;
+    return value !== undefined ? value : field.default;
   }
 
   getAll(): Record<string, unknown> {
@@ -92,25 +100,29 @@ export class SettingsManager {
     const field = this.schema.find((f) => f.key === key);
     if (!field) return;
 
-    const persistence = field.persistence ?? 'node';
+    match(field.persistence ?? 'node')
+      .with('none', () => {
+        this.memoryStore.set(key, value);
+      })
+      .with('kv', () => {
+        this.kvCache.set(key, value);
+        this.kvStore.set(`settings:${key}`, value);
+      })
+      .with('node', () => {
+        const settings = this.getCurrentNodeSettings();
 
-    if (persistence === 'none') {
-      this.noneValues.set(key, value);
-    } else if (persistence === 'kv') {
-      this.kvCache.set(key, value);
-      this.kvStore.set(`settings:${key}`, value);
-    } else {
-      const nodeSettings = this.getNodeSettings();
-      this.updateNodeSettings({ ...nodeSettings, [key]: value }, this.schema);
-    }
+        this.updateNodeSettingsWithCache({ ...settings, [key]: value }, this.schema);
+      })
+      .exhaustive();
 
     // Fire onChange callbacks
-    const allValues = this.getAll();
-    for (const cb of this.changeCallbacks) {
+    const settingsValues = this.getAll();
+
+    for (const callback of this.changeCallbacks) {
       try {
-        cb(key, value, allValues);
-      } catch (e) {
-        console.error('settings.onChange callback error:', e);
+        callback(key, value, settingsValues);
+      } catch (error) {
+        console.error('settings.onChange callback error:', error);
       }
     }
   }
@@ -119,38 +131,44 @@ export class SettingsManager {
     const newSettings: Record<string, unknown> = {};
 
     for (const field of this.schema) {
-      const persistence = field.persistence ?? 'node';
+      const hasDefault = field.default !== undefined;
 
-      if (persistence === 'none') {
-        if (field.default !== undefined) {
-          this.noneValues.set(field.key, field.default);
-        } else {
-          this.noneValues.delete(field.key);
-        }
-      } else if (persistence === 'kv') {
-        if (field.default !== undefined) {
-          this.kvCache.set(field.key, field.default);
-          this.kvStore.set(`settings:${field.key}`, field.default);
-        } else {
-          this.kvCache.delete(field.key);
-          this.kvStore.delete(`settings:${field.key}`);
-        }
-      } else {
-        if (field.default !== undefined) {
-          newSettings[field.key] = field.default;
-        }
-      }
+      match(field.persistence ?? 'node')
+        .with('none', () => {
+          if (hasDefault) {
+            this.memoryStore.set(field.key, field.default);
+          } else {
+            this.memoryStore.delete(field.key);
+          }
+        })
+        .with('kv', () => {
+          if (hasDefault) {
+            this.kvCache.set(field.key, field.default);
+            this.kvStore.set(`settings:${field.key}`, field.default);
+          } else {
+            this.kvCache.delete(field.key);
+            this.kvStore.delete(`settings:${field.key}`);
+          }
+        })
+        .with('node', () => {
+          if (hasDefault) {
+            newSettings[field.key] = field.default;
+          }
+        })
+        .exhaustive();
     }
 
-    this.updateNodeSettings(newSettings, this.schema);
+    this.updateNodeSettingsWithCache(newSettings, this.schema);
 
     // Fire onChange for all fields
-    const allValues = this.getAll();
+    const settingValues = this.getAll();
+
     for (const field of this.schema) {
-      const value = allValues[field.key];
-      for (const cb of this.changeCallbacks) {
+      const value = settingValues[field.key];
+
+      for (const callback of this.changeCallbacks) {
         try {
-          cb(field.key, value, allValues);
+          callback(field.key, value, settingValues);
         } catch (e) {
           console.error('settings.onChange callback error:', e);
         }
@@ -159,7 +177,7 @@ export class SettingsManager {
   }
 
   clear(): void {
-    this.noneValues.clear();
+    this.memoryStore.clear();
     this.kvCache.clear();
 
     for (const field of this.schema) {
@@ -168,7 +186,7 @@ export class SettingsManager {
       }
     }
 
-    this.updateNodeSettings({}, this.schema);
+    this.updateNodeSettingsWithCache({}, this.schema);
   }
 
   /** Clear onChange callbacks. Called before each code re-run. */
@@ -184,13 +202,47 @@ export class SettingsManager {
     return this.schema.length > 0;
   }
 
+  private getCurrentNodeSettings(): Record<string, unknown> {
+    const currentSettings = this.getNodeSettings();
+
+    if (
+      this.lastReadNodeSettings === undefined ||
+      !areSettingsEqual(currentSettings, this.lastReadNodeSettings)
+    ) {
+      this.lastReadNodeSettings = { ...currentSettings };
+      this.pendingNodeSettings = { ...currentSettings };
+    }
+
+    return this.pendingNodeSettings ?? currentSettings;
+  }
+
+  private updateNodeSettingsWithCache(
+    settings: Record<string, unknown>,
+    schema: SettingsSchema
+  ): void {
+    this.pendingNodeSettings = settings;
+    this.updateNodeSettings(settings, schema);
+  }
+
   /** True if any field with a default has a value different from it. */
   isDirty(): boolean {
     for (const field of this.schema) {
       if (field.default === undefined) continue;
+
       const current = this.get(field.key);
       if (current !== field.default) return true;
     }
+
     return false;
   }
+}
+
+function areSettingsEqual(left: Record<string, unknown>, right: Record<string, unknown>): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every((key) => Object.is(left[key], right[key]))
+  );
 }
