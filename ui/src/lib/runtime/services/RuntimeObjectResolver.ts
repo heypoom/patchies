@@ -9,7 +9,7 @@ import {
 } from '../utils/runtime-object-data';
 
 import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
-import type { RuntimeObjectDescriptor, RuntimeObjectSpec } from '../types/runtime-object';
+import type { RuntimeObjectSpec } from '../types/runtime-object';
 
 type RuntimeObjectResolverOptions = {
   isMessageObject: (objectType: string) => boolean;
@@ -17,7 +17,7 @@ type RuntimeObjectResolverOptions = {
 };
 
 export type ResolvedRuntimeObject =
-  | { kind: 'message'; descriptor: RuntimeObjectDescriptor }
+  | { kind: 'message'; object: RuntimeObjectSpec }
   | { kind: 'audio'; descriptor: RuntimeAudioObjectDescriptor }
   | { kind: 'ignored' };
 
@@ -28,13 +28,13 @@ export class RuntimeObjectResolver {
     const audioDescriptor = this.getAudioObjectDescriptor(object);
     if (audioDescriptor) return { kind: 'audio', descriptor: audioDescriptor };
 
-    const messageDescriptor = this.getMessageObjectDescriptor(object);
-    if (messageDescriptor) return { kind: 'message', descriptor: messageDescriptor };
+    const messageObject = this.getMessageObjectSpec(object);
+    if (messageObject) return { kind: 'message', object: messageObject };
 
     return { kind: 'ignored' };
   }
 
-  private getMessageObjectDescriptor(object: RuntimeObjectSpec): RuntimeObjectDescriptor | null {
+  private getMessageObjectSpec(object: RuntimeObjectSpec): RuntimeObjectSpec | null {
     if (!this.options.isMessageObject(object.type)) return null;
 
     const data = object.data;
@@ -44,7 +44,7 @@ export class RuntimeObjectResolver {
       ? getTextObjectData(object.type, data, rawParams)
       : { ...data };
 
-    return { id: object.id, objectType: object.type, data: runtimeData, rawParams };
+    return { ...object, data: runtimeData };
   }
 
   private getAudioObjectDescriptor(object: RuntimeObjectSpec): RuntimeAudioObjectDescriptor | null {

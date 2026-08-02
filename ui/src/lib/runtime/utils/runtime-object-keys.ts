@@ -1,15 +1,10 @@
 import { hash } from 'ohash';
 
+import { getRawObjectParamsFromExpr } from './runtime-object-data';
+
 import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
 
-import type {
-  RuntimeConnectionSpec,
-  RuntimeObjectDescriptor,
-  RuntimeObjectSpec
-} from '../types/runtime-object';
-
-export const getRuntimeObjectDescriptorKey = (descriptor: RuntimeObjectDescriptor): string =>
-  hash([descriptor.objectType, descriptor.data, descriptor.rawParams]);
+import type { RuntimeConnectionSpec, RuntimeObjectSpec } from '../types/runtime-object';
 
 export const getRuntimeAudioObjectDescriptorKey = (
   descriptor: RuntimeAudioObjectDescriptor
@@ -18,8 +13,8 @@ export const getRuntimeAudioObjectDescriptorKey = (
 export const getRuntimeConnectionId = (connection: RuntimeConnectionSpec): string =>
   hash([connection.source, connection.outlet, connection.target, connection.inlet]);
 
-export const getObjectLifecycleKey = (descriptor: RuntimeObjectDescriptor): string =>
-  hash([descriptor.objectType, descriptor.rawParams]);
+export const getObjectLifecycleKey = (object: RuntimeObjectSpec): string =>
+  hash([object.type, getRawObjectParamsFromExpr(object.data.expr)]);
 
 export const getConnectionKey = (connection: RuntimeConnectionSpec & { id: string }): string =>
   `${connection.id}:${getRuntimeConnectionId(connection)}`;

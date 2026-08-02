@@ -6,13 +6,6 @@ export interface RuntimeObjectSpec<TData = Record<string, unknown>> {
   data: TData;
 }
 
-export interface RuntimeObjectDescriptor {
-  id: string;
-  objectType: string;
-  data: Record<string, unknown>;
-  rawParams: string[];
-}
-
 export interface RuntimeConnectionSpec {
   id?: string;
 

@@ -1,25 +1,22 @@
 import { logger } from '$lib/utils/logger';
 
 import { RuntimeObjectResolver } from './RuntimeObjectResolver';
-import {
-  getRuntimeAudioObjectDescriptorKey,
-  getRuntimeObjectDescriptorKey
-} from '../utils/runtime-object-keys';
+import { getRuntimeAudioObjectDescriptorKey, getObjectKey } from '../utils/runtime-object-keys';
 import { createSerialQueue } from '../utils/serial-queue';
 
 import type { RuntimeAudioObjectDescriptor } from '../types/audio-adapter';
-import type { RuntimeObjectDescriptor, RuntimeObjectSpec } from '../types/runtime-object';
+import type { RuntimeObjectSpec } from '../types/runtime-object';
 
 interface RuntimeObjectSnapshot {
   ids: Set<string>;
-  descriptorKeys: Map<string, string>;
+  objectKeys: Map<string, string>;
 }
 
 type NextRuntimeObjectSnapshot = RuntimeObjectSnapshot & { pendingIds: Set<string> };
 
 export interface RuntimeObjectReconcilerRuntime {
-  createMessageObject(descriptor: RuntimeObjectDescriptor): Promise<void>;
-  updateMessageObject(nodeId: string, descriptor: RuntimeObjectDescriptor): Promise<void>;
+  createMessageObject(object: RuntimeObjectSpec): Promise<void>;
+  updateMessageObject(nodeId: string, object: RuntimeObjectSpec): Promise<void>;
   destroyMessageObject(nodeId: string): void;
   upsertAudioObject(descriptor: RuntimeAudioObjectDescriptor): void;
   destroyAudioObject(nodeId: string): void;
@@ -32,17 +29,17 @@ export class RuntimeObjectReconciler {
 
   private current: RuntimeObjectSnapshot = {
     ids: new Set(),
-    descriptorKeys: new Map()
+    objectKeys: new Map()
   };
 
   private currentAudio: RuntimeObjectSnapshot = {
     ids: new Set(),
-    descriptorKeys: new Map()
+    objectKeys: new Map()
   };
 
   private next: NextRuntimeObjectSnapshot = {
     ids: new Set(),
-    descriptorKeys: new Map(),
+    objectKeys: new Map(),
     pendingIds: new Set()
   };
 
@@ -64,7 +61,7 @@ export class RuntimeObjectReconciler {
   }
 
   private async reconcileObjects(objects: RuntimeObjectSpec[]): Promise<void> {
-    const nextObjectDescriptors = new Map<string, RuntimeObjectDescriptor>();
+    const nextMessageObjects = new Map<string, RuntimeObjectSpec>();
     const nextAudioDescriptors = new Map<string, RuntimeAudioObjectDescriptor>();
 
     const pendingRuntimeUpdates: Promise<void>[] = [];
@@ -78,26 +75,23 @@ export class RuntimeObjectReconciler {
       }
 
       if (resolved.kind === 'message') {
-        nextObjectDescriptors.set(resolved.descriptor.id, resolved.descriptor);
+        nextMessageObjects.set(resolved.object.id, resolved.object);
       }
     }
 
-    this.next.ids = new Set(nextObjectDescriptors.keys());
+    this.next.ids = new Set(nextMessageObjects.keys());
 
-    this.next.descriptorKeys = new Map(
-      Array.from(nextObjectDescriptors).map(([nodeId, descriptor]) => [
-        nodeId,
-        getRuntimeObjectDescriptorKey(descriptor)
-      ])
+    this.next.objectKeys = new Map(
+      Array.from(nextMessageObjects).map(([nodeId, object]) => [nodeId, getObjectKey(object)])
     );
 
     const trackedRuntimeObjectIds = new Set([...this.current.ids, ...this.next.pendingIds]);
 
     for (const nodeId of trackedRuntimeObjectIds) {
-      if (!nextObjectDescriptors.has(nodeId)) {
+      if (!nextMessageObjects.has(nodeId)) {
         this.runtime.destroyMessageObject(nodeId);
         this.current.ids.delete(nodeId);
-        this.current.descriptorKeys.delete(nodeId);
+        this.current.objectKeys.delete(nodeId);
 
         this.next.pendingIds.delete(nodeId);
       }
@@ -105,21 +99,21 @@ export class RuntimeObjectReconciler {
 
     this.syncAudioObjects(nextAudioDescriptors);
 
-    for (const descriptor of nextObjectDescriptors.values()) {
-      if (this.next.pendingIds.has(descriptor.id)) continue;
+    for (const object of nextMessageObjects.values()) {
+      if (this.next.pendingIds.has(object.id)) continue;
 
-      const descriptorKey = getRuntimeObjectDescriptorKey(descriptor);
-      const hasCommittedObject = this.current.ids.has(descriptor.id);
-      const lastSyncedDescriptorKey = this.current.descriptorKeys.get(descriptor.id);
+      const objectKey = getObjectKey(object);
+      const hasCommittedObject = this.current.ids.has(object.id);
+      const lastSyncedObjectKey = this.current.objectKeys.get(object.id);
 
-      if (hasCommittedObject && lastSyncedDescriptorKey === descriptorKey) continue;
+      if (hasCommittedObject && lastSyncedObjectKey === objectKey) continue;
 
       const operation = () =>
         hasCommittedObject
-          ? this.runtime.updateMessageObject(descriptor.id, descriptor)
-          : this.runtime.createMessageObject(descriptor);
+          ? this.runtime.updateMessageObject(object.id, object)
+          : this.runtime.createMessageObject(object);
 
-      pendingRuntimeUpdates.push(this.syncRuntimeObject(descriptor, descriptorKey, operation));
+      pendingRuntimeUpdates.push(this.syncRuntimeObject(object, objectKey, operation));
     }
 
     await Promise.all(pendingRuntimeUpdates);
@@ -130,14 +124,14 @@ export class RuntimeObjectReconciler {
       if (!nextAudioDescriptors.has(nodeId)) {
         this.runtime.destroyAudioObject(nodeId);
         this.currentAudio.ids.delete(nodeId);
-        this.currentAudio.descriptorKeys.delete(nodeId);
+        this.currentAudio.objectKeys.delete(nodeId);
       }
     }
 
     for (const descriptor of nextAudioDescriptors.values()) {
       const descriptorKey = getRuntimeAudioObjectDescriptorKey(descriptor);
       const hasCommittedAudioObject = this.currentAudio.ids.has(descriptor.id);
-      const lastSyncedDescriptorKey = this.currentAudio.descriptorKeys.get(descriptor.id);
+      const lastSyncedDescriptorKey = this.currentAudio.objectKeys.get(descriptor.id);
 
       if (
         hasCommittedAudioObject &&
@@ -149,9 +143,9 @@ export class RuntimeObjectReconciler {
 
       if (this.runtime.consumeSuppressedAudioObjectSync(descriptor.id)) {
         if (hasCommittedAudioObject) {
-          this.currentAudio.descriptorKeys.set(descriptor.id, descriptorKey);
+          this.currentAudio.objectKeys.set(descriptor.id, descriptorKey);
         } else {
-          this.currentAudio.descriptorKeys.delete(descriptor.id);
+          this.currentAudio.objectKeys.delete(descriptor.id);
         }
 
         continue;
@@ -159,28 +153,28 @@ export class RuntimeObjectReconciler {
 
       this.runtime.upsertAudioObject(descriptor);
       this.currentAudio.ids.add(descriptor.id);
-      this.currentAudio.descriptorKeys.set(descriptor.id, descriptorKey);
+      this.currentAudio.objectKeys.set(descriptor.id, descriptorKey);
     }
   }
 
   private async syncRuntimeObject(
-    descriptor: RuntimeObjectDescriptor,
-    descriptorKey: string,
+    spec: RuntimeObjectSpec,
+    objectKey: string,
     operation: () => Promise<void>
   ): Promise<void> {
-    this.next.pendingIds.add(descriptor.id);
+    this.next.pendingIds.add(spec.id);
 
     try {
       await operation();
 
-      if (this.next.descriptorKeys.get(descriptor.id) !== descriptorKey) return;
+      if (this.next.objectKeys.get(spec.id) !== objectKey) return;
 
-      this.current.ids.add(descriptor.id);
-      this.current.descriptorKeys.set(descriptor.id, descriptorKey);
+      this.current.ids.add(spec.id);
+      this.current.objectKeys.set(spec.id, objectKey);
     } catch (error) {
-      logger.warn(`failed to sync runtime object "${descriptor.id}"`, error);
+      logger.warn(`failed to sync runtime object "${spec.id}"`, error);
     } finally {
-      this.next.pendingIds.delete(descriptor.id);
+      this.next.pendingIds.delete(spec.id);
     }
   }
 }
