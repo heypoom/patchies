@@ -3,6 +3,7 @@ import type { Edge } from '@xyflow/svelte';
 import type { PatchiesEventBus } from '$lib/eventbus';
 import type { ObjectDataChangedEvent } from '$lib/eventbus/events';
 import type { ObjectMetadata, ObjectService } from '$lib/objects';
+import type { ObjectContextOptions } from '$lib/objects/v2/ObjectContext';
 import { MessageContext, type MessageCallbackFn, type MessageSystem } from '$lib/messages';
 
 import { RuntimeViewRevisionTracker } from '../services/RuntimeViewRevisionTracker';
@@ -39,6 +40,7 @@ type MessageAdapterOptions = {
 
   onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
+  objectContextOptions?: ObjectContextOptions;
 };
 
 export class MessageAdapter {
@@ -51,6 +53,7 @@ export class MessageAdapter {
 
   private onObjectParamsChange?: (nodeId: string, params: unknown[]) => void;
   private onObjectDataChange?: (nodeId: string, updates: Record<string, unknown>) => void;
+  private objectContextOptions: ObjectContextOptions;
 
   private objects = new Map<string, RuntimeObject>();
 
@@ -64,6 +67,7 @@ export class MessageAdapter {
 
     this.onObjectParamsChange = options.onObjectParamsChange;
     this.onObjectDataChange = options.onObjectDataChange;
+    this.objectContextOptions = options.objectContextOptions ?? {};
 
     this.eventBus.addEventListener('objectParamsChanged', this.handleObjectParamsChanged);
     this.eventBus.addEventListener('objectDataChanged', this.handleObjectDataChanged);
@@ -94,7 +98,8 @@ export class MessageAdapter {
       spec.type,
       messageContext,
       spec.data,
-      rawParams
+      rawParams,
+      this.objectContextOptions
     );
 
     if (!this.isCurrentObjectLifecycleToken(spec.id, lifecycleToken)) {

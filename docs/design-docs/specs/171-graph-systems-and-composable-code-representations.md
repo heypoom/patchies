@@ -147,9 +147,9 @@ need them.
 
 ## Subscription Lifecycle
 
-The callback runs immediately with the current matching snapshot. It also runs
-when the matching set changes, matching node data changes, or internal edges
-change. It receives an empty snapshot when no matching node remains.
+The callback runs immediately when the current graph has matching nodes. It
+also runs when matching node data changes or internal edges change. It does not
+run when no nodes match, including after all matching nodes disappear.
 
 Patchies coalesces rapid edits into one callback for a settled graph update.
 It does not include editor position in the first API.
@@ -207,7 +207,7 @@ sources of truth when a person edits generated source.
 
 The first implementation has these boundaries:
 
-- `setTags` is available to every persisted JSRunner object.
+- `setTags` is available to `js`, `canvas.dom`, `three.dom`, `dom`, and `vue`.
 - `onGraphChange` is available only in the standard `js` object.
 - The `js` runtime owns execution and subscriptions outside `JSBlockNode.svelte`.
 - The graph query uses tags, nodes, and internal edges only.

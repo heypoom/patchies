@@ -2396,6 +2396,23 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     tags: ['int']
   },
 
+  js: {
+    type: 'js',
+    category: 'programming',
+    description: 'Run JavaScript and compose tagged graph fragments',
+    inlets: [
+      {
+        id: 'message',
+        type: 'any',
+        description: '',
+        messages: [{ schema: Type.Any(), description: '' }],
+        handle: { handleType: 'message' }
+      }
+    ],
+    outlets: [{ id: 'message', type: 'any', description: '', handle: { handleType: 'message' } }],
+    tags: ['programming', 'javascript', 'code']
+  },
+
   knob: {
     type: 'knob',
     category: 'interface',

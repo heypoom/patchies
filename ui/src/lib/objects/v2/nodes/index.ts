@@ -55,6 +55,7 @@ import { StackObject } from '$objects/stack/StackObject';
 import { QueueObject } from '$objects/queue/QueueObject';
 import { SwitchObject } from '$objects/switch/SwitchObject';
 import { TextboxObject } from '$objects/textbox/TextboxObject';
+import { JSObject } from '$objects/js/JSObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
@@ -112,7 +113,8 @@ export const VISUAL_OBJECTS = [
   ToggleObject,
   SequencerObject,
   SwitchObject,
-  TextboxObject
+  TextboxObject,
+  JSObject
 ] as const satisfies TextObjectClass[];
 
 export const RUNTIME_OBJECTS = [

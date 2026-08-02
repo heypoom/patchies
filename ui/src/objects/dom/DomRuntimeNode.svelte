@@ -26,6 +26,7 @@
     shouldResetDomSize,
     type DomSize
   } from '$objects/dom/runtime-size';
+  import { getUserTags } from '$lib/runtime/services/graph-tags';
 
   export type DomRuntimeRoot = {
     root: HTMLElement;
@@ -263,6 +264,9 @@
         setPortCount,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+        setTags(tags: string[]) {
+          updateNodeData(nodeId, { tags: getUserTags(tags) });
+        },
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           root: runtimeRoot.root,

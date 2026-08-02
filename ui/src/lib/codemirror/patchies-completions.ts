@@ -142,6 +142,20 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setHidePorts(true)'
   },
   {
+    label: 'setTags',
+    type: 'function',
+    detail: '(tags: string[]) => void',
+    info: "Replace this object's user tags. Reserved core/* tags are ignored.",
+    apply: "setTags(['foo/bar'])"
+  },
+  {
+    label: 'onGraphChange',
+    type: 'function',
+    detail: '(query, callback) => () => void',
+    info: 'Subscribe to matching runtime graph nodes and their internal edges.',
+    apply: "onGraphChange({\n  tags: ['foo/*']\n}, (graph) => {\n  \n})"
+  },
+  {
     label: 'hideBorder',
     type: 'function',
     detail: '() => void',
@@ -506,6 +520,8 @@ const topLevelOnlyFunctions = new Set([
   'setRunOnMount',
   'setSize',
   'setTextureFormat',
+  'setTags',
+  'onGraphChange',
   'setVideoCount'
 ]);
 
@@ -535,7 +551,7 @@ const MOUSE_INTERACTION_JS_NODES = [
 // Note on JSRunner defaults (main-thread nodes):
 // JSRunner.executeJavaScript() provides these by default for main-thread nodes:
 //   console, send, onMessage/recv, setInterval, setTimeout, requestAnimationFrame,
-//   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, getVfsUrl
+//   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, setTags, getVfsUrl
 //
 // Worker nodes (hydra, canvas, textmode, three, swgl) must provide their own
 // implementations via extraContext since JSRunner defaults are for main thread.
@@ -644,6 +660,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'dom',
     'vue'
   ],
+  setTags: ['js', 'canvas.dom', 'three.dom', 'dom', 'vue'],
+  onGraphChange: ['js'],
   'htmlCanvas.videoOutput': ['dom', 'vue'],
   'htmlCanvas.canvasLayer': ['dom', 'vue'],
   'htmlCanvas.glslLayer': ['dom', 'vue'],

@@ -9,6 +9,7 @@ import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler, type ClockState } from '$lib/transport/ClockScheduler';
 import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
+import type { GraphChangeCallback, GraphChangeQuery } from '$lib/runtime/services/GraphObserver';
 
 import type { FBOFormat } from '$lib/rendering/types';
 import type { createLLMFunction } from '$lib/ai/google';
@@ -28,6 +29,9 @@ export interface JSRunnerOptions {
   setTextureFormat?: (format: FBOFormat) => void;
   setResolution?: (widthOrPreset: number | string, height?: number) => void;
   setHidePorts?: (hidePorts: boolean) => void;
+  setTags?: (tags: string[]) => void;
+  onGraphChange?: (query: GraphChangeQuery, callback: GraphChangeCallback) => () => void;
+  messageContext?: MessageContext;
   extraContext?: Record<string, unknown>;
 
   /** Skip MessageContext setup - use when caller manages their own MessageContext */
@@ -353,8 +357,8 @@ export class JSRunner {
    *
    * Returns the messaging context for the node.
    */
-  private setupRunnerMessageContext(nodeId: string) {
-    const messageContext = this.getMessageContext(nodeId);
+  private setupRunnerMessageContext(nodeId: string, providedMessageContext?: MessageContext) {
+    const messageContext = providedMessageContext ?? this.getMessageContext(nodeId);
     messageContext.runCleanupCallbacks();
     messageContext.clearTimers();
     messageContext.messageCallbacks = [];
@@ -371,6 +375,9 @@ export class JSRunner {
       setTextureFormat = () => {},
       setResolution = () => {},
       setHidePorts = () => {},
+      setTags = () => {},
+      onGraphChange = () => () => {},
+      messageContext,
       extraContext = {},
       skipMessageContext = false,
       onSchedulerCallbackRegistered
@@ -378,7 +385,7 @@ export class JSRunner {
 
     const messageSystemContext = skipMessageContext
       ? JSRunner.noopMessageContext
-      : this.setupRunnerMessageContext(nodeId);
+      : this.setupRunnerMessageContext(nodeId, messageContext);
 
     // Clear stale logs from last run, so only errors from the current run are visible
     if (!skipMessageContext) {
@@ -387,9 +394,9 @@ export class JSRunner {
 
     // Set up error handler for recv() callbacks
     if (!skipMessageContext) {
-      const messageContext = this.getMessageContext(nodeId);
+      const runnerMessageContext = messageContext ?? this.getMessageContext(nodeId);
 
-      messageContext.onCallbackError = (error) => {
+      runnerMessageContext.onCallbackError = (error) => {
         handleCodeError(error, code, nodeId, customConsole);
       };
     }
@@ -416,6 +423,8 @@ export class JSRunner {
       'setTextureFormat',
       'setResolution',
       'setHidePorts',
+      'setTags',
+      'onGraphChange',
       'getVfsUrl',
       'clock',
       ...Object.keys(extraContext)
@@ -526,6 +535,8 @@ export class JSRunner {
       setTextureFormat,
       setResolution,
       setHidePorts,
+      setTags,
+      onGraphChange,
       createGetVfsUrl(nodeId),
       clock,
       ...Object.values(extraContext)
