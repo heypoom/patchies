@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import { logger } from '$lib/utils/logger';
 
 import { GraphObserver } from './GraphObserver';
 import type { RuntimeGraphSpec } from '../types/runtime-object';
@@ -14,6 +16,7 @@ describe('GraphObserver', () => {
 
     observer.subscribe({ tags: ['shader/foo/*'] }, (snapshot) => snapshots.push(snapshot));
     observer.notify();
+    await Promise.resolve();
 
     expect(snapshots).toEqual([]);
   });
@@ -33,6 +36,7 @@ describe('GraphObserver', () => {
 
     graph = { objects: [], connections: [] };
     observer.notify();
+    await Promise.resolve();
 
     expect(snapshots).toEqual([['fragment']]);
   });
@@ -66,8 +70,31 @@ describe('GraphObserver', () => {
     };
 
     observer.notify();
+    await Promise.resolve();
 
     expect(snapshots).toEqual([['fragment']]);
+  });
+
+  it('continues notifying subscriptions when a callback fails', () => {
+    const observer = new GraphObserver(() => ({
+      objects: [{ id: 'fragment', type: 'js', data: { tags: ['shader/foo/function'] } }],
+      connections: []
+    }));
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    const snapshots: string[][] = [];
+
+    try {
+      observer.subscribe({ tags: ['shader/foo/*'] }, () => {
+        throw new Error('broken callback');
+      });
+      observer.subscribe({ tags: ['shader/foo/*'] }, ({ nodes }) =>
+        snapshots.push(nodes.map(({ id }) => id))
+      );
+
+      expect(snapshots).toEqual([['fragment']]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('immediately returns tagged nodes and only their internal edges', () => {

@@ -151,12 +151,9 @@ export class FakeObjectService {
   ): Promise<TextObjectV2 | null> {
     if (!this.isObjectInRegistry(objectType)) return null;
 
-    const ObjectClass: TextObjectClass =
-      objectType === ButtonObject.type
-        ? ButtonObject
-        : objectType === JSObject.type
-          ? JSObject
-          : PatchRuntimeTestObject;
+    const ObjectClass = this.getObjectClass(objectType);
+
+    if (!ObjectClass) return null;
 
     const context = new ObjectContext(
       nodeId,

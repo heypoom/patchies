@@ -1,6 +1,8 @@
 import { getUserTags } from './graph-tags';
 import { hash } from 'ohash';
 
+import { logger } from '$lib/utils/logger';
+
 import type {
   RuntimeConnectionSpec,
   RuntimeGraphSpec,
@@ -65,13 +67,14 @@ export class GraphObserver {
   }
 
   private getSnapshot(query: GraphChangeQuery): GraphSnapshot {
-    const nodes = this.getGraph().objects.flatMap((node) => {
+    const graph = this.getGraph();
+    const nodes = graph.objects.flatMap((node) => {
       const tags = getUserTags(node.data.tags);
 
       return nodeMatchesTags(tags, query.tags) ? [{ ...node, tags }] : [];
     });
     const matchingNodeIds = new Set(nodes.map((node) => node.id));
-    const edges = (this.getGraph().connections ?? []).flatMap((edge) =>
+    const edges = (graph.connections ?? []).flatMap((edge) =>
       matchingNodeIds.has(edge.source) && matchingNodeIds.has(edge.target)
         ? [
             {
@@ -102,7 +105,12 @@ export class GraphObserver {
     if (snapshotKey === subscription.lastSnapshotKey) return;
 
     subscription.lastSnapshotKey = snapshotKey;
-    subscription.callback(snapshot);
+
+    try {
+      subscription.callback(snapshot);
+    } catch (error) {
+      logger.warn('Error in onGraphChange() handler:', error);
+    }
   }
 }
 
