@@ -308,7 +308,7 @@ export class PatchRuntime {
       workletDirectChannelService
     } = this.services;
 
-    this.message.updateEdges(edges);
+    this.syncMessageConnections();
     this.audio.audioService.updateEdges(edges);
     glSystem.updateEdges(edges);
 

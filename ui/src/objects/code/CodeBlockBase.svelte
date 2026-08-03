@@ -51,7 +51,7 @@
 
     // Execution handlers
     onExecute,
-    onExecuteFromData = onExecute,
+    onExecuteFromData = executeCode,
     onCleanup: onCleanupHandler,
     onCodeChange,
 

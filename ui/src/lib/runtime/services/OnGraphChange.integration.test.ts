@@ -10,6 +10,7 @@ describe('js onGraphChange', () => {
   const glslId = 'glsl-target';
 
   afterEach(() => {
+    messageSystem.unregisterNode(compilerId);
     messageSystem.unregisterNode(glslId);
     messageSystem.updateEdges([]);
   });
