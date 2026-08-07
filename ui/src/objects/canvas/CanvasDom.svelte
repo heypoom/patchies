@@ -24,6 +24,7 @@
   import type { SettingsSchema } from '$lib/settings';
   import { resetCanvasSize } from '$objects/dom/runtime-size';
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
+  import { getUserTags } from '$lib/runtime/services/graph-tags';
 
   let {
     id: nodeId,
@@ -400,6 +401,9 @@
         setPortCount,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+        setTags(tags: string[]) {
+          updateNodeData(nodeId, { tags: getUserTags(tags) });
+        },
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           canvas,

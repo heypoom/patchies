@@ -13,10 +13,12 @@ import {
   type ObjectOutlet,
   ObjectContext
 } from '$lib/objects';
+import type { ObjectContextOptions } from '$lib/objects/v2/ObjectContext';
 
 import type { PatchiesEventBus } from '$lib/eventbus';
 
 import { ButtonObject } from '$objects/button/ButtonObject';
+import { JSObject } from '$objects/js/JSObject';
 
 import type { EditorRuntime } from '../types/editor-runtime';
 import type { GLSystem } from '$lib/canvas/GLSystem';
@@ -124,11 +126,16 @@ export class FakeObjectService {
   private fakeObjectsById = new Map<string, TextObjectV2>();
 
   isObjectInRegistry(objectType: string): boolean {
-    return objectType === TEST_OBJECT_TYPE || objectType === ButtonObject.type;
+    return (
+      objectType === TEST_OBJECT_TYPE ||
+      objectType === ButtonObject.type ||
+      objectType === JSObject.type
+    );
   }
 
   getObjectClass(objectType: string): TextObjectClass | undefined {
     if (objectType === ButtonObject.type) return ButtonObject;
+    if (objectType === JSObject.type) return JSObject;
     if (objectType === TEST_OBJECT_TYPE) return PatchRuntimeTestObject;
 
     return undefined;
@@ -139,14 +146,22 @@ export class FakeObjectService {
     objectType: string,
     messageContext: MessageContext,
     data: Record<string, unknown> = {},
-    rawParams: string[] = []
+    rawParams: string[] = [],
+    contextOptions: ObjectContextOptions = {}
   ): Promise<TextObjectV2 | null> {
     if (!this.isObjectInRegistry(objectType)) return null;
 
-    const ObjectClass: TextObjectClass =
-      objectType === ButtonObject.type ? ButtonObject : PatchRuntimeTestObject;
+    const ObjectClass = this.getObjectClass(objectType);
 
-    const context = new ObjectContext(nodeId, messageContext, ObjectClass.inlets, data);
+    if (!ObjectClass) return null;
+
+    const context = new ObjectContext(
+      nodeId,
+      messageContext,
+      ObjectClass.inlets,
+      data,
+      contextOptions
+    );
 
     const object = new ObjectClass(nodeId, context);
     this.fakeObjectsById.set(nodeId, object);

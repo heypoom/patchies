@@ -9,6 +9,7 @@ import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler, type ClockState } from '$lib/transport/ClockScheduler';
 import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
+import type { GraphChangeCallback, GraphChangeQuery } from '$lib/runtime/services/GraphObserver';
 
 import type { FBOFormat } from '$lib/rendering/types';
 import type { createLLMFunction } from '$lib/ai/google';
@@ -28,6 +29,9 @@ export interface JSRunnerOptions {
   setTextureFormat?: (format: FBOFormat) => void;
   setResolution?: (widthOrPreset: number | string, height?: number) => void;
   setHidePorts?: (hidePorts: boolean) => void;
+  setTags?: (tags: string[]) => void;
+  onGraphChange?: (query: GraphChangeQuery, callback: GraphChangeCallback) => () => void;
+  messageContext?: MessageContext;
   extraContext?: Record<string, unknown>;
 
   /** Skip MessageContext setup - use when caller manages their own MessageContext */
@@ -38,6 +42,21 @@ export interface JSRunnerOptions {
 }
 
 const SET_JS_LIBRARY_CODE_DEBOUNCE = 500;
+
+/**
+ * If we are using the no message context execution mode,
+ * e.g. `filter` object, some methods will not be available.
+ */
+const NOOP_MESSAGE_CONTEXT = {
+  send: () => {},
+  onMessage: () => {},
+  setInterval: () => 0,
+  setTimeout: () => 0,
+  delay: () => Promise.resolve(),
+  requestAnimationFrame: () => 0,
+  onCleanup: () => {},
+  fft: () => new Float32Array(0)
+};
 
 export class JSRunner {
   private static instance: JSRunner;
@@ -333,28 +352,13 @@ export class JSRunner {
   }
 
   /**
-   * If we are using the "no message context"
-   * execution mode e.g. `filter` node, some methods will
-   * not be available.
-   */
-  private static noopMessageContext = {
-    send: () => {},
-    onMessage: () => {},
-    setInterval: () => 0,
-    setTimeout: () => 0,
-    delay: () => Promise.resolve(),
-    requestAnimationFrame: () => 0,
-    onCleanup: () => {},
-    fft: () => new Float32Array(0)
-  };
-
-  /**
    * Sets up the message context for the node's execution.
-   *
    * Returns the messaging context for the node.
    */
-  private setupRunnerMessageContext(nodeId: string) {
-    const messageContext = this.getMessageContext(nodeId);
+  private setupMessageContext(
+    nodeId: string,
+    messageContext: MessageContext = this.getMessageContext(nodeId)
+  ) {
     messageContext.runCleanupCallbacks();
     messageContext.clearTimers();
     messageContext.messageCallbacks = [];
@@ -371,14 +375,17 @@ export class JSRunner {
       setTextureFormat = () => {},
       setResolution = () => {},
       setHidePorts = () => {},
+      setTags = () => {},
+      onGraphChange = () => () => {},
+      messageContext,
       extraContext = {},
       skipMessageContext = false,
       onSchedulerCallbackRegistered
     } = options;
 
     const messageSystemContext = skipMessageContext
-      ? JSRunner.noopMessageContext
-      : this.setupRunnerMessageContext(nodeId);
+      ? NOOP_MESSAGE_CONTEXT
+      : this.setupMessageContext(nodeId, messageContext);
 
     // Clear stale logs from last run, so only errors from the current run are visible
     if (!skipMessageContext) {
@@ -387,9 +394,9 @@ export class JSRunner {
 
     // Set up error handler for recv() callbacks
     if (!skipMessageContext) {
-      const messageContext = this.getMessageContext(nodeId);
+      const runnerMessageContext = messageContext ?? this.getMessageContext(nodeId);
 
-      messageContext.onCallbackError = (error) => {
+      runnerMessageContext.onCallbackError = (error) => {
         handleCodeError(error, code, nodeId, customConsole);
       };
     }
@@ -416,6 +423,8 @@ export class JSRunner {
       'setTextureFormat',
       'setResolution',
       'setHidePorts',
+      'setTags',
+      'onGraphChange',
       'getVfsUrl',
       'clock',
       ...Object.keys(extraContext)
@@ -526,6 +535,8 @@ export class JSRunner {
       setTextureFormat,
       setResolution,
       setHidePorts,
+      setTags,
+      onGraphChange,
       createGetVfsUrl(nodeId),
       clock,
       ...Object.values(extraContext)

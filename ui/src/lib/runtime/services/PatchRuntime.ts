@@ -9,6 +9,7 @@ import { AudioAdapter } from '../adapters/AudioAdapter';
 import { MessageAdapter } from '../adapters/MessageAdapter';
 
 import { PatchGraph } from './PatchGraph';
+import { GraphObserver } from './GraphObserver';
 import { RuntimeObjectResolver } from './RuntimeObjectResolver';
 import { RuntimeObjectReconciler } from './RuntimeObjectReconciler';
 import { createSerialQueue } from '../utils/serial-queue';
@@ -21,11 +22,13 @@ import type {
   RuntimeObjectSpec,
   RuntimeObjectViewRevisionListener
 } from '../types/runtime-object';
+import type { GraphChangeCallback, GraphChangeQuery } from './GraphObserver';
 
 import type { PatchRuntimeOptions, RuntimeServices } from '../types/patch-runtime';
 
 export class PatchRuntime {
   private graph = new PatchGraph();
+  private graphObserver = new GraphObserver(() => this.graph.getGraph());
 
   private message: MessageAdapter;
   private audio: AudioAdapter;
@@ -47,7 +50,10 @@ export class PatchRuntime {
       messageSystem,
       objectService,
       onObjectParamsChange: options.onObjectParamsChange,
-      onObjectDataChange: options.onObjectDataChange
+      onObjectDataChange: options.onObjectDataChange,
+      objectContextOptions: {
+        subscribeGraph: (query, callback) => this.subscribeGraph(query, callback)
+      }
     });
 
     this.audio = new AudioAdapter({
@@ -98,6 +104,10 @@ export class PatchRuntime {
   async setGraph(graph: RuntimeGraphSpec): Promise<void> {
     const { objectsChanged, connectionsChanged } = this.graph.setGraph(graph);
 
+    if (connectionsChanged) {
+      this.syncMessageConnections();
+    }
+
     await this.startObjectSync();
 
     if (objectsChanged) {
@@ -107,6 +117,10 @@ export class PatchRuntime {
     if (connectionsChanged) {
       this.syncConnections();
     }
+
+    if (objectsChanged || connectionsChanged) {
+      this.graphObserver.notify();
+    }
   }
 
   async setObjects(objects: RuntimeObjectSpec[]): Promise<void> {
@@ -114,6 +128,7 @@ export class PatchRuntime {
 
     await this.startObjectSync();
     this.syncNodeTypes();
+    this.graphObserver.notify();
   }
 
   async setConnections(connections: RuntimeConnectionSpec[]): Promise<void> {
@@ -122,6 +137,7 @@ export class PatchRuntime {
     await this.waitForObjectSync();
 
     this.syncConnections();
+    this.graphObserver.notify();
   }
 
   getGraph(): RuntimeGraphSpec {
@@ -139,6 +155,7 @@ export class PatchRuntime {
 
     await this.startObjectSync();
     this.syncNodeTypes();
+    this.graphObserver.notify();
   }
 
   /**
@@ -152,6 +169,7 @@ export class PatchRuntime {
 
     await this.startObjectSync();
     this.syncNodeTypes();
+    this.graphObserver.notify();
   }
 
   destroyObject(nodeId: string): void {
@@ -160,6 +178,7 @@ export class PatchRuntime {
     this.destroyAudioObject(nodeId);
     this.syncNodeTypes();
     this.syncConnections();
+    this.graphObserver.notify();
   }
 
   cleanupDeletedNodes(nodeIds: Iterable<string>): void {
@@ -174,6 +193,7 @@ export class PatchRuntime {
   connect(connection: RuntimeConnectionSpec): string {
     const connectionId = this.graph.upsertConnection(connection);
     this.syncConnections();
+    this.graphObserver.notify();
 
     return connectionId;
   }
@@ -181,6 +201,7 @@ export class PatchRuntime {
   disconnect(connectionId: string): void {
     this.graph.removeConnection(connectionId);
     this.syncConnections();
+    this.graphObserver.notify();
   }
 
   refreshConnections(): void {
@@ -192,6 +213,10 @@ export class PatchRuntime {
       this.message.subscribeObjectMessages(nodeId, callback) ??
       this.audio.subscribeAudioObjectMessages(nodeId, callback)
     );
+  }
+
+  subscribeGraph(query: GraphChangeQuery, callback: GraphChangeCallback): () => void {
+    return this.graphObserver.subscribe(query, callback);
   }
 
   getObjectPorts(
@@ -242,6 +267,7 @@ export class PatchRuntime {
   }
 
   destroy(): void {
+    this.graphObserver.destroy();
     this.message.destroy();
     this.audio.destroy();
   }
@@ -282,7 +308,7 @@ export class PatchRuntime {
       workletDirectChannelService
     } = this.services;
 
-    this.message.updateEdges(edges);
+    this.syncMessageConnections();
     this.audio.audioService.updateEdges(edges);
     glSystem.updateEdges(edges);
 
@@ -291,6 +317,10 @@ export class PatchRuntime {
     mediaPipeNodeSystem.updateEdges(edges);
     directChannelService.updateEdges(edges);
     workletDirectChannelService.updateEdges(edges);
+  }
+
+  private syncMessageConnections(): void {
+    this.message.updateEdges(this.graph.getConnections().map(getEditorEdgeFromRuntimeConnection));
   }
 
   private syncNodeTypes(): void {
