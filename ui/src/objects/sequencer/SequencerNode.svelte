@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
-  import { getSequencerVisualStep } from '$lib/sequencer/sequencer-scheduler';
-  import type { OutletMode, SequencerOutputMode } from '$lib/sequencer/sequencer-output';
+  import type { OutletMode, SequencerOutputMode } from './sequencer-output';
+  import { getSequencerVisualStep } from './sequencer-scheduler';
   import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
   import { useNodeDataTracker } from '$lib/history';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
