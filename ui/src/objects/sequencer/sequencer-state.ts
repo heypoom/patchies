@@ -46,12 +46,12 @@ export function getSequencerData(data: SequencerData): ResolvedSequencerData {
   };
 }
 
-export function reduceSequencerMessage(
+export const sequencerMessageReducer = (
   data: ResolvedSequencerData,
   message: unknown,
   random: () => number = Math.random
-): SequencerTransition | null {
-  return match(message)
+): SequencerTransition | null =>
+  match(message)
     .with(sequencerMessages.bang, () => advanceManualStep(data))
     .with(sequencerMessages.reset, () => resetManualStep(data))
     .with(sequencerMessages.goto, ({ step }) => goToManualStep(data, step))
@@ -80,7 +80,6 @@ export function reduceSequencerMessage(
     .with(sequencerMessages.mute, () => transition({ muted: true }))
     .with(sequencerMessages.unmute, () => transition({ muted: false }))
     .otherwise(() => null);
-}
 
 function advanceManualStep(data: ResolvedSequencerData): SequencerTransition | null {
   if (data.clockMode !== 'manual') return null;

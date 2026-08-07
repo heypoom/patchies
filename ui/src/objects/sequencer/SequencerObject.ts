@@ -16,7 +16,7 @@ import { Transport } from '$lib/transport';
 import { SEQUENCER_INLETS, SEQUENCER_OUTLETS } from './sequencer-metadata';
 import {
   getSequencerData,
-  reduceSequencerMessage,
+  sequencerMessageReducer,
   type ResolvedSequencerData,
   type SequencerData
 } from './sequencer-state';
@@ -85,11 +85,13 @@ export class SequencerObject implements TextObjectV2 {
 
   onMessage(message: unknown): void {
     const data = this.getData();
-    const transition = reduceSequencerMessage(data, message);
+
+    const transition = sequencerMessageReducer(data, message);
     if (!transition) return;
 
     if (transition.fireStep !== undefined) {
-      const time = data.audioRate ? AudioService.getInstance().getAudioContext().currentTime : 0;
+      const audioContext = AudioService.getInstance().getAudioContext();
+      const time = data.audioRate ? audioContext.currentTime : 0;
 
       this.fireAtStep(transition.fireStep, time);
     }

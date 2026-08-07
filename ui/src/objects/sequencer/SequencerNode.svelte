@@ -20,9 +20,9 @@
     data: SequencerData;
   } = $props();
 
+  const store = useStore();
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const store = useStore();
 
   function getInitialNodeId() {
     return nodeId;
@@ -80,15 +80,19 @@
   });
 
   onDestroy(() => {
-    if (pollingIntervalId) clearInterval(pollingIntervalId);
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+    }
   });
 
   function toggleStep(trackIdx: number, stepIdx: number): void {
     applyTracks(
       tracks.map((t, i) => {
         if (i !== trackIdx) return t;
+
         const newOn = [...t.stepOn];
         newOn[stepIdx] = !newOn[stepIdx];
+
         return { ...t, stepOn: newOn };
       })
     );
@@ -126,25 +130,28 @@
 
   function removeTrack(trackIdx: number): void {
     if (tracks.length <= 1) return;
+
     applyTracks(tracks.filter((_, i) => i !== trackIdx));
   }
 
-  function updateTrackName(trackIdx: number, name: string): void {
+  const updateTrackName = (trackIdx: number, name: string): void =>
     applyTracks(tracks.map((t, i) => (i === trackIdx ? { ...t, name } : t)));
-  }
 
-  function updateTrackColor(trackIdx: number, color: string): void {
+  const updateTrackColor = (trackIdx: number, color: string): void =>
     applyTracks(tracks.map((t, i) => (i === trackIdx ? { ...t, color } : t)));
-  }
 
   function setStepValue(trackIdx: number, stepIdx: number, value: number): void {
     const clamped = Math.max(0, Math.min(1, value));
+
     const newTracks = tracks.map((t, i) => {
       if (i !== trackIdx) return t;
+
       const newValues = [...t.stepValues];
       newValues[stepIdx] = clamped;
+
       return { ...t, stepValues: newValues };
     });
+
     updateNodeData(nodeId, { ...data, tracks: newTracks });
   }
 </script>
