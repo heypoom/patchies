@@ -39,3 +39,17 @@ Load these repo-local skills when the task matches:
 - `patchies-rendering`: rendering pipeline, render graph, FBO, worker, and preview guidance.
 - `patchies-assembly-module`: VASM Rust/WASM build and linked UI asset workflow.
 - `docs-style`: topic and object documentation style for `ui/static/content/**/*.md`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs are tracked in GitHub Issues for `heypoom/patchies`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default five-label triage vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use the single-context domain-doc layout. See `docs/agents/domain.md`.
