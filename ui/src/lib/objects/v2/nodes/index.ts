@@ -49,6 +49,7 @@ import { WebMidiLinkObject } from '$objects/web-midi-link/WebMidiLinkObject';
 import { SendObject } from '$objects/send-recv/SendObject';
 import { RecvObject } from '$objects/send-recv/RecvObject';
 import { SamplerateObject } from '$objects/samplerate/SamplerateObject';
+import { SequencerObject } from '$objects/sequencer/SequencerObject';
 import { UnpackObject } from '$objects/unpack/UnpackObject';
 import { StackObject } from '$objects/stack/StackObject';
 import { QueueObject } from '$objects/queue/QueueObject';
@@ -109,6 +110,7 @@ export const VISUAL_OBJECTS = [
   SliderObject,
   TitleObject,
   ToggleObject,
+  SequencerObject,
   SwitchObject,
   TextboxObject
 ] as const satisfies TextObjectClass[];

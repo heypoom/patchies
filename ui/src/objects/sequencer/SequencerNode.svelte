@@ -1,50 +1,23 @@
 <script lang="ts">
-  import { match } from 'ts-pattern';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import { AudioService } from '$lib/audio/v2/AudioService';
-  import { Transport } from '$lib/transport';
-  import { SequencerScheduler } from '$lib/sequencer/sequencer-scheduler';
-  import {
-    createSequencerPayload,
-    sequencerOutputCarriesTiming,
-    transportTimeToAudioContextTime
-  } from '$lib/sequencer/sequencer-output';
+  import { getSequencerVisualStep } from '$lib/sequencer/sequencer-scheduler';
+  import type { OutletMode, SequencerOutputMode } from '$lib/sequencer/sequencer-output';
   import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
   import { useNodeDataTracker } from '$lib/history';
-  import { sequencerMessages } from '$lib/objects/schemas';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { sequencerSchema } from '$objects/sequencer/schema';
+  import { SequencerObject, type SequencerData } from '$objects/sequencer/SequencerObject';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
   import { Settings, VolumeX, X } from '@lucide/svelte/icons';
-
-  type OutletMode = 'multi' | 'single';
-  type MultiOutputMode = 'bang' | 'value';
-  type SingleOutputMode = 'index' | 'midi';
-  type OutputMode = MultiOutputMode | SingleOutputMode;
-
-  type NodeData = {
-    steps?: number;
-    tracks?: TrackData[];
-    swing?: number;
-    outletMode?: OutletMode;
-    outputMode?: OutputMode;
-    audioRate?: boolean;
-    clockMode?: 'auto' | 'manual';
-    showVelocity?: boolean;
-    showInTimeline?: boolean;
-    muted?: boolean;
-  };
 
   let {
     id: nodeId,
     data,
     selected
   }: NodeProps & {
-    data: NodeData;
+    data: SequencerData;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -58,11 +31,8 @@
   const tracker = useNodeDataTracker(getInitialNodeId());
   const swingTracker = tracker.track('swing', () => data.swing ?? 0);
 
-  let messageContext: MessageContext | null = null;
-  let schedulerHandle: SequencerScheduler | null = null;
   let showSettings = $state(false);
   let currentVisualStep = $state(-1);
-  let manualStep = $state(0);
   let velocityDragOldTracks: TrackData[] | null = null;
   let pollingIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -72,9 +42,6 @@
   const outletMode = $derived(data.outletMode ?? 'multi');
   const outputMode = $derived(data.outputMode ?? (outletMode === 'single' ? 'index' : 'bang'));
   const audioRate = $derived(data.audioRate ?? false);
-  const sendsTimedOutput = $derived(
-    audioRate && sequencerOutputCarriesTiming(outletMode, outputMode)
-  );
   const clockMode = $derived(data.clockMode ?? 'auto');
 
   const showVelocity = $derived(data.showVelocity ?? false);
@@ -84,61 +51,7 @@
   const stepsPerRow = $derived(Math.min(steps, 16));
   const rowCount = $derived(Math.ceil(steps / 16));
 
-  function fireAtStep(stepIndex: number, time: number): void {
-    if (!messageContext || data.muted) return;
-
-    const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
-    const mode = outputMode;
-    const outlet = outletMode;
-
-    const payloadTime = sendsTimedOutput
-      ? transportTimeToAudioContextTime({
-          scheduledTransportTime: time,
-          currentTransportTime: Transport.seconds,
-          audioContextTime: AudioService.getInstance().getAudioContext().currentTime
-        })
-      : time;
-
-    for (let t = 0; t < currentTracks.length; t++) {
-      const track = currentTracks[t];
-      if (!(track?.stepOn[stepIndex] ?? false)) continue;
-
-      const velocity = track.stepValues[stepIndex] ?? 1.0;
-
-      const payload =
-        outlet === 'single'
-          ? createSequencerPayload({
-              outletMode: 'single',
-              outputMode: assertSingleOutputMode(mode),
-              audioRate: sendsTimedOutput,
-              trackIndex: t,
-              velocity,
-              time: payloadTime
-            })
-          : createSequencerPayload({
-              outletMode: 'multi',
-              outputMode: assertMultiOutputMode(mode),
-              audioRate: sendsTimedOutput,
-              trackIndex: t,
-              velocity,
-              time: payloadTime
-            });
-
-      messageContext.send(payload, { to: outlet === 'single' ? 0 : t });
-    }
-  }
-
-  function assertSingleOutputMode(mode: OutputMode): SingleOutputMode {
-    if (mode === 'index' || mode === 'midi') return mode;
-    throw new Error(`Invalid sequencer output mode "${mode}" for single outlet mode`);
-  }
-
-  function assertMultiOutputMode(mode: OutputMode): MultiOutputMode {
-    if (mode === 'bang' || mode === 'value') return mode;
-    throw new Error(`Invalid sequencer output mode "${mode}" for multi outlet mode`);
-  }
-
-  function setNodeData<T extends keyof NodeData>(key: T, value: NodeData[T]): void {
+  function setNodeData<T extends keyof SequencerData>(key: T, value: SequencerData[T]): void {
     updateNodeData(nodeId, { ...data, [key]: value });
     tracker.commit(key, data[key], value);
   }
@@ -150,173 +63,6 @@
     tracker.commit('tracks', oldTracks, newTracks);
   }
 
-  function handleInletMessage(raw: unknown): void {
-    match(raw)
-      // --- Manual clock ---
-      .with(sequencerMessages.bang, () => {
-        if (clockMode !== 'manual') return;
-        const step = manualStep;
-
-        const audioTime = audioRate ? AudioService.getInstance().getAudioContext().currentTime : 0;
-
-        fireAtStep(step, audioTime);
-
-        currentVisualStep = step;
-        manualStep = (step + 1) % steps;
-      })
-      .with(sequencerMessages.reset, () => {
-        if (clockMode !== 'manual') return;
-        manualStep = 0;
-        currentVisualStep = 0;
-      })
-      .with(sequencerMessages.goto, ({ step }) => {
-        if (clockMode !== 'manual') return;
-        const clamped = Math.max(0, Math.min(steps - 1, step));
-        manualStep = clamped;
-        currentVisualStep = clamped;
-      })
-
-      // --- Step control ---
-      .with(sequencerMessages.setStep, ({ track, step, on }) => {
-        if (track < 0 || track >= tracks.length || step < 0 || step >= steps) return;
-        applyTracks(
-          tracks.map((t, i) => {
-            if (i !== track) return t;
-            const newOn = [...t.stepOn];
-            newOn[step] = on;
-            return { ...t, stepOn: newOn };
-          })
-        );
-      })
-      .with(sequencerMessages.setVelocityAll, ({ track, values }) => {
-        if (track < 0 || track >= tracks.length) return;
-
-        applyTracks(
-          tracks.map((t, i) => {
-            if (i !== track) return t;
-
-            const newValues = Array.from({ length: steps }, (_, j) =>
-              Math.max(0, Math.min(1, values[j] ?? t.stepValues[j] ?? 1.0))
-            );
-
-            return { ...t, stepValues: newValues };
-          })
-        );
-      })
-      .with(sequencerMessages.setVelocityOne, ({ track, step, value }) => {
-        if (track < 0 || track >= tracks.length || step < 0 || step >= steps) return;
-
-        applyTracks(
-          tracks.map((t, i) => {
-            if (i !== track) return t;
-
-            const newValues = [...t.stepValues];
-            newValues[step] = Math.max(0, Math.min(1, value));
-
-            return { ...t, stepValues: newValues };
-          })
-        );
-      })
-      .with(sequencerMessages.setPattern, ({ track, pattern }) => {
-        if (track < 0 || track >= tracks.length) return;
-
-        applyTracks(
-          tracks.map((t, i) => {
-            if (i !== track) return t;
-
-            return { ...t, stepOn: Array.from({ length: steps }, (_, j) => pattern[j] ?? false) };
-          })
-        );
-      })
-
-      // --- Pattern manipulation (specific track matched before all-tracks) ---
-      .with(sequencerMessages.clearTrack, ({ track }) => {
-        if (track < 0 || track >= tracks.length) return;
-
-        applyTracks(
-          tracks.map((t, i) => (i === track ? { ...t, stepOn: Array(steps).fill(false) } : t))
-        );
-      })
-      .with(sequencerMessages.clearAll, () => {
-        applyTracks(tracks.map((t) => ({ ...t, stepOn: Array(steps).fill(false) })));
-      })
-      .with(sequencerMessages.fillTrack, ({ track }) => {
-        if (track < 0 || track >= tracks.length) return;
-
-        applyTracks(
-          tracks.map((t, i) => (i === track ? { ...t, stepOn: Array(steps).fill(true) } : t))
-        );
-      })
-      .with(sequencerMessages.fillAll, () => {
-        applyTracks(tracks.map((t) => ({ ...t, stepOn: Array(steps).fill(true) })));
-      })
-      .with(sequencerMessages.randomAll, () => {
-        applyTracks(
-          tracks.map((t) => ({
-            ...t,
-            stepOn: Array.from({ length: steps }, () => Math.random() < 0.5),
-            stepValues: Array.from({ length: steps }, () => Math.random())
-          }))
-        );
-      })
-      .with(sequencerMessages.rotate, ({ track, amount }) => {
-        if (track < 0 || track >= tracks.length) return;
-
-        const n = steps;
-        const shift = ((amount % n) + n) % n;
-
-        applyTracks(
-          tracks.map((t, i) => {
-            if (i !== track) return t;
-
-            return {
-              ...t,
-              stepOn: [...t.stepOn.slice(n - shift), ...t.stepOn.slice(0, n - shift)],
-              stepValues: [...t.stepValues.slice(n - shift), ...t.stepValues.slice(0, n - shift)]
-            };
-          })
-        );
-      })
-
-      // --- Config ---
-      .with(sequencerMessages.setSwing, ({ value }) => {
-        const clamped = Math.max(0, Math.min(100, value));
-
-        setNodeData('swing', clamped);
-      })
-      .with(sequencerMessages.setOutputMode, ({ value }) => {
-        // Infer outletMode from unambiguous output modes
-        const inferredOutlet = match(value)
-          .with('index', 'midi', () => 'single' as const)
-          .with('bang', 'value', () => 'multi' as const)
-          .otherwise(() => outletMode);
-
-        const oldData = { outputMode, outletMode };
-        const newData = { outputMode: value, outletMode: inferredOutlet };
-
-        updateNodeData(nodeId, { ...data, ...newData });
-        tracker.commit('outputMode', oldData, newData);
-      })
-      .with(sequencerMessages.setClockMode, ({ value }) => {
-        setNodeData('clockMode', value);
-      })
-      .with(sequencerMessages.setStepCount, ({ value }) => {
-        setStepCount(value);
-      })
-      .with(sequencerMessages.setOutletMode, ({ value }) => {
-        const newOutput = value === 'single' ? 'index' : 'bang';
-
-        const oldData = { outletMode, outputMode };
-        const newData = { outletMode: value, outputMode: newOutput };
-
-        updateNodeData(nodeId, { ...data, ...newData });
-        tracker.commit('outletMode', oldData, newData);
-      })
-      .with(sequencerMessages.mute, () => setNodeData('muted', true))
-      .with(sequencerMessages.unmute, () => setNodeData('muted', false))
-      .otherwise(() => {});
-  }
-
   // Update xyflow handle positions when track count, clockMode, or outletMode changes
   $effect(() => {
     void trackCount;
@@ -326,52 +72,15 @@
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
-  // Re-setup scheduler when output mode, lookahead mode, or clock mode changes
-  $effect(() => {
-    void sendsTimedOutput;
-    void clockMode;
-
-    schedulerHandle?.setup();
-  });
-
-  // Immediately clear timeline markers when muted or showInTimeline is disabled
-  $effect(() => {
-    if (muted || !showInTimeline) {
-      schedulerHandle?.clearMarkers();
-    }
-  });
-
   onMount(() => {
-    messageContext = new MessageContext(nodeId);
-    messageContext.messageCallbacks = [handleInletMessage];
-
-    schedulerHandle = new SequencerScheduler(
-      nodeId,
-      () => ({ clockMode, audioRate: sendsTimedOutput, steps, swing }),
-      fireAtStep,
-      (step) => {
-        if (!(data.showInTimeline ?? true) || (data.muted ?? false)) return [];
-
-        const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
-
-        return currentTracks
-          .filter((t) => (t.stepOn?.[step] ?? false) && (t.stepValues?.[step] ?? 1.0) > 0)
-          .map((t) => t.color);
-      }
-    );
-
-    schedulerHandle.start();
-
     pollingIntervalId = setInterval(() => {
-      if (clockMode === 'manual') return;
-      currentVisualStep = schedulerHandle!.getVisualStep(steps);
+      currentVisualStep =
+        clockMode === 'manual' ? (data.currentStep ?? -1) : getSequencerVisualStep(steps);
     }, 1000 / 30);
   });
 
   onDestroy(() => {
     if (pollingIntervalId) clearInterval(pollingIntervalId);
-    schedulerHandle?.dispose();
-    messageContext?.destroy();
   });
 
   function toggleStep(trackIdx: number, stepIdx: number): void {
@@ -580,7 +289,7 @@
     <!-- Control inlet: always present, smart-hidden when not connected -->
     <TypedHandle
       port="inlet"
-      spec={sequencerSchema.inlets[0].handle!}
+      spec={SequencerObject.inlets[0].handle!}
       title="Control"
       total={1}
       index={0}
@@ -643,7 +352,7 @@
           updateNodeData(nodeId, { ...data, ...newData });
           tracker.commit('outletMode', oldData, newData);
         }}
-        onSetOutputMode={(v: string) => setNodeData('outputMode', v as OutputMode)}
+        onSetOutputMode={(v: string) => setNodeData('outputMode', v as SequencerOutputMode)}
         onSetAudioRate={(v) => setNodeData('audioRate', v)}
         onSetClockMode={(v) => setNodeData('clockMode', v)}
         onSetShowVelocity={(v) => setNodeData('showVelocity', v)}

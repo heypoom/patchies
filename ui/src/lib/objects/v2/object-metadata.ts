@@ -1,6 +1,6 @@
 import type { TSchema } from '@sinclair/typebox';
 
-import type { HandleSpec } from '$lib/objects/schemas/types';
+import type { HandlePattern, HandleSpec } from '$lib/objects/schemas/types';
 
 /**
  * Data types for node inlets/outlets.
@@ -159,4 +159,9 @@ export interface ObjectMetadata {
   outlets?: ObjectOutlet[];
   description?: string;
   tags?: string[];
+  hasDynamicOutlets?: boolean;
+  handlePatterns?: {
+    inlet?: HandlePattern;
+    outlet?: HandlePattern;
+  };
 }

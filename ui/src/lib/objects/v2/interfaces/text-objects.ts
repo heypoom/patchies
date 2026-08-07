@@ -1,6 +1,6 @@
 import type { Message } from '$lib/messages/MessageSystem';
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import type { ObjectInlet, ObjectMetadata, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 /**
  * Message metadata passed to onMessage handlers.
@@ -77,25 +77,10 @@ export type TextObjectConstructor = new (nodeId: string, context: ObjectContext)
 /**
  * Text object class type including required static properties and optional metadata.
  */
-export type TextObjectClass = {
+export type TextObjectClass = ObjectMetadata & {
   /** Type identifier of the text object (e.g. `mtof` or `metro`) */
   type: string;
 
   /** Aliases for the object type (e.g. 't' for 'trigger') */
   aliases?: string[];
-
-  /** Description of the object */
-  description?: string;
-
-  /** Object browser/docs category */
-  category?: string;
-
-  /** Search tags */
-  tags?: string[];
-
-  /** Inlet definitions */
-  inlets?: ObjectInlet[];
-
-  /** Outlet definitions (used as default if instance doesn't implement getOutlets) */
-  outlets?: ObjectOutlet[];
 } & TextObjectConstructor;

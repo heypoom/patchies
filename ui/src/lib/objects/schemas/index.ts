@@ -77,7 +77,6 @@ export * from '$objects/send.vdo/schema';
 export * from '$objects/recv.vdo/schema';
 export * from '$objects/group/schema';
 export * from '$objects/meter~/schema';
-export * from '$objects/sequencer/schema';
 export * from '$objects/bytebeat~/schema';
 export * from '$objects/projmap/schema';
 export * from '$objects/ngea/schema';
@@ -166,7 +165,6 @@ import { sendVdoSchema } from '$objects/send.vdo/schema';
 import { recvVdoSchema } from '$objects/recv.vdo/schema';
 import { groupSchema } from '$objects/group/schema';
 import { meterSchema } from '$objects/meter~/schema';
-import { sequencerSchema } from '$objects/sequencer/schema';
 import { bytebeatSchema } from '$objects/bytebeat~/schema';
 import { projmapSchema } from '$objects/projmap/schema';
 import { ngeaSchema } from '$objects/ngea/schema';
@@ -285,7 +283,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'recv.vdo': recvVdoSchema,
   group: groupSchema,
   'meter~': meterSchema,
-  sequencer: sequencerSchema,
   'bytebeat~': bytebeatSchema,
   projmap: projmapSchema,
   curve: curveSchema,

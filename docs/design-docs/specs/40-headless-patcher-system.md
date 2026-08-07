@@ -2,7 +2,7 @@
 
 Status: Active architecture target, partially implemented through runtime services.
 
-Last verified against code: 2026-07-17.
+Last verified against code: 2026-08-08.
 
 ## Goal
 
@@ -39,9 +39,14 @@ The codebase has these headless runtime parts:
 - `ui/src/lib/runtime/EditorRuntimeReconciler.ts` translates XYFlow object nodes
   into runtime object create/update/destroy calls. It may understand editor node
   shape; `PatchRuntime` itself should not.
-- `button` is the first UI-owned Svelte node runtime slice. `ButtonObject` is
-  under `ui/src/objects/button/` and `ObjectService` manages it. `ButtonNode.svelte`
-  is a view. Its local `MessageContext` sends clicks and renders flash feedback.
+- Dedicated visual controls including `button`, `knob`, `slider`, `switch`,
+  `textbox`, and `toggle` are registered runtime objects. Their Svelte components
+  are views over object-shaped node data.
+- `sequencer` is the next scheduler-backed runtime slice. `SequencerObject` owns
+  transport scheduling, manual clock position, message-driven state changes,
+  timeline markers, and output emission. `SequencerNode.svelte` owns grid and
+  settings interaction, undo history, handle layout, and playhead presentation.
+  Unmounting the view must not stop or restart the sequence.
 - `ui/src/lib/objects/v2/ObjectService.ts` owns V2 text object instances, message dispatch, creation, and destruction outside Svelte components.
 - `ui/src/lib/registry/ObjectRegistry.ts` and `ui/src/lib/registry/AudioRegistry.ts` support runtime registration of text object and audio node constructors.
 - `ui/src/lib/audio/v2/AudioService.ts` owns V2 audio node instances, audio graph updates, scheduled messages, and virtual audio routing.
