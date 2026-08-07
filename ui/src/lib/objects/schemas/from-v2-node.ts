@@ -138,6 +138,8 @@ interface V2NodeClass {
   schemaInlets?: ObjectInlet[];
   outlets?: ObjectOutlet[];
   tags?: string[];
+  hasDynamicOutlets?: boolean;
+  handlePatterns?: ObjectSchema['handlePatterns'];
 }
 
 /**
@@ -165,7 +167,9 @@ export function schemaFromNode(NodeClass: V2NodeClass, category: string): Object
     description: NodeClass.description ?? '',
     inlets,
     outlets,
-    tags
+    tags,
+    hasDynamicOutlets: NodeClass.hasDynamicOutlets,
+    handlePatterns: NodeClass.handlePatterns
   };
 }
 

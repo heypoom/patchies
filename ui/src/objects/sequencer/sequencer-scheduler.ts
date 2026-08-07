@@ -9,6 +9,17 @@ export interface SequencerConfig {
   swing: number;
 }
 
+export function getSequencerVisualStep(numSteps: number): number {
+  if (!Transport.isPlaying || numSteps <= 0) return -1;
+
+  const ticksPerBeat = Transport.ppq * (4 / Transport.denominator);
+  const ticksPerBar = ticksPerBeat * Transport.beatsPerBar;
+  const ticksPerStep = ticksPerBar / numSteps;
+  const ticksInBar = Transport.ticks % ticksPerBar;
+
+  return Math.floor(ticksInBar / ticksPerStep) % numSteps;
+}
+
 /**
  * Encapsulates the lookahead scheduling logic for the sequencer node.
  * Handles bar/step scheduling, swing, and visual step polling.
@@ -132,14 +143,7 @@ export class SequencerScheduler {
    * Returns -1 when transport is stopped.
    */
   getVisualStep(numSteps: number): number {
-    if (!Transport.isPlaying) return -1;
-
-    const ticksPerBeat = Transport.ppq * (4 / Transport.denominator);
-    const ticksPerBar = ticksPerBeat * Transport.beatsPerBar;
-    const ticksPerStep = ticksPerBar / numSteps;
-    const ticksInBar = Transport.ticks % ticksPerBar;
-
-    return Math.floor(ticksInBar / ticksPerStep) % numSteps;
+    return getSequencerVisualStep(numSteps);
   }
 
   /** Immediately remove all current step markers from the timeline. */

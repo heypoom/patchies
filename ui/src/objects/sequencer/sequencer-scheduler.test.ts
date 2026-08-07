@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { SequencerScheduler } from './sequencer-scheduler';
+import { getSequencerVisualStep, SequencerScheduler } from './sequencer-scheduler';
 
 const transportState = vi.hoisted(() => ({
   seconds: 0,
@@ -9,6 +9,8 @@ const transportState = vi.hoisted(() => ({
   phase: 0,
   beatsPerBar: 4,
   denominator: 4,
+  ppq: 192,
+  ticks: 0,
   isPlaying: false
 }));
 
@@ -32,6 +34,12 @@ vi.mock('$lib/transport', () => ({
     get denominator() {
       return transportState.denominator;
     },
+    get ppq() {
+      return transportState.ppq;
+    },
+    get ticks() {
+      return transportState.ticks;
+    },
     get isPlaying() {
       return transportState.isPlaying;
     }
@@ -47,7 +55,16 @@ describe('SequencerScheduler', () => {
     transportState.phase = 0;
     transportState.beatsPerBar = 4;
     transportState.denominator = 4;
+    transportState.ppq = 192;
+    transportState.ticks = 0;
     transportState.isPlaying = false;
+  });
+
+  it('returns the inactive sentinel for non-positive step counts', () => {
+    transportState.isPlaying = true;
+
+    expect(getSequencerVisualStep(0)).toBe(-1);
+    expect(getSequencerVisualStep(-4)).toBe(-1);
   });
 
   it('schedules the first bar when transport starts in audio lookahead mode', () => {
