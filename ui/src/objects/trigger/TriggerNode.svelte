@@ -1,21 +1,16 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { onMount, onDestroy } from 'svelte';
   import { match } from 'ts-pattern';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { triggerSchema } from '$objects/trigger/schema';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { objectSchemas } from '$lib/objects/schemas';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CircleQuestionMark } from '@lucide/svelte/icons';
   import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../stores/ui.store';
-  import {
-    normalizeMessageType,
-    getTypedOutput,
-    type MessageType
-  } from '$lib/messages/message-types';
-  import { TRIGGER_TYPE_SPECS, getTriggerTypeSpec } from '$objects/trigger/schema';
+  import { normalizeMessageType } from '$lib/messages/message-types';
+  import { TRIGGER_TYPE_SPECS, getTriggerTypeSpec } from '$objects/trigger/trigger-type-specs';
+
+  const triggerSchema = objectSchemas.trigger;
 
   let {
     id: nodeId,
@@ -33,7 +28,6 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
-  let messageContext: MessageContext;
   let isEditing = $state(false);
   let editValue = $state('');
   let inputElement = $state<HTMLInputElement>();
@@ -41,13 +35,6 @@
   let showAutocomplete = $state(false);
   let selectedSuggestion = $state(0);
   let resultsContainer = $state<HTMLDivElement>();
-
-  // Normalize types to full MessageType names for processing
-  const normalizedTypes = $derived.by((): MessageType[] => {
-    return data.types
-      .map((t) => normalizeMessageType(t))
-      .filter((t): t is MessageType => t !== undefined);
-  });
 
   // Display name based on shorthand flag
   const displayName = $derived(data.shorthand ? 't' : 'trigger');
@@ -94,6 +81,7 @@
   // Get current word being typed (last word after space)
   const currentWord = $derived.by(() => {
     const parts = editValue.split(/\s+/);
+
     return parts[parts.length - 1] || '';
   });
 
@@ -110,24 +98,12 @@
     );
   });
 
-  // Handle incoming messages - fire outlets right-to-left
-  const handleMessage: MessageCallbackFn = (message, meta) => {
-    if (meta?.inlet !== undefined && meta.inlet !== 0) return;
-
-    // Fire outputs right-to-left (highest outlet index first)
-    for (let i = normalizedTypes.length - 1; i >= 0; i--) {
-      const output = getTypedOutput(normalizedTypes[i], message);
-      if (output !== undefined) {
-        messageContext.send(output, { to: i });
-      }
-    }
-  };
-
   function enterEditingMode() {
     editValue = data.types.join(' ');
     isEditing = true;
     showAutocomplete = true;
     selectedSuggestion = 0;
+
     setTimeout(() => inputElement?.focus(), 10);
   }
 
@@ -232,16 +208,6 @@
     sidebarView.set('help');
     selectedNodeInfo.set({ type: 'trigger', id: nodeId });
   }
-
-  onMount(() => {
-    messageContext = new MessageContext(nodeId);
-    messageContext.queue.addCallback(handleMessage);
-  });
-
-  onDestroy(() => {
-    messageContext.queue.removeCallback(handleMessage);
-    messageContext.destroy();
-  });
 
   // Calculate minimum width based on outlet count
   const minWidthStyle = $derived.by(() => {

@@ -296,6 +296,7 @@ export class PatchRuntime {
   private syncNodeTypes(): void {
     const nodeTypes = this.graph.getObjects().map(({ id, type }) => ({ id, type }));
 
+    this.messageSystem.updateNodeTypes(nodeTypes);
     this.services.directChannelService.updateNodeTypes(nodeTypes);
   }
 }

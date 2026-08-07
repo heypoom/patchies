@@ -84,6 +84,7 @@ export class MessageSystem {
   // Derived routing cache: source node id -> connected target node ids.
   // Rebuilt from edges in updateEdges().
   private connections = new Map<string, string[]>();
+  private nodeTypes = new Map<string, string>();
 
   static getInstance(): MessageSystem {
     if (!MessageSystem.instance) {
@@ -140,6 +141,28 @@ export class MessageSystem {
     for (const [source, targets] of connectionSets) {
       this.connections.set(source, [...targets]);
     }
+  }
+
+  updateNodeTypes(nodes: Array<{ id: string; type: string }>): void {
+    this.nodeTypes.clear();
+
+    for (const node of nodes) {
+      this.nodeTypes.set(node.id, node.type);
+    }
+  }
+
+  getConnectedTargetTypes(sourceNodeId: string): string[] {
+    const targetTypes = new Set<string>();
+
+    for (const targetNodeId of this.connections.get(sourceNodeId) ?? []) {
+      const targetType = this.nodeTypes.get(targetNodeId);
+
+      if (targetType) {
+        targetTypes.add(targetType);
+      }
+    }
+
+    return [...targetTypes];
   }
 
   registerPatchbayEdge(routeId: string, edge: Edge): void {

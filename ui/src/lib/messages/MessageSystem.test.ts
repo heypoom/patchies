@@ -53,6 +53,31 @@ describe('MessageSystem named channels', () => {
   });
 });
 
+describe('MessageSystem connected target types', () => {
+  it('returns distinct downstream object types for a source node', () => {
+    const suffix = crypto.randomUUID();
+    const sourceNodeId = `target-types-source-${suffix}`;
+    const firstTargetId = `target-types-first-${suffix}`;
+    const secondTargetId = `target-types-second-${suffix}`;
+    const messageSystem = MessageSystem.getInstance();
+
+    messageSystem.updateNodeTypes([
+      { id: sourceNodeId, type: 'msg' },
+      { id: firstTargetId, type: 'table' },
+      { id: secondTargetId, type: 'table' }
+    ]);
+    messageSystem.updateEdges([
+      { id: `${suffix}-1`, source: sourceNodeId, target: firstTargetId },
+      { id: `${suffix}-2`, source: sourceNodeId, target: secondTargetId }
+    ]);
+
+    expect(messageSystem.getConnectedTargetTypes(sourceNodeId)).toEqual(['table']);
+
+    messageSystem.updateEdges([]);
+    messageSystem.updateNodeTypes([]);
+  });
+});
+
 describe('MessageSystem view remount routing', () => {
   it('keeps graph routes restorable when a node unregisters and registers without edge changes', () => {
     const suffix = crypto.randomUUID();

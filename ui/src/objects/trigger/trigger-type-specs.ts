@@ -67,6 +67,7 @@ export function getTriggerTypeSpec(type: string) {
   }
 
   const lowerType = type.toLowerCase();
+
   const entry = Object.entries(TRIGGER_TYPE_SPECS).find(([, spec]) => spec.name === lowerType);
   if (entry) return entry[1];
 

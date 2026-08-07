@@ -3,7 +3,6 @@ export * from './utils';
 export * from '$lib/objects/schemas/helpers';
 export * from '$lib/objects/schemas/common';
 export * from '$lib/objects/schemas/midi-messages';
-export * from '$objects/trigger/schema';
 export * from '$objects/p5/schema';
 export * from '$objects/hydra/schema';
 export * from '$objects/glsl/schema';
@@ -20,7 +19,6 @@ export * from '$objects/video/schema';
 export * from '$objects/webcam/schema';
 export * from '$objects/screen/schema';
 export * from '$objects/iframe/schema';
-export * from '$objects/msg/schema';
 export * from '$objects/keyboard/schema';
 export * from '$objects/soundfile~/schema';
 export * from '$objects/sampler~/schema';
@@ -90,7 +88,6 @@ import type { ObjectSchemaRegistry } from '$lib/objects/schemas/types';
 import { generatedObjectSchemas } from '$lib/generated/object-schemas.generated';
 
 // Manual schema imports (for visual/UI objects that don't have V2 classes)
-import { triggerSchema } from '$objects/trigger/schema';
 import { p5Schema } from '$objects/p5/schema';
 import { hydraSchema } from '$objects/hydra/schema';
 import { glslSchema } from '$objects/glsl/schema';
@@ -107,7 +104,6 @@ import { videoSchema } from '$objects/video/schema';
 import { webcamSchema } from '$objects/webcam/schema';
 import { screenSchema } from '$objects/screen/schema';
 import { iframeSchema } from '$objects/iframe/schema';
-import { msgSchema } from '$objects/msg/schema';
 import { keyboardSchema } from '$objects/keyboard/schema';
 import { soundfileSchema } from '$objects/soundfile~/schema';
 import { samplerSchema } from '$objects/sampler~/schema';
@@ -170,7 +166,6 @@ import { projmapSchema } from '$objects/projmap/schema';
 import { ngeaSchema } from '$objects/ngea/schema';
 import { anuparsSchema } from '$objects/anupars/schema';
 import { sheetSchema } from '$objects/sheet/schema';
-import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
 import {
   gmSchema,
@@ -205,7 +200,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   ...generatedObjectSchemas,
 
   // Manual schemas (override auto-generated where both exist)
-  trigger: triggerSchema,
   p5: p5Schema,
   hydra: hydraSchema,
   glsl: glslSchema,
@@ -225,7 +219,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   webcam: webcamSchema,
   screen: screenSchema,
   iframe: iframeSchema,
-  msg: msgSchema,
   keyboard: keyboardSchema,
   'soundfile~': soundfileSchema,
   'sampler~': samplerSchema,
@@ -285,7 +278,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'meter~': meterSchema,
   'bytebeat~': bytebeatSchema,
   projmap: projmapSchema,
-  curve: curveSchema,
   serial: serialSchema,
   'serial.term': serialTermSchema,
   'serial.dmx': dmxSchema,

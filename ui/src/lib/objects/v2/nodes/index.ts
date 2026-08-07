@@ -5,6 +5,7 @@
 import { AdsrObject } from '$objects/adsr/AdsrObject';
 import { BeatObject } from '$objects/beat/BeatObject';
 import { ButtonObject } from '$objects/button/ButtonObject';
+import { CurveObject } from '$objects/curve/CurveObject';
 import {
   AndObject,
   EqualObject,
@@ -28,6 +29,7 @@ import { LinkObject } from '$objects/link/LinkObject';
 import { LoadbangObject } from '$objects/loadbang/LoadbangObject';
 import { MetroObject } from '$objects/metro/MetroObject';
 import { MtofObject } from '$objects/mtof/MtofObject';
+import { MsgObject } from '$objects/msg/MsgObject';
 import { NoteObject } from '$objects/note/NoteObject';
 import {
   AddObject,
@@ -44,6 +46,7 @@ import { SpigotObject } from '$objects/spigot/SpigotObject';
 import { ThrottleObject } from '$objects/throttle/ThrottleObject';
 import { TitleObject } from '$objects/title/TitleObject';
 import { ToggleObject } from '$objects/toggle/ToggleObject';
+import { TriggerObject } from '$objects/trigger/TriggerObject';
 import { UniqbyObject } from '$objects/uniqby/UniqbyObject';
 import { WebMidiLinkObject } from '$objects/web-midi-link/WebMidiLinkObject';
 import { SendObject } from '$objects/send-recv/SendObject';
@@ -103,13 +106,16 @@ export const TEXT_OBJECTS = [
 
 export const VISUAL_OBJECTS = [
   ButtonObject,
+  CurveObject,
   KnobObject,
   LabelObject,
   LinkObject,
+  MsgObject,
   NoteObject,
   SliderObject,
   TitleObject,
   ToggleObject,
+  TriggerObject,
   SequencerObject,
   SwitchObject,
   TextboxObject

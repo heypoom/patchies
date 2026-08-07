@@ -858,11 +858,14 @@ describe('PatchRuntime', () => {
     expect(connectionServices.glSystem.updateEdges).toHaveBeenCalledTimes(1);
   });
 
-  it('updates direct-channel node types when objects change without connection changes', async () => {
+  it('updates message and direct-channel node types when objects change', async () => {
     const connectionServices = createFakeRuntimeConnectionServices();
+    const messageSystem = MessageSystem.getInstance();
+    const updateMessageNodeTypes = vi.spyOn(messageSystem, 'updateNodeTypes');
     const runtime = createTestPatchRuntime({
       objectService: createFakeObjectService(),
       audioService: createFakeAudioService(),
+      messageSystem,
       ...connectionServices
     });
 
@@ -873,6 +876,7 @@ describe('PatchRuntime', () => {
 
     connectionServices.directChannelService.updateNodeTypes.mockClear();
     connectionServices.directChannelService.updateEdges.mockClear();
+    updateMessageNodeTypes.mockClear();
 
     await runtime.setGraph({
       objects: [{ id: 'worker-1', type: 'js', data: {} }],
@@ -882,6 +886,7 @@ describe('PatchRuntime', () => {
     expect(connectionServices.directChannelService.updateNodeTypes).toHaveBeenCalledWith([
       { id: 'worker-1', type: 'js' }
     ]);
+    expect(updateMessageNodeTypes).toHaveBeenCalledWith([{ id: 'worker-1', type: 'js' }]);
     expect(connectionServices.directChannelService.updateEdges).not.toHaveBeenCalled();
   });
 

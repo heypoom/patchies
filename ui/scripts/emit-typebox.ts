@@ -19,9 +19,9 @@ import { Kind, OptionalKind, type TSchema } from '@sinclair/typebox';
  */
 export function emitTypeBox(schema: TSchema): string {
   // Check Optional modifier FIRST (doesn't change Kind)
-  if ((schema as Record<symbol, unknown>)[OptionalKind] === 'Optional') {
+  if ((schema as unknown as Record<symbol, unknown>)[OptionalKind] === 'Optional') {
     const inner = { ...schema };
-    delete (inner as Record<symbol, unknown>)[OptionalKind];
+    delete (inner as unknown as Record<symbol, unknown>)[OptionalKind];
     return `Type.Optional(${emitTypeBox(inner as TSchema)})`;
   }
 
@@ -58,8 +58,12 @@ export function emitTypeBox(schema: TSchema): string {
       return `Type.Object({ ${entries} })`;
     }
 
-    case 'Array':
-      return `Type.Array(${emitTypeBox(schema.items as TSchema)})`;
+    case 'Array': {
+      const opts = emitArrayOptions(schema);
+      return opts
+        ? `Type.Array(${emitTypeBox(schema.items as TSchema)}, ${opts})`
+        : `Type.Array(${emitTypeBox(schema.items as TSchema)})`;
+    }
 
     case 'Union': {
       const items = (schema.anyOf as TSchema[]).map((s) => emitTypeBox(s)).join(', ');
@@ -98,6 +102,15 @@ function emitNumberOptions(schema: TSchema): string | null {
 
   if (schema.minimum !== undefined) opts.push(`minimum: ${schema.minimum}`);
   if (schema.maximum !== undefined) opts.push(`maximum: ${schema.maximum}`);
+
+  return opts.length > 0 ? `{ ${opts.join(', ')} }` : null;
+}
+
+function emitArrayOptions(schema: TSchema): string | null {
+  const opts: string[] = [];
+
+  if (schema.minItems !== undefined) opts.push(`minItems: ${schema.minItems}`);
+  if (schema.maxItems !== undefined) opts.push(`maxItems: ${schema.maxItems}`);
 
   return opts.length > 0 ? `{ ${opts.join(', ')} }` : null;
 }

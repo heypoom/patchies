@@ -1,15 +1,10 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { Settings, RotateCcw, Lock, LockOpen } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
-  import { MessageContext } from '$lib/messages/MessageContext';
-  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match } from 'ts-pattern';
-  import { messages } from '$lib/objects/schemas';
-  import { curveMessages } from './schema';
   import { useNodeDataTracker } from '$lib/history';
   import {
     type CurvePoint as Point,
@@ -22,7 +17,7 @@
     CURVE_POINT_RADIUS as POINT_RADIUS,
     CURVE_HIT_RADIUS as HIT_RADIUS
   } from './constants';
-  import { toSvg, fromSvg, buildPath, evaluate, getHoveredIdx } from './utils';
+  import { toSvg, fromSvg, buildPath, getHoveredIdx } from './utils';
   import CurveSettings from './CurveSettings.svelte';
   import CurveNodeDeleteButton from './CurveNodeDeleteButton.svelte';
 
@@ -38,7 +33,6 @@
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = $derived.by(() => useNodeDataTracker(node.id));
 
-  let messageContext: MessageContext;
   let showSettings = $state(false);
   let svgEl: SVGSVGElement;
 
@@ -234,40 +228,7 @@
     tracker.commit('locked', oldLocked, !oldLocked);
   }
 
-  // ── Message handling ──────────────────────────────────────────────────────
-
-  const handleMessage: MessageCallbackFn = (message) => {
-    match(message)
-      .with(curveMessages.float, (x) => {
-        messageContext.send(evaluate(mode, x, points));
-      })
-      .with(messages.bang, () => {
-        messageContext.send(points.flatMap((p) => [p.x, p.y]));
-      })
-      .with(messages.reset, () => {
-        resetPoints();
-      })
-      .with(curveMessages.list, (arr) => {
-        if (arr.length < 4 || arr.length % 2 !== 0) return;
-        const newPts: Point[] = [];
-        for (let i = 0; i < arr.length; i += 2) {
-          newPts.push({
-            x: Math.max(0, Math.min(1, arr[i])),
-            y: Math.max(0, Math.min(1, arr[i + 1]))
-          });
-        }
-        const sorted = newPts.sort((a, b) => a.x - b.x);
-        const oldPoints = points.map((p) => ({ ...p }));
-        updateNodeData(node.id, { points: sorted });
-        tracker.commit('points', oldPoints, sorted);
-      })
-      .otherwise(() => {});
-  };
-
   onMount(() => {
-    messageContext = new MessageContext(node.id);
-    messageContext.queue.addCallback(handleMessage);
-
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'x') {
         // Mouse is over the canvas — intercept to prevent accidental node deletion
@@ -284,14 +245,9 @@
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   });
 
-  onDestroy(() => {
-    messageContext?.queue.removeCallback(handleMessage);
-    messageContext?.destroy();
-  });
-
   $effect(() => {
-    displayWidth;
-    displayHeight;
+    void displayWidth;
+    void displayHeight;
     setTimeout(() => updateNodeInternals(), 0);
   });
 </script>
@@ -423,7 +379,7 @@
             </defs>
 
             <!-- Grid lines -->
-            {#each [0.25, 0.5, 0.75] as t}
+            {#each [0.25, 0.5, 0.75] as t (t)}
               <line
                 x1={t * innerW}
                 y1={0}
@@ -472,7 +428,7 @@
             {/if}
 
             <!-- Points -->
-            {#each points as point, i}
+            {#each points as point, i (point)}
               {@const [sx, sy] = toSvg(point, innerW, innerH)}
               {@const isEndpoint = i === 0 || i === points.length - 1}
               {@const isHovered = hoveredIdx === i}

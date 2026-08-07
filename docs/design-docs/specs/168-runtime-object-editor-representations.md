@@ -223,6 +223,7 @@ interface RuntimeObjectContext<TData = Record<string, unknown>> {
   send(data: unknown, options?: SendMessageOptions): void;
   getData(): TData;
   setData(updates: Partial<TData>, options?: { notifyUI?: boolean }): void;
+  getConnectedTargetTypes(): string[];
 }
 ```
 
@@ -250,6 +251,27 @@ interface TextObjectContext extends RuntimeObjectContext<TextObjectData> {
    connection fan-out.
 7. Move edge updates behind `PatchRuntime` connection methods.
 8. Prefer data-first runtime objects. Keep param helpers only for text-object compatibility.
+
+### Message-control migration batch
+
+Migrate `trigger`, `curve`, and `msg` as independent visual runtime objects:
+
+- `trigger` owns message conversion and right-to-left dynamic-outlet dispatch.
+- `curve` owns message-driven evaluation and breakpoint data updates. Its view
+  keeps pointer editing, selection, dimensions, and history commits for direct
+  editor gestures.
+- `msg` owns placeholder inlet values, message parsing, and sequential output.
+  Its view keeps text editing, syntax highlighting, and editor controls.
+
+`RuntimeObjectContext.getConnectedTargetTypes()` exposes the distinct object
+types reached by the current object's outgoing message connections. The message
+runtime owns this graph query. `msg` uses it to keep object-specific shorthand
+resolution independent of whether its editor view is mounted.
+
+Each runtime object uses the existing object-shaped `node.data`, preserves saved
+message handle IDs, and continues to process patch messages while its Svelte view
+is unmounted. Register all three in `VISUAL_OBJECTS`; do not make them loadable as
+object-box text objects.
 
 ## Success Criteria
 

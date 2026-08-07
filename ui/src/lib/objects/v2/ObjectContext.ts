@@ -52,6 +52,10 @@ export class ObjectContext {
     this.messageContext.send(data, options);
   }
 
+  getConnectedTargetTypes(): string[] {
+    return this.messageContext.messageSystem.getConnectedTargetTypes(this.nodeId);
+  }
+
   /**
    * Get the MessageQueue for adding message callbacks.
    */
