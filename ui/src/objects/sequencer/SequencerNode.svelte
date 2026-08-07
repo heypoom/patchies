@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
   import type { OutletMode, SequencerOutputMode } from './sequencer-output';
   import { getSequencerVisualStep } from './sequencer-scheduler';
@@ -34,7 +33,6 @@
   let showSettings = $state(false);
   let currentVisualStep = $state(-1);
   let velocityDragOldTracks: TrackData[] | null = null;
-  let pollingIntervalId: ReturnType<typeof setInterval> | null = null;
 
   const steps = $derived(data.steps ?? 16);
   const tracks = $derived((data.tracks ?? DEFAULT_TRACKS) as TrackData[]);
@@ -72,17 +70,13 @@
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
-  onMount(() => {
-    pollingIntervalId = setInterval(() => {
+  $effect(() => {
+    const pollingIntervalId = setInterval(() => {
       currentVisualStep =
         clockMode === 'manual' ? (data.currentStep ?? -1) : getSequencerVisualStep(steps);
     }, 1000 / 30);
-  });
 
-  onDestroy(() => {
-    if (pollingIntervalId) {
-      clearInterval(pollingIntervalId);
-    }
+    return () => clearInterval(pollingIntervalId);
   });
 
   function toggleStep(trackIdx: number, stepIdx: number): void {

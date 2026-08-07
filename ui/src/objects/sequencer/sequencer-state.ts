@@ -2,8 +2,14 @@ import { match } from 'ts-pattern';
 
 import { DEFAULT_TRACKS, type TrackData } from '$lib/nodes/sequencer-constants';
 
+import { DEFAULT_SEQUENCER_STEP_COUNT, isSequencerStepCount } from './sequencer-constants';
 import { sequencerMessages } from './sequencer-metadata';
-import type { OutletMode, SequencerOutputMode } from './sequencer-output';
+import type {
+  MultiOutputMode,
+  OutletMode,
+  SequencerOutputMode,
+  SingleOutputMode
+} from './sequencer-output';
 
 export type SequencerData = {
   steps?: number;
@@ -31,11 +37,11 @@ export function getSequencerData(data: SequencerData): ResolvedSequencerData {
   const outletMode = data.outletMode === 'single' ? 'single' : 'multi';
 
   return {
-    steps: typeof data.steps === 'number' && data.steps > 0 ? Math.floor(data.steps) : 16,
+    steps: isSequencerStepCount(data.steps) ? data.steps : DEFAULT_SEQUENCER_STEP_COUNT,
     tracks: Array.isArray(data.tracks) ? data.tracks : DEFAULT_TRACKS,
     swing: typeof data.swing === 'number' ? data.swing : 0,
     outletMode,
-    outputMode: data.outputMode ?? (outletMode === 'single' ? 'index' : 'bang'),
+    outputMode: normalizeOutputMode(outletMode, data.outputMode),
     audioRate: data.audioRate === true,
     clockMode: data.clockMode === 'manual' ? 'manual' : 'auto',
     showVelocity: data.showVelocity === true,
@@ -255,22 +261,41 @@ const setOutletMode = (outletMode: OutletMode): SequencerTransition =>
     outputMode: outletMode === 'single' ? 'index' : 'bang'
   });
 
-function setStepCount(data: ResolvedSequencerData, steps: number): SequencerTransition {
-  const nextSteps = Math.max(1, Math.floor(steps));
+function setStepCount(data: ResolvedSequencerData, steps: number): SequencerTransition | null {
+  if (!isSequencerStepCount(steps)) return null;
 
   const tracks = data.tracks.map((track) => ({
     ...track,
-    stepOn: Array.from({ length: nextSteps }, (_, index) => track.stepOn[index] ?? false),
-    stepValues: Array.from({ length: nextSteps }, (_, index) => track.stepValues[index] ?? 1)
+    stepOn: Array.from({ length: steps }, (_, index) => track.stepOn[index] ?? false),
+    stepValues: Array.from({ length: steps }, (_, index) => track.stepValues[index] ?? 1)
   }));
 
   return transition({
-    steps: nextSteps,
+    steps,
     tracks,
-    manualStep: clamp(data.manualStep, 0, nextSteps - 1),
-    currentStep: clamp(data.currentStep, 0, nextSteps - 1)
+    manualStep: clamp(data.manualStep, 0, steps - 1),
+    currentStep: clamp(data.currentStep, 0, steps - 1)
   });
 }
+
+function normalizeOutputMode(
+  outletMode: OutletMode,
+  outputMode: SequencerOutputMode | undefined
+): SequencerOutputMode {
+  if (outletMode === 'single') {
+    return isSingleOutputMode(outputMode) ? outputMode : 'index';
+  }
+
+  return isMultiOutputMode(outputMode) ? outputMode : 'bang';
+}
+
+const isSingleOutputMode = (
+  outputMode: SequencerOutputMode | undefined
+): outputMode is SingleOutputMode => outputMode === 'index' || outputMode === 'midi';
+
+const isMultiOutputMode = (
+  outputMode: SequencerOutputMode | undefined
+): outputMode is MultiOutputMode => outputMode === 'bang' || outputMode === 'value';
 
 const withTracks = (tracks: TrackData[]): SequencerTransition => transition({ tracks });
 const transition = (updates: Partial<SequencerData>): SequencerTransition => ({ updates });

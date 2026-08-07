@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import { resolveMessageInlet } from '$lib/objects/v2/resolve-message-inlet';
@@ -9,6 +9,27 @@ import {
   type SequencerData,
   type SequencerSchedulerFactory
 } from './SequencerObject';
+
+const timing = vi.hoisted(() => ({
+  audioContextTime: 0,
+  transportTime: 0
+}));
+
+vi.mock('$lib/audio/v2/AudioService', () => ({
+  AudioService: {
+    getInstance: () => ({
+      getAudioContext: () => ({ currentTime: timing.audioContextTime })
+    })
+  }
+}));
+
+vi.mock('$lib/transport', () => ({
+  Transport: {
+    get seconds() {
+      return timing.transportTime;
+    }
+  }
+}));
 
 const TRACKS = [
   {
@@ -85,6 +106,11 @@ function createSequencer(initialData: SequencerData = {}) {
 }
 
 describe('SequencerObject', () => {
+  afterEach(() => {
+    timing.audioContextTime = 0;
+    timing.transportTime = 0;
+  });
+
   it('owns the scheduler lifecycle without mounting a Svelte view', () => {
     const { object, scheduler, schedulerFactory } = createSequencer();
 
@@ -105,6 +131,44 @@ describe('SequencerObject', () => {
     fireStep(0);
 
     expect(sent).toEqual([{ data: { type: 'bang' }, options: { to: 0 } }]);
+  });
+
+  it('emits MIDI payloads from a single outlet', () => {
+    const { object, sent, fireStep } = createSequencer({
+      outletMode: 'single',
+      outputMode: 'midi'
+    });
+    object.create();
+
+    fireStep(0);
+
+    expect(sent).toEqual([
+      {
+        data: { type: 'noteOn', note: 36, index: 0, velocity: 95 },
+        options: { to: 0 }
+      }
+    ]);
+  });
+
+  it('converts scheduled transport time for audio-rate output', () => {
+    timing.audioContextTime = 30;
+    timing.transportTime = 12;
+
+    const { object, sent, fireStep } = createSequencer({
+      outletMode: 'single',
+      outputMode: 'midi',
+      audioRate: true
+    });
+    object.create();
+
+    fireStep(0, 12.08);
+
+    expect(sent).toEqual([
+      {
+        data: { type: 'noteOn', note: 36, index: 0, velocity: 95, time: 30.08 },
+        options: { to: 0 }
+      }
+    ]);
   });
 
   it('advances and stores manual clock state on bang', () => {
@@ -147,14 +211,27 @@ describe('SequencerObject', () => {
     expect(scheduler.setup).toHaveBeenCalledOnce();
   });
 
-  it('clears timeline markers when muted while keeping the scheduler alive', () => {
-    const { object, scheduler } = createSequencer();
+  it('refreshes timeline markers when marker visibility changes', () => {
+    const { object, scheduler, values } = createSequencer();
     object.create();
 
     object.onMessage({ type: 'mute' });
 
+    expect(scheduler.setup).toHaveBeenCalledOnce();
     expect(scheduler.clearMarkers).toHaveBeenCalledOnce();
     expect(scheduler.dispose).not.toHaveBeenCalled();
+
+    object.onMessage({ type: 'unmute' });
+    expect(scheduler.setup).toHaveBeenCalledTimes(2);
+
+    Object.assign(values, { showInTimeline: false });
+    object.update();
+    expect(scheduler.setup).toHaveBeenCalledTimes(3);
+    expect(scheduler.clearMarkers).toHaveBeenCalledTimes(2);
+
+    Object.assign(values, { showInTimeline: true });
+    object.update();
+    expect(scheduler.setup).toHaveBeenCalledTimes(4);
   });
 
   it('exposes the current dynamic outlet count and preserved handle IDs', () => {

@@ -10,7 +10,7 @@ export interface SequencerConfig {
 }
 
 export function getSequencerVisualStep(numSteps: number): number {
-  if (!Transport.isPlaying) return -1;
+  if (!Transport.isPlaying || numSteps <= 0) return -1;
 
   const ticksPerBeat = Transport.ppq * (4 / Transport.denominator);
   const ticksPerBar = ticksPerBeat * Transport.beatsPerBar;

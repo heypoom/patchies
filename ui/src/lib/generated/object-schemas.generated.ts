@@ -4311,7 +4311,17 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Set clock mode (auto / manual)'
           },
           {
-            schema: Type.Object({ type: Type.Literal('setStepCount'), value: Type.Number() }),
+            schema: Type.Object({
+              type: Type.Literal('setStepCount'),
+              value: Type.Union([
+                Type.Literal(4),
+                Type.Literal(8),
+                Type.Literal(12),
+                Type.Literal(16),
+                Type.Literal(24),
+                Type.Literal(32)
+              ])
+            }),
             description: 'Set number of steps (4, 8, 12, 16, 24, or 32)'
           },
           {

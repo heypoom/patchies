@@ -56,6 +56,7 @@ export class SequencerObject implements TextObjectV2 {
 
   private scheduler: SequencerSchedulerHandle | null = null;
   private schedulerConfig: SequencerConfig | null = null;
+  private markersVisible: boolean | null = null;
 
   constructor(
     readonly nodeId: string,
@@ -64,7 +65,10 @@ export class SequencerObject implements TextObjectV2 {
   ) {}
 
   create(): void {
-    this.schedulerConfig = this.getSchedulerConfig();
+    const data = this.getData();
+
+    this.schedulerConfig = this.getSchedulerConfig(data);
+    this.markersVisible = areMarkersVisible(data);
     this.scheduler = this.createScheduler(
       this.nodeId,
       () => this.getSchedulerConfig(),
@@ -81,6 +85,7 @@ export class SequencerObject implements TextObjectV2 {
   destroy(): void {
     this.scheduler?.dispose();
     this.scheduler = null;
+    this.markersVisible = null;
   }
 
   onMessage(message: unknown): void {
@@ -159,15 +164,23 @@ export class SequencerObject implements TextObjectV2 {
   }
 
   private syncSchedulerState(): void {
-    const nextConfig = this.getSchedulerConfig();
+    const data = this.getData();
+    const nextConfig = this.getSchedulerConfig(data);
+    const markersVisible = areMarkersVisible(data);
+    const visibilityChanged = this.markersVisible !== markersVisible;
 
-    if (!this.schedulerConfig || !schedulerConfigsEqual(this.schedulerConfig, nextConfig)) {
-      this.schedulerConfig = nextConfig;
+    if (
+      !this.schedulerConfig ||
+      !schedulerConfigsEqual(this.schedulerConfig, nextConfig) ||
+      visibilityChanged
+    ) {
       this.scheduler?.setup();
     }
 
-    const data = this.getData();
-    if (data.muted || !data.showInTimeline) {
+    this.schedulerConfig = nextConfig;
+    this.markersVisible = markersVisible;
+
+    if (!markersVisible) {
       this.scheduler?.clearMarkers();
     }
   }
@@ -181,9 +194,7 @@ export class SequencerObject implements TextObjectV2 {
       .map((track) => track.color);
   }
 
-  private getSchedulerConfig(): SequencerConfig {
-    const data = this.getData();
-
+  private getSchedulerConfig(data: ResolvedSequencerData = this.getData()): SequencerConfig {
     return {
       clockMode: data.clockMode,
       audioRate: data.audioRate && sequencerOutputCarriesTiming(data.outletMode, data.outputMode),
@@ -196,6 +207,9 @@ export class SequencerObject implements TextObjectV2 {
     return getSequencerData(this.context.getData<SequencerData>());
   }
 }
+
+const areMarkersVisible = (data: ResolvedSequencerData): boolean =>
+  data.showInTimeline && !data.muted;
 
 function schedulerConfigsEqual(left: SequencerConfig, right: SequencerConfig): boolean {
   return (

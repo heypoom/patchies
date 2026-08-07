@@ -5,6 +5,8 @@ import { Bang, Clear, Reset, messages } from '$lib/objects/schemas/common';
 import { msg, sym } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
 
+import { SEQUENCER_STEP_COUNTS } from './sequencer-constants';
+
 const FillAll = sym('fill');
 const Mute = sym('mute');
 const Unmute = sym('unmute');
@@ -75,7 +77,7 @@ const SetClockMode = msg('setClockMode', {
 });
 
 const SetStepCount = msg('setStepCount', {
-  value: Type.Number()
+  value: Type.Union(SEQUENCER_STEP_COUNTS.map((stepCount) => Type.Literal(stepCount)))
 });
 
 const BangOutput = msg('bang', {
