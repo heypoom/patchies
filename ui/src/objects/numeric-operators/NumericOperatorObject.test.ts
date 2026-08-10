@@ -74,23 +74,24 @@ describe('NumericOperatorObject', () => {
   });
 
   it.each([
-    [AddObject, 2, 5, 7],
-    [SubtractObject, 2, 5, 3],
-    [MultiplyObject, 2, 5, 10],
-    [DivideObject, 2, 5, 2.5]
+    [AddObject, 2, 3, 5, 7, 8],
+    [SubtractObject, 2, 3, 5, 3, 2],
+    [MultiplyObject, 2, 3, 5, 10, 15],
+    [DivideObject, 2, 1, 5, 2.5, 5]
   ])(
     'recomputes the stored value when the hot inlet receives bang',
-    (ObjectClass, operand, value, result) => {
+    (ObjectClass, operand, updatedOperand, value, initialResult, recomputedResult) => {
       const { object, sent } = createNumericOperator(ObjectClass, [operand]);
 
       object.onMessage?.(value, meta('value'));
+      object.onMessage?.(updatedOperand, meta('operand'));
       object.onMessage?.({ type: 'bang' }, meta('value'));
 
       expect(ObjectClass.inlets[0].messages?.some(({ schema }) => schema === Bang)).toBe(true);
       expect(validateMessageToObject({ type: 'bang' }, ObjectClass.inlets[0])).toBe(true);
       expect(sent).toEqual([
-        { data: result, options: undefined },
-        { data: result, options: undefined }
+        { data: initialResult, options: undefined },
+        { data: recomputedResult, options: undefined }
       ]);
     }
   );
