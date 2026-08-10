@@ -8,7 +8,7 @@ Multiply incoming values by a number.
 ```
 
 The argument sets the right operand. A number sent to the hot inlet is multiplied by that
-operand and emitted immediately.
+operand and emitted immediately. Send a bang to repeat the calculation with the previous value.
 
 ## Inlets
 

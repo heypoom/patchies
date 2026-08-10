@@ -8,7 +8,8 @@ Subtract a number from incoming values.
 ```
 
 The argument sets the right operand. A number sent to the hot inlet has that operand
-subtracted from it and is emitted immediately.
+subtracted from it and is emitted immediately. Send a bang to repeat the calculation with the
+previous value.
 
 ## Inlets
 

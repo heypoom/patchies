@@ -7,6 +7,9 @@ import {
   SubtractObject
 } from '$objects/numeric-operators/NumericOperatorObject';
 
+import { validateMessageToObject } from '$lib/objects/validate-object-message';
+import { Bang } from '$lib/objects/schemas/common';
+
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 
@@ -69,6 +72,28 @@ describe('NumericOperatorObject', () => {
     expect(values.operand).toBe(3);
     expect(sent).toEqual([{ data: 15, options: undefined }]);
   });
+
+  it.each([
+    [AddObject, 2, 5, 7],
+    [SubtractObject, 2, 5, 3],
+    [MultiplyObject, 2, 5, 10],
+    [DivideObject, 2, 5, 2.5]
+  ])(
+    'recomputes the stored value when the hot inlet receives bang',
+    (ObjectClass, operand, value, result) => {
+      const { object, sent } = createNumericOperator(ObjectClass, [operand]);
+
+      object.onMessage?.(value, meta('value'));
+      object.onMessage?.({ type: 'bang' }, meta('value'));
+
+      expect(ObjectClass.inlets[0].messages?.some(({ schema }) => schema === Bang)).toBe(true);
+      expect(validateMessageToObject({ type: 'bang' }, ObjectClass.inlets[0])).toBe(true);
+      expect(sent).toEqual([
+        { data: result, options: undefined },
+        { data: result, options: undefined }
+      ]);
+    }
+  );
 
   it('outputs zero when dividing by zero', () => {
     const { object, sent } = createNumericOperator(DivideObject, [0]);

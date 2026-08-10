@@ -15,7 +15,9 @@ compact text objects without requiring a full expression.
 - `* n` multiplies incoming numbers by `n`.
 - `/ n` divides incoming numbers by `n`.
 - With no argument, the right operand defaults to `0`, matching the audio operator default.
-- Inlet 0 is hot: a number is transformed and emitted immediately.
+- Inlet 0 is hot: a number is stored as the left operand, transformed, and emitted immediately.
+- A `bang` sent to inlet 0 recomputes and emits using the stored left operand and the current
+  right operand. Before a number has been received, the stored left operand defaults to `0`.
 - Inlet 1 is cold: a number updates the right operand without output.
 - `/ 0` emits `0` instead of `Infinity` or `NaN`.
 
