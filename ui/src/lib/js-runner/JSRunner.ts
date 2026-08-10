@@ -235,7 +235,7 @@ export class JSRunner {
       const libName = getLibName(code);
 
       if (libName) {
-        this.setLibraryCode(nodeId, code);
+        await this.setLibraryCode(nodeId, code, { syncImmediately: true });
         setLibraryName?.(libName);
 
         return null;
@@ -560,7 +560,11 @@ export class JSRunner {
     return userFunction(...functionArgs);
   }
 
-  async setLibraryCode(nodeId: string, code: string) {
+  async setLibraryCode(
+    nodeId: string,
+    code: string,
+    { syncImmediately = false }: { syncImmediately?: boolean } = {}
+  ) {
     const libName = getLibName(code);
     if (!libName) return;
 
@@ -569,7 +573,11 @@ export class JSRunner {
 
     await this.ensureRenderWorker();
 
-    this.sendToRenderWorkerSlow?.(libName, code);
+    if (syncImmediately) {
+      this.sendToRenderWorker?.(libName, code);
+    } else {
+      this.sendToRenderWorkerSlow?.(libName, code);
+    }
   }
 
   private setModuleAndSync(moduleName: string, code: string | null) {
