@@ -17,6 +17,7 @@
   import { overrideOutputNodeId } from '../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
+  import { getLibName, getLibraryDependentNodeIds } from '$lib/js-runner/js-module-utils';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -47,7 +48,7 @@
   }
 
   // Get flow utilities to update node data
-  const { updateNodeData } = useSvelteFlow();
+  const { getNodes, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   const jsRunner = JSRunner.getInstance();
@@ -234,6 +235,21 @@
     }
   }
 
+  async function rerunLibraryAndDependents() {
+    await executeCode();
+
+    const libraryName = getLibName(code);
+    if (!libraryName) return;
+
+    const dependents = getLibraryDependentNodeIds(getNodes(), libraryName, nodeId);
+
+    for (const dependentNodeId of dependents) {
+      updateNodeData(dependentNodeId, {
+        executeCode: Date.now()
+      });
+    }
+  }
+
   function handleCodeChange(newCode: string) {
     if (data.libraryName) {
       jsRunner.setLibraryCode(nodeId, newCode);
@@ -246,7 +262,7 @@
   id={nodeId}
   {data}
   {selected}
-  onExecute={executeCode}
+  onExecute={rerunLibraryAndDependents}
   onCleanup={cleanupRunningTasks}
   onCodeChange={handleCodeChange}
   {isRunning}

@@ -350,7 +350,7 @@
 
   function handleCodeOpen(event?: MouseEvent) {
     if (supportsLibraries && data.libraryName) {
-      openInlineEditor();
+      toggleInlineEditor();
       return;
     }
 
@@ -372,6 +372,15 @@
     }
   }
 
+  function handleRunButtonClick() {
+    if (supportsLibraries && data.libraryName) {
+      toggleInlineEditor();
+      return;
+    }
+
+    runOrStop();
+  }
+
   export function flash() {
     isFlashing = true;
     setTimeout(() => {
@@ -384,12 +393,6 @@
     overlayConsoleRef?.clearConsole();
     lineErrors = undefined;
     hasError = false;
-  }
-
-  function handleDoubleClickOnRun() {
-    if (supportsLibraries && data.libraryName) {
-      toggleInlineEditor();
-    }
   }
 
   function handleConsoleToggle() {
@@ -582,15 +585,13 @@
                   : 'hover:shadow-glow-sm bg-zinc-900'
             ]}
             style={`min-width: ${minContainerWidth}px`}
-            onclick={runOrStop}
-            ondblclick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-
-              handleDoubleClickOnRun();
-            }}
+            onclick={handleRunButtonClick}
             aria-disabled={showRunningIndicator && isRunning && !isLongRunningTaskActive}
-            aria-label={isLongRunningTaskActive ? 'Stop' : 'Run code'}
+            aria-label={supportsLibraries && data.libraryName
+              ? 'Edit shared code'
+              : isLongRunningTaskActive
+                ? 'Stop'
+                : 'Run code'}
           >
             <div
               class={[
@@ -611,7 +612,7 @@
           >
             {#if supportsLibraries && data.libraryName}
               {#if !showEditor}
-                <div>double click to edit shared code</div>
+                <div>click to edit shared code</div>
               {/if}
             {:else}
               <div>click to run</div>
@@ -652,6 +653,22 @@
             </Tooltip.Trigger>
 
             <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
+          </Tooltip.Root>
+        {/if}
+
+        {#if supportsLibraries && data.libraryName}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={executeCode}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                aria-label="Re-run dependent code"
+              >
+                <Play class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+
+            <Tooltip.Content>Re-run dependent code</Tooltip.Content>
           </Tooltip.Root>
         {/if}
 

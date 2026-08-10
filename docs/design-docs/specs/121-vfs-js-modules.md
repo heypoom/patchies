@@ -90,7 +90,9 @@ This reuses the existing module sync infrastructure entirely — no new message 
 
 ### Re-Execution on Change
 
-When a VFS JS file changes, all nodes that import from it should re-execute — same as how `// @lib` changes trigger re-execution of importers. JSRunner needs to track VFS file → importer node dependencies.
+When a library is explicitly re-run, all canvas nodes that import it re-execute. This includes transitive library dependencies: if `render-utils` imports `math-utils`, re-running `math-utils` first refreshes `render-utils`, then every node importing either library re-executes. A `// @lib` node exposes this re-run button in its editor and supports Shift+Enter for the same action.
+
+When a VFS JS file changes, all nodes that import from it should use the same dependent re-execution flow. JSRunner needs to track VFS file → importer node dependencies.
 
 ### Snippet Preset Integration
 
