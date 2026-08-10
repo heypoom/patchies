@@ -8,7 +8,8 @@ Divide incoming values by a number.
 ```
 
 The argument sets the right operand. A number sent to the hot inlet is divided by that operand
-and emitted immediately. Dividing by `0` outputs `0`.
+and emitted immediately. Send a bang to repeat the calculation with the previous value. Dividing
+by `0` outputs `0`.
 
 ## Inlets
 

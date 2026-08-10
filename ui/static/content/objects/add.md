@@ -8,7 +8,7 @@ Add a number to incoming values.
 ```
 
 The argument sets the right operand. A number sent to the hot inlet is added to that operand
-and emitted immediately.
+and emitted immediately. Send a bang to repeat the calculation with the previous value.
 
 ## Inlets
 

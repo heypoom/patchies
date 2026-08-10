@@ -4,6 +4,7 @@ import { match } from 'ts-pattern';
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import { Bang, messages } from '$lib/objects/schemas/common';
 import { schema } from '$lib/objects/schemas/types';
 
 type NumericOperation = (value: number, operand: number) => number;
@@ -19,7 +20,10 @@ const numericOperatorInlets: ObjectInlet[] = [
     description: 'Number to transform',
     hot: true,
     hideTextParam: true,
-    messages: [{ schema: Type.Number(), description: 'Apply the operator to this number' }]
+    messages: [
+      { schema: Type.Number(), description: 'Apply the operator to this number' },
+      { schema: Bang, description: 'Recompute using the previous value' }
+    ]
   },
   {
     name: 'operand',
@@ -55,7 +59,11 @@ abstract class NumericOperatorObject implements TextObjectV2 {
 
   onMessage(data: unknown, meta: MessageMeta): void {
     match([meta.inletName, data])
+      .with(['value', messages.bang], () => {
+        this.context.send(this.operate(this.getValue(), this.getOperand()));
+      })
       .with(['value', numericOperatorMessages.number], ([, value]) => {
+        this.context.setParam('value', value, { notifyUI: true });
         this.context.send(this.operate(value, this.getOperand()));
       })
       .with(['operand', numericOperatorMessages.number], ([, value]) => {
@@ -76,6 +84,12 @@ abstract class NumericOperatorObject implements TextObjectV2 {
     const operand = this.context.getParam('operand');
 
     return typeof operand === 'number' && Number.isFinite(operand) ? operand : 0;
+  }
+
+  private getValue(): number {
+    const value = this.context.getParam('value');
+
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
   }
 }
 

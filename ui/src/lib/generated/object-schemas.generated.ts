@@ -18,7 +18,13 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'value',
         type: 'message',
         description: 'Number to transform',
-        messages: [{ schema: Type.Number(), description: 'Apply the operator to this number' }],
+        messages: [
+          { schema: Type.Number(), description: 'Apply the operator to this number' },
+          {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Recompute using the previous value'
+          }
+        ],
         handle: { handleType: 'message', handleId: 0 }
       },
       {
@@ -145,7 +151,13 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'value',
         type: 'message',
         description: 'Number to transform',
-        messages: [{ schema: Type.Number(), description: 'Apply the operator to this number' }],
+        messages: [
+          { schema: Type.Number(), description: 'Apply the operator to this number' },
+          {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Recompute using the previous value'
+          }
+        ],
         handle: { handleType: 'message', handleId: 0 }
       },
       {
@@ -205,7 +217,13 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'value',
         type: 'message',
         description: 'Number to transform',
-        messages: [{ schema: Type.Number(), description: 'Apply the operator to this number' }],
+        messages: [
+          { schema: Type.Number(), description: 'Apply the operator to this number' },
+          {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Recompute using the previous value'
+          }
+        ],
         handle: { handleType: 'message', handleId: 0 }
       },
       {
@@ -302,7 +320,13 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'value',
         type: 'message',
         description: 'Number to transform',
-        messages: [{ schema: Type.Number(), description: 'Apply the operator to this number' }],
+        messages: [
+          { schema: Type.Number(), description: 'Apply the operator to this number' },
+          {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Recompute using the previous value'
+          }
+        ],
         handle: { handleType: 'message', handleId: 0 }
       },
       {
