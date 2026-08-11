@@ -111,7 +111,7 @@
   <Search class="h-4 w-4" />
   <span class="flex-1 text-left">Search docs...</span>
   <kbd
-    class="hidden rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 font-mono text-xs text-zinc-500 sm:inline"
+    class="hidden h-5 shrink-0 items-center rounded-sm border border-zinc-700/80 bg-zinc-800/80 px-1 font-mono text-[10px] leading-none text-zinc-500 sm:inline-flex"
   >
     ⌘K
   </kbd>

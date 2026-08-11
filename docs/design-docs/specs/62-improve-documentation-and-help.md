@@ -336,6 +336,18 @@ The full documentation surface and compact in-app help share prose infrastructur
 typography must remain independently tunable. A `/docs` typography change must not unintentionally
 change the denser in-app help, chat, or object-prompt variants.
 
+#### Reading-surface restraint
+
+The `/docs` shell stays a flat Ink surface. It must not use ambient gradients, decorative glows, or
+other background effects that compete with screenshots, patch visuals, and code examples. Ember is
+reserved for intentional navigation state and hover feedback; it is not a persistent page
+decoration. The search shortcut is a compact utility keycap with a fixed visual height, so it does
+not change the search control's rhythm.
+
+A docs title can claim the page with scale and a short one-pixel Ember underline. Section markers
+use the same one-pixel Ember rule as wayfinding; this gives the reading surface an authored rhythm
+without adding an ambient effect or an ornamental display face.
+
 #### Hierarchy
 
 - Page titles are the strongest text on the page, set in Plex Sans with restrained weight and tight

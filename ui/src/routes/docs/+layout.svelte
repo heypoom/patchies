@@ -9,9 +9,9 @@
 </script>
 
 <TooltipProvider>
-  <div class="patchies-docs docs-bg min-h-screen text-zinc-200">
+  <div class="min-h-screen bg-zinc-950 text-zinc-200">
     <div
-      class="mx-auto flex px-4 py-8 transition-all duration-300"
+      class="mx-auto flex px-5 py-10 transition-all duration-300 sm:px-8"
       class:max-w-5xl={sidebarVisible}
       class:max-w-3xl={!sidebarVisible}
     >
@@ -29,14 +29,3 @@
     </div>
   </div>
 </TooltipProvider>
-
-<style>
-  .docs-bg {
-    background-color: #09090b;
-    background-image: radial-gradient(
-      ellipse 90% 55% at 10% 0%,
-      rgba(249, 115, 22, 0.05) 0%,
-      transparent 60%
-    );
-  }
-</style>

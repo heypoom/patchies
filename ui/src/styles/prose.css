@@ -107,10 +107,15 @@
 
   .prose-markdown h1 {
     font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
-    font-size: calc(2rem * var(--prose-scale));
-    font-weight: 600;
-    letter-spacing: -0.025em;
-    line-height: 1.2;
+    font-size: calc(2.25rem * var(--prose-scale));
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    position: relative;
+    color: #fafafa;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #27272a;
   }
 
   .prose-markdown-app h1 {
@@ -121,7 +126,6 @@
     line-height: 1.15;
   }
 
-  .prose-markdown h1,
   .prose-markdown-app h1 {
     color: #fafafa;
     margin-bottom: 1.5rem;
@@ -129,10 +133,20 @@
     border-bottom: 1px solid #27272a;
   }
 
+  .prose-markdown h1::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 3.25rem;
+    height: 1px;
+    background: #f97316;
+  }
+
   .prose-markdown h2 {
     font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
     font-size: calc(0.75rem * var(--prose-scale));
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .prose-markdown-app h2 {
@@ -141,7 +155,16 @@
     font-weight: 700;
   }
 
-  .prose-markdown h2,
+  .prose-markdown h2 {
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-left: 0.625rem;
+    border-left: 1px solid #f97316;
+  }
+
   .prose-markdown-app h2 {
     color: #a1a1aa;
     text-transform: uppercase;
@@ -164,7 +187,13 @@
     letter-spacing: 0.02em;
   }
 
-  .prose-markdown h3,
+  .prose-markdown h3 {
+    font-weight: 500;
+    color: #d4d4d8;
+    margin-top: 1.75rem;
+    margin-bottom: 0.625rem;
+  }
+
   .prose-markdown-app h3 {
     font-weight: 600;
     color: #d4d4d8;
@@ -172,7 +201,16 @@
     margin-bottom: 0.625rem;
   }
 
-  .prose-markdown h4,
+  .prose-markdown h4 {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: calc(0.8125rem * var(--prose-scale));
+    font-weight: 500;
+    color: #a1a1aa;
+    letter-spacing: 0.02em;
+    margin-top: 1.25rem;
+    margin-bottom: 0.375rem;
+  }
+
   .prose-markdown-app h4 {
     font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
     font-size: calc(0.8125rem * var(--prose-scale));
@@ -291,7 +329,11 @@
     margin-bottom: 0.5rem;
   }
 
-  .prose-markdown strong,
+  .prose-markdown strong {
+    color: #e4e4e7;
+    font-weight: 500;
+  }
+
   .prose-markdown-app strong {
     color: #e4e4e7;
     font-weight: 600;

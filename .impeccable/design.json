@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-31T15:35:06+07:00",
+  "generatedAt": "2026-08-12T00:36:00+07:00",
   "title": "Design System: Patchies",
   "extensions": {
     "colorMeta": {
@@ -223,6 +223,13 @@
       "description": "A compact opaque label that remains readable over bright content.",
       "html": "<div class=\"ds-tooltip\" role=\"tooltip\">Browse Objects <kbd>⌘O</kbd></div>",
       "css": ".ds-tooltip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: #e4e4e7; color: #27272a; box-shadow: 0 10px 30px rgba(0,0,0,0.35); font: 500 12px/1.4 'IBM Plex Sans', system-ui, sans-serif; } .ds-tooltip kbd { color: #52525b; font: 400 10px/1.4 'IBM Plex Mono', monospace; }"
+    },
+    {
+      "name": "Documentation Search Trigger",
+      "kind": "input",
+      "description": "A quiet, full-width documentation search control with a fixed-height shortcut keycap.",
+      "html": "<button class=\"ds-docs-search\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6\"/><path d=\"m16 16 4 4\"/></svg><span>Search docs...</span><kbd>⌘K</kbd></button>",
+      "css": ".ds-docs-search { width: 280px; height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid #27272a; border-radius: 8px; background: rgba(24,24,27,0.5); color: #71717a; font: 400 14px/1.4 'IBM Plex Sans', system-ui, sans-serif; text-align: left; cursor: pointer; transition: border-color 150ms ease, background 150ms ease, color 150ms ease; } .ds-docs-search svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; } .ds-docs-search kbd { height: 20px; display: inline-flex; align-items: center; margin-left: auto; padding: 0 4px; border: 1px solid rgba(63,63,70,0.8); border-radius: 3px; background: rgba(39,39,42,0.8); color: #71717a; font: 400 10px/1 'IBM Plex Mono', monospace; } .ds-docs-search:hover { border-color: #3f3f46; background: rgba(39,39,42,0.5); color: #a1a1aa; } .ds-docs-search:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(249,115,22,0.18); }"
     }
   ],
   "narrative": {

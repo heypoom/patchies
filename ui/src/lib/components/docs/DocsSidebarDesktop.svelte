@@ -62,7 +62,7 @@
 <!-- Desktop toggle button (visible when sidebar hidden) -->
 <button
   onclick={() => (visible = true)}
-  class="fixed top-8 left-4 z-10 hidden cursor-pointer rounded-lg bg-zinc-800/80 p-2 text-zinc-400 backdrop-blur-sm transition-all hover:bg-zinc-700 hover:text-zinc-200 md:block"
+  class="fixed top-8 left-4 z-10 hidden cursor-pointer rounded-md bg-zinc-900 p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200 md:block"
   class:opacity-0={visible}
   class:pointer-events-none={visible}
   title="Show sidebar"
@@ -111,7 +111,7 @@
       <div class="mb-6">
         <button
           onclick={() => (guidesExpanded = !guidesExpanded)}
-          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 font-sans text-[10px] font-semibold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 font-sans text-[10px] font-medium tracking-widest text-zinc-500 uppercase transition-colors hover:text-orange-400"
         >
           {#if guidesExpanded}
             <ChevronDown class="h-3 w-3" />
@@ -130,7 +130,7 @@
               {#if categoryTopics && categoryTopics.length > 0}
                 <div>
                   <div
-                    class="mb-1 font-sans text-[9px] font-semibold tracking-widest text-zinc-600 uppercase"
+                    class="mb-1 font-sans text-[9px] font-medium tracking-widest text-zinc-600 uppercase"
                   >
                     {category}
                   </div>
@@ -143,10 +143,10 @@
                           href="/docs/{topic.slug}"
                           data-active={isActive}
                           class={[
-                            'block border-l-2 py-1 pr-2 pl-1.5 text-sm transition-colors',
+                            'block border-l py-1 pr-2 pl-2 text-sm transition-colors',
                             isActive
-                              ? 'border-orange-500 bg-zinc-900/80 text-zinc-100'
-                              : 'border-transparent text-zinc-500 hover:border-zinc-700 hover:bg-zinc-800/40 hover:text-zinc-300'
+                              ? 'border-orange-400 bg-zinc-900 text-zinc-100'
+                              : 'border-transparent text-zinc-500 hover:border-zinc-700 hover:bg-zinc-900/70 hover:text-zinc-300'
                           ]}
                         >
                           {topic.title}
@@ -165,7 +165,7 @@
       <div>
         <button
           onclick={() => (objectsExpanded = !objectsExpanded)}
-          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 font-sans text-[10px] font-semibold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 font-sans text-[10px] font-medium tracking-widest text-zinc-500 uppercase transition-colors hover:text-orange-400"
         >
           {#if objectsExpanded}
             <ChevronDown class="h-3 w-3" />
@@ -185,10 +185,10 @@
                   href="/docs/objects/{object.slug}"
                   data-active={isActive}
                   class={[
-                    'block border-l-2 py-1 pr-2 pl-1.5 font-mono text-sm transition-colors',
+                    'block border-l py-1 pr-2 pl-2 font-mono text-sm transition-colors',
                     isActive
-                      ? 'border-orange-500 bg-zinc-900/80 text-zinc-100'
-                      : 'border-transparent text-zinc-500 hover:border-zinc-700 hover:bg-zinc-800/40 hover:text-zinc-300'
+                      ? 'border-orange-400 bg-zinc-900 text-zinc-100'
+                      : 'border-transparent text-zinc-500 hover:border-zinc-700 hover:bg-zinc-900/70 hover:text-zinc-300'
                   ]}
                 >
                   {object.title}

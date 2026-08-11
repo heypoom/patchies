@@ -24,10 +24,7 @@
 <!-- Header -->
 <header class="mb-8">
   <div class="mb-1 flex items-start gap-3">
-    <h1
-      class="font-mono text-3xl font-bold text-zinc-50"
-      style="letter-spacing: -0.015em; text-shadow: 0 0 60px rgba(249,115,22,0.12);"
-    >
+    <h1 class="font-mono text-3xl font-medium text-zinc-100" style="letter-spacing: -0.015em;">
       {data.objectType}
     </h1>
   </div>
