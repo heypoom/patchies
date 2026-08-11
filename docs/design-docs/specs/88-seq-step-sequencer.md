@@ -2,11 +2,11 @@
 
 ## Overview
 
-A DAW-style multi-track step sequencer (drum machine) driven by the global transport clock. Multiple instrument tracks share a step grid. Each track has its own outlet, so output can be wired directly to sounds without needing a `route` node.
+A DAW-style multi-track step sequencer (drum machine) driven by the global transport clock. Multiple instrument tracks share a step grid. Each track has its own outlet, so output can be wired directly to sounds without needing a `route` node. A pattern keeps its 4/4 duration when the transport meter changes, so meter changes affect bar boundaries rather than step speed.
 
 ## Concept
 
-N tracks, each with 16 (configurable) steps. All tracks share the same clock — one bar divided into `steps` equal parts. When step `s` fires, every track with `stepOn[s] = true` sends a message on its own outlet. Supports swing, audio-rate scheduling, and per-step values (velocity).
+N tracks, each with 16 (configurable) steps. All tracks share the same clock — a 4/4-length pattern divided into `steps` equal parts. When step `s` fires, every track with `stepOn[s] = true` sends a message on its own outlet. Supports swing, audio-rate scheduling, and per-step values (velocity). In other meters, patterns can continue across bar boundaries.
 
 ## Node Data
 
@@ -58,20 +58,20 @@ When a step is off, no message is sent on that outlet for that step.
 
 One `LookaheadClockScheduler` drives all tracks:
 
-1. Subscribe: `scheduler.every("0:${beatsPerBar/steps}:0", callback, { audio: true })`
+1. Schedule a 4-quarter-note pattern and chain the next pattern boundary.
 2. In each callback, compute step index from transport time (stateless):
 
    ```
-   stepInterval = (60/bpm) * (beatsPerBar/numSteps)
-   barDuration  = (60/bpm) * beatsPerBar
-   posInBar     = time % barDuration
-   stepIndex    = floor(posInBar / stepInterval) % numSteps
+   stepInterval   = (60/bpm) * (4/numSteps)
+   patternDuration = (60/bpm) * 4
+   posInPattern   = time % patternDuration
+   stepIndex       = floor(posInPattern / stepInterval) % numSteps
    ```
 
 3. Apply swing for odd steps: one-shot `schedule(time + swingOffset)` where
    `swingOffset = (swing/100) * 0.5 * stepInterval`
 4. At fire time, iterate tracks: for each track `t`, if `stepOn[stepIndex]` fire outlet `t`
-5. Re-subscribe when `steps` count or time signature (`beatsPerBar`) changes
+5. Re-schedule when the `steps` count changes. Time-signature changes do not change the pattern duration or step interval.
 6. Visual cursor: poll `Transport.ticks` at 30fps
 
 ## Output Format
