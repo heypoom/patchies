@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RotateCcw, Sparkles, Square } from '@lucide/svelte/icons';
+  import { ArrowLeft, RotateCcw, Sparkles, Square } from '@lucide/svelte/icons';
   import { SvelteSet } from 'svelte/reactivity';
   import { getTextProvider } from '$lib/ai/providers';
   import { extractJson } from '$lib/ai/extract-json';
@@ -18,6 +18,9 @@
     accentColor: string;
     glowColor: string;
     textColor: string;
+    showResults?: boolean;
+    onGenerationStart?: () => void;
+    onBack?: () => void;
     onScatter?: (nodeNames: string[]) => void;
     onChat?: (prompt: string) => void;
   }
@@ -29,6 +32,9 @@
     accentColor,
     glowColor,
     textColor,
+    showResults = true,
+    onGenerationStart,
+    onBack,
     onScatter,
     onChat
   }: Props = $props();
@@ -71,6 +77,7 @@
       return;
     }
 
+    onGenerationStart?.();
     isGenerating = true;
     sparksVisions.set([]);
     generationError = null;
@@ -165,13 +172,27 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
 <section class="vision-section" style:--composer-accent={accentColor}>
   <div class="vision-shell">
+    {#if showResults && onBack}
+      <button
+        class="vision-back cursor-pointer disabled:cursor-not-allowed"
+        disabled={isGenerating}
+        onclick={onBack}
+      >
+        <ArrowLeft size={14} /> Edit feeling and medium
+      </button>
+    {/if}
+
     <div class="vision-composer">
       <div class="vision-copy">
         <span class="vision-mark" aria-hidden="true"><Sparkles size={17} /></span>
 
         <div>
-          <h2>Imagine the collision</h2>
-          <p>Turn your picks into three concrete what-ifs.</p>
+          <h2>{showResults ? 'Imagined ideas' : 'Imagine the collision'}</h2>
+          <p>
+            {showResults
+              ? 'Three directions shaped by your feeling and medium.'
+              : 'Turn your picks into three concrete what-ifs.'}
+          </p>
         </div>
       </div>
 
@@ -205,11 +226,11 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
       </div>
     </div>
 
-    {#if generationError}
+    {#if showResults && generationError}
       <p class="generation-error" role="alert">{generationError}</p>
     {/if}
 
-    {#if isGenerating && $sparksVisions.length === 0}
+    {#if showResults && isGenerating && $sparksVisions.length === 0}
       <div class="vision-results">
         <div class="visions-grid">
           {#each [0, 1, 2] as i (i)}
@@ -217,7 +238,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
           {/each}
         </div>
       </div>
-    {:else if $sparksVisions.length > 0}
+    {:else if showResults && $sparksVisions.length > 0}
       <div class="vision-results">
         <div class="visions-grid">
           {#each $sparksVisions as v, i (i)}
@@ -280,6 +301,41 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
   .vision-shell {
     width: 100%;
     max-width: none;
+  }
+
+  .vision-back {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 16px;
+    padding: 6px 9px;
+    border: 1px solid #3f3f46;
+    border-radius: 7px;
+    color: #a1a1aa;
+    background: #18181b;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .vision-back:hover:not(:disabled) {
+    color: #f4f4f5;
+    border-color: #52525b;
+    background: #27272a;
+  }
+
+  .vision-back:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--composer-accent) 22%, transparent);
+    outline-offset: 2px;
+  }
+
+  .vision-back:disabled {
+    opacity: 0.45;
   }
 
   .vision-composer {
@@ -374,7 +430,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     background: color-mix(in srgb, var(--composer-accent) 9%, #18181b);
     font-family: 'IBM Plex Sans', sans-serif;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 500;
     white-space: nowrap;
     transition:
       color 0.16s ease,

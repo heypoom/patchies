@@ -164,21 +164,23 @@ Sparks reads as one connected creative instrument rather than two unrelated sele
 opening question is a live sentence that combines the selected feeling and medium into a curiosity
 prompt. On desktop, entering Sparks expands the modal from its focused reading width into a wider
 creative workspace, then returns it when another tab is selected. The width transition uses a
-single restrained ease and is disabled when reduced motion is requested. On wide screens both
-selector stages remain visible side by side around a signal junction;
-on narrow screens they stack with an explicit connector, so discovering the second question never
-depends on guessing that the modal scrolls. Mood choices expose a directional affordance and clear
+single restrained ease and is disabled when reduced motion is requested. Feeling and Medium remain
+visible side by side around a signal junction on wide screens, then stack on narrow screens. They
+form one Define stage, allowing users to understand and adjust the collision as a whole. Generated
+ideas occupy a separate Ideas stage rather than splitting the modal with the selectors; users may
+return to Define without losing their generated ideas. Mood choices expose a directional affordance and clear
 hover, focus, and selected states. Mood colors belong to those interactions and generated results,
 not broad card fills; the default state remains in the Ink, Zinc, and Ember modal system. The
 full-screen Sparks route is intentionally omitted: this workflow exists only inside the startup
 modal so its presentation and editor actions have one maintained implementation.
 
 After the first feeling or medium is selected, generation appears as a persistent creation dock at
-the bottom of the Sparks workspace. The selector canvas scrolls independently above it, keeping the
-creative-direction field and Imagine action visible without requiring discovery through scrolling.
-Generated what-if cards expand inside the dock as a bounded results tray rather than as another
-section after the selectors. Missing AI credentials remain a just-in-time concern: invoking Imagine
-opens provider settings, while the idle dock does not pre-emptively gate or warn the user.
+the bottom of the Define stage, keeping the creative-direction field and Imagine action visible.
+Invoking Imagine transitions the modal to the Ideas stage, where generated what-if cards receive the
+full workspace instead of sharing it with the selectors. A clear Edit feeling and medium action
+returns to Define without discarding results. Missing AI credentials remain a just-in-time concern:
+invoking Imagine opens provider settings, while the idle dock does not pre-emptively gate or warn
+the user.
 
 #### Example Patches JSON Format
 

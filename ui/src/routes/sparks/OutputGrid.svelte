@@ -54,6 +54,7 @@
 <div>
   <div class="sparks-question mb-4 flex items-center justify-between gap-3">
     <span class="sparks-heading">What could it become?</span>
+
     {#if selectedOutputIds.size > 0}
       <button
         class="sparks-clear cursor-pointer"
@@ -86,8 +87,11 @@
         <span class="output-name text-xs font-semibold text-zinc-400 transition-colors"
           >{output.name}</span
         >
-        <span class="mx-1.5 text-center font-mono text-[9px] leading-[1.3] text-zinc-700"
-          >{output.description}</span
+        <span
+          class={[
+            'mx-1.5 text-center font-mono text-[9px] leading-[1.3]',
+            active ? 'text-accent' : 'text-zinc-500'
+          ]}>{output.description}</span
         >
       </button>
     {/each}

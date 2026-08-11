@@ -5,7 +5,11 @@
   import OutputGrid from '$routes/sparks/OutputGrid.svelte';
   import VisionGenerator from '$routes/sparks/VisionGenerator.svelte';
   import { moods, outputs } from '$routes/sparks/data';
-  import { sparksMoodTheme, sparksSelectedMoodId } from '../../../stores/sparks.store';
+  import {
+    sparksMoodTheme,
+    sparksSelectedMoodId,
+    sparksVisions
+  } from '../../../stores/sparks.store';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import { chatSessionsStore, setDraft } from '../../../stores/chat-sessions.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
@@ -17,6 +21,7 @@
   let { closeModal }: Props = $props();
 
   let selectedOutputIds = new SvelteSet<string>();
+  let activeStage = $state<'define' | 'ideas'>($sparksVisions.length > 0 ? 'ideas' : 'define');
 
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -64,61 +69,63 @@
   style:--glow={glowColor}
   style:--text-acc={textColor}
 >
-  <div class="sparks-workspace">
-    <header class="sparks-intro" class:sparks-intro--active={hasSelection}>
-      <div class="sparks-intro-mark" aria-hidden="true"><Sparkles /></div>
-      <div class="sparks-intro-copy">
-        <h1>
-          What happens when <span class="sparks-choice">{feelingSummary}</span><br />
-          meets <span class="sparks-choice">{outputSummary}</span>{#if hasAdditionalOutputs}<span
-              class="sparks-more">and more</span
-            >{/if}?
-        </h1>
-        <p>
-          Combine a feeling with a medium. Patchies will turn the collision into questions to
-          explore.
-        </p>
-      </div>
-    </header>
+  {#if activeStage === 'define'}
+    <div class="sparks-workspace">
+      <header class="sparks-intro" class:sparks-intro--active={hasSelection}>
+        <div class="sparks-intro-mark" aria-hidden="true"><Sparkles /></div>
+        <div class="sparks-intro-copy">
+          <h1>
+            What happens when <span class="sparks-choice">{feelingSummary}</span><br />
+            meets <span class="sparks-choice">{outputSummary}</span>{#if hasAdditionalOutputs}<span
+                class="sparks-more">and more</span
+              >{/if}?
+          </h1>
+          <p>
+            Combine a feeling with a medium. Patchies will turn the collision into questions to
+            explore.
+          </p>
+        </div>
+      </header>
 
-    <div class="sparks-selectors" class:sparks-selectors--active={hasSelection}>
-      <svg
-        class="sparks-flow-trace"
-        viewBox="0 0 32 100"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path class="sparks-flow-base" d="M 16 0 V 100" pathLength="1" />
-        {#if hasSelection}
-          {#key selectionKey}
-            <path class="sparks-flow-pulse" d="M 16 0 V 100" pathLength="1" />
-          {/key}
-        {/if}
-      </svg>
+      <div class="sparks-selectors" class:sparks-selectors--active={hasSelection}>
+        <svg
+          class="sparks-flow-trace"
+          viewBox="0 0 32 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path class="sparks-flow-base" d="M 16 0 V 100" pathLength="1" />
+          {#if hasSelection}
+            {#key selectionKey}
+              <path class="sparks-flow-pulse" d="M 16 0 V 100" pathLength="1" />
+            {/key}
+          {/if}
+        </svg>
 
-      <div class="sparks-stage">
-        <MoodGrid
-          {moods}
-          selectedMoodId={$sparksSelectedMoodId}
-          onSelect={(id) => sparksSelectedMoodId.set(id)}
-        />
-      </div>
+        <div class="sparks-stage">
+          <MoodGrid
+            {moods}
+            selectedMoodId={$sparksSelectedMoodId}
+            onSelect={(id) => sparksSelectedMoodId.set(id)}
+          />
+        </div>
 
-      <div class="sparks-join" aria-hidden="true">
-        <span></span>
-        <span class="sparks-junction"><Sparkles class="sparks-junction-icon" /> and / or</span>
-        <span></span>
-      </div>
+        <div class="sparks-join" aria-hidden="true">
+          <span></span>
+          <span class="sparks-junction"><Sparkles class="sparks-junction-icon" /> and / or</span>
+          <span></span>
+        </div>
 
-      <div class="sparks-stage">
-        <OutputGrid {outputs} {selectedOutputIds} />
+        <div class="sparks-stage">
+          <OutputGrid {outputs} {selectedOutputIds} />
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 
   <!-- AI Vision Generator -->
-  {#if hasSelection}
-    <div class="sparks-tab-generator">
+  {#if hasSelection || activeStage === 'ideas'}
+    <div class="sparks-tab-generator" class:sparks-tab-generator--ideas={activeStage === 'ideas'}>
       <VisionGenerator
         {selectedMood}
         {selectedOutputIds}
@@ -126,6 +133,9 @@
         {accentColor}
         {glowColor}
         {textColor}
+        showResults={activeStage === 'ideas'}
+        onGenerationStart={() => (activeStage = 'ideas')}
+        onBack={() => (activeStage = 'define')}
         onScatter={handleScatter}
         onChat={handleChat}
       />
@@ -486,6 +496,20 @@
   :global(.sparks-tab-generator .visions-grid > *:last-child:nth-child(3)) {
     grid-column: 1 / -1;
     min-height: unset;
+  }
+
+  .sparks-tab-generator--ideas {
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .sparks-tab-generator--ideas :global(.vision-section) {
+    height: 100%;
+    max-height: none;
+    padding: 24px 32px 32px !important;
+    overflow-y: auto;
+    box-shadow: none;
   }
 
   @media (max-width: 520px) {
