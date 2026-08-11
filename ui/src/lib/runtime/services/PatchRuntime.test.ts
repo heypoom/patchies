@@ -408,6 +408,18 @@ describe('AudioAdapter', () => {
     expect(audioService.removeNodeById).toHaveBeenLastCalledWith(nodeId);
   });
 
+  it('notifies views again after asynchronous audio node creation completes', async () => {
+    const audioService = createFakeAudioService();
+    const runtime = new AudioAdapter({ audioService });
+    const nodeId = 'async-audio-view-test';
+
+    runtime.upsertAudioObject(audioObjectSpec(nodeId, 'sampler~', []));
+
+    expect(runtime.trackAudioObjectViewRevision(nodeId)).toBe(1);
+
+    await vi.waitFor(() => expect(runtime.trackAudioObjectViewRevision(nodeId)).toBe(2));
+  });
+
   it('persists numeric messages sent to audio parameters for the object display', () => {
     const nodeId = 'gain-parameter-target';
     const sourceNodeId = 'gain-parameter-source';

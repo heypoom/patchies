@@ -99,6 +99,15 @@ export class AudioAdapter {
       onBeforeAudioNodeCreate
     );
 
+    // Node creation can asynchronously load runtime state (for example a sampler
+    // decoding its VFS file). Notify views again once that state is available.
+    const completion = nodePromise.then?.((node) => {
+      if (node && this.audioService.getNodeById(object.id) === node) {
+        this.viewRevisions.bump(object.id);
+      }
+    });
+
+    completion?.catch?.(() => undefined);
     nodePromise.catch?.(() => undefined);
 
     const messageContext = this.createAudioObjectMessageContext(object.id, object.type);

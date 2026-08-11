@@ -241,8 +241,7 @@
           vfsPath: node.data.vfsPath
         },
         handleMapping: {
-          'audio-out-0': 'audio-out-audio-out',
-          'message-in': 'message-in-message-in'
+          'audio-out-0': 'audio-out'
         }
       });
     } catch (err) {

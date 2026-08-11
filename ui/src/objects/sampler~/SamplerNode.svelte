@@ -151,10 +151,6 @@
   const detune = $derived(node.data.detune || 0);
   const noteOffMode = $derived(node.data.noteOffMode ?? 'one-shot');
 
-  // Derive isPlaying from active voice count
-  const activeVoiceCount = $derived(activePlaybackVoices.size);
-  const isPlaying = $derived(activeVoiceCount > 0);
-
   // Use node dimensions if available, otherwise use defaults
   const width = $derived(node.width || 190);
   const height = $derived(node.height || 35);
@@ -170,7 +166,11 @@
 
     const runtimeNode = audioService.getNodeById(node.id);
     const samplerNode = runtimeNode instanceof SamplerNodeV2 ? runtimeNode : null;
-    if (samplerNode === v2Node) return;
+
+    if (samplerNode === v2Node) {
+      audioBuffer = samplerNode?.audioBuffer ?? null;
+      return;
+    }
 
     if (v2Node) {
       v2Node.onPlaybackStart = undefined;

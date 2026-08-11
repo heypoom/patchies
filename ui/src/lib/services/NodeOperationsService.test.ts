@@ -51,13 +51,15 @@ function createContext() {
       historyManager: { execute: vi.fn() },
       canvasAccessors: {}
     },
-    getNodes: () => nodes
+    getNodes: () => nodes,
+    getEdges: () => edges
   };
 }
 
 describe('NodeOperationsService', () => {
   test('creates gm~ as a dedicated visual node type', () => {
     const { ctx } = createContext();
+
     const service = new NodeOperationsService(
       ctx as unknown as ConstructorParameters<typeof NodeOperationsService>[0]
     );
@@ -79,6 +81,7 @@ describe('NodeOperationsService', () => {
 
   test('creates new group nodes with explicit top-level dimensions', () => {
     const { ctx, getNodes } = createContext();
+
     const service = new NodeOperationsService(
       ctx as unknown as ConstructorParameters<typeof NodeOperationsService>[0]
     );
@@ -95,6 +98,7 @@ describe('NodeOperationsService', () => {
 
   test('replaces nodes with group nodes that have explicit top-level dimensions', () => {
     const { ctx, getNodes } = createContext();
+
     ctx.nodes = [{ id: 'old-1', type: 'js', position: { x: 10, y: 20 }, data: {} }];
     const service = new NodeOperationsService(
       ctx as unknown as ConstructorParameters<typeof NodeOperationsService>[0]
@@ -116,5 +120,43 @@ describe('NodeOperationsService', () => {
       height: DEFAULT_GROUP_HEIGHT,
       data: {}
     });
+  });
+
+  test('remaps soundfile handles to the sampler handles that exist today', () => {
+    const { ctx, getEdges } = createContext();
+    ctx.nodes = [{ id: 'soundfile~-1', type: 'soundfile~', position: { x: 10, y: 20 }, data: {} }];
+    ctx.edges = [
+      {
+        id: 'sampler-to-out',
+        source: 'soundfile~-1',
+        sourceHandle: 'audio-out-0',
+        target: 'out~-1',
+        targetHandle: 'audio-in'
+      },
+      {
+        id: 'message-to-sampler',
+        source: 'message-1',
+        sourceHandle: 'message-out',
+        target: 'soundfile~-1',
+        targetHandle: 'message-in'
+      }
+    ];
+
+    const service = new NodeOperationsService(
+      ctx as unknown as ConstructorParameters<typeof NodeOperationsService>[0]
+    );
+
+    service.replaceNode({
+      type: 'nodeReplace',
+      nodeId: 'soundfile~-1',
+      newType: 'sampler~',
+      newData: { hasRecording: true },
+      handleMapping: { 'audio-out-0': 'audio-out' }
+    });
+
+    expect(getEdges()).toEqual([
+      expect.objectContaining({ source: 'sampler~-1', sourceHandle: 'audio-out' }),
+      expect.objectContaining({ target: 'sampler~-1', targetHandle: 'message-in' })
+    ]);
   });
 });
