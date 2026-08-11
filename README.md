@@ -1,6 +1,8 @@
 # Patchies.app: creative coding patcher in the browser
 
-<img src="./docs/images/patchies-v4-hero.webp" alt="Hero Image" width="700">
+<img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700">
+
+> Try out [the above demo](https://patchies.app/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
 
 Patchies is a code-first patcher for exploring computation through audio, visual, hardware and more.
 
@@ -24,10 +26,6 @@ Patchies lets you use the audio, visual and computational tools and libraries th
 - Use any [third party JavaScript library](https://patchies.app/docs/javascript-runner) via [esm.sh](https://esm.sh).
 
 ## ...by patching them together ✨
-
-<img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700">
-
-> Try out [the above demo](https://patchies.app/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
 
 Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a huge web of small objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
