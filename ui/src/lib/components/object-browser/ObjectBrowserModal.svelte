@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     ArrowLeft,
+    ArrowRight,
     Bookmark,
     Boxes,
     ChevronDown,
@@ -8,7 +9,6 @@
     Package,
     Search,
     SearchX,
-    SlidersHorizontal,
     X
   } from '@lucide/svelte/icons';
   import Fuse from 'fuse.js';
@@ -275,6 +275,23 @@
   const allPresetPacksEnabled = $derived(
     BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
+  const disabledPackCount = $derived(
+    catalogKind === 'objects'
+      ? BUILT_IN_PACKS.filter(
+          (pack) => !isPackLocked(pack.id) && !isPackEnabled(pack.id, $enabledPackIds)
+        ).length
+      : BUILT_IN_PRESET_PACKS.filter(
+          (pack) =>
+            !isPresetPackLocked(pack.id) && !isPresetPackEnabled(pack.id, $enabledPresetPackIds)
+        ).length
+  );
+  const enabledCatalogPackCount = $derived(
+    catalogKind === 'objects'
+      ? BUILT_IN_PACKS.filter((pack) => isPackEnabled(pack.id, $enabledPackIds)).length
+      : BUILT_IN_PRESET_PACKS.filter((pack) => isPresetPackEnabled(pack.id, $enabledPresetPackIds))
+          .length
+  );
+  const showPackDiscovery = $derived(disabledPackCount > 0 && enabledCatalogPackCount <= 2);
   const hasEnabledOptionalObjectPacks = $derived(
     $enabledPackIds.some((packId) => !isPackLocked(packId))
   );
@@ -465,15 +482,36 @@
               <CircleQuestionMark class="h-4 w-4" />
               <span class="max-sm:hidden">Help</span>
             </button>
-            <button
-              type="button"
-              onclick={openPacks}
-              aria-label="Manage library"
-              class="flex h-11 cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-white/[0.025] px-3 text-[11px] font-medium text-zinc-500 transition-colors outline-none hover:border-white/16 hover:text-zinc-200 focus-visible:border-orange-500/70 sm:h-9"
-            >
-              <SlidersHorizontal class="h-4 w-4" />
-              <span class="max-sm:hidden">Manage library</span>
-            </button>
+            {#if $objectBrowserMode === 'insert' && showPackDiscovery}
+              <button
+                type="button"
+                class="ob-pack-discovery ob-pack-discovery-header"
+                onclick={openPacks}
+                aria-label={`Manage library: enable ${disabledPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs`}
+              >
+                <Package class="h-3.5 w-3.5 shrink-0" />
+                <span class="ob-pack-discovery-copy">
+                  <span class="ob-pack-discovery-count">
+                    {disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs
+                  </span>
+                  <span class="ob-pack-discovery-label">Manage library</span>
+                </span>
+                <ArrowRight class="h-3.5 w-3.5 shrink-0" />
+              </button>
+            {:else}
+              <button
+                type="button"
+                onclick={openPacks}
+                aria-label="Manage library"
+                class={[
+                  'flex h-11 cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-white/[0.025] px-3 text-[11px] font-medium text-zinc-500 transition-colors outline-none hover:border-white/16 hover:text-zinc-200 focus-visible:border-orange-500/70 sm:h-9',
+                  $objectBrowserMode === 'insert' && 'ob-library-header-action'
+                ]}
+              >
+                <Package class="h-4 w-4" />
+                <span class="max-sm:hidden">Manage library</span>
+              </button>
+            {/if}
           {/if}
           <button
             type="button"
@@ -514,15 +552,15 @@
       {#if $objectBrowserMode === 'packs'}
         <section class="flex min-h-0 flex-1 flex-col" aria-label="Library packs">
           <div
-            class="flex shrink-0 flex-col gap-3 border-b border-white/7 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+            class="flex shrink-0 flex-col gap-2 border-b border-white/7 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-3"
           >
-            <div class="grid grid-cols-2 rounded-lg border border-white/8 bg-black/15 p-1">
+            <div class="grid grid-cols-2 rounded-lg border border-white/8 bg-black/15 p-0.5 sm:p-1">
               <button
                 type="button"
                 onclick={() => selectCatalogKind('objects')}
                 aria-pressed={catalogKind === 'objects'}
                 class={[
-                  'flex h-11 min-w-32 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70 sm:h-8',
+                  'flex h-10 min-w-32 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70 sm:h-8',
                   catalogKind === 'objects'
                     ? 'bg-white/8 text-zinc-100'
                     : 'text-zinc-500 hover:text-zinc-200'
@@ -536,7 +574,7 @@
                 onclick={() => selectCatalogKind('presets')}
                 aria-pressed={catalogKind === 'presets'}
                 class={[
-                  'flex h-11 min-w-32 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70 sm:h-8',
+                  'flex h-10 min-w-32 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70 sm:h-8',
                   catalogKind === 'presets'
                     ? 'bg-white/8 text-zinc-100'
                     : 'text-zinc-500 hover:text-zinc-200'
@@ -547,20 +585,29 @@
               </button>
             </div>
 
-            <div class="flex items-center justify-between gap-4 sm:justify-end">
-              <span class="font-mono text-[10px] text-zinc-500">
+            <div
+              class="grid grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-md border border-white/8 bg-black/15 p-0.5 sm:flex sm:items-center sm:justify-end sm:gap-4 sm:border-0 sm:bg-transparent sm:p-0"
+            >
+              <span class="flex items-center px-3 font-mono text-[10px] text-zinc-500 sm:hidden">
+                {catalogKind === 'objects'
+                  ? `${enabledObjectCount}/${totalObjectCount} enabled`
+                  : `${$enabledPresetPackIds.length}/${BUILT_IN_PRESET_PACKS.length} enabled`}
+              </span>
+              <span class="hidden font-mono text-[10px] text-zinc-500 sm:inline">
                 {catalogKind === 'objects'
                   ? `${enabledObjectCount}/${totalObjectCount} objects enabled`
                   : `${$enabledPresetPackIds.length}/${BUILT_IN_PRESET_PACKS.length} packs enabled`}
               </span>
-              <div class="grid grid-cols-2 rounded-md border border-white/8 bg-black/15 p-1">
+              <div
+                class="grid grid-cols-2 border-l border-white/8 sm:rounded-md sm:border sm:border-white/8 sm:bg-black/15 sm:p-1"
+              >
                 <button
                   type="button"
                   onclick={catalogKind === 'objects' ? disableAllPacks : disableAllPresetPacks}
                   disabled={catalogKind === 'objects'
                     ? !hasEnabledOptionalObjectPacks
                     : !hasEnabledOptionalPresetPacks}
-                  class="h-11 cursor-pointer rounded px-3 text-[10px] font-medium text-zinc-500 transition-colors outline-none hover:bg-white/[0.05] hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-orange-500/70 disabled:cursor-not-allowed disabled:opacity-35 sm:h-7"
+                  class="h-10 cursor-pointer rounded px-3 text-[10px] font-medium text-zinc-500 transition-colors outline-none hover:bg-white/[0.05] hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-orange-500/70 disabled:cursor-not-allowed disabled:opacity-35 sm:h-7"
                 >
                   Disable all
                 </button>
@@ -570,7 +617,7 @@
                   disabled={catalogKind === 'objects'
                     ? allObjectPacksEnabled
                     : allPresetPacksEnabled}
-                  class="h-11 cursor-pointer rounded bg-white/[0.045] px-3 text-[10px] font-medium text-zinc-300 transition-colors outline-none hover:bg-white/[0.075] hover:text-zinc-100 focus-visible:ring-1 focus-visible:ring-orange-500/70 disabled:cursor-not-allowed disabled:opacity-35 sm:h-7"
+                  class="h-10 cursor-pointer rounded bg-white/[0.045] px-3 text-[10px] font-medium text-zinc-300 transition-colors outline-none hover:bg-white/[0.075] hover:text-zinc-100 focus-visible:ring-1 focus-visible:ring-orange-500/70 disabled:cursor-not-allowed disabled:opacity-35 sm:h-7"
                 >
                   Enable all
                 </button>
@@ -833,6 +880,40 @@
                     </p>
                   </div>
                 </div>
+
+                {#if $objectBrowserMode === 'insert'}
+                  {#if showPackDiscovery}
+                    <button
+                      type="button"
+                      class="ob-pack-discovery ob-pack-discovery-mobile"
+                      onclick={openPacks}
+                      aria-label={`Manage library: enable ${disabledPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs`}
+                    >
+                      <Package class="h-3.5 w-3.5 shrink-0" />
+                      <span class="ob-pack-discovery-copy">
+                        <span class="ob-pack-discovery-count ob-pack-discovery-count-full">
+                          {disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs
+                        </span>
+                        <span class="ob-pack-discovery-count ob-pack-discovery-count-compact">
+                          {disabledPackCount} more packs
+                        </span>
+                        <span class="ob-pack-discovery-label">Manage library</span>
+                      </span>
+                      <ArrowRight class="h-3.5 w-3.5 shrink-0" />
+                    </button>
+                  {:else}
+                    <button
+                      type="button"
+                      class="ob-pack-discovery ob-pack-discovery-mobile ob-pack-discovery-neutral"
+                      onclick={openPacks}
+                      aria-label="Manage library"
+                    >
+                      <Package class="h-3.5 w-3.5 shrink-0" />
+                      <span class="ob-pack-discovery-count">Manage library</span>
+                      <ArrowRight class="h-3.5 w-3.5 shrink-0" />
+                    </button>
+                  {/if}
+                {/if}
               </header>
 
               <div class="ob-scroll min-h-0 flex-1 overflow-y-auto p-3 sm:p-5">
@@ -976,6 +1057,16 @@
       opacity: 1;
       transform: translateY(0) scale(1);
     }
+  }
+
+  #object-browser-search::-webkit-search-cancel-button,
+  #object-browser-search::-webkit-search-decoration {
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  #object-browser-search::-ms-clear {
+    display: none;
   }
 
   .ob-catalog {
@@ -1139,6 +1230,88 @@
     padding: 12px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     background: #111113;
+  }
+
+  .ob-pack-discovery {
+    display: flex;
+    min-height: 40px;
+    flex: 0 0 auto;
+    cursor: pointer;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 7px;
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.025);
+    text-align: left;
+    outline: none;
+    transition:
+      border-color 120ms ease,
+      color 120ms ease,
+      background 120ms ease;
+  }
+
+  .ob-pack-discovery:hover {
+    border-color: rgba(249, 115, 22, 0.3);
+    color: #f4f4f5;
+    background: rgba(249, 115, 22, 0.045);
+  }
+
+  .ob-pack-discovery:focus-visible {
+    border-color: rgba(249, 115, 22, 0.65);
+    color: #fafafa;
+  }
+
+  .ob-pack-discovery :global(svg:first-child),
+  .ob-pack-discovery :global(svg:last-child) {
+    color: #f97316;
+  }
+
+  .ob-pack-discovery-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .ob-pack-discovery-count {
+    color: #e4e4e7;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .ob-pack-discovery-label {
+    color: #71717a;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+
+  .ob-pack-discovery-count-compact {
+    display: none;
+  }
+
+  .ob-pack-discovery-mobile {
+    display: none;
+  }
+
+  .ob-pack-discovery-neutral {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .ob-pack-discovery-neutral:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #f4f4f5;
+    background: rgba(255, 255, 255, 0.055);
+  }
+
+  .ob-pack-discovery-neutral :global(svg:first-child),
+  .ob-pack-discovery-neutral :global(svg:last-child) {
+    color: #71717a;
   }
 
   .ob-scroll::-webkit-scrollbar,
@@ -1321,7 +1494,46 @@
 
     .ob-results-header {
       min-height: 60px;
+      gap: 8px;
       padding: 9px 12px;
+    }
+
+    .ob-results-header > :global(div:first-child) {
+      gap: 8px;
+    }
+
+    .ob-pack-discovery {
+      min-height: 40px;
+      gap: 7px;
+      padding: 5px 12px;
+    }
+
+    .ob-pack-discovery-header {
+      display: none;
+    }
+
+    .ob-library-header-action {
+      display: none;
+    }
+
+    .ob-pack-discovery-mobile {
+      display: flex;
+    }
+
+    .ob-pack-discovery-count {
+      font-size: 11px;
+    }
+
+    .ob-pack-discovery-count-full {
+      display: none;
+    }
+
+    .ob-pack-discovery-count-compact {
+      display: inline;
+    }
+
+    .ob-pack-discovery-label {
+      display: none;
     }
   }
 
@@ -1332,6 +1544,10 @@
 
     .ob-results :global(.grid) {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ob-pack-discovery {
+      padding-inline: 10px;
     }
   }
 </style>

@@ -39,6 +39,13 @@ Each workspace has:
 The initial Objects category is the first enabled object category. The initial Presets category is the
 first enabled preset pack or preset library category.
 
+When only one or two packs are enabled in the active workspace, a count-based affordance shows how
+many more object or preset packs are available and links directly to **Manage library**. Place it in
+the modal header on desktop, where there is spare horizontal space, and beside the active category on
+compact touch layouts. Once three or more packs are enabled, replace it with the normal generic
+library action. On touch layouts, keep that neutral action beside the active category so enabling a
+third pack never moves the control.
+
 ### Desktop
 
 Use a two-pane catalog:
