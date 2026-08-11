@@ -15,6 +15,7 @@ export interface CategoryGroup {
   id: string;
   title: string;
   icon: string; // lucide icon name
+  description?: string;
   objects: ObjectItem[];
   isPresetCategory?: boolean;
 }
@@ -158,6 +159,7 @@ export function getCategorizedObjects(
         id: `object-pack:${pack.id}`,
         title: pack.name,
         icon: pack.icon,
+        description: pack.description,
         objects
       });
     }

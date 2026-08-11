@@ -82,116 +82,116 @@
 </script>
 
 {#if variant === 'tile'}
-  <!-- ── Tile variant (grid-friendly card) ── -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class={[
-      'flex flex-col rounded-lg border p-3 transition-all',
-      toggleAllowed ? 'cursor-pointer' : 'cursor-not-allowed',
+      'relative min-h-[112px] overflow-hidden rounded-lg border transition-colors',
       selected
-        ? 'border-orange-500/30 bg-orange-500/5'
+        ? 'border-orange-500/45 bg-orange-500/5'
         : unavailable
           ? 'border-white/4 opacity-45'
           : enabled
-            ? 'border-orange-500/15 bg-orange-500/3 hover:border-orange-500/25'
-            : 'border-white/6 bg-white/2 hover:border-white/10'
+            ? 'border-white/10 bg-white/[0.035] hover:border-white/16'
+            : 'border-white/6 bg-transparent hover:border-white/12 hover:bg-white/[0.02]'
     ]}
-    onclick={handleTogglePack}
   >
-    <!-- Header: icon + name + toggle -->
-    <div class="mb-1 flex items-center gap-2">
-      <div
-        class={[
-          'flex h-5 w-5 shrink-0 items-center justify-center rounded',
-          enabled && !unavailable ? 'bg-orange-500/12 text-orange-500' : 'bg-white/4 text-zinc-600'
-        ]}
-      >
-        <IconComponent class="h-3 w-3" />
-      </div>
-      <span
-        class={[
-          'flex-1 truncate text-[11px] leading-[1.2] font-medium',
-          enabled && !unavailable ? 'text-zinc-200' : 'text-zinc-500'
-        ]}
-      >
-        {name}
-      </span>
-      {#if nameExtra}
-        {@render nameExtra()}
-      {/if}
-      <Tooltip.Root delayDuration={100}>
-        <Tooltip.Trigger>
-          <button
-            onclick={(e) => {
-              e.stopPropagation();
-              handleToggleManualExpansion();
-            }}
-            disabled={!manualExpansionAllowed}
-            class={[
-              'flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] border transition-all',
-              manualExpansionAllowed
-                ? 'cursor-pointer border-white/8 text-zinc-600 hover:border-orange-500/25 hover:text-orange-400'
-                : 'cursor-not-allowed border-white/4 text-zinc-800',
-              selected && 'border-orange-500/30 text-orange-400'
-            ]}
-            aria-label={selected ? 'Hide pack contents' : 'Show pack contents'}
-          >
-            <ChevronDown class={['h-3 w-3 transition-transform', selected && 'rotate-180']} />
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>
-          {manualExpansionAllowed ? 'Show Contents' : 'Contents listed in search'}
-        </Tooltip.Content>
-      </Tooltip.Root>
-      {#if locked}
-        <Lock class="h-3 w-3 shrink-0 text-zinc-700" />
-      {:else}
+    <button
+      type="button"
+      onclick={handleTogglePack}
+      disabled={!toggleAllowed}
+      aria-pressed={enabled}
+      class="flex h-full min-h-[112px] w-full cursor-pointer flex-col p-3 pr-14 text-left transition-colors outline-none focus-visible:bg-white/[0.04] focus-visible:ring-1 focus-visible:ring-orange-500/70 focus-visible:ring-inset disabled:cursor-not-allowed"
+    >
+      <div class="mb-1.5 flex items-center gap-2">
         <div
           class={[
-            'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border transition-all',
-            unavailable
-              ? 'border-zinc-700 text-zinc-600'
-              : enabled
-                ? 'border-orange-500/50 bg-orange-500/12 text-orange-500'
-                : 'border-zinc-700 text-transparent'
+            'flex h-6 w-6 shrink-0 items-center justify-center rounded-md border',
+            enabled && !unavailable
+              ? 'border-white/10 bg-white/[0.055] text-zinc-300'
+              : 'border-white/6 bg-white/[0.025] text-zinc-600'
           ]}
-          aria-hidden="true"
         >
-          {#if enabled && !unavailable}
-            <Check class="h-2 w-2" />
-          {/if}
+          <IconComponent class="h-3.5 w-3.5" />
         </div>
-      {/if}
-    </div>
-
-    <!-- Description -->
-    <p class="text-[10px] leading-[1.4] text-zinc-600">{description}</p>
-
-    {#if searchQuery.trim()}
-      <!-- Pills visible during search -->
-      <div class="mt-2 flex flex-wrap gap-[3px]">
-        {#each searchTileItems as item (item)}
+        <span
+          class={[
+            'min-w-0 flex-1 truncate text-[12px] leading-[1.25] font-medium',
+            enabled && !unavailable ? 'text-zinc-200' : 'text-zinc-500'
+          ]}
+        >
+          {name}
+        </span>
+        {#if locked}
+          <Lock class="h-3 w-3 shrink-0 text-zinc-600" />
+        {:else}
           <span
             class={[
-              'rounded-[3px] px-[5px] py-px font-mono text-[8px]',
-              matchingItems.has(item)
-                ? 'bg-orange-500/15 text-orange-400'
-                : 'bg-white/4 text-zinc-600'
+              'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+              unavailable
+                ? 'border-zinc-700 text-transparent'
+                : enabled
+                  ? 'border-zinc-500 bg-zinc-700 text-zinc-100'
+                  : 'border-zinc-700 text-transparent'
             ]}
+            aria-hidden="true"
           >
-            {item}
-          </span>
-        {/each}
-        {#if hiddenSearchTileItemCount > 0}
-          <span class="rounded-[3px] bg-white/4 px-[5px] py-px font-mono text-[8px] text-zinc-600">
-            +{hiddenSearchTileItemCount} more
+            {#if enabled && !unavailable}
+              <Check class="h-2.5 w-2.5" />
+            {/if}
           </span>
         {/if}
       </div>
-    {:else}
-      <!-- Item count when not searching -->
-      <p class="mt-auto pt-1.5 font-mono text-[9px] text-zinc-700">{items.length} items</p>
+
+      <p class="line-clamp-2 text-[10px] leading-[1.45] text-zinc-500">{description}</p>
+
+      {#if !searchQuery.trim()}
+        <p class="mt-auto pt-2 font-mono text-[9px] text-zinc-600">{items.length} items</p>
+      {/if}
+    </button>
+
+    <div class="absolute top-1.5 right-1.5 flex items-center gap-0.5">
+      {#if nameExtra}
+        <div class="flex h-11 w-8 items-center justify-center">{@render nameExtra()}</div>
+      {/if}
+      <button
+        type="button"
+        onclick={handleToggleManualExpansion}
+        disabled={!manualExpansionAllowed}
+        class={[
+          'flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent transition-colors outline-none focus-visible:border-orange-500/70 focus-visible:text-orange-400 disabled:cursor-not-allowed',
+          manualExpansionAllowed
+            ? 'text-zinc-500 hover:bg-white/5 hover:text-zinc-200'
+            : 'text-zinc-800'
+        ]}
+        aria-label={selected ? `Hide ${name} contents` : `Show ${name} contents`}
+      >
+        <ChevronDown class={['h-4 w-4 transition-transform', selected && 'rotate-180']} />
+      </button>
+    </div>
+
+    {#if searchQuery.trim()}
+      <div class="border-t border-white/6 px-3 py-2">
+        <div class="flex flex-wrap gap-[3px]">
+          {#each searchTileItems as item (item)}
+            <span
+              class={[
+                'rounded-[3px] px-[5px] py-px font-mono text-[8px]',
+                matchingItems.has(item)
+                  ? 'bg-orange-500/15 text-orange-400'
+                  : 'bg-white/4 text-zinc-600'
+              ]}
+            >
+              {item}
+            </span>
+          {/each}
+          {#if hiddenSearchTileItemCount > 0}
+            <span
+              class="rounded-[3px] bg-white/4 px-[5px] py-px font-mono text-[8px] text-zinc-600"
+            >
+              +{hiddenSearchTileItemCount} more
+            </span>
+          {/if}
+        </div>
+      </div>
     {/if}
   </div>
 {:else}

@@ -1,19 +1,22 @@
 <script lang="ts">
   import {
-    ChevronDown,
+    ArrowLeft,
+    Bookmark,
+    Boxes,
+    CircleQuestionMark,
+    Package,
     Search,
     SearchX,
-    X,
-    Bookmark,
-    Package,
-    CircleQuestionMark
+    SlidersHorizontal,
+    X
   } from '@lucide/svelte/icons';
+  import Fuse from 'fuse.js';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import {
     getCategorizedObjects,
     type CategoryGroup,
     type ObjectItem
   } from './get-categorized-objects';
-  import Fuse from 'fuse.js';
   import {
     isAiFeaturesVisible,
     isSidebarOpen,
@@ -58,22 +61,8 @@
     type DisabledObjectInfo
   } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { objectSchemas } from '$lib/objects/schemas';
-  import * as Tooltip from '$lib/components/ui/tooltip';
-  import { SvelteMap } from 'svelte/reactivity';
 
-  function openPacks() {
-    $objectBrowserMode = 'packs';
-  }
-
-  function togglePacksMode() {
-    $objectBrowserMode = $objectBrowserMode === 'packs' ? 'insert' : 'packs';
-  }
-
-  function toggleHelpMode() {
-    $objectBrowserMode = $objectBrowserMode === 'help' ? 'insert' : 'help';
-  }
-
-  const getIconComponent = getPackIcon;
+  type CatalogKind = 'objects' | 'presets';
 
   let {
     open = $bindable(false),
@@ -81,17 +70,17 @@
   }: { open?: boolean; onSelectObject: (name: string) => void } = $props();
 
   let searchQuery = $state('');
-  let expandedCategories = $state<Set<string>>(new Set());
-  let showPresets = $state(true);
-  let hasInitialized = $state(false);
+  let searchInput = $state<HTMLInputElement>();
+  let catalogKind = $state<CatalogKind>('objects');
+  let selectedCategoryId = $state<string | null>(null);
   let expandedPackId = $state<string | null>(null);
 
-  // Check if an object has help available
+  const getIconComponent = getPackIcon;
+
   function hasHelp(objectName: string): boolean {
     return objectName in objectSchemas;
   }
 
-  // Open help for an object in sidebar
   function openHelp(objectName: string) {
     $isSidebarOpen = true;
     $sidebarView = 'help';
@@ -99,18 +88,15 @@
     open = false;
   }
 
-  // Get all categorized objects, filtering AI features and by enabled extensions
-  const allCategories = $derived(
+  const objectCategories = $derived(
     getCategorizedObjects($isAiFeaturesVisible, $enabledObjects, $patchObjectTypes)
   );
 
-  // Composable for searching disabled objects
   const { searchDisabledObject } = useDisabledObjectSuggestion(
     () => $enabledPackIds,
     () => $isAiFeaturesVisible
   );
 
-  // Get preset categories grouped by library and type
   const presetCategories = $derived.by((): CategoryGroup[] => {
     const presetsByCategory = new SvelteMap<string, ObjectItem[]>();
     const categoryIconMap = new SvelteMap<string, string>();
@@ -119,24 +105,16 @@
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
 
-      if (!$enabledObjects.has(preset.type)) {
-        continue;
-      }
-
-      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) {
-        continue;
-      }
+      if (!$enabledObjects.has(preset.type)) continue;
+      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) continue;
 
       const presetPack =
         libraryName === 'Built-in' ? getBuiltInPresetPackByPresetName(preset.name) : undefined;
-
       const typeFolder = path.length > 2 ? path[1] : preset.type;
-
       const categoryKey =
         libraryName === 'Built-in'
           ? (presetPack?.name ?? typeFolder)
           : formatPresetLocation(flatPreset);
-
       const categoryId =
         libraryName === 'Built-in'
           ? `preset-pack:${presetPack?.id ?? categoryKey}`
@@ -145,8 +123,7 @@
       if (!presetsByCategory.has(categoryKey)) {
         presetsByCategory.set(categoryKey, []);
         categoryIdMap.set(categoryKey, categoryId);
-
-        const pack = BUILT_IN_PACKS.find((p) => p.objects.includes(preset.type));
+        const pack = BUILT_IN_PACKS.find((candidate) => candidate.objects.includes(preset.type));
         categoryIconMap.set(categoryKey, presetPack?.icon ?? pack?.icon ?? 'Package');
       }
 
@@ -166,40 +143,37 @@
     const sortedCategories = Array.from(presetsByCategory.keys()).sort((a, b) => {
       const aOrder = presetPackOrder.get(a) ?? Number.MAX_SAFE_INTEGER;
       const bOrder = presetPackOrder.get(b) ?? Number.MAX_SAFE_INTEGER;
-
-      if (aOrder !== bOrder) return aOrder - bOrder;
-
-      return a.localeCompare(b);
+      return aOrder === bOrder ? a.localeCompare(b) : aOrder - bOrder;
     });
 
-    return sortedCategories.map((category) => ({
-      id: categoryIdMap.get(category)!,
-      title: category,
-      icon: categoryIconMap.get(category) || 'Package',
-      isPresetCategory: true,
-      objects: presetsByCategory.get(category)!
-    }));
+    return sortedCategories.map((category) => {
+      const presetPack = BUILT_IN_PRESET_PACKS.find((pack) => pack.name === category);
+
+      return {
+        id: categoryIdMap.get(category)!,
+        title: category,
+        icon: categoryIconMap.get(category) || 'Package',
+        description: presetPack?.description,
+        isPresetCategory: true,
+        objects: presetsByCategory.get(category)!
+      };
+    });
   });
 
-  const allCategoriesWithPresets = $derived.by(() => {
-    if (showPresets && $objectBrowserMode !== 'help') {
-      return [...allCategories, ...presetCategories];
-    }
-    return allCategories;
-  });
+  const catalogCategories = $derived(
+    catalogKind === 'objects' || $objectBrowserMode === 'help' ? objectCategories : presetCategories
+  );
 
   const fuse = $derived(
     new Fuse(
-      allCategoriesWithPresets.flatMap((category) =>
-        category.objects.map((obj) => ({
-          ...obj,
-          categoryId: category.id,
-          categoryTitle: category.title,
-          isPreset: category.isPresetCategory === true
+      catalogCategories.flatMap((category) =>
+        category.objects.map((object) => ({
+          ...object,
+          categoryId: category.id
         }))
       ),
       {
-        keys: ['name', 'description', 'categoryTitle'],
+        keys: ['name', 'description', 'category'],
         threshold: 0.3,
         includeScore: true
       }
@@ -207,14 +181,10 @@
   );
 
   const filteredCategories = $derived.by(() => {
-    if (!searchQuery.trim()) {
-      return allCategoriesWithPresets;
-    }
+    if (!searchQuery.trim()) return catalogCategories;
 
-    const results = fuse.search(searchQuery);
-
-    const sortedResults = sortFuseResultsWithPrefixPriority(
-      results,
+    const results = sortFuseResultsWithPrefixPriority(
+      fuse.search(searchQuery),
       searchQuery,
       (item) => item.name,
       (a, b) => {
@@ -224,126 +194,48 @@
         return 0;
       }
     );
+    const matchesByCategory = new SvelteMap<string, ObjectItem[]>();
+    const categoryOrder = new SvelteMap<string, number>();
 
-    const matchedObjects = new SvelteMap<string, ObjectItem[]>();
-
-    for (const result of sortedResults) {
+    results.forEach((result, index) => {
       const categoryId = result.item.categoryId;
-
-      if (!matchedObjects.has(categoryId)) {
-        matchedObjects.set(categoryId, []);
-      }
-
-      matchedObjects.get(categoryId)!.push({
+      if (!matchesByCategory.has(categoryId)) matchesByCategory.set(categoryId, []);
+      if (!categoryOrder.has(categoryId)) categoryOrder.set(categoryId, index);
+      matchesByCategory.get(categoryId)!.push({
         name: result.item.name,
         description: result.item.description,
         category: result.item.category,
         priority: result.item.priority
       });
-    }
-
-    const categoryOrder = new SvelteMap<string, number>();
-
-    sortedResults.forEach((result, index) => {
-      const categoryId = result.item.categoryId;
-
-      if (!categoryOrder.has(categoryId)) {
-        categoryOrder.set(categoryId, index);
-      }
     });
 
-    return allCategoriesWithPresets
+    return catalogCategories
       .map((category) => ({
         ...category,
-        objects: matchedObjects.get(category.id) || []
+        objects: matchesByCategory.get(category.id) || []
       }))
       .filter((category) => category.objects.length > 0)
-      .toSorted((a, b) => {
-        const aOrder = categoryOrder.get(a.id) ?? Infinity;
-        const bOrder = categoryOrder.get(b.id) ?? Infinity;
-
-        return aOrder - bOrder;
-      });
+      .toSorted(
+        (a, b) =>
+          (categoryOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (categoryOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      );
   });
 
-  const suggestedDisabledObject = $derived.by((): DisabledObjectInfo | null => {
-    if (!searchQuery.trim()) return null;
-    if (filteredCategories.length > 0) return null;
+  const activeCategory = $derived(
+    filteredCategories.find((category) => category.id === selectedCategoryId) ??
+      filteredCategories[0] ??
+      null
+  );
 
+  const suggestedDisabledObject = $derived.by((): DisabledObjectInfo | null => {
+    if (catalogKind !== 'objects' || $objectBrowserMode !== 'insert' || !searchQuery.trim()) {
+      return null;
+    }
+    if (filteredCategories.length > 0) return null;
     return searchDisabledObject(searchQuery);
   });
 
-  const isSearching = $derived(searchQuery.trim().length > 0);
-
-  function enablePackAndSelect(packId: string, objectName: string) {
-    togglePack(packId);
-    setTimeout(() => {
-      handleSelectObject(objectName);
-    }, 50);
-  }
-
-  function handleClose() {
-    open = false;
-    searchQuery = '';
-    $objectBrowserMode = 'insert';
-    expandedPackId = null;
-  }
-
-  function handleSelectObject(name: string) {
-    onSelectObject(name);
-    handleClose();
-  }
-
-  function toggleCategory(id: string) {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    expandedCategories = newExpanded;
-  }
-
-  function togglePackExpansion(packId: string) {
-    if (isSearching) return;
-    expandedPackId = expandedPackId === packId ? null : packId;
-  }
-
-  $effect(() => {
-    if (open && !hasInitialized) {
-      expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.id));
-      hasInitialized = true;
-    } else if (!open) {
-      hasInitialized = false;
-    }
-  });
-
-  $effect(() => {
-    if (searchQuery.trim() && filteredCategories.length > 0) {
-      expandedCategories = new Set(filteredCategories.map((cat) => cat.id));
-    }
-  });
-
-  $effect(() => {
-    if (isSearching) {
-      expandedPackId = null;
-    }
-  });
-
-  $effect(() => {
-    if (!open) return;
-
-    function handleKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        handleClose();
-      }
-    }
-
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
-  });
-
-  // Pack filtering for packs mode
   const filteredObjectPacks = $derived.by(() => {
     if (!searchQuery.trim()) return BUILT_IN_PACKS;
     const query = searchQuery.toLowerCase();
@@ -351,7 +243,7 @@
       (pack) =>
         pack.name.toLowerCase().includes(query) ||
         pack.description.toLowerCase().includes(query) ||
-        pack.objects.some((obj) => obj.toLowerCase().includes(query))
+        pack.objects.some((object) => object.toLowerCase().includes(query))
     );
   });
 
@@ -366,504 +258,597 @@
     );
   });
 
+  const visiblePackCount = $derived(
+    catalogKind === 'objects' ? filteredObjectPacks.length : filteredPresetPacks.length
+  );
   const totalObjectCount = $derived.by(() => {
-    const allObjects = new Set<string>();
+    const objects = new SvelteSet<string>();
     for (const pack of BUILT_IN_PACKS) {
-      for (const obj of pack.objects) allObjects.add(obj);
+      for (const object of pack.objects) objects.add(object);
     }
-    return allObjects.size;
+    return objects.size;
   });
-
-  const enabledCount = $derived($enabledPrimaryObjects.size);
+  const enabledObjectCount = $derived($enabledPrimaryObjects.size);
   const allObjectPacksEnabled = $derived($enabledPackIds.length === BUILT_IN_PACKS.length);
   const allPresetPacksEnabled = $derived(
     BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
+  const expandedObjectPack = $derived(
+    catalogKind === 'objects'
+      ? (BUILT_IN_PACKS.find((pack) => pack.id === expandedPackId) ?? null)
+      : null
+  );
+  const expandedPresetPack = $derived(
+    catalogKind === 'presets'
+      ? (BUILT_IN_PRESET_PACKS.find((pack) => pack.id === expandedPackId) ?? null)
+      : null
+  );
+  const expandedPackItems = $derived(
+    expandedObjectPack?.objects ??
+      (expandedPresetPack ? getPresetPackPresetNames(expandedPresetPack) : [])
+  );
+  const expandedPackName = $derived(expandedObjectPack?.name ?? expandedPresetPack?.name ?? '');
+  const expandedPackDescription = $derived(
+    expandedObjectPack?.description ?? expandedPresetPack?.description ?? ''
+  );
+  const ExpandedPackIcon = $derived(
+    getIconComponent(expandedObjectPack?.icon ?? expandedPresetPack?.icon ?? 'package')
+  );
+
+  const dialogTitle = $derived(
+    $objectBrowserMode === 'packs'
+      ? 'Manage library'
+      : $objectBrowserMode === 'help'
+        ? 'Explore object help'
+        : 'Add to patch'
+  );
+  const searchPlaceholder = $derived(
+    $objectBrowserMode === 'packs'
+      ? `Search ${catalogKind === 'objects' ? 'object' : 'preset'} packs`
+      : $objectBrowserMode === 'help'
+        ? 'Search object help'
+        : `Search ${catalogKind}`
+  );
+
+  $effect(() => {
+    if (!open || $objectBrowserMode === 'packs') return;
+
+    const frame = requestAnimationFrame(() => {
+      if (window.matchMedia('(pointer: fine)').matches) {
+        searchInput?.focus();
+        searchInput?.select();
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  });
+
+  function selectCatalogKind(kind: CatalogKind) {
+    catalogKind = kind;
+    selectedCategoryId = null;
+    expandedPackId = null;
+    searchQuery = '';
+  }
+
+  function openPacks() {
+    $objectBrowserMode = 'packs';
+    expandedPackId = null;
+    searchQuery = '';
+  }
+
+  function closePacks() {
+    $objectBrowserMode = 'insert';
+    expandedPackId = null;
+    searchQuery = '';
+  }
+
+  function toggleHelpMode() {
+    if ($objectBrowserMode === 'help') {
+      $objectBrowserMode = 'insert';
+    } else {
+      catalogKind = 'objects';
+      selectedCategoryId = null;
+      searchQuery = '';
+      $objectBrowserMode = 'help';
+    }
+  }
+
+  function handleClose() {
+    open = false;
+    searchQuery = '';
+    expandedPackId = null;
+    $objectBrowserMode = 'insert';
+  }
+
+  function handleSelectObject(name: string) {
+    onSelectObject(name);
+    handleClose();
+  }
+
+  function enablePackAndSelect(packId: string, objectName: string) {
+    togglePack(packId);
+    setTimeout(() => handleSelectObject(objectName), 50);
+  }
+
+  function togglePackExpansion(packId: string) {
+    if (searchQuery.trim()) return;
+    expandedPackId = expandedPackId === packId ? null : packId;
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (open && event.key === 'Escape') handleClose();
+  }
 </script>
+
+<svelte:window onkeydown={handleWindowKeydown} />
 
 {#if open}
   <div
     class="pt-safe pr-safe pb-safe pl-safe fixed inset-0 z-50 flex items-center justify-center"
     role="presentation"
   >
-    <!-- Backdrop -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="fixed inset-0 animate-[ob-fade_0.2s_ease_both] bg-black/75 backdrop-blur-[2px]"
-      role="button"
-      tabindex="-1"
+      class="fixed inset-0 animate-[ob-fade_0.18s_ease_both] bg-black/80"
       onclick={handleClose}
-      aria-label="Close modal"
+      aria-hidden="true"
     ></div>
 
-    <!-- Modal container -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="relative z-10 m-0 flex h-full w-full max-w-[860px] animate-[ob-card-in_0.2s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-xl border border-white/12 bg-[#111113] shadow-[0_24px_80px_rgba(0,0,0,0.58)] outline-none sm:m-4 sm:h-[88dvh] sm:max-h-[780px]"
+      class="relative z-10 m-0 flex h-full w-full max-w-[1040px] animate-[ob-card-in_0.2s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-none border border-white/12 bg-[#101012] shadow-[0_24px_80px_rgba(0,0,0,0.58)] outline-none sm:m-4 sm:h-[88dvh] sm:max-h-[820px] sm:rounded-xl"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="ob-title"
+      aria-labelledby="object-browser-title"
       tabindex="-1"
-      onclick={(e) => e.stopPropagation()}
     >
-      <!-- Header -->
-      <div
-        class="relative z-[1] flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-5 pt-4 pb-3 max-sm:flex-col max-sm:items-start sm:px-7 sm:pt-[18px] sm:pb-3.5"
+      <header
+        class="relative z-[2] flex min-h-[72px] shrink-0 items-center gap-4 border-b border-white/7 px-4 py-3 sm:px-6"
       >
-        <span
-          class="shrink-0 font-mono text-[10px] tracking-[0.18em] whitespace-nowrap text-zinc-700 uppercase"
-          >patchies · objects</span
-        >
-        <div
-          class="flex items-center gap-2.5 max-sm:ml-0 max-sm:w-full max-sm:justify-between sm:ml-auto"
-        >
-          <div class="flex flex-wrap gap-1.5">
-            <!-- Packs button -->
-            <Tooltip.Root delayDuration={100}>
-              <Tooltip.Trigger>
-                <button
-                  onclick={togglePacksMode}
-                  class={[
-                    'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
-                    $objectBrowserMode === 'packs'
-                      ? 'border-orange-500/30 bg-orange-500/6 text-orange-500'
-                      : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
-                  ]}
-                >
-                  <Package class="h-3 w-3" />
-                  <span>packs</span>
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">Enable or disable packs</Tooltip.Content>
-            </Tooltip.Root>
-
-            <!-- Presets toggle -->
-            <Tooltip.Root delayDuration={100}>
-              <Tooltip.Trigger>
-                <button
-                  onclick={() => (showPresets = !showPresets)}
-                  disabled={$objectBrowserMode === 'help' || $objectBrowserMode === 'packs'}
-                  class={[
-                    'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
-                    $objectBrowserMode === 'help' || $objectBrowserMode === 'packs'
-                      ? 'cursor-not-allowed border-white/4 text-zinc-700 opacity-50'
-                      : showPresets
-                        ? 'border-orange-500/30 bg-orange-500/6 text-orange-500'
-                        : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
-                  ]}
-                >
-                  <Bookmark class="h-3 w-3" />
-                  <span>presets</span>
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">
-                {$objectBrowserMode === 'help'
-                  ? 'Presets hidden in help mode'
-                  : $objectBrowserMode === 'packs'
-                    ? 'Switch to insert mode to browse presets'
-                    : 'Show saved and enabled presets'}
-              </Tooltip.Content>
-            </Tooltip.Root>
-
-            <!-- Help mode toggle -->
-            <Tooltip.Root delayDuration={100}>
-              <Tooltip.Trigger>
-                <button
-                  onclick={toggleHelpMode}
-                  class={[
-                    'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
-                    $objectBrowserMode === 'help'
-                      ? 'border-blue-400/30 bg-blue-400/6 text-blue-400'
-                      : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
-                  ]}
-                >
-                  <CircleQuestionMark class="h-3 w-3" />
-                  <span>help</span>
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">
-                {$objectBrowserMode === 'help' ? 'Help mode active' : 'Browse help'}
-              </Tooltip.Content>
-            </Tooltip.Root>
-          </div>
+        {#if $objectBrowserMode === 'packs'}
           <button
-            onclick={handleClose}
-            class="-my-2 -mr-1 shrink-0 cursor-pointer border-none bg-transparent p-3 font-mono text-base leading-none text-zinc-700 transition-colors hover:text-zinc-500"
-            aria-label="Close modal">✕</button
+            type="button"
+            onclick={closePacks}
+            class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors outline-none hover:border-white/16 hover:text-zinc-100 focus-visible:border-orange-500/70"
+            aria-label="Back to catalog"
           >
+            <ArrowLeft class="h-4 w-4" />
+          </button>
+        {/if}
+
+        <div class="min-w-0 flex-1">
+          <h2
+            id="object-browser-title"
+            class="truncate text-[17px] leading-tight font-medium text-zinc-100"
+          >
+            {dialogTitle}
+          </h2>
+          <p class="mt-1 truncate text-[11px] text-zinc-500 max-[360px]:hidden">
+            {$objectBrowserMode === 'packs'
+              ? 'Choose which objects and presets appear in your catalog.'
+              : $objectBrowserMode === 'help'
+                ? 'Choose an object to open its documentation.'
+                : 'Browse the building blocks available in Patchies.'}
+          </p>
         </div>
-      </div>
 
-      <!-- Search bar -->
-      <div class="relative z-[1] shrink-0 border-b border-white/4 px-5 py-2.5 sm:px-7 sm:py-3">
+        <div class="flex shrink-0 items-center gap-1.5">
+          {#if $objectBrowserMode !== 'packs'}
+            <button
+              type="button"
+              onclick={toggleHelpMode}
+              aria-pressed={$objectBrowserMode === 'help'}
+              aria-label={$objectBrowserMode === 'help' ? 'Exit help mode' : 'Browse object help'}
+              class={[
+                'flex h-11 cursor-pointer items-center gap-2 rounded-md border px-3 text-[11px] font-medium transition-colors outline-none focus-visible:border-blue-400/70 sm:h-9',
+                $objectBrowserMode === 'help'
+                  ? 'border-blue-400/35 bg-blue-400/8 text-blue-300'
+                  : 'border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
+              ]}
+            >
+              <CircleQuestionMark class="h-4 w-4" />
+              <span class="max-sm:hidden">Help</span>
+            </button>
+            <button
+              type="button"
+              onclick={openPacks}
+              aria-label="Manage library"
+              class="flex h-11 cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-white/[0.025] px-3 text-[11px] font-medium text-zinc-500 transition-colors outline-none hover:border-white/16 hover:text-zinc-200 focus-visible:border-orange-500/70 sm:h-9"
+            >
+              <SlidersHorizontal class="h-4 w-4" />
+              <span class="max-sm:hidden">Manage library</span>
+            </button>
+          {/if}
+          <button
+            type="button"
+            onclick={handleClose}
+            class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent text-zinc-500 transition-colors outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:border-orange-500/70"
+            aria-label="Close object browser"
+          >
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+      </header>
+
+      <div class="relative z-[1] shrink-0 border-b border-white/7 px-4 py-3 sm:px-6">
+        <label for="object-browser-search" class="sr-only">{searchPlaceholder}</label>
         <div class="relative flex items-center">
-          <Search class="pointer-events-none absolute left-3 h-3.5 w-3.5 text-zinc-700" />
+          <Search class="pointer-events-none absolute left-3.5 h-4 w-4 text-zinc-500" />
           <input
-            type="text"
+            id="object-browser-search"
+            bind:this={searchInput}
+            type="search"
             bind:value={searchQuery}
-            placeholder="search objects and presets..."
-            class="w-full rounded-md border border-white/6 bg-white/2 px-9 py-2 font-mono text-[13px] text-zinc-200 transition-colors outline-none placeholder:tracking-[0.04em] placeholder:text-zinc-700 focus:border-orange-500/25"
-            id="ob-title"
+            placeholder={searchPlaceholder}
+            class="h-11 w-full rounded-lg border border-white/9 bg-white/[0.035] pr-11 pl-10 font-mono text-[13px] text-zinc-100 transition-colors outline-none placeholder:text-zinc-600 focus:border-orange-500/45 focus:bg-white/[0.05]"
           />
-
           {#if searchQuery}
             <button
+              type="button"
               onclick={() => (searchQuery = '')}
-              class="absolute right-2.5 cursor-pointer border-none bg-transparent p-0.5 text-zinc-600 transition-colors hover:text-zinc-400"
+              class="absolute right-1.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-zinc-500 transition-colors outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:text-orange-400"
               aria-label="Clear search"
             >
-              <X class="h-3.5 w-3.5" />
+              <X class="h-4 w-4" />
             </button>
           {/if}
         </div>
       </div>
 
-      <!-- Object list / Packs panel -->
-      <div class="ob-scroll relative z-[1] flex-1 overflow-y-auto p-4 sm:p-5">
-        {#if $objectBrowserMode === 'packs'}
-          <div class="flex flex-col gap-5">
-            <!-- Object Packs Section -->
-            {#if filteredObjectPacks.length > 0}
-              <div>
-                <div class="mb-2 flex items-center justify-between">
-                  <span
-                    class="font-mono text-[10px] font-medium tracking-[0.14em] text-zinc-600 uppercase"
-                    >Object Packs</span
-                  >
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono text-[10px] text-zinc-700"
-                      >{enabledCount}/{totalObjectCount}</span
-                    >
-                    {#if allObjectPacksEnabled}
-                      <button
-                        onclick={disableAllPacks}
-                        class="cursor-pointer rounded border-none bg-transparent px-1.5 py-0.5 font-mono text-[10px] text-zinc-600 transition-all hover:bg-white/5 hover:text-zinc-400"
-                        >Reset</button
-                      >
-                    {:else}
-                      <button
-                        onclick={enableAllPacks}
-                        class="cursor-pointer rounded border-none bg-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-200 transition-all hover:bg-zinc-600"
-                        >All</button
-                      >
-                    {/if}
-                  </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {#each filteredObjectPacks as pack, i (pack.id)}
-                    {@const expandedIdx = isSearching
-                      ? -1
-                      : filteredObjectPacks.findIndex((p) => p.id === expandedPackId)}
-                    {@const cols = 3}
-                    {@const isEndOfRow =
-                      (i + 1) % cols === 0 || i === filteredObjectPacks.length - 1}
-                    {@const expandedInThisRow =
-                      expandedIdx >= 0 && Math.floor(expandedIdx / cols) === Math.floor(i / cols)}
-                    {@const expandedPack = expandedInThisRow
-                      ? filteredObjectPacks[expandedIdx]
-                      : null}
-                    <ExtensionPackCard
-                      {pack}
-                      enabled={isPackEnabled(pack.id, $enabledPackIds)}
-                      onToggle={() => togglePack(pack.id)}
-                      {searchQuery}
-                      locked={isPackLocked(pack.id)}
-                      variant="tile"
-                      selected={!isSearching && expandedPackId === pack.id}
-                      onSelect={() => togglePackExpansion(pack.id)}
-                    />
-                    {#if isEndOfRow && expandedPack}
-                      <div
-                        class="col-span-full rounded-lg border border-orange-500/15 bg-orange-500/3 p-3"
-                      >
-                        <div class="flex flex-wrap gap-1">
-                          {#each expandedPack.objects as obj}
-                            {@const isMatch =
-                              searchQuery.trim() &&
-                              obj.toLowerCase().includes(searchQuery.toLowerCase())}
-                            <span
-                              class={[
-                                'rounded-[3px] px-1.5 py-0.5 font-mono text-[9px]',
-                                isMatch
-                                  ? 'bg-orange-500/15 text-orange-400'
-                                  : 'bg-white/4 text-zinc-500'
-                              ]}
-                            >
-                              {obj}
-                            </span>
-                          {/each}
-                        </div>
-                      </div>
-                    {/if}
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            <!-- Preset Packs Section -->
-            {#if filteredPresetPacks.length > 0}
-              <div>
-                <div class="mb-2 flex items-center justify-between">
-                  <span
-                    class="font-mono text-[10px] font-medium tracking-[0.14em] text-zinc-600 uppercase"
-                    >Preset Packs</span
-                  >
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono text-[10px] text-zinc-700"
-                      >{$enabledPresetPackIds.length}/{BUILT_IN_PRESET_PACKS.length}</span
-                    >
-                    {#if allPresetPacksEnabled}
-                      <button
-                        onclick={disableAllPresetPacks}
-                        class="cursor-pointer rounded border-none bg-transparent px-1.5 py-0.5 font-mono text-[10px] text-zinc-600 transition-all hover:bg-white/5 hover:text-zinc-400"
-                        >Reset</button
-                      >
-                    {:else}
-                      <button
-                        onclick={enableAllPresetPacks}
-                        class="cursor-pointer rounded border-none bg-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-200 transition-all hover:bg-zinc-600"
-                        >All</button
-                      >
-                    {/if}
-                  </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {#each filteredPresetPacks as pack, i (pack.id)}
-                    {@const expandedIdx = isSearching
-                      ? -1
-                      : filteredPresetPacks.findIndex((p) => p.id === expandedPackId)}
-
-                    {@const cols = 3}
-
-                    {@const isEndOfRow =
-                      (i + 1) % cols === 0 || i === filteredPresetPacks.length - 1}
-
-                    {@const expandedInThisRow =
-                      expandedIdx >= 0 && Math.floor(expandedIdx / cols) === Math.floor(i / cols)}
-
-                    {@const expandedPack = expandedInThisRow
-                      ? filteredPresetPacks[expandedIdx]
-                      : null}
-
-                    <PresetPackCard
-                      {pack}
-                      enabled={isPresetPackEnabled(pack.id, $enabledPresetPackIds)}
-                      onToggle={() => togglePresetPack(pack.id)}
-                      {searchQuery}
-                      locked={isPresetPackLocked(pack.id)}
-                      variant="tile"
-                      selected={!isSearching && expandedPackId === pack.id}
-                      onSelect={() => togglePackExpansion(pack.id)}
-                    />
-
-                    {#if isEndOfRow && expandedPack}
-                      <div
-                        class="col-span-full rounded-lg border border-orange-500/15 bg-orange-500/3 p-3"
-                      >
-                        <div class="flex flex-wrap gap-1">
-                          {#each expandedPack.presets as preset (preset)}
-                            {@const isMatch =
-                              searchQuery.trim() &&
-                              preset.toLowerCase().includes(searchQuery.toLowerCase())}
-
-                            <span
-                              class={[
-                                'rounded-[3px] px-1.5 py-0.5 font-mono text-[9px]',
-                                isMatch
-                                  ? 'bg-orange-500/15 text-orange-400'
-                                  : 'bg-white/4 text-zinc-500'
-                              ]}
-                            >
-                              {preset}
-                            </span>
-                          {/each}
-                        </div>
-                      </div>
-                    {/if}
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            <!-- No results -->
-            {#if filteredObjectPacks.length === 0 && filteredPresetPacks.length === 0}
-              <div class="flex h-full flex-col items-center justify-center gap-3 text-center">
-                <SearchX class="h-10 w-10 text-zinc-800" />
-                <p class="font-mono text-xs tracking-[0.04em] text-zinc-600">
-                  No packs match "{searchQuery}"
-                </p>
-              </div>
-            {/if}
-          </div>
-        {:else if filteredCategories.length === 0}
-          <div class="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <SearchX class="h-10 w-10 text-zinc-800" />
-            <p class="font-mono text-xs tracking-[0.04em] text-zinc-600">
-              No objects found for "{searchQuery}"
-            </p>
-
-            {#if suggestedDisabledObject}
-              <DisabledObjectSuggestion
-                name={suggestedDisabledObject.name}
-                packName={suggestedDisabledObject.packName}
-                packIcon={suggestedDisabledObject.packIcon}
-                onBrowsePacks={openPacks}
-                onEnableAndAdd={() => {
-                  enablePackAndSelect(suggestedDisabledObject.packId, suggestedDisabledObject.name);
-                }}
-              />
-            {:else}
+      {#if $objectBrowserMode === 'packs'}
+        <section class="flex min-h-0 flex-1 flex-col" aria-label="Library packs">
+          <div
+            class="flex shrink-0 flex-col gap-3 border-b border-white/7 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+          >
+            <div class="grid grid-cols-2 rounded-lg border border-white/8 bg-black/15 p-1">
               <button
-                onclick={openPacks}
-                class="flex cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-transparent px-4 py-2 font-mono text-xs text-zinc-500 transition-all hover:border-orange-500/25 hover:text-zinc-400"
+                type="button"
+                onclick={() => selectCatalogKind('objects')}
+                aria-pressed={catalogKind === 'objects'}
+                class={[
+                  'flex h-11 min-w-32 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70 sm:h-8',
+                  catalogKind === 'objects'
+                    ? 'bg-white/8 text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-200'
+                ]}
               >
-                <Package class="h-4 w-4" />
-                <span>Browse Packs</span>
+                <Boxes class="h-4 w-4" />
+                Object Packs
               </button>
-            {/if}
-          </div>
-        {:else}
-          <div class="flex flex-col gap-2">
-            {#each filteredCategories as category (category.id)}
-              {@const isCategoryPreset = category.isPresetCategory === true}
-              {@const IconComponent = getIconComponent(category.icon)}
+              <button
+                type="button"
+                onclick={() => selectCatalogKind('presets')}
+                aria-pressed={catalogKind === 'presets'}
+                class={[
+                  'flex h-11 min-w-32 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70 sm:h-8',
+                  catalogKind === 'presets'
+                    ? 'bg-white/8 text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-200'
+                ]}
+              >
+                <Bookmark class="h-4 w-4" />
+                Preset Packs
+              </button>
+            </div>
 
-              <div>
-                <!-- Category header -->
+            <div class="flex items-center justify-between gap-4 sm:justify-end">
+              <span class="font-mono text-[10px] text-zinc-500">
+                {catalogKind === 'objects'
+                  ? `${enabledObjectCount}/${totalObjectCount} objects enabled`
+                  : `${$enabledPresetPackIds.length}/${BUILT_IN_PRESET_PACKS.length} packs enabled`}
+              </span>
+              {#if catalogKind === 'objects'}
                 <button
-                  onclick={() => toggleCategory(category.id)}
-                  class="mb-1 flex w-full cursor-pointer items-center justify-between rounded border-none bg-transparent px-1.5 py-[5px] transition-colors hover:bg-white/2"
+                  type="button"
+                  onclick={allObjectPacksEnabled ? disableAllPacks : enableAllPacks}
+                  class="h-11 cursor-pointer rounded-md border border-white/10 bg-white/[0.035] px-3 text-[11px] font-medium text-zinc-300 transition-colors outline-none hover:border-white/18 hover:bg-white/[0.06] focus-visible:border-orange-500/70 sm:h-8"
                 >
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-zinc-500"
-                    >
-                      <IconComponent class="h-3 w-3" />
-                    </div>
-                    <span
-                      class={[
-                        'font-mono text-[10px] tracking-[0.14em] uppercase',
-                        isCategoryPreset ? 'text-zinc-600' : 'text-zinc-500'
-                      ]}
-                    >
-                      {category.title}
-                    </span>
-                    <span class="font-mono text-[9px] tracking-[0.05em] text-zinc-600"
-                      >{category.objects.length}</span
-                    >
-                  </div>
-                  <ChevronDown
-                    class={[
-                      'h-3.5 w-3.5 text-zinc-600 transition-transform',
-                      expandedCategories.has(category.id) ? '' : '-rotate-90'
-                    ]}
-                  />
+                  {allObjectPacksEnabled ? 'Reset' : 'Enable all'}
                 </button>
+              {:else}
+                <button
+                  type="button"
+                  onclick={allPresetPacksEnabled ? disableAllPresetPacks : enableAllPresetPacks}
+                  class="h-11 cursor-pointer rounded-md border border-white/10 bg-white/[0.035] px-3 text-[11px] font-medium text-zinc-300 transition-colors outline-none hover:border-white/18 hover:bg-white/[0.06] focus-visible:border-orange-500/70 sm:h-8"
+                >
+                  {allPresetPacksEnabled ? 'Reset' : 'Enable all'}
+                </button>
+              {/if}
+            </div>
+          </div>
 
-                <!-- Objects grid -->
-                {#if expandedCategories.has(category.id)}
-                  <div class="mb-1 grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4">
-                    {#each category.objects as object (object.name)}
-                      {@const isPreset = category.isPresetCategory === true}
-                      {@const isLowPriority = object.priority === 'low'}
-                      {@const objectHasHelp = hasHelp(object.name)}
-                      {@const noHelpAvailable = $objectBrowserMode === 'help' && !objectHasHelp}
+          <div class="relative flex min-h-0 flex-1">
+            <div class="ob-scroll min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+              {#if visiblePackCount === 0}
+                <div class="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
+                  <SearchX class="h-9 w-9 text-zinc-700" />
+                  <p class="text-sm text-zinc-400">No {catalogKind} packs match “{searchQuery}”.</p>
+                  <button
+                    type="button"
+                    onclick={() => (searchQuery = '')}
+                    class="h-11 cursor-pointer rounded-md border border-white/10 px-4 text-xs text-zinc-300 hover:bg-white/5"
+                    >Clear search</button
+                  >
+                </div>
+              {:else}
+                <div
+                  class={[
+                    'grid grid-cols-1 gap-2 min-[430px]:grid-cols-2',
+                    expandedPackId ? 'min-[900px]:grid-cols-2' : 'md:grid-cols-3'
+                  ]}
+                >
+                  {#if catalogKind === 'objects'}
+                    {#each filteredObjectPacks as pack (pack.id)}
+                      <ExtensionPackCard
+                        {pack}
+                        enabled={isPackEnabled(pack.id, $enabledPackIds)}
+                        onToggle={() => togglePack(pack.id)}
+                        {searchQuery}
+                        locked={isPackLocked(pack.id)}
+                        variant="tile"
+                        selected={!searchQuery.trim() && expandedPackId === pack.id}
+                        onSelect={() => togglePackExpansion(pack.id)}
+                      />
+                    {/each}
+                  {:else}
+                    {#each filteredPresetPacks as pack (pack.id)}
+                      <PresetPackCard
+                        {pack}
+                        enabled={isPresetPackEnabled(pack.id, $enabledPresetPackIds)}
+                        onToggle={() => togglePresetPack(pack.id)}
+                        {searchQuery}
+                        locked={isPresetPackLocked(pack.id)}
+                        variant="tile"
+                        selected={!searchQuery.trim() && expandedPackId === pack.id}
+                        onSelect={() => togglePackExpansion(pack.id)}
+                      />
+                    {/each}
+                  {/if}
+                </div>
+              {/if}
+            </div>
 
-                      <div class="group relative flex">
-                        <button
-                          onclick={() => {
-                            if (noHelpAvailable) return;
-                            if ($objectBrowserMode === 'help') {
-                              openHelp(object.name);
-                            } else {
-                              handleSelectObject(object.name);
-                            }
-                          }}
-                          disabled={noHelpAvailable}
-                          class={[
-                            'flex h-full w-full cursor-pointer flex-col gap-1 rounded-md border px-2.5 py-2 text-left transition-all',
-                            noHelpAvailable
-                              ? 'cursor-not-allowed border-white/2 bg-transparent opacity-30'
-                              : $objectBrowserMode === 'help'
-                                ? 'border-blue-400/15 bg-blue-400/3 hover:border-blue-400/30 hover:bg-blue-400/7'
-                                : isPreset
-                                  ? 'border-white/7 bg-white/2 hover:border-white/12 hover:bg-white/4'
-                                  : 'border-white/7 bg-white/2 hover:border-orange-500/30 hover:bg-orange-500/5',
-                            isLowPriority && !noHelpAvailable && 'opacity-45'
-                          ]}
-                        >
-                          <div class="flex items-center gap-[5px]">
-                            {#if $objectBrowserMode === 'help'}
-                              <CircleQuestionMark
-                                class={[
-                                  'h-3 w-3',
-                                  noHelpAvailable ? 'text-zinc-600' : 'text-blue-400'
-                                ]}
-                              />
-                            {/if}
-                            <span
-                              class={[
-                                'font-mono text-xs leading-tight',
-                                noHelpAvailable
-                                  ? 'text-zinc-600'
-                                  : $objectBrowserMode === 'help'
-                                    ? 'text-blue-200'
-                                    : isPreset
-                                      ? 'text-zinc-300'
-                                      : 'text-zinc-100'
-                              ]}>{object.name}</span
-                            >
-                          </div>
+            {#if (expandedObjectPack || expandedPresetPack) && !searchQuery.trim()}
+              <button
+                type="button"
+                onclick={() => (expandedPackId = null)}
+                class="absolute inset-0 z-10 cursor-pointer bg-black/65 sm:hidden"
+                aria-label="Dismiss pack contents"
+              ></button>
+              <aside
+                class="absolute inset-x-3 bottom-3 z-20 flex max-h-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-xl border border-white/12 bg-zinc-950 shadow-[0_18px_50px_rgba(0,0,0,0.55)] sm:static sm:z-auto sm:w-[300px] sm:shrink-0 sm:rounded-none sm:border-y-0 sm:border-r-0 sm:border-l sm:bg-black/15 sm:shadow-none"
+                aria-label={`${expandedPackName} contents`}
+              >
+                <div class="shrink-0 border-b border-white/7 p-4">
+                  <div class="flex items-start gap-3">
+                    <div
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/9 bg-white/[0.045] text-zinc-300"
+                    >
+                      <ExpandedPackIcon class="h-4 w-4" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h3 class="truncate text-sm font-medium text-zinc-100">{expandedPackName}</h3>
+                      <p class="mt-0.5 font-mono text-[9px] text-zinc-600">
+                        {expandedPackItems.length}
+                        {catalogKind === 'objects' ? 'objects' : 'presets'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onclick={() => (expandedPackId = null)}
+                      class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-zinc-500 outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:ring-1 focus-visible:ring-orange-500/70 sm:h-9 sm:w-9"
+                      aria-label="Close pack contents"
+                    >
+                      <X class="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p class="mt-3 text-[11px] leading-relaxed text-zinc-500">
+                    {expandedPackDescription}
+                  </p>
+                </div>
 
-                          <span
-                            class={[
-                              'line-clamp-2 text-[11px] leading-[1.4] text-zinc-500',
-                              noHelpAvailable && 'text-zinc-700'
-                            ]}
-                          >
-                            {object.description}
-                          </span>
-
-                          {#if isLowPriority && !noHelpAvailable}
-                            <span class="font-mono text-[9px] tracking-[0.08em] text-zinc-600"
-                              >disabled</span
-                            >
-                          {/if}
-                        </button>
-
-                        <!-- Help hover button (insert mode, desktop) -->
-                        {#if $objectBrowserMode === 'insert' && objectHasHelp}
-                          <button
-                            onclick={(e) => {
-                              e.stopPropagation();
-                              openHelp(object.name);
-                            }}
-                            class="absolute top-1.5 right-1.5 hidden cursor-pointer rounded border-none bg-transparent p-1 text-zinc-600 opacity-0 transition-all group-hover:opacity-100 hover:bg-white/6 hover:text-zinc-400 sm:block"
-                            title="Open help for {object.name}"
-                          >
-                            <CircleQuestionMark class="h-3.5 w-3.5" />
-                          </button>
-                        {/if}
+                <div class="ob-scroll min-h-0 flex-1 overflow-y-auto p-3">
+                  <div class="flex flex-col gap-1">
+                    {#each expandedPackItems as item, index (item)}
+                      <div
+                        class="flex min-h-9 items-center gap-3 rounded-md border border-white/6 bg-white/[0.025] px-3 py-2"
+                      >
+                        <span class="w-5 shrink-0 text-right font-mono text-[8px] text-zinc-700">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <span class="min-w-0 font-mono text-[10px] text-zinc-300">{item}</span>
                       </div>
                     {/each}
                   </div>
+                </div>
+              </aside>
+            {/if}
+          </div>
+        </section>
+      {:else}
+        <div class="ob-catalog min-h-0 flex-1">
+          <nav class="ob-catalog-nav" aria-label="Object browser categories">
+            <div class="ob-workspace-switch" aria-label="Catalog workspace">
+              <button
+                type="button"
+                onclick={() => selectCatalogKind('objects')}
+                aria-pressed={catalogKind === 'objects' || $objectBrowserMode === 'help'}
+                class:ob-workspace-active={catalogKind === 'objects' ||
+                  $objectBrowserMode === 'help'}
+                disabled={$objectBrowserMode === 'help'}
+              >
+                <Boxes class="h-4 w-4" />
+                <span>Objects</span>
+                <span class="ob-workspace-count">{objectCategories.length}</span>
+              </button>
+              <button
+                type="button"
+                onclick={() => selectCatalogKind('presets')}
+                aria-pressed={catalogKind === 'presets'}
+                class:ob-workspace-active={catalogKind === 'presets'}
+                disabled={$objectBrowserMode === 'help'}
+              >
+                <Bookmark class="h-4 w-4" />
+                <span>Presets</span>
+                <span class="ob-workspace-count">{presetCategories.length}</span>
+              </button>
+            </div>
+
+            <div class="ob-category-list" aria-label={`${catalogKind} categories`}>
+              {#each filteredCategories as category (category.id)}
+                {@const CategoryIcon = getIconComponent(category.icon)}
+                <button
+                  type="button"
+                  onclick={() => (selectedCategoryId = category.id)}
+                  aria-current={activeCategory?.id === category.id ? 'true' : undefined}
+                  class:ob-category-active={activeCategory?.id === category.id}
+                >
+                  <CategoryIcon class="h-4 w-4 shrink-0" />
+                  <span>{category.title}</span>
+                  <span class="ob-category-count">{category.objects.length}</span>
+                </button>
+              {/each}
+            </div>
+          </nav>
+
+          <section class="ob-results" aria-live="polite">
+            {#if activeCategory}
+              {@const ActiveIcon = getIconComponent(activeCategory.icon)}
+              <header class="ob-results-header">
+                <div class="flex min-w-0 items-center gap-3">
+                  <div
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/8 bg-white/[0.035] text-zinc-400"
+                  >
+                    <ActiveIcon class="h-4 w-4" />
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="truncate text-sm font-medium text-zinc-100">
+                      {activeCategory.title}
+                    </h3>
+                    <p class="mt-0.5 text-[11px] text-zinc-500">
+                      {activeCategory.description ??
+                        `${activeCategory.objects.length} ${catalogKind === 'objects' ? 'objects' : 'presets'} ready to add`}
+                    </p>
+                  </div>
+                </div>
+              </header>
+
+              <div class="ob-scroll min-h-0 flex-1 overflow-y-auto p-3 sm:p-5">
+                <div class="grid grid-cols-2 gap-2 min-[720px]:grid-cols-3 min-[960px]:grid-cols-4">
+                  {#each activeCategory.objects as object (object.name)}
+                    {@const isPreset = catalogKind === 'presets'}
+                    {@const isLowPriority = object.priority === 'low'}
+                    {@const objectHasHelp = hasHelp(object.name)}
+                    {@const noHelpAvailable = $objectBrowserMode === 'help' && !objectHasHelp}
+
+                    <div class="group relative flex min-w-0">
+                      <button
+                        type="button"
+                        onclick={() => {
+                          if (noHelpAvailable) return;
+                          if ($objectBrowserMode === 'help') openHelp(object.name);
+                          else handleSelectObject(object.name);
+                        }}
+                        disabled={noHelpAvailable}
+                        class={[
+                          'flex min-h-[84px] w-full cursor-pointer flex-col gap-1.5 rounded-lg border px-3 py-3 text-left transition-colors outline-none focus-visible:border-orange-500/60 focus-visible:bg-orange-500/[0.055] disabled:cursor-not-allowed',
+                          noHelpAvailable
+                            ? 'border-white/4 bg-transparent opacity-30'
+                            : $objectBrowserMode === 'help'
+                              ? 'border-blue-400/15 bg-blue-400/[0.025] hover:border-blue-400/35 hover:bg-blue-400/[0.06]'
+                              : isPreset
+                                ? 'border-white/8 bg-white/[0.025] hover:border-white/16 hover:bg-white/[0.055]'
+                                : 'border-white/8 bg-white/[0.025] hover:border-orange-500/35 hover:bg-orange-500/[0.045]',
+                          isLowPriority && !noHelpAvailable && 'opacity-50'
+                        ]}
+                      >
+                        <div class="flex items-center gap-1.5 pr-5">
+                          {#if $objectBrowserMode === 'help'}
+                            <CircleQuestionMark
+                              class={[
+                                'h-3.5 w-3.5 shrink-0',
+                                noHelpAvailable ? 'text-zinc-600' : 'text-blue-400'
+                              ]}
+                            />
+                          {/if}
+                          <span
+                            class={[
+                              'min-w-0 font-mono text-[12px] leading-tight break-words',
+                              noHelpAvailable
+                                ? 'text-zinc-600'
+                                : $objectBrowserMode === 'help'
+                                  ? 'text-blue-200'
+                                  : 'text-zinc-100'
+                            ]}>{object.name}</span
+                          >
+                        </div>
+                        <span
+                          class={[
+                            'line-clamp-2 text-[11px] leading-[1.45] text-zinc-500',
+                            noHelpAvailable && 'text-zinc-700'
+                          ]}>{object.description}</span
+                        >
+                        {#if isLowPriority && !noHelpAvailable}
+                          <span class="mt-auto font-mono text-[9px] text-zinc-600">disabled</span>
+                        {/if}
+                      </button>
+
+                      {#if $objectBrowserMode === 'insert' && objectHasHelp && !isPreset}
+                        <button
+                          type="button"
+                          onclick={(event) => {
+                            event.stopPropagation();
+                            openHelp(object.name);
+                          }}
+                          class="absolute top-1 right-1 hidden h-9 w-9 cursor-pointer items-center justify-center rounded-md text-zinc-600 opacity-0 transition-all outline-none group-hover:opacity-100 hover:bg-white/7 hover:text-zinc-200 focus-visible:flex focus-visible:text-orange-400 sm:flex"
+                          aria-label={`Open help for ${object.name}`}
+                        >
+                          <CircleQuestionMark class="h-3.5 w-3.5" />
+                        </button>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {:else}
+              <div
+                class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
+              >
+                <SearchX class="h-10 w-10 text-zinc-700" />
+                <div>
+                  <h3 class="text-sm font-medium text-zinc-200">
+                    No {catalogKind} found for “{searchQuery}”
+                  </h3>
+                  <p class="mt-1 text-xs text-zinc-500">
+                    Try another search or enable more content in your library.
+                  </p>
+                </div>
+
+                {#if suggestedDisabledObject}
+                  <DisabledObjectSuggestion
+                    name={suggestedDisabledObject.name}
+                    packName={suggestedDisabledObject.packName}
+                    packIcon={suggestedDisabledObject.packIcon}
+                    onBrowsePacks={openPacks}
+                    onEnableAndAdd={() =>
+                      enablePackAndSelect(
+                        suggestedDisabledObject.packId,
+                        suggestedDisabledObject.name
+                      )}
+                  />
+                {:else}
+                  <button
+                    type="button"
+                    onclick={openPacks}
+                    class="flex h-11 cursor-pointer items-center gap-2 rounded-md border border-white/10 bg-white/[0.035] px-4 text-xs text-zinc-300 outline-none hover:border-white/18 hover:bg-white/[0.06] focus-visible:border-orange-500/70"
+                  >
+                    <Package class="h-4 w-4" />
+                    Manage library
+                  </button>
                 {/if}
               </div>
-            {/each}
-
-            <!-- Enable more packs CTA -->
-            <button
-              onclick={() => ($objectBrowserMode = 'packs')}
-              class="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/6 bg-transparent py-3.5 font-mono text-[10px] tracking-[0.12em] text-zinc-700 lowercase transition-all hover:border-orange-500/20 hover:text-zinc-500"
-            >
-              <Package class="h-4 w-4" />
-              <span>enable more object packs</span>
-            </button>
-          </div>
-        {/if}
-      </div>
+            {/if}
+          </section>
+        </div>
+      {/if}
     </div>
   </div>
 {/if}
@@ -881,7 +866,7 @@
   @keyframes ob-card-in {
     from {
       opacity: 0;
-      transform: translateY(20px) scale(0.97);
+      transform: translateY(14px) scale(0.985);
     }
     to {
       opacity: 1;
@@ -889,17 +874,247 @@
     }
   }
 
-  .ob-scroll::-webkit-scrollbar {
-    width: 5px;
+  .ob-catalog {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
   }
-  .ob-scroll::-webkit-scrollbar-track {
+
+  .ob-catalog-nav {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    background: #0d0d0f;
+  }
+
+  .ob-workspace-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .ob-workspace-switch button {
+    display: flex;
+    min-width: 0;
+    height: 36px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    padding-inline: 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #71717a;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    outline: none;
+    transition:
+      color 150ms ease,
+      background 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .ob-workspace-switch button:hover:not(:disabled) {
+    color: #d4d4d8;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .ob-workspace-switch button:focus-visible {
+    border-color: rgba(249, 115, 22, 0.7);
+  }
+
+  .ob-workspace-switch button:disabled {
+    cursor: not-allowed;
+  }
+
+  .ob-workspace-switch .ob-workspace-active {
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #f4f4f5;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .ob-workspace-count {
+    margin-left: auto;
+    color: #52525b;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+  }
+
+  .ob-category-list {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .ob-category-list button {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    cursor: pointer;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 8px 9px;
+    color: #71717a;
+    text-align: left;
+    outline: none;
+    transition:
+      color 150ms ease,
+      background 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .ob-category-list button:hover {
+    color: #d4d4d8;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .ob-category-list button:focus-visible {
+    border-color: rgba(249, 115, 22, 0.65);
+  }
+
+  .ob-category-list button :global(svg) {
+    color: #71717a;
+  }
+
+  .ob-category-list button > span:nth-child(2) {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ob-category-list .ob-category-active {
+    border-color: rgba(249, 115, 22, 0.25);
+    color: #fafafa;
+    background: rgba(249, 115, 22, 0.07);
+  }
+
+  .ob-category-list .ob-category-active :global(svg) {
+    color: #f97316;
+  }
+
+  .ob-category-count {
+    color: #52525b;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+  }
+
+  .ob-results {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    background: #111113;
+  }
+
+  .ob-results-header {
+    display: flex;
+    min-height: 68px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: #111113;
+  }
+
+  .ob-scroll::-webkit-scrollbar,
+  .ob-category-list::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .ob-scroll::-webkit-scrollbar-track,
+  .ob-category-list::-webkit-scrollbar-track {
     background: transparent;
   }
-  .ob-scroll::-webkit-scrollbar-thumb {
-    background: #27272a;
+
+  .ob-scroll::-webkit-scrollbar-thumb,
+  .ob-category-list::-webkit-scrollbar-thumb {
     border-radius: 3px;
-  }
-  .ob-scroll::-webkit-scrollbar-thumb:hover {
     background: #3f3f46;
+  }
+
+  @media (max-width: 639px) {
+    .ob-catalog {
+      display: flex;
+      min-height: 0;
+      flex-direction: column;
+    }
+
+    .ob-catalog-nav {
+      flex: 0 0 auto;
+      border-right: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .ob-workspace-switch {
+      padding: 8px 12px 6px;
+      border-bottom: 0;
+    }
+
+    .ob-workspace-switch button {
+      height: 44px;
+      justify-content: center;
+      padding-inline: 14px;
+    }
+
+    .ob-workspace-count {
+      margin-left: 0;
+    }
+
+    .ob-category-list {
+      display: flex;
+      width: 100%;
+      min-height: auto;
+      flex: 0 0 auto;
+      gap: 6px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 12px 10px;
+      scrollbar-width: none;
+    }
+
+    .ob-category-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .ob-category-list button {
+      width: auto;
+      min-width: max-content;
+      padding-inline: 12px;
+      border-color: rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .ob-category-count {
+      padding-left: 2px;
+    }
+
+    .ob-results-header {
+      min-height: 60px;
+      padding: 9px 12px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .ob-workspace-count {
+      display: none;
+    }
+
+    .ob-results :global(.grid) {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 </style>
