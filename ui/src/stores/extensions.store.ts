@@ -37,6 +37,10 @@ import { getObjectAliases } from '$lib/objects/object-definitions';
 const STORAGE_KEY = 'patchies:enabled-packs';
 const DEFAULT_ENABLED_PACKS = ['starters'];
 const LOCKED_PACKS = ['starters']; // Always enabled, cannot be disabled
+const BULK_ENABLE_EXCLUDED_PACKS = new Set(['experimental']);
+export const BULK_ENABLE_PACK_IDS = BUILT_IN_PACKS.filter(
+  (pack) => !BULK_ENABLE_EXCLUDED_PACKS.has(pack.id)
+).map((pack) => pack.id);
 
 function getInitialEnabledPacks(): string[] {
   if (typeof localStorage === 'undefined') return DEFAULT_ENABLED_PACKS;
@@ -126,7 +130,7 @@ export function togglePack(packId: string): void {
  * Enable all object packs
  */
 export function enableAllPacks(): void {
-  enabledPackIds.set(BUILT_IN_PACKS.map((p) => p.id));
+  enabledPackIds.set(BULK_ENABLE_PACK_IDS);
 }
 
 /**

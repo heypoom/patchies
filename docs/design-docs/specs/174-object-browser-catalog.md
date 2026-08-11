@@ -88,6 +88,7 @@ action.
 - Provide **Object Packs** and **Preset Packs** as adjacent tabs above the fold.
 - Render only the selected pack type at a time.
 - Keep explicit **Disable all** and **Enable all** actions visible together.
+- **Enable all** leaves the Experimental object pack disabled; users opt into it individually.
 - Keep enabled packs visually neutral with a quiet check state.
 - Reserve Ember for the selected pack, focus, search matches, and primary actions.
 - The pack card body changes enablement so bulk scanning and toggling uses the largest target. Treat

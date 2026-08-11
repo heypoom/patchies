@@ -6,8 +6,8 @@ vi.mock('$lib/objects/object-definitions', () => ({
 }));
 
 import {
-  BUILT_IN_PACKS,
   BUILT_IN_PRESET_PACKS,
+  BULK_ENABLE_PACK_IDS,
   disableAllPacks,
   disableAllPresetPacks,
   enabledPackIds,
@@ -27,13 +27,14 @@ describe('extensions store', () => {
     );
   });
 
-  it('enables every object pack and lightweight preset packs for workshop setup', () => {
+  it('leaves experimental objects and heavyweight presets disabled for workshop setup', () => {
     disableAllPacks();
     disableAllPresetPacks();
 
     enableAllExtensionPacks();
 
-    expect(get(enabledPackIds)).toEqual(BUILT_IN_PACKS.map((pack) => pack.id));
+    expect(get(enabledPackIds)).toEqual(BULK_ENABLE_PACK_IDS);
+    expect(get(enabledPackIds)).not.toContain('experimental');
     expect(get(enabledPresetPackIds)).toEqual(
       BUILT_IN_PRESET_PACKS.filter((pack) => pack.id !== 'greggman-bytebeat').map((pack) => pack.id)
     );

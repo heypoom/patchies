@@ -34,6 +34,7 @@
     enabledPresetPackIds,
     BUILT_IN_PACKS,
     BUILT_IN_PRESET_PACKS,
+    BULK_ENABLE_PACK_IDS,
     BULK_ENABLE_PRESET_PACK_IDS,
     togglePack,
     togglePresetPack,
@@ -271,7 +272,9 @@
     return objects.size;
   });
   const enabledObjectCount = $derived($enabledPrimaryObjects.size);
-  const allObjectPacksEnabled = $derived($enabledPackIds.length === BUILT_IN_PACKS.length);
+  const allObjectPacksEnabled = $derived(
+    BULK_ENABLE_PACK_IDS.every((packId) => $enabledPackIds.includes(packId))
+  );
   const allPresetPacksEnabled = $derived(
     BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
