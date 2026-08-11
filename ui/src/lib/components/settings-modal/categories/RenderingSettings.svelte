@@ -81,7 +81,12 @@
 </script>
 
 <SettingRow title="Render FPS cap" description="Limit the rendering frame rate">
-  <SettingDropdown value={currentFpsCap} options={fpsCapOptions} onchange={handleFpsCapChange} />
+  <SettingDropdown
+    value={currentFpsCap}
+    options={fpsCapOptions}
+    onchange={handleFpsCapChange}
+    label="Render FPS cap"
+  />
 </SettingRow>
 
 <SettingRow title="Preview background" description="Composite node previews over a color">
@@ -90,6 +95,7 @@
       value={previewBackgroundMode}
       options={previewBackgroundModeOptions}
       onchange={handlePreviewBackgroundModeChange}
+      label="Preview background"
     />
 
     {#if previewBackgroundMode === 'color'}
@@ -105,22 +111,38 @@
 </SettingRow>
 
 <SettingRow title="Show FPS monitor" description="Display frames-per-second counter">
-  <SettingToggle checked={$isFpsMonitorVisible} onchange={(v) => isFpsMonitorVisible.set(v)} />
+  <SettingToggle
+    checked={$isFpsMonitorVisible}
+    onchange={(v) => isFpsMonitorVisible.set(v)}
+    label="Show FPS monitor"
+  />
 </SettingRow>
 
 <SettingRow title="Show video stats" description="Overlay video decoding statistics">
-  <SettingToggle checked={$showVideoStats} onchange={(v) => showVideoStats.set(v)} />
+  <SettingToggle
+    checked={$showVideoStats}
+    onchange={(v) => showVideoStats.set(v)}
+    label="Show video stats"
+  />
 </SettingRow>
 
 <SettingRow title="Show cook stats" description="Overlay render cook status on video previews">
-  <SettingToggle checked={$showCookStats} onchange={(v) => showCookStats.set(v)} />
+  <SettingToggle
+    checked={$showCookStats}
+    onchange={(v) => showCookStats.set(v)}
+    label="Show cook stats"
+  />
 </SettingRow>
 
 <SettingRow
   title="MediaBunny (WebCodecs)"
   description="Use WebCodecs for video decoding (Chrome/Edge recommended)"
 >
-  <SettingToggle checked={$useWebCodecs} onchange={(v) => useWebCodecs.set(v)} />
+  <SettingToggle
+    checked={$useWebCodecs}
+    onchange={(v) => useWebCodecs.set(v)}
+    label="Use MediaBunny WebCodecs"
+  />
 </SettingRow>
 
 <SettingRow title="Output target" description="Where to send rendered output">
@@ -128,5 +150,6 @@
     value={$outputTarget}
     options={outputTargetOptions}
     onchange={handleOutputTargetChange}
+    label="Output target"
   />
 </SettingRow>

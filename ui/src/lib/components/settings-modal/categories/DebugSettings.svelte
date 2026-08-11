@@ -8,5 +8,5 @@
   title="Cull objects"
   description="Only render viewport-visible objects to verify headless behavior."
 >
-  <SettingToggle checked={$cullObjects} onchange={setCullObjects} />
+  <SettingToggle checked={$cullObjects} onchange={setCullObjects} label="Cull objects" />
 </SettingRow>

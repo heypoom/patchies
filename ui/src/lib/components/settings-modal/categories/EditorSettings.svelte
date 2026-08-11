@@ -72,6 +72,7 @@
     value={$defaultEditorLayout}
     options={editorLayoutOptions}
     onchange={handleLayoutChange}
+    label="Default editor layout"
   />
 </SettingRow>
 
@@ -144,13 +145,21 @@
 </SettingRow>
 
 <SettingRow title="Autocomplete" description="Show code completions while typing in code editors.">
-  <SettingToggle checked={$editorAutocompleteEnabled} onchange={setEditorAutocompleteEnabled} />
+  <SettingToggle
+    checked={$editorAutocompleteEnabled}
+    onchange={setEditorAutocompleteEnabled}
+    label="Autocomplete"
+  />
 </SettingRow>
 
 <SettingRow title="Hover hints" description="Show function and value hints when hovering code.">
-  <SettingToggle checked={$editorHoverHintsEnabled} onchange={setEditorHoverHintsEnabled} />
+  <SettingToggle
+    checked={$editorHoverHintsEnabled}
+    onchange={setEditorHoverHintsEnabled}
+    label="Hover hints"
+  />
 </SettingRow>
 
 <SettingRow title="Vim mode" description="Enable Vim keybindings in code editors (requires reload)">
-  <SettingToggle checked={$useVimInEditor} onchange={setVimMode} />
+  <SettingToggle checked={$useVimInEditor} onchange={setVimMode} label="Vim mode" />
 </SettingRow>

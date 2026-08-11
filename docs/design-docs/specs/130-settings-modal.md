@@ -15,13 +15,17 @@ Add a settings modal with a categorized sidebar, surfacing all user-configurable
 
 ### Visual Style
 
-Reuses the same dark-card aesthetic as `StartupModal` and `ObjectBrowserModal`:
+Uses the restrained shared modal system from spec 173:
 
-- Dark background (`#09090b`), accent border, corner ornaments, radial glow
-- **Left sidebar** with category list (not top tabs — more categories than startup modal)
-- Right content pane with the settings for the selected category
-- Same close button, backdrop blur, escape-to-close behavior
-- IBM Plex Mono for labels, Syne for headings
+- Opaque ink/zinc surface, fine neutral border, and a dark scrim without backdrop blur
+- **Left sidebar** with category icons and separate workspace/current-patch groups on desktop
+- Native grouped category picker on mobile so every category remains visible without a horizontal tab scroller
+- Right content pane with a category summary and one bounded settings surface
+- Lucide close icon, visible focus treatment, Escape-to-close, focus containment, and focus restoration
+- IBM Plex Sans for headings and descriptions; IBM Plex Mono only for values and compact technical labels
+- Font weight 500 is the maximum default display weight
+
+Settings apply immediately. The modal states that changes save automatically instead of adding a separate save action.
 
 ### Layout
 
@@ -51,7 +55,7 @@ Reuses the same dark-card aesthetic as `StartupModal` and `ObjectBrowserModal`:
 The sidebar has two labeled sections separated by a subtle divider:
 
 - **Per-User** — settings that persist globally across all patches
-- **Per-Patch** — settings scoped to the current patch
+- **Per-Patch** — settings scoped to this patch
 
 ### Scope Labels
 

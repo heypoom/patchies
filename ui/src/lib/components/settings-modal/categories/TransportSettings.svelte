@@ -40,6 +40,7 @@
     oninput={handleBpmInput}
     min="1"
     max="999"
+    aria-label="Beats per minute"
     class="w-20 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none hover:border-white/20 focus:border-orange-500/40"
   />
 </SettingRow>
@@ -52,6 +53,7 @@
       oninput={handleTimeSigNumInput}
       min="1"
       max="32"
+      aria-label="Time signature numerator"
       class="w-12 rounded border border-white/10 bg-white/5 px-2 py-1 text-center font-mono text-xs text-zinc-300 transition-colors outline-none hover:border-white/20 focus:border-orange-500/40"
     />
     <span class="text-xs text-zinc-600">/</span>
@@ -61,6 +63,7 @@
       oninput={handleTimeSigDenInput}
       min="1"
       max="32"
+      aria-label="Time signature denominator"
       class="w-12 rounded border border-white/10 bg-white/5 px-2 py-1 text-center font-mono text-xs text-zinc-300 transition-colors outline-none hover:border-white/20 focus:border-orange-500/40"
     />
   </div>

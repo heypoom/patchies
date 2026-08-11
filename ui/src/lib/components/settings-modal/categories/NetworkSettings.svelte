@@ -18,6 +18,7 @@
       if (e.key === 'Enter') handleApplyRoom();
     }}
     placeholder="No room set"
+    aria-label="Network room"
     class="w-40 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none placeholder:text-zinc-700 hover:border-white/20 focus:border-orange-500/40"
   />
 </SettingRow>

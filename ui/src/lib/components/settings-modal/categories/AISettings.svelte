@@ -65,7 +65,11 @@
 </script>
 
 <SettingRow title="Show AI features" description="Show or hide AI-powered tools and sparks">
-  <SettingToggle checked={$isAiFeaturesVisible} onchange={(v) => isAiFeaturesVisible.set(v)} />
+  <SettingToggle
+    checked={$isAiFeaturesVisible}
+    onchange={(v) => isAiFeaturesVisible.set(v)}
+    label="Show AI features"
+  />
 </SettingRow>
 
 {#if $isAiFeaturesVisible}
@@ -74,6 +78,7 @@
       value={currentProvider}
       options={providerOptions}
       onchange={handleProviderChange}
+      label="AI provider"
     />
   </SettingRow>
 
@@ -83,6 +88,7 @@
       value={currentApiKey}
       oninput={handleApiKeyInput}
       placeholder="Enter API key"
+      aria-label="API key"
       class="w-48 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none placeholder:text-zinc-700 hover:border-white/20 focus:border-orange-500/40"
     />
   </SettingRow>
@@ -92,6 +98,7 @@
       type="text"
       value={currentTextModel}
       oninput={handleTextModelInput}
+      aria-label="Text model"
       class="w-48 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none hover:border-white/20 focus:border-orange-500/40"
     />
   </SettingRow>
@@ -101,6 +108,7 @@
       type="text"
       value={currentImageModel}
       oninput={handleImageModelInput}
+      aria-label="Image model"
       class="w-48 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none hover:border-white/20 focus:border-orange-500/40"
     />
   </SettingRow>
@@ -109,6 +117,7 @@
     <SettingToggle
       checked={$chatSettingsStore.expandThinking}
       onchange={() => chatSettingsStore.toggleExpandThinking()}
+      label="Expand thinking"
     />
   </SettingRow>
 {/if}

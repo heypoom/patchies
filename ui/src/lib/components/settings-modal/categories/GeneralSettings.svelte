@@ -9,9 +9,14 @@
   <SettingToggle
     checked={$showStartupModalOnLoad}
     onchange={(v) => showStartupModalOnLoad.set(v)}
+    label="Show startup modal"
   />
 </SettingRow>
 
 <SettingRow title="Show bottom bar" description="Toggle the bottom toolbar visibility">
-  <SettingToggle checked={$isBottomBarVisible} onchange={(v) => isBottomBarVisible.set(v)} />
+  <SettingToggle
+    checked={$isBottomBarVisible}
+    onchange={(v) => isBottomBarVisible.set(v)}
+    label="Show bottom bar"
+  />
 </SettingRow>

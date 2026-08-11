@@ -36,7 +36,11 @@
 </script>
 
 <SettingRow title="Show cables" description="Toggle connection cable visibility">
-  <SettingToggle checked={$isCablesVisible} onchange={(v) => isCablesVisible.set(v)} />
+  <SettingToggle
+    checked={$isCablesVisible}
+    onchange={(v) => isCablesVisible.set(v)}
+    label="Show cables"
+  />
 </SettingRow>
 
 <SettingRow
@@ -53,11 +57,13 @@
         if (e.key === 'Escape') isEditingOutputSize = false;
       }}
       placeholder="1920x1080"
+      aria-label="Output size"
       class="w-32 rounded border border-orange-500/40 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 outline-none"
     />
   {:else}
     <button
       onclick={startEditingOutputSize}
+      type="button"
       class="cursor-pointer rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors hover:border-white/20"
     >
       {currentOutputSize}
@@ -70,5 +76,6 @@
     value={String($snapGridSize)}
     options={snapGridOptions}
     onchange={handleSnapGridChange}
+    label="Snap to grid"
   />
 </SettingRow>
