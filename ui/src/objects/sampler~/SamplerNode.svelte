@@ -170,7 +170,11 @@
 
     const runtimeNode = audioService.getNodeById(node.id);
     const samplerNode = runtimeNode instanceof SamplerNodeV2 ? runtimeNode : null;
-    if (samplerNode === v2Node) return;
+
+    if (samplerNode === v2Node) {
+      audioBuffer = samplerNode?.audioBuffer ?? null;
+      return;
+    }
 
     if (v2Node) {
       v2Node.onPlaybackStart = undefined;
