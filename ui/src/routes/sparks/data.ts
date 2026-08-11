@@ -191,7 +191,7 @@ export const outputs: Output[] = [
   },
   {
     id: 'connections',
-    name: 'Connections',
+    name: 'Network',
     description: 'MQTT, RTC, OBS, I/O',
     packIds: ['networking']
   },
