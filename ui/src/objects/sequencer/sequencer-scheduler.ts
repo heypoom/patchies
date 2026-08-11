@@ -12,10 +12,10 @@ export interface SequencerConfig {
 export function getSequencerVisualStep(numSteps: number): number {
   if (!Transport.isPlaying || numSteps <= 0) return -1;
 
-  // A pattern keeps the duration it has in 4/4: changing the meter changes
-  // bar boundaries, not the tempo or the sequencer's step rate.
-  const ticksPerPattern = Transport.ppq * 4;
-  const ticksPerStep = ticksPerPattern / numSteps;
+  // Each step is one tempo beat. Meter controls bar boundaries only, so a
+  // longer pattern continues across more bars instead of playing faster.
+  const ticksPerStep = Transport.ppq;
+  const ticksPerPattern = ticksPerStep * numSteps;
   const ticksInPattern = Transport.ticks % ticksPerPattern;
 
   return Math.floor(ticksInPattern / ticksPerStep) % numSteps;
@@ -68,17 +68,13 @@ export class SequencerScheduler {
 
     this.clearMarkers();
 
-    const beatDuration = 60 / Transport.bpm;
-    const stepInterval = (beatDuration * 4) / steps;
+    const stepInterval = 60 / Transport.bpm;
 
-    // Swing operates at the 8th-note level: the off-beat 8th note in each beat pair is delayed.
-    const stepsPerBeat = steps / 4;
-    const halfBeat = Math.max(1, Math.round(stepsPerBeat / 2));
-    const eighthInterval = stepInterval * halfBeat;
+    // Swing delays every other step by up to half a step interval.
 
     for (let i = 0; i < steps; i++) {
-      const isSwung = swing > 0 && i % (halfBeat * 2) === halfBeat;
-      const swingOffset = isSwung ? (swing / 100) * 0.5 * eighthInterval : 0;
+      const isSwung = swing > 0 && i % 2 === 1;
+      const swingOffset = isSwung ? (swing / 100) * 0.5 * stepInterval : 0;
       const stepTime = patternTime + i * stepInterval + swingOffset;
 
       const id = this.scheduler.schedule(stepTime, (t) => this.onFire(i, t), {
@@ -101,7 +97,7 @@ export class SequencerScheduler {
   }
 
   private scheduleCurrentPattern(): void {
-    const patternDuration = (60 / Transport.bpm) * 4;
+    const patternDuration = (60 / Transport.bpm) * this.getConfig().steps;
     const patternTime = Math.floor(Transport.seconds / patternDuration) * patternDuration;
 
     this.schedulePattern(patternTime);

@@ -67,22 +67,25 @@ describe('SequencerScheduler', () => {
     expect(getSequencerVisualStep(-4)).toBe(-1);
   });
 
-  it('keeps 8-step patterns at their 4/4 speed across a 5/4 bar', () => {
+  it('keeps the step rate constant when the pattern length changes', () => {
+    transportState.isPlaying = true;
+
+    // Both patterns advance one step per tempo beat, regardless of the number
+    // of steps in their pattern.
+    transportState.ticks = 192;
+    expect(getSequencerVisualStep(4)).toBe(1);
+    expect(getSequencerVisualStep(32)).toBe(1);
+  });
+
+  it('lets patterns continue across a 5/4 bar boundary', () => {
     transportState.isPlaying = true;
     transportState.beatsPerBar = 5;
 
-    // At 120 BPM an eight-step pattern advances every eighth note (96 ticks),
-    // independent of how many beats the current bar contains.
-    transportState.ticks = 192;
-    expect(getSequencerVisualStep(8)).toBe(2);
-
-    // The pattern completes after four quarter-note beats and continues into
-    // the next 5/4 bar rather than being squeezed into that bar.
-    transportState.ticks = 4 * transportState.ppq;
-    expect(getSequencerVisualStep(8)).toBe(0);
+    transportState.ticks = 5 * transportState.ppq;
+    expect(getSequencerVisualStep(8)).toBe(5);
   });
 
-  it('fires 8-step patterns every eighth note in 5/4', () => {
+  it('fires 8-step patterns once per tempo beat in 5/4', () => {
     vi.useFakeTimers();
     transportState.isPlaying = true;
     transportState.beatsPerBar = 5;
@@ -97,13 +100,13 @@ describe('SequencerScheduler', () => {
     scheduler.start();
     vi.advanceTimersByTime(25);
 
-    transportState.seconds = 0.2;
-    transportState.phase = 0.4;
+    transportState.seconds = 0.4;
+    transportState.phase = 0.8;
     vi.advanceTimersByTime(25);
     scheduler.dispose();
 
     expect(onFire).toHaveBeenNthCalledWith(1, 0, 0);
-    expect(onFire).toHaveBeenNthCalledWith(2, 1, 0.25);
+    expect(onFire).toHaveBeenNthCalledWith(2, 1, 0.5);
   });
 
   it('schedules the first bar when transport starts in audio lookahead mode', () => {
