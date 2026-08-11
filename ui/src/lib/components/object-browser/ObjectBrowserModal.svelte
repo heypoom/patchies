@@ -3,6 +3,7 @@
     ArrowLeft,
     Bookmark,
     Boxes,
+    ChevronDown,
     CircleQuestionMark,
     Package,
     Search,
@@ -74,6 +75,7 @@
   let catalogKind = $state<CatalogKind>('objects');
   let selectedCategoryId = $state<string | null>(null);
   let expandedPackId = $state<string | null>(null);
+  let mobileCategoryOpen = $state(false);
 
   const getIconComponent = getPackIcon;
 
@@ -336,7 +338,13 @@
     catalogKind = kind;
     selectedCategoryId = null;
     expandedPackId = null;
+    mobileCategoryOpen = false;
     searchQuery = '';
+  }
+
+  function selectMobileCategory(categoryId: string) {
+    selectedCategoryId = categoryId;
+    mobileCategoryOpen = false;
   }
 
   function openPacks() {
@@ -366,6 +374,7 @@
     open = false;
     searchQuery = '';
     expandedPackId = null;
+    mobileCategoryOpen = false;
     $objectBrowserMode = 'insert';
   }
 
@@ -410,7 +419,7 @@
       tabindex="-1"
     >
       <header
-        class="relative z-[2] flex min-h-[72px] shrink-0 items-center gap-4 border-b border-white/7 px-4 py-3 sm:px-6"
+        class="relative z-[2] flex min-h-[60px] shrink-0 items-center gap-4 border-b border-white/7 px-4 py-2 sm:min-h-[72px] sm:px-6 sm:py-3"
       >
         {#if $objectBrowserMode === 'packs'}
           <button
@@ -477,7 +486,7 @@
         </div>
       </header>
 
-      <div class="relative z-[1] shrink-0 border-b border-white/7 px-4 py-3 sm:px-6">
+      <div class="relative z-[1] shrink-0 border-b border-white/7 px-4 py-2 sm:px-6 sm:py-3">
         <label for="object-browser-search" class="sr-only">{searchPlaceholder}</label>
         <div class="relative flex items-center">
           <Search class="pointer-events-none absolute left-3.5 h-4 w-4 text-zinc-500" />
@@ -699,6 +708,16 @@
         </section>
       {:else}
         <div class="ob-catalog min-h-0 flex-1">
+          {#if mobileCategoryOpen}
+            <button
+              type="button"
+              class="ob-mobile-category-dismiss"
+              onclick={() => (mobileCategoryOpen = false)}
+              tabindex="-1"
+              aria-hidden="true"
+            ></button>
+          {/if}
+
           <nav class="ob-catalog-nav" aria-label="Object browser categories">
             <div class="ob-workspace-switch" aria-label="Catalog workspace">
               <button
@@ -725,6 +744,57 @@
                 <span class="ob-workspace-count">{presetCategories.length}</span>
               </button>
             </div>
+
+            {#if activeCategory}
+              {@const MobileCategoryIcon = getIconComponent(activeCategory.icon)}
+              <div class="ob-mobile-category-picker">
+                <button
+                  type="button"
+                  class="ob-mobile-category-trigger"
+                  onclick={() => (mobileCategoryOpen = !mobileCategoryOpen)}
+                  aria-expanded={mobileCategoryOpen}
+                  aria-controls="object-browser-category-menu"
+                >
+                  <MobileCategoryIcon class="h-4 w-4 shrink-0 text-zinc-400" />
+                  <span class="min-w-0 flex-1 truncate text-left">{activeCategory.title}</span>
+                  <span class="ob-mobile-category-count">{activeCategory.objects.length}</span>
+                  <ChevronDown
+                    class={[
+                      'h-4 w-4 shrink-0 text-zinc-500 transition-transform',
+                      mobileCategoryOpen && 'rotate-180'
+                    ]}
+                  />
+                </button>
+
+                {#if mobileCategoryOpen}
+                  <div
+                    id="object-browser-category-menu"
+                    class="ob-mobile-category-menu"
+                    role="menu"
+                    aria-label={catalogKind === 'objects'
+                      ? 'Object categories'
+                      : 'Preset categories'}
+                  >
+                    {#each filteredCategories as category (category.id)}
+                      {@const CategoryMenuIcon = getIconComponent(category.icon)}
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onclick={() => selectMobileCategory(category.id)}
+                        aria-current={activeCategory.id === category.id ? 'true' : undefined}
+                        class:ob-mobile-category-active={activeCategory.id === category.id}
+                      >
+                        <span class="ob-mobile-category-icon">
+                          <CategoryMenuIcon class="h-4 w-4" />
+                        </span>
+                        <span class="min-w-0 flex-1 truncate">{category.title}</span>
+                        <span class="ob-mobile-category-count">{category.objects.length}</span>
+                      </button>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {/if}
 
             <div class="ob-category-list" aria-label={`${catalogKind} categories`}>
               {#each filteredCategories as category (category.id)}
@@ -978,6 +1048,14 @@
     font-size: 9px;
   }
 
+  .ob-mobile-category-picker {
+    display: none;
+  }
+
+  .ob-mobile-category-dismiss {
+    display: none;
+  }
+
   .ob-category-list {
     min-height: 0;
     flex: 1;
@@ -1082,58 +1160,163 @@
 
   @media (max-width: 639px) {
     .ob-catalog {
+      position: relative;
       display: flex;
       min-height: 0;
       flex-direction: column;
     }
 
     .ob-catalog-nav {
+      position: relative;
+      z-index: 3;
+      display: grid;
+      min-height: 48px;
       flex: 0 0 auto;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
       border-right: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     }
 
     .ob-workspace-switch {
-      padding: 8px 12px 6px;
-      border-bottom: 0;
+      gap: 2px;
+      padding: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.15);
     }
 
     .ob-workspace-switch button {
-      height: 44px;
+      height: 38px;
       justify-content: center;
-      padding-inline: 14px;
+      gap: 5px;
+      padding-inline: 10px;
     }
 
     .ob-workspace-count {
-      margin-left: 0;
-    }
-
-    .ob-category-list {
-      display: flex;
-      width: 100%;
-      min-height: auto;
-      flex: 0 0 auto;
-      gap: 6px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 2px 12px 10px;
-      scrollbar-width: none;
-    }
-
-    .ob-category-list::-webkit-scrollbar {
       display: none;
     }
 
-    .ob-category-list button {
-      width: auto;
-      min-width: max-content;
-      padding-inline: 12px;
-      border-color: rgba(255, 255, 255, 0.07);
-      background: rgba(255, 255, 255, 0.02);
+    .ob-mobile-category-picker {
+      position: static;
+      display: flex;
+      min-width: 0;
+      align-items: center;
     }
 
-    .ob-category-count {
-      padding-left: 2px;
+    .ob-mobile-category-trigger {
+      display: flex;
+      width: 100%;
+      height: 38px;
+      cursor: pointer;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 8px;
+      color: #d4d4d8;
+      background: rgba(255, 255, 255, 0.035);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      outline: none;
+    }
+
+    .ob-mobile-category-trigger:focus-visible {
+      border-color: rgba(249, 115, 22, 0.7);
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.12);
+    }
+
+    .ob-mobile-category-count {
+      flex: 0 0 auto;
+      color: #52525b;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+    }
+
+    .ob-mobile-category-menu {
+      position: absolute;
+      z-index: 5;
+      top: calc(100% + 1px);
+      right: 12px;
+      left: 12px;
+      display: grid;
+      max-height: min(55dvh, 420px);
+      gap: 2px;
+      overflow-y: auto;
+      padding: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      background: #18181b;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+      scrollbar-width: thin;
+      scrollbar-color: #3f3f46 transparent;
+    }
+
+    .ob-mobile-category-menu button {
+      display: flex;
+      min-height: 48px;
+      cursor: pointer;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: #a1a1aa;
+      font-size: 12px;
+      text-align: left;
+      outline: none;
+    }
+
+    .ob-mobile-category-menu button:hover,
+    .ob-mobile-category-menu button:focus-visible {
+      color: #f4f4f5;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .ob-mobile-category-menu button:focus-visible {
+      border-color: rgba(249, 115, 22, 0.55);
+    }
+
+    .ob-mobile-category-icon {
+      display: flex;
+      width: 30px;
+      height: 30px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      color: #71717a;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .ob-mobile-category-menu .ob-mobile-category-active {
+      color: #fafafa;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .ob-mobile-category-menu .ob-mobile-category-active .ob-mobile-category-icon {
+      border-color: rgba(249, 115, 22, 0.2);
+      color: #f97316;
+      background: rgba(249, 115, 22, 0.07);
+    }
+
+    .ob-mobile-category-dismiss {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      display: block;
+      cursor: default;
+      border: 0;
+      background: rgba(0, 0, 0, 0.46);
+    }
+
+    .ob-category-list {
+      display: none;
     }
 
     .ob-results-header {
@@ -1143,8 +1326,8 @@
   }
 
   @media (max-width: 360px) {
-    .ob-workspace-count {
-      display: none;
+    .ob-workspace-switch button {
+      padding-inline: 8px;
     }
 
     .ob-results :global(.grid) {

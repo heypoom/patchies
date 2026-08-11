@@ -52,7 +52,9 @@ Use a two-pane catalog:
 Use a full-screen catalog:
 
 - keep Objects/Presets and search sticky;
-- render categories as a horizontally scrolling chip row;
+- place Objects/Presets and an icon-led category menu in one compact toolbar so every category is
+  directly reachable without horizontal swiping; the collapsed menu retains the selected category's
+  icon, name, and count;
 - show only the active category's results;
 - use controls and insertion cards with at least 44px touch targets;
 - avoid automatically opening the software keyboard on arrival.
