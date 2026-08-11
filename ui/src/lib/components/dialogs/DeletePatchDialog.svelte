@@ -31,16 +31,10 @@
     </Dialog.Header>
 
     <Dialog.Footer class="flex gap-2">
-      <button
-        onclick={handleCancel}
-        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-      >
+      <button onclick={handleCancel} class="modal-action modal-action--secondary flex-1">
         Cancel
       </button>
-      <button
-        onclick={handleConfirm}
-        class="flex-1 cursor-pointer rounded bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500"
-      >
+      <button onclick={handleConfirm} class="modal-action modal-action--destructive flex-1">
         Delete
       </button>
     </Dialog.Footer>

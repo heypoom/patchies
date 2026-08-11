@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDown, KeyRound } from '@lucide/svelte/icons';
+  import { ChevronDown, KeyRound, X } from '@lucide/svelte/icons';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
   import {
     aiSettings,
@@ -125,22 +125,15 @@
       aria-labelledby="ai-dialog-title"
       tabindex="-1"
     >
-      <!-- Corner ornaments -->
-      <span class="ac ac-tl" aria-hidden="true"></span>
-      <span class="ac ac-tr" aria-hidden="true"></span>
-      <span class="ac ac-bl" aria-hidden="true"></span>
-      <span class="ac ac-br" aria-hidden="true"></span>
-
-      <!-- Glow -->
-      <div class="ai-glow" aria-hidden="true"></div>
-
       <!-- Header -->
       <div class="ai-header">
         <div>
           <p class="ai-eyebrow">patchies · ai</p>
           <h2 id="ai-dialog-title" class="ai-title">Provider Settings</h2>
         </div>
-        <button onclick={() => (open = false)} class="ai-close" aria-label="Close">✕</button>
+        <button onclick={() => (open = false)} class="ai-close" aria-label="Close">
+          <X class="h-4 w-4" />
+        </button>
       </div>
 
       <!-- Provider tabs -->
@@ -307,15 +300,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     padding: 16px;
   }
 
   .ai-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.88);
-    backdrop-filter: blur(12px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(2px);
     animation: ai-fade 0.2s ease both;
   }
 
@@ -331,13 +324,10 @@
   .ai-card {
     position: relative;
     z-index: 10;
-    background: #09090b;
-    border: 1px solid rgba(249, 115, 22, 0.18);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.03),
-      0 0 60px rgba(249, 115, 22, 0.06),
-      0 32px 64px rgba(0, 0, 0, 0.8);
-    border-radius: 14px;
+    background: #111113;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
+    border-radius: 12px;
     width: 100%;
     max-width: 400px;
     overflow: hidden;
@@ -353,55 +343,6 @@
       opacity: 1;
       transform: translateY(0) scale(1);
     }
-  }
-
-  /* Corner ornaments */
-  .ac {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    opacity: 0.4;
-    pointer-events: none;
-    z-index: 2;
-  }
-  .ac-tl {
-    top: 10px;
-    left: 10px;
-    border-top: 1px solid #f97316;
-    border-left: 1px solid #f97316;
-  }
-  .ac-tr {
-    top: 10px;
-    right: 10px;
-    border-top: 1px solid #f97316;
-    border-right: 1px solid #f97316;
-  }
-  .ac-bl {
-    bottom: 10px;
-    left: 10px;
-    border-bottom: 1px solid #f97316;
-    border-left: 1px solid #f97316;
-  }
-  .ac-br {
-    bottom: 10px;
-    right: 10px;
-    border-bottom: 1px solid #f97316;
-    border-right: 1px solid #f97316;
-  }
-
-  .ai-glow {
-    position: absolute;
-    top: -40px;
-    left: -40px;
-    right: -40px;
-    height: 160px;
-    background: radial-gradient(
-      ellipse 70% 60% at 50% 35%,
-      rgba(249, 115, 22, 0.08),
-      transparent 70%
-    );
-    pointer-events: none;
-    z-index: 0;
   }
 
   /* Header */
@@ -424,7 +365,7 @@
   }
 
   .ai-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-size: 15px;
     font-weight: 700;
     color: #f4f4f5;
@@ -432,19 +373,21 @@
   }
 
   .ai-close {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: #3f3f46;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a1a1aa;
     background: none;
     border: none;
-    padding: 4px 6px;
+    padding: 8px;
     cursor: pointer;
     transition: color 0.15s;
     line-height: 1;
-    margin-top: 2px;
+    border-radius: 6px;
   }
   .ai-close:hover {
-    color: #71717a;
+    color: #f4f4f5;
+    background: rgba(255, 255, 255, 0.08);
   }
 
   /* Provider tabs */
@@ -658,35 +601,32 @@
     flex: 1;
     padding: 9px 12px;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    background: rgba(255, 255, 255, 0.02);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    color: #71717a;
+    border: 0;
+    background: #27272a;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    color: #e4e4e7;
     cursor: pointer;
     transition: all 0.15s;
   }
   .ai-btn-cancel:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #a1a1aa;
+    background: #3f3f46;
+    color: #f4f4f5;
   }
 
   .ai-btn-save {
     flex: 1;
     padding: 9px 12px;
     border-radius: 6px;
-    border: 1px solid rgba(249, 115, 22, 0.35);
-    background: rgba(249, 115, 22, 0.1);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    color: #f97316;
+    border: 0;
+    background: #f4f4f5;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    color: #18181b;
     cursor: pointer;
     transition: all 0.15s;
   }
   .ai-btn-save:hover {
-    border-color: rgba(249, 115, 22, 0.55);
-    background: rgba(249, 115, 22, 0.16);
+    background: #ffffff;
   }
 </style>

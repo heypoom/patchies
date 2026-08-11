@@ -390,7 +390,7 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="fixed inset-0 animate-[ob-fade_0.2s_ease_both] bg-black/88 backdrop-blur-[12px]"
+      class="fixed inset-0 animate-[ob-fade_0.2s_ease_both] bg-black/75 backdrop-blur-[2px]"
       role="button"
       tabindex="-1"
       onclick={handleClose}
@@ -401,37 +401,13 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="relative z-10 m-0 flex h-full w-full max-w-[860px] animate-[ob-card-in_0.35s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-[14px] border border-orange-500/18 bg-[#09090b] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_0_80px_rgba(249,115,22,0.06),0_40px_80px_rgba(0,0,0,0.8)] outline-none sm:m-4 sm:h-[88dvh] sm:max-h-[780px]"
+      class="relative z-10 m-0 flex h-full w-full max-w-[860px] animate-[ob-card-in_0.2s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-xl border border-white/12 bg-[#111113] shadow-[0_24px_80px_rgba(0,0,0,0.58)] outline-none sm:m-4 sm:h-[88dvh] sm:max-h-[780px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="ob-title"
       tabindex="-1"
       onclick={(e) => e.stopPropagation()}
     >
-      <!-- Corner ornaments -->
-      <span
-        class="pointer-events-none absolute top-3 left-3 z-[2] h-4 w-4 border-t border-l border-orange-500 opacity-40"
-        aria-hidden="true"
-      ></span>
-      <span
-        class="pointer-events-none absolute top-3 right-3 z-[2] h-4 w-4 border-t border-r border-orange-500 opacity-40"
-        aria-hidden="true"
-      ></span>
-      <span
-        class="pointer-events-none absolute bottom-3 left-3 z-[2] h-4 w-4 border-b border-l border-orange-500 opacity-40"
-        aria-hidden="true"
-      ></span>
-      <span
-        class="pointer-events-none absolute right-3 bottom-3 z-[2] h-4 w-4 border-r border-b border-orange-500 opacity-40"
-        aria-hidden="true"
-      ></span>
-
-      <!-- Radial glow -->
-      <div
-        class="pointer-events-none absolute -top-[60px] -right-[60px] -left-[60px] z-0 h-[240px] bg-[radial-gradient(ellipse_70%_60%_at_50%_35%,rgba(249,115,22,0.07),transparent_70%)]"
-        aria-hidden="true"
-      ></div>
-
       <!-- Header -->
       <div
         class="relative z-[1] flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-5 pt-4 pb-3 max-sm:flex-col max-sm:items-start sm:px-7 sm:pt-[18px] sm:pb-3.5"

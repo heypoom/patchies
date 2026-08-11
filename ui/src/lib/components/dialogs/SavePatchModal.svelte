@@ -112,7 +112,7 @@
           type="text"
           bind:value={patchName}
           onkeydown={handleKeydown}
-          class="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+          class="modal-field w-full"
           placeholder="my-patch"
         />
       </div>
@@ -134,16 +134,13 @@
     </div>
 
     <Dialog.Footer class="flex gap-2">
-      <button
-        onclick={() => (open = false)}
-        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-      >
+      <button onclick={() => (open = false)} class="modal-action modal-action--secondary flex-1">
         Cancel
       </button>
       <button
         onclick={handleSave}
         disabled={!actualSaveName}
-        class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+        class="modal-action modal-action--primary flex-1"
       >
         {willAutoIncrement ? 'Save as Copy' : 'Save'}
       </button>

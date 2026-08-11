@@ -105,8 +105,48 @@ The startup modal is implemented as a modular component system in `/ui/src/lib/c
 
 - Use IBM Plex Sans for interface copy and IBM Plex Mono for shortcuts, commands, and technical
   labels.
-- Use IBM Plex Serif for expressive editorial headings and italic display copy.
-- Do not use the former display serif. The startup modal should stay within the IBM Plex family.
+- Use IBM Plex Sans at regular weight for the expressive heading. Scale, line breaks, and one
+  deliberate Ember emphasis create the display voice without introducing a second type family.
+- Do not use an eyebrow above the hero heading or rely on italic serif styling for personality.
+
+#### Expressive Hero
+
+The About tab is the expressive exception within the restrained modal system from spec 173. Its
+hero visualizes Patchies' core mechanism as a compact patch topology: small code/object nodes,
+visible signal cables, and an output state. The diagram is illustrative and does not claim to be a
+live patch. It uses the existing Ink/Zinc/Ember palette, remains readable without animation, and
+keeps motion disabled when reduced motion is requested.
+
+The hero includes direct actions to browse demos and open the object browser. Supporting guidance,
+shortcuts, and community links remain visually quieter so the hero is the modal's single peak.
+
+The About tab reads as one continuous instrument surface rather than a stack of separate cards. Its
+content runs edge-to-edge between the tab bar and footer: the modal shell is the boundary, so the
+About content must not introduce an inset outer container, rounded inner frame, or decorative margin.
+The technology rail, guide/shortcut paths, and compact command reference use only internal dividers.
+This keeps the learning material connected to the patch metaphor while preserving clear hierarchy
+beneath the primary actions.
+
+The patch topology must be geometrically trustworthy and visually quiet. Cables terminate at the
+visible centers of their inlet and outlet handles at every supported size. The illustrative patch
+demonstrates a real Patchies relationship: an audio source passes through gain to audio output, while
+the same signal is analyzed by `fft~` and drives a Hydra visual. Analysis and visual nodes use neutral
+boundaries rather than introducing a second accent system. The Hydra result is a flat, edge-to-edge
+striped output rectangle rather than another padded node or nested preview. Code nodes preserve the
+editor's anatomy: the object name sits outside the node while the code itself sits inside. Related
+nodes align to shared edges where possible so the topology reads as a deliberate layout.
+
+The compact shortcut reference presents six first moves in a three-column, two-row command matrix:
+adding and browsing objects, running code, opening the sidebar and command palette, and connecting
+nodes. On narrow screens it becomes one column. Each item is a single compact row with a muted icon,
+short label, and platform-aware keycap; extended explanations belong in the full Shortcuts tab.
+Because these items are reference content rather than controls, their surface, icons, and typography
+must remain visually quieter than the clickable guide and Shortcuts paths above them. Gesture labels
+use the same keycap treatment as keyboard shortcuts.
+
+The community links and “show on startup” preference live in a dedicated footer outside the tab's
+scrolling content. The footer stays visible whenever About is active, including before the user
+scrolls, and adapts to two compact rows on narrow screens.
 
 #### Example Patches JSON Format
 
