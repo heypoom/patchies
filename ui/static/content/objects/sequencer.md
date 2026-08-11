@@ -11,8 +11,11 @@ Click any step button to toggle it on or off.
 
 ## Steps
 
-Choose 4, 8, 12, 16, 24, or 32 steps per bar from the settings panel. Steps
-always fill exactly one bar regardless of time signature.
+Choose 4, 8, 12, 16, 24, or 32 steps from the settings panel. A pattern keeps
+the same duration it has in 4/4, so changing the time signature changes bar
+boundaries without changing the step speed. In a 5/4 transport, for example,
+an 8-step pattern continues across the bar boundary instead of squeezing all
+eight steps into five beats.
 
 ## Clock Modes
 

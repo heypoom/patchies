@@ -12,12 +12,13 @@ export interface SequencerConfig {
 export function getSequencerVisualStep(numSteps: number): number {
   if (!Transport.isPlaying || numSteps <= 0) return -1;
 
-  const ticksPerBeat = Transport.ppq * (4 / Transport.denominator);
-  const ticksPerBar = ticksPerBeat * Transport.beatsPerBar;
-  const ticksPerStep = ticksPerBar / numSteps;
-  const ticksInBar = Transport.ticks % ticksPerBar;
+  // A pattern keeps the duration it has in 4/4: changing the meter changes
+  // bar boundaries, not the tempo or the sequencer's step rate.
+  const ticksPerPattern = Transport.ppq * 4;
+  const ticksPerStep = ticksPerPattern / numSteps;
+  const ticksInPattern = Transport.ticks % ticksPerPattern;
 
-  return Math.floor(ticksInBar / ticksPerStep) % numSteps;
+  return Math.floor(ticksInPattern / ticksPerStep) % numSteps;
 }
 
 /**
@@ -26,7 +27,7 @@ export function getSequencerVisualStep(numSteps: number): number {
  */
 export class SequencerScheduler {
   private scheduler: LookaheadClockScheduler;
-  private barSubId: string | null = null;
+  private patternSubId: string | null = null;
   private playStateSubId: string | null = null;
   private stepScheduleIds: string[] = [];
   private stepMarkerIds: string[] = [];
@@ -53,27 +54,32 @@ export class SequencerScheduler {
     this.scheduler.setTimelineStyle({ visible: false });
   }
 
-  private scheduleBar(barTime: number): void {
+  private schedulePattern(patternTime: number): void {
     const { steps, swing, audioRate } = this.getConfig();
 
-    // Cancel any leftover step schedules and markers from the previous bar
+    if (this.patternSubId) {
+      this.scheduler.cancel(this.patternSubId);
+      this.patternSubId = null;
+    }
+
+    // Cancel any leftover step schedules and markers from the previous pattern.
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
     this.stepScheduleIds = [];
 
     this.clearMarkers();
 
-    const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
-    const stepInterval = (beatDuration * Transport.beatsPerBar) / steps;
+    const beatDuration = 60 / Transport.bpm;
+    const stepInterval = (beatDuration * 4) / steps;
 
     // Swing operates at the 8th-note level: the off-beat 8th note in each beat pair is delayed.
-    const stepsPerBeat = steps / Transport.beatsPerBar;
+    const stepsPerBeat = steps / 4;
     const halfBeat = Math.max(1, Math.round(stepsPerBeat / 2));
     const eighthInterval = stepInterval * halfBeat;
 
     for (let i = 0; i < steps; i++) {
       const isSwung = swing > 0 && i % (halfBeat * 2) === halfBeat;
       const swingOffset = isSwung ? (swing / 100) * 0.5 * eighthInterval : 0;
-      const stepTime = barTime + i * stepInterval + swingOffset;
+      const stepTime = patternTime + i * stepInterval + swingOffset;
 
       const id = this.scheduler.schedule(stepTime, (t) => this.onFire(i, t), {
         audio: audioRate
@@ -85,23 +91,29 @@ export class SequencerScheduler {
         this.stepMarkerIds.push(this.scheduler.addMarker(stepTime, color));
       }
     }
+
+    const patternDuration = stepInterval * steps;
+    this.patternSubId = this.scheduler.schedule(
+      patternTime + patternDuration,
+      (nextPatternTime) => this.schedulePattern(nextPatternTime),
+      { audio: audioRate }
+    );
   }
 
-  private scheduleCurrentBar(): void {
-    const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
-    const barDuration = beatDuration * Transport.beatsPerBar;
-    const barTime = Math.floor(Transport.seconds / barDuration) * barDuration;
+  private scheduleCurrentPattern(): void {
+    const patternDuration = (60 / Transport.bpm) * 4;
+    const patternTime = Math.floor(Transport.seconds / patternDuration) * patternDuration;
 
-    this.scheduleBar(barTime);
+    this.schedulePattern(patternTime);
   }
 
-  /** Re-subscribe to the bar clock, respecting current clockMode. */
+  /** Re-subscribe to the pattern clock, respecting current clockMode. */
   setup(): void {
     const { clockMode, audioRate } = this.getConfig();
 
-    if (this.barSubId) {
-      this.scheduler.cancel(this.barSubId);
-      this.barSubId = null;
+    if (this.patternSubId) {
+      this.scheduler.cancel(this.patternSubId);
+      this.patternSubId = null;
     }
 
     if (this.playStateSubId) {
@@ -118,16 +130,12 @@ export class SequencerScheduler {
 
     this.playStateSubId = this.scheduler.onPlayStateChange((state) => {
       if (state === 'playing') {
-        this.scheduleCurrentBar();
+        this.scheduleCurrentPattern();
       }
     });
 
-    this.barSubId = this.scheduler.onBeat(0, (barTime) => this.scheduleBar(barTime), {
-      audio: audioRate
-    });
-
     if (Transport.isPlaying) {
-      this.scheduleCurrentBar();
+      this.scheduleCurrentPattern();
     }
   }
 

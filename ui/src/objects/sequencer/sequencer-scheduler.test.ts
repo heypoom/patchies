@@ -67,6 +67,45 @@ describe('SequencerScheduler', () => {
     expect(getSequencerVisualStep(-4)).toBe(-1);
   });
 
+  it('keeps 8-step patterns at their 4/4 speed across a 5/4 bar', () => {
+    transportState.isPlaying = true;
+    transportState.beatsPerBar = 5;
+
+    // At 120 BPM an eight-step pattern advances every eighth note (96 ticks),
+    // independent of how many beats the current bar contains.
+    transportState.ticks = 192;
+    expect(getSequencerVisualStep(8)).toBe(2);
+
+    // The pattern completes after four quarter-note beats and continues into
+    // the next 5/4 bar rather than being squeezed into that bar.
+    transportState.ticks = 4 * transportState.ppq;
+    expect(getSequencerVisualStep(8)).toBe(0);
+  });
+
+  it('fires 8-step patterns every eighth note in 5/4', () => {
+    vi.useFakeTimers();
+    transportState.isPlaying = true;
+    transportState.beatsPerBar = 5;
+
+    const onFire = vi.fn();
+    const scheduler = new SequencerScheduler(
+      'seq-1',
+      () => ({ clockMode: 'auto', audioRate: true, steps: 8, swing: 0 }),
+      onFire
+    );
+
+    scheduler.start();
+    vi.advanceTimersByTime(25);
+
+    transportState.seconds = 0.2;
+    transportState.phase = 0.4;
+    vi.advanceTimersByTime(25);
+    scheduler.dispose();
+
+    expect(onFire).toHaveBeenNthCalledWith(1, 0, 0);
+    expect(onFire).toHaveBeenNthCalledWith(2, 1, 0.25);
+  });
+
   it('schedules the first bar when transport starts in audio lookahead mode', () => {
     vi.useFakeTimers();
 
