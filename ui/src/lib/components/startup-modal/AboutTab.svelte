@@ -1,19 +1,18 @@
 <script lang="ts">
   import { ArrowRight, Command, Diamond } from '@lucide/svelte/icons';
-  import { onMount } from 'svelte';
 
   import QuickTips from './QuickTips.svelte';
   import type { Tab } from './types';
 
-  let isMac = $state(false);
   let {
     setTab,
+    isTouchFirst,
     onOpenObjectBrowser
-  }: { setTab: (tab: Tab) => void; onOpenObjectBrowser: () => void } = $props();
-
-  onMount(() => {
-    isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
-  });
+  }: {
+    setTab: (tab: Tab) => void;
+    isTouchFirst: boolean;
+    onOpenObjectBrowser: () => void;
+  } = $props();
 
   const techNodes = ['hydra', 'strudel', 'p5', 'glsl', 'three', 'orca', 'chuck~', 'asm', 'js'];
 </script>
@@ -125,7 +124,11 @@
     </div>
 
     <div class="starter-deck">
-      <nav class="learning-paths" aria-label="Getting started">
+      <nav
+        class:learning-paths--touch={isTouchFirst}
+        class="learning-paths"
+        aria-label="Getting started"
+      >
         <a href="/docs/adding-objects" target="_blank" class="learning-path">
           <Diamond class="h-3.5 w-3.5 shrink-0" />
           <span>
@@ -134,18 +137,20 @@
           </span>
           <ArrowRight class="ml-auto h-3.5 w-3.5 shrink-0" />
         </a>
-        <button class="learning-path" onclick={() => setTab('shortcuts')}>
-          <Command class="h-3.5 w-3.5 shrink-0" />
-          <span>
-            <strong>All shortcuts</strong>
-            <small>Keyboard and mouse reference.</small>
-          </span>
-          <ArrowRight class="ml-auto h-3.5 w-3.5 shrink-0" />
-        </button>
+        {#if !isTouchFirst}
+          <button class="learning-path" onclick={() => setTab('shortcuts')}>
+            <Command class="h-3.5 w-3.5 shrink-0" />
+            <span>
+              <strong>All shortcuts</strong>
+              <small>Keyboard and mouse reference.</small>
+            </span>
+            <ArrowRight class="ml-auto h-3.5 w-3.5 shrink-0" />
+          </button>
+        {/if}
       </nav>
 
       <div class="quick-reference">
-        <QuickTips {isMac} />
+        <QuickTips {isTouchFirst} />
       </div>
     </div>
   </section>
@@ -436,6 +441,10 @@
 
   .learning-path + .learning-path {
     border-left: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .learning-paths--touch {
+    grid-template-columns: 1fr;
   }
 
   .learning-path:hover {

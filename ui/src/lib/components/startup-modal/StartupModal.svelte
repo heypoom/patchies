@@ -7,6 +7,7 @@
   import SparksTab from './SparksTab.svelte';
   import type { Tab } from './types';
   import { X } from '@lucide/svelte/icons';
+  import { onMount } from 'svelte';
   import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
   import { sparksMoodTheme, DEFAULT_THEME } from '../../../stores/sparks.store';
 
@@ -26,10 +27,29 @@
 
   let activeTab = $state<Tab>(getInitialTab());
   let modalBody = $state<HTMLDivElement>();
+  let isTouchFirst = $state(false);
+
+  onMount(() => {
+    const touchFirstQuery = window.matchMedia('(pointer: coarse)');
+    const updateTouchFirst = () => {
+      isTouchFirst = touchFirstQuery.matches;
+    };
+
+    updateTouchFirst();
+    touchFirstQuery.addEventListener('change', updateTouchFirst);
+
+    return () => touchFirstQuery.removeEventListener('change', updateTouchFirst);
+  });
 
   $effect(() => {
     if (open && initialTab) {
-      activeTab = initialTab;
+      activeTab = isTouchFirst && initialTab === 'shortcuts' ? 'about' : initialTab;
+    }
+  });
+
+  $effect(() => {
+    if (isTouchFirst && activeTab === 'shortcuts') {
+      activeTab = 'about';
     }
   });
 
@@ -49,9 +69,10 @@
   }
 
   const tabs = $derived<Tab[]>(
-    $isAiFeaturesVisible
+    ($isAiFeaturesVisible
       ? ['about', 'demos', 'sparks', 'shortcuts', 'thanks']
       : ['about', 'demos', 'shortcuts', 'thanks']
+    ).filter((tab) => !isTouchFirst || tab !== 'shortcuts') as Tab[]
   );
 </script>
 
@@ -114,6 +135,7 @@
         {#if activeTab === 'about'}
           <AboutTab
             setTab={selectTab}
+            {isTouchFirst}
             onOpenObjectBrowser={() => {
               open = false;
 

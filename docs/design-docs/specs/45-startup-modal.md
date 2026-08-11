@@ -145,6 +145,17 @@ Because these items are reference content rather than controls, their surface, i
 must remain visually quieter than the clickable guide and Shortcuts paths above them. Gesture labels
 use the same keycap treatment as keyboard shortcuts.
 
+#### Touch-First Guidance
+
+On devices whose primary pointer is coarse, the startup modal must not present keyboard shortcuts as
+the primary onboarding path. The keyboard-only Shortcuts tab and its About-tab entry point are hidden.
+In their place, the compact reference becomes **Touch controls**: direct, platform-native gestures
+for adding objects, moving around the canvas, zooming, and connecting nodes. Object insertion follows
+the visible bottom-toolbar **Add object** control: users tap the plus button, then tap an object card
+to insert it. Connecting follows the visible **Easy Connect** button: users tap the cable control,
+then tap a port. This keeps the modal useful on a tablet or phone without implying that a keyboard is
+available. Desktop and other fine-pointer devices retain the full shortcut reference.
+
 #### Full Shortcuts Reference
 
 The Shortcuts tab is a lookup surface, not an editorial page. Its opening stays compact so useful
