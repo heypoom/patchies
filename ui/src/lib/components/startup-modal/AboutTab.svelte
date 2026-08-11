@@ -44,54 +44,75 @@
     <div class="patch-visual" aria-hidden="true">
       <svg class="patch-diagram" viewBox="0 0 320 260" preserveAspectRatio="xMidYMid meet">
         <defs>
-          <pattern id="hydra-stripes" width="10" height="10" patternUnits="userSpaceOnUse">
-            <rect width="5" height="10" fill="#27272a" />
-          </pattern>
+          <clipPath id="hydra-output-clip">
+            <rect x="198" y="198" width="76" height="36" rx="2" />
+          </clipPath>
         </defs>
 
-        <path class="patch-cable patch-cable--quiet" d="M 120 51 C 164 51, 78 130, 110 130" />
-        <path class="patch-cable patch-cable--active" d="M 202 130 C 226 130, 214 94, 238 94" />
-        <path class="patch-cable patch-cable--quiet" d="M 202 130 C 236 130, 82 216, 110 216" />
-        <path class="patch-cable patch-cable--quiet" d="M 170 216 C 180 216, 188 216, 198 216" />
+        <path class="patch-cable patch-cable--quiet" d="M 108 48 C 150 48, 68 130, 96 130" />
+        <path class="patch-cable patch-cable--active" d="M 138 130 C 218 130, 214 94, 238 94" />
+        <path class="patch-cable patch-cable--quiet" d="M 138 130 C 222 130, 68 216, 96 216" />
+        <path class="patch-cable patch-cable--quiet" d="M 156 216 C 170 216, 184 216, 198 216" />
 
         <g class="diagram-node">
           <text class="code-node-label" x="16" y="23">strudel</text>
-          <rect x="16" y="30" width="104" height="42" rx="6" />
-          <text class="node-value node-value--code" x="30" y="56">s("bd sd")</text>
-          <circle class="node-port" cx="120" cy="51" r="4" />
+          <rect x="16" y="30" width="92" height="36" rx="6" />
+          <text class="node-value node-value--code" x="28" y="52">s("bd sd")</text>
+          <circle class="node-port" cx="108" cy="48" r="4" />
         </g>
 
         <g class="diagram-node diagram-node--active">
-          <rect x="110" y="102" width="92" height="56" rx="8" />
-          <text class="node-name" x="124" y="125">gain~</text>
-          <text class="node-value" x="124" y="144">0.72</text>
-          <circle class="node-port" cx="110" cy="130" r="4" />
-          <circle class="node-port" cx="202" cy="130" r="4" />
+          <rect x="50" y="102" width="92" height="56" rx="8" />
+          <text class="node-name" x="65" y="125">gain~</text>
+          <text class="node-value" x="65" y="144">0.72</text>
+          <circle class="node-port" cx="50" cy="130" r="4" />
+          <circle class="node-port" cx="142" cy="130" r="4" />
         </g>
 
         <g class="diagram-node">
-          <rect x="238" y="66" width="68" height="56" rx="8" />
+          <rect x="238" y="72" width="62" height="44" rx="7" />
           <text class="node-name" x="250" y="90">out~</text>
           <circle class="node-port" cx="238" cy="94" r="4" />
-          <g class="signal-bars">
-            <rect x="251" y="104" width="3" height="8" rx="1" />
-            <rect x="257" y="99" width="3" height="13" rx="1" />
-            <rect x="263" y="94" width="3" height="18" rx="1" />
-            <rect x="269" y="101" width="3" height="11" rx="1" />
-            <rect x="275" y="106" width="3" height="6" rx="1" />
+
+          <g class="output-meter">
+            <rect class="meter-track" x="250" y="99" width="36" height="3" rx="1.5" />
+            <rect
+              class="meter-level meter-level--left"
+              x="250"
+              y="99"
+              width="26"
+              height="3"
+              rx="1.5"
+            />
+            <rect class="meter-track" x="250" y="106" width="36" height="3" rx="1.5" />
+            <rect
+              class="meter-level meter-level--right"
+              x="250"
+              y="106"
+              width="31"
+              height="3"
+              rx="1.5"
+            />
           </g>
         </g>
 
         <g class="diagram-node diagram-node--analyser">
-          <rect x="110" y="200" width="60" height="32" rx="7" />
-          <text class="node-name" x="124" y="220">fft~</text>
-          <circle class="node-port node-port--neutral" cx="110" cy="216" r="4" />
-          <circle class="node-port node-port--neutral" cx="170" cy="216" r="4" />
+          <rect x="96" y="200" width="60" height="32" rx="7" />
+          <text class="node-name" x="110" y="220">fft~</text>
+          <circle class="node-port node-port--neutral" cx="96" cy="216" r="4" />
+          <circle class="node-port node-port--neutral" cx="156" cy="216" r="4" />
         </g>
 
         <g class="diagram-visual">
           <text class="visual-label" x="198" y="192">hydra</text>
           <rect class="visual-output" x="198" y="198" width="76" height="36" rx="2" />
+
+          <g class="visual-flow" clip-path="url(#hydra-output-clip)">
+            <path d="M 191 224 C 205 205, 215 229, 229 211 S 254 202, 281 216" />
+            <path d="M 191 215 C 207 201, 220 219, 233 206 S 259 201, 281 207" />
+            <path d="M 191 232 C 210 214, 220 237, 237 220 S 260 215, 281 225" />
+          </g>
+
           <circle class="node-port node-port--neutral" cx="198" cy="216" r="4" />
         </g>
       </svg>
@@ -322,32 +343,40 @@
   }
 
   .visual-output {
-    fill: url('#hydra-stripes');
+    fill: #111113;
     stroke: rgba(255, 255, 255, 0.2);
     vector-effect: non-scaling-stroke;
   }
 
-  .signal-bars rect {
+  .visual-flow {
+    fill: none;
+    stroke: #52525b;
+    stroke-linecap: round;
+    stroke-width: 1.15;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .visual-flow path:nth-child(2) {
+    stroke: #71717a;
+  }
+
+  .visual-flow path:nth-child(3) {
+    opacity: 0.65;
+  }
+
+  .meter-track {
+    fill: #3f3f46;
+  }
+
+  .meter-level {
     fill: #f97316;
     transform-box: fill-box;
-    transform-origin: center bottom;
-    animation: signal-bars 0.9s ease-in-out infinite alternate;
+    transform-origin: left center;
+    animation: output-level 1.1s ease-in-out infinite alternate;
   }
 
-  .signal-bars rect:nth-child(2) {
-    animation-delay: -0.3s;
-  }
-
-  .signal-bars rect:nth-child(3) {
-    animation-delay: -0.6s;
-  }
-
-  .signal-bars rect:nth-child(4) {
-    animation-delay: -0.15s;
-  }
-
-  .signal-bars rect:nth-child(5) {
-    animation-delay: -0.45s;
+  .meter-level--right {
+    animation-delay: -0.55s;
   }
 
   .tech-rail {
@@ -442,9 +471,9 @@
     min-width: 0;
   }
 
-  @keyframes signal-bars {
+  @keyframes output-level {
     to {
-      transform: scaleY(0.42);
+      transform: scaleX(0.52);
     }
   }
 
@@ -508,7 +537,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .signal-bars rect {
+    .meter-level {
       animation: none;
     }
   }

@@ -100,8 +100,7 @@
             {/if}
           </h1>
           <p>
-            Combine a feeling with a medium. Patchies will turn the collision into questions to
-            explore.
+            Combine a feeling with a medium. Patchies will turn the collision into explorations.
           </p>
         </div>
       </header>
