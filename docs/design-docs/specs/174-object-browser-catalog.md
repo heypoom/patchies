@@ -78,12 +78,14 @@ action.
 
 - Provide **Object Packs** and **Preset Packs** as adjacent tabs above the fold.
 - Render only the selected pack type at a time.
-- Use explicit **Enable all** and **Reset** labels.
+- Keep explicit **Disable all** and **Enable all** actions visible together.
 - Keep enabled packs visually neutral with a quiet check state.
 - Reserve Ember for the selected pack, focus, search matches, and primary actions.
-- Separate pack enablement from content expansion with semantic, touch-sized controls.
-- Keep the pack grid stable when inspecting contents. On desktop, selection opens an attached
-  right-hand inspector; on touch layouts, it opens an immediate bottom sheet over the pack grid.
+- The pack card body changes enablement so bulk scanning and toggling uses the largest target. Treat
+  the checkbox as its state indicator. A separate full-width footer opens the pack inspector.
+- Keep the pack grid stable when inspecting contents. On desktop, permanently reserve an attached
+  right-hand inspector and show a quiet selection prompt before a pack is chosen. On touch layouts,
+  selection opens an immediate bottom sheet over the pack grid.
 - The inspector identifies the selected pack, preserves its description and item count, and presents
   its objects or presets as a scannable ordered list. It must never render after the final grid row.
 

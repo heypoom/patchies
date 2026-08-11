@@ -273,6 +273,12 @@
   const allPresetPacksEnabled = $derived(
     BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
+  const hasEnabledOptionalObjectPacks = $derived(
+    $enabledPackIds.some((packId) => !isPackLocked(packId))
+  );
+  const hasEnabledOptionalPresetPacks = $derived(
+    $enabledPresetPackIds.some((packId) => !isPresetPackLocked(packId))
+  );
   const expandedObjectPack = $derived(
     catalogKind === 'objects'
       ? (BUILT_IN_PACKS.find((pack) => pack.id === expandedPackId) ?? null)
@@ -293,6 +299,9 @@
   );
   const ExpandedPackIcon = $derived(
     getIconComponent(expandedObjectPack?.icon ?? expandedPresetPack?.icon ?? 'package')
+  );
+  const hasExpandedPack = $derived(
+    Boolean((expandedObjectPack || expandedPresetPack) && !searchQuery.trim())
   );
 
   const dialogTitle = $derived(
@@ -535,23 +544,28 @@
                   ? `${enabledObjectCount}/${totalObjectCount} objects enabled`
                   : `${$enabledPresetPackIds.length}/${BUILT_IN_PRESET_PACKS.length} packs enabled`}
               </span>
-              {#if catalogKind === 'objects'}
+              <div class="grid grid-cols-2 rounded-md border border-white/8 bg-black/15 p-1">
                 <button
                   type="button"
-                  onclick={allObjectPacksEnabled ? disableAllPacks : enableAllPacks}
-                  class="h-11 cursor-pointer rounded-md border border-white/10 bg-white/[0.035] px-3 text-[11px] font-medium text-zinc-300 transition-colors outline-none hover:border-white/18 hover:bg-white/[0.06] focus-visible:border-orange-500/70 sm:h-8"
+                  onclick={catalogKind === 'objects' ? disableAllPacks : disableAllPresetPacks}
+                  disabled={catalogKind === 'objects'
+                    ? !hasEnabledOptionalObjectPacks
+                    : !hasEnabledOptionalPresetPacks}
+                  class="h-11 cursor-pointer rounded px-3 text-[10px] font-medium text-zinc-500 transition-colors outline-none hover:bg-white/[0.05] hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-orange-500/70 disabled:cursor-not-allowed disabled:opacity-35 sm:h-7"
                 >
-                  {allObjectPacksEnabled ? 'Reset' : 'Enable all'}
+                  Disable all
                 </button>
-              {:else}
                 <button
                   type="button"
-                  onclick={allPresetPacksEnabled ? disableAllPresetPacks : enableAllPresetPacks}
-                  class="h-11 cursor-pointer rounded-md border border-white/10 bg-white/[0.035] px-3 text-[11px] font-medium text-zinc-300 transition-colors outline-none hover:border-white/18 hover:bg-white/[0.06] focus-visible:border-orange-500/70 sm:h-8"
+                  onclick={catalogKind === 'objects' ? enableAllPacks : enableAllPresetPacks}
+                  disabled={catalogKind === 'objects'
+                    ? allObjectPacksEnabled
+                    : allPresetPacksEnabled}
+                  class="h-11 cursor-pointer rounded bg-white/[0.045] px-3 text-[10px] font-medium text-zinc-300 transition-colors outline-none hover:bg-white/[0.075] hover:text-zinc-100 focus-visible:ring-1 focus-visible:ring-orange-500/70 disabled:cursor-not-allowed disabled:opacity-35 sm:h-7"
                 >
-                  {allPresetPacksEnabled ? 'Reset' : 'Enable all'}
+                  Enable all
                 </button>
-              {/if}
+              </div>
             </div>
           </div>
 
@@ -569,12 +583,7 @@
                   >
                 </div>
               {:else}
-                <div
-                  class={[
-                    'grid grid-cols-1 gap-2 min-[430px]:grid-cols-2',
-                    expandedPackId ? 'min-[900px]:grid-cols-2' : 'md:grid-cols-3'
-                  ]}
-                >
+                <div class="grid grid-cols-1 gap-2 min-[430px]:grid-cols-2">
                   {#if catalogKind === 'objects'}
                     {#each filteredObjectPacks as pack (pack.id)}
                       <ExtensionPackCard
@@ -606,17 +615,23 @@
               {/if}
             </div>
 
-            {#if (expandedObjectPack || expandedPresetPack) && !searchQuery.trim()}
+            {#if hasExpandedPack}
               <button
                 type="button"
                 onclick={() => (expandedPackId = null)}
                 class="absolute inset-0 z-10 cursor-pointer bg-black/65 sm:hidden"
                 aria-label="Dismiss pack contents"
               ></button>
-              <aside
-                class="absolute inset-x-3 bottom-3 z-20 flex max-h-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-xl border border-white/12 bg-zinc-950 shadow-[0_18px_50px_rgba(0,0,0,0.55)] sm:static sm:z-auto sm:w-[300px] sm:shrink-0 sm:rounded-none sm:border-y-0 sm:border-r-0 sm:border-l sm:bg-black/15 sm:shadow-none"
-                aria-label={`${expandedPackName} contents`}
-              >
+            {/if}
+
+            <aside
+              class={[
+                'absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-xl border border-white/12 bg-zinc-950 shadow-[0_18px_50px_rgba(0,0,0,0.55)] sm:static sm:z-auto sm:flex sm:w-[300px] sm:shrink-0 sm:rounded-none sm:border-y-0 sm:border-r-0 sm:border-l sm:bg-black/15 sm:shadow-none',
+                hasExpandedPack ? 'flex' : 'hidden'
+              ]}
+              aria-label={hasExpandedPack ? `${expandedPackName} contents` : 'Pack contents'}
+            >
+              {#if hasExpandedPack}
                 <div class="shrink-0 border-b border-white/7 p-4">
                   <div class="flex items-start gap-3">
                     <div
@@ -659,8 +674,27 @@
                     {/each}
                   </div>
                 </div>
-              </aside>
-            {/if}
+              {:else}
+                <div
+                  class="flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center"
+                >
+                  <div
+                    class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/7 bg-white/[0.025] text-zinc-600"
+                  >
+                    {#if catalogKind === 'objects'}
+                      <Boxes class="h-4 w-4" />
+                    {:else}
+                      <Bookmark class="h-4 w-4" />
+                    {/if}
+                  </div>
+                  <h3 class="mt-4 text-sm font-medium text-zinc-300">Select a pack</h3>
+                  <p class="mt-1.5 max-w-44 text-[11px] leading-relaxed text-zinc-600">
+                    Choose a card to inspect the {catalogKind === 'objects' ? 'objects' : 'presets'}
+                    it contains.
+                  </p>
+                </div>
+              {/if}
+            </aside>
           </div>
         </section>
       {:else}

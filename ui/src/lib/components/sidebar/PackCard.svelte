@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDown, Check, Lock } from '@lucide/svelte/icons';
+  import { ChevronDown, ChevronRight, Check, Lock } from '@lucide/svelte/icons';
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import type { Snippet } from 'svelte';
@@ -84,7 +84,7 @@
 {#if variant === 'tile'}
   <div
     class={[
-      'relative min-h-[112px] overflow-hidden rounded-lg border transition-colors',
+      'relative min-h-[120px] overflow-hidden rounded-lg border transition-colors',
       selected
         ? 'border-orange-500/45 bg-orange-500/5'
         : unavailable
@@ -99,7 +99,11 @@
       onclick={handleTogglePack}
       disabled={!toggleAllowed}
       aria-pressed={enabled}
-      class="flex h-full min-h-[112px] w-full cursor-pointer flex-col p-3 pr-14 text-left transition-colors outline-none focus-visible:bg-white/[0.04] focus-visible:ring-1 focus-visible:ring-orange-500/70 focus-visible:ring-inset disabled:cursor-not-allowed"
+      aria-label={`${enabled ? 'Disable' : 'Enable'} ${name}`}
+      class={[
+        'flex h-full min-h-[120px] w-full cursor-pointer flex-col pt-3 pr-14 pl-3 text-left transition-colors outline-none focus-visible:bg-white/[0.04] focus-visible:ring-1 focus-visible:ring-orange-500/70 focus-visible:ring-inset disabled:cursor-not-allowed',
+        searchQuery.trim() ? 'pb-3' : 'pb-12 sm:pb-10'
+      ]}
     >
       <div class="mb-1.5 flex items-center gap-2">
         <div
@@ -120,12 +124,36 @@
         >
           {name}
         </span>
-        {#if locked}
-          <Lock class="h-3 w-3 shrink-0 text-zinc-600" />
-        {:else}
+      </div>
+
+      <p class="line-clamp-2 text-[10px] leading-[1.45] text-zinc-500">{description}</p>
+    </button>
+
+    <div class="absolute top-1.5 right-1.5 flex items-center gap-0.5">
+      {#if nameExtra}
+        <div class="flex h-11 w-8 items-center justify-center">{@render nameExtra()}</div>
+      {/if}
+      {#if locked}
+        <Tooltip.Root delayDuration={100}>
+          <Tooltip.Trigger>
+            <div
+              class="flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-md text-zinc-600"
+            >
+              <Lock class="h-3.5 w-3.5" />
+            </div>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="left" class="max-w-48 p-2">
+            <p class="text-[10px]">Always enabled.</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {:else}
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
+          aria-hidden="true"
+        >
           <span
             class={[
-              'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+              'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
               unavailable
                 ? 'border-zinc-700 text-transparent'
                 : enabled
@@ -138,35 +166,28 @@
               <Check class="h-2.5 w-2.5" />
             {/if}
           </span>
-        {/if}
-      </div>
-
-      <p class="line-clamp-2 text-[10px] leading-[1.45] text-zinc-500">{description}</p>
-
-      {#if !searchQuery.trim()}
-        <p class="mt-auto pt-2 font-mono text-[9px] text-zinc-600">{items.length} items</p>
+        </div>
       {/if}
-    </button>
+    </div>
 
-    <div class="absolute top-1.5 right-1.5 flex items-center gap-0.5">
-      {#if nameExtra}
-        <div class="flex h-11 w-8 items-center justify-center">{@render nameExtra()}</div>
-      {/if}
+    {#if !searchQuery.trim()}
       <button
         type="button"
         onclick={handleToggleManualExpansion}
         disabled={!manualExpansionAllowed}
         class={[
-          'flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent transition-colors outline-none focus-visible:border-orange-500/70 focus-visible:text-orange-400 disabled:cursor-not-allowed',
-          manualExpansionAllowed
-            ? 'text-zinc-500 hover:bg-white/5 hover:text-zinc-200'
-            : 'text-zinc-800'
+          'absolute inset-x-0 bottom-0 flex h-11 cursor-pointer items-center gap-1 border-t border-white/6 px-3 font-mono text-[9px] transition-colors outline-none focus-visible:bg-white/[0.045] focus-visible:text-orange-400 disabled:cursor-not-allowed sm:h-9',
+          selected
+            ? 'bg-orange-500/[0.025] text-orange-400'
+            : 'text-zinc-600 hover:bg-white/[0.025] hover:text-zinc-400'
         ]}
         aria-label={selected ? `Hide ${name} contents` : `Show ${name} contents`}
+        aria-pressed={selected}
       >
-        <ChevronDown class={['h-4 w-4 transition-transform', selected && 'rotate-180']} />
+        <span>{selected ? 'Viewing contents' : `View ${items.length} items`}</span>
+        <ChevronRight class={['h-3 w-3 transition-transform', selected && 'translate-x-0.5']} />
       </button>
-    </div>
+    {/if}
 
     {#if searchQuery.trim()}
       <div class="border-t border-white/6 px-3 py-2">
