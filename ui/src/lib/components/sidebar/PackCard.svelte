@@ -129,15 +129,17 @@
       <p class="line-clamp-2 text-[10px] leading-[1.45] text-zinc-500">{description}</p>
     </button>
 
-    <div class="absolute top-1.5 right-1.5 flex items-center gap-0.5">
+    <div class="pointer-events-none absolute top-1.5 right-1.5 flex items-center gap-0.5">
       {#if nameExtra}
-        <div class="flex h-11 w-8 items-center justify-center">{@render nameExtra()}</div>
+        <div class="pointer-events-auto flex h-11 w-8 items-center justify-center">
+          {@render nameExtra()}
+        </div>
       {/if}
       {#if locked}
         <Tooltip.Root delayDuration={100}>
           <Tooltip.Trigger>
             <div
-              class="flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-md text-zinc-600"
+              class="pointer-events-auto flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-md text-zinc-600"
             >
               <Lock class="h-3.5 w-3.5" />
             </div>
