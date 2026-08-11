@@ -73,6 +73,7 @@
     <div
       class="modal-card"
       class:modal-card--sparks={activeTab === 'sparks'}
+      class:modal-card--shortcuts={activeTab === 'shortcuts'}
       class:modal-card--thanks={activeTab === 'thanks'}
       role="dialog"
       aria-modal="true"
@@ -202,6 +203,10 @@
 
     .modal-card--thanks {
       max-width: 960px;
+    }
+
+    .modal-card--shortcuts {
+      max-width: 920px;
     }
   }
 

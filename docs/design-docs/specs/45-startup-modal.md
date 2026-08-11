@@ -145,6 +145,19 @@ Because these items are reference content rather than controls, their surface, i
 must remain visually quieter than the clickable guide and Shortcuts paths above them. Gesture labels
 use the same keycap treatment as keyboard shortcuts.
 
+#### Full Shortcuts Reference
+
+The Shortcuts tab is a lookup surface, not an editorial page. Its opening stays compact so useful
+commands enter the first viewport, and the modal expands to a dedicated wider reference width on
+desktop. Narrow viewports keep the standard modal width and collapse the reference to one column.
+
+Shortcuts are grouped by the Patchies task they accomplish rather than only by input device:
+Canvas & selection, Create & edit, Patch & workspace, and Run & playback. Each group uses a real
+section heading and list semantics. Rows keep the action in a flexible column and the input gesture
+in a protected keycap column, while concise natural-language gestures avoid implementation-like
+slash syntax. Long actions and gestures must remain readable without collapsing labels into narrow
+vertical stacks or causing horizontal overflow at supported widths.
+
 The community links and “show on startup” preference live in a dedicated footer outside the tab's
 scrolling content. The footer stays visible whenever About is active, including before the user
 scrolls, and adapts to two compact rows on narrow screens.
