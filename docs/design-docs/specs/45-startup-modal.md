@@ -64,6 +64,7 @@ If you enjoy using Hydra, please consider supporting continued development <3 .
 ### MVP Implementation (Completed)
 
 #### Component Architecture
+
 The startup modal is implemented as a modular component system in `/ui/src/lib/components/startup-modal/`:
 
 - **StartupModal.svelte** - Main modal container with tab navigation and backdrop handling
@@ -183,6 +184,30 @@ selected medium visible while the user refines or regenerates the directions. Mi
 credentials remain a just-in-time concern:
 invoking Imagine opens provider settings, while the idle dock does not pre-emptively gate or warn
 the user.
+
+#### Credits Patch Thanks Tab
+
+The Thanks tab is the startup modal's celebratory closing state. It may be more expressive than the
+other reference-oriented tabs while continuing the same Ink, Zinc, Ember, IBM Plex Sans, and IBM
+Plex Mono system. On wide screens, selecting Thanks expands the modal to a wider credits workspace;
+the standard single-column modal width remains the fallback for narrow screens.
+
+The tab presents its existing content in three progressively denser layers:
+
+1. A full-width Credits Patch opening connects the four named contributors as a lightweight SVG and
+   CSS patch topology. The illustration is decorative, while the contributor profiles below retain
+   every biography and external link as accessible HTML.
+2. The people and open-source support sections use connected rails and quiet signal markers rather
+   than a repeated stack of generic cards. Personal acknowledgements lead visually; library,
+   educator, and tool-maintainer links form a denser ecosystem index afterward.
+3. Project licensing, ported and adapted code, and the complete dependency table resolve into a
+   compact source ledger. These records remain complete, selectable, horizontally scrollable where
+   necessary, and reachable without relying on the decorative topology.
+
+The only authored entrance moment traces the hero cables and reveals its nodes when the tab opens.
+It uses SVG and CSS only, does not add WebGL, canvas, backdrop blur, or sound, and becomes static when
+reduced motion is requested. Mobile removes the decorative cable geometry, keeps the reading order
+linear, and prevents horizontal overflow outside intentionally scrollable dependency data.
 
 #### Example Patches JSON Format
 

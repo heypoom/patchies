@@ -73,6 +73,7 @@
     <div
       class="modal-card"
       class:modal-card--sparks={activeTab === 'sparks'}
+      class:modal-card--thanks={activeTab === 'thanks'}
       role="dialog"
       aria-modal="true"
       aria-label="Patchies"
@@ -197,6 +198,10 @@
   @media (min-width: 900px) {
     .modal-card--sparks {
       max-width: 1120px;
+    }
+
+    .modal-card--thanks {
+      max-width: 960px;
     }
   }
 
