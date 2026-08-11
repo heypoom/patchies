@@ -39,6 +39,9 @@ export class AudioAdapter {
   /** Runtime-owned audio objects and their message contexts. */
   private audioObjects = new Map<string, RuntimeAudioObjectEntry>();
 
+  /** View callbacks retained while the runtime creates or replaces an audio object. */
+  private messageSubscribers = new Map<string, Set<MessageCallbackFn>>();
+
   /** Node ids whose next editor-state sync should be ignored because runtime messaging already applied it. */
   private suppressedAudioObjectSyncs = new Set<string>();
 
@@ -117,6 +120,10 @@ export class AudioAdapter {
       params: [...object.data.params]
     });
 
+    for (const callback of this.messageSubscribers.get(object.id) ?? []) {
+      messageContext.queue.addCallback(callback);
+    }
+
     this.suppressedAudioObjectSyncs.delete(object.id);
     this.viewRevisions.bump(object.id);
   }
@@ -131,13 +138,25 @@ export class AudioAdapter {
   }
 
   subscribeAudioObjectMessages(nodeId: string, callback: MessageCallbackFn): (() => void) | null {
-    const messageContext = this.audioObjects.get(nodeId)?.messageContext;
-    if (!messageContext) return null;
+    let subscribers = this.messageSubscribers.get(nodeId);
 
-    messageContext.queue.addCallback(callback);
+    if (!subscribers) {
+      subscribers = new Set();
+      this.messageSubscribers.set(nodeId, subscribers);
+    }
+
+    subscribers.add(callback);
+
+    const messageContext = this.audioObjects.get(nodeId)?.messageContext;
+    messageContext?.queue.addCallback(callback);
 
     return () => {
-      messageContext.queue.removeCallback(callback);
+      this.messageSubscribers.get(nodeId)?.delete(callback);
+      this.audioObjects.get(nodeId)?.messageContext.queue.removeCallback(callback);
+
+      if (this.messageSubscribers.get(nodeId)?.size === 0) {
+        this.messageSubscribers.delete(nodeId);
+      }
     };
   }
 
@@ -153,6 +172,8 @@ export class AudioAdapter {
     for (const nodeId of this.audioObjects.keys()) {
       this.destroyAudioObject(nodeId);
     }
+
+    this.messageSubscribers.clear();
   }
 
   private createAudioObjectMessageContext(nodeId: string, objectType: string): MessageContext {
