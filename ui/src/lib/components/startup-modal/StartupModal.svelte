@@ -25,6 +25,7 @@
   }
 
   let activeTab = $state<Tab>(getInitialTab());
+  let modalBody = $state<HTMLDivElement>();
 
   $effect(() => {
     if (open && initialTab) {
@@ -40,6 +41,11 @@
 
   function handleClose() {
     open = false;
+  }
+
+  function selectTab(tab: Tab) {
+    activeTab = tab;
+    if (modalBody) modalBody.scrollTop = 0;
   }
 
   const tabs = $derived<Tab[]>(
@@ -66,6 +72,7 @@
     <!-- Modal container -->
     <div
       class="modal-card"
+      class:modal-card--sparks={activeTab === 'sparks'}
       role="dialog"
       aria-modal="true"
       aria-label="Patchies"
@@ -83,7 +90,7 @@
         <nav class="modal-tabs">
           {#each tabs as tab (tab)}
             <button
-              onclick={() => (activeTab = tab)}
+              onclick={() => selectTab(tab)}
               class="modal-tab"
               class:modal-tab--active={activeTab === tab}
             >
@@ -97,10 +104,14 @@
       </div>
 
       <!-- Tab content -->
-      <div class="modal-body" class:modal-body--about={activeTab === 'about'}>
+      <div
+        class="modal-body"
+        class:modal-body--sparks={activeTab === 'sparks'}
+        bind:this={modalBody}
+      >
         {#if activeTab === 'about'}
           <AboutTab
-            setTab={(tab) => (activeTab = tab)}
+            setTab={selectTab}
             onOpenObjectBrowser={() => {
               open = false;
 
@@ -121,7 +132,7 @@
       </div>
 
       {#if activeTab === 'about'}
-        <AboutFooter setTab={(tab) => (activeTab = tab)} />
+        <AboutFooter />
       {/if}
     </div>
   </div>
@@ -172,6 +183,7 @@
     display: flex;
     flex-direction: column;
     animation: card-in 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    transition: max-width 0.48s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @media (min-width: 640px) {
@@ -179,6 +191,12 @@
       height: 85dvh;
       max-height: 720px;
       margin: 16px;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .modal-card--sparks {
+      max-width: 1120px;
     }
   }
 
@@ -276,23 +294,16 @@
     z-index: 1;
     flex: 1;
     overflow-y: auto;
-    padding: 24px 24px 20px;
+    padding: 0;
   }
 
-  .modal-body--about {
-    padding: 0;
+  .modal-body--sparks {
+    overflow: hidden;
   }
 
   @media (min-width: 640px) {
     .modal-tabbar {
       padding: 10px 28px 0;
-    }
-    .modal-body {
-      padding: 28px 28px 24px;
-    }
-
-    .modal-body--about {
-      padding: 0;
     }
   }
 
@@ -313,6 +324,13 @@
 
     .modal-close {
       padding: 7px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .modal-card {
+      animation: none;
+      transition: none;
     }
   }
 

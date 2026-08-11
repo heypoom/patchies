@@ -1,6 +1,7 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import { FileText, ExternalLink } from '@lucide/svelte/icons';
+  import StartupTabIntro from './StartupTabIntro.svelte';
 
   import {
     projectLicense,
@@ -26,14 +27,10 @@
 </script>
 
 <div class="thanks-root">
-  <!-- Header -->
-  <div class="thanks-hero">
-    <p class="thanks-eyebrow">patchies · gratitude</p>
-    <h1 id="modal-title" class="thanks-headline">Made with love.</h1>
-    <p class="thanks-subhead">
-      Built upon amazing open source projects and the generosity of many people.
-    </p>
-  </div>
+  <StartupTabIntro
+    title="Made with love."
+    description="Built upon amazing open source projects and the generosity of many people."
+  />
 
   <!-- Project License -->
   <div class="thanks-section">
@@ -45,7 +42,7 @@
     <div class="thanks-panel">
       <p class="thanks-body">{projectLicense.description}</p>
       <ul class="thanks-list">
-        {#each projectLicense.whatItMeans as point}
+        {#each projectLicense.whatItMeans as point (point)}
           <li>{point}</li>
         {/each}
       </ul>
@@ -190,7 +187,7 @@
     <div class="oss-group">
       <p class="oss-group-label">Library & Tool Creators</p>
       <div class="oss-list">
-        {#each libraryCreators as creator}
+        {#each libraryCreators as creator (creator.name)}
           <div class="oss-item">
             <div class="oss-item-head">
               <span class="oss-name">{creator.name}</span>
@@ -211,7 +208,7 @@
     <div class="oss-group">
       <p class="oss-group-label">Educators & Tutorial Creators</p>
       <div class="oss-list">
-        {#each educators as educator}
+        {#each educators as educator (educator.name)}
           <div class="oss-item">
             <div class="oss-item-head">
               <span class="oss-name">{educator.name}</span>
@@ -232,7 +229,7 @@
     <div class="oss-group">
       <p class="oss-group-label">Tool & Dependency Maintainers</p>
       <div class="oss-list">
-        {#each toolMaintainers as tool}
+        {#each toolMaintainers as tool (tool.name)}
           <div class="oss-item">
             <div class="oss-item-head">
               <span class="oss-name">{tool.name}</span>
@@ -260,7 +257,7 @@
     </div>
 
     <div class="oss-list">
-      {#each portedCode as code}
+      {#each portedCode as code (code.name)}
         <div class="oss-item">
           <div class="oss-item-head">
             <span class="oss-name">{code.name}</span>
@@ -307,7 +304,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each dependenciesSection.dependencies as dep}
+          {#each dependenciesSection.dependencies as dep (dep.name)}
             <tr>
               <td>
                 {#if dep.url}
@@ -335,92 +332,54 @@
     gap: 0;
   }
 
-  /* Hero */
-  .thanks-hero {
-    padding-bottom: 24px;
+  .thanks-section {
+    padding: 22px 32px 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .thanks-eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba(249, 115, 22, 0.7);
+  .thanks-divider {
     margin-bottom: 14px;
   }
 
-  .thanks-headline {
-    font-family: 'IBM Plex Serif', ui-serif, Georgia, serif;
-    font-style: italic;
-    font-size: clamp(1.8rem, 5vw, 2.6rem);
-    line-height: 1.12;
-    color: #f4f4f5;
-    margin-bottom: 12px;
-  }
-
-  .thanks-subhead {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.82rem;
-    line-height: 1.7;
-    color: #52525b;
-  }
-
-  /* Section wrapper */
-  .thanks-section {
-    padding-bottom: 28px;
-  }
-
-  /* Dividers */
-  .thanks-divider {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
   .thanks-divider-line {
-    flex: 1;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.06);
+    display: none;
   }
 
   .thanks-divider-label {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
-    letter-spacing: 0.25em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #3f3f46;
+    color: #d4d4d8;
     white-space: nowrap;
   }
 
   .thanks-section-desc {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.78rem;
-    color: #52525b;
+    max-width: 70ch;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.82rem;
+    color: #71717a;
     line-height: 1.6;
     margin-bottom: 16px;
   }
 
-  /* Panel (license) */
   .thanks-panel {
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    padding: 16px 18px;
-    background: rgba(255, 255, 255, 0.015);
+    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
   .thanks-body {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.78rem;
-    color: #71717a;
+    max-width: 70ch;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.82rem;
+    color: #a1a1aa;
     line-height: 1.65;
   }
 
   .thanks-list {
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-size: 0.75rem;
     color: #52525b;
     line-height: 1.7;
@@ -452,20 +411,15 @@
     flex-shrink: 0;
   }
 
-  /* People cards */
   .thanks-people {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    overflow: hidden;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .person-card {
-    padding: 16px 18px;
-    background: rgba(255, 255, 255, 0.01);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     transition: background 0.15s;
   }
 
@@ -478,17 +432,18 @@
   }
 
   .person-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.82rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #d4d4d8;
     margin-bottom: 6px;
   }
 
   .person-bio {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.75rem;
-    color: #52525b;
+    max-width: 76ch;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.78rem;
+    color: #71717a;
     line-height: 1.65;
     margin-bottom: 6px;
   }
@@ -548,16 +503,12 @@
   .oss-list {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    overflow: hidden;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .oss-item {
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.01);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .oss-item:last-child {
@@ -573,7 +524,7 @@
   }
 
   .oss-name {
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-size: 0.8rem;
     font-weight: 600;
     color: #a1a1aa;
@@ -619,7 +570,8 @@
   }
 
   .oss-desc {
-    font-family: 'Syne', sans-serif;
+    max-width: 76ch;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-size: 0.73rem;
     color: #52525b;
     line-height: 1.55;
@@ -634,7 +586,7 @@
   }
 
   .oss-notes {
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-size: 0.72rem;
     color: #3f3f46;
     font-style: italic;
@@ -645,7 +597,6 @@
   /* Dependencies table */
   .deps-table-wrap {
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
     overflow: hidden;
     overflow-x: auto;
   }
@@ -693,5 +644,17 @@
 
   .dep-link:hover {
     color: #f97316;
+  }
+
+  @media (max-width: 600px) {
+    .thanks-section {
+      padding: 20px 20px 24px;
+    }
+    .oss-item-head {
+      align-items: flex-start;
+    }
+    .deps-table {
+      min-width: 520px;
+    }
   }
 </style>

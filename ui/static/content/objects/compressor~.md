@@ -1,21 +1,20 @@
-Dynamic range compressor for controlling audio levels.
+A dynamic range compressor that controls audio levels.
 
 ## Parameters
 
-- **threshold**: Level above which compression starts (dB, default: -24)
-- **knee**: Softness of the compression curve (dB, default: 30)
-- **ratio**: Compression ratio (default: 12)
-- **attack**: Attack time in seconds (default: 0.003)
-- **release**: Release time in seconds (default: 0.25)
+- **threshold**: The level where compression starts, in dB. Default: -24.
+- **knee**: How smoothly compression starts, in dB. Default: 30.
+- **ratio**: The compression ratio. Default: 12.
+- **attack**: The attack time, in seconds. Default: 0.003.
+- **release**: The release time, in seconds. Default: 0.25.
 
 ## Usage
 
-Use as a limiter by setting high ratio and fast attack to prevent clipping.
+Use a high ratio and a short attack time to limit the signal and prevent clipping.
 
-> **Tip**: Place after [expr~](/docs/objects/expr~) or [dsp~](/docs/objects/dsp~)
-> to prevent loud audio spikes.
+> **Tip**: Place this object after [expr~](/docs/objects/expr~) or [dsp~](/docs/objects/dsp~). This prevents loud audio spikes.
 
 ## See Also
 
-- [gain~](/docs/objects/gain~) - volume control
-- [waveshaper~](/docs/objects/waveshaper~) - distortion
+- [gain~](/docs/objects/gain~) controls volume.
+- [waveshaper~](/docs/objects/waveshaper~) distorts audio.

@@ -1,10 +1,7 @@
 <script lang="ts">
-  import { BookOpen, Github, Heart, Info, Instagram, MessageCircle } from '@lucide/svelte/icons';
+  import { BookOpen, Github, Instagram, MessageCircle } from '@lucide/svelte/icons';
 
   import { showStartupModalOnLoad } from '../../../stores/startup-modal.store';
-  import type { Tab } from './types';
-
-  let { setTab }: { setTab: (tab: Tab) => void } = $props();
 
   function toggleShowOnStartup() {
     showStartupModalOnLoad.update((value) => !value);
@@ -17,6 +14,7 @@
       <BookOpen class="h-3.5 w-3.5" />
       docs
     </a>
+
     <a
       href="https://github.com/heypoom/patchies"
       target="_blank"
@@ -26,6 +24,7 @@
       <Github class="h-3.5 w-3.5" />
       github
     </a>
+
     <a
       href="https://www.instagram.com/patchiesapp"
       target="_blank"
@@ -33,8 +32,9 @@
       class="footer-link"
     >
       <Instagram class="h-3.5 w-3.5" />
-      IG
+      insta
     </a>
+
     <a
       href="https://discord.gg/PpccRb2XjE"
       target="_blank"
@@ -44,14 +44,9 @@
       <MessageCircle class="h-3.5 w-3.5" />
       discord
     </a>
-    <button class="footer-link cursor-pointer" onclick={() => setTab('thanks')}>
-      <Heart class="h-3.5 w-3.5" />
-      thanks
-    </button>
   </nav>
 
   <div class="startup-preference">
-    <Info class="h-3.5 w-3.5 shrink-0" />
     <span>show on startup</span>
     <button
       onclick={toggleShowOnStartup}

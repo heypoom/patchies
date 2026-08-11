@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RotateCcw, Sparkles, Square } from '@lucide/svelte/icons';
   import { SvelteSet } from 'svelte/reactivity';
   import { getTextProvider } from '$lib/ai/providers';
   import { extractJson } from '$lib/ai/extract-json';
@@ -162,106 +163,90 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
   }
 </script>
 
-<section class="vision-section border-y border-white/5 bg-black/20 px-8 pt-8 pb-10">
-  <div class="mx-auto max-w-4xl">
-    <!-- Header row -->
-    <div
-      class="mb-5 flex flex-wrap items-center gap-4 max-[600px]:flex-col max-[600px]:items-stretch"
-    >
-      <div class="flex-1">
-        <h2
-          class="sparks-heading font-serif text-[clamp(2rem,5vw,3.8rem)] leading-[1.1] text-zinc-200 italic"
-        >
-          Dream a build
-        </h2>
-        <p class="mt-0.5 font-mono text-[11px] text-zinc-700">three what-ifs based on your picks</p>
+<section class="vision-section" style:--composer-accent={accentColor}>
+  <div class="vision-shell">
+    <div class="vision-composer">
+      <div class="vision-copy">
+        <span class="vision-mark" aria-hidden="true"><Sparkles size={17} /></span>
+
+        <div>
+          <h2>Imagine the collision</h2>
+          <p>Turn your picks into three concrete what-ifs.</p>
+        </div>
       </div>
-      <div class="flex min-w-0 flex-1 items-center gap-2">
+
+      <div class="vision-controls">
+        <label class="sr-only" for="sparks-steer-prompt">Add a creative direction</label>
         <input
+          id="sparks-steer-prompt"
           type="text"
           bind:value={steerPrompt}
-          placeholder="try: stranger, lo-fi, for a gallery opening"
-          class="steer-input max-w-[340px] min-w-0 flex-1 rounded-md border border-white/8 bg-white/3 px-3 py-1.5 font-mono text-xs text-zinc-400 transition-colors outline-none placeholder:text-zinc-700 focus:text-zinc-200"
+          placeholder="Add a twist: stranger, lo-fi, for a gallery opening"
+          class="steer-input"
           onkeydown={(e) => e.key === 'Enter' && generateVisions()}
         />
         <button
           onclick={generateVisions}
-          class="generate-btn flex cursor-pointer items-center gap-1.5 rounded-md border bg-transparent px-3.5 py-1.5 font-mono text-xs whitespace-nowrap transition-all disabled:cursor-not-allowed disabled:opacity-40"
-          style:border-color="color-mix(in srgb, {accentColor} 35%, transparent)"
-          style:color={isGenerating ? accentColor : undefined}
+          class="generate-btn cursor-pointer"
+          aria-label={isGenerating
+            ? 'Stop imagining'
+            : $sparksVisions.length > 0
+              ? 'Imagine again'
+              : 'Imagine ideas'}
         >
           {#if isGenerating}
-            <span class="generating-dot"></span> stop
+            <Square size={13} fill="currentColor" /> Stop
           {:else if $sparksVisions.length > 0}
-            ↺ again
+            <RotateCcw size={14} /> Again
           {:else}
-            ✦ imagine
+            <Sparkles size={14} /> Imagine
           {/if}
         </button>
       </div>
     </div>
 
-    <!-- Error -->
     {#if generationError}
-      <p class="mb-4 font-mono text-xs text-red-500">{generationError}</p>
+      <p class="generation-error" role="alert">{generationError}</p>
     {/if}
 
-    <!-- Vision cards -->
     {#if isGenerating && $sparksVisions.length === 0}
-      <div class="visions-grid">
-        {#each [0, 1, 2] as i (i)}
-          <div class="vision-card vision-skeleton" style:animation-delay="{i * 120}ms"></div>
-        {/each}
+      <div class="vision-results">
+        <div class="visions-grid">
+          {#each [0, 1, 2] as i (i)}
+            <div class="vision-card vision-skeleton" style:animation-delay="{i * 120}ms"></div>
+          {/each}
+        </div>
       </div>
     {:else if $sparksVisions.length > 0}
-      <div class="visions-grid">
-        {#each $sparksVisions as v, i (i)}
-          <button
-            class="vision-card cursor-pointer text-left"
-            style:--card-accent={accentColor}
-            style:animation-delay="{i * 80}ms"
-            onclick={() => openVision(v, i)}
-          >
-            <div class="vision-top-line"></div>
-            <h3 class="font-serif text-[1.1rem] leading-[1.2] italic" style:color={textColor}>
-              {v.title}
-            </h3>
-            <p class="flex-1 text-[0.8rem] leading-[1.65] text-zinc-500">{v.vision}</p>
-            <div class="mt-auto flex flex-wrap gap-1 pt-4">
-              {#each v.nodes as node (node)}
-                <span
-                  class="rounded-[3px] border border-white/6 bg-white/4 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600"
-                  >{node}</span
-                >
-              {/each}
-            </div>
-            <span class="vision-tap-hint font-mono text-[10px] tracking-[0.05em]"
-              >tap to explore →</span
+      <div class="vision-results">
+        <div class="visions-grid">
+          {#each $sparksVisions as v, i (i)}
+            <button
+              class="vision-card cursor-pointer text-left"
+              style:--card-accent={accentColor}
+              style:animation-delay="{i * 80}ms"
+              onclick={() => openVision(v, i)}
             >
-          </button>
-        {/each}
+              <div class="vision-top-line"></div>
+              <h3 class="font-serif text-[1.1rem] leading-[1.2] italic" style:color={textColor}>
+                {v.title}
+              </h3>
+              <p class="flex-1 text-[0.8rem] leading-[1.65] text-zinc-500">{v.vision}</p>
+              <div class="mt-auto flex flex-wrap gap-1 pt-4">
+                {#each v.nodes as node (node)}
+                  <span
+                    class="rounded-[3px] border border-white/6 bg-white/4 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600"
+                    >{node}</span
+                  >
+                {/each}
+              </div>
+              <span class="vision-tap-hint font-mono text-[10px] tracking-[0.05em]"
+                >tap to explore →</span
+              >
+            </button>
+          {/each}
+        </div>
       </div>
-    {:else if !$hasAIApiKey}
-      <div class="vision-idle-prompt w-full">
-        <p class="mb-3 font-serif text-2xl text-zinc-800 italic">Generation needs an AI key</p>
-        <p class="mb-5 font-mono text-[11px] text-zinc-700">
-          Sparks uses your own API key — nothing is shared with Patchies servers.
-        </p>
-        <button
-          onclick={() => (aiSettingsOpen = true)}
-          class="cursor-pointer rounded-md border border-zinc-700 px-4 py-2 font-mono text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
-        >
-          Set up AI Provider →
-        </button>
-      </div>
-    {:else}
-      <button onclick={generateVisions} class="vision-idle-prompt w-full cursor-pointer">
-        <span
-          class="font-serif text-2xl text-zinc-800 italic transition-colors group-hover:text-zinc-600"
-        >
-          Click ✦ imagine to dream up ideas →
-        </span>
-      </button>
     {/if}
   </div>
 </section>
@@ -288,31 +273,151 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 {/if}
 
 <style>
+  .vision-section {
+    animation: dock-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .vision-shell {
+    width: 100%;
+    max-width: none;
+  }
+
+  .vision-composer {
+    display: grid;
+    grid-template-columns: minmax(230px, 0.8fr) minmax(360px, 1.35fr);
+    align-items: center;
+    gap: 24px;
+  }
+
+  .vision-copy {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .vision-mark {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--composer-accent) 35%, #3f3f46);
+    border-radius: 8px;
+    color: var(--composer-accent);
+    background: color-mix(in srgb, var(--composer-accent) 7%, #18181b);
+  }
+
+  .vision-copy h2 {
+    color: #e4e4e7;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .vision-copy p {
+    margin-top: 2px;
+    color: #71717a;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .vision-controls {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .steer-input {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    flex: 1;
+    border: 1px solid #3f3f46;
+    border-radius: 7px;
+    outline: none;
+    padding: 0 12px;
+    color: #d4d4d8;
+    background: #18181b;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    transition:
+      border-color 0.16s ease,
+      background 0.16s ease;
+  }
+
+  .steer-input::placeholder {
+    color: #71717a;
+  }
+
   .steer-input:focus {
-    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    border-color: color-mix(in srgb, var(--composer-accent) 58%, #52525b);
+    background: #1c1c1f;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--composer-accent) 14%, transparent);
+  }
+
+  .generate-btn {
+    display: inline-flex;
+    height: 36px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--composer-accent) 55%, #3f3f46);
+    border-radius: 7px;
+    color: var(--composer-accent);
+    background: color-mix(in srgb, var(--composer-accent) 9%, #18181b);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      color 0.16s ease,
+      border-color 0.16s ease,
+      background 0.16s ease,
+      transform 0.16s ease;
   }
 
   .generate-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: #09090b;
+    border-color: var(--composer-accent);
+    background: var(--composer-accent);
+    transform: translateY(-1px);
   }
 
-  .generating-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-    animation: pulse-dot 0.9s ease-in-out infinite;
+  .generate-btn:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--composer-accent) 22%, transparent);
+    outline-offset: 2px;
   }
-  @keyframes pulse-dot {
-    0%,
-    100% {
-      opacity: 1;
-      transform: scale(1);
+
+  .generation-error {
+    margin-top: 10px;
+    color: #f87171;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+  }
+
+  .vision-results {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  @keyframes dock-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+      clip-path: inset(100% 0 0 0);
     }
-    50% {
-      opacity: 0.4;
-      transform: scale(0.7);
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      clip-path: inset(0 0 0 0);
     }
   }
 
@@ -322,6 +427,11 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     gap: 12px;
   }
   @media (max-width: 768px) {
+    .vision-composer {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
     .visions-grid {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -331,6 +441,14 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     }
   }
   @media (max-width: 480px) {
+    .vision-controls {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .generate-btn {
+      width: 100%;
+    }
+
     .visions-grid {
       grid-template-columns: 1fr;
     }
@@ -416,15 +534,15 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     }
   }
 
-  .vision-idle-prompt {
-    background: none;
-    border: 1px dashed rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 32px;
-    text-align: center;
-    transition: border-color 0.2s;
-  }
-  .vision-idle-prompt:hover {
-    border-color: rgba(255, 255, 255, 0.12);
+  @media (prefers-reduced-motion: reduce) {
+    .vision-section,
+    .vision-card,
+    .vision-skeleton {
+      animation: none;
+    }
+
+    .generate-btn:hover:not(:disabled) {
+      transform: none;
+    }
   }
 </style>

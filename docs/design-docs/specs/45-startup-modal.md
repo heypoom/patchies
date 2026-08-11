@@ -148,6 +148,38 @@ The community links and “show on startup” preference live in a dedicated foo
 scrolling content. The footer stays visible whenever About is active, including before the user
 scrolls, and adapts to two compact rows on narrow screens.
 
+#### Demos and Sparks Signal System
+
+Demos and Sparks extend the patch topology into an interactive signal-system language while
+remaining subordinate to About's hero. The treatment is built with lightweight CSS and SVG rather
+than WebGL, backdrop blur, or continuously running off-screen animation. Motion is limited to direct
+interaction and respects reduced-motion preferences.
+
+Demo cards carry quiet category-specific signal traces behind their real title, description, author,
+and action. The trace is decorative rather than a literal preview of the patch, stays neutral at
+rest, and receives a brief Ember signal sweep on hover or keyboard focus. Cards remain readable and
+fully functional without the trace or motion.
+
+Sparks reads as one connected creative instrument rather than two unrelated selector grids. Its
+opening question is a live sentence that combines the selected feeling and medium into a curiosity
+prompt. On desktop, entering Sparks expands the modal from its focused reading width into a wider
+creative workspace, then returns it when another tab is selected. The width transition uses a
+single restrained ease and is disabled when reduced motion is requested. On wide screens both
+selector stages remain visible side by side around a signal junction;
+on narrow screens they stack with an explicit connector, so discovering the second question never
+depends on guessing that the modal scrolls. Mood choices expose a directional affordance and clear
+hover, focus, and selected states. Mood colors belong to those interactions and generated results,
+not broad card fills; the default state remains in the Ink, Zinc, and Ember modal system. The
+full-screen Sparks route is intentionally omitted: this workflow exists only inside the startup
+modal so its presentation and editor actions have one maintained implementation.
+
+After the first feeling or medium is selected, generation appears as a persistent creation dock at
+the bottom of the Sparks workspace. The selector canvas scrolls independently above it, keeping the
+creative-direction field and Imagine action visible without requiring discovery through scrolling.
+Generated what-if cards expand inside the dock as a bounded results tray rather than as another
+section after the selectors. Missing AI credentials remain a just-in-time concern: invoking Imagine
+opens provider settings, while the idle dock does not pre-emptively gate or warn the user.
+
 #### Example Patches JSON Format
 
 ```json
