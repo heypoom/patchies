@@ -47,6 +47,8 @@
   let abortController: AbortController | null = null;
   let aiSettingsOpen = $state(false);
 
+  const selectedOutputs = $derived(outputs.filter((output) => selectedOutputIds.has(output.id)));
+
   function portal(node: HTMLElement) {
     document.body.appendChild(node);
     return {
@@ -173,39 +175,64 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 <section class="vision-section" style:--composer-accent={accentColor}>
   <div class="vision-shell">
     {#if showResults && onBack}
-      <button
-        class="vision-back cursor-pointer disabled:cursor-not-allowed"
-        disabled={isGenerating}
-        onclick={onBack}
-      >
-        <ArrowLeft size={14} /> Edit feeling and medium
-      </button>
+      <div class="vision-stage-bar">
+        <button
+          class="vision-back cursor-pointer disabled:cursor-not-allowed"
+          disabled={isGenerating}
+          onclick={onBack}
+        >
+          <ArrowLeft size={14} /> Edit feeling and medium
+        </button>
+
+        <div class="vision-context" aria-label="Selected feeling and media">
+          <span class="vision-context-item">
+            <span class="vision-context-label">Feeling</span>
+            <strong style:color={selectedMood ? textColor : undefined}
+              >{selectedMood?.name ?? 'Any feeling'}</strong
+            >
+          </span>
+          <span class="vision-context-item">
+            <span class="vision-context-label"
+              >{selectedOutputs.length === 1 ? 'Medium' : 'Media'}</span
+            >
+            <strong>
+              {selectedOutputs.length > 0
+                ? selectedOutputs.map((output) => output.name).join(' · ')
+                : 'Any medium'}
+            </strong>
+          </span>
+        </div>
+      </div>
     {/if}
 
-    <div class="vision-composer">
+    <div class="vision-composer" class:vision-composer--results={showResults}>
       <div class="vision-copy">
         <span class="vision-mark" aria-hidden="true"><Sparkles size={17} /></span>
 
         <div>
-          <h2>{showResults ? 'Imagined ideas' : 'Imagine the collision'}</h2>
+          <h2>{showResults ? 'Three directions to explore' : 'Imagine the collision'}</h2>
           <p>
             {showResults
-              ? 'Three directions shaped by your feeling and medium.'
+              ? 'Open one to inspect the idea and start building.'
               : 'Turn your picks into three concrete what-ifs.'}
           </p>
         </div>
       </div>
 
-      <div class="vision-controls">
-        <label class="sr-only" for="sparks-steer-prompt">Add a creative direction</label>
-        <input
-          id="sparks-steer-prompt"
-          type="text"
-          bind:value={steerPrompt}
-          placeholder="Add a twist: stranger, lo-fi, for a gallery opening"
-          class="steer-input"
-          onkeydown={(e) => e.key === 'Enter' && generateVisions()}
-        />
+      <div class="vision-controls" class:vision-controls--results={showResults}>
+        <label class="steer-field" for="sparks-steer-prompt">
+          {#if showResults}<span>Refine these ideas</span>{:else}<span class="sr-only"
+              >Add a creative direction</span
+            >{/if}
+          <input
+            id="sparks-steer-prompt"
+            type="text"
+            bind:value={steerPrompt}
+            placeholder="Try: stranger, lo-fi, for a gallery opening"
+            class="steer-input"
+            onkeydown={(e) => e.key === 'Enter' && generateVisions()}
+          />
+        </label>
         <button
           onclick={generateVisions}
           class="generate-btn cursor-pointer"
@@ -268,6 +295,14 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
           {/each}
         </div>
       </div>
+    {:else if showResults}
+      <div class="vision-empty">
+        <Sparkles size={20} aria-hidden="true" />
+        <div>
+          <strong>No ideas yet</strong>
+          <p>Add a constraint or imagine the same ingredients again.</p>
+        </div>
+      </div>
     {/if}
   </div>
 </section>
@@ -308,7 +343,6 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     min-height: 32px;
     align-items: center;
     gap: 7px;
-    margin-bottom: 16px;
     padding: 6px 9px;
     border: 1px solid #3f3f46;
     border-radius: 7px;
@@ -336,6 +370,49 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
   .vision-back:disabled {
     opacity: 0.45;
+  }
+
+  .vision-stage-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .vision-context {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 24px;
+    color: #a1a1aa;
+  }
+
+  .vision-context-item {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .vision-context-label {
+    color: #71717a;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .vision-context-item strong {
+    color: #d4d4d8;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-align: right;
   }
 
   .vision-composer {
@@ -381,6 +458,10 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     line-height: 1.4;
   }
 
+  .vision-composer--results .vision-copy h2 {
+    font-size: 1.1rem;
+  }
+
   .vision-controls {
     display: flex;
     min-width: 0;
@@ -388,11 +469,29 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     gap: 8px;
   }
 
+  .vision-controls--results {
+    align-items: flex-end;
+  }
+
+  .steer-field {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 5px;
+    color: #71717a;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 400;
+  }
+
   .steer-input {
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
     height: 36px;
-    flex: 1;
+    min-height: 36px;
+    flex: 0 0 36px;
     border: 1px solid #3f3f46;
     border-radius: 7px;
     outline: none;
@@ -464,12 +563,41 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     border-top: 1px solid rgba(255, 255, 255, 0.07);
   }
 
+  .vision-empty {
+    display: flex;
+    min-height: 180px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    color: #71717a;
+    text-align: left;
+  }
+
+  .vision-empty > :global(svg) {
+    color: var(--composer-accent);
+    stroke-width: 1.5;
+  }
+
+  .vision-empty strong {
+    color: #d4d4d8;
+    font-size: 0.86rem;
+    font-weight: 500;
+  }
+
+  .vision-empty p {
+    margin-top: 2px;
+    font-size: 0.74rem;
+  }
+
   @keyframes dock-in {
     from {
       opacity: 0;
       transform: translateY(14px);
       clip-path: inset(100% 0 0 0);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -482,7 +610,19 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
+
   @media (max-width: 768px) {
+    .vision-stage-bar {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .vision-context {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
     .vision-composer {
       grid-template-columns: 1fr;
       gap: 10px;
@@ -496,7 +636,14 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
       min-height: unset;
     }
   }
+
   @media (max-width: 480px) {
+    .vision-context {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     .vision-controls {
       align-items: stretch;
       flex-direction: column;

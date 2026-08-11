@@ -25,6 +25,11 @@
 
   const eventBus = PatchiesEventBus.getInstance();
 
+  const mediumListFormatter = new Intl.ListFormat('en', {
+    style: 'long',
+    type: 'conjunction'
+  });
+
   function handleScatter(nodeNames: string[]) {
     eventBus.dispatch({ type: 'scatterNodes', nodeNames });
     closeModal();
@@ -33,8 +38,10 @@
   function handleChat(prompt: string) {
     const activeId = $chatSessionsStore.activeId;
     setDraft(activeId, prompt);
+
     $isSidebarOpen = true;
     $sidebarView = 'chat';
+
     closeModal();
   }
 
@@ -42,16 +49,20 @@
   const selectedOutputs = $derived(outputs.filter((output) => selectedOutputIds.has(output.id)));
   const hasSelection = $derived($sparksSelectedMoodId !== null || selectedOutputIds.size > 0);
   const feelingSummary = $derived(selectedMood?.name ?? 'Any feeling');
+
   const outputSummary = $derived.by(() => {
     if (selectedOutputs.length === 0) return 'Any medium';
-    if (selectedOutputs.length === 1) return selectedOutputs[0].name;
 
-    const firstTwoNames = selectedOutputs.slice(0, 2).map((output) => output.name);
-    if (selectedOutputs.length === 2) return firstTwoNames.join(' and ');
+    if (selectedOutputs.length > 2) {
+      return `${selectedOutputs
+        .slice(0, 2)
+        .map((output) => output.name)
+        .join(', ')}, ...`;
+    }
 
-    return firstTwoNames.join(', ');
+    return mediumListFormatter.format(selectedOutputs.map((output) => output.name));
   });
-  const hasAdditionalOutputs = $derived(selectedOutputs.length > 2);
+
   const selectionKey = $derived(`${feelingSummary}-${outputSummary}-${selectedOutputs.length}`);
 
   const accentColor = $derived(selectedMood?.accentColor ?? '#f97316');
@@ -73,12 +84,20 @@
     <div class="sparks-workspace">
       <header class="sparks-intro" class:sparks-intro--active={hasSelection}>
         <div class="sparks-intro-mark" aria-hidden="true"><Sparkles /></div>
+
         <div class="sparks-intro-copy">
           <h1>
-            What happens when <span class="sparks-choice">{feelingSummary}</span><br />
-            meets <span class="sparks-choice">{outputSummary}</span>{#if hasAdditionalOutputs}<span
-                class="sparks-more">and more</span
-              >{/if}?
+            {#if selectedMood && selectedOutputs.length > 0}
+              How could <span class="sparks-choice">{outputSummary}</span><br />
+              make things feel <span class="sparks-choice">{feelingSummary}</span>?
+            {:else if selectedMood}
+              What could make things feel <span class="sparks-choice">{feelingSummary}</span>?
+            {:else if selectedOutputs.length > 0}
+              What could <span class="sparks-choice">{outputSummary}</span><br />
+              make someone feel?
+            {:else}
+              What do you want to make people feel?
+            {/if}
           </h1>
           <p>
             Combine a feeling with a medium. Patchies will turn the collision into questions to
@@ -238,10 +257,6 @@
   .sparks-intro--active h1 .sparks-choice {
     color: var(--text-acc);
     text-decoration-color: color-mix(in srgb, var(--accent) 58%, #3f3f46);
-  }
-
-  .sparks-more {
-    margin-left: 0.22em;
   }
 
   .sparks-intro p {
@@ -512,6 +527,25 @@
     box-shadow: none;
   }
 
+  .sparks-tab-generator--ideas :global(.visions-grid) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .sparks-tab-generator--ideas :global(.visions-grid > *:last-child:nth-child(3)) {
+    grid-column: auto;
+    min-height: 180px;
+  }
+
+  @media (max-width: 900px) {
+    .sparks-tab-generator--ideas :global(.visions-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .sparks-tab-generator--ideas :global(.visions-grid > *:last-child:nth-child(3)) {
+      grid-column: 1 / -1;
+    }
+  }
+
   @media (max-width: 520px) {
     .sparks-intro {
       min-height: 0;
@@ -551,6 +585,10 @@
 
     :global(.sparks-tab-generator .visions-grid) {
       grid-template-columns: 1fr !important;
+    }
+
+    .sparks-tab-generator--ideas :global(.visions-grid > *:last-child:nth-child(3)) {
+      grid-column: auto;
     }
   }
 

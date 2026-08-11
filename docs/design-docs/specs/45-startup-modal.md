@@ -178,7 +178,9 @@ After the first feeling or medium is selected, generation appears as a persisten
 the bottom of the Define stage, keeping the creative-direction field and Imagine action visible.
 Invoking Imagine transitions the modal to the Ideas stage, where generated what-if cards receive the
 full workspace instead of sharing it with the selectors. A clear Edit feeling and medium action
-returns to Define without discarding results. Missing AI credentials remain a just-in-time concern:
+returns to Define without discarding results. The Ideas header keeps the selected feeling and every
+selected medium visible while the user refines or regenerates the directions. Missing AI
+credentials remain a just-in-time concern:
 invoking Imagine opens provider settings, while the idle dock does not pre-emptively gate or warn
 the user.
 
