@@ -1070,6 +1070,51 @@ describe('PatchRuntime', () => {
     messageSystem.updateEdges([]);
   });
 
+  it('keeps view message subscriptions made before an audio object is created', () => {
+    const audioNodeId = 'late-audio-target';
+    const sourceNodeId = 'late-audio-source';
+
+    const audioService = createFakeAudioService();
+
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: isOsc
+    });
+
+    const callback = vi.fn();
+    const messageSystem = MessageSystem.getInstance();
+
+    const unsubscribe = runtime.subscribeObjectMessages(audioNodeId, callback);
+    expect(unsubscribe).toEqual(expect.any(Function));
+
+    runtime.upsertAudioObject(audioObjectSpec(audioNodeId, 'osc~', [440]));
+    messageSystem.registerNode(sourceNodeId);
+
+    messageSystem.updateEdges([
+      {
+        id: 'late-source-to-audio',
+        source: sourceNodeId,
+        target: audioNodeId,
+        sourceHandle: 'message-out',
+        targetHandle: 'message-in-0'
+      }
+    ]);
+
+    messageSystem.sendMessage(sourceNodeId, { type: 'set', value: 220, time: 1 });
+
+    expect(callback).toHaveBeenCalledWith(
+      { type: 'set', value: 220, time: 1 },
+      expect.objectContaining({ inlet: 0 })
+    );
+
+    unsubscribe?.();
+    runtime.destroy();
+
+    messageSystem.unregisterNode(sourceNodeId);
+    messageSystem.updateEdges([]);
+  });
+
   it('creates message objects from public runtime graph specs', async () => {
     const nodeId = 'object-patch-runtime-facade-test';
 
