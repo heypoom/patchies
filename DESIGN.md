@@ -22,13 +22,13 @@ typography:
   headline:
     fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
     fontSize: "2rem"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.15
     letterSpacing: "-0.025em"
   title:
     fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.125rem"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.3
     letterSpacing: "normal"
   body:
@@ -192,9 +192,9 @@ inherited from the provisional serif and Syne treatment.
 
 ### Hierarchy
 
-- **Headline** (600, `2rem`, 1.15): Major documentation or onboarding headings
+- **Headline** (500, `2rem`, 1.15): Major documentation or onboarding headings
   when a surface genuinely needs editorial hierarchy.
-- **Title** (600, `1.125rem`, 1.3): Dialog, panel, and section titles.
+- **Title** (500, `1.125rem`, 1.3): Dialog, panel, and section titles.
 - **Body** (400, `0.9375rem`, 1.6): Guidance, descriptions, and readable prose.
   Long reading surfaces should stay near 65–75 characters per line.
 - **Label** (500, `0.6875rem`, 1.4, `0.05em`): Compact controls, categories,
@@ -207,6 +207,12 @@ inherited from the provisional serif and Syne treatment.
 **The Instrument Type Rule.** Use IBM Plex Sans for human-readable interface
 language and IBM Plex Mono where exact values, commands, or computational
 identity matter.
+
+**The Plex Weight Ceiling Rule.** IBM Plex Sans uses weight 400 for normal and
+display text, and weight 500 for emphasis, titles, and strong hierarchy. Never
+use weight 600 or higher unless Poom or the active task brief explicitly asks
+for it. Do not introduce weight 600 through framework defaults or by assuming
+that headings and primary actions must be semibold.
 
 ## Layout
 

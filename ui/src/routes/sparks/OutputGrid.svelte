@@ -17,6 +17,7 @@
     Disc3,
     Globe,
     SlidersHorizontal,
+    X,
     type Icon as LucideIcon
   } from '@lucide/svelte';
   import type { Output } from './types';
@@ -51,18 +52,19 @@
 </script>
 
 <div>
-  <div class="mb-4 flex items-baseline gap-3">
-    <span
-      class="sparks-heading font-serif text-[clamp(2rem,5vw,3.8rem)] leading-[1.1] text-zinc-100 italic"
-      >What do you want to make?</span
-    >
+  <div class="sparks-question mb-4 flex items-center justify-between gap-3">
+    <span class="sparks-heading">What could it become?</span>
+
     {#if selectedOutputIds.size > 0}
       <button
-        class="cursor-pointer font-mono text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+        class="sparks-clear cursor-pointer"
         onclick={() => selectedOutputIds.clear()}
+        aria-label="Clear selected media"
       >
-        ✕ clear
+        <X size={13} /> Clear media
       </button>
+    {:else}
+      <span class="sparks-pick-note">Choose any</span>
     {/if}
   </div>
 
@@ -77,6 +79,7 @@
         class:output-tile-active={active}
         onclick={() =>
           active ? selectedOutputIds.delete(output.id) : selectedOutputIds.add(output.id)}
+        aria-pressed={active}
       >
         <span class="output-icon text-[1.2rem] leading-none text-zinc-600 transition-colors"
           ><Icon size={18} /></span
@@ -84,8 +87,11 @@
         <span class="output-name text-xs font-semibold text-zinc-400 transition-colors"
           >{output.name}</span
         >
-        <span class="mx-1.5 text-center font-mono text-[9px] leading-[1.3] text-zinc-700"
-          >{output.description}</span
+        <span
+          class={[
+            'mx-1.5 text-center font-mono text-[9px] leading-[1.3]',
+            active ? 'text-accent' : 'text-zinc-500'
+          ]}>{output.description}</span
         >
       </button>
     {/each}
@@ -93,6 +99,51 @@
 </div>
 
 <style>
+  .sparks-heading {
+    color: #e4e4e7;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .sparks-pick-note {
+    color: #71717a;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.72rem;
+  }
+
+  .sparks-clear {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    color: #a1a1aa;
+    background: #18181b;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .sparks-clear:hover {
+    border-color: #52525b;
+    color: #f4f4f5;
+    background: #27272a;
+  }
+
+  .sparks-clear:focus-visible {
+    outline: 3px solid rgba(249, 115, 22, 0.22);
+    outline-offset: 2px;
+  }
+
   .output-tile {
     aspect-ratio: auto;
     border-radius: 8px;

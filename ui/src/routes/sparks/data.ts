@@ -103,32 +103,32 @@ export const outputs: Output[] = [
   {
     id: '2d-visual',
     name: '2D Visual',
-    description: 'Canvas, P5.js, 2D graphics',
+    description: '2D canvas & P5.js',
     packIds: ['2d']
   },
   {
     id: 'video',
     name: 'Video',
-    description: 'Three.js, Hydra, shaders',
+    description: 'Hydra, Shaders, 3D',
     packIds: ['video-synthesis']
   },
   {
     id: 'sound',
     name: 'Sound',
-    description: 'Synthesis and effects',
+    description: 'Synthesis & effects',
     packIds: ['signal-generators', 'audio-effects']
   },
   {
     id: 'music',
     name: 'Music',
-    description: 'Composition and sequencing',
+    description: 'Composition & sequences',
     packIds: ['music'],
     nodes: ['bytebeat~']
   },
   {
     id: 'gestures',
     name: 'Gestures',
-    description: 'Webcam, body & hand tracking',
+    description: 'Body & hand trackers',
     packIds: ['vision'],
     nodes: ['webcam']
   },
@@ -142,32 +142,32 @@ export const outputs: Output[] = [
   {
     id: 'low-level',
     name: 'Low-Level',
-    description: 'VMs, assembly, bytecode',
+    description: 'Virtual machines',
     packIds: ['low-level'],
     nodes: ['wgpu.compute']
   },
   {
     id: 'dsp',
     name: 'DSP',
-    description: 'Custom signal processors',
+    description: 'Signal processors',
     packIds: ['signal-processors']
   },
   {
     id: 'lighting',
     name: 'Lighting',
-    description: 'DMX lights & LED strips',
+    description: 'DMX over serial',
     nodes: ['serial.dmx']
   },
   {
     id: 'projection',
     name: 'Projection',
-    description: 'Projection mapping',
+    description: 'Surface mapping',
     nodes: ['projmap']
   },
   {
     id: 'midi',
     name: 'MIDI',
-    description: 'MIDI controllers',
+    description: 'Send and receive midi',
     packIds: ['midi']
   },
   {
@@ -179,26 +179,26 @@ export const outputs: Output[] = [
   {
     id: 'ai',
     name: 'AI',
-    description: 'Text, sound and image gen',
+    description: 'Media generation',
     packIds: ['ai']
   },
   {
     id: 'sampling',
     name: 'Sampling',
-    description: 'Samplers, pads, loops & tables',
+    description: 'Samples and tables',
     packIds: ['audio-samples'],
     nodes: ['soundfile~']
   },
   {
     id: 'connections',
     name: 'Connections',
-    description: 'Live Video, MQTT, RTC, I/O',
+    description: 'MQTT, RTC, OBS, I/O',
     packIds: ['networking']
   },
   {
     id: 'ui',
     name: 'UI',
-    description: 'Custom controls & interfaces',
+    description: 'Interfaces & controls',
     packIds: ['ui'],
     nodes: ['canvas.dom', 'p5', 'keyboard']
   }

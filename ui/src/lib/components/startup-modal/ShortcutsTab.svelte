@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Keyboard, MousePointer } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
+  import StartupTabIntro from './StartupTabIntro.svelte';
 
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
 
@@ -73,25 +74,22 @@
 </script>
 
 <div class="sc-root">
-  <!-- Header -->
-  <div class="sc-hero">
-    <p class="sc-eyebrow">patchies · shortcuts</p>
-    <h1 class="sc-headline">Keyboard & Mouse</h1>
-    <p class="sc-subhead">Quick reference for navigating and working with Patchies.</p>
-  </div>
+  <StartupTabIntro
+    title="Move at patch speed."
+    description="A complete keyboard and mouse reference for navigating the canvas and building patches."
+  />
 
-  <!-- Mouse -->
   <div class="sc-group">
     <div class="sc-group-label">
-      <MousePointer class="sc-group-icon" />
-      mouse
+      <span><MousePointer class="sc-group-icon" /> Mouse</span>
+      <span>{mouseShortcuts.length} gestures</span>
     </div>
     <div class="sc-list">
-      {#each mouseShortcuts as shortcut}
+      {#each mouseShortcuts as shortcut (shortcut.description)}
         <div class="sc-row">
           <span class="sc-desc">{shortcut.description}</span>
           <div class="sc-keys">
-            {#each shortcut.keys as key}
+            {#each shortcut.keys as key (key)}
               <kbd class="sc-key">{transformKey(key)}</kbd>
             {/each}
           </div>
@@ -100,18 +98,17 @@
     </div>
   </div>
 
-  <!-- Keyboard -->
   <div class="sc-group">
     <div class="sc-group-label">
-      <Keyboard class="sc-group-icon" />
-      keyboard
+      <span><Keyboard class="sc-group-icon" /> Keyboard</span>
+      <span>{keyboardShortcuts.length} commands</span>
     </div>
     <div class="sc-list">
-      {#each keyboardShortcuts as shortcut}
+      {#each keyboardShortcuts as shortcut (shortcut.description)}
         <div class="sc-row">
           <span class="sc-desc">{shortcut.description}</span>
           <div class="sc-keys">
-            {#each shortcut.keys as key}
+            {#each shortcut.keys as key (key)}
               <kbd class="sc-key">{transformKey(key)}</kbd>
             {/each}
           </div>
@@ -125,68 +122,42 @@
   .sc-root {
     display: flex;
     flex-direction: column;
-    gap: 24px;
   }
 
-  /* Hero */
-  .sc-hero {
-    padding-bottom: 4px;
-  }
-
-  .sc-eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba(249, 115, 22, 0.7);
-    margin-bottom: 14px;
-  }
-
-  .sc-headline {
-    font-family: 'IBM Plex Serif', ui-serif, Georgia, serif;
-    font-style: italic;
-    font-size: clamp(1.8rem, 5vw, 2.4rem);
-    line-height: 1.12;
-    color: #f4f4f5;
-    margin-bottom: 10px;
-  }
-
-  .sc-subhead {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.82rem;
-    color: #52525b;
-    line-height: 1.6;
-  }
-
-  /* Group */
   .sc-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .sc-group-label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 32px 12px;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.22em;
+    font-size: 10px;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #3f3f46;
+    color: #52525b;
+  }
+
+  .sc-group-label > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #d4d4d8;
   }
 
   :global(.sc-group-icon) {
-    width: 11px;
-    height: 11px;
-    color: rgba(249, 115, 22, 0.5);
+    width: 13px;
+    height: 13px;
+    color: #f97316;
   }
 
-  /* Shortcut list */
   .sc-list {
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .sc-row {
@@ -194,24 +165,26 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 9px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    min-height: 52px;
+    padding: 10px 18px 10px 32px;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     transition: background 0.12s;
   }
 
-  .sc-row:last-child {
-    border-bottom: none;
+  .sc-row:nth-child(2n) {
+    border-right: 0;
   }
-
   .sc-row:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.025);
   }
 
   .sc-desc {
-    font-family: 'Syne', sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-size: 0.78rem;
-    color: #71717a;
+    color: #a1a1aa;
     flex: 1;
+    line-height: 1.35;
   }
 
   .sc-keys {
@@ -224,11 +197,24 @@
   .sc-key {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
-    color: #71717a;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #a1a1aa;
+    background: #1c1c1f;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 4px;
     padding: 2px 7px;
     white-space: nowrap;
+  }
+
+  @media (max-width: 700px) {
+    .sc-group-label {
+      padding-inline: 20px;
+    }
+    .sc-list {
+      grid-template-columns: 1fr;
+    }
+    .sc-row {
+      padding-inline: 20px;
+      border-right: 0;
+    }
   }
 </style>

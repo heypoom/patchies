@@ -64,6 +64,7 @@ If you enjoy using Hydra, please consider supporting continued development <3 .
 ### MVP Implementation (Completed)
 
 #### Component Architecture
+
 The startup modal is implemented as a modular component system in `/ui/src/lib/components/startup-modal/`:
 
 - **StartupModal.svelte** - Main modal container with tab navigation and backdrop handling
@@ -105,8 +106,108 @@ The startup modal is implemented as a modular component system in `/ui/src/lib/c
 
 - Use IBM Plex Sans for interface copy and IBM Plex Mono for shortcuts, commands, and technical
   labels.
-- Use IBM Plex Serif for expressive editorial headings and italic display copy.
-- Do not use the former display serif. The startup modal should stay within the IBM Plex family.
+- Use IBM Plex Sans at regular weight for the expressive heading. Scale, line breaks, and one
+  deliberate Ember emphasis create the display voice without introducing a second type family.
+- Do not use an eyebrow above the hero heading or rely on italic serif styling for personality.
+
+#### Expressive Hero
+
+The About tab is the expressive exception within the restrained modal system from spec 173. Its
+hero visualizes Patchies' core mechanism as a compact patch topology: small code/object nodes,
+visible signal cables, and an output state. The diagram is illustrative and does not claim to be a
+live patch. It uses the existing Ink/Zinc/Ember palette, remains readable without animation, and
+keeps motion disabled when reduced motion is requested.
+
+The hero includes direct actions to browse demos and open the object browser. Supporting guidance,
+shortcuts, and community links remain visually quieter so the hero is the modal's single peak.
+
+The About tab reads as one continuous instrument surface rather than a stack of separate cards. Its
+content runs edge-to-edge between the tab bar and footer: the modal shell is the boundary, so the
+About content must not introduce an inset outer container, rounded inner frame, or decorative margin.
+The technology rail, guide/shortcut paths, and compact command reference use only internal dividers.
+This keeps the learning material connected to the patch metaphor while preserving clear hierarchy
+beneath the primary actions.
+
+The patch topology must be geometrically trustworthy and visually quiet. Cables terminate at the
+visible centers of their inlet and outlet handles at every supported size. The illustrative patch
+demonstrates a real Patchies relationship: an audio source passes through gain to audio output, while
+the same signal is analyzed by `fft~` and drives a Hydra visual. Analysis and visual nodes use neutral
+boundaries rather than introducing a second accent system. The Hydra result is a flat, edge-to-edge
+striped output rectangle rather than another padded node or nested preview. Code nodes preserve the
+editor's anatomy: the object name sits outside the node while the code itself sits inside. Related
+nodes align to shared edges where possible so the topology reads as a deliberate layout.
+
+The compact shortcut reference presents six first moves in a three-column, two-row command matrix:
+adding and browsing objects, running code, opening the sidebar and command palette, and connecting
+nodes. On narrow screens it becomes one column. Each item is a single compact row with a muted icon,
+short label, and platform-aware keycap; extended explanations belong in the full Shortcuts tab.
+Because these items are reference content rather than controls, their surface, icons, and typography
+must remain visually quieter than the clickable guide and Shortcuts paths above them. Gesture labels
+use the same keycap treatment as keyboard shortcuts.
+
+The community links and “show on startup” preference live in a dedicated footer outside the tab's
+scrolling content. The footer stays visible whenever About is active, including before the user
+scrolls, and adapts to two compact rows on narrow screens.
+
+#### Demos and Sparks Signal System
+
+Demos and Sparks extend the patch topology into an interactive signal-system language while
+remaining subordinate to About's hero. The treatment is built with lightweight CSS and SVG rather
+than WebGL, backdrop blur, or continuously running off-screen animation. Motion is limited to direct
+interaction and respects reduced-motion preferences.
+
+Demo cards carry quiet category-specific signal traces behind their real title, description, author,
+and action. The trace is decorative rather than a literal preview of the patch, stays neutral at
+rest, and receives a brief Ember signal sweep on hover or keyboard focus. Cards remain readable and
+fully functional without the trace or motion.
+
+Sparks reads as one connected creative instrument rather than two unrelated selector grids. Its
+opening question is a live sentence that combines the selected feeling and medium into a curiosity
+prompt. On desktop, entering Sparks expands the modal from its focused reading width into a wider
+creative workspace, then returns it when another tab is selected. The width transition uses a
+single restrained ease and is disabled when reduced motion is requested. Feeling and Medium remain
+visible side by side around a signal junction on wide screens, then stack on narrow screens. They
+form one Define stage, allowing users to understand and adjust the collision as a whole. Generated
+ideas occupy a separate Ideas stage rather than splitting the modal with the selectors; users may
+return to Define without losing their generated ideas. Mood choices expose a directional affordance and clear
+hover, focus, and selected states. Mood colors belong to those interactions and generated results,
+not broad card fills; the default state remains in the Ink, Zinc, and Ember modal system. The
+full-screen Sparks route is intentionally omitted: this workflow exists only inside the startup
+modal so its presentation and editor actions have one maintained implementation.
+
+After the first feeling or medium is selected, generation appears as a persistent creation dock at
+the bottom of the Define stage, keeping the creative-direction field and Imagine action visible.
+Invoking Imagine transitions the modal to the Ideas stage, where generated what-if cards receive the
+full workspace instead of sharing it with the selectors. A clear Edit feeling and medium action
+returns to Define without discarding results. The Ideas header keeps the selected feeling and every
+selected medium visible while the user refines or regenerates the directions. Missing AI
+credentials remain a just-in-time concern:
+invoking Imagine opens provider settings, while the idle dock does not pre-emptively gate or warn
+the user.
+
+#### Credits Patch Thanks Tab
+
+The Thanks tab is the startup modal's celebratory closing state. It may be more expressive than the
+other reference-oriented tabs while continuing the same Ink, Zinc, Ember, IBM Plex Sans, and IBM
+Plex Mono system. On wide screens, selecting Thanks expands the modal to a wider credits workspace;
+the standard single-column modal width remains the fallback for narrow screens.
+
+The tab presents its existing content in three progressively denser layers:
+
+1. A full-width Credits Patch opening connects the four named contributors as a lightweight SVG and
+   CSS patch topology. The illustration is decorative, while the contributor profiles below retain
+   every biography and external link as accessible HTML.
+2. The people and open-source support sections use connected rails and quiet signal markers rather
+   than a repeated stack of generic cards. Personal acknowledgements lead visually; library,
+   educator, and tool-maintainer links form a denser ecosystem index afterward.
+3. Project licensing, ported and adapted code, and the complete dependency table resolve into a
+   compact source ledger. These records remain complete, selectable, horizontally scrollable where
+   necessary, and reachable without relying on the decorative topology.
+
+The only authored entrance moment traces the hero cables and reveals its nodes when the tab opens.
+It uses SVG and CSS only, does not add WebGL, canvas, backdrop blur, or sound, and becomes static when
+reduced motion is requested. Mobile removes the decorative cable geometry, keeps the reading order
+linear, and prevents horizontal overflow outside intentionally scrollable dependency data.
 
 #### Example Patches JSON Format
 

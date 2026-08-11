@@ -73,7 +73,6 @@
   import { useFocusNode, useNodeLabels } from '$lib/canvas/use-focus-node.svelte';
   import AIProviderSettingsDialog from './dialogs/AIProviderSettingsDialog.svelte';
   import { hasAIApiKey } from '../../stores/ai-settings.store';
-  import { chatSessionsStore, setDraft } from '../../stores/chat-sessions.store';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
   import SavePatchModal from './dialogs/SavePatchModal.svelte';
   import ExportPatchModal from './dialogs/ExportPatchModal.svelte';
@@ -820,28 +819,6 @@
     Transport.setTimeSignature(timeSignature[0], timeSignature[1]);
 
     loadPatch();
-
-    // Handle pending Sparks actions (scatter/chat) from the standalone /sparks page
-    const pendingScatter = localStorage.getItem('patchies:sparks-pending-scatter');
-    if (pendingScatter) {
-      localStorage.removeItem('patchies:sparks-pending-scatter');
-      try {
-        const nodeNames = JSON.parse(pendingScatter) as string[];
-        // Defer until canvas is laid out
-        tick().then(() => eventBus.dispatch({ type: 'scatterNodes', nodeNames }));
-      } catch {
-        // ignore malformed data
-      }
-    }
-
-    const pendingChat = localStorage.getItem('patchies:sparks-pending-chat');
-    if (pendingChat) {
-      localStorage.removeItem('patchies:sparks-pending-chat');
-      const activeId = $chatSessionsStore.activeId;
-      setDraft(activeId, pendingChat, true);
-      $isSidebarOpen = true;
-      $sidebarView = 'chat';
-    }
 
     // Check if the user wants to see the startup modal on launch
     // Don't show if loading from URL params (src or id)

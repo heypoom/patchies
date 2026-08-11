@@ -149,6 +149,28 @@ body {
   }
 }
 
+@layer components {
+  .modal-action {
+    @apply inline-flex h-9 cursor-pointer items-center justify-center rounded-md px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-orange-400/70 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .modal-action--secondary {
+    @apply bg-zinc-800 text-zinc-200 hover:bg-zinc-700;
+  }
+
+  .modal-action--primary {
+    @apply bg-zinc-100 text-zinc-950 hover:bg-white;
+  }
+
+  .modal-action--destructive {
+    @apply bg-red-500 text-white hover:bg-red-400;
+  }
+
+  .modal-field {
+    @apply rounded-md border border-white/12 bg-black/20 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-orange-400/70 focus:ring-2 focus:ring-orange-400/20 focus:outline-none;
+  }
+}
+
 /* Safe area utilities for PWA/notched devices */
 @layer utilities {
   .pt-safe {

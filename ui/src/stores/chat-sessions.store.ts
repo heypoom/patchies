@@ -67,20 +67,13 @@ export function getDraft(sessionId: string): string {
   return _drafts[sessionId] ?? '';
 }
 
-// Reactive signal so ChatView can notice when a draft is set externally
-// (e.g. from the /sparks standalone page via localStorage handoff)
-export const draftSignal = writable<{ sessionId: string; text: string } | null>(null);
-
-export function setDraft(sessionId: string, text: string, signal = false): void {
+export function setDraft(sessionId: string, text: string): void {
   if (text) {
     _drafts[sessionId] = text;
   } else {
     delete _drafts[sessionId];
   }
   persistDrafts(_drafts);
-  if (signal) {
-    draftSignal.set({ sessionId, text });
-  }
 }
 
 function removeDraft(sessionId: string): void {
