@@ -16,7 +16,7 @@ Use Quick Add to search object and preset names.
 
 ## Object Browser
 
-![Object browser modal](/content/images/object-browser.webp)
+![Object Browser](/content/images/object-browser.webp)
 
 The Object Browser lists objects and presets by pack.
 

@@ -39,7 +39,7 @@ This lets you visually see the program's core composition and its in-between res
 
 ## Get started
 
-<img src="./docs/images/startup-modal.webp" alt="Startup Modal" width="700">
+<img src="./docs/images/startup-modal.webp" alt="Patchies getting started screen" width="700">
 
 Open [patchies.app](https://patchies.app) and get patching.
 

@@ -2,7 +2,7 @@
 
 Explore demo patches to learn what Patchies can do and get ideas for your own patch.
 
-![Patchies demo modal](/content/images/startup-modal-demos.webp)
+![Demos gallery](/content/images/startup-modal-demos.webp)
 
 The Demos tab lists patches that you can open and change.
 

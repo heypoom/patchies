@@ -23,7 +23,7 @@ Some objects have interactive help patches. Click **Open Help Patch** to load an
 
 ## Object Browser Help
 
-![Object browser help modal](/content/images/object-browser-help.webp)
+![Object Browser help mode](/content/images/object-browser-help.webp)
 
 Turn on the **?** help toggle to show object documentation in the sidebar. It does not insert an object.
 

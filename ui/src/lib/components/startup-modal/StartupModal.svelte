@@ -28,6 +28,7 @@
   let activeTab = $state<Tab>(getInitialTab());
   let modalBody = $state<HTMLDivElement>();
   let isTouchFirst = $state(false);
+  let openedTab = $state<Tab | undefined>();
 
   onMount(() => {
     const touchFirstQuery = window.matchMedia('(pointer: coarse)');
@@ -42,8 +43,14 @@
   });
 
   $effect(() => {
-    if (open && initialTab) {
+    if (!open) {
+      openedTab = undefined;
+      return;
+    }
+
+    if (initialTab && openedTab !== initialTab) {
       activeTab = isTouchFirst && initialTab === 'shortcuts' ? 'about' : initialTab;
+      openedTab = initialTab;
     }
   });
 

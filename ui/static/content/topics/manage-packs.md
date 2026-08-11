@@ -2,7 +2,7 @@
 
 Patchies enables some objects by default. Packs group related objects and presets by use case. Enable a pack to show its objects or presets.
 
-![Object browser packs panel](/content/images/object-browser-packs.webp)
+![Manage library panel](/content/images/object-browser-packs.webp)
 
 The packs panel shows object packs and preset packs.
 

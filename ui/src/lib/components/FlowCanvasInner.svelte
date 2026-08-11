@@ -832,8 +832,11 @@
       if (validTabs.includes(startupParam as (typeof validTabs)[number])) {
         startupInitialTab = startupParam as (typeof validTabs)[number];
         showStartupModal = true;
-        // Clean up the URL param after using it
-        deleteSearchParam('startup');
+        // The SvelteKit router is not initialized yet during this boot-time effect.
+        // Use the browser history directly to remove this one-shot startup instruction.
+        const startupUrl = new URL(window.location.href);
+        startupUrl.searchParams.delete('startup');
+        window.history.replaceState(window.history.state, '', startupUrl);
       }
     } else if (!isLoadingFromUrlParam) {
       const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');

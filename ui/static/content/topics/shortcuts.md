@@ -1,6 +1,6 @@
 # Shortcuts
 
-![Shortcuts](/content/images/startup-modal-shortcut.webp)
+![Shortcuts tab](/content/images/startup-modal-shortcut.webp)
 
 The Shortcuts screen lists keyboard and mouse shortcuts.
 
