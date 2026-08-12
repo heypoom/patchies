@@ -514,10 +514,6 @@
                       >{disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs</span
                     >
                   </span>
-
-                  <span class="hidden text-[10px] font-normal text-zinc-500 sm:block">
-                    Manage library
-                  </span>
                 </span>
                 <ArrowRight class="h-4 w-4 shrink-0 text-orange-500" />
               {:else}
@@ -625,6 +621,7 @@
                 >
                   Disable all
                 </button>
+
                 <button
                   type="button"
                   onclick={catalogKind === 'objects' ? enableAllPacks : enableAllPresetPacks}
