@@ -29,9 +29,9 @@ Patchies lets you use the audio, visual and computational tools and libraries th
 
 Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a huge web of small objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
-If you haven't used a patching environment before, patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You connect the output of one object to the input of another object to create a flow of data.
+Patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. Connect the output of one object to the input of another object to create a flow of data.
 
-This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](https://patchies.app/docs/message-passing), [Video Chaining](https://patchies.app/docs/video-chaining) and [Audio Chaining](https://patchies.app/docs/audio-chaining). They're heavily inspired by tools like Max, Pd, TouchDesigner and VVVV.
+You can the program's composition and in-between results such as audio, video and message flows, using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](https://patchies.app/docs/message-passing), [Video Chaining](https://patchies.app/docs/video-chaining) and [Audio Chaining](https://patchies.app/docs/audio-chaining). They're heavily inspired by tools like Max, Pd, TouchDesigner and VVVV.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
