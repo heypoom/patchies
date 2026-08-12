@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     ArrowLeft,
-    ArrowRight,
     Bookmark,
     Boxes,
     ChevronDown,
@@ -278,23 +277,6 @@
   const allPresetPacksEnabled = $derived(
     BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
-  const disabledPackCount = $derived(
-    catalogKind === 'objects'
-      ? BUILT_IN_PACKS.filter(
-          (pack) => !isPackLocked(pack.id) && !isPackEnabled(pack.id, $enabledPackIds)
-        ).length
-      : BUILT_IN_PRESET_PACKS.filter(
-          (pack) =>
-            !isPresetPackLocked(pack.id) && !isPresetPackEnabled(pack.id, $enabledPresetPackIds)
-        ).length
-  );
-  const enabledCatalogPackCount = $derived(
-    catalogKind === 'objects'
-      ? BUILT_IN_PACKS.filter((pack) => isPackEnabled(pack.id, $enabledPackIds)).length
-      : BUILT_IN_PRESET_PACKS.filter((pack) => isPresetPackEnabled(pack.id, $enabledPresetPackIds))
-          .length
-  );
-  const showPackDiscovery = $derived(disabledPackCount > 0 && enabledCatalogPackCount <= 2);
   const hasEnabledOptionalObjectPacks = $derived(
     $enabledPackIds.some((packId) => !isPackLocked(packId))
   );
@@ -463,8 +445,8 @@
             {$objectBrowserMode === 'packs'
               ? 'Choose which objects and presets appear in your catalog.'
               : $objectBrowserMode === 'help'
-                ? 'Choose an object to open its documentation.'
-                : 'Browse the building blocks available in Patchies.'}
+                ? 'Browse object documentation.'
+                : 'Browse Patchies objects.'}
           </p>
         </div>
 
@@ -472,49 +454,13 @@
           {#if $objectBrowserMode !== 'packs'}
             <button
               type="button"
-              onclick={toggleHelpMode}
-              aria-pressed={$objectBrowserMode === 'help'}
-              aria-label={$objectBrowserMode === 'help' ? 'Exit help mode' : 'Browse object help'}
-              class={[
-                'flex h-11 cursor-pointer items-center gap-2 rounded-md border px-3 text-[11px] font-medium transition-colors outline-none focus-visible:border-blue-400/70 sm:h-9',
-                $objectBrowserMode === 'help'
-                  ? 'border-blue-400/35 bg-blue-400/8 text-blue-300'
-                  : 'border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
-              ]}
+              onclick={openPacks}
+              aria-label="Manage library"
+              class="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-white/[0.025] px-3 text-[11px] font-medium text-zinc-500 transition-colors outline-none hover:border-white/16 hover:text-zinc-200 focus-visible:border-orange-500/70"
             >
-              <CircleQuestionMark class="h-4 w-4" />
-              <span class="max-sm:hidden">Help</span>
+              <Package class="h-4 w-4" />
+              <span>Manage library</span>
             </button>
-            {#if $objectBrowserMode === 'insert' && showPackDiscovery}
-              <button
-                type="button"
-                class="ob-pack-discovery ob-pack-discovery-header"
-                onclick={openPacks}
-                aria-label={`Manage library: enable ${disabledPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs`}
-              >
-                <Package class="h-3.5 w-3.5 shrink-0" />
-                <span class="ob-pack-discovery-copy">
-                  <span class="ob-pack-discovery-count">
-                    {disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs
-                  </span>
-                  <span class="ob-pack-discovery-label">Manage library</span>
-                </span>
-                <ArrowRight class="h-3.5 w-3.5 shrink-0" />
-              </button>
-            {:else}
-              <button
-                type="button"
-                onclick={openPacks}
-                aria-label="Manage library"
-                class={[
-                  'flex h-11 cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-white/[0.025] px-3 text-[11px] font-medium text-zinc-500 transition-colors outline-none hover:border-white/16 hover:text-zinc-200 focus-visible:border-orange-500/70 sm:h-9',
-                  $objectBrowserMode === 'insert' && 'ob-library-header-action'
-                ]}
-              >
-                <Package class="h-4 w-4" />
-                <span class="max-sm:hidden">Manage library</span>
-              </button>
-            {/if}
           {/if}
           <button
             type="button"
@@ -884,39 +830,22 @@
                   </div>
                 </div>
 
-                {#if $objectBrowserMode === 'insert'}
-                  {#if showPackDiscovery}
-                    <button
-                      type="button"
-                      class="ob-pack-discovery ob-pack-discovery-mobile"
-                      onclick={openPacks}
-                      aria-label={`Manage library: enable ${disabledPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs`}
-                    >
-                      <Package class="h-3.5 w-3.5 shrink-0" />
-                      <span class="ob-pack-discovery-copy">
-                        <span class="ob-pack-discovery-count ob-pack-discovery-count-full">
-                          {disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs
-                        </span>
-                        <span class="ob-pack-discovery-count ob-pack-discovery-count-compact">
-                          {disabledPackCount} more packs
-                        </span>
-                        <span class="ob-pack-discovery-label">Manage library</span>
-                      </span>
-                      <ArrowRight class="h-3.5 w-3.5 shrink-0" />
-                    </button>
-                  {:else}
-                    <button
-                      type="button"
-                      class="ob-pack-discovery ob-pack-discovery-mobile ob-pack-discovery-neutral"
-                      onclick={openPacks}
-                      aria-label="Manage library"
-                    >
-                      <Package class="h-3.5 w-3.5 shrink-0" />
-                      <span class="ob-pack-discovery-count">Manage library</span>
-                      <ArrowRight class="h-3.5 w-3.5 shrink-0" />
-                    </button>
-                  {/if}
-                {/if}
+                <button
+                  type="button"
+                  onclick={toggleHelpMode}
+                  aria-pressed={$objectBrowserMode === 'help'}
+                  aria-label={$objectBrowserMode === 'help'
+                    ? 'Exit help mode'
+                    : 'Browse object help'}
+                  class={[
+                    'flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors outline-none focus-visible:border-blue-400/70',
+                    $objectBrowserMode === 'help'
+                      ? 'border-blue-400/35 bg-blue-400/8 text-blue-300'
+                      : 'border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
+                  ]}
+                >
+                  <CircleQuestionMark class="h-4 w-4" />
+                </button>
               </header>
 
               <div class="ob-scroll min-h-0 flex-1 overflow-y-auto p-3 sm:p-5">
@@ -1235,88 +1164,6 @@
     background: #111113;
   }
 
-  .ob-pack-discovery {
-    display: flex;
-    min-height: 40px;
-    flex: 0 0 auto;
-    cursor: pointer;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 7px;
-    color: #a1a1aa;
-    background: rgba(255, 255, 255, 0.025);
-    text-align: left;
-    outline: none;
-    transition:
-      border-color 120ms ease,
-      color 120ms ease,
-      background 120ms ease;
-  }
-
-  .ob-pack-discovery:hover {
-    border-color: rgba(249, 115, 22, 0.3);
-    color: #f4f4f5;
-    background: rgba(249, 115, 22, 0.045);
-  }
-
-  .ob-pack-discovery:focus-visible {
-    border-color: rgba(249, 115, 22, 0.65);
-    color: #fafafa;
-  }
-
-  .ob-pack-discovery :global(svg:first-child),
-  .ob-pack-discovery :global(svg:last-child) {
-    color: #f97316;
-  }
-
-  .ob-pack-discovery-copy {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 1px;
-  }
-
-  .ob-pack-discovery-count {
-    color: #e4e4e7;
-    font-size: 10px;
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-  }
-
-  .ob-pack-discovery-label {
-    color: #71717a;
-    font-size: 9px;
-    line-height: 1.2;
-  }
-
-  .ob-pack-discovery-count-compact {
-    display: none;
-  }
-
-  .ob-pack-discovery-mobile {
-    display: none;
-  }
-
-  .ob-pack-discovery-neutral {
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #a1a1aa;
-    background: rgba(255, 255, 255, 0.025);
-  }
-
-  .ob-pack-discovery-neutral:hover {
-    border-color: rgba(255, 255, 255, 0.18);
-    color: #f4f4f5;
-    background: rgba(255, 255, 255, 0.055);
-  }
-
-  .ob-pack-discovery-neutral :global(svg:first-child),
-  .ob-pack-discovery-neutral :global(svg:last-child) {
-    color: #71717a;
-  }
-
   .ob-scroll::-webkit-scrollbar,
   .ob-category-list::-webkit-scrollbar {
     width: 5px;
@@ -1504,40 +1351,6 @@
     .ob-results-header > :global(div:first-child) {
       gap: 8px;
     }
-
-    .ob-pack-discovery {
-      min-height: 40px;
-      gap: 7px;
-      padding: 5px 12px;
-    }
-
-    .ob-pack-discovery-header {
-      display: none;
-    }
-
-    .ob-library-header-action {
-      display: none;
-    }
-
-    .ob-pack-discovery-mobile {
-      display: flex;
-    }
-
-    .ob-pack-discovery-count {
-      font-size: 11px;
-    }
-
-    .ob-pack-discovery-count-full {
-      display: none;
-    }
-
-    .ob-pack-discovery-count-compact {
-      display: inline;
-    }
-
-    .ob-pack-discovery-label {
-      display: none;
-    }
   }
 
   @media (max-width: 360px) {
@@ -1547,10 +1360,6 @@
 
     .ob-results :global(.grid) {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .ob-pack-discovery {
-      padding-inline: 10px;
     }
   }
 </style>
