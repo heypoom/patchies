@@ -39,10 +39,10 @@
   const specialPeople = [
     {
       shortName: 'Kijjaz',
-      name: 'Kijjasak "Kijjaz" Triyanond',
+      name: 'Kijjasak "Kijjaz" Triyanond (@kijjaz)',
       bio: 'A great senior and friend who dedicated thousands of hours to playtesting Patchies. Shared countless inspirations, suggested new nodes, organized workshops, and taught me FM/AM synthesis and sound design.',
       meta: 'CU · CU BAND · Monotone Group · Pollen Sound · @vibrationperfum',
-      links: [{ label: '@kijjaz', href: 'https://www.instagram.com/kijjaz' }]
+      links: [{ label: 'Instagram', href: 'https://www.instagram.com/kijjaz' }]
     },
     {
       shortName: 'Thai',
@@ -78,7 +78,7 @@
     },
     {
       shortName: 'Chun',
-      name: 'Rapeepat "Chun" Kaewprasith',
+      name: 'Rapeepat "Chun" Kaewprasith (@chunrapeepat)',
       bio: 'Shared lots of ideas throughout Patchies’ development and has always been a great friend.',
       meta: '',
       links: [
@@ -90,7 +90,7 @@
     },
     {
       shortName: 'Patt',
-      name: 'Patt Vira',
+      name: 'Patt Vira (@pattvira)',
       bio: 'Gave great advice and made our lunch conversations a constant source of inspiration.',
       meta: '',
       links: [
