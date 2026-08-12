@@ -411,8 +411,6 @@
       $objectBrowserMode = 'insert';
     } else {
       catalogKind = 'objects';
-      selectedCategoryId = null;
-      searchQuery = '';
       $objectBrowserMode = 'help';
     }
   }
