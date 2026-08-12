@@ -9,7 +9,7 @@
     compact?: boolean;
   }
 
-  let { port, defaultOpen = true, compact = false }: Props = $props();
+  let { port, defaultOpen = false, compact = false }: Props = $props();
 
   function getInitialOpenState() {
     return defaultOpen;
