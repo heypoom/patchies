@@ -221,23 +221,23 @@
   }
 
   .person-card:global(.motion-ready.is-revealed) {
-    animation: patch-node-connect 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: patch-node-connect 0.44s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .person-card:global(.motion-ready.is-revealed):nth-child(even) {
-    animation-delay: 0.06s;
+    animation-delay: 0.04s;
   }
 
   .person-card:global(.motion-ready.is-revealed) > :not(.person-port) {
-    animation: node-content-resolve 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+    animation: node-content-resolve 0.34s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
   }
 
   .person-card:global(.motion-ready.is-revealed) .person-port {
-    animation: port-connect 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    animation: port-connect 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
   }
 
   .person-card:global(.motion-ready.is-revealed)::after {
-    animation: connection-draw 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+    animation: connection-draw 0.54s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
   }
 
   .person-card:global(.motion-ready.is-active.is-revealed) .person-port::after {

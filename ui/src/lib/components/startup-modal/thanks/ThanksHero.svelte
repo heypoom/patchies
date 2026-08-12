@@ -184,12 +184,12 @@
   }
 
   .credits-hero:global(.motion-ready.is-revealed) :global(.hero-heart) {
-    animation: heart-arrive 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+    animation: heart-arrive 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.03s both;
   }
 
   .credits-hero:global(.motion-ready.is-active.is-revealed) :global(.hero-heart) {
     animation:
-      heart-arrive 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both,
+      heart-arrive 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.03s both,
       heart-current 2.8s ease-in-out 1s infinite;
   }
 
@@ -199,35 +199,35 @@
   }
 
   .credits-hero:global(.motion-ready.is-revealed) :global(.hero-heart path) {
-    animation: draw-heart 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+    animation: draw-heart 0.64s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
   }
 
   .credits-hero:global(.motion-ready.is-revealed) .hero-copy h1 {
-    animation: copy-resolve 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+    animation: copy-resolve 0.54s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
   }
 
   .credits-hero:global(.motion-ready.is-revealed) .hero-copy p {
-    animation: detail-resolve 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+    animation: detail-resolve 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
   }
 
   .credits-hero:global(.motion-ready.is-revealed) .collective-statement {
-    animation: copy-resolve 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both;
+    animation: copy-resolve 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
   }
 
   .credits-hero:global(.motion-ready.is-revealed) .credits-index-row {
-    animation: detail-resolve 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: detail-resolve 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .credits-hero:global(.motion-ready.is-revealed) .credits-index-row:nth-child(1) {
-    animation-delay: 0.38s;
+    animation-delay: 0.22s;
   }
 
   .credits-hero:global(.motion-ready.is-revealed) .credits-index-row:nth-child(2) {
-    animation-delay: 0.46s;
+    animation-delay: 0.27s;
   }
 
   .credits-hero:global(.motion-ready.is-revealed) .credits-index-row:nth-child(3) {
-    animation-delay: 0.54s;
+    animation-delay: 0.32s;
   }
 
   @keyframes heart-arrive {

@@ -249,19 +249,19 @@
   }
 
   .support-channel:global(.motion-ready.is-revealed) .channel-heading {
-    animation: channel-resolve 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: channel-resolve 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .support-channel:global(.motion-ready.is-revealed) .support-row {
-    animation: detail-resolve 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    animation: detail-resolve 0.34s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
   }
 
   .support-channel:global(.motion-ready.is-revealed) .support-row:nth-child(3n + 2) {
-    animation-delay: 0.16s;
+    animation-delay: 0.1s;
   }
 
   .support-channel:global(.motion-ready.is-revealed) .support-row:nth-child(3n) {
-    animation-delay: 0.22s;
+    animation-delay: 0.15s;
   }
 
   .support-channel:global(.motion-ready.is-active) .channel-heading::after {

@@ -389,15 +389,15 @@
 
   .license-block:global(.motion-ready.is-revealed) > *,
   .ledger-group:global(.motion-ready.is-revealed) > * {
-    animation: detail-resolve 0.56s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+    animation: detail-resolve 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
   }
 
   .license-block:global(.motion-ready.is-revealed)::after {
-    animation: license-scan 1.05s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+    animation: license-scan 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
   }
 
   .ledger-group:global(.motion-ready.is-revealed)::before {
-    animation: connection-draw 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: connection-draw 0.54s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   @keyframes detail-resolve {
