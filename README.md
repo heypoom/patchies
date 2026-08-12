@@ -1,6 +1,6 @@
 # Patchies.app: creative coding patcher in the browser
 
-<img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700">
+<a href="https://patchies.app/?id=ng7a8mcxobde7kv"><img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700"></a>
 
 > Try out [the above demo](https://patchies.app/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
 
@@ -37,7 +37,7 @@ You can the program's composition and in-between results such as audio, video an
 
 ## Get started
 
-<img src="./docs/images/startup-modal.webp" alt="Patchies getting started screen" width="700">
+<a href="https://patchies.app"><img src="./docs/images/startup-modal.webp" alt="Patchies getting started screen" width="700"></a>
 
 Open [patchies.app](https://patchies.app) and get patching.
 
