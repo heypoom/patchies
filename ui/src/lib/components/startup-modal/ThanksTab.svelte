@@ -39,7 +39,7 @@
   const specialPeople = [
     {
       shortName: 'Kijjaz',
-      name: 'Kijjasak "Kijjaz" Triyanond (@kijjaz)',
+      name: 'Kijjasak Triyanond (@kijjaz)',
       bio: 'A great senior and friend who dedicated thousands of hours to playtesting Patchies. Shared countless inspirations, suggested new nodes, organized workshops, and taught me FM/AM synthesis and sound design.',
       meta: 'CU · CU BAND · Monotone Group · Pollen Sound · @vibrationperfum',
       links: [{ label: 'Instagram', href: 'https://www.instagram.com/kijjaz' }]
@@ -69,11 +69,11 @@
       shortName: 'Pub',
       name: 'Chayapatr "Pub" Archiwaranguprok (@chayapatr)',
       bio: 'My closest friend, who inspired me during the earliest days of Patchies when I was just playing with ideas. Designed the new Patchies logo and organized countless events in Creatorsgarten.',
-      meta: 'Creatorsgarten · MIT Media Lab',
+      meta: 'MIT Media Lab · Creatorsgarten',
       links: [
         { label: 'from.pub', href: 'https://from.pub' },
         { label: 'MIT Media Lab', href: 'https://www.media.mit.edu/people/pub' },
-        { label: 'Creatorsgarten', href: 'https://creatorsgarten.org' }
+        { label: 'Creatorsgarten', href: 'https://creatorsgarten.org/wiki/People/chayapatr' }
       ]
     },
     {
