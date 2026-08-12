@@ -17,14 +17,6 @@ This means:
 - If you run this software on a server and provide services to users, you must make the source code available to those users
 - See the [AGPL-3.0 full text](./LICENSE) for complete terms
 
-## Licensing: Lygia Shader Library
-
-Lygia is free for non-commercial use, i.e. personal use and usage in non-commercial organizations. For commercial use, please purchase a license from the creator, Patricio Gonzalez Vivo.
-
-Lygia is dual licensed under the [Prosperity License](https://prosperitylicense.com/versions/3.0.0) and the [Lygia Patron License](https://lygia.xyz/license).
-
-This does NOT apply to you if you do not import the Lygia package by using `#include <lygia/...>` in your shaders. You can still use Patchies and all its features without importing Lygia.
-
 ### Source Code Access
 
 The complete source code for Patchies is available on [GitHub](https://github.com/heypoom/patchies)
@@ -35,3 +27,11 @@ The complete source code for Patchies is available on [GitHub](https://github.co
 2. **For modifications**: If you modify Patchies code, you must share your changes under AGPL-3.0
 3. **For web services**: If you host Patchies as a service and modify it, you must provide source code to your users
 4. **For redistribution**: You can redistribute Patchies but must include the license and attribution notices
+
+## Licensing: Lygia Shader Library
+
+Lygia is free for non-commercial use, i.e. personal use and usage in non-commercial organizations. For commercial use, please purchase a license from the creator, Patricio Gonzalez Vivo.
+
+Lygia is dual licensed under the [Prosperity License](https://prosperitylicense.com/versions/3.0.0) and the [Lygia Patron License](https://lygia.xyz/license).
+
+This does NOT apply to you if you do not import the Lygia package by using `#include <lygia/...>` in your shaders. You can still use Patchies and all its features without importing Lygia.

@@ -15,4 +15,4 @@ These creators dedicate countless hours of their personal time to building and m
 
 ## Where to support?
 
-Please check out the [Thanks Tab](https://patchies.app/?startup=thanks) of Patchies to see a list of the open source libraries that Patchies uses, along with links to their support pages.
+Please check out the [Thanks Tab](https://patchies.app/?startup=thanks) of Patchies to see a list of the open source libraries that Patchies uses, along with links to their support and donation pages.
