@@ -12,7 +12,7 @@ Configuration:
 - text: The displayed text
 - color: Background color (default: 'transparent')
 - fontSize: Font size in pixels (10, 14, 20, 28, 40, 56)
-- font: 'default', 'mono' (shown as Code), 'serif', 'syne', or 'custom'
+- font: 'default', 'mono' (shown as Code), 'serif', or 'custom'
 - customFontFamily: CSS font-family stack to use when font is 'custom'
 - bordered: Show a border (true/false)
 

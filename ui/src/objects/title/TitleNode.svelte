@@ -34,7 +34,6 @@
     { label: 'Default', value: 'default' },
     { label: 'Code', value: 'mono' },
     { label: 'Serif', value: 'serif' },
-    { label: 'Syne', value: 'syne' },
     { label: 'Custom', value: 'custom' }
   ] as const;
 
@@ -80,7 +79,6 @@
     match(font)
       .with('mono', () => $editorFontFamily)
       .with('serif', () => "'IBM Plex Serif', ui-serif, Georgia, serif")
-      .with('syne', () => "'Syne', sans-serif")
       .with('custom', () => customFontFamily.trim() || $editorFontFamily)
       .otherwise(() => 'inherit')
   );

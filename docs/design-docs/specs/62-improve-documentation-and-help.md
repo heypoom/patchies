@@ -326,7 +326,7 @@ The `/docs` reading surface uses a **Plex System**:
 
 - **IBM Plex Sans** for page titles, prose, section headings, navigation, and interface labels
 - **IBM Plex Mono** for object names, code, signatures, paths, and other computational language
-- No legacy serif display face or Syne within `/docs`
+- No legacy display face within `/docs`
 
 The typography should feel like a quiet, precise instrument. Hierarchy comes from scale, weight,
 spacing, contrast, and the existing Ember section marker rather than from an ornamental display
@@ -364,7 +364,7 @@ without adding an ambient effect or an ornamental display face.
 - Reuse the Plex families already loaded by the application.
 - Do not add a new font dependency for the documentation page.
 - IBM Plex Serif may serve expressive product surfaces, but `/docs` remains Sans and Mono only.
-- Remove Syne from the global font request only when no remaining product surface uses it.
+- The global font request includes only the Plex families used by the product.
 
 ### 6. Don't Forget Schema Registration
 

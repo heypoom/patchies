@@ -367,7 +367,7 @@
   .ai-title {
     font-family: 'IBM Plex Sans', sans-serif;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 500;
     color: #f4f4f5;
     letter-spacing: -0.01em;
   }

@@ -130,7 +130,7 @@ but it must still feel authored rather than decorated from a generic template.
 
 The current startup, object-browser, settings, AI-settings, documentation, and
 Sparks surfaces are provisional redesign candidates. Their ornamental corner
-brackets and the legacy serif plus Syne pairing are not design-system authority.
+brackets and legacy ornamental typography are not design-system authority.
 The sidebar and command palette are usable evidence but remain open to
 refinement.
 
@@ -188,7 +188,7 @@ or creative action; never use it as continuous decoration across the editor.
 with a technical mono companion. It should feel engineered without becoming
 sterile. Expressive typography may be introduced for a redesigned onboarding
 experience, but it must be chosen intentionally for Patchies rather than
-inherited from the provisional serif and Syne treatment.
+inherited from provisional ornamental typography.
 
 ### Hierarchy
 
@@ -362,7 +362,7 @@ bright or visually noisy.
 - **Don't** spread Ember across large surfaces or use saturated gradients as
   editor chrome.
 - **Don't** propagate the current ornamental modal corners or the Instrument
-  Serif plus Syne pairing as canonical Patchies identity.
+  serif pairing as canonical Patchies identity.
 - **Don't** use the current startup, object-browser, settings, AI-settings, docs,
   or Sparks presentation as unquestioned design-system authority.
 - **Don't** let floating UI become unreadable over bright or high-motion user

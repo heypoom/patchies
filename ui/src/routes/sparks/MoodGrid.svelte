@@ -58,7 +58,7 @@
     color: #e4e4e7;
     font-family: 'IBM Plex Sans', sans-serif;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: -0.01em;
   }
 
