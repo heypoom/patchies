@@ -4,6 +4,7 @@ import {
   type REdge,
   type RNode
 } from '$lib/rendering/graphUtils';
+
 import {
   isFBOCompatible,
   type FBOFormat,
@@ -11,8 +12,9 @@ import {
   type RenderNode,
   type RenderWorkerMessage
 } from '$lib/rendering/types';
+
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
-import RenderWorker from '$workers/rendering/renderWorker?worker';
+import RenderWorker from '$workers/rendering/renderWorkerEntry?worker';
 import type { ProjMapSurface } from '$lib/projmap/types';
 
 import * as ohash from 'ohash';

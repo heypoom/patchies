@@ -164,6 +164,18 @@ export default defineConfig(() => ({
     format: 'es' as const,
     plugins: () => [wasm(), topLevelAwait(), minifyExceptShaderParkCore()],
     rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          const normalizedId = id.replaceAll('\\', '/');
+
+          // Keep worker-global installation in the tiny entry facade. Renderer
+          // chunks may share this neutral runtime chunk, but never import the
+          // side-effectful entry back into the worker global.
+          if (normalizedId.endsWith('/src/workers/rendering/renderWorker.ts')) {
+            return 'render-core';
+          }
+        }
+      },
       // Exclude heavy dependencies from worker bundle
       external: [
         '@csound/browser',
