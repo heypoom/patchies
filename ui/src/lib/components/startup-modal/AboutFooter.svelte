@@ -10,11 +10,6 @@
 
 <footer class="about-footer">
   <nav class="footer-links" aria-label="Patchies links">
-    <a href="/docs/adding-objects" target="_blank" rel="noopener noreferrer" class="footer-link">
-      <BookOpen class="h-3.5 w-3.5" />
-      docs
-    </a>
-
     <a
       href="https://github.com/heypoom/patchies"
       target="_blank"

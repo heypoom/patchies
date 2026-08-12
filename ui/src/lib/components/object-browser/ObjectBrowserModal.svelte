@@ -498,7 +498,7 @@
               onclick={openPacks}
               aria-label={`Manage library${disabledPackCount ? `: enable ${disabledPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs` : ''}`}
               class={[
-                'flex h-9 cursor-pointer items-center rounded-md border px-3 text-left transition-colors outline-none focus-visible:border-orange-500/70 sm:h-11 sm:min-w-[210px]',
+                'flex h-9 cursor-pointer items-center rounded-md border px-3 text-left transition-colors outline-none focus-visible:border-orange-500/70',
                 disabledPackCount > 0
                   ? 'gap-2 border-white/10 bg-white/[0.025] text-zinc-100 hover:border-orange-500/30 hover:bg-orange-500/[0.045]'
                   : 'gap-2 border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
@@ -506,6 +506,7 @@
             >
               {#if disabledPackCount > 0}
                 <Package class="h-4 w-4 shrink-0 text-orange-500" />
+
                 <span class="min-w-0 flex-1">
                   <span class="block truncate text-[11px] font-medium text-zinc-100 sm:text-[12px]">
                     <span class="sm:hidden">{disabledPackCount} more packs</span>
@@ -513,14 +514,16 @@
                       >{disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs</span
                     >
                   </span>
+
                   <span class="hidden text-[10px] font-normal text-zinc-500 sm:block">
                     Manage library
                   </span>
                 </span>
                 <ArrowRight class="h-4 w-4 shrink-0 text-orange-500" />
               {:else}
-                <Package class="h-4 w-4 shrink-0" />
-                <span class="min-w-0 flex-1 truncate">Manage library</span>
+                <Package class="h-3.5 w-3.5 shrink-0" />
+
+                <span class="min-w-0 flex-1 truncate text-[12px] font-medium">Manage library</span>
               {/if}
             </button>
           {/if}
