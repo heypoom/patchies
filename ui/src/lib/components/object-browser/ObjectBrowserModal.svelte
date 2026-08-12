@@ -298,15 +298,19 @@
     BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
 
-  const disabledPackCount = $derived(
+  const onboardingPackCount = $derived(
     catalogKind === 'objects'
-      ? BUILT_IN_PACKS.filter(
-          (pack) => !isPackLocked(pack.id) && !isPackEnabled(pack.id, $enabledPackIds)
-        ).length
-      : BUILT_IN_PRESET_PACKS.filter(
-          (pack) =>
-            !isPresetPackLocked(pack.id) && !isPresetPackEnabled(pack.id, $enabledPresetPackIds)
-        ).length
+      ? $enabledPackIds.filter((packId) => !isPackLocked(packId)).length < 3
+        ? BUILT_IN_PACKS.filter(
+            (pack) => !isPackLocked(pack.id) && !isPackEnabled(pack.id, $enabledPackIds)
+          ).length
+        : 0
+      : $enabledPresetPackIds.filter((packId) => !isPresetPackLocked(packId)).length < 3
+        ? BUILT_IN_PRESET_PACKS.filter(
+            (pack) =>
+              !isPresetPackLocked(pack.id) && !isPresetPackEnabled(pack.id, $enabledPresetPackIds)
+          ).length
+        : 0
   );
 
   const hasEnabledOptionalObjectPacks = $derived(
@@ -496,22 +500,22 @@
             <button
               type="button"
               onclick={openPacks}
-              aria-label={`Manage library${disabledPackCount ? `: enable ${disabledPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs` : ''}`}
+              aria-label={`Manage library${onboardingPackCount ? `: enable ${onboardingPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs` : ''}`}
               class={[
                 'flex h-9 cursor-pointer items-center rounded-md border px-3 text-left transition-colors outline-none focus-visible:border-orange-500/70',
-                disabledPackCount > 0
+                onboardingPackCount > 0
                   ? 'gap-2 border-white/10 bg-white/[0.025] text-zinc-100 hover:border-orange-500/30 hover:bg-orange-500/[0.045]'
                   : 'gap-2 border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
               ]}
             >
-              {#if disabledPackCount > 0}
+              {#if onboardingPackCount > 0}
                 <Package class="h-4 w-4 shrink-0 text-orange-500" />
 
                 <span class="min-w-0 flex-1">
                   <span class="block truncate text-[11px] font-medium text-zinc-100 sm:text-[12px]">
-                    <span class="sm:hidden">{disabledPackCount} more packs</span>
+                    <span class="sm:hidden">{onboardingPackCount} more packs</span>
                     <span class="hidden sm:inline"
-                      >{disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs</span
+                      >{onboardingPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs</span
                     >
                   </span>
                 </span>
