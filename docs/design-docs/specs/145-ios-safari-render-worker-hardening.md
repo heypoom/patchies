@@ -10,6 +10,8 @@ On current iOS Safari, adding a `hydra` or `shaderpark` object can leave other w
 
 Safari/WebKit has known rough edges around worker `OffscreenCanvas` and WebGL context loss or blanking. The render worker should surface those failures instead of silently retaining the last frame.
 
+Production diagnostics identified a more specific failure mode. Loading a dynamic Hydra or ShaderPark worker chunk can re-evaluate the generated render-worker entry on iOS Safari. The second evaluation installs a new `self.onmessage` handler and creates a new `FBORenderer`, while the first renderer's animation loop continues posting frames. New control messages reach the second renderer, but visible frames still come from the first renderer's stale graph.
+
 ## Approach
 
 - Report render-worker global errors to the normal internal logger.
@@ -19,6 +21,22 @@ Safari/WebKit has known rough edges around worker `OffscreenCanvas` and WebGL co
 - On iOS Safari, refresh regl state after high-risk raw WebGL renderers.
 - On iOS Safari, flush after high-risk nodes (`hydra` and `shaderpark`) to reduce WebKit command-queue stalls.
 - Outside iOS Safari, keep the normal render path and avoid per-node `getError()` polling.
+- Keep worker-global installation in a small entry facade and the stateful renderer implementation in a neutral `render-core` chunk.
+- Install the render runtime synchronously behind a worker-global install-once guard. A repeated entry evaluation must not create another `FBORenderer`, message handler, or render loop.
+- Keep Hydra, ShaderPark, and other large renderer libraries lazy-loaded.
+- Prevent lazy renderer chunks from importing the side-effectful worker entry. Shared imports must target the neutral core chunk.
+
+## Worker Entry Invariant
+
+`GLSystem` constructs the small render-worker entry facade. The facade waits for its statically imported core module, then invokes the synchronous install-once guard. Only the guarded installation may create `FBORenderer`, install `self.onmessage`, and own render-loop lifecycle state.
+
+A production build is valid only when:
+
+- the entry remains a small facade;
+- the core implementation is a separate neutral chunk;
+- Hydra and ShaderPark remain dynamically imported;
+- no non-entry chunk imports the entry facade;
+- repeated entry installation against one worker global creates one runtime owner.
 
 ## Non-Goals
 

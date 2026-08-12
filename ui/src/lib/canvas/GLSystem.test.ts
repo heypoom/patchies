@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('$workers/rendering/renderWorker?worker', () => ({
+vi.mock('$workers/rendering/renderWorkerEntry?worker', () => ({
   default: class RenderWorkerMock {
     addEventListener = vi.fn();
     postMessage = vi.fn();
