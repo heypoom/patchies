@@ -58,7 +58,7 @@
     {
       shortName: 'Ryan',
       name: 'Thanapat "Ryan" Ogaslert (@crsrcrsrrr)',
-      bio: 'Creator of SYNAP [home/lab], College of Music, Mahidol University. Inspired me to give my first ever talk about Patchies — where I showed it to the world for the first time.',
+      bio: 'Creator of SYNAP [home/lab], College of Music, Mahidol University. Inspired me to give my first ever talk about Patchies.',
       meta: 'SYNAP [home/lab] · Monday music experiments & performances',
       links: [
         { label: '@crsrcrsrrr', href: 'https://www.instagram.com/crsrcrsrrr' },
@@ -118,7 +118,7 @@
           <div>
             <p class="credits-index-title">People in the patch</p>
             <p class="credits-index-copy">
-              Playtesting, workshops, technical guidance, friendship, and encouragement.
+              Playtesting, workshops, technical guidance and encouragement.
             </p>
           </div>
           <span>{specialPeople.length} awesome friends</span>
@@ -126,19 +126,22 @@
         <div class="credits-index-row">
           <div>
             <p class="credits-index-title">The open-source ecosystem</p>
+
             <p class="credits-index-copy">
-              Libraries and tools, teachers and references, and web infrastructure.
+              Libraries, tools, teachers, references and infrastructure.
             </p>
           </div>
+
           <span>{supportLinks.length} creators &amp; projects</span>
         </div>
+
         <div class="credits-index-row">
           <div>
-            <p class="credits-index-title">Source, shared</p>
-            <p class="credits-index-copy">
-              The AGPL-3.0 license, adapted code, and the complete dependency ledger.
-            </p>
+            <p class="credits-index-title">Open source</p>
+
+            <p class="credits-index-copy">AGPL-3.0, adapted code and libraries we use.</p>
           </div>
+
           <span>
             {portedCode.length} adapted · {dependenciesSection.dependencies.length} dependencies
           </span>
@@ -150,10 +153,7 @@
   <section class="people-section">
     <header class="section-heading">
       <h2>The people in the patch.</h2>
-      <p>
-        These people helped bring Patchies to life through their support, feedback, and
-        encouragement.
-      </p>
+      <p>These people helped bring Patchies to life through their guidance.</p>
     </header>
 
     <div class="people-grid">
