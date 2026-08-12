@@ -815,19 +815,28 @@ export class FBORenderer {
         const inlet0 = node.inletMap.get(0);
         if (!inlet0) return;
 
+        const externalTexture = this.videoTextures.getDestinationTexture(inlet0.sourceNodeId);
+
+        const externalSourceFramebuffer = externalTexture
+          ? this.videoTextures.getDestinationFBO(inlet0.sourceNodeId)
+          : undefined;
+
         const sourceFbo = this.fboNodes.get(inlet0.sourceNodeId);
-        if (!sourceFbo) return;
+        const sourceFramebuffer = externalSourceFramebuffer ?? sourceFbo?.framebuffer;
+        if (!sourceFramebuffer) return;
 
         // Blit input FBO to output framebuffer.
         // Source and destination may differ when the source uses @resolution.
-        const srcW = sourceFbo.texture.width;
-        const srcH = sourceFbo.texture.height;
+        const srcW = externalTexture?.width ?? sourceFbo?.texture.width;
+        const srcH = externalTexture?.height ?? sourceFbo?.texture.height;
+        if (!srcW || !srcH) return;
+
         const dstFbo = this.fboNodes.get(node.id);
         const dstW = dstFbo?.texture.width ?? srcW;
         const dstH = dstFbo?.texture.height ?? srcH;
         const gl = this.gl;
 
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFramebuffer));
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
 
         gl.blitFramebuffer(0, 0, srcW, srcH, 0, 0, dstW, dstH, gl.COLOR_BUFFER_BIT, gl.LINEAR);
