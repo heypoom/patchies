@@ -16,20 +16,76 @@ const h = () => {
 
 requestAnimationFrame(h)`;
 
-const MIDI_ADSR_GAIN_JS = `setRunOnMount(true)
+const MIDI_ADSR_GAIN_JS = `// JS-based ADSR
+// Inlet 0: Gate (number or noteOn/noteOff)
 
-recv(m => {
-  if (m.type === 'noteOn') {
+setTitle("adsr");
+setPortCount(1, 1);
+setRunOnMount(true);
+
+await settings.define([
+  {
+    key: "attack",
+    label: "Attack (s)",
+    type: "slider",
+    min: 0,
+    max: 10,
+    default: 0.1,
+    step: 0.01,
+  },
+  {
+    key: "decay",
+    label: "Decay (s)",
+    type: "slider",
+    min: 0,
+    max: 10,
+    default: 0.2,
+    step: 0.01,
+  },
+  {
+    key: "sustain",
+    label: "Sustain (0-1)",
+    type: "slider",
+    min: 0,
+    max: 1,
+    default: 0.5,
+    step: 0.01,
+  },
+  {
+    key: "release",
+    label: "Release (s)",
+    type: "slider",
+    min: 0,
+    max: 10,
+    default: 0.3,
+    step: 0.01,
+  },
+]);
+
+recv((m) => {
+  const isOn = (typeof m === "number" && m > 0) || (m && m.type === "noteOn");
+
+  const isOff =
+    (typeof m === "number" && m === 0) || (m && m.type === "noteOff");
+
+  if (isOn) {
     send({
-      type: 'trigger',
-      values: { peak: 1, sustain: 0.7 },
-      attack: 0.02,
-      decay: 0.1
-    })
-  } else if (m.type === 'noteOff') {
-    send({ type: 'release', release: 0.3, endValue: 0 })
+      type: "trigger",
+      values: {
+        peak: 1,
+        sustain: settings.get("sustain"),
+      },
+      attack: settings.get("attack"),
+      decay: settings.get("decay"),
+    });
+  } else if (isOff) {
+    send({
+      type: "release",
+      release: settings.get("release"),
+      endValue: 0,
+    });
   }
-})`;
+});`;
 
 const FRAME_COUNTER_JS = `setRunOnMount(true)
 
