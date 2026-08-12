@@ -2,7 +2,7 @@
   import AboutTab from './AboutTab.svelte';
   import AboutFooter from './AboutFooter.svelte';
   import ExamplesTab from './ExamplesTab.svelte';
-  import ThanksTab from './ThanksTab.svelte';
+  import ThanksTab from './thanks/ThanksTab.svelte';
   import ShortcutsTab from './ShortcutsTab.svelte';
   import SparksTab from './SparksTab.svelte';
   import type { Tab } from './types';
