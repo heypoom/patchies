@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     ArrowLeft,
+    ArrowRight,
     Bookmark,
     Boxes,
     ChevronDown,
@@ -112,11 +113,14 @@
 
       const presetPack =
         libraryName === 'Built-in' ? getBuiltInPresetPackByPresetName(preset.name) : undefined;
+
       const typeFolder = path.length > 2 ? path[1] : preset.type;
+
       const categoryKey =
         libraryName === 'Built-in'
           ? (presetPack?.name ?? typeFolder)
           : formatPresetLocation(flatPreset);
+
       const categoryId =
         libraryName === 'Built-in'
           ? `preset-pack:${presetPack?.id ?? categoryKey}`
@@ -142,6 +146,7 @@
     }
 
     const presetPackOrder = new Map(BUILT_IN_PRESET_PACKS.map((pack, index) => [pack.name, index]));
+
     const sortedCategories = Array.from(presetsByCategory.keys()).sort((a, b) => {
       const aOrder = presetPackOrder.get(a) ?? Number.MAX_SAFE_INTEGER;
       const bOrder = presetPackOrder.get(b) ?? Number.MAX_SAFE_INTEGER;
@@ -196,13 +201,16 @@
         return 0;
       }
     );
+
     const matchesByCategory = new SvelteMap<string, ObjectItem[]>();
     const categoryOrder = new SvelteMap<string, number>();
 
     results.forEach((result, index) => {
       const categoryId = result.item.categoryId;
+
       if (!matchesByCategory.has(categoryId)) matchesByCategory.set(categoryId, []);
       if (!categoryOrder.has(categoryId)) categoryOrder.set(categoryId, index);
+
       matchesByCategory.get(categoryId)!.push({
         name: result.item.name,
         description: result.item.description,
@@ -234,13 +242,17 @@
     if (catalogKind !== 'objects' || $objectBrowserMode !== 'insert' || !searchQuery.trim()) {
       return null;
     }
+
     if (filteredCategories.length > 0) return null;
+
     return searchDisabledObject(searchQuery);
   });
 
   const filteredObjectPacks = $derived.by(() => {
     if (!searchQuery.trim()) return BUILT_IN_PACKS;
+
     const query = searchQuery.toLowerCase();
+
     return BUILT_IN_PACKS.filter(
       (pack) =>
         pack.name.toLowerCase().includes(query) ||
@@ -251,7 +263,9 @@
 
   const filteredPresetPacks = $derived.by(() => {
     if (!searchQuery.trim()) return BUILT_IN_PRESET_PACKS;
+
     const query = searchQuery.toLowerCase();
+
     return BUILT_IN_PRESET_PACKS.filter(
       (pack) =>
         pack.name.toLowerCase().includes(query) ||
@@ -263,47 +277,73 @@
   const visiblePackCount = $derived(
     catalogKind === 'objects' ? filteredObjectPacks.length : filteredPresetPacks.length
   );
+
   const totalObjectCount = $derived.by(() => {
     const objects = new SvelteSet<string>();
+
     for (const pack of BUILT_IN_PACKS) {
       for (const object of pack.objects) objects.add(object);
     }
+
     return objects.size;
   });
+
   const enabledObjectCount = $derived($enabledPrimaryObjects.size);
+
   const allObjectPacksEnabled = $derived(
     BULK_ENABLE_PACK_IDS.every((packId) => $enabledPackIds.includes(packId))
   );
+
   const allPresetPacksEnabled = $derived(
     BULK_ENABLE_PRESET_PACK_IDS.every((packId) => $enabledPresetPackIds.includes(packId))
   );
+
+  const disabledPackCount = $derived(
+    catalogKind === 'objects'
+      ? BUILT_IN_PACKS.filter(
+          (pack) => !isPackLocked(pack.id) && !isPackEnabled(pack.id, $enabledPackIds)
+        ).length
+      : BUILT_IN_PRESET_PACKS.filter(
+          (pack) =>
+            !isPresetPackLocked(pack.id) && !isPresetPackEnabled(pack.id, $enabledPresetPackIds)
+        ).length
+  );
+
   const hasEnabledOptionalObjectPacks = $derived(
     $enabledPackIds.some((packId) => !isPackLocked(packId))
   );
+
   const hasEnabledOptionalPresetPacks = $derived(
     $enabledPresetPackIds.some((packId) => !isPresetPackLocked(packId))
   );
+
   const expandedObjectPack = $derived(
     catalogKind === 'objects'
       ? (BUILT_IN_PACKS.find((pack) => pack.id === expandedPackId) ?? null)
       : null
   );
+
   const expandedPresetPack = $derived(
     catalogKind === 'presets'
       ? (BUILT_IN_PRESET_PACKS.find((pack) => pack.id === expandedPackId) ?? null)
       : null
   );
+
   const expandedPackItems = $derived(
     expandedObjectPack?.objects ??
       (expandedPresetPack ? getPresetPackPresetNames(expandedPresetPack) : [])
   );
+
   const expandedPackName = $derived(expandedObjectPack?.name ?? expandedPresetPack?.name ?? '');
+
   const expandedPackDescription = $derived(
     expandedObjectPack?.description ?? expandedPresetPack?.description ?? ''
   );
+
   const ExpandedPackIcon = $derived(
     getIconComponent(expandedObjectPack?.icon ?? expandedPresetPack?.icon ?? 'package')
   );
+
   const hasExpandedPack = $derived(
     Boolean((expandedObjectPack || expandedPresetPack) && !searchQuery.trim())
   );
@@ -315,6 +355,7 @@
         ? 'Explore object help'
         : 'Add to patch'
   );
+
   const searchPlaceholder = $derived(
     $objectBrowserMode === 'packs'
       ? `Search ${catalogKind === 'objects' ? 'object' : 'preset'} packs`
@@ -455,11 +496,32 @@
             <button
               type="button"
               onclick={openPacks}
-              aria-label="Manage library"
-              class="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-white/[0.025] px-3 text-[11px] font-medium text-zinc-500 transition-colors outline-none hover:border-white/16 hover:text-zinc-200 focus-visible:border-orange-500/70"
+              aria-label={`Manage library${disabledPackCount ? `: enable ${disabledPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs` : ''}`}
+              class={[
+                'flex h-9 cursor-pointer items-center rounded-md border px-3 text-left transition-colors outline-none focus-visible:border-orange-500/70 sm:h-11 sm:min-w-[210px]',
+                disabledPackCount > 0
+                  ? 'gap-2 border-white/10 bg-white/[0.025] text-zinc-100 hover:border-orange-500/30 hover:bg-orange-500/[0.045]'
+                  : 'gap-2 border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
+              ]}
             >
-              <Package class="h-4 w-4" />
-              <span>Manage library</span>
+              {#if disabledPackCount > 0}
+                <Package class="h-4 w-4 shrink-0 text-orange-500" />
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-[11px] font-medium text-zinc-100 sm:text-[12px]">
+                    <span class="sm:hidden">{disabledPackCount} more packs</span>
+                    <span class="hidden sm:inline"
+                      >{disabledPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs</span
+                    >
+                  </span>
+                  <span class="hidden text-[10px] font-normal text-zinc-500 sm:block">
+                    Manage library
+                  </span>
+                </span>
+                <ArrowRight class="h-4 w-4 shrink-0 text-orange-500" />
+              {:else}
+                <Package class="h-4 w-4 shrink-0" />
+                <span class="min-w-0 flex-1 truncate">Manage library</span>
+              {/if}
             </button>
           {/if}
           <button
