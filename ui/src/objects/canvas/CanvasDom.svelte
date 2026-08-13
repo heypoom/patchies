@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import {
+    NodeResizer,
+    NodeResizeControl,
+    ResizeControlVariant,
+    useSvelteFlow,
+    useUpdateNodeInternals
+  } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -24,11 +30,15 @@
   import type { SettingsSchema } from '$lib/settings';
   import { resetCanvasSize } from '$objects/dom/runtime-size';
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
+  import { useNodeDataTracker } from '$lib/history';
+  import { useFluidCanvas } from './useFluidCanvas.svelte';
 
   let {
     id: nodeId,
     data,
-    selected
+    selected,
+    width,
+    height
   }: {
     id: string;
     data: {
@@ -43,8 +53,11 @@
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
       hideBorder?: boolean;
+      fluidCanvasResizerVisible?: boolean;
     };
     selected?: boolean;
+    width?: number;
+    height?: number;
   } = $props();
 
   function initialNodeId() {
@@ -81,9 +94,9 @@
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
   let pausedCallback: FrameRequestCallback | null = null;
-
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNode, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
@@ -107,6 +120,29 @@
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
       runCode();
+    }
+  });
+
+  const fluidCanvas = useFluidCanvas({
+    getNodeId: () => nodeId,
+    getData: () => data,
+    getNodeSize: () => ({ width, height }),
+    getPreviewSize: () => ({ width: previewWidth, height: previewHeight }),
+    getCanvasSize: () => ({ width: outputWidth, height: outputHeight }),
+    setCanvasSize: ({ width, height }) => setCanvasDimensions(width, height),
+    updateNode,
+    updateNodeData,
+    commitNodeData: (key, oldValue, newValue) => tracker.commit(key, oldValue, newValue),
+    warn: (message) => customConsole.warn(message),
+    previewScaleFactor: PREVIEW_SCALE_FACTOR,
+
+    onResizeCallback(callback) {
+      try {
+        callback({ width: outputWidth, height: outputHeight });
+        sendBitmap();
+      } catch (error) {
+        handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+      }
     }
   });
 
@@ -296,13 +332,13 @@
     ctx = canvas.getContext('2d');
   }
 
-  function setCanvasSize(width: number, height: number) {
+  function setCanvasDimensions(width: number, height: number) {
     if (!canvas) return;
 
     outputWidth = width;
     outputHeight = height;
 
-    // Update canvas resolution
+    // CanvasDom owns bitmap dimensions. Reactive canvas width/height attributes would clear draws.
     canvas.width = width;
     canvas.height = height;
 
@@ -369,6 +405,7 @@
     panEnabled = true;
     wheelEnabled = true;
     videoOutputEnabled = true;
+    fluidCanvas.reset();
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     const resetSize = resetCanvasSize(canvas, DEFAULT_OUTPUT_SIZE);
@@ -395,6 +432,8 @@
         return;
       }
 
+      const dimensions = fluidCanvas.getExecutionDimensions(processedCode);
+
       await jsRunner.executeJavaScript(nodeId, processedCode, {
         customConsole,
         setPortCount,
@@ -404,12 +443,8 @@
           settings: createSettingsAPI(settingsManager),
           canvas,
           ctx,
-          get width() {
-            return outputWidth;
-          },
-          get height() {
-            return outputHeight;
-          },
+          width: dimensions.width,
+          height: dimensions.height,
           mouse,
           noDrag: () => {
             dragEnabled = false;
@@ -432,7 +467,9 @@
             videoOutputEnabled = false;
             updateNodeInternals(nodeId);
           },
-          setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
+          setCanvasSize: fluidCanvas.setFixedCanvasSize,
+          setFluidSize: fluidCanvas.setFluidSize,
+          onCanvasResize: fluidCanvas.onCanvasResize,
           setPrimaryButton: (primaryButton: PrimaryButton) => {
             eventBus.dispatch({
               type: 'nodePrimaryButtonUpdate',
@@ -472,6 +509,10 @@
           }
         }
       });
+
+      if (!fluidCanvas.isFluid && (width !== undefined || height !== undefined)) {
+        updateNode(nodeId, { width: undefined, height: undefined });
+      }
     } catch (error) {
       handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
     }
@@ -491,7 +532,6 @@
 
     const cleanupMouse = setupMouseListeners();
     const cleanupKeyboard = setupKeyboardListeners();
-
     setTimeout(() => {
       runCode();
     }, 50);
@@ -506,6 +546,7 @@
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
     }
+    fluidCanvas.reset();
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
     glSystem?.removeNode(nodeId);
     jsRunner.destroy(nodeId);
@@ -523,98 +564,122 @@
   });
 </script>
 
-<CanvasPreviewLayout
-  title={data.title ?? 'canvas.dom'}
-  objectType="canvas.dom"
-  codePlaceholder="Write your Canvas API code here..."
-  {nodeId}
-  onrun={runCode}
-  onPlaybackToggle={togglePlayback}
-  paused={data.paused}
-  showPauseButton={true}
-  bind:previewCanvas={canvas}
-  nodrag={!dragEnabled}
-  nopan={!panEnabled}
-  nowheel={!wheelEnabled}
-  tabindex={0}
-  width={outputWidth}
-  height={outputHeight}
-  style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
-  {selected}
-  {editorReady}
-  hasError={lineErrors !== undefined}
-  settingsSchema={data.settingsSchema}
-  settingsValues={data.settings ?? {}}
-  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
-  onSettingsRevertAll={() => settingsManager.revertAll()}
-  hideBorder={data.hideBorder}
->
-  {#snippet topHandle()}
-    {#each Array.from({ length: inletCount }) as _, index (index)}
-      <TypedHandle
-        port="inlet"
-        spec={{ handleId: index }}
-        title={`Inlet ${index}`}
-        total={inletCount}
-        {index}
-        class={handleClass}
-        {nodeId}
+<div class="relative">
+  {#if selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible}
+    {#if fluidCanvas.resizeAxis === 'both' || fluidCanvas.keepAspectRatio}
+      <NodeResizer
+        class="z-1"
+        minWidth={100}
+        minHeight={80}
+        keepAspectRatio={fluidCanvas.keepAspectRatio}
+        onResize={fluidCanvas.handleResize}
       />
-    {/each}
-  {/snippet}
-
-  {#snippet bottomHandle()}
-    {#if videoOutputEnabled}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleType: 'video', handleId: '0' }}
-        title="Video output"
-        total={outletCount + 1}
-        index={0}
-        class={handleClass}
-        {nodeId}
-      />
+    {:else}
+      {#each fluidCanvas.resizeControlPositions as position (position)}
+        <NodeResizeControl
+          class="z-1"
+          {position}
+          variant={ResizeControlVariant.Line}
+          minWidth={100}
+          minHeight={80}
+          onResize={fluidCanvas.handleResize}
+        />
+      {/each}
     {/if}
+  {/if}
 
-    {#each Array.from({ length: outletCount }) as _, index (index)}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleId: index }}
-        title={`Outlet ${index}`}
-        total={videoOutputEnabled ? outletCount + 1 : outletCount}
-        index={videoOutputEnabled ? index + 1 : index}
-        class={handleClass}
+  <CanvasPreviewLayout
+    title={data.title ?? 'canvas.dom'}
+    objectType="canvas.dom"
+    codePlaceholder="Write your Canvas API code here..."
+    {nodeId}
+    onrun={runCode}
+    onPlaybackToggle={togglePlayback}
+    paused={data.paused}
+    showPauseButton={true}
+    bind:previewCanvas={canvas}
+    nodrag={!dragEnabled}
+    nopan={!panEnabled}
+    nowheel={!wheelEnabled}
+    tabindex={0}
+    style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+    {selected}
+    {editorReady}
+    hasError={lineErrors !== undefined}
+    settingsSchema={data.settingsSchema}
+    settingsValues={data.settings ?? {}}
+    onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+    onSettingsRevertAll={() => settingsManager.revertAll()}
+    hideBorder={data.hideBorder}
+    displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
+  >
+    {#snippet topHandle()}
+      {#each Array.from({ length: inletCount }) as _, index (index)}
+        <TypedHandle
+          port="inlet"
+          spec={{ handleId: index }}
+          title={`Inlet ${index}`}
+          total={inletCount}
+          {index}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
+    {/snippet}
+
+    {#snippet bottomHandle()}
+      {#if videoOutputEnabled}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleType: 'video', handleId: '0' }}
+          title="Video output"
+          total={outletCount + 1}
+          index={0}
+          class={handleClass}
+          {nodeId}
+        />
+      {/if}
+
+      {#each Array.from({ length: outletCount }) as _, index (index)}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleId: index }}
+          title={`Outlet ${index}`}
+          total={videoOutputEnabled ? outletCount + 1 : outletCount}
+          index={videoOutputEnabled ? index + 1 : index}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
+    {/snippet}
+
+    {#snippet codeEditor()}
+      <CodeEditor
+        value={data.code}
+        language="javascript"
+        nodeType="canvas.dom"
+        placeholder="Write your Canvas API code here..."
+        class="nodrag h-64 w-full resize-none"
+        onrun={runCode}
+        onchange={(newCode) => {
+          updateNodeData(nodeId, { code: newCode });
+        }}
+        onready={() => (editorReady = true)}
+        {lineErrors}
         {nodeId}
       />
-    {/each}
-  {/snippet}
+    {/snippet}
 
-  {#snippet codeEditor()}
-    <CodeEditor
-      value={data.code}
-      language="javascript"
-      nodeType="canvas.dom"
-      placeholder="Write your Canvas API code here..."
-      class="nodrag h-64 w-full resize-none"
-      onrun={runCode}
-      onchange={(newCode) => {
-        updateNodeData(nodeId, { code: newCode });
-      }}
-      onready={() => (editorReady = true)}
-      {lineErrors}
-      {nodeId}
-    />
-  {/snippet}
-
-  {#snippet console()}
-    <!-- Always render VirtualConsole so it receives events even when hidden -->
-    <div class="mt-3 w-full" class:hidden={!data.showConsole}>
-      <VirtualConsole
-        bind:this={consoleRef}
-        {nodeId}
-        placeholder="Canvas errors will appear here."
-        maxHeight="200px"
-      />
-    </div>
-  {/snippet}
-</CanvasPreviewLayout>
+    {#snippet console()}
+      <!-- Always render VirtualConsole so it receives events even when hidden -->
+      <div class="mt-3 w-full" class:hidden={!data.showConsole}>
+        <VirtualConsole
+          bind:this={consoleRef}
+          {nodeId}
+          placeholder="Canvas errors will appear here."
+          maxHeight="200px"
+        />
+      </div>
+    {/snippet}
+  </CanvasPreviewLayout>
+</div>
