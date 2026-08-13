@@ -12,6 +12,21 @@ export const codeSidebarTargets = writable<Map<string, CodeSidebarTarget>>(new M
 /** Set when an explicit Code action opens a node in the sidebar. */
 export const requestCodeSidebarTargetId = writable<string | null>(null);
 
+export interface CodeSidebarSelectionState {
+  activeTargetId: string | null;
+  pinnedTargetId: string | null;
+  lastSelectedNodeId: string | null;
+  lastSelectedNodeTargetId: string | null;
+}
+
+/** Preserves Code sidebar target choice while its tab is unmounted. */
+export const codeSidebarSelection = writable<CodeSidebarSelectionState>({
+  activeTargetId: null,
+  pinnedTargetId: null,
+  lastSelectedNodeId: null,
+  lastSelectedNodeTargetId: null
+});
+
 export function registerCodeSidebarTarget(target: CodeSidebarTarget): () => void {
   codeSidebarTargets.update((targets) => {
     const next = new Map(targets);
