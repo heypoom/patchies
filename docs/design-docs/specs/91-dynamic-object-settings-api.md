@@ -66,7 +66,7 @@ interface SelectField extends SettingsFieldBase {
 interface ColorField extends SettingsFieldBase {
   type: 'color'
   default?: string // hex string, e.g. '#ff0000'
-  presets?: string[] // optional swatch grid (PostItNode-style), falls back to native picker
+  presets?: string[] // optional swatch grid (PostItNode-style), otherwise uses the shared in-app picker
 }
 
 interface SliderField extends SettingsFieldBase {
