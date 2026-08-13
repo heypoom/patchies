@@ -134,15 +134,16 @@
     updateNodeData,
     commitNodeData: (key, oldValue, newValue) => tracker.commit(key, oldValue, newValue),
     warn: (message) => customConsole.warn(message),
-    onResizeCallback: (callback) => {
+    previewScaleFactor: PREVIEW_SCALE_FACTOR,
+
+    onResizeCallback(callback) {
       try {
         callback({ width: outputWidth, height: outputHeight });
-        void sendBitmap();
+        sendBitmap();
       } catch (error) {
         handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
       }
-    },
-    previewScaleFactor: PREVIEW_SCALE_FACTOR
+    }
   });
 
   // Mouse state - coordinates scaled to canvas resolution
@@ -337,7 +338,7 @@
     outputWidth = width;
     outputHeight = height;
 
-    // Update canvas resolution
+    // CanvasDom owns bitmap dimensions. Reactive canvas width/height attributes would clear draws.
     canvas.width = width;
     canvas.height = height;
 
@@ -601,8 +602,6 @@
     nopan={!panEnabled}
     nowheel={!wheelEnabled}
     tabindex={0}
-    width={outputWidth}
-    height={outputHeight}
     style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
     {selected}
     {editorReady}
