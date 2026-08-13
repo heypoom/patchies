@@ -142,6 +142,12 @@ Sidebar mode is useful for focused editing without covering the background
 output. Unlike overlay mode, opening the sidebar editor should not create a
 temporary background output override.
 
+The Code sidebar follows the single selected code-capable node. Its header can
+pin the current target, which prevents subsequent canvas selections from
+changing the editor until unpinned. Explicit Code actions still select their
+own target. Nodes without an applicable code accessor leave the pinned or last
+available target unchanged.
+
 ## Settings
 
 Add editor layout preferences to `SettingsModal.svelte`.

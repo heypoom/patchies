@@ -33,6 +33,7 @@
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
   import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
@@ -332,6 +333,26 @@
       setOpen: (open) => (showSettings = open),
       onOpenFloating: () => (showEditor = false)
     }
+  });
+
+  useCodeSidebarTarget(() => {
+    if (!nodeId || !onCodeChange) return null;
+
+    const value = getNode(nodeId)?.data?.[codeDataKey];
+
+    return {
+      nodeId,
+      dataKey: codeDataKey,
+      language: codeLanguage,
+      nodeType: objectType,
+      label: title,
+      title,
+      placeholder: codePlaceholder,
+      value: typeof value === 'string' ? value : '',
+      onchange: onCodeChange,
+      onrun: onrun ? handleRun : undefined,
+      settings: detachedSettings
+    };
   });
 
   function openSidebarCodeEditor() {
