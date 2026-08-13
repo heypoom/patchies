@@ -133,10 +133,13 @@
     if (variant !== 'floating' || !floatingPanelElement) return;
 
     const frame = requestAnimationFrame(updateFloatingScrollIndicator);
+
     const observer = new ResizeObserver(updateFloatingScrollIndicator);
     observer.observe(floatingPanelElement);
-    floatingPanelElement.firstElementChild &&
+
+    if (floatingPanelElement.firstElementChild) {
       observer.observe(floatingPanelElement.firstElementChild);
+    }
 
     return () => {
       cancelAnimationFrame(frame);
@@ -179,6 +182,7 @@
 
     const next = toVec2(getCurrentValue(field));
     next[axis] = parsed;
+
     onValueChange(field.key, next);
   }
 
