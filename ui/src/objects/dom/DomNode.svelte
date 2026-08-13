@@ -29,7 +29,7 @@
       height?: number;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
-      hideBorder?: boolean;
+      noBorder?: boolean;
     };
     selected?: boolean;
   } = $props();

@@ -1,7 +1,7 @@
 export function getBorderChromeClass({
   hasError = false,
   selected = false,
-  hideBorder = false,
+  noBorder = false,
   errorClass,
   selectedClass,
   idleClass,
@@ -9,19 +9,19 @@ export function getBorderChromeClass({
 }: {
   hasError?: boolean;
   selected?: boolean;
-  hideBorder?: boolean;
+  noBorder?: boolean;
   errorClass: string;
   selectedClass: string;
   idleClass: string;
   borderlessClass: string;
 }) {
   if (hasError) return errorClass;
-  if (hideBorder) return borderlessClass;
-  if (selected && !hideBorder) return selectedClass;
+  if (noBorder) return borderlessClass;
+  if (selected && !noBorder) return selectedClass;
 
   return idleClass;
 }
 
-export function getBorderResetDataForRun({ hideBorder = false }: { hideBorder?: boolean }) {
-  return hideBorder ? { hideBorder: false } : {};
+export function getBorderResetDataForRun({ noBorder = false }: { noBorder?: boolean }) {
+  return noBorder ? { noBorder: false } : {};
 }

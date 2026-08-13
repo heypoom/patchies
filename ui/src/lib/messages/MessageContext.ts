@@ -60,7 +60,7 @@ export interface UserFnRunContext {
   noInteract: () => void;
 
   /** Hides Patchies border, selected glow, and floating preview controls for this node. */
-  hideBorder?: () => void;
+  noBorder?: () => void;
 
   /** Hides the video output port in canvas/p5 nodes. */
   noOutput?: () => void;

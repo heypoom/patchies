@@ -52,7 +52,7 @@
       paused?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
-      hideBorder?: boolean;
+      noBorder?: boolean;
       fluidCanvasResizerVisible?: boolean;
     };
     selected?: boolean;
@@ -460,8 +460,8 @@
             panEnabled = false;
             wheelEnabled = false;
           },
-          hideBorder: () => {
-            updateNodeData(nodeId, { hideBorder: true });
+          noBorder: () => {
+            updateNodeData(nodeId, { noBorder: true });
           },
           noOutput: () => {
             videoOutputEnabled = false;
@@ -610,7 +610,7 @@
     settingsValues={data.settings ?? {}}
     onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
     onSettingsRevertAll={() => settingsManager.revertAll()}
-    hideBorder={data.hideBorder}
+    noBorder={data.noBorder}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
   >
     {#snippet topHandle()}

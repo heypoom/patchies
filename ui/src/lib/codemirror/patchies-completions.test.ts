@@ -170,14 +170,14 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('canvas', 'onCanvasR')).not.toContain('onCanvasResize');
   });
 
-  it('shows hideBorder completions only for native UI nodes', () => {
-    expect(getCompletionLabels('dom', 'hideB')).toContain('hideBorder');
-    expect(getCompletionLabels('vue', 'hideB')).toContain('hideBorder');
-    expect(getCompletionLabels('p5', 'hideB')).toContain('hideBorder');
-    expect(getCompletionLabels('canvas.dom', 'hideB')).toContain('hideBorder');
-    expect(getCompletionLabels('three.dom', 'hideB')).toContain('hideBorder');
-    expect(getCompletionLabels('js', 'hideB')).not.toContain('hideBorder');
-    expect(getCompletionLabels('hydra', 'hideB')).not.toContain('hideBorder');
+  it('shows noBorder completions only for native UI nodes', () => {
+    expect(getCompletionLabels('dom', 'hideB')).toContain('noBorder');
+    expect(getCompletionLabels('vue', 'hideB')).toContain('noBorder');
+    expect(getCompletionLabels('p5', 'hideB')).toContain('noBorder');
+    expect(getCompletionLabels('canvas.dom', 'hideB')).toContain('noBorder');
+    expect(getCompletionLabels('three.dom', 'hideB')).toContain('noBorder');
+    expect(getCompletionLabels('js', 'hideB')).not.toContain('noBorder');
+    expect(getCompletionLabels('hydra', 'hideB')).not.toContain('noBorder');
   });
 
   it('shows showAudioInput completions only for simple DSP audio nodes', () => {

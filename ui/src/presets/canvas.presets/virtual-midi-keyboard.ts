@@ -5,7 +5,7 @@ export const VIRTUAL_MIDI_KEYBOARD_JS = `// Piano Keyboard with Note-Specific Co
 
 noDrag();
 noOutput();
-hideBorder()
+noBorder()
 
 setTitle('MIDI Keyboard');
 setPortCount(1, 1);

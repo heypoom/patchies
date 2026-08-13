@@ -20,7 +20,7 @@ These Vue.js objects and modules are exposed:
 
 TailwindCSS is enabled by default. Call `tailwind(false)` to disable it.
 
-Call `hideBorder()` when the Vue UI should blend into the patch without
+Call `noBorder()` when the Vue UI should blend into the patch without
 showing Patchies' border or selected glow. Remove
 the call and run the node again to restore the border.
 

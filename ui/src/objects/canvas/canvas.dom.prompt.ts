@@ -8,7 +8,7 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - ctx: 2D canvas context
 - width, height, mouse: {x, y, down, buttons}
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
-- hideBorder() - Hide Patchies border and selected glow
+- noBorder() - Hide Patchies border and selected glow
 - noOutput() - Hide video output (call this when the sketch does not feed video to other nodes)
 - setCanvasSize(width, height) - Use a fixed logical canvas size
 - setFluidSize({ showResizer?, resize?, keepAspectRatio?, initialSize? }) - Use a resizable canvas. resize is 'horizontal', 'vertical', or 'both' (default); keepAspectRatio preserves the initial ratio; initialSize sets the initial logical canvas size, e.g. { width: 800, height: 600 }. Users can enable or disable resizing from the overflow menu.

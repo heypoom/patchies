@@ -52,7 +52,7 @@
     height?: number;
     settingsSchema?: SettingsSchema;
     settings?: Record<string, unknown>;
-    hideBorder?: boolean;
+    noBorder?: boolean;
   };
 
   let {
@@ -283,8 +283,8 @@
             panEnabled = false;
             wheelEnabled = false;
           },
-          hideBorder: () => {
-            updateNodeData(nodeId, { hideBorder: true });
+          noBorder: () => {
+            updateNodeData(nodeId, { noBorder: true });
           },
           tailwind: container.tailwind,
           ...extraContext({ runCode }),
@@ -364,7 +364,7 @@
         getBorderChromeClass({
           hasError: lineErrors !== undefined,
           selected,
-          hideBorder: data.hideBorder,
+          noBorder: data.noBorder,
           errorClass: 'border-red-500/70',
           selectedClass: 'shadow-glow-md ring ring-zinc-400',
           idleClass: 'hover:shadow-glow-sm',

@@ -7,7 +7,7 @@ describe('border chrome helpers', () => {
     expect(
       getBorderChromeClass({
         selected: true,
-        hideBorder: true,
+        noBorder: true,
         borderlessClass: 'borderless',
         idleClass: 'idle',
         selectedClass: 'selected',
@@ -20,7 +20,7 @@ describe('border chrome helpers', () => {
     expect(
       getBorderChromeClass({
         selected: false,
-        hideBorder: true,
+        noBorder: true,
         borderlessClass: 'borderless',
         idleClass: 'idle',
         selectedClass: 'selected',
@@ -34,7 +34,7 @@ describe('border chrome helpers', () => {
       getBorderChromeClass({
         hasError: true,
         selected: true,
-        hideBorder: true,
+        noBorder: true,
         borderlessClass: 'borderless',
         idleClass: 'idle',
         selectedClass: 'selected',
@@ -43,9 +43,9 @@ describe('border chrome helpers', () => {
     ).toBe('error');
   });
 
-  it('restores the border at run start when hideBorder is no longer called', () => {
-    expect(getBorderResetDataForRun({ hideBorder: true })).toEqual({ hideBorder: false });
-    expect(getBorderResetDataForRun({ hideBorder: false })).toEqual({});
+  it('restores the border at run start when noBorder is no longer called', () => {
+    expect(getBorderResetDataForRun({ noBorder: true })).toEqual({ noBorder: false });
+    expect(getBorderResetDataForRun({ noBorder: false })).toEqual({});
     expect(getBorderResetDataForRun({})).toEqual({});
   });
 });

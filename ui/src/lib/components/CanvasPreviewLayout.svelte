@@ -55,7 +55,7 @@
     showBgOutputOption = true,
     showExpandOption = true,
     showCookDebugOption = undefined,
-    hideBorder = false,
+    noBorder = false,
     class: className = ''
   }: {
     title: string;
@@ -100,7 +100,7 @@
     showBgOutputOption?: boolean;
     showExpandOption?: boolean;
     showCookDebugOption?: boolean;
-    hideBorder?: boolean;
+    noBorder?: boolean;
     class?: string;
   } = $props();
 
@@ -117,7 +117,7 @@
     getBorderChromeClass({
       hasError,
       selected,
-      hideBorder,
+      noBorder,
       errorClass: 'border-red-500/70',
       selectedClass: 'shadow-glow-md border-zinc-300 [&>canvas]:rounded-[7px]',
       idleClass: 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',

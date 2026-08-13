@@ -41,7 +41,7 @@
       surfaceMode?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
-      hideBorder?: boolean;
+      noBorder?: boolean;
     };
     selected: boolean;
   } = $props();
@@ -296,8 +296,8 @@
             setTitle: (title: string) => {
               updateNodeData(nodeId, { title });
             },
-            hideBorder: () => {
-              updateNodeData(nodeId, { hideBorder: true });
+            noBorder: () => {
+              updateNodeData(nodeId, { noBorder: true });
             }
           },
           setHidePorts: (hide: boolean) => {
@@ -422,7 +422,7 @@
           getBorderChromeClass({
             hasError: Boolean(errorMessage),
             selected,
-            hideBorder: data.hideBorder,
+            noBorder: data.noBorder,
             errorClass: 'border-red-500 [&>canvas]:rounded-[7px]',
             selectedClass: 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]',
             idleClass: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',

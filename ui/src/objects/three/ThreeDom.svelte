@@ -43,7 +43,7 @@
       paused?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
-      hideBorder?: boolean;
+      noBorder?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -425,8 +425,8 @@
             panEnabled = false;
             wheelEnabled = false;
           },
-          hideBorder: () => {
-            updateNodeData(nodeId, { hideBorder: true });
+          noBorder: () => {
+            updateNodeData(nodeId, { noBorder: true });
           }
         }
       });
@@ -523,7 +523,7 @@
   settingsValues={data.settings ?? {}}
   onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
   onSettingsRevertAll={() => settingsManager.revertAll()}
-  hideBorder={data.hideBorder}
+  noBorder={data.noBorder}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
