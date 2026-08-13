@@ -319,7 +319,10 @@
   }
 
   function openSettings() {
-    if (openObjectSettingsInSidebarIfPreferred(showSettings)) return;
+    if (openObjectSettingsInSidebarIfPreferred()) {
+      showSettings = false;
+      return;
+    }
 
     showSettings = !showSettings;
     if (showSettings) showEditor = false;

@@ -9,6 +9,10 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { GM_DEFAULT_SETTINGS, GM_SETTINGS_SCHEMA } from './gm-settings';
   import { GmAudioNode, type GmMonitorSnapshot, type GmRuntimeStatus } from './GmAudioNode';
+  import {
+    openObjectSettingsInSidebarIfPreferred,
+    registerSettingsSidebarTarget
+  } from '../../stores/settings-sidebar.store';
 
   type GmNodeData = {
     settings?: Record<string, unknown>;
@@ -71,6 +75,26 @@
   async function revertSettings() {
     await applySettings(GM_DEFAULT_SETTINGS);
   }
+
+  function toggleSettings() {
+    if (openObjectSettingsInSidebarIfPreferred()) {
+      showSettings = false;
+      return;
+    }
+
+    showSettings = !showSettings;
+  }
+
+  $effect(() => {
+    return registerSettingsSidebarTarget({
+      id: node.id,
+      label: 'gm~',
+      schema: GM_SETTINGS_SCHEMA,
+      values: settings,
+      onValueChange: updateSetting,
+      onRevertAll: revertSettings
+    });
+  });
 
   function createInitialMonitorChannels(): GmMonitorSnapshot['channels'] {
     return Array.from({ length: 16 }, (_, index) => ({
@@ -141,7 +165,7 @@
           type="button"
           class="node-floating-button !opacity-100"
           aria-label="Settings"
-          onclick={() => (showSettings = !showSettings)}
+          onclick={toggleSettings}
         >
           <Settings class="h-4 w-4 text-zinc-300" />
         </button>

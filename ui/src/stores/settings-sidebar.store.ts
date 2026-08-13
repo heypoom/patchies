@@ -43,8 +43,8 @@ export function registerSettingsSidebarTarget(target: SettingsSidebarTarget): ()
  *
  * Returns whether the caller's settings action was handled by the sidebar.
  */
-export function openObjectSettingsInSidebarIfPreferred(settingsAreOpen: boolean): boolean {
-  if (settingsAreOpen || !get(openObjectSettingsInSidebar)) return false;
+export function openObjectSettingsInSidebarIfPreferred(): boolean {
+  if (!get(openObjectSettingsInSidebar)) return false;
 
   showSidebarTab('settings');
   sidebarView.set('settings');

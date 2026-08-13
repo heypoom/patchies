@@ -5,8 +5,11 @@
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { settingsSidebarTargets } from '../../../stores/settings-sidebar.store';
 
+  let { class: className = '' }: { class?: string } = $props();
+
   let activeTargetId = $state<string | null>(null);
   let pinnedTargetId = $state<string | null>(null);
+  let lastSelectedNodeId = $state<string | null>(null);
 
   let targets = $derived(
     [...$settingsSidebarTargets.values()].sort((a, b) => a.label.localeCompare(b.label))
@@ -31,11 +34,14 @@
       ? targets.find((target) => target.id === $selectedNodeInfo?.id)
       : undefined;
 
-    if (selectedTarget) {
+    const selectedNodeId = $selectedNodeInfo?.id ?? null;
+    if (selectedTarget && selectedNodeId !== lastSelectedNodeId) {
       activeTargetId = selectedTarget.id;
     } else if (!activeTargetId || !targets.some((target) => target.id === activeTargetId)) {
       activeTargetId = targets[0]?.id ?? null;
     }
+
+    lastSelectedNodeId = selectedNodeId;
   });
 
   function handleTargetChange(event: Event) {
@@ -63,7 +69,8 @@
     return activeTarget.schema.some((field) => {
       if (!('default' in field) || field.default === undefined) return false;
 
-      const value = activeTarget.values[field.key] ?? field.default;
+      const storedValue = activeTarget.values[field.key];
+      const value = storedValue !== undefined ? storedValue : field.default;
       return !settingsValueEquals(value, field.default);
     });
   }
@@ -72,7 +79,7 @@
 </script>
 
 {#if targets.length === 0}
-  <div class="flex h-full flex-col items-center justify-center px-6 text-center">
+  <div class={['flex h-full flex-col items-center justify-center px-6 text-center', className]}>
     <div
       class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-500"
     >
@@ -84,7 +91,7 @@
     </p>
   </div>
 {:else if activeTarget}
-  <div class="flex min-h-full flex-col">
+  <div class={['flex min-h-full flex-col', className]}>
     <div class="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950 px-5 py-4">
       <div class="flex items-center gap-2">
         <label class="sr-only" for="sidebar-settings-target">Object settings target</label>

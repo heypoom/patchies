@@ -5,6 +5,10 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings/types';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
+  import {
+    openObjectSettingsInSidebarIfPreferred,
+    registerSettingsSidebarTarget
+  } from '../../../stores/settings-sidebar.store';
 
   let {
     nodeId,
@@ -64,6 +68,28 @@
       .with('error', () => 'bg-red-500')
       .exhaustive()
   );
+
+  function toggleSettings() {
+    if (openObjectSettingsInSidebarIfPreferred()) {
+      showSettings = false;
+      return;
+    }
+
+    showSettings = !showSettings;
+  }
+
+  $effect(() => {
+    if (schema.length === 0) return;
+
+    return registerSettingsSidebarTarget({
+      id: nodeId,
+      label: title,
+      schema,
+      values: settingsData as Record<string, unknown>,
+      onValueChange: onSettingChange,
+      onRevertAll: onRevertSettings
+    });
+  });
 </script>
 
 <div class="relative flex gap-x-3">
@@ -92,7 +118,7 @@
         onclick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          showSettings = !showSettings;
+          toggleSettings();
         }}
       >
         <Settings class="h-4 w-4 text-zinc-300" />

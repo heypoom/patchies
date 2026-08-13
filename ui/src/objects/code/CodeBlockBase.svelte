@@ -405,7 +405,10 @@
   }
 
   function handleSettingsToggle() {
-    if (openObjectSettingsInSidebarIfPreferred(showSettings)) return;
+    if (openObjectSettingsInSidebarIfPreferred()) {
+      showSettings = false;
+      return;
+    }
 
     showSettings = !showSettings;
 
