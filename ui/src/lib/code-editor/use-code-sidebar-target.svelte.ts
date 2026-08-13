@@ -75,12 +75,12 @@ export function useCodeSidebarTargetSelection(): {
     }
 
     const selectedId = selectedNode.current?.id ?? null;
+    const selectionChanged = selectedId !== lastSelectedNodeId;
 
     const selectedTarget = selectedId
       ? targets.find((target) => target.nodeId === selectedId)
       : undefined;
 
-    const selectionChanged = selectedId !== lastSelectedNodeId;
     const selectedTargetRegisteredAfterSelection =
       selectedTarget !== undefined && lastSelectedNodeTargetId === null;
 

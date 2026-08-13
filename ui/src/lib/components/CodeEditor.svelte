@@ -124,6 +124,7 @@
 
   let languageComp = new Compartment();
   let autocompleteComp = new Compartment();
+  let placeholderComp = new Compartment();
 
   let {
     value = $bindable(),
@@ -317,6 +318,7 @@
         search(),
 
         languageComp.of(languageExtension),
+        placeholderComp.of(placeholder ? cmPlaceholder(placeholder) : []),
 
         // Error line highlighting with hover tooltips
         tooltips({ parent: document.body }),
@@ -540,11 +542,6 @@
         extensions.push(vim({ status: false }));
       }
 
-      // Add placeholder if provided
-      if (placeholder) {
-        extensions.push(cmPlaceholder(placeholder));
-      }
-
       // Add line wrapping if enabled
       if (lineWrap) {
         extensions.push(EditorView.lineWrapping);
@@ -631,7 +628,8 @@
           editorView.dispatch({
             effects: [
               languageComp.reconfigure(languageExtension),
-              autocompleteComp.reconfigure(autocomplete ? autocompletion() : [])
+              autocompleteComp.reconfigure(autocomplete ? autocompletion() : []),
+              placeholderComp.reconfigure(placeholder ? cmPlaceholder(placeholder) : [])
             ]
           });
         }
