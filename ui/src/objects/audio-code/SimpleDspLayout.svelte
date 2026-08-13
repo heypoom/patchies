@@ -18,6 +18,7 @@
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
   import { editorFontFamily } from '../../stores/editor.store';
 
   let {
@@ -91,6 +92,20 @@
       : undefined
   );
 
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language: 'javascript',
+    nodeType,
+    label: displayTitle,
+    title: displayTitle,
+    value: code,
+    onchange: handleCodeChangeInternal,
+    onrun: onRun,
+    lineErrors,
+    settings: detachedSettings
+  }));
+
   // Update content width when title changes
   $effect(() => {
     void displayTitle;
@@ -157,6 +172,7 @@
       language: 'javascript',
       nodeType,
       title: displayTitle,
+      onchange: handleCodeChangeInternal,
       onrun: onRun,
       lineErrors,
       settings: detachedSettings
@@ -173,6 +189,7 @@
       language: 'javascript',
       nodeType,
       title: displayTitle,
+      onchange: handleCodeChangeInternal,
       onrun: onRun,
       lineErrors,
       settings: detachedSettings

@@ -26,6 +26,7 @@ export function registerSettingsSidebarTarget(target: SettingsSidebarTarget): ()
   settingsSidebarTargets.update((targets) => {
     const next = new Map(targets);
     next.set(target.id, target);
+
     return next;
   });
 
@@ -36,6 +37,7 @@ export function registerSettingsSidebarTarget(target: SettingsSidebarTarget): ()
 
       const next = new Map(targets);
       next.delete(target.id);
+
       return next;
     });
   };

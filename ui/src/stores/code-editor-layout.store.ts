@@ -6,6 +6,7 @@ import type { SupportedLanguage } from '$lib/codemirror/types';
 import type { SettingsSchema } from '$lib/settings';
 import { isSidebarOpen, sidebarView } from './ui.store';
 import { showSidebarTab } from './sidebar-visibility.store';
+import { requestCodeSidebarTargetId } from './code-sidebar.store';
 
 export interface CodeEditorTargetSettings {
   schema: SettingsSchema;
@@ -48,9 +49,14 @@ export function openCodeEditorOverlay(target: OpenCodeEditorOverlayTarget): void
 
 export function openCodeEditorSidebar(target: OpenCodeEditorSidebarTarget): void {
   activeCodeEditorTarget.set({ ...target, mode: 'sidebar' });
+  requestCodeSidebarTargetId.set(target.nodeId);
   showSidebarTab('code');
   sidebarView.set('code');
   isSidebarOpen.set(true);
+}
+
+export function activateCodeEditorSidebarTarget(target: OpenCodeEditorSidebarTarget): void {
+  activeCodeEditorTarget.set({ ...target, mode: 'sidebar' });
 }
 
 export function closeCodeEditorOverlay(): void {

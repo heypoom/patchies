@@ -34,6 +34,7 @@
   import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
   import { getPatchbayObjectPorts } from '$objects/patchbay/patchbay-object-ports';
   import { requestFitView } from '../../stores/ui.store';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
 
   import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
   import type { PatchbayDiagnostic } from '$lib/patchbay/patchbay-parser';
@@ -175,6 +176,24 @@
   function handleCodeChange(nextCode: string) {
     updateNodeData(nodeId, { code: nextCode });
   }
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language: 'patchbay',
+    nodeType: 'patchbay',
+    label: 'patchbay',
+    title: 'patchbay',
+    placeholder: '[Message]\nchan Logger\nClock -> Logger',
+    value: code,
+    onchange: handleCodeChange,
+    onrun: applyPatchbayCode,
+    lineErrors,
+    inlineDecorations,
+    extraExtensions: patchbayCompletionExtensions,
+    onAltDecorationClick: focusPatchbayReference,
+    lineWrap: true
+  }));
 
   function handleRunOnEditChange(nextRunOnEdit: boolean) {
     const oldRunOnEdit = runOnEdit;

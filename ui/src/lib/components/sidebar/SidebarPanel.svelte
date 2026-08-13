@@ -321,13 +321,7 @@
         {:else if view === 'preview'}
           <AppPreviewView {onRequestApiKey} {onOpenPatchToApp} />
         {:else if view === 'code'}
-          <SidebarCodeEditorView
-            target={codeEditorTarget}
-            value={codeEditorValue ?? ''}
-            onchange={onCodeEditorChange}
-            title={codeEditorTitle}
-            onrun={onRunCodeEditor}
-          />
+          <SidebarCodeEditorView />
         {:else if view === 'settings'}
           <SidebarObjectSettingsView />
         {/if}

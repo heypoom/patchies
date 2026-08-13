@@ -14,6 +14,7 @@
     openCodeEditorOverlay
   } from '../../stores/code-editor-layout.store';
   import { createCommonExprEditorTarget } from '$lib/code-editor/common-expr-editor-target';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
   import { editorFontFamily } from '../../stores/editor.store';
 
   import 'highlight.js/styles/tokyo-night-dark.css';
@@ -211,6 +212,22 @@
     updateNodeData(nodeId, { expr: value });
     onExpressionChange(value);
   }
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey,
+    language,
+    nodeType,
+    label: detachedEditorTitle ?? displayPrefix ?? nodeType,
+    title: detachedEditorTitle,
+    placeholder,
+    value: expr,
+    onchange: handleExpressionUpdate,
+    onrun: onRun,
+    customActions: detachedActions,
+    customSettings: detachedSettings,
+    lineWrap
+  }));
 
   const containerClass = $derived.by(() => {
     const base = hasError

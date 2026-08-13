@@ -37,6 +37,7 @@
   } from '../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
 
   let contentContainer: HTMLDivElement | null = null;
   let inlineConsoleRef: VirtualConsole | null = $state(null);
@@ -423,6 +424,22 @@
       onOpenFloating: () => (showEditor = false)
     }
   });
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language,
+    nodeType,
+    label: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+    title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+    placeholder: editorPlaceholder,
+    value: code,
+    onchange: onCodeChange,
+    onrun: executeCode,
+    lineErrors,
+    settings: detachedSettings,
+    console: detachedConsole
+  }));
 
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;

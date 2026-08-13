@@ -17,13 +17,17 @@
 
   let targetPickerOpen = $state(false);
   let targetQuery = $state('');
+
   const selection = useSettingsSidebarTargetSelection();
+
   let targets = $derived(selection.targets);
   let activeTarget = $derived(selection.activeTarget);
   let pinnedTargetId = $derived(selection.pinnedTargetId);
+
   let filteredTargets = $derived(
     targets.filter((target) => {
       const query = targetQuery.trim().toLowerCase();
+
       return !query || `${target.label} ${target.id}`.toLowerCase().includes(query);
     })
   );
@@ -74,7 +78,7 @@
   </div>
 {:else if activeTarget}
   <div class={['flex min-h-full flex-col', className]}>
-    <div class="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950 px-5 py-4">
+    <div class="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950 px-3 py-2">
       <div class="flex items-center gap-2">
         <Popover.Root bind:open={targetPickerOpen}>
           <Popover.Trigger
@@ -148,12 +152,12 @@
           <Tooltip.Content>{pinnedTargetId ? 'Unpin target' : 'Pin target'}</Tooltip.Content>
         </Tooltip.Root>
       </div>
-      <p class="mt-2 truncate font-mono text-[11px] text-zinc-500">
+      <p class="mt-1.5 truncate font-mono text-[11px] text-zinc-500">
         {pinnedTargetId ? 'Pinned' : 'Following canvas selection'}
       </p>
     </div>
 
-    <div class="min-h-0 flex-1 px-5 py-5">
+    <div class="min-h-0 flex-1 px-3 py-3">
       {#key activeTarget.id}
         <ObjectSettings
           nodeId={activeTarget.id}
