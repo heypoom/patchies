@@ -8,10 +8,7 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import type { SettingsSchema } from '$lib/settings';
-  import {
-    openObjectSettingsInSidebarIfPreferred,
-    registerSettingsSidebarTarget
-  } from '../../stores/settings-sidebar.store';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
 
   import type { SmplrRuntimeStatus } from './SmplrInstrumentAudioNode';
   import type { GmRuntimeStatus } from './GmAudioNode';
@@ -99,26 +96,22 @@
     audioService.send(node.id, 'settings', descriptor.defaultSettings);
   }
 
-  function toggleSettings(event?: MouseEvent) {
-    if (openObjectSettingsInSidebarIfPreferred(node.id, event?.shiftKey)) {
-      showSettings = false;
-      return;
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () =>
+      settingsSchema.length > 0
+        ? {
+            id: node.id,
+            label: descriptor.title,
+            schema: settingsSchema,
+            values: settings,
+            onValueChange: updateSetting,
+            onRevertAll: revertSettings
+          }
+        : null,
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open)
     }
-
-    showSettings = !showSettings;
-  }
-
-  $effect(() => {
-    if (settingsSchema.length === 0) return;
-
-    return registerSettingsSidebarTarget({
-      id: node.id,
-      label: descriptor.title,
-      schema: settingsSchema,
-      values: settings,
-      onValueChange: updateSetting,
-      onRevertAll: revertSettings
-    });
   });
 
   function createSettingsSchema(
@@ -276,7 +269,7 @@
             type="button"
             class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
             aria-label="Settings"
-            onclick={toggleSettings}
+            onclick={settingsSidebarTarget.toggle}
           >
             <Settings class="h-4 w-4" />
           </button>

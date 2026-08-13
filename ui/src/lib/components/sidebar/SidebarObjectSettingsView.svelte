@@ -11,26 +11,16 @@
   import * as Command from '$lib/components/ui/command';
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { selectedNodeInfo } from '../../../stores/ui.store';
-  import {
-    requestSettingsSidebarTargetId,
-    settingsSidebarTargets
-  } from '../../../stores/settings-sidebar.store';
+  import { useSettingsSidebarTargetSelection } from '$lib/settings/use-settings-sidebar-target-selection.svelte';
 
   let { class: className = '' }: { class?: string } = $props();
 
-  let activeTargetId = $state<string | null>(null);
-  let pinnedTargetId = $state<string | null>(null);
-  let lastSelectedNodeId = $state<string | null>(null);
   let targetPickerOpen = $state(false);
   let targetQuery = $state('');
-
-  let targets = $derived(
-    [...$settingsSidebarTargets.values()].sort((a, b) => a.label.localeCompare(b.label))
-  );
-  let activeTarget = $derived(
-    activeTargetId ? (targets.find((target) => target.id === activeTargetId) ?? null) : null
-  );
+  const selection = useSettingsSidebarTargetSelection();
+  let targets = $derived(selection.targets);
+  let activeTarget = $derived(selection.activeTarget);
+  let pinnedTargetId = $derived(selection.pinnedTargetId);
   let filteredTargets = $derived(
     targets.filter((target) => {
       const query = targetQuery.trim().toLowerCase();
@@ -38,51 +28,10 @@
     })
   );
 
-  $effect(() => {
-    const requestedTargetId = $requestSettingsSidebarTargetId;
-    const requestedTarget = requestedTargetId
-      ? targets.find((target) => target.id === requestedTargetId)
-      : undefined;
-
-    if (requestedTarget) {
-      activeTargetId = requestedTarget.id;
-      requestSettingsSidebarTargetId.set(null);
-      return;
-    }
-
-    const pinnedTarget = pinnedTargetId
-      ? targets.find((target) => target.id === pinnedTargetId)
-      : undefined;
-
-    if (pinnedTarget) {
-      activeTargetId = pinnedTarget.id;
-      return;
-    }
-
-    if (pinnedTargetId) pinnedTargetId = null;
-
-    const selectedTarget = $selectedNodeInfo
-      ? targets.find((target) => target.id === $selectedNodeInfo?.id)
-      : undefined;
-
-    const selectedNodeId = $selectedNodeInfo?.id ?? null;
-    if (selectedTarget && selectedNodeId !== lastSelectedNodeId) {
-      activeTargetId = selectedTarget.id;
-    } else if (!activeTargetId || !targets.some((target) => target.id === activeTargetId)) {
-      activeTargetId = targets[0]?.id ?? null;
-    }
-
-    lastSelectedNodeId = selectedNodeId;
-  });
-
   function selectTarget(targetId: string) {
-    activeTargetId = targetId;
+    selection.selectTarget(targetId);
     targetPickerOpen = false;
     targetQuery = '';
-  }
-
-  function togglePin() {
-    pinnedTargetId = pinnedTargetId ? null : activeTargetId;
   }
 
   function settingsValueEquals(left: unknown, right: unknown): boolean {
@@ -185,7 +134,7 @@
                   ? 'border-orange-500/50 bg-orange-500/15 text-orange-300 hover:bg-orange-500/25'
                   : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
               ]}
-              onclick={togglePin}
+              onclick={selection.togglePin}
               aria-label={pinnedTargetId ? 'Unpin settings target' : 'Pin settings target'}
               aria-pressed={Boolean(pinnedTargetId)}
             >

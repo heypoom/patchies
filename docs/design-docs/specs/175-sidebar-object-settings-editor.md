@@ -42,6 +42,14 @@ This initial implementation covers the shared schema-driven settings system.
 It intentionally does not adapt bespoke settings panels (for example, complex
 object-specific panels) into a new shared contract.
 
+## Architecture
+
+Schema-backed node layouts use a shared Svelte composable to register their
+live settings callbacks and route an action to the floating panel or sidebar,
+including the one-off Shift inversion. The sidebar owns a second composable for
+selection, pinning, and explicit node-target requests. Object layouts retain
+only their object-specific value and revert behavior.
+
 ## Verification
 
 - The tab is hidden for new users and can be enabled from the sidebar menu.

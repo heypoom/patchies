@@ -16,10 +16,7 @@
     syncActiveCodeEditorTargetSettings
   } from '../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
-  import {
-    openObjectSettingsInSidebarIfPreferred,
-    registerSettingsSidebarTarget
-  } from '../../stores/settings-sidebar.store';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { editorFontFamily } from '../../stores/editor.store';
 
@@ -116,19 +113,6 @@
     });
   });
 
-  $effect(() => {
-    if (!settingsSchema || settingsSchema.length === 0) return;
-
-    return registerSettingsSidebarTarget({
-      id: nodeId,
-      label: displayTitle,
-      schema: settingsSchema,
-      values: settingsValues,
-      onValueChange: (key, value) => onSettingsValueChange?.(key, value),
-      onRevertAll: () => onSettingsRevertAll?.()
-    });
-  });
-
   const containerClass = $derived.by(() => {
     const hasError = lineErrors !== undefined;
     if (hasError) return 'object-container-error';
@@ -209,15 +193,24 @@
     });
   }
 
-  function toggleSettings(event?: MouseEvent) {
-    if (openObjectSettingsInSidebarIfPreferred(nodeId, event?.shiftKey)) {
-      showSettings = false;
-      return;
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () =>
+      settingsSchema && settingsSchema.length > 0
+        ? {
+            id: nodeId,
+            label: displayTitle,
+            schema: settingsSchema,
+            values: settingsValues,
+            onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+            onRevertAll: () => onSettingsRevertAll?.()
+          }
+        : null,
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open),
+      onOpenFloating: () => (showEditor = false)
     }
-
-    showSettings = !showSettings;
-    if (showSettings) showEditor = false;
-  }
+  });
 
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 20;
@@ -244,7 +237,7 @@
                     e.preventDefault();
                     e.stopPropagation();
 
-                    toggleSettings(e);
+                    settingsSidebarTarget.toggle(e);
                   }}
                   aria-label="Settings"
                 >
