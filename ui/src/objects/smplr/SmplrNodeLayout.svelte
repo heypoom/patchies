@@ -8,6 +8,7 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import type { SettingsSchema } from '$lib/settings';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
 
   import type { SmplrRuntimeStatus } from './SmplrInstrumentAudioNode';
   import type { GmRuntimeStatus } from './GmAudioNode';
@@ -94,6 +95,24 @@
 
     audioService.send(node.id, 'settings', descriptor.defaultSettings);
   }
+
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () =>
+      settingsSchema.length > 0
+        ? {
+            id: node.id,
+            label: descriptor.title,
+            schema: settingsSchema,
+            values: settings,
+            onValueChange: updateSetting,
+            onRevertAll: revertSettings
+          }
+        : null,
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open)
+    }
+  });
 
   function createSettingsSchema(
     descriptor: SmplrLayoutDescriptor,
@@ -250,7 +269,7 @@
             type="button"
             class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
             aria-label="Settings"
-            onclick={() => (showSettings = !showSettings)}
+            onclick={settingsSidebarTarget.toggle}
           >
             <Settings class="h-4 w-4" />
           </button>

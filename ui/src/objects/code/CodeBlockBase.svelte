@@ -24,6 +24,7 @@
   } from '$lib/eventbus/events';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
@@ -122,6 +123,10 @@
   let isLongRunningTaskActive = $derived(isMessageCallbackActive || isTimerCallbackActive);
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 1);
+
+  let settingsSidebarLabel = $derived(
+    (supportsLibraries && data.libraryName) || data.title || nodeLabel
+  );
 
   let showEditor = $state(false);
   let showSettings = $state(false);
@@ -400,13 +405,24 @@
     setTimeout(() => updateContentWidth(), 10);
   }
 
-  function handleSettingsToggle() {
-    showSettings = !showSettings;
-
-    if (showSettings) {
-      showEditor = false;
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () =>
+      settingsSchema && settingsSchema.length > 0
+        ? {
+            id: nodeId,
+            label: settingsSidebarLabel,
+            schema: settingsSchema,
+            values: settingsValues,
+            onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+            onRevertAll: () => onSettingsRevertAll?.()
+          }
+        : null,
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open),
+      onOpenFloating: () => (showEditor = false)
     }
-  }
+  });
 
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;
@@ -468,7 +484,7 @@
                 {showSettings}
                 {settingsSchema}
                 onConsoleToggle={handleConsoleToggle}
-                onSettingsToggle={handleSettingsToggle}
+                onSettingsToggle={settingsSidebarTarget.toggle}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
               />
             {:else}
@@ -492,7 +508,7 @@
               <Tooltip.Trigger>
                 <button
                   class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                  onclick={handleSettingsToggle}
+                  onclick={settingsSidebarTarget.toggle}
                   aria-label="Settings"
                 >
                   <SettingsIcon class="h-4 w-4 text-zinc-300" />

@@ -9,6 +9,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { GM_DEFAULT_SETTINGS, GM_SETTINGS_SCHEMA } from './gm-settings';
   import { GmAudioNode, type GmMonitorSnapshot, type GmRuntimeStatus } from './GmAudioNode';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
 
   type GmNodeData = {
     settings?: Record<string, unknown>;
@@ -71,6 +72,21 @@
   async function revertSettings() {
     await applySettings(GM_DEFAULT_SETTINGS);
   }
+
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () => ({
+      id: node.id,
+      label: 'gm~',
+      schema: GM_SETTINGS_SCHEMA,
+      values: settings,
+      onValueChange: updateSetting,
+      onRevertAll: revertSettings
+    }),
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open)
+    }
+  });
 
   function createInitialMonitorChannels(): GmMonitorSnapshot['channels'] {
     return Array.from({ length: 16 }, (_, index) => ({
@@ -141,7 +157,7 @@
           type="button"
           class="node-floating-button !opacity-100"
           aria-label="Settings"
-          onclick={() => (showSettings = !showSettings)}
+          onclick={settingsSidebarTarget.toggle}
         >
           <Settings class="h-4 w-4 text-zinc-300" />
         </button>

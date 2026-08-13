@@ -16,6 +16,7 @@
     syncActiveCodeEditorTargetSettings
   } from '../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { editorFontFamily } from '../../stores/editor.store';
 
@@ -192,10 +193,24 @@
     });
   }
 
-  function toggleSettings() {
-    showSettings = !showSettings;
-    if (showSettings) showEditor = false;
-  }
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () =>
+      settingsSchema && settingsSchema.length > 0
+        ? {
+            id: nodeId,
+            label: displayTitle,
+            schema: settingsSchema,
+            values: settingsValues,
+            onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+            onRevertAll: () => onSettingsRevertAll?.()
+          }
+        : null,
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open),
+      onOpenFloating: () => (showEditor = false)
+    }
+  });
 
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 20;
@@ -222,7 +237,7 @@
                     e.preventDefault();
                     e.stopPropagation();
 
-                    toggleSettings();
+                    settingsSidebarTarget.toggle(e);
                   }}
                   aria-label="Settings"
                 >

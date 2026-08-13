@@ -31,6 +31,7 @@
     syncActiveCodeEditorTargetSettings
   } from '../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
@@ -314,6 +315,25 @@
     showSettings = false;
   }
 
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () =>
+      nodeId && settingsSchema && settingsSchema.length > 0
+        ? {
+            id: nodeId,
+            label: title,
+            schema: settingsSchema,
+            values: settingsValues,
+            onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+            onRevertAll: () => onSettingsRevertAll?.()
+          }
+        : null,
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open),
+      onOpenFloating: () => (showEditor = false)
+    }
+  });
+
   function openSidebarCodeEditor() {
     if (!nodeId) return;
 
@@ -443,10 +463,7 @@
                 {canPin}
                 onPreviewToggle={onPreviewToggle ? handlePreviewToggle : undefined}
                 {previewVisible}
-                onSettingsToggle={() => {
-                  showSettings = !showSettings;
-                  if (showSettings) showEditor = false;
-                }}
+                onSettingsToggle={settingsSidebarTarget.toggle}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : handleCodeOpen}
                 onExpandToggle={canExpand ? handleExpandToggle : undefined}
                 {isExpanded}
@@ -477,10 +494,7 @@
                     <button
                       class="node-floating-button"
                       aria-label={showSettings ? 'Hide settings' : 'Settings'}
-                      onclick={() => {
-                        showSettings = !showSettings;
-                        if (showSettings) showEditor = false;
-                      }}
+                      onclick={settingsSidebarTarget.toggle}
                     >
                       <SettingsIcon class="h-4 w-4 text-zinc-300" />
                     </button>
@@ -539,10 +553,7 @@
       {previewVisible}
       {settingsSchema}
       {showSettings}
-      onSettingsToggle={() => {
-        showSettings = !showSettings;
-        if (showSettings) showEditor = false;
-      }}
+      onSettingsToggle={settingsSidebarTarget.toggle}
       onCodeToggle={handleCodeOpen}
       onExpandToggle={canExpand ? handleExpandToggle : undefined}
       {isExpanded}

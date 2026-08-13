@@ -6,12 +6,14 @@ export type EditorOpenLayout = 'inline' | 'overlay' | 'sidebar';
 
 const DEFAULT_EDITOR_LAYOUT_KEY = 'editor.defaultLayout';
 const OVERLAY_TRANSPARENCY_KEY = 'editor.overlayTransparency';
+const OPEN_OBJECT_SETTINGS_IN_SIDEBAR_KEY = 'editor.openObjectSettingsInSidebar';
 
 const DEFAULT_EDITOR_LAYOUT: EditorLayoutPreference = 'inline';
 const DEFAULT_OVERLAY_TRANSPARENCY = 0.72;
 
 export const defaultEditorLayout = writable<EditorLayoutPreference>(readDefaultEditorLayout());
 export const overlayEditorTransparency = writable<number>(readOverlayTransparency());
+export const openObjectSettingsInSidebar = writable<boolean>(readOpenObjectSettingsInSidebar());
 
 function readDefaultEditorLayout(): EditorLayoutPreference {
   if (typeof localStorage === 'undefined') return DEFAULT_EDITOR_LAYOUT;
@@ -38,6 +40,12 @@ function readOverlayTransparency(): number {
   return clampTransparency(Number(stored));
 }
 
+function readOpenObjectSettingsInSidebar(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+
+  return localStorage.getItem(OPEN_OBJECT_SETTINGS_IN_SIDEBAR_KEY) === 'true';
+}
+
 export function setDefaultEditorLayout(value: EditorLayoutPreference): void {
   defaultEditorLayout.set(value);
 
@@ -53,6 +61,14 @@ export function setOverlayEditorTransparency(value: number): void {
 
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(OVERLAY_TRANSPARENCY_KEY, String(next));
+  }
+}
+
+export function setOpenObjectSettingsInSidebar(value: boolean): void {
+  openObjectSettingsInSidebar.set(value);
+
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(OPEN_OBJECT_SETTINGS_IN_SIDEBAR_KEY, String(value));
   }
 }
 
