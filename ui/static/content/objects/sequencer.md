@@ -16,6 +16,13 @@ lasts one tempo beat, so changing the number of steps changes the pattern
 length, not its speed. In a 5/4 transport, an 8-step pattern continues across
 the bar boundary instead of squeezing all eight steps into five beats.
 
+## Resize
+
+Enable **Resizable** under **Display** in the settings panel, then select the
+sequencer and drag a resize handle to scale it. The node keeps its original
+proportions, so the step grid grows evenly in both directions instead of
+stretching its cells wider.
+
 ## Clock Modes
 
 Set via **Clock** in the settings panel:

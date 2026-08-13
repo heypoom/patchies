@@ -24,4 +24,9 @@ describe('sequencer state', () => {
     expect(getSequencerData({ outletMode: 'multi', outputMode: 'value' }).outputMode).toBe('value');
     expect(getSequencerData({ outletMode: 'multi', outputMode: 'midi' }).outputMode).toBe('bang');
   });
+
+  it('keeps resizing disabled unless explicitly enabled', () => {
+    expect(getSequencerData({}).resizable).toBe(false);
+    expect(getSequencerData({ resizable: true }).resizable).toBe(true);
+  });
 });
