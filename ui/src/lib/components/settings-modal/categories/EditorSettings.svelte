@@ -80,7 +80,7 @@
 
 <SettingRow
   title="Open object settings in sidebar"
-  description="Open schema-driven object settings in the Settings sidebar instead of beside the node."
+  description="Open object settings in the settings sidebar instead of beside the node."
 >
   <SettingToggle
     checked={$openObjectSettingsInSidebar}
