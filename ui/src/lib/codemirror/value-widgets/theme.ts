@@ -38,30 +38,6 @@ export const valueWidgetsTheme = EditorView.baseTheme({
     borderColor: 'rgba(244, 244, 245, 0.8)',
     cursor: 'pointer'
   },
-  '.cm-value-widget-color-picker': {
-    width: '112px',
-    padding: '6px',
-    border: '1px solid rgba(82, 82, 91, 1)',
-    borderRadius: '6px',
-    backgroundColor: 'rgba(24, 24, 27, 0.98)',
-    boxShadow: '0 10px 28px rgba(0, 0, 0, 0.45)'
-  },
-  '.cm-value-widget-color-picker input': {
-    width: '100%',
-    boxSizing: 'border-box',
-    border: '1px solid rgba(82, 82, 91, 1)',
-    borderRadius: '4px',
-    padding: '4px 6px',
-    backgroundColor: 'rgba(9, 9, 11, 1)',
-    color: 'rgba(244, 244, 245, 1)',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '11px',
-    outline: 'none'
-  },
-  '.cm-value-widget-color-picker input:focus': {
-    borderColor: 'rgba(161, 161, 170, 1)',
-    boxShadow: '0 0 0 1px rgba(161, 161, 170, 1)'
-  },
   '.cm-value-widget-xy-grid': {
     position: 'absolute',
     zIndex: '50',

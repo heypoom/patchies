@@ -285,7 +285,7 @@ describe('CodeMirror inline value widgets', () => {
     ).toEqual(['0.400', '0.750']);
   });
 
-  it('formats hex colors into normalized component text for GLSL vec3 colors', () => {
+  it('keeps three decimal places for normalized GLSL colors even when the source is less precise', () => {
     const widget = findInlineValueWidgets(
       glslState('vec3 color = vec3(1.0, 0.5, 0.0);'),
       'glsl'
@@ -293,9 +293,9 @@ describe('CodeMirror inline value widgets', () => {
 
     expect(widget).toBeDefined();
     expect(formatNormalizedColorComponents(widget!.components, '#336699')).toEqual([
-      '0.2',
-      '0.4',
-      '0.6'
+      '0.200',
+      '0.400',
+      '0.600'
     ]);
   });
 

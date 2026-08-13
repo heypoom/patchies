@@ -50,6 +50,7 @@ export function formatColorComponents(components: InlineValueComponent[], hex: s
   const values = normalizedValues.map((value) => value * scale);
   const defaultPrecision = scale === 1 ? 3 : 0;
   const precision = Math.max(
+    defaultPrecision,
     ...components.map((component) => decimalPlaces(component.text, defaultPrecision))
   );
 
