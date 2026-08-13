@@ -10,7 +10,9 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - hideBorder() - Hide Patchies border and selected glow
 - noOutput() - Hide video output (call this when the sketch does not feed video to other nodes)
-- setCanvasSize(w, h) - Resize canvas
+- setCanvasSize(width, height) - Use a fixed logical canvas size
+- setFluidSize({ showResizer?, resize?, keepAspectRatio?, initialSize? }) - Use a resizable canvas. resize is 'horizontal', 'vertical', or 'both' (default); keepAspectRatio preserves the initial ratio; initialSize sets the initial logical canvas size, e.g. { width: 800, height: 600 }. Users can enable or disable resizing from the overflow menu.
+- onCanvasResize(({ width, height }) => {}) - Redraw a non-animated fluid widget after a resize; it runs at most once per animation frame
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)
 - onKeyUp(event => {}) - Keyboard up events (event.key, event.code)
 - setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
@@ -21,14 +23,14 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - Call noWheel() if the sketch uses scroll or wheel interaction.
 - Call setPortCount(1, 0) if the sketch only needs to receive messages (inlet) and does not send any output messages.
 
-**Font & element sizes:**
+**Canvas sizing and layout:**
 - The node is displayed very zoomed out in the patch canvas.
 - Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.
 - Similarly, make shapes, lines, and UI elements larger than you would for a full-screen sketch.
-- Call setCanvasSize(width, height) with appropriate dimensions.
-  Minimum: 800x600. Maximum: 2000x2000.
-- When using setCanvasSize, make sure to define width and height variables:
-  e.g. const width = 800, height = 600; setCanvasSize(width, height);
+- Choose one sizing mode; do not call setCanvasSize() after setFluidSize().
+- For a fixed widget, call setCanvasSize(width, height) with an appropriate size. Minimum: 800x600. Maximum: 2000x2000.
+- For a resizable widget, call setFluidSize({ initialSize: { width: 800, height: 600 } }) instead. Use resize: 'horizontal' for faders, resize: 'vertical' for meters, or keepAspectRatio: true for square widgets.
+- Fluid widgets always read their current logical size from width and height. A requestAnimationFrame draw loop automatically redraws at the new size. Static widgets should register onCanvasResize(draw). Use width and height for arithmetic and formatting; when a primitive is required, copy with Number(width) or Number(height).
 
 ${typographyInstructions}
 

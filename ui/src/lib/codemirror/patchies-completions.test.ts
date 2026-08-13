@@ -163,6 +163,13 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('canvas.dom', 'setP')).toContain('setPrimaryButton');
   });
 
+  it('shows fluid canvas completions only for canvas.dom nodes', () => {
+    expect(getCompletionLabels('canvas.dom', 'setF')).toContain('setFluidSize');
+    expect(getCompletionLabels('canvas.dom', 'onCanvasR')).toContain('onCanvasResize');
+    expect(getCompletionLabels('canvas', 'setF')).not.toContain('setFluidSize');
+    expect(getCompletionLabels('canvas', 'onCanvasR')).not.toContain('onCanvasResize');
+  });
+
   it('shows hideBorder completions only for native UI nodes', () => {
     expect(getCompletionLabels('dom', 'hideB')).toContain('hideBorder');
     expect(getCompletionLabels('vue', 'hideB')).toContain('hideBorder');

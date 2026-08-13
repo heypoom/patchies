@@ -63,6 +63,55 @@ Resize the canvas resolution dynamically:
 setCanvasSize(800, 600);
 ```
 
+## Resizable Widgets
+
+Build a widget that fills its Patchies node instead of choosing a fixed canvas size:
+
+```javascript
+setFluidSize();
+
+function draw() {
+  ctx.fillStyle = '#18181b';
+  ctx.fillRect(0, 0, width, height);
+}
+
+onCanvasResize(draw);
+draw();
+```
+
+The node's resize handles update `width`, `height`, the canvas bitmap, and mouse coordinates.
+Use `onCanvasResize()` when your widget only draws on demand. An animation loop that reads
+`width` and `height` redraws at the new size automatically.
+
+In a fluid widget, `width` and `height` act like live numbers for arithmetic and common
+formatting methods such as `toFixed()`. Do not use `typeof`, `Number.isFinite()`, or JSON
+serialization on them; copy them first with `const currentWidth = Number(width)` when needed.
+
+Set a starting size and choose how people can resize the widget:
+
+```javascript
+setFluidSize({
+  initialSize: { width: 800, height: 600 },
+  resize: 'horizontal'
+});
+```
+
+Open the node overflow menu to enable or disable resizing. Pass
+`setFluidSize({ showResizer: false })` to hide the handles initially; the menu remains available.
+You can also limit a controller to one resize axis, or preserve its shape:
+
+```javascript
+setFluidSize({ resize: 'horizontal' }); // e.g. a fader
+setFluidSize({ resize: 'vertical' });   // e.g. a meter
+setFluidSize({ keepAspectRatio: true }); // e.g. a square pad grid
+setFluidSize({ initialSize: { width: 800, height: 600 } }); // starting size
+```
+
+`resize` defaults to `'both'`. `keepAspectRatio` uses both dimensions to preserve the
+node's initial ratio. `initialSize` uses logical canvas pixels (the same coordinate space as
+`width` and `height`) and applies only before a user has set an explicit node size.
+In fluid mode, `setCanvasSize()` is ignored and reports a one-time console warning.
+
 ## Special Functions
 
 All [Patchies JavaScript Runner](/docs/javascript-runner) functions are available, plus:
