@@ -81,16 +81,16 @@
         </div>
       {/if}
 
-      <div class="flex shrink-0 items-center gap-1">
+      <div class="flex shrink-0 items-center gap-2">
         {#if target?.onrun}
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-500 transition-colors hover:border-zinc-700 hover:text-zinc-300 focus-visible:ring-2 focus-visible:ring-orange-400/30 focus-visible:outline-none"
+                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200 focus-visible:ring-2 focus-visible:ring-orange-400/30 focus-visible:outline-none"
                 onclick={() => target?.onrun?.()}
                 aria-label="Run code"
               >
-                <Play class="h-4 w-4" />
+                <Play class="h-3.5 w-3.5" />
               </button>
             </Tooltip.Trigger>
 
@@ -105,7 +105,7 @@
                   'flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border transition-colors focus-visible:ring-2 focus-visible:ring-orange-400/30 focus-visible:outline-none',
                   pinnedTargetId
                     ? 'border-orange-500/50 bg-orange-500/15 text-orange-300 hover:bg-orange-500/25'
-                    : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                    : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
                 ]}
                 onclick={selection.togglePin}
                 aria-label={pinnedTargetId ? 'Unpin code target' : 'Pin code target'}

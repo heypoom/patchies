@@ -137,16 +137,16 @@
                 'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors focus-visible:ring-2 focus-visible:ring-orange-400/30 focus-visible:outline-none',
                 pinnedTargetId
                   ? 'border-orange-500/50 bg-orange-500/15 text-orange-300 hover:bg-orange-500/25'
-                  : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                  : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
               ]}
               onclick={selection.togglePin}
               aria-label={pinnedTargetId ? 'Unpin settings target' : 'Pin settings target'}
               aria-pressed={Boolean(pinnedTargetId)}
             >
               {#if pinnedTargetId}
-                <PinOff class="h-4 w-4" />
+                <PinOff class="h-3.5 w-3.5" />
               {:else}
-                <Pin class="h-4 w-4" />
+                <Pin class="h-3.5 w-3.5" />
               {/if}
             </button>
           </Tooltip.Trigger>
