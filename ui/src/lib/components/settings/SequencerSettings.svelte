@@ -34,7 +34,8 @@
     onAddTrack,
     onRemoveTrack,
     onUpdateTrackName,
-    onUpdateTrackColor
+    onUpdateTrackColor,
+    variant = 'floating'
   }: {
     steps: number;
     swing: number;
@@ -60,6 +61,7 @@
     onRemoveTrack: (idx: number) => void;
     onUpdateTrackName: (idx: number, name: string) => void;
     onUpdateTrackColor: (idx: number, color: string) => void;
+    variant?: 'floating' | 'sidebar';
   } = $props();
 
   const outputValueMode = $derived(
@@ -82,7 +84,14 @@
   }
 </script>
 
-<div class="nodrag w-56 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+<div
+  class={[
+    'nodrag',
+    variant === 'floating'
+      ? 'w-56 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl'
+      : 'w-full'
+  ]}
+>
   <div class="flex flex-col gap-3">
     <!-- Steps -->
     <div>

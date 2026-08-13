@@ -12,6 +12,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useSettingsSidebarTargetSelection } from '$lib/settings/use-settings-sidebar-target-selection.svelte';
+  import { isSchemaSettingsSidebarTarget } from '../../../stores/settings-sidebar.store';
 
   let { class: className = '' }: { class?: string } = $props();
 
@@ -50,7 +51,7 @@
   }
 
   function hasDirtySettings(): boolean {
-    if (!activeTarget) return false;
+    if (!activeTarget || !isSchemaSettingsSidebarTarget(activeTarget)) return false;
 
     return activeTarget.schema.some((field) => {
       if (!('default' in field) || field.default === undefined) return false;
@@ -114,7 +115,7 @@
             </Command.Root>
           </Popover.Content>
         </Popover.Root>
-        {#if hasDirtySettingsValue}
+        {#if hasDirtySettingsValue && isSchemaSettingsSidebarTarget(activeTarget)}
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
@@ -159,17 +160,21 @@
 
     <div class="min-h-0 flex-1 px-4 py-3">
       {#key activeTarget.id}
-        <ObjectSettings
-          nodeId={activeTarget.id}
-          schema={activeTarget.schema}
-          values={activeTarget.values}
-          onValueChange={activeTarget.onValueChange}
-          onRevertAll={activeTarget.onRevertAll}
-          onClose={() => {}}
-          showCloseButton={false}
-          showRevertButton={false}
-          variant="sidebar"
-        />
+        {#if isSchemaSettingsSidebarTarget(activeTarget)}
+          <ObjectSettings
+            nodeId={activeTarget.id}
+            schema={activeTarget.schema}
+            values={activeTarget.values}
+            onValueChange={activeTarget.onValueChange}
+            onRevertAll={activeTarget.onRevertAll}
+            onClose={() => {}}
+            showCloseButton={false}
+            showRevertButton={false}
+            variant="sidebar"
+          />
+        {:else}
+          {@render activeTarget.content()}
+        {/if}
       {/key}
     </div>
   </div>

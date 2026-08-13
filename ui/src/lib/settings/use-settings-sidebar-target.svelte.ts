@@ -1,5 +1,6 @@
 import type { SettingsSidebarTarget } from '../../stores/settings-sidebar.store';
 import {
+  isSchemaSettingsSidebarTarget,
   openObjectSettingsInSidebarIfPreferred,
   registerSettingsSidebarTarget
 } from '../../stores/settings-sidebar.store';
@@ -24,7 +25,7 @@ export function useSettingsSidebarTarget({ getTarget, floating }: SettingsSideba
 } {
   $effect(() => {
     const target = getTarget();
-    if (!target || target.schema.length === 0) return;
+    if (!target || (isSchemaSettingsSidebarTarget(target) && target.schema.length === 0)) return;
 
     return registerSettingsSidebarTarget(target);
   });

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Give settings-schema-backed objects a persistent editor surface that does not
+Give settings-capable objects a persistent editor surface that does not
 require locating or panning to the node on the canvas. This complements the
 existing floating settings panel; it does not replace it.
 
@@ -10,8 +10,9 @@ existing floating settings panel; it does not replace it.
 
 - Add a user-configurable `Settings` sidebar tab. It is hidden by default and
   can be enabled with the existing sidebar tab picker.
-- The tab lists only nodes whose `data.settingsSchema` is a non-empty schema.
-  The sidebar renders settings only; it never exposes a node's code editor.
+- The tab lists schema-backed nodes and object-specific panels that register a
+  sidebar settings view. The sidebar renders settings only; it never exposes a
+  node's code editor.
 - The active target follows a selected settings-capable canvas node. Selecting
   a node with no settings preserves the most recently edited settings target.
 - Users can choose any eligible node from the tab without selecting or moving
@@ -21,9 +22,9 @@ existing floating settings panel; it does not replace it.
   recent eligible target.
 - Reuse `ObjectSettings` so values, defaults, visibility rules, color pickers,
   and undo/redo semantics stay identical to the existing floating panel.
-- Add an Editor preference, disabled by default, that opens a node's
-  schema-driven Settings action in the sidebar and enables the tab. Existing
-  floating settings behavior remains the default.
+- Add an Editor preference, disabled by default, that opens a node's Settings
+  action in the sidebar and enables the tab. Existing floating settings
+  behavior remains the default.
 
 ## Interaction
 
@@ -38,17 +39,17 @@ node becomes the fallback target; otherwise the empty state is shown.
 
 ## Boundaries
 
-This initial implementation covers the shared schema-driven settings system.
-It intentionally does not adapt bespoke settings panels (for example, complex
-object-specific panels) into a new shared contract.
+Schema-driven settings remain the default integration. Bespoke settings panels
+can also register a live, object-specific Svelte settings view when a schema
+cannot express their controls; the sequencer is the initial example.
 
 ## Architecture
 
-Schema-backed node layouts use a shared Svelte composable to register their
-live settings callbacks and route an action to the floating panel or sidebar,
-including the one-off Shift inversion. The sidebar owns a second composable for
-selection, pinning, and explicit node-target requests. Object layouts retain
-only their object-specific value and revert behavior.
+Node layouts use a shared Svelte composable to register either a schema with
+live callbacks or a bespoke settings view, then route an action to the floating
+panel or sidebar, including the one-off Shift inversion. The sidebar owns a
+second composable for selection, pinning, and explicit node-target requests.
+Object layouts retain their object-specific value and revert behavior.
 
 ## Verification
 
@@ -57,5 +58,7 @@ only their object-specific value and revert behavior.
 - The selector changes the edited node without changing canvas selection.
 - Pinning resists selection changes and clears safely when the node is gone.
 - A settings change updates the target's node data and remains undoable.
-- The preference routes schema-driven Settings actions to the sidebar only when
-  enabled; the default continues to open the floating panel.
+- The preference routes Settings actions to the sidebar only when enabled; the
+  default continues to open the floating panel.
+- Selecting a sequencer shows its existing settings controls in the sidebar,
+  and changes retain the existing node-data and undo/redo behavior.
