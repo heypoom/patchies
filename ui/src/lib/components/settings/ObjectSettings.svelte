@@ -20,7 +20,8 @@
     onClose,
     settingsPrefix = 'settings',
     showCloseButton = true,
-    showRevertButton = true
+    showRevertButton = true,
+    variant = 'floating'
   }: {
     nodeId: string;
     schema: SettingsSchema;
@@ -34,6 +35,7 @@
     settingsPrefix?: string;
     showCloseButton?: boolean;
     showRevertButton?: boolean;
+    variant?: 'floating' | 'sidebar';
   } = $props();
 
   const createComboboxOpenState = (schema: SettingsSchema): Record<string, boolean> =>
@@ -184,7 +186,11 @@
 
 <!-- Close button bar -->
 {#if showCloseButton || (showRevertButton && isDirty)}
-  <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+  <div
+    class={variant === 'floating'
+      ? 'absolute -top-7 left-0 flex w-full justify-end gap-x-1'
+      : 'mb-3 flex justify-end gap-x-1'}
+  >
     {#if showRevertButton && isDirty}
       <Tooltip.Root>
         <Tooltip.Trigger>
@@ -210,7 +216,11 @@
 {/if}
 
 <!-- Settings panel -->
-<div class="nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+<div
+  class={variant === 'floating'
+    ? 'nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl'
+    : 'nodrag w-full'}
+>
   <div class="flex flex-col gap-3">
     {#each schema as field (field.key)}
       {#if isSettingsFieldVisible(schema, values, field)}

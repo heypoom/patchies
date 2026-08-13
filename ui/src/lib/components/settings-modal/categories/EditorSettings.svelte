@@ -5,9 +5,11 @@
   import {
     defaultEditorLayout,
     overlayEditorTransparency,
+    openObjectSettingsInSidebar,
     setDefaultEditorLayout,
     setOverlayEditorTransparency,
-    type EditorLayoutPreference
+    type EditorLayoutPreference,
+    setOpenObjectSettingsInSidebar
   } from '../../../../stores/editor-layout-settings.store';
   import {
     editorAutocompleteEnabled,
@@ -73,6 +75,17 @@
     options={editorLayoutOptions}
     onchange={handleLayoutChange}
     label="Default editor layout"
+  />
+</SettingRow>
+
+<SettingRow
+  title="Open object settings in sidebar"
+  description="Open schema-driven object settings in the Settings sidebar instead of beside the node."
+>
+  <SettingToggle
+    checked={$openObjectSettingsInSidebar}
+    onchange={setOpenObjectSettingsInSidebar}
+    label="Open object settings in sidebar"
   />
 </SettingRow>
 

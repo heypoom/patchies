@@ -11,7 +11,8 @@
     Music,
     MessageSquare,
     Activity,
-    Code
+    Code,
+    Settings
   } from '@lucide/svelte/icons';
 
   import FileTreeView from './FileTreeView.svelte';
@@ -24,6 +25,7 @@
   import ChatSessionsPanel from './ChatSessionsPanel.svelte';
   import ProfilerView from './ProfilerView.svelte';
   import SidebarCodeEditorView from './SidebarCodeEditorView.svelte';
+  import SidebarObjectSettingsView from './SidebarObjectSettingsView.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Popover from '$lib/components/ui/popover';
@@ -91,7 +93,8 @@
     { id: 'chat', icon: MessageSquare, title: 'Chat', aiOnly: true },
     { id: 'preview', icon: AppWindow, title: 'Patch to App', aiOnly: true },
     { id: 'profiler', icon: Activity, title: 'Profiler' },
-    { id: 'code', icon: Code, title: 'Code' }
+    { id: 'code', icon: Code, title: 'Code' },
+    { id: 'settings', icon: Settings, title: 'Settings' }
   ];
 
   const AI_VIEWS: SidebarView[] = ['chat', 'preview'];
@@ -325,6 +328,8 @@
             title={codeEditorTitle}
             onrun={onRunCodeEditor}
           />
+        {:else if view === 'settings'}
+          <SidebarObjectSettingsView />
         {/if}
       </div>
     {/if}
@@ -343,3 +348,9 @@
     ></div>
   </div>
 {/if}
+
+<style>
+  [data-sidebar] {
+    container-type: inline-size;
+  }
+</style>

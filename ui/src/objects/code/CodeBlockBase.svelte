@@ -24,6 +24,10 @@
   } from '$lib/eventbus/events';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import {
+    openObjectSettingsInSidebarIfPreferred,
+    registerSettingsSidebarTarget
+  } from '../../stores/settings-sidebar.store';
   import type { SettingsSchema } from '$lib/settings';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
@@ -401,12 +405,27 @@
   }
 
   function handleSettingsToggle() {
+    if (openObjectSettingsInSidebarIfPreferred(showSettings)) return;
+
     showSettings = !showSettings;
 
     if (showSettings) {
       showEditor = false;
     }
   }
+
+  $effect(() => {
+    if (!settingsSchema || settingsSchema.length === 0) return;
+
+    return registerSettingsSidebarTarget({
+      id: nodeId,
+      label: nodeLabel,
+      schema: settingsSchema,
+      values: settingsValues,
+      onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+      onRevertAll: () => onSettingsRevertAll?.()
+    });
+  });
 
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;

@@ -31,6 +31,10 @@
     syncActiveCodeEditorTargetSettings
   } from '../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
+  import {
+    openObjectSettingsInSidebarIfPreferred,
+    registerSettingsSidebarTarget
+  } from '../../stores/settings-sidebar.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
@@ -314,6 +318,26 @@
     showSettings = false;
   }
 
+  function openSettings() {
+    if (openObjectSettingsInSidebarIfPreferred(showSettings)) return;
+
+    showSettings = !showSettings;
+    if (showSettings) showEditor = false;
+  }
+
+  $effect(() => {
+    if (!nodeId || !settingsSchema || settingsSchema.length === 0) return;
+
+    return registerSettingsSidebarTarget({
+      id: nodeId,
+      label: title,
+      schema: settingsSchema,
+      values: settingsValues,
+      onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+      onRevertAll: () => onSettingsRevertAll?.()
+    });
+  });
+
   function openSidebarCodeEditor() {
     if (!nodeId) return;
 
@@ -443,10 +467,7 @@
                 {canPin}
                 onPreviewToggle={onPreviewToggle ? handlePreviewToggle : undefined}
                 {previewVisible}
-                onSettingsToggle={() => {
-                  showSettings = !showSettings;
-                  if (showSettings) showEditor = false;
-                }}
+                onSettingsToggle={openSettings}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : handleCodeOpen}
                 onExpandToggle={canExpand ? handleExpandToggle : undefined}
                 {isExpanded}
@@ -477,10 +498,7 @@
                     <button
                       class="node-floating-button"
                       aria-label={showSettings ? 'Hide settings' : 'Settings'}
-                      onclick={() => {
-                        showSettings = !showSettings;
-                        if (showSettings) showEditor = false;
-                      }}
+                      onclick={openSettings}
                     >
                       <SettingsIcon class="h-4 w-4 text-zinc-300" />
                     </button>
@@ -539,10 +557,7 @@
       {previewVisible}
       {settingsSchema}
       {showSettings}
-      onSettingsToggle={() => {
-        showSettings = !showSettings;
-        if (showSettings) showEditor = false;
-      }}
+      onSettingsToggle={openSettings}
       onCodeToggle={handleCodeOpen}
       onExpandToggle={canExpand ? handleExpandToggle : undefined}
       {isExpanded}
