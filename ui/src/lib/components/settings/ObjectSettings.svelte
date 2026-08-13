@@ -9,6 +9,7 @@
   import type { SettingsField, SettingsSchema } from '$lib/settings/types';
   import { filterSettingsOptions, normalizeSettingsOptions } from '$lib/settings/options';
   import { isSettingsFieldVisible } from '$lib/settings/visibility';
+  import { useFloatingSettingsScroll } from './use-floating-settings-scroll.svelte';
 
   let {
     nodeId,
@@ -64,9 +65,7 @@
   const tracker = useNodeDataTracker(getInitialNodeId());
   const comboboxOpen = $state(createInitialComboboxOpenState());
   const comboboxQuery = $state(createInitialComboboxQueryState());
-  let floatingPanelElement = $state<HTMLDivElement>();
-  let isFloatingScrollable = $state(false);
-  let hasMoreFloatingSettings = $state(false);
+  const floatingScroll = useFloatingSettingsScroll(() => variant === 'floating');
 
   function trackingKey(key: string): string {
     return settingsPrefix ? `${settingsPrefix}.${key}` : key;
@@ -114,36 +113,6 @@
     onClose();
   }
 
-  function updateFloatingScrollIndicator() {
-    if (!floatingPanelElement || variant !== 'floating') {
-      isFloatingScrollable = false;
-      hasMoreFloatingSettings = false;
-      return;
-    }
-
-    isFloatingScrollable =
-      floatingPanelElement.scrollHeight > floatingPanelElement.clientHeight + 1;
-    hasMoreFloatingSettings =
-      isFloatingScrollable &&
-      floatingPanelElement.scrollTop + floatingPanelElement.clientHeight <
-        floatingPanelElement.scrollHeight - 1;
-  }
-
-  $effect(() => {
-    if (variant !== 'floating' || !floatingPanelElement) return;
-
-    const frame = requestAnimationFrame(updateFloatingScrollIndicator);
-    const observer = new ResizeObserver(updateFloatingScrollIndicator);
-    observer.observe(floatingPanelElement);
-    floatingPanelElement.firstElementChild &&
-      observer.observe(floatingPanelElement.firstElementChild);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-    };
-  });
-
   function makeTracker(field: SettingsField) {
     if ((field.persistence ?? 'node') !== 'node') {
       return { onFocus: () => {}, onBlur: () => {} };
@@ -179,6 +148,7 @@
 
     const next = toVec2(getCurrentValue(field));
     next[axis] = parsed;
+
     onValueChange(field.key, next);
   }
 
@@ -249,12 +219,12 @@
 <!-- Settings panel -->
 <div class={variant === 'floating' ? 'relative w-48' : 'w-full'}>
   <div
-    bind:this={floatingPanelElement}
-    onscroll={updateFloatingScrollIndicator}
+    bind:this={floatingScroll.element}
+    onscroll={floatingScroll.onScroll}
     class={variant === 'floating'
       ? [
-          'nodrag max-h-[min(32rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl',
-          isFloatingScrollable && 'nopan nowheel'
+          'nodrag max-h-[min(25rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl',
+          floatingScroll.isScrollable && 'nopan nowheel'
         ]
       : 'nodrag w-full'}
   >
@@ -612,7 +582,7 @@
     </div>
   </div>
 
-  {#if variant === 'floating' && hasMoreFloatingSettings}
+  {#if variant === 'floating' && floatingScroll.hasMore}
     <div
       class="pointer-events-none absolute right-px bottom-px left-px flex h-10 items-end justify-center rounded-b-md bg-gradient-to-t from-zinc-900 via-zinc-900/90 to-transparent pb-1 text-[10px] text-zinc-400"
       aria-hidden="true"

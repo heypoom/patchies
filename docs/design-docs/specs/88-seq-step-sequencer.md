@@ -101,6 +101,9 @@ Always a value — there's no bang-only mode. The value is always present.
 - **Visual cursor**: the current step column is highlighted across all rows simultaneously
 - **Outlets**: one per track, evenly spaced at the bottom; `useUpdateNodeInternals()` called after track count changes
 - **Settings panel** (gear icon → floating panel):
+  - The panel caps its height to the viewport and scrolls internally when its
+    controls overflow. A bottom fade says **Scroll for more** until the user
+    reaches the end.
   - Step count: segmented buttons `4 / 8 / 12 / 16 / 24 / 32`
   - Swing: slider 0–100%
   - Audio Rate: toggle

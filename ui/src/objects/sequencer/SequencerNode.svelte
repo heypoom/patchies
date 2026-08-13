@@ -7,6 +7,7 @@
     type NodeProps
   } from '@xyflow/svelte';
   import type { OutletMode, SequencerOutputMode } from './sequencer-output';
+  import { getHeightForTrackCountChange } from './sequencer-layout';
   import { getSequencerVisualStep } from './sequencer-scheduler';
   import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
   import { useNodeDataTracker } from '$lib/history';
@@ -16,6 +17,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
   import { Settings, VolumeX, X } from '@lucide/svelte/icons';
+  import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
 
   let {
     id: nodeId,
@@ -84,6 +86,18 @@
 
   function applyTracks(newTracks: TrackData[]): void {
     const oldTracks = tracks;
+
+    if (newTracks.length !== oldTracks.length) {
+      updateNode(nodeId, {
+        height: getHeightForTrackCountChange(
+          nodeHeight,
+          oldTracks.length,
+          newTracks.length,
+          defaultGridHeight,
+          scale
+        )
+      });
+    }
 
     updateNodeData(nodeId, { ...data, tracks: newTracks });
     tracker.commit('tracks', oldTracks, newTracks);
@@ -176,7 +190,56 @@
 
     updateNodeData(nodeId, { ...data, tracks: newTracks });
   }
+
+  const settingsSidebarTarget = useSettingsSidebarTarget({
+    getTarget: () => ({ id: nodeId, label: 'sequencer', content: sidebarSettings }),
+    floating: {
+      isOpen: () => showSettings,
+      setOpen: (open) => (showSettings = open)
+    }
+  });
 </script>
+
+{#snippet sequencerSettings(variant: 'floating' | 'sidebar')}
+  <SequencerSettings
+    {steps}
+    {swing}
+    {outletMode}
+    {outputMode}
+    {audioRate}
+    {clockMode}
+    {showVelocity}
+    {showInTimeline}
+    {resizable}
+    {tracks}
+    {swingTracker}
+    onSetStepCount={setStepCount}
+    onSetSwing={(v) => updateNodeData(nodeId, { ...data, swing: v })}
+    onSetOutletMode={(v: OutletMode) => {
+      const newOutput = v === 'single' ? 'index' : 'bang';
+
+      const oldData = { outletMode, outputMode };
+      const newData = { outletMode: v, outputMode: newOutput };
+      updateNodeData(nodeId, { ...data, ...newData });
+      tracker.commit('outletMode', oldData, newData);
+    }}
+    onSetOutputMode={(v: string) => setNodeData('outputMode', v as SequencerOutputMode)}
+    onSetAudioRate={(v) => setNodeData('audioRate', v)}
+    onSetClockMode={(v) => setNodeData('clockMode', v)}
+    onSetShowVelocity={setShowVelocity}
+    onSetShowInTimeline={(v) => setNodeData('showInTimeline', v)}
+    onSetResizable={(v) => setNodeData('resizable', v)}
+    onAddTrack={addTrack}
+    onRemoveTrack={removeTrack}
+    onUpdateTrackName={updateTrackName}
+    onUpdateTrackColor={updateTrackColor}
+    {variant}
+  />
+{/snippet}
+
+{#snippet sidebarSettings()}
+  {@render sequencerSettings('sidebar')}
+{/snippet}
 
 <div class="relative h-full" style:width="{nodeWidth}px" style:height="{nodeHeight}px">
   <NodeResizer
@@ -211,7 +274,7 @@
             <button
               class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 [@media(hover:none)]:opacity-100"
               class:opacity-100={showSettings}
-              onclick={() => (showSettings = !showSettings)}
+              onclick={(event) => settingsSidebarTarget.toggle(event)}
             >
               <Settings class="h-4 w-4 text-zinc-300" />
             </button>
@@ -382,39 +445,7 @@
         </button>
       </div>
 
-      <SequencerSettings
-        {steps}
-        {swing}
-        {outletMode}
-        {outputMode}
-        {audioRate}
-        {clockMode}
-        {showVelocity}
-        {showInTimeline}
-        {resizable}
-        {tracks}
-        {swingTracker}
-        onSetStepCount={setStepCount}
-        onSetSwing={(v) => updateNodeData(nodeId, { ...data, swing: v })}
-        onSetOutletMode={(v: OutletMode) => {
-          const newOutput = v === 'single' ? 'index' : 'bang';
-
-          const oldData = { outletMode, outputMode };
-          const newData = { outletMode: v, outputMode: newOutput };
-          updateNodeData(nodeId, { ...data, ...newData });
-          tracker.commit('outletMode', oldData, newData);
-        }}
-        onSetOutputMode={(v: string) => setNodeData('outputMode', v as SequencerOutputMode)}
-        onSetAudioRate={(v) => setNodeData('audioRate', v)}
-        onSetClockMode={(v) => setNodeData('clockMode', v)}
-        onSetShowVelocity={setShowVelocity}
-        onSetShowInTimeline={(v) => setNodeData('showInTimeline', v)}
-        onSetResizable={(v) => setNodeData('resizable', v)}
-        onAddTrack={addTrack}
-        onRemoveTrack={removeTrack}
-        onUpdateTrackName={updateTrackName}
-        onUpdateTrackColor={updateTrackColor}
-      />
+      {@render sequencerSettings('floating')}
     </div>
   {/if}
 </div>

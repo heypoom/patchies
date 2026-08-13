@@ -1,21 +1,38 @@
+import type { Snippet } from 'svelte';
 import { get, writable } from 'svelte/store';
 import type { SettingsSchema } from '$lib/settings';
 import { isSidebarOpen, sidebarView } from './ui.store';
 import { showSidebarTab } from './sidebar-visibility.store';
 import { openObjectSettingsInSidebar } from './editor-layout-settings.store';
 
-export interface SettingsSidebarTarget {
+interface SettingsSidebarTargetBase {
   id: string;
   label: string;
+}
+
+export interface SchemaSettingsSidebarTarget extends SettingsSidebarTargetBase {
   schema: SettingsSchema;
   values: Record<string, unknown>;
   onValueChange: (key: string, value: unknown) => void;
   onRevertAll: () => void;
 }
 
+export interface CustomSettingsSidebarTarget extends SettingsSidebarTargetBase {
+  /** Object-specific settings UI rendered by the sidebar. */
+  content: Snippet;
+}
+
+export type SettingsSidebarTarget = SchemaSettingsSidebarTarget | CustomSettingsSidebarTarget;
+
+export function isSchemaSettingsSidebarTarget(
+  target: SettingsSidebarTarget
+): target is SchemaSettingsSidebarTarget {
+  return 'schema' in target;
+}
+
 /**
- * Settings-schema views register their live callbacks here so the sidebar can
- * edit a node without coupling to a particular object implementation.
+ * Settings views register their live schema callbacks or bespoke content here
+ * so the sidebar can edit a node without coupling to its implementation.
  */
 export const settingsSidebarTargets = writable<Map<string, SettingsSidebarTarget>>(new Map());
 
