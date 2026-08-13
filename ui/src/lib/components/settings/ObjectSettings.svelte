@@ -237,7 +237,7 @@
             {@const rawValue = (getCurrentValue(field) as number) ?? field.min}
 
             <div>
-              <div class="mb-1 flex items-start justify-between gap-2">
+              <div class="mb-1 flex items-center justify-between gap-2">
                 {#if field.description}
                   <Tooltip.Root>
                     <Tooltip.Trigger>
