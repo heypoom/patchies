@@ -145,7 +145,8 @@ export function inlineValueWidgets(
     activeColorWidget: InlineValueWidgetInfo | null = null;
     numberModifierActive = false;
     xyGrid: HTMLElement | null = null;
-    colorInput: HTMLInputElement | null = null;
+    colorInput: HTMLDivElement | null = null;
+    colorTextInput: HTMLInputElement | null = null;
 
     constructor(readonly view: EditorView) {
       this.decorations = buildValueDecorations(this.numberModifierActive, this.hoveredWidget);
@@ -224,39 +225,40 @@ export function inlineValueWidgets(
 
       this.destroyColorInput();
 
-      const input = document.createElement('input');
-      input.type = 'color';
-      input.className = 'cm-value-widget-color-picker';
-      input.value = hexColorForComponents(widget.components, widget.colorScale);
-      input.dataset.valueWidgetFrom = String(widget.from);
-      input.dataset.valueWidgetTo = String(widget.to);
+      const picker = document.createElement('div');
+      picker.className = 'cm-value-widget-color-picker';
+      picker.dataset.valueWidgetFrom = String(widget.from);
+      picker.dataset.valueWidgetTo = String(widget.to);
 
-      Object.assign(input.style, {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.inputMode = 'text';
+      input.maxLength = 7;
+      input.spellcheck = false;
+      input.value = hexColorForComponents(widget.components, widget.colorScale);
+      input.setAttribute('aria-label', 'Hex color');
+
+      Object.assign(picker.style, {
         position: 'fixed',
-        width: '24px',
-        height: '24px',
-        opacity: '0',
-        pointerEvents: 'none',
         zIndex: '10001'
       });
 
       input.addEventListener('input', this.handleColorInput);
-      input.addEventListener('change', this.handleColorInput);
+      picker.appendChild(input);
 
-      document.body.appendChild(input);
+      document.body.appendChild(picker);
 
-      this.colorInput = input;
+      this.colorInput = picker;
+      this.colorTextInput = input;
       this.activeColorWidget = widget;
-      this.positionColorInput(widget, input);
+      this.positionColorInput(widget, picker);
       document.addEventListener('mousedown', this.handleDocumentMouseDown);
 
       input.focus({ preventScroll: true });
-      input.click();
-
       return true;
     }
 
-    positionColorInput(widget: InlineValueWidgetInfo, input: HTMLInputElement) {
+    positionColorInput(widget: InlineValueWidgetInfo, input: HTMLElement) {
       const coords = this.view.coordsAtPos(widget.to);
       const margin = 8;
 
@@ -280,11 +282,11 @@ export function inlineValueWidgets(
     destroyColorInput() {
       if (!this.colorInput) return;
 
-      this.colorInput.removeEventListener('input', this.handleColorInput);
-      this.colorInput.removeEventListener('change', this.handleColorInput);
+      this.colorTextInput?.removeEventListener('input', this.handleColorInput);
 
       this.colorInput.remove();
       this.colorInput = null;
+      this.colorTextInput = null;
       this.activeColorWidget = null;
 
       if (!this.xyGrid) {

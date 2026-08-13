@@ -21,7 +21,6 @@
   import VisualSettings from './categories/VisualSettings.svelte';
   import TransportSettings from './categories/TransportSettings.svelte';
   import NetworkSettings from './categories/NetworkSettings.svelte';
-  import { dismissActiveNativeColorPicker } from '$lib/components/settings/native-color-picker';
 
   let {
     open = $bindable(false),
@@ -74,7 +73,6 @@
   const ActiveCategoryIcon = $derived(CATEGORY_ICONS[activeCategory]);
 
   function handleClose() {
-    dismissActiveNativeColorPicker();
     open = false;
   }
 

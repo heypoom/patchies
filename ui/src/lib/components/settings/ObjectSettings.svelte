@@ -9,7 +9,6 @@
   import type { SettingsField, SettingsSchema } from '$lib/settings/types';
   import { filterSettingsOptions, normalizeSettingsOptions } from '$lib/settings/options';
   import { isSettingsFieldVisible } from '$lib/settings/visibility';
-  import { dismissActiveNativeColorPicker } from './native-color-picker';
 
   let {
     nodeId,
@@ -112,7 +111,6 @@
   }
 
   function handleClose() {
-    dismissActiveNativeColorPicker();
     onClose();
   }
 

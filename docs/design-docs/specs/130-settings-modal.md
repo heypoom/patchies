@@ -92,7 +92,7 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 | Setting | Control | Store | Notes |
 |---------|---------|-------|-------|
 | Render FPS cap | Dropdown (Unlimited/30/60) | `renderFpsCap` (renderer.store) | |
-| Preview background | Color + transparent option | `previewBackgroundColor` (renderer.store) | Per-user; transparent by default; applied as CSS behind preview canvases. Native color picker changes update on `input`, not only `change`, so the live setting continues to respond while the browser/OS picker is open. |
+| Preview background | Color + transparent option | `previewBackgroundColor` (renderer.store) | Per-user; transparent by default; applied as CSS behind preview canvases. The in-app picker updates the live setting while its controls are adjusted. |
 | Show FPS monitor | Toggle | `isFpsMonitorVisible` (ui.store) | |
 | Show video stats | Toggle | `showVideoStats` (video.store) | |
 | MediaBunny (WebCodecs) | Toggle | `useWebCodecs` (video.store) | Shows browser support note |
@@ -188,13 +188,13 @@ Standard layout for every setting row:
 
 Renders as a horizontal row: label + description on the left, control on the right. Consistent spacing and alignment across all categories.
 
-### Native Color Picker Lifecycle
+### Color Picker Behavior
 
-Native browser/OS color pickers can outlive the Svelte settings panel that opened them, and there is no reliable standard API to force-close an already-open picker. Settings-modal color controls therefore use the shared persistent native color picker helper instead of owning the `<input type="color">` directly in the panel subtree.
+Color controls use Adobe Spectrum Web Components rather than the browser/OS `<input type="color">` dialog. On pointer-fine desktop screens the shared picker opens as a compact popover; on mobile it uses the shared bottom drawer so the controls remain within thumb reach and do not compete with the settings panel. Both presentations compose Spectrum's accessible HSV color area, hue slider, and hex field.
 
-- Color values update from the picker `input` event so changes apply continuously.
-- The picker `change` event is reserved for finalization such as undo tracking.
-- Closing the settings modal blurs the active native color input as a best-effort dismissal, but the active callback remains wired so late picker events can still update the setting when the platform keeps the picker open.
+- Spectrum's `input` events update the value continuously, while its `change` events finalize changes such as undo tracking.
+- Closing the settings modal also closes its color popovers as part of the normal panel teardown.
+- The mobile drawer gives the color field a 256px height and 44px hue and hex touch targets, with safe-area padding at the bottom.
 
 ### Reuse of Existing Controls
 
