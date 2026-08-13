@@ -7,7 +7,6 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
   import {
-    activeCodeEditorTarget,
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
     syncActiveCodeEditorTargetLineErrors
@@ -35,6 +34,7 @@
   import { getPatchbayObjectPorts } from '$objects/patchbay/patchbay-object-ports';
   import { requestFitView } from '../../stores/ui.store';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
+  import { useCodeEditorOverlayTarget } from '$lib/code-editor/use-code-editor-overlay-target.svelte';
 
   import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
   import type { PatchbayDiagnostic } from '$lib/patchbay/patchbay-parser';
@@ -91,8 +91,9 @@
   const runOnEdit = $derived(data.runOnEdit ?? true);
   const allowResize = $derived(data.allowResize ?? true);
 
-  const isCodeEditorDetached = $derived(
-    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
+  const codeEditorOverlay = useCodeEditorOverlayTarget(
+    () => nodeId,
+    () => 'code'
   );
 
   const lineErrors = $derived.by(() => {
@@ -314,7 +315,7 @@
     unsubscribeVideoRegistryChange?.();
     unsubscribeVideoRegistryChange = null;
 
-    if (isCodeEditorDetached) {
+    if (codeEditorOverlay.isOpen) {
       closeCodeEditorOverlay();
     }
 
@@ -388,7 +389,7 @@
     ]}
     style="width: {width ?? defaultWidth}px; height: {height ?? defaultHeight}px"
   >
-    {#if !isCodeEditorDetached}
+    {#if !codeEditorOverlay.isOpen}
       <CodeEditor
         value={code}
         onchange={handleCodeChange}

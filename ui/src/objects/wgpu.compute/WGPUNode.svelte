@@ -12,6 +12,7 @@
   import { parseWGSL, serializeStructToBuffer } from '$lib/webgpu/wgsl-parser';
   import { WebGPUComputeSystem } from '$lib/webgpu/WebGPUComputeSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
 
   let {
     id: nodeId,
@@ -53,6 +54,20 @@
   let inferredDispatch = $state<[number, number, number] | null>(null);
 
   const code = $derived(data.code || '');
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language: 'wgsl',
+    nodeType: 'wgpu.compute',
+    label: data.title ?? 'wgpu.compute',
+    title: data.title ?? 'wgpu.compute',
+    placeholder: 'Write your WGSL compute shader here...',
+    value: code,
+    onchange: (newCode) => updateNodeData(nodeId, { code: newCode }),
+    onrun: compileShader
+  }));
+
   const parseResult = $derived(parseWGSL(code));
   const inputBindings = $derived(parseResult.inputs);
   const outputBindings = $derived(parseResult.outputs);

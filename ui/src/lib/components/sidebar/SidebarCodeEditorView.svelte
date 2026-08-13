@@ -121,6 +121,7 @@
         {/if}
       </div>
     </div>
+
     {#if target}
       <p class="mt-1.5 truncate font-mono text-[11px] text-zinc-500">
         {pinnedTargetId ? 'Pinned' : 'Following canvas selection'}
@@ -130,17 +131,19 @@
 
   <div class="sidebar-code-editor min-h-0 flex-1 overflow-hidden">
     {#if target}
-      <CodeEditor
-        value={target.value}
-        onchange={target.onchange ?? (() => {})}
-        language={target.language}
-        nodeType={target.nodeType}
-        placeholder={target.placeholder ?? ''}
-        class="nodrag nopan nowheel h-full w-full resize-none"
-        onrun={target.onrun}
-        nodeId={target.nodeId}
-        dataKey={target.dataKey}
-      />
+      {#key `${target.nodeId}:${target.dataKey}`}
+        <CodeEditor
+          value={target.value}
+          onchange={target.onchange ?? (() => {})}
+          language={target.language}
+          nodeType={target.nodeType}
+          placeholder={target.placeholder ?? ''}
+          class="nodrag nopan nowheel h-full w-full resize-none"
+          onrun={target.onrun}
+          nodeId={target.nodeId}
+          dataKey={target.dataKey}
+        />
+      {/key}
     {:else}
       <div class="flex h-full items-center justify-center px-4 text-center">
         <div class="flex max-w-[220px] flex-col items-center gap-3">

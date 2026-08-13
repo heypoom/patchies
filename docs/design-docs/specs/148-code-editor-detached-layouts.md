@@ -148,6 +148,11 @@ changing the editor until unpinned. Explicit Code actions still select their
 own target. Nodes without an applicable code accessor leave the pinned or last
 available target unchanged.
 
+Every code-capable node must register a sidebar accessor, including nodes that
+use `CanvasPreviewLayout` and standalone editors. This keeps selection behavior
+consistent for render nodes such as `canvas`, `canvas.dom`, `three`, and
+`three.dom`, as well as non-preview code editors.
+
 ## Settings
 
 Add editor layout preferences to `SettingsModal.svelte`.

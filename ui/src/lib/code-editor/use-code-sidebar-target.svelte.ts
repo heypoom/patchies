@@ -34,6 +34,7 @@ export function useCodeSidebarTargetSelection(): {
   let activeTargetId = $state<string | null>(null);
   let pinnedTargetId = $state<string | null>(null);
   let lastSelectedNodeId = $state<string | null>(null);
+  let lastSelectedNodeTargetId = $state<string | null>(null);
 
   const targets = $derived(
     [...targetsSource.current.values()].sort((a, b) => a.label.localeCompare(b.label))
@@ -79,7 +80,11 @@ export function useCodeSidebarTargetSelection(): {
       ? targets.find((target) => target.nodeId === selectedId)
       : undefined;
 
-    if (selectedTarget && selectedId !== lastSelectedNodeId) {
+    const selectionChanged = selectedId !== lastSelectedNodeId;
+    const selectedTargetRegisteredAfterSelection =
+      selectedTarget !== undefined && lastSelectedNodeTargetId === null;
+
+    if (selectedTarget && (selectionChanged || selectedTargetRegisteredAfterSelection)) {
       activeTargetId = selectedTarget.nodeId;
       activateCodeEditorSidebarTarget(selectedTarget);
     } else if (!activeTargetId || !targets.some((target) => target.nodeId === activeTargetId)) {
@@ -91,6 +96,7 @@ export function useCodeSidebarTargetSelection(): {
     }
 
     lastSelectedNodeId = selectedId;
+    lastSelectedNodeTargetId = selectedTarget?.nodeId ?? null;
   });
 
   return {

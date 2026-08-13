@@ -27,6 +27,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useNodeDataTracker } from '$lib/history';
   import { toast } from 'svelte-sonner';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
 
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -62,6 +63,19 @@
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language: 'assembly',
+    nodeType: 'asm',
+    label: data.title ?? 'asm',
+    title: data.title ?? 'asm',
+    placeholder: 'Enter assembly code...',
+    value: data.code,
+    onchange: (newCode) => updateNodeData(nodeId, { code: newCode }),
+    onrun: playMachine
+  }));
 
   function getInitialNodeId() {
     return nodeId;

@@ -25,6 +25,7 @@
     openDetachedStrudelEditor
   } from '../../stores/detached-strudel-editor.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -63,6 +64,18 @@
 
   const code = $derived(data.code || '');
   const customConsole = createCustomConsole(initialNodeId());
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language: 'plain',
+    nodeType: 'strudel',
+    label: 'strudel',
+    title: 'strudel',
+    value: code,
+    onchange: setCode,
+    onrun: evaluate
+  }));
 
   const setCode = (newCode: string) => {
     updateNodeData(nodeId, { code: newCode });

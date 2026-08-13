@@ -186,6 +186,7 @@
   let valueWidgetRunTimeout: ReturnType<typeof setTimeout> | null = null;
   let lastValueWidgetRunAt = 0;
   let pendingValueWidgetRunCode: string | undefined;
+  let languageRequestVersion = 0;
 
   function runValueWidgetCode(code: string | undefined) {
     onrun(code);
@@ -622,10 +623,11 @@
   $effect(() => {
     const autocomplete = $editorAutocompleteEnabled;
     const hoverHints = $editorHoverHintsEnabled;
+    const requestVersion = ++languageRequestVersion;
 
     loadLanguageExtension(language, { nodeType }, { autocomplete, hoverHints }).then(
       (languageExtension) => {
-        if (editorView) {
+        if (editorView && requestVersion === languageRequestVersion) {
           editorView.dispatch({
             effects: [
               languageComp.reconfigure(languageExtension),

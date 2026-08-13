@@ -133,22 +133,23 @@ export function hasCodeEditorTargetSettings(
   target: CodeEditorTarget | CodeEditorTargetSettingsState | null | undefined
 ): boolean {
   if (!target) return false;
-
   if (target.customSettings) return true;
 
   return (target.settings?.schema.length ?? 0) > 0;
 }
 
-export function hasCodeEditorTargetConsole(
+export const hasCodeEditorTargetConsole = (
   target: CodeEditorTarget | CodeEditorTargetConsoleState | null | undefined
-): boolean {
-  return Boolean(target?.console);
-}
+): boolean => Boolean(target?.console);
 
 export function isDetachedCodeEditorTarget(nodeId: string | undefined, dataKey: string): boolean {
   if (!nodeId) return false;
 
-  const target = get(activeCodeEditorTarget);
-
-  return target?.nodeId === nodeId && target.dataKey === dataKey;
+  return isCodeEditorOverlayTarget(get(activeCodeEditorTarget), nodeId, dataKey);
 }
+
+export const isCodeEditorOverlayTarget = (
+  target: CodeEditorTarget | null,
+  nodeId: string | undefined,
+  dataKey: string
+): boolean => target?.mode === 'overlay' && target.nodeId === nodeId && target.dataKey === dataKey;

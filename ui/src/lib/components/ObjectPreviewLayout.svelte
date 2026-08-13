@@ -24,7 +24,6 @@
   import { helpViewStore } from '../../stores/help-view.store';
   import { overrideOutputNodeId, previewBackgroundColor } from '../../stores/renderer.store';
   import {
-    activeCodeEditorTarget,
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
     openCodeEditorSidebar,
@@ -34,6 +33,7 @@
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
+  import { useCodeEditorOverlayTarget } from '$lib/code-editor/use-code-editor-overlay-target.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
   import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
@@ -273,10 +273,9 @@
     showExpandOption && nodeId !== undefined && $outputTarget === 'background'
   );
 
-  let isCodeEditorDetached = $derived(
-    nodeId !== undefined &&
-      $activeCodeEditorTarget?.nodeId === nodeId &&
-      $activeCodeEditorTarget.dataKey === codeDataKey
+  const codeEditorOverlay = useCodeEditorOverlayTarget(
+    () => nodeId,
+    () => codeDataKey
   );
   const detachedSettings = $derived(
     settingsSchema && settingsSchema.length > 0
@@ -440,7 +439,7 @@
   }
 
   function openInlineCodeEditor() {
-    if (isCodeEditorDetached) {
+    if (codeEditorOverlay.isOpen) {
       closeCodeEditorOverlay();
     }
 
@@ -600,7 +599,7 @@
     </div>
   {/if}
 
-  {#if showEditor && !isCodeEditorDetached}
+  {#if showEditor && !codeEditorOverlay.isOpen}
     <div class="absolute" style="left: {editorLeftPos}px;">
       {#if editorReady !== false}
         <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
@@ -653,7 +652,7 @@
               <button
                 onclick={() => {
                   showEditor = false;
-                  if (isCodeEditorDetached) closeCodeEditorOverlay();
+                  if (codeEditorOverlay.isOpen) closeCodeEditorOverlay();
                 }}
                 class="cursor-pointer rounded p-1 hover:bg-zinc-700"
                 aria-label="Close editor"

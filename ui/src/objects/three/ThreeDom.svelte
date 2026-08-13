@@ -503,6 +503,7 @@
   title={data.title ?? 'three.dom'}
   objectType="three.dom"
   codePlaceholder="Write your Three.js code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={runCode}
   onPlaybackToggle={togglePlayback}

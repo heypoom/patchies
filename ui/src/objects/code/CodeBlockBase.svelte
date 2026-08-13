@@ -28,7 +28,6 @@
   import type { SettingsSchema } from '$lib/settings';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
-    activeCodeEditorTarget,
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
     openCodeEditorSidebar,
@@ -38,6 +37,7 @@
   import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
+  import { useCodeEditorOverlayTarget } from '$lib/code-editor/use-code-editor-overlay-target.svelte';
 
   let contentContainer: HTMLDivElement | null = null;
   let inlineConsoleRef: VirtualConsole | null = $state(null);
@@ -158,8 +158,9 @@
   const code = $derived(data.code || '');
   let previousExecuteCode = $state<number | undefined>(undefined);
 
-  let isCodeEditorDetached = $derived(
-    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
+  const codeEditorOverlay = useCodeEditorOverlayTarget(
+    () => nodeId,
+    () => 'code'
   );
 
   const detachedSettings = $derived(
@@ -310,7 +311,7 @@
   }
 
   function openInlineEditor() {
-    if (isCodeEditorDetached) {
+    if (codeEditorOverlay.isOpen) {
       closeCodeEditorOverlay();
     }
 
@@ -670,7 +671,7 @@
     </div>
   </div>
 
-  {#if showEditor && !isCodeEditorDetached}
+  {#if showEditor && !codeEditorOverlay.isOpen}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         {#if !(supportsLibraries && data.libraryName)}

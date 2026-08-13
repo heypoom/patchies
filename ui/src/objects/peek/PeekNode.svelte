@@ -9,6 +9,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { JSRunner } from '$lib/js-runner/JSRunner';
   import { editorFontFamily } from '../../stores/editor.store';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
 
   let {
     id: nodeId,
@@ -30,6 +31,27 @@
   let latestValue = $state<unknown>(undefined);
   let evaluatedValue = $state<unknown>(undefined);
   let hasError = $state(false);
+
+  function reevaluateExpression() {
+    if (latestValue !== undefined) {
+      evaluate(latestValue).then((result) => {
+        evaluatedValue = result;
+      });
+    }
+  }
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'expr',
+    language: 'javascript',
+    nodeType: 'peek',
+    label: 'peek',
+    title: 'peek',
+    placeholder: '$1.type',
+    value: expr,
+    onchange: (value) => updateNodeData(nodeId, { expr: value }),
+    onrun: reevaluateExpression
+  }));
 
   // Format value for display
   function formatValue(value: unknown): string {
@@ -122,14 +144,7 @@
         <CodeEditor
           value={expr}
           onchange={(value) => updateNodeData(nodeId, { expr: value })}
-          onrun={() => {
-            // Re-evaluate with current value if we have one
-            if (latestValue !== undefined) {
-              evaluate(latestValue).then((result) => {
-                evaluatedValue = result;
-              });
-            }
-          }}
+          onrun={reevaluateExpression}
           language="javascript"
           placeholder="$1.type"
           class="peek-node-code-editor rounded-lg border !border-transparent focus:outline-none"

@@ -288,6 +288,7 @@
   title={data.title ?? 'regl'}
   objectType="regl"
   codePlaceholder="Write your regl code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={updateRegl}
   bind:previewCanvas
