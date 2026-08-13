@@ -1,6 +1,15 @@
 <script lang="ts">
-  import { Pin, PinOff, RotateCcw, SlidersHorizontal } from '@lucide/svelte/icons';
+  import {
+    Check,
+    ChevronsUpDown,
+    Pin,
+    PinOff,
+    RotateCcw,
+    SlidersHorizontal
+  } from '@lucide/svelte/icons';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import * as Command from '$lib/components/ui/command';
+  import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { settingsSidebarTargets } from '../../../stores/settings-sidebar.store';
@@ -10,12 +19,20 @@
   let activeTargetId = $state<string | null>(null);
   let pinnedTargetId = $state<string | null>(null);
   let lastSelectedNodeId = $state<string | null>(null);
+  let targetPickerOpen = $state(false);
+  let targetQuery = $state('');
 
   let targets = $derived(
     [...$settingsSidebarTargets.values()].sort((a, b) => a.label.localeCompare(b.label))
   );
   let activeTarget = $derived(
     activeTargetId ? (targets.find((target) => target.id === activeTargetId) ?? null) : null
+  );
+  let filteredTargets = $derived(
+    targets.filter((target) => {
+      const query = targetQuery.trim().toLowerCase();
+      return !query || `${target.label} ${target.id}`.toLowerCase().includes(query);
+    })
   );
 
   $effect(() => {
@@ -44,8 +61,10 @@
     lastSelectedNodeId = selectedNodeId;
   });
 
-  function handleTargetChange(event: Event) {
-    activeTargetId = (event.currentTarget as HTMLSelectElement).value || null;
+  function selectTarget(targetId: string) {
+    activeTargetId = targetId;
+    targetPickerOpen = false;
+    targetQuery = '';
   }
 
   function togglePin() {
@@ -94,17 +113,40 @@
   <div class={['flex min-h-full flex-col', className]}>
     <div class="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950 px-5 py-4">
       <div class="flex items-center gap-2">
-        <label class="sr-only" for="sidebar-settings-target">Object settings target</label>
-        <select
-          id="sidebar-settings-target"
-          value={activeTarget.id}
-          onchange={handleTargetChange}
-          class="h-8 min-w-0 flex-1 cursor-pointer rounded-md border border-zinc-700 bg-zinc-900 px-2 font-mono text-xs text-zinc-200 outline-none hover:border-zinc-600 focus-visible:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-400/20"
-        >
-          {#each targets as target (target.id)}
-            <option value={target.id}>{target.label}</option>
-          {/each}
-        </select>
+        <Popover.Root bind:open={targetPickerOpen}>
+          <Popover.Trigger
+            class="flex h-8 min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-2 text-left font-mono text-xs text-zinc-200 outline-none hover:border-zinc-600 focus-visible:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-400/20"
+            aria-label="Select object settings target"
+          >
+            <span class="min-w-0 truncate">{activeTarget.label}</span>
+            <ChevronsUpDown class="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+          </Popover.Trigger>
+          <Popover.Content class="w-[min(22rem,calc(100vw-2rem))] p-0" align="start" sideOffset={6}>
+            <Command.Root shouldFilter={false}>
+              <Command.Input placeholder="Search objects..." bind:value={targetQuery} />
+              <Command.List class="max-h-64">
+                <Command.Empty>No settings-capable object found.</Command.Empty>
+                <Command.Group>
+                  {#each filteredTargets as target (target.id)}
+                    <Command.Item
+                      value={`${target.label} ${target.id}`}
+                      onSelect={() => selectTarget(target.id)}
+                      class="cursor-pointer"
+                    >
+                      <Check
+                        class={[
+                          'h-3.5 w-3.5',
+                          target.id === activeTarget.id ? 'opacity-100' : 'opacity-0'
+                        ]}
+                      />
+                      <span class="min-w-0 truncate font-mono text-xs">{target.label}</span>
+                    </Command.Item>
+                  {/each}
+                </Command.Group>
+              </Command.List>
+            </Command.Root>
+          </Popover.Content>
+        </Popover.Root>
         {#if hasDirtySettingsValue}
           <Tooltip.Root>
             <Tooltip.Trigger>
