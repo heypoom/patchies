@@ -386,7 +386,6 @@
     selectedCategoryId = null;
     expandedPackId = null;
     mobileCategoryOpen = false;
-    searchQuery = '';
   }
 
   function selectMobileCategory(categoryId: string) {
