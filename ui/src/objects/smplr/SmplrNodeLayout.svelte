@@ -99,8 +99,8 @@
     audioService.send(node.id, 'settings', descriptor.defaultSettings);
   }
 
-  function toggleSettings() {
-    if (openObjectSettingsInSidebarIfPreferred()) {
+  function toggleSettings(event?: MouseEvent) {
+    if (openObjectSettingsInSidebarIfPreferred(node.id, event?.shiftKey)) {
       showSettings = false;
       return;
     }

@@ -35,7 +35,7 @@ export interface ObjectPreviewMenuProps {
   canPin?: boolean;
   onPreviewToggle?: () => void;
   previewVisible?: boolean;
-  onSettingsToggle?: () => void;
+  onSettingsToggle?: (event?: MouseEvent) => void;
   onCodeToggle?: (event: MouseEvent) => void;
   onExpandToggle?: () => void;
   isExpanded?: boolean;
@@ -106,7 +106,7 @@ export function getObjectPreviewMenuGroups({
       id: 'settings',
       label: showSettings ? 'Hide settings' : 'Settings',
       icon: Settings,
-      onclick: () => onSettingsToggle()
+      onclick: (event) => onSettingsToggle(event)
     });
   }
 

@@ -76,8 +76,8 @@
     await applySettings(GM_DEFAULT_SETTINGS);
   }
 
-  function toggleSettings() {
-    if (openObjectSettingsInSidebarIfPreferred()) {
+  function toggleSettings(event?: MouseEvent) {
+    if (openObjectSettingsInSidebarIfPreferred(node.id, event?.shiftKey)) {
       showSettings = false;
       return;
     }

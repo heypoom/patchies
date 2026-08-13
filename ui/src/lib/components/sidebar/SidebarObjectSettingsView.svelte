@@ -12,7 +12,10 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { selectedNodeInfo } from '../../../stores/ui.store';
-  import { settingsSidebarTargets } from '../../../stores/settings-sidebar.store';
+  import {
+    requestSettingsSidebarTargetId,
+    settingsSidebarTargets
+  } from '../../../stores/settings-sidebar.store';
 
   let { class: className = '' }: { class?: string } = $props();
 
@@ -36,6 +39,17 @@
   );
 
   $effect(() => {
+    const requestedTargetId = $requestSettingsSidebarTargetId;
+    const requestedTarget = requestedTargetId
+      ? targets.find((target) => target.id === requestedTargetId)
+      : undefined;
+
+    if (requestedTarget) {
+      activeTargetId = requestedTarget.id;
+      requestSettingsSidebarTargetId.set(null);
+      return;
+    }
+
     const pinnedTarget = pinnedTargetId
       ? targets.find((target) => target.id === pinnedTargetId)
       : undefined;

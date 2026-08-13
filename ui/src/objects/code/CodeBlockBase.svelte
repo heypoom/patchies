@@ -408,8 +408,8 @@
     setTimeout(() => updateContentWidth(), 10);
   }
 
-  function handleSettingsToggle() {
-    if (openObjectSettingsInSidebarIfPreferred()) {
+  function handleSettingsToggle(event?: MouseEvent) {
+    if (openObjectSettingsInSidebarIfPreferred(nodeId, event?.shiftKey)) {
       showSettings = false;
       return;
     }

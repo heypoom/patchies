@@ -318,8 +318,8 @@
     showSettings = false;
   }
 
-  function openSettings() {
-    if (openObjectSettingsInSidebarIfPreferred()) {
+  function openSettings(event?: MouseEvent) {
+    if (nodeId && openObjectSettingsInSidebarIfPreferred(nodeId, event?.shiftKey)) {
       showSettings = false;
       return;
     }

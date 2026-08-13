@@ -209,8 +209,8 @@
     });
   }
 
-  function toggleSettings() {
-    if (openObjectSettingsInSidebarIfPreferred()) {
+  function toggleSettings(event?: MouseEvent) {
+    if (openObjectSettingsInSidebarIfPreferred(nodeId, event?.shiftKey)) {
       showSettings = false;
       return;
     }
@@ -244,7 +244,7 @@
                     e.preventDefault();
                     e.stopPropagation();
 
-                    toggleSettings();
+                    toggleSettings(e);
                   }}
                   aria-label="Settings"
                 >

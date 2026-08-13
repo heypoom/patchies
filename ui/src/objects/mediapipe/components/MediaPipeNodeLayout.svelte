@@ -69,8 +69,8 @@
       .exhaustive()
   );
 
-  function toggleSettings() {
-    if (openObjectSettingsInSidebarIfPreferred()) {
+  function toggleSettings(event?: MouseEvent) {
+    if (openObjectSettingsInSidebarIfPreferred(nodeId, event?.shiftKey)) {
       showSettings = false;
       return;
     }
@@ -118,7 +118,7 @@
         onclick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          toggleSettings();
+          toggleSettings(e);
         }}
       >
         <Settings class="h-4 w-4 text-zinc-300" />

@@ -19,6 +19,9 @@ export interface SettingsSidebarTarget {
  */
 export const settingsSidebarTargets = writable<Map<string, SettingsSidebarTarget>>(new Map());
 
+/** Set when a node action explicitly opens its settings in the sidebar. */
+export const requestSettingsSidebarTargetId = writable<string | null>(null);
+
 export function registerSettingsSidebarTarget(target: SettingsSidebarTarget): () => void {
   settingsSidebarTargets.update((targets) => {
     const next = new Map(targets);
@@ -40,13 +43,15 @@ export function registerSettingsSidebarTarget(target: SettingsSidebarTarget): ()
 
 /**
  * Opens the Settings sidebar when the user has opted into that behavior.
+ * Holding Shift inverts the preferred destination for a one-off settings action.
  *
  * Returns whether the caller's settings action was handled by the sidebar.
  */
-export function openObjectSettingsInSidebarIfPreferred(): boolean {
-  if (!get(openObjectSettingsInSidebar)) return false;
+export function openObjectSettingsInSidebarIfPreferred(nodeId: string, shiftKey = false): boolean {
+  if (get(openObjectSettingsInSidebar) === shiftKey) return false;
 
   showSidebarTab('settings');
+  requestSettingsSidebarTargetId.set(nodeId);
   sidebarView.set('settings');
   isSidebarOpen.set(true);
 
