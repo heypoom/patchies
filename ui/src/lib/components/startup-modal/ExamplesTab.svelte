@@ -54,7 +54,7 @@
 <div class="examples-root">
   <StartupTabIntro
     title="Explore working patches."
-    description="Open a demo across visuals, audio, or programming—then trace it, change it, and make it yours."
+    description="Open a demo across visuals, audio, or programming. Play with it and make it yours."
   />
 
   {#if isLoadingExamples}

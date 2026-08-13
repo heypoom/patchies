@@ -1,6 +1,20 @@
 {
 	"patches": [
 		{
+			"id": "ng7a8mcxobde7kv",
+			"name": "Random Walk World",
+			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "84et6trrsq2ouoc",
+			"name": "Random Walk Lullaby",
+			"description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
 			"id": "xzydes1peqmuum4",
 			"name": "Raymarch Masker",
 			"description": "Draw masks on top of raymarching shaders with GLSL and surface",
@@ -15,16 +29,16 @@
 			"author": "@heypoom"
 		},
 		{
-			"id": "ng7a8mcxobde7kv",
-			"name": "Random Walk World",
-			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
+			"id": "miuavskza1gydmy",
+			"name": "Symmetry and Sphere",
+			"description": "Uses shaderpark to create a symmetrical pattern and a raymarched sphere",
 			"category": "Visual",
-			"author": "@heypoom"
+			"author": "@jsqvlC + @heypoom"
 		},
 		{
-			"id": "84et6trrsq2ouoc",
-			"name": "Random Walk Lullaby",
-			"description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
+			"id": "c6adsknw8iix3m2",
+			"name": "Plotting Equations",
+			"description": "Uses expr node to create mathematical plots",
 			"category": "Visual",
 			"author": "@heypoom"
 		},
@@ -41,13 +55,6 @@
 			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader",
 			"category": "Visual",
 			"author": "@dtinth"
-		},
-		{
-			"id": "miuavskza1gydmy",
-			"name": "Symmetry and Sphere",
-			"description": "Uses shaderpark to create a symmetrical pattern and a raymarched sphere",
-			"category": "Visual",
-			"author": "@jsqvlC + @heypoom"
 		},
 		{
 			"id": "1c484xkin7p7p2r",
@@ -76,13 +83,6 @@
 			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
 			"category": "Visual",
 			"author": "@humanbydefinition"
-		},
-		{
-			"id": "c6adsknw8iix3m2",
-			"name": "Plotting Equations",
-			"description": "Uses expr node to create mathematical plots",
-			"category": "Visual",
-			"author": "@heypoom"
 		},
 		{
 			"id": "08wca4jzuz5wpng",
