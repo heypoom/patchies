@@ -224,7 +224,7 @@
     onscroll={floatingScroll.onScroll}
     class={variant === 'floating'
       ? [
-          'nodrag max-h-[min(25rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl',
+          'nodrag max-h-[min(27rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl',
           floatingScroll.isScrollable && 'nopan nowheel'
         ]
       : 'nodrag w-full'}
