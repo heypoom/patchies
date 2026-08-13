@@ -157,7 +157,7 @@
       </p>
     </div>
 
-    <div class="min-h-0 flex-1 px-3 py-3">
+    <div class="min-h-0 flex-1 px-4 py-3">
       {#key activeTarget.id}
         <ObjectSettings
           nodeId={activeTarget.id}

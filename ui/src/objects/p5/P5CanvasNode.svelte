@@ -13,11 +13,7 @@
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
-  import {
-    parseCanvasDimensions,
-    shouldResetP5CanvasSize,
-    usesP5SurfaceCanvas
-  } from '$lib/p5/component-helpers';
+  import { parseCanvasDimensions, usesP5SurfaceCanvas } from '$lib/p5/component-helpers';
   import { createP5SurfaceMode } from '$lib/p5/use-p5-surface-mode.svelte';
   import { P5_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
@@ -89,7 +85,6 @@
   // These prevent layout shift by setting min-width/height before P5.js loads
   let preloadCanvasWidth = $state<number | undefined>(0);
   let preloadCanvasHeight = $state<number | undefined>(0);
-  let clearDimensionsTimeout: ReturnType<typeof setTimeout> | null = null;
   let preservedFrameCanvas: HTMLCanvasElement | null = null;
 
   const surfaceMode = createP5SurfaceMode({
@@ -109,33 +104,6 @@
       preloadCanvasWidth = dimensions.width;
       preloadCanvasHeight = dimensions.height;
     }
-  }
-
-  function clearCanvasDimensions() {
-    preloadCanvasWidth = undefined;
-    preloadCanvasHeight = undefined;
-  }
-
-  function cancelScheduledDimensionsClear() {
-    if (clearDimensionsTimeout) {
-      clearTimeout(clearDimensionsTimeout);
-
-      clearDimensionsTimeout = null;
-    }
-  }
-
-  function scheduleDimensionsClear(nextCode = code) {
-    cancelScheduledDimensionsClear();
-
-    if (!shouldResetP5CanvasSize(nextCode)) return;
-
-    clearDimensionsTimeout = setTimeout(() => {
-      if (!errorMessage) {
-        clearCanvasDimensions();
-      }
-
-      clearDimensionsTimeout = null;
-    }, 150);
   }
 
   function clearPreservedFrameCanvas() {
@@ -263,7 +231,6 @@
 
   // Handle runtime errors (from draw(), setup(), etc.)
   function handleRuntimeError(error: Error, nextCode = code) {
-    cancelScheduledDimensionsClear();
     errorMessage = error.message;
     handleCodeError(error, nextCode, nodeId, customConsole, P5_WRAPPER_OFFSET);
     setCanvasDimensionsFromCode(nextCode);
@@ -342,7 +309,10 @@
           customConsole,
           onRuntimeError: (error) => handleRuntimeError(error, nextCode),
           onPreserveFrame: surfaceMode.isExpanded ? undefined : preserveFrameCanvas,
-          onFrameReady: () => {
+          onFrameReady: ({ width, height }) => {
+            preloadCanvasWidth = width;
+            preloadCanvasHeight = height;
+
             clearPreservedFrameCanvas();
             setVideoOutputEnabled(nextVideoOutputEnabled);
           },
@@ -376,13 +346,7 @@
         }
 
         measureWidth(100);
-
-        // Schedule dimension cleanup only if no error occurred during updateCode
-        if (!errorMessage) {
-          scheduleDimensionsClear(nextCode);
-        }
       } catch (error) {
-        cancelScheduledDimensionsClear();
         errorMessage = error instanceof Error ? error.message : String(error);
         handleCodeError(error, nextCode, nodeId, customConsole);
         setCanvasDimensionsFromCode(nextCode);

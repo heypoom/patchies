@@ -44,7 +44,7 @@ interface P5SketchConfig {
   onRuntimeError?: (error: Error) => void;
 
   onPreserveFrame?: (snapshot: P5CanvasSnapshot) => void;
-  onFrameReady?: () => void;
+  onFrameReady?: (dimensions: { width: number; height: number }) => void;
   getSurfaceCanvasSize?: () => { width: number; height: number };
 
   onSurfaceModeChange?: (enabled: boolean) => void;
@@ -160,7 +160,7 @@ export class P5Manager {
         if (frameReady) return;
 
         frameReady = true;
-        config.onFrameReady?.();
+        config.onFrameReady?.({ width: p.width, height: p.height });
       };
 
       try {
