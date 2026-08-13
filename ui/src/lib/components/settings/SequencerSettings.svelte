@@ -19,6 +19,7 @@
     clockMode,
     showVelocity,
     showInTimeline,
+    resizable,
     tracks,
     swingTracker,
     onSetStepCount,
@@ -29,6 +30,7 @@
     onSetClockMode,
     onSetShowVelocity,
     onSetShowInTimeline,
+    onSetResizable,
     onAddTrack,
     onRemoveTrack,
     onUpdateTrackName,
@@ -42,6 +44,7 @@
     clockMode: 'auto' | 'manual';
     showVelocity: boolean;
     showInTimeline: boolean;
+    resizable: boolean;
     tracks: TrackData[];
     swingTracker: ContinuousTracker;
     onSetStepCount: (n: number) => void;
@@ -52,6 +55,7 @@
     onSetClockMode: (v: 'auto' | 'manual') => void;
     onSetShowVelocity: (v: boolean) => void;
     onSetShowInTimeline: (v: boolean) => void;
+    onSetResizable: (v: boolean) => void;
     onAddTrack: () => void;
     onRemoveTrack: (idx: number) => void;
     onUpdateTrackName: (idx: number, name: string) => void;
@@ -220,6 +224,21 @@
     <div>
       <span class="mb-2 block text-xs font-medium text-zinc-300">Display</span>
       <div class="flex flex-col gap-1">
+        <button
+          class="flex cursor-pointer items-center gap-1.5 transition-colors"
+          onclick={() => onSetResizable(!resizable)}
+        >
+          <div
+            class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
+            class:border-zinc-500={resizable}
+            class:bg-zinc-500={resizable}
+            class:border-zinc-600={!resizable}
+          ></div>
+          <span class="text-xs" class:text-zinc-400={resizable} class:text-zinc-500={!resizable}>
+            Resizable
+          </span>
+        </button>
+
         <button
           class="flex cursor-pointer items-center gap-1.5 transition-colors"
           onclick={() => onSetShowVelocity(!showVelocity)}

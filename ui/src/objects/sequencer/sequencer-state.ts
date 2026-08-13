@@ -21,6 +21,7 @@ export type SequencerData = {
   clockMode?: 'auto' | 'manual';
   showVelocity?: boolean;
   showInTimeline?: boolean;
+  resizable?: boolean;
   muted?: boolean;
   manualStep?: number;
   currentStep?: number;
@@ -46,6 +47,7 @@ export function getSequencerData(data: SequencerData): ResolvedSequencerData {
     clockMode: data.clockMode === 'manual' ? 'manual' : 'auto',
     showVelocity: data.showVelocity === true,
     showInTimeline: data.showInTimeline !== false,
+    resizable: data.resizable === true,
     muted: data.muted === true,
     manualStep: typeof data.manualStep === 'number' ? Math.floor(data.manualStep) : 0,
     currentStep: typeof data.currentStep === 'number' ? Math.floor(data.currentStep) : -1

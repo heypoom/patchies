@@ -339,7 +339,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       swing: 0,
       outputMode: 'bang',
       showVelocity: false,
-      showInTimeline: true
+      showInTimeline: true,
+      resizable: false
     }))
     .with('curve', () => CURVE_DEFAULT_OBJECT_DATA)
     .with('pads~', () => DEFAULT_PADS_NODE_DATA)

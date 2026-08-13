@@ -97,6 +97,7 @@ Always a value — there's no bang-only mode. The value is always present.
 
 - **Track row**: label (left) + 16 step buttons
 - **Step button**: colored when on, dark when off; outlined when it's the current step
+- **Proportional resize**: **Resizable** in the Display settings section defaults to off. When it is enabled, selecting the node reveals XYFlow resize controls. The node cannot shrink below its natural grid size, and keeps its original aspect ratio so steps scale evenly in both directions.
 - **Visual cursor**: the current step column is highlighted across all rows simultaneously
 - **Outlets**: one per track, evenly spaced at the bottom; `useUpdateNodeInternals()` called after track count changes
 - **Settings panel** (gear icon → floating panel):
