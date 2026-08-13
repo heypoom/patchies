@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-12T00:36:00+07:00",
+  "generatedAt": "2026-08-13T19:24:38+07:00",
   "title": "Design System: Patchies",
   "extensions": {
     "colorMeta": {
@@ -281,7 +281,7 @@
       "Don't turn the infinite canvas into a decorative branded background.",
       "Don't put persistent backdrop blur over live canvas, video, WebGL, or other frequently changing content.",
       "Don't spread Ember across large surfaces or use saturated gradients as editor chrome.",
-      "Don't propagate the current ornamental modal corners or the Instrument Serif plus Syne pairing as canonical Patchies identity.",
+      "Don't propagate the current ornamental modal corners or the Instrument serif pairing as canonical Patchies identity.",
       "Don't use the current startup, object-browser, settings, AI-settings, docs, or Sparks presentation as unquestioned design-system authority.",
       "Don't let floating UI become unreadable over bright or high-motion user content."
     ]
