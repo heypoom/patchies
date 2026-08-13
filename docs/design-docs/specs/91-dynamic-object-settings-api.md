@@ -235,7 +235,7 @@ Each field type maps to a UI element:
 | `boolean`  | Compact checkbox button (SequencerSettings pattern), NOT bits-ui Switch                         |
 | `select`   | Pill button group (SequencerSettings output/clock mode pattern)                                 |
 | `color`    | Color swatch grid (PostItNode pattern) or swatch+picker (SequencerSettings track color pattern) |
-| `slider`   | `<SettingsSlider>` component (`$lib/components/SettingsSlider.svelte`) with label+value header  |
+| `slider`   | `<SettingsSlider>` component (`$lib/components/SettingsSlider.svelte`) with label+value header. The value is double-clickable on desktop and tappable on touch devices for precise numeric entry. |
 
 ### UI Patterns (Reference Components)
 
@@ -258,6 +258,14 @@ The `<ObjectSettings>` component MUST follow the established UI patterns from ex
   />
 </div>
 ```
+
+The displayed value is a keyboard-accessible precision affordance. Hovering it
+reveals that it can be edited; double-clicking with a mouse or tapping on a
+touch device swaps it for an inline number input. The input selects the current
+value, uses the slider's `step` for arrow-key increments, accepts typed decimal
+precision beyond that step, constrains commits to the configured `min` and
+`max`, commits on Enter or blur, and cancels on Escape. This keeps slider drags
+accidental-edit free while allowing values such as `0.807`.
 
 **Select fields** — pill button group, NOT a `<select>` dropdown (SequencerSettings/ScopeNode pattern):
 

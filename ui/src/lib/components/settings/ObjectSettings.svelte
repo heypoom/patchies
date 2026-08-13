@@ -2,6 +2,7 @@
   import { Check, ChevronDown, ChevronsUpDown, RotateCcw, X } from '@lucide/svelte/icons';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
+  import SliderValueEditor from '$lib/components/settings/SliderValueEditor.svelte';
   import * as Command from '$lib/components/ui/command';
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -235,13 +236,6 @@
             {@const sliderTracker = makeTracker(field)}
             {@const rawValue = (getCurrentValue(field) as number) ?? field.min}
 
-            {@const decimals =
-              field.step != null && field.step < 1
-                ? Math.max(0, Math.ceil(-Math.log10(field.step)))
-                : 0}
-
-            {@const displayValue = decimals > 0 ? rawValue.toFixed(decimals) : rawValue}
-
             <div>
               <div class="mb-1 flex items-start justify-between gap-2">
                 {#if field.description}
@@ -257,7 +251,16 @@
                   <span class="text-xs font-medium text-zinc-300">{field.label}</span>
                 {/if}
 
-                <span class="shrink-0 text-xs text-zinc-500 tabular-nums">{displayValue}</span>
+                <SliderValueEditor
+                  label={field.label}
+                  value={rawValue}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
+                  onchange={(value) => onValueChange(field.key, value)}
+                  oneditstart={sliderTracker.onFocus}
+                  oneditend={sliderTracker.onBlur}
+                />
               </div>
 
               <SettingsSlider
