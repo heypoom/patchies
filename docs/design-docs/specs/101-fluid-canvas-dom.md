@@ -24,3 +24,11 @@ and applies only before the user has explicitly sized the node.
 The node overflow menu provides Enable/Disable resizing, and the user's
 persisted choice wins on later code runs. This is an editor control, not an
 object setting.
+
+## Implementation boundary
+
+`useFluidCanvas.svelte.ts` owns fluid-mode state, the generated-code API,
+resize coalescing, node-size persistence, and the overflow action. `CanvasDom`
+provides canvas-specific adapters for dimensions, errors, bitmap output, and
+XYFlow rendering controls. This keeps the canvas execution lifecycle separate
+from the optional fluid-layout lifecycle.

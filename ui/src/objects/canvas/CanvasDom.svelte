@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { Maximize2, Minimize2 } from '@lucide/svelte/icons';
   import {
     NodeResizer,
     NodeResizeControl,
     ResizeControlVariant,
     useSvelteFlow,
-    useUpdateNodeInternals,
-    type ControlPosition
+    useUpdateNodeInternals
   } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -30,17 +28,10 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { stripJavaScriptComments, stripJavaScriptStrings } from '$lib/utils/javascript-comments';
   import { resetCanvasSize } from '$objects/dom/runtime-size';
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
   import { useNodeDataTracker } from '$lib/history';
-  import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
-  import { createDynamicCanvasDimension } from './dynamic-canvas-dimension';
-  import {
-    resolveFluidCanvasOptions,
-    type FluidCanvasOptions,
-    type FluidCanvasResizeAxis
-  } from './fluid-canvas-options';
+  import { useFluidCanvas } from './useFluidCanvas.svelte';
 
   let {
     id: nodeId,
@@ -103,21 +94,6 @@
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
   let pausedCallback: FrameRequestCallback | null = null;
-  let fluidCanvas = $state(false);
-  let fluidCanvasResizerVisible = $state(false);
-  let fluidCanvasResizeAxis = $state<FluidCanvasResizeAxis>('both');
-  let fluidCanvasKeepAspectRatio = $state(false);
-  let canvasResizeCallback: ((size: { width: number; height: number }) => void) | undefined;
-  let fluidResizeFrame: number | null = null;
-  let warnedAboutFixedCanvasSize = false;
-  const horizontalResizeControlPositions: ControlPosition[] = ['left', 'right'];
-  const verticalResizeControlPositions: ControlPosition[] = ['top', 'bottom'];
-  const fluidCanvasResizeControlPositions = $derived(
-    fluidCanvasResizeAxis === 'horizontal'
-      ? horizontalResizeControlPositions
-      : verticalResizeControlPositions
-  );
-
   const { updateNode, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
@@ -134,8 +110,6 @@
   let outputHeight = $state(defaultOutputHeight);
   let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
   let previewHeight = $derived(outputHeight / PREVIEW_SCALE_FACTOR);
-  const widthDimension = createDynamicCanvasDimension(() => outputWidth);
-  const heightDimension = createDynamicCanvasDimension(() => outputHeight);
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
@@ -149,10 +123,26 @@
     }
   });
 
-  $effect(() => {
-    if (fluidCanvas && data.fluidCanvasResizerVisible !== undefined) {
-      fluidCanvasResizerVisible = data.fluidCanvasResizerVisible;
-    }
+  const fluidCanvas = useFluidCanvas({
+    getNodeId: () => nodeId,
+    getData: () => data,
+    getNodeSize: () => ({ width, height }),
+    getPreviewSize: () => ({ width: previewWidth, height: previewHeight }),
+    getCanvasSize: () => ({ width: outputWidth, height: outputHeight }),
+    setCanvasSize: ({ width, height }) => setCanvasDimensions(width, height),
+    updateNode,
+    updateNodeData,
+    commitNodeData: (key, oldValue, newValue) => tracker.commit(key, oldValue, newValue),
+    warn: (message) => customConsole.warn(message),
+    onResizeCallback: (callback) => {
+      try {
+        callback({ width: outputWidth, height: outputHeight });
+        void sendBitmap();
+      } catch (error) {
+        handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+      }
+    },
+    previewScaleFactor: PREVIEW_SCALE_FACTOR
   });
 
   // Mouse state - coordinates scaled to canvas resolution
@@ -357,96 +347,6 @@
     canvas.style.height = `${height / PREVIEW_SCALE_FACTOR}px`;
   }
 
-  function setCanvasSize(width: number, height: number) {
-    if (fluidCanvas) {
-      if (!warnedAboutFixedCanvasSize) {
-        customConsole.warn('setCanvasSize() is ignored while fluid canvas mode is active.');
-        warnedAboutFixedCanvasSize = true;
-      }
-      return;
-    }
-
-    setCanvasDimensions(width, height);
-  }
-
-  function notifyCanvasResize() {
-    if (fluidResizeFrame !== null) return;
-
-    fluidResizeFrame = requestAnimationFrame(() => {
-      fluidResizeFrame = null;
-      if (!fluidCanvas || !canvasResizeCallback) return;
-
-      try {
-        canvasResizeCallback({ width: outputWidth, height: outputHeight });
-        void sendBitmap();
-      } catch (error) {
-        handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
-      }
-    });
-  }
-
-  function setFluidSize(options: FluidCanvasOptions = {}) {
-    fluidCanvas = true;
-    const resolvedOptions = resolveFluidCanvasOptions(options);
-    const showResizer = data.fluidCanvasResizerVisible ?? resolvedOptions.showResizer;
-    fluidCanvasResizerVisible = showResizer;
-    fluidCanvasResizeAxis = resolvedOptions.resize;
-    fluidCanvasKeepAspectRatio = resolvedOptions.keepAspectRatio;
-
-    if (resolvedOptions.initialSize && width === undefined && height === undefined) {
-      const { width: initialWidth, height: initialHeight } = resolvedOptions.initialSize;
-
-      updateNode(nodeId, {
-        width: initialWidth / PREVIEW_SCALE_FACTOR,
-        height: initialHeight / PREVIEW_SCALE_FACTOR
-      });
-      setCanvasDimensions(initialWidth, initialHeight);
-    } else {
-      setCanvasDimensions(
-        Math.round((width ?? previewWidth) * PREVIEW_SCALE_FACTOR),
-        Math.round((height ?? previewHeight) * PREVIEW_SCALE_FACTOR)
-      );
-    }
-
-    if (data.fluidCanvasResizerVisible === undefined) {
-      updateNodeData(nodeId, { fluidCanvasResizerVisible: showResizer });
-    }
-  }
-
-  function handleFluidCanvasResize(
-    _event: unknown,
-    { width, height }: { width: number; height: number }
-  ) {
-    if (!fluidCanvas) return;
-
-    setCanvasDimensions(
-      Math.round(width * PREVIEW_SCALE_FACTOR),
-      Math.round(height * PREVIEW_SCALE_FACTOR)
-    );
-    notifyCanvasResize();
-  }
-
-  function toggleFluidCanvasResizer() {
-    const oldValue = fluidCanvasResizerVisible;
-    const nextVisible = !oldValue;
-
-    fluidCanvasResizerVisible = nextVisible;
-    updateNodeData(nodeId, { fluidCanvasResizerVisible: nextVisible });
-    tracker.commit('fluidCanvasResizerVisible', oldValue, nextVisible);
-  }
-
-  const displayExtraMenuItems = $derived.by<ExtraMenuItem[] | undefined>(() => {
-    if (!fluidCanvas) return undefined;
-
-    return [
-      {
-        label: fluidCanvasResizerVisible ? 'Disable resizing' : 'Enable resizing',
-        icon: fluidCanvasResizerVisible ? Minimize2 : Maximize2,
-        onclick: toggleFluidCanvasResizer
-      }
-    ];
-  });
-
   async function sendBitmap() {
     if (!canvas) return;
     if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
@@ -504,16 +404,7 @@
     panEnabled = true;
     wheelEnabled = true;
     videoOutputEnabled = true;
-    fluidCanvas = false;
-    fluidCanvasResizerVisible = false;
-    fluidCanvasResizeAxis = 'both';
-    fluidCanvasKeepAspectRatio = false;
-    canvasResizeCallback = undefined;
-    warnedAboutFixedCanvasSize = false;
-    if (fluidResizeFrame !== null) {
-      cancelAnimationFrame(fluidResizeFrame);
-      fluidResizeFrame = null;
-    }
+    fluidCanvas.reset();
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     const resetSize = resetCanvasSize(canvas, DEFAULT_OUTPUT_SIZE);
@@ -540,9 +431,7 @@
         return;
       }
 
-      const usesFluidCanvas = /\bsetFluidSize\s*\(/.test(
-        stripJavaScriptStrings(stripJavaScriptComments(processedCode))
-      );
+      const dimensions = fluidCanvas.getExecutionDimensions(processedCode);
 
       await jsRunner.executeJavaScript(nodeId, processedCode, {
         customConsole,
@@ -553,10 +442,8 @@
           settings: createSettingsAPI(settingsManager),
           canvas,
           ctx,
-          // Preserve primitive-number behavior for fixed canvases. Fluid canvases need
-          // live dimensions because JSRunner otherwise snapshots function parameters.
-          width: usesFluidCanvas ? widthDimension : outputWidth,
-          height: usesFluidCanvas ? heightDimension : outputHeight,
+          width: dimensions.width,
+          height: dimensions.height,
           mouse,
           noDrag: () => {
             dragEnabled = false;
@@ -579,11 +466,9 @@
             videoOutputEnabled = false;
             updateNodeInternals(nodeId);
           },
-          setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
-          setFluidSize: (options?: FluidCanvasOptions) => setFluidSize(options),
-          onCanvasResize: (callback: (size: { width: number; height: number }) => void) => {
-            canvasResizeCallback = callback;
-          },
+          setCanvasSize: fluidCanvas.setFixedCanvasSize,
+          setFluidSize: fluidCanvas.setFluidSize,
+          onCanvasResize: fluidCanvas.onCanvasResize,
           setPrimaryButton: (primaryButton: PrimaryButton) => {
             eventBus.dispatch({
               type: 'nodePrimaryButtonUpdate',
@@ -624,7 +509,7 @@
         }
       });
 
-      if (!fluidCanvas && (width !== undefined || height !== undefined)) {
+      if (!fluidCanvas.isFluid && (width !== undefined || height !== undefined)) {
         updateNode(nodeId, { width: undefined, height: undefined });
       }
     } catch (error) {
@@ -660,7 +545,7 @@
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
     }
-    if (fluidResizeFrame !== null) cancelAnimationFrame(fluidResizeFrame);
+    fluidCanvas.reset();
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
     glSystem?.removeNode(nodeId);
     jsRunner.destroy(nodeId);
@@ -679,24 +564,24 @@
 </script>
 
 <div class="relative">
-  {#if selected && fluidCanvas && fluidCanvasResizerVisible}
-    {#if fluidCanvasResizeAxis === 'both' || fluidCanvasKeepAspectRatio}
+  {#if selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible}
+    {#if fluidCanvas.resizeAxis === 'both' || fluidCanvas.keepAspectRatio}
       <NodeResizer
         class="z-1"
         minWidth={100}
         minHeight={80}
-        keepAspectRatio={fluidCanvasKeepAspectRatio}
-        onResize={handleFluidCanvasResize}
+        keepAspectRatio={fluidCanvas.keepAspectRatio}
+        onResize={fluidCanvas.handleResize}
       />
     {:else}
-      {#each fluidCanvasResizeControlPositions as position (position)}
+      {#each fluidCanvas.resizeControlPositions as position (position)}
         <NodeResizeControl
           class="z-1"
           {position}
           variant={ResizeControlVariant.Line}
           minWidth={100}
           minHeight={80}
-          onResize={handleFluidCanvasResize}
+          onResize={fluidCanvas.handleResize}
         />
       {/each}
     {/if}
@@ -727,7 +612,7 @@
     onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
     onSettingsRevertAll={() => settingsManager.revertAll()}
     hideBorder={data.hideBorder}
-    {displayExtraMenuItems}
+    displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
   >
     {#snippet topHandle()}
       {#each Array.from({ length: inletCount }) as _, index (index)}
