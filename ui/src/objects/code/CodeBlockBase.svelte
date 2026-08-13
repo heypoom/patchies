@@ -127,6 +127,10 @@
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 1);
 
+  let settingsSidebarLabel = $derived(
+    (supportsLibraries && data.libraryName) || data.title || nodeLabel
+  );
+
   let showEditor = $state(false);
   let showSettings = $state(false);
   let contentWidth = $state(100);
@@ -422,7 +426,7 @@
 
     return registerSettingsSidebarTarget({
       id: nodeId,
-      label: nodeLabel,
+      label: settingsSidebarLabel,
       schema: settingsSchema,
       values: settingsValues,
       onValueChange: (key, value) => onSettingsValueChange?.(key, value),
