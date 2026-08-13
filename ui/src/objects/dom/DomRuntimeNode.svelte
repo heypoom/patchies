@@ -335,6 +335,8 @@
   title={data.title ?? titleFallback}
   {objectType}
   {nodeId}
+  {codePlaceholder}
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   onrun={runCode}
   {editorReady}
   settingsSchema={data.settingsSchema}

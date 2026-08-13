@@ -228,6 +228,7 @@
   title="swgl"
   objectType="swgl"
   codePlaceholder="Write your SwissGL code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={updateSwissGL}
   onPlaybackToggle={togglePause}

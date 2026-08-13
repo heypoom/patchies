@@ -124,6 +124,7 @@
 
   let languageComp = new Compartment();
   let autocompleteComp = new Compartment();
+  let placeholderComp = new Compartment();
 
   let {
     value = $bindable(),
@@ -186,6 +187,7 @@
   let valueWidgetRunTimeout: ReturnType<typeof setTimeout> | null = null;
   let lastValueWidgetRunAt = 0;
   let pendingValueWidgetRunCode: string | undefined;
+  let languageRequestVersion = 0;
 
   function runValueWidgetCode(code: string | undefined) {
     onrun(code);
@@ -316,6 +318,7 @@
         search(),
 
         languageComp.of(languageExtension),
+        placeholderComp.of(placeholder ? cmPlaceholder(placeholder) : []),
 
         // Error line highlighting with hover tooltips
         tooltips({ parent: document.body }),
@@ -539,11 +542,6 @@
         extensions.push(vim({ status: false }));
       }
 
-      // Add placeholder if provided
-      if (placeholder) {
-        extensions.push(cmPlaceholder(placeholder));
-      }
-
       // Add line wrapping if enabled
       if (lineWrap) {
         extensions.push(EditorView.lineWrapping);
@@ -622,14 +620,16 @@
   $effect(() => {
     const autocomplete = $editorAutocompleteEnabled;
     const hoverHints = $editorHoverHintsEnabled;
+    const requestVersion = ++languageRequestVersion;
 
     loadLanguageExtension(language, { nodeType }, { autocomplete, hoverHints }).then(
       (languageExtension) => {
-        if (editorView) {
+        if (editorView && requestVersion === languageRequestVersion) {
           editorView.dispatch({
             effects: [
               languageComp.reconfigure(languageExtension),
-              autocompleteComp.reconfigure(autocomplete ? autocompletion() : [])
+              autocompleteComp.reconfigure(autocomplete ? autocompletion() : []),
+              placeholderComp.reconfigure(placeholder ? cmPlaceholder(placeholder) : [])
             ]
           });
         }

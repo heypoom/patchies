@@ -272,6 +272,7 @@
   title={data.title ?? 'textmode'}
   objectType="textmode"
   codePlaceholder="Write your Textmode.js code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={updateTextmode}
   bind:previewCanvas

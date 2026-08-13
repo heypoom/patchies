@@ -4,6 +4,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -62,6 +63,19 @@
   let bitmapFrameId: number | null = null;
   const fileName = $derived(data.fileName || 'No ROM loaded');
   const code = $derived(data.code || '');
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language: 'assembly',
+    nodeType: 'uxn',
+    label: 'uxn',
+    title: 'uxn',
+    placeholder: 'Write Uxntal code here...',
+    value: code,
+    onchange: (newCode) => updateNodeData(nodeId, { code: newCode }),
+    onrun: assembleAndLoad
+  }));
 
   const editorGap = 10;
   let previewContainerWidth = $state(0);

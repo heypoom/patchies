@@ -9,12 +9,12 @@
   import { highlightUiua } from '$lib/uiua/uiua-highlight';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import {
-    activeCodeEditorTarget,
     closeCodeEditorOverlay,
     openCodeEditorOverlay
   } from '../../stores/code-editor-layout.store';
   import { createCommonExprEditorTarget } from '$lib/code-editor/common-expr-editor-target';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
+  import { useCodeEditorOverlayTarget } from '$lib/code-editor/use-code-editor-overlay-target.svelte';
   import { editorFontFamily } from '../../stores/editor.store';
 
   import 'highlight.js/styles/tokyo-night-dark.css';
@@ -115,8 +115,9 @@
   let codeEditorRef: CodeEditor | null = $state(null);
   let originalExpr = expr; // Store original for escape functionality
 
-  const isCodeEditorDetached = $derived(
-    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === dataKey
+  const codeEditorOverlay = useCodeEditorOverlayTarget(
+    () => nodeId,
+    () => dataKey
   );
 
   // Escape HTML for safe display
@@ -152,7 +153,7 @@
   });
 
   function enterEditingMode() {
-    if (isCodeEditorDetached) {
+    if (codeEditorOverlay.isOpen) {
       closeCodeEditorOverlay();
     }
 
@@ -269,7 +270,7 @@
   }
 
   export function closeExpandedEditor() {
-    if (isCodeEditorDetached) {
+    if (codeEditorOverlay.isOpen) {
       closeCodeEditorOverlay();
     }
   }
@@ -282,7 +283,7 @@
         {@render handles?.()}
 
         <div class="relative">
-          {#if isEditing && !isCodeEditorDetached}
+          {#if isEditing && !codeEditorOverlay.isOpen}
             <div
               class={[
                 'expr-editor-container nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',

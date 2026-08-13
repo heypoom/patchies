@@ -341,6 +341,7 @@
   title={data.title ?? 'three'}
   objectType="three"
   codePlaceholder="Write your Three.js code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={updateThree}
   bind:previewCanvas

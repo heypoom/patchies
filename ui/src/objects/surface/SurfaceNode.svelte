@@ -725,6 +725,7 @@
   title={data.title ?? 'surface'}
   objectType="surface"
   codePlaceholder="Write your surface interaction code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={runCode}
   onPlaybackToggle={togglePlayback}

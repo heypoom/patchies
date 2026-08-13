@@ -279,6 +279,7 @@
   title={data.title ?? 'canvas'}
   objectType="canvas"
   codePlaceholder="Write your Canvas API code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={updateCanvas}
   onPlaybackToggle={togglePlayback}

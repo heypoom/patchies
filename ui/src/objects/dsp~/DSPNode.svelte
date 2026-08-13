@@ -15,6 +15,7 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { logger } from '$lib/utils/logger';
   import { editorFontFamily } from '../../stores/editor.store';
+  import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
 
   let contentContainer: HTMLDivElement | null = null;
 
@@ -63,6 +64,20 @@
   });
 
   const code = $derived(data.code || '');
+
+  useCodeSidebarTarget(() => ({
+    nodeId,
+    dataKey: 'code',
+    language: 'javascript',
+    nodeType: 'dsp~',
+    label: data.title ?? 'dsp~',
+    title: data.title ?? 'dsp~',
+    placeholder: 'Enter dsp code here...',
+    value: code,
+    onchange: handleCodeChange,
+    onrun: runDSP,
+    lineErrors
+  }));
   const messageInletCount = $derived(data.messageInletCount ?? 0);
   const messageOutletCount = $derived(data.messageOutletCount ?? 0);
   const audioInletCount = $derived(data.audioInletCount ?? 1);

@@ -8,7 +8,6 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import {
-    activeCodeEditorTarget,
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
     openCodeEditorSidebar,
@@ -19,6 +18,7 @@
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
+  import { useCodeEditorOverlayTarget } from '$lib/code-editor/use-code-editor-overlay-target.svelte';
   import { editorFontFamily } from '../../stores/editor.store';
 
   let {
@@ -77,8 +77,9 @@
   const showAudioInput = $derived(data.showAudioInput ?? false);
   const visibleInletCount = $derived((showAudioInput ? 1 : 0) + messageInletCount);
 
-  const isCodeEditorDetached = $derived(
-    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
+  const codeEditorOverlay = useCodeEditorOverlayTarget(
+    () => nodeId,
+    () => 'code'
   );
 
   const detachedSettings = $derived(
@@ -157,7 +158,7 @@
   }
 
   function openInlineEditor() {
-    if (isCodeEditorDetached) {
+    if (codeEditorOverlay.isOpen) {
       closeCodeEditorOverlay();
     }
 
@@ -361,7 +362,7 @@
     </div>
   </div>
 
-  {#if showEditor && !isCodeEditorDetached}
+  {#if showEditor && !codeEditorOverlay.isOpen}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <Tooltip.Root>

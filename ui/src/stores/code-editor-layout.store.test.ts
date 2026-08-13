@@ -66,6 +66,7 @@ describe('code editor layout store', () => {
     expect(get(sidebarView)).toBe('code');
     expect(get(isSidebarOpen)).toBe(true);
     expect(get(sidebarVisibleTabs).has('code')).toBe(true);
+    expect(isDetachedCodeEditorTarget('node-2', 'code')).toBe(false);
 
     closeCodeEditorOverlay();
   });

@@ -430,6 +430,7 @@
   title={data.title ?? 'textmode.dom'}
   objectType="textmode.dom"
   codePlaceholder="Write your Textmode.js code here..."
+  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={runCode}
   onPlaybackToggle={togglePlayback}
