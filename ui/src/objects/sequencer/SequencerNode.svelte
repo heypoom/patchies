@@ -28,7 +28,7 @@
   } = $props();
 
   const store = useStore();
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   function getInitialNodeId() {
@@ -72,6 +72,14 @@
   function setNodeData<T extends keyof SequencerData>(key: T, value: SequencerData[T]): void {
     updateNodeData(nodeId, { ...data, [key]: value });
     tracker.commit(key, data[key], value);
+  }
+
+  function setShowVelocity(value: boolean): void {
+    if (value !== showVelocity) {
+      updateNode(nodeId, { height: nodeHeight * (value ? 2 : 0.5) });
+    }
+
+    setNodeData('showVelocity', value);
   }
 
   function applyTracks(newTracks: TrackData[]): void {
@@ -399,7 +407,7 @@
         onSetOutputMode={(v: string) => setNodeData('outputMode', v as SequencerOutputMode)}
         onSetAudioRate={(v) => setNodeData('audioRate', v)}
         onSetClockMode={(v) => setNodeData('clockMode', v)}
-        onSetShowVelocity={(v) => setNodeData('showVelocity', v)}
+        onSetShowVelocity={setShowVelocity}
         onSetShowInTimeline={(v) => setNodeData('showInTimeline', v)}
         onSetResizable={(v) => setNodeData('resizable', v)}
         onAddTrack={addTrack}
