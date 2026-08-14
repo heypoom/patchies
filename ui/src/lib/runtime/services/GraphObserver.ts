@@ -149,7 +149,11 @@ export class GraphObserver {
     subscription.lastSnapshotKey = snapshotKey;
 
     try {
-      subscription.callback(snapshot);
+      const result = subscription.callback(snapshot) as unknown;
+
+      if (result instanceof Promise) {
+        result.catch((error) => logger.warn('Error in onGraphChange() handler:', error));
+      }
     } catch (error) {
       logger.warn('Error in onGraphChange() handler:', error);
     }

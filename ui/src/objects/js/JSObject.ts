@@ -190,7 +190,21 @@ export class JSObject implements RuntimeObject<JSObjectData> {
           ),
 
         onGraphChange: (query, callback) => {
-          const unsubscribe = this.context.subscribeGraph(query, callback);
+          const notifyGraphChange = (snapshot: Parameters<typeof callback>[0]) => {
+            try {
+              const result = callback(snapshot) as unknown;
+
+              if (result instanceof Promise) {
+                return result.catch((error) =>
+                  handleCodeError(error, code, this.nodeId, customConsole)
+                );
+              }
+            } catch (error) {
+              handleCodeError(error, code, this.nodeId, customConsole);
+            }
+          };
+
+          const unsubscribe = this.context.subscribeGraph(query, notifyGraphChange);
 
           if (!unsubscribe) return () => {};
 

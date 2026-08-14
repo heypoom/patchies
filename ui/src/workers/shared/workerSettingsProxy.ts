@@ -109,6 +109,7 @@ export function createWorkerSettingsProxy(
         cachedValues = Object.fromEntries(
           Object.entries(values).map(([key, value]) => {
             const field = schema.find((candidate) => candidate.key === key);
+
             return [key, field ? cloneSettingsFieldValue(field, value) : value];
           })
         );

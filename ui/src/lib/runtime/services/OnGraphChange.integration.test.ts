@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { MessageSystem } from '$lib/messages';
+import { logger } from '$lib/utils/logger';
 
 import { createTestPatchRuntime } from '../utils/runtime-test-utils';
 
@@ -13,6 +14,7 @@ describe('js onGraphChange', () => {
     messageSystem.unregisterNode(compilerId);
     messageSystem.unregisterNode(glslId);
     messageSystem.updateEdges([]);
+    logger.clearNodeLogs(compilerId);
   });
 
   it('emits generated source for tagged fragments through its output edge', async () => {
@@ -89,6 +91,38 @@ describe('js onGraphChange', () => {
     });
 
     expect(received).toHaveLength(2);
+
+    runtime.destroy();
+  });
+
+  it('routes callback errors to the subscribing JS node', async () => {
+    const runtime = createTestPatchRuntime();
+
+    await runtime.setGraph({
+      objects: [
+        {
+          id: compilerId,
+          type: 'js',
+          data: {
+            runOnMount: true,
+            code: `onGraphChange({ tags: ['shader/foo/*'] }, () => { throw new Error('broken graph callback') })`
+          }
+        },
+        {
+          id: 'fragment',
+          type: 'js',
+          data: { tags: ['shader/foo/function'] }
+        }
+      ],
+      connections: []
+    });
+
+    expect(logger.getNodeLogs(compilerId)).toMatchObject([
+      {
+        level: 'error',
+        args: ['broken graph callback']
+      }
+    ]);
 
     runtime.destroy();
   });
