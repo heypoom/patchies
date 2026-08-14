@@ -1,14 +1,10 @@
 <script lang="ts">
-  import { Check, ChevronsUpDown, PanelLeftOpen, Pin, PinOff, Play } from '@lucide/svelte/icons';
+  import { Check, ChevronsUpDown, Code2, Pin, PinOff, Play } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Command from '$lib/components/ui/command';
   import * as Popover from '$lib/components/ui/popover';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { useCodeSidebarTargetSelection } from '$lib/code-editor/use-code-sidebar-target.svelte';
-  import {
-    defaultEditorLayout,
-    setDefaultEditorLayout
-  } from '../../../stores/editor-layout-settings.store';
 
   const selection = useCodeSidebarTargetSelection();
 
@@ -26,10 +22,6 @@
     })
   );
 
-  function useSidebarByDefault() {
-    setDefaultEditorLayout('sidebar');
-  }
-
   function selectTarget(targetId: string) {
     selection.selectTarget(targetId);
     targetPickerOpen = false;
@@ -37,10 +29,22 @@
   }
 </script>
 
-<div class="flex h-full min-h-0 flex-col">
-  <div class="shrink-0 border-b border-zinc-800 bg-zinc-950 px-3 py-2">
-    <div class="flex items-center gap-2">
-      {#if target}
+{#if !target}
+  <div class="flex h-full flex-col items-center justify-center px-6 text-center">
+    <div
+      class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-500"
+    >
+      <Code2 class="h-5 w-5" />
+    </div>
+    <h2 class="text-sm font-medium text-zinc-300">No code objects</h2>
+    <p class="mt-1 max-w-56 text-xs leading-5 text-zinc-500">
+      Code-capable objects will appear here when they are added to this patch.
+    </p>
+  </div>
+{:else}
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="shrink-0 border-b border-zinc-800 bg-zinc-950 px-3 py-2">
+      <div class="flex items-center gap-2">
         <Popover.Root bind:open={targetPickerOpen}>
           <Popover.Trigger
             class="flex h-8 min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-2 text-left font-mono text-xs text-zinc-200 outline-none hover:border-zinc-600 focus-visible:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-400/20"
@@ -75,29 +79,23 @@
             </Command.Root>
           </Popover.Content>
         </Popover.Root>
-      {:else}
-        <div class="min-w-0">
-          <div class="truncate text-sm font-medium text-zinc-200">Code</div>
-        </div>
-      {/if}
 
-      <div class="flex shrink-0 items-center gap-2">
-        {#if target?.onrun}
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200 focus-visible:ring-2 focus-visible:ring-orange-400/30 focus-visible:outline-none"
-                onclick={() => target?.onrun?.()}
-                aria-label="Run code"
-              >
-                <Play class="h-3.5 w-3.5" />
-              </button>
-            </Tooltip.Trigger>
+        <div class="flex shrink-0 items-center gap-2">
+          {#if target.onrun}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200 focus-visible:ring-2 focus-visible:ring-orange-400/30 focus-visible:outline-none"
+                  onclick={() => target.onrun?.()}
+                  aria-label="Run code"
+                >
+                  <Play class="h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
 
-            <Tooltip.Content>Run Code</Tooltip.Content>
-          </Tooltip.Root>
-        {/if}
-        {#if target}
+              <Tooltip.Content>Run Code</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
@@ -118,19 +116,15 @@
             </Tooltip.Trigger>
             <Tooltip.Content>{pinnedTargetId ? 'Unpin target' : 'Pin target'}</Tooltip.Content>
           </Tooltip.Root>
-        {/if}
+        </div>
       </div>
-    </div>
 
-    {#if target}
       <p class="mt-1.5 truncate font-mono text-[11px] text-zinc-500">
         {pinnedTargetId ? 'Pinned' : 'Following canvas selection'}
       </p>
-    {/if}
-  </div>
+    </div>
 
-  <div class="sidebar-code-editor min-h-0 flex-1 overflow-hidden">
-    {#if target}
+    <div class="sidebar-code-editor min-h-0 flex-1 overflow-hidden">
       {#key `${target.nodeId}:${target.dataKey}`}
         <CodeEditor
           value={target.value}
@@ -144,27 +138,9 @@
           dataKey={target.dataKey}
         />
       {/key}
-    {:else}
-      <div class="flex h-full items-center justify-center px-4 text-center">
-        <div class="flex max-w-[220px] flex-col items-center gap-3">
-          <div class="text-sm leading-5 text-zinc-500">
-            Select a code-capable object to edit it here.
-          </div>
-
-          <button
-            class="inline-flex cursor-pointer items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-            onclick={useSidebarByDefault}
-            disabled={$defaultEditorLayout === 'sidebar'}
-          >
-            <PanelLeftOpen class="h-3.5 w-3.5" />
-
-            {$defaultEditorLayout === 'sidebar' ? 'Sidebar Is Default' : 'Use Sidebar by Default'}
-          </button>
-        </div>
-      </div>
-    {/if}
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   :global(.sidebar-code-editor .code-editor-container) {
