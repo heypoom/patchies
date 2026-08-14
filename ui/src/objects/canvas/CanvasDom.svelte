@@ -32,6 +32,8 @@
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
   import { useNodeDataTracker } from '$lib/history';
   import { useFluidCanvas } from './useFluidCanvas.svelte';
+  import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
+  import { CanvasDomExpandController } from '$lib/canvas/CanvasDomExpandController';
 
   let {
     id: nodeId,
@@ -94,7 +96,7 @@
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
   let pausedCallback: FrameRequestCallback | null = null;
-  const { updateNode, updateNodeData } = useSvelteFlow();
+  const { updateNode, updateNodeData, getNodes } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
@@ -113,7 +115,21 @@
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
+
+  let isExpanded = $state(false);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
+  let expandController: CanvasDomExpandController | null = null;
+
+  const expandedPreviewPortalTarget = $derived(
+    isExpanded && typeof document !== 'undefined' ? SurfaceOverlay.getInstance().customHost : null
+  );
+
+  const canvasDisplayStyle = $derived(
+    isExpanded
+      ? 'width:auto;height:auto;max-width:100vw;max-height:100vh;'
+      : `width: ${previewWidth}px; height: ${previewHeight}px;`
+  );
 
   // Watch for executeCode timestamp changes and re-run when it changes
   $effect(() => {
@@ -325,9 +341,7 @@
     canvas.width = outputWidth;
     canvas.height = outputHeight;
 
-    // Display at preview size
-    canvas.style.width = `${previewWidth}px`;
-    canvas.style.height = `${previewHeight}px`;
+    applyCanvasDisplaySize();
 
     ctx = canvas.getContext('2d');
   }
@@ -342,11 +356,34 @@
     canvas.width = width;
     canvas.height = height;
 
-    // Update display size - calculate directly instead of using $derived values
-    // which may not have updated yet in the same synchronous execution
-    canvas.style.width = `${width / PREVIEW_SCALE_FACTOR}px`;
-    canvas.style.height = `${height / PREVIEW_SCALE_FACTOR}px`;
+    applyCanvasDisplaySize(width, height);
   }
+
+  function applyCanvasDisplaySize(width = outputWidth, height = outputHeight) {
+    if (!canvas) return;
+
+    if (isExpanded) {
+      Object.assign(canvas.style, {
+        width: 'auto',
+        height: 'auto',
+        maxWidth: '100vw',
+        maxHeight: '100vh'
+      });
+      return;
+    }
+
+    Object.assign(canvas.style, {
+      width: `${width / PREVIEW_SCALE_FACTOR}px`,
+      height: `${height / PREVIEW_SCALE_FACTOR}px`,
+      maxWidth: '',
+      maxHeight: ''
+    });
+  }
+
+  $effect(() => {
+    isExpanded;
+    applyCanvasDisplaySize();
+  });
 
   async function sendBitmap() {
     if (!canvas) return;
@@ -530,6 +567,16 @@
 
     setupCanvas();
 
+    expandController = new CanvasDomExpandController({
+      nodeId,
+      getNodes,
+      overlay: SurfaceOverlay.getInstance(),
+      onActiveChange: (active) => {
+        isExpanded = active;
+      },
+      focusCanvas: () => canvas?.focus()
+    });
+
     const cleanupMouse = setupMouseListeners();
     const cleanupKeyboard = setupKeyboardListeners();
     setTimeout(() => {
@@ -543,6 +590,7 @@
   });
 
   onDestroy(() => {
+    expandController?.exit();
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
     }
@@ -551,6 +599,16 @@
     glSystem?.removeNode(nodeId);
     jsRunner.destroy(nodeId);
   });
+
+  function toggleExpandedCanvas() {
+    if (!expandController) return;
+
+    if (expandController.isActive) {
+      expandController.exit();
+    } else {
+      expandController.enter();
+    }
+  }
 
   const handleClass = $derived.by(() => {
     // only apply the custom handles if setHidePorts(true) is set
@@ -603,7 +661,10 @@
     nopan={!panEnabled}
     nowheel={!wheelEnabled}
     tabindex={0}
-    style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+    style={canvasDisplayStyle}
+    onCustomExpandToggle={toggleExpandedCanvas}
+    customExpanded={isExpanded}
+    previewPortalTarget={expandedPreviewPortalTarget}
     {selected}
     {editorReady}
     hasError={lineErrors !== undefined}
