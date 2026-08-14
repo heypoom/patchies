@@ -141,9 +141,9 @@
     }
   }
 
-  async function handleRun() {
+  async function handleRun(expression = expr) {
     warnIfNoOutletConnection();
-    await audioService.send(nodeId, 'expr', expr);
+    await audioService.send(nodeId, 'expr', expression);
     await play();
   }
 
@@ -334,6 +334,7 @@
           editorClass="bytebeat-node-code-editor"
           previewContainerClass="bytebeat-node-preview-container"
           onExpressionChange={handleExpressionChange}
+          persistOnInput={autoEval}
           exitOnRun={false}
           onRun={handleRun}
           hasError={!!errorMessage}

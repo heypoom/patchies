@@ -60,6 +60,7 @@
     language = 'javascript',
     onExpressionChange = () => {},
     onRun = () => {},
+    persistOnInput = true,
     exitOnRun = true,
     runOnExit = false,
     extraExtensions = [],
@@ -90,8 +91,10 @@
     class?: string;
     fontSize?: string;
     language?: SupportedLanguage;
-    onRun?: () => void;
+    onRun?: (expr?: string) => void;
     onExpressionChange?: (expr: string) => void;
+    /** Persist each edit immediately. Runtime-managed nodes can defer until run or blur. */
+    persistOnInput?: boolean;
     exitOnRun?: boolean;
     runOnExit?: boolean;
     extraExtensions?: any[];
@@ -173,15 +176,10 @@
   function exitEditingMode(save: boolean = true) {
     isEditing = false;
 
-    if (runOnExit) {
-      onRun?.();
-    }
-
     if (!save) {
       // Restore original expression on escape
       expr = originalExpr;
-      updateNodeData(nodeId, { expr: originalExpr });
-      onExpressionChange(originalExpr);
+      persistExpression(originalExpr);
 
       // If the original expression was empty, delete the node (unless empty is allowed)
       if (!originalExpr.trim() && !allowEmptyExpr) {
@@ -193,12 +191,16 @@
     if (save) {
       if (expr.trim()) {
         const trimmedExpr = expr.trim();
-        updateNodeData(nodeId, { expr: trimmedExpr });
-        onExpressionChange(trimmedExpr);
+        expr = trimmedExpr;
+        persistExpression(trimmedExpr);
       } else if (!allowEmptyExpr) {
         // If trying to save with empty expression, delete the node (unless empty is allowed)
         deleteElements({ nodes: [{ id: nodeId }] });
       }
+    }
+
+    if (save && runOnExit) {
+      onRun?.(expr);
     }
   }
 
@@ -210,8 +212,25 @@
 
   function handleExpressionUpdate(value: string) {
     expr = value;
+
+    if (persistOnInput) {
+      persistExpression(value);
+    }
+  }
+
+  function persistExpression(value: string) {
     updateNodeData(nodeId, { expr: value });
     onExpressionChange(value);
+  }
+
+  function handleDetachedRun(value?: string) {
+    const expression = value ?? expr;
+
+    if (!persistOnInput) {
+      persistExpression(expression);
+    }
+
+    onRun?.(expression);
   }
 
   useCodeSidebarTarget(() => ({
@@ -224,7 +243,8 @@
     placeholder,
     value: expr,
     onchange: handleExpressionUpdate,
-    onrun: onRun,
+    onrun: handleDetachedRun,
+    persistOnChange: persistOnInput,
     customActions: detachedActions,
     customSettings: detachedSettings,
     lineWrap
@@ -259,8 +279,9 @@
         nodeType,
         title: detachedEditorTitle,
         placeholder,
-        onchange: onExpressionChange,
-        onrun: onRun,
+        onchange: handleExpressionUpdate,
+        onrun: handleDetachedRun,
+        persistOnChange: persistOnInput,
         customActions: detachedActions,
         customSettings: detachedSettings
       })
@@ -298,9 +319,15 @@
                 value={expr}
                 onchange={handleExpressionUpdate}
                 onrun={() => {
-                  if (exitOnRun) exitEditingMode(true);
+                  if (exitOnRun) {
+                    exitEditingMode(true);
 
-                  onRun?.();
+                    if (runOnExit) return;
+                  } else if (!persistOnInput) {
+                    persistExpression(expr);
+                  }
+
+                  onRun?.(expr);
                 }}
                 {language}
                 class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}

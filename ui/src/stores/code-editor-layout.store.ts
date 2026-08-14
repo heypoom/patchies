@@ -25,6 +25,10 @@ export interface CodeEditorTarget {
   placeholder?: string;
   onchange?: (value: string) => void | Promise<void>;
   onrun?: (code?: string) => void;
+
+  /** Persist input immediately. Runtime-managed nodes can defer until an explicit run. */
+  persistOnChange?: boolean;
+
   lineErrors?: Record<number, string[]>;
   inlineDecorations?: InlineDecoration[];
   extraExtensions?: Extension[];
