@@ -15,6 +15,7 @@ export const Get = msg('get', { key: Type.String() });
 export const Set = msg('set', { value: Type.Any() });
 export const SetKey = msg('set', { key: Type.String(), value: Type.Any() });
 export const SetCode = msg('setCode', { value: Type.String() });
+export const SetSetting = msg('setSetting', { key: Type.String(), value: Type.Any() });
 export const Clear = sym('clear');
 export const Reset = sym('reset');
 export const Start = sym('start');
@@ -42,6 +43,7 @@ export const COMMON_SCHEMAS = [
   Set,
   SetKey,
   SetCode,
+  SetSetting,
   Clear,
   Reset,
   Start,
@@ -70,6 +72,7 @@ export const messages = {
   set: schema(Set),
   setKey: schema(SetKey),
   setCode: schema(SetCode),
+  setSetting: schema(SetSetting),
   clear: schema(Clear),
   reset: schema(Reset),
   start: schema(Start),

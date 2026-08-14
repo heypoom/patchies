@@ -50,7 +50,7 @@
   }
 
   function setSetting(key: string, value: unknown) {
-    updateNodeData(nodeId, { settings: { ...data.settings, [key]: value } });
+    viewMessageContext.send({ type: 'setSetting', key, value });
   }
 </script>
 

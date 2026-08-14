@@ -1,6 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
 
 import type { AudioNodeV2 } from '$lib/audio';
+import type { PatchiesEventBus } from '$lib/eventbus';
 import type { ProfilerCoordinator } from '$lib/profiler';
 import type { ObjectMetadata, TextObjectClass } from '$lib/objects';
 import type { MessageCallbackFn, MessageSystem } from '$lib/messages';
@@ -25,6 +26,7 @@ import type {
 import type { GraphChangeCallback, GraphChangeQuery } from './GraphObserver';
 
 import type { PatchRuntimeOptions, RuntimeServices } from '../types/patch-runtime';
+import { getLibraryDependentNodeIds } from '$lib/js-runner/js-module-utils';
 
 export class PatchRuntime {
   private graph = new PatchGraph();
@@ -33,6 +35,7 @@ export class PatchRuntime {
   private message: MessageAdapter;
   private audio: AudioAdapter;
   private services: RuntimeServices;
+  private eventBus: PatchiesEventBus;
 
   private messageSystem: MessageSystem;
   private profilerCoordinator: ProfilerCoordinator;
@@ -52,7 +55,10 @@ export class PatchRuntime {
       onObjectParamsChange: options.onObjectParamsChange,
       onObjectDataChange: options.onObjectDataChange,
       objectContextOptions: {
-        subscribeGraph: (query, callback) => this.subscribeGraph(query, callback)
+        subscribeGraph: (query, callback) => this.subscribeGraph(query, callback),
+        rerunLibraryDependents: (sourceNodeId, libraryName) => {
+          queueMicrotask(() => this.rerunLibraryDependents(sourceNodeId, libraryName));
+        }
       }
     });
 
@@ -63,6 +69,7 @@ export class PatchRuntime {
     });
 
     this.services = options.services;
+    this.eventBus = eventBus;
     this.messageSystem = messageSystem;
     this.profilerCoordinator = profilerCoordinator;
 
@@ -294,6 +301,45 @@ export class PatchRuntime {
       sync = this.objectSyncQueue.current;
       await sync;
     } while (sync !== this.objectSyncQueue.current);
+  }
+
+  private async rerunLibraryDependents(sourceNodeId: string, libraryName: string): Promise<void> {
+    const dependentNodeIds = getLibraryDependentNodeIds(
+      this.graph.getObjects(),
+      libraryName,
+      sourceNodeId
+    );
+
+    for (const nodeId of dependentNodeIds) {
+      if (await this.message.runObjectAsLibraryDependent(nodeId)) continue;
+
+      const object = this.graph.getObjects().find(({ id }) => id === nodeId);
+      if (!object) continue;
+
+      const executeCode =
+        (typeof object.data.executeCode === 'number' ? object.data.executeCode : 0) + 1;
+
+      const updates = { executeCode };
+
+      this.graph.upsertObject({
+        ...object,
+        data: {
+          ...object.data,
+          ...updates
+        }
+      });
+
+      this.eventBus.dispatch({
+        type: 'objectDataChanged',
+        nodeId,
+        data: { ...object.data, ...updates },
+        updates
+      });
+    }
+
+    await this.startObjectSync();
+    this.syncNodeTypes();
+    this.graphObserver.notify();
   }
 
   private syncConnections(): void {

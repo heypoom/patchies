@@ -182,6 +182,15 @@ export class MessageAdapter {
     return () => messageContext.queue.removeCallback(callback);
   }
 
+  async runObjectAsLibraryDependent(nodeId: string): Promise<boolean> {
+    const object = this.objectService.getObjectById(nodeId);
+
+    if (!object?.runAsLibraryDependent) return false;
+
+    await object.runAsLibraryDependent();
+    return true;
+  }
+
   updateEdges(edges: Edge[]): void {
     this.messageSystem.updateEdges(edges);
   }

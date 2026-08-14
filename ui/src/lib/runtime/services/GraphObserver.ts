@@ -68,12 +68,15 @@ export class GraphObserver {
 
   private getSnapshot(query: GraphChangeQuery): GraphSnapshot {
     const graph = this.getGraph();
+
     const nodes = graph.objects.flatMap((node) => {
       const tags = getUserTags(node.data.tags);
 
       return nodeMatchesTags(tags, query.tags) ? [{ ...node, tags }] : [];
     });
+
     const matchingNodeIds = new Set(nodes.map((node) => node.id));
+
     const edges = (graph.connections ?? []).flatMap((edge) =>
       matchingNodeIds.has(edge.source) && matchingNodeIds.has(edge.target)
         ? [
@@ -97,11 +100,11 @@ export class GraphObserver {
 
     if (snapshot.nodes.length === 0) {
       subscription.lastSnapshotKey = undefined;
+
       return;
     }
 
     const snapshotKey = hash(snapshot);
-
     if (snapshotKey === subscription.lastSnapshotKey) return;
 
     subscription.lastSnapshotKey = snapshotKey;
@@ -114,10 +117,9 @@ export class GraphObserver {
   }
 }
 
-function nodeMatchesTags(tags: string[], patterns: string[]): boolean {
-  return patterns.some((pattern) =>
+const nodeMatchesTags = (tags: string[], patterns: string[]): boolean =>
+  patterns.some((pattern) =>
     tags.some((tag) =>
       pattern.endsWith('/*') ? tag.startsWith(pattern.slice(0, -1)) : tag === pattern
     )
   );
-}

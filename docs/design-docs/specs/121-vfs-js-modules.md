@@ -92,6 +92,8 @@ This reuses the existing module sync infrastructure entirely — no new message 
 
 When a library is explicitly re-run, all canvas nodes that import it re-execute. This includes transitive library dependencies: if `render-utils` imports `math-utils`, re-running `math-utils` first refreshes `render-utils`, then every node importing either library re-executes. A `// @lib` node exposes this re-run button in its editor and supports Shift+Enter for the same action.
 
+The headless `js` runtime owns this lifecycle. The Svelte node only requests execution; when a library registers, the runtime finds and re-runs its dependents without restoring execution state to the view.
+
 When a VFS JS file changes, all nodes that import from it should use the same dependent re-execution flow. JSRunner needs to track VFS file → importer node dependencies.
 
 ### Snippet Preset Integration
