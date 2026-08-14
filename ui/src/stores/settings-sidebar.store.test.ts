@@ -6,7 +6,8 @@ afterEach(() => {
   settingsSidebarSelection.set({
     activeTargetId: null,
     pinnedTargetId: null,
-    lastSelectedNodeId: null
+    lastSelectedNodeId: null,
+    lastSelectedNodeTargetId: null
   });
 });
 
@@ -15,7 +16,8 @@ describe('settings sidebar selection', () => {
     settingsSidebarSelection.set({
       activeTargetId: 'node-2',
       pinnedTargetId: 'node-2',
-      lastSelectedNodeId: 'node-1'
+      lastSelectedNodeId: 'node-1',
+      lastSelectedNodeTargetId: 'node-1'
     });
 
     expect(get(settingsSidebarSelection)).toMatchObject({

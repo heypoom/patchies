@@ -37,9 +37,8 @@ export function useSettingsSidebarTargetSelection(): {
   );
 
   $effect(() => {
-    const { activeTargetId, pinnedTargetId, lastSelectedNodeId } = untrack(
-      () => selectionState.current
-    );
+    const { activeTargetId, pinnedTargetId, lastSelectedNodeId, lastSelectedNodeTargetId } =
+      untrack(() => selectionState.current);
     const requestedId = requestedTargetId.current;
 
     const requestedTarget = requestedId
@@ -68,14 +67,22 @@ export function useSettingsSidebarTargetSelection(): {
       : undefined;
 
     const selectedNodeId = selectedNode.current?.id ?? null;
+    const selectedTargetRegisteredAfterSelection =
+      selectedTarget !== undefined && lastSelectedNodeTargetId === null;
 
-    if (selectedTarget && selectedNodeId !== lastSelectedNodeId) {
+    if (
+      selectedTarget &&
+      (selectedNodeId !== lastSelectedNodeId || selectedTargetRegisteredAfterSelection)
+    ) {
       updateSelectionState({ activeTargetId: selectedTarget.id });
     } else if (!activeTargetId || !targets.some((target) => target.id === activeTargetId)) {
       updateSelectionState({ activeTargetId: targets[0]?.id ?? null });
     }
 
-    updateSelectionState({ lastSelectedNodeId: selectedNodeId });
+    updateSelectionState({
+      lastSelectedNodeId: selectedNodeId,
+      lastSelectedNodeTargetId: selectedTarget?.id ?? null
+    });
   });
 
   function selectTarget(targetId: string): void {
