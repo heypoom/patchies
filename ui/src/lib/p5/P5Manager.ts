@@ -3,7 +3,6 @@ import { GLSystem } from '$lib/canvas/GLSystem';
 import type { UserFnRunContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import { deleteAfterComment } from '$lib/js-runner/js-module-utils';
-import type { Viewport } from '@xyflow/svelte';
 import { revokeObjectUrls } from '$lib/vfs';
 import { profiler } from '$lib/profiler';
 import type { SettingsAPI } from '$lib/settings';
@@ -69,7 +68,7 @@ interface P5SketchConfig {
   setMouseForwarding?: (rules?: SurfaceMouseForwardingRules) => void;
   expandSurface?: () => void;
   collapseSurface?: () => void;
-  useViewportMouseScale?: boolean;
+  normalizeInlineMouseCoordinates?: boolean;
 }
 
 interface P5CanvasSnapshot {
@@ -87,15 +86,13 @@ export class P5Manager {
   public shouldSendBitmap = true;
 
   private container: HTMLElement | null = null;
-  private viewport: { current: Viewport } | null = null;
   private onSurfaceFrame: ((canvas: HTMLCanvasElement) => void) | null = null;
 
   private static compatLibsLoaded = false;
 
-  constructor(nodeId: string, container: HTMLElement, viewport?: { current: Viewport }) {
+  constructor(nodeId: string, container: HTMLElement) {
     this.nodeId = nodeId;
     this.container = container;
-    this.viewport = viewport || null;
 
     // @ts-expect-error -- expose for debugging
     window[nodeId] = this;
@@ -248,33 +245,57 @@ export class P5Manager {
           userCode?.preload?.call(p);
         };
 
-        // Inline p5 canvases live inside the zoomed XYFlow surface, so p5's
-        // browser coordinates need to be mapped back into node-local space.
-        // Expanded surface canvases are fixed DOM overlays and must not use
-        // XYFlow zoom for mouse coordinates.
-        const adjustMouseForZoom = () => {
-          if (!this.viewport || config.useViewportMouseScale === false) return;
+        // p5 derives pointer coordinates from the canvas's untransformed layout width.
+        // Inline canvases are scaled by XYFlow, so correct them immediately after p5
+        // receives an event. Doing this at the source keeps mouseX and pmouseX in the
+        // same coordinate space for draw(), including line(pmouseX, ..., mouseX, ...).
+        const installInlinePointerCoordinateNormalization = () => {
+          if (config.normalizeInlineMouseCoordinates === false) return;
 
-          const zoom = this.viewport.current.zoom;
-          // Store original values
-          const originalMouseX = p.mouseX;
-          const originalMouseY = p.mouseY;
-          const originalPmouseX = p.pmouseX;
-          const originalPmouseY = p.pmouseY;
+          const pointerSketch = p as Sketch & {
+            _hasMouseInteracted?: boolean;
+            _updatePointerCoords?: (event: PointerEvent) => void;
+            canvas?: HTMLCanvasElement;
+          };
+          const updatePointerCoords = pointerSketch._updatePointerCoords;
 
-          // !! Adjust for zoom
-          // @ts-expect-error -- we are hacking the p5 instance here
-          p.mouseX = originalMouseX / zoom;
+          if (!updatePointerCoords) return;
 
-          // @ts-expect-error -- we are hacking the p5 instance here
-          p.mouseY = originalMouseY / zoom;
+          pointerSketch._updatePointerCoords = function (event: PointerEvent) {
+            const isFirstPointerUpdate = !this._hasMouseInteracted;
+            updatePointerCoords.call(this, event);
 
-          // @ts-expect-error -- we are hacking the p5 instance here
-          p.pmouseX = originalPmouseX / zoom;
+            const canvas = this.canvas;
+            if (!canvas) return;
 
-          // @ts-expect-error -- we are hacking the p5 instance here
-          p.pmouseY = originalPmouseY / zoom;
+            const bounds = canvas.getBoundingClientRect();
+            const scaleX = canvas.scrollWidth / bounds.width;
+            const scaleY = canvas.scrollHeight / bounds.height;
+
+            if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) return;
+
+            // p5's public coordinate properties are typed as readonly even though
+            // its own pointer implementation updates them at runtime.
+            const mutablePointerSketch = this as unknown as {
+              mouseX: number;
+              mouseY: number;
+              pmouseX: number;
+              pmouseY: number;
+            };
+
+            mutablePointerSketch.mouseX *= scaleX;
+            mutablePointerSketch.mouseY *= scaleY;
+
+            // p5 initializes pmouse from mouse during its first pointer update. On
+            // following events it is already the previous normalized frame value.
+            if (isFirstPointerUpdate) {
+              mutablePointerSketch.pmouseX *= scaleX;
+              mutablePointerSketch.pmouseY *= scaleY;
+            }
+          };
         };
+
+        installInlinePointerCoordinateNormalization();
 
         // Guard: only dispatch mouse events that originate within the canvas bounds.
         // P5.js v2 listens on the window, so events outside the canvas still fire.
@@ -300,8 +321,6 @@ export class P5Manager {
         };
 
         p.mousePressed = function (event: MouseEvent) {
-          adjustMouseForZoom();
-
           if (isMouseInCanvas()) {
             userCode?.mousePressed?.call(p, event);
             dispatchSurfacePointer(event.buttons || 1, 'down');
@@ -309,8 +328,6 @@ export class P5Manager {
         };
 
         p.mouseReleased = function (event: MouseEvent) {
-          adjustMouseForZoom();
-
           if (isMouseInCanvas()) {
             userCode?.mouseReleased?.call(p, event);
             dispatchSurfacePointer(0, 'up');
@@ -318,16 +335,12 @@ export class P5Manager {
         };
 
         p.mouseClicked = function (event: MouseEvent) {
-          adjustMouseForZoom();
-
           if (isMouseInCanvas()) {
             userCode?.mouseClicked?.call(p, event);
           }
         };
 
         p.mouseMoved = function (event: MouseEvent) {
-          adjustMouseForZoom();
-
           if (isMouseInCanvas()) {
             userCode?.mouseMoved?.call(p, event);
             dispatchSurfacePointer(event.buttons, 'move');
@@ -335,8 +348,6 @@ export class P5Manager {
         };
 
         p.mouseDragged = function (event: MouseEvent) {
-          adjustMouseForZoom();
-
           if (isMouseInCanvas()) {
             userCode?.mouseDragged?.call(p, event);
             dispatchSurfacePointer(event.buttons, 'move');
@@ -344,8 +355,6 @@ export class P5Manager {
         };
 
         p.mouseWheel = function (event: WheelEvent) {
-          adjustMouseForZoom();
-
           if (isMouseInCanvas()) {
             userCode?.mouseWheel?.call(p, event);
             dispatchSurfaceWheel(event);
@@ -353,8 +362,6 @@ export class P5Manager {
         };
 
         p.doubleClicked = function (event: MouseEvent) {
-          adjustMouseForZoom();
-
           if (isMouseInCanvas()) {
             userCode?.doubleClicked?.call(p, event);
           }
