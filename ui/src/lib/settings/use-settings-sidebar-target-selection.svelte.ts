@@ -1,12 +1,15 @@
 import { fromStore } from 'svelte/store';
+import { untrack } from 'svelte';
 
 import { selectedNodeInfo } from '../../stores/ui.store';
 
 import {
   requestSettingsSidebarTargetId,
+  settingsSidebarSelection,
   settingsSidebarTargets,
   type SettingsSidebarTarget
 } from '../../stores/settings-sidebar.store';
+import { useSidebarSelectionState } from '$lib/sidebar/use-sidebar-selection-state.svelte';
 
 export function useSettingsSidebarTargetSelection(): {
   readonly targets: SettingsSidebarTarget[];
@@ -15,11 +18,11 @@ export function useSettingsSidebarTargetSelection(): {
   selectTarget: (targetId: string) => void;
   togglePin: () => void;
 } {
-  let activeTargetId = $state<string | null>(null);
-  let pinnedTargetId = $state<string | null>(null);
-  let lastSelectedNodeId = $state<string | null>(null);
-
   const sidebarTargets = fromStore(settingsSidebarTargets);
+
+  const { state: selectionState, update: updateSelectionState } =
+    useSidebarSelectionState(settingsSidebarSelection);
+
   const requestedTargetId = fromStore(requestSettingsSidebarTargetId);
   const selectedNode = fromStore(selectedNodeInfo);
 
@@ -28,10 +31,14 @@ export function useSettingsSidebarTargetSelection(): {
   );
 
   const activeTarget = $derived(
-    activeTargetId ? (targets.find((target) => target.id === activeTargetId) ?? null) : null
+    selectionState.current.activeTargetId
+      ? (targets.find((target) => target.id === selectionState.current.activeTargetId) ?? null)
+      : null
   );
 
   $effect(() => {
+    const { activeTargetId, pinnedTargetId, lastSelectedNodeId, lastSelectedNodeTargetId } =
+      untrack(() => selectionState.current);
     const requestedId = requestedTargetId.current;
 
     const requestedTarget = requestedId
@@ -39,7 +46,7 @@ export function useSettingsSidebarTargetSelection(): {
       : undefined;
 
     if (requestedTarget) {
-      activeTargetId = requestedTarget.id;
+      updateSelectionState({ activeTargetId: requestedTarget.id });
       requestSettingsSidebarTargetId.set(null);
       return;
     }
@@ -49,33 +56,45 @@ export function useSettingsSidebarTargetSelection(): {
       : undefined;
 
     if (pinnedTarget) {
-      activeTargetId = pinnedTarget.id;
+      updateSelectionState({ activeTargetId: pinnedTarget.id });
       return;
     }
 
-    if (pinnedTargetId) pinnedTargetId = null;
+    if (pinnedTargetId) updateSelectionState({ pinnedTargetId: null });
 
     const selectedTarget = selectedNode.current
       ? targets.find((target) => target.id === selectedNode.current?.id)
       : undefined;
 
     const selectedNodeId = selectedNode.current?.id ?? null;
+    const selectedTargetRegisteredAfterSelection =
+      selectedTarget !== undefined && lastSelectedNodeTargetId === null;
 
-    if (selectedTarget && selectedNodeId !== lastSelectedNodeId) {
-      activeTargetId = selectedTarget.id;
+    if (
+      selectedTarget &&
+      (selectedNodeId !== lastSelectedNodeId || selectedTargetRegisteredAfterSelection)
+    ) {
+      updateSelectionState({ activeTargetId: selectedTarget.id });
     } else if (!activeTargetId || !targets.some((target) => target.id === activeTargetId)) {
-      activeTargetId = targets[0]?.id ?? null;
+      updateSelectionState({ activeTargetId: targets[0]?.id ?? null });
     }
 
-    lastSelectedNodeId = selectedNodeId;
+    updateSelectionState({
+      lastSelectedNodeId: selectedNodeId,
+      lastSelectedNodeTargetId: selectedTarget?.id ?? null
+    });
   });
 
   function selectTarget(targetId: string): void {
-    activeTargetId = targetId;
+    updateSelectionState({ activeTargetId: targetId });
   }
 
   function togglePin(): void {
-    pinnedTargetId = pinnedTargetId ? null : activeTargetId;
+    updateSelectionState({
+      pinnedTargetId: selectionState.current.pinnedTargetId
+        ? null
+        : selectionState.current.activeTargetId
+    });
   }
 
   return {
@@ -89,7 +108,7 @@ export function useSettingsSidebarTargetSelection(): {
       return activeTarget;
     },
     get pinnedTargetId() {
-      return pinnedTargetId;
+      return selectionState.current.pinnedTargetId;
     }
   };
 }

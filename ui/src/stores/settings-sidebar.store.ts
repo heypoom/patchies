@@ -39,6 +39,21 @@ export const settingsSidebarTargets = writable<Map<string, SettingsSidebarTarget
 /** Set when a node action explicitly opens its settings in the sidebar. */
 export const requestSettingsSidebarTargetId = writable<string | null>(null);
 
+export interface SettingsSidebarSelectionState {
+  activeTargetId: string | null;
+  pinnedTargetId: string | null;
+  lastSelectedNodeId: string | null;
+  lastSelectedNodeTargetId: string | null;
+}
+
+/** Preserves Settings sidebar target choice while its tab is unmounted. */
+export const settingsSidebarSelection = writable<SettingsSidebarSelectionState>({
+  activeTargetId: null,
+  pinnedTargetId: null,
+  lastSelectedNodeId: null,
+  lastSelectedNodeTargetId: null
+});
+
 export function registerSettingsSidebarTarget(target: SettingsSidebarTarget): () => void {
   settingsSidebarTargets.update((targets) => {
     const next = new Map(targets);

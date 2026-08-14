@@ -1,6 +1,7 @@
 import { get } from 'svelte/store';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  codeSidebarSelection,
   codeSidebarTargets,
   registerCodeSidebarTarget,
   requestCodeSidebarTargetId
@@ -8,6 +9,12 @@ import {
 
 afterEach(() => {
   codeSidebarTargets.set(new Map());
+  codeSidebarSelection.set({
+    activeTargetId: null,
+    pinnedTargetId: null,
+    lastSelectedNodeId: null,
+    lastSelectedNodeTargetId: null
+  });
   requestCodeSidebarTargetId.set(null);
 });
 
@@ -30,5 +37,19 @@ describe('code sidebar targets', () => {
 
     unregisterSecond();
     expect(get(codeSidebarTargets).size).toBe(0);
+  });
+
+  it('retains the selected and pinned target outside the tab component lifecycle', () => {
+    codeSidebarSelection.set({
+      activeTargetId: 'node-2',
+      pinnedTargetId: 'node-2',
+      lastSelectedNodeId: 'node-1',
+      lastSelectedNodeTargetId: 'node-1'
+    });
+
+    expect(get(codeSidebarSelection)).toMatchObject({
+      activeTargetId: 'node-2',
+      pinnedTargetId: 'node-2'
+    });
   });
 });
