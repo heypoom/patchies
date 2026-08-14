@@ -269,6 +269,7 @@
         settingsManager.clearCallbacks();
         p5Manager.shouldSendBitmap = true;
         surfaceMode.setMouseForwarding();
+
         updateNodeData(nodeId, getBorderResetDataForRun(data));
 
         await p5Manager.updateCode({

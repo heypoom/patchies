@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { useSvelteFlow, useUpdateNodeInternals, useViewport } from '@xyflow/svelte';
+  import {
+    NodeResizer,
+    NodeResizeControl,
+    ResizeControlVariant,
+    useSvelteFlow,
+    useUpdateNodeInternals,
+    useViewport
+  } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -26,6 +33,8 @@
     shouldResetDomSize,
     type DomSize
   } from '$objects/dom/runtime-size';
+  import { useNodeDataTracker } from '$lib/history';
+  import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
 
   export type DomRuntimeRoot = {
     root: HTMLElement;
@@ -53,12 +62,15 @@
     settingsSchema?: SettingsSchema;
     settings?: Record<string, unknown>;
     noBorder?: boolean;
+    fluidCanvasResizerVisible?: boolean;
   };
 
   let {
     id: nodeId,
     data,
     selected,
+    width: nodeWidth,
+    height: nodeHeight,
     objectType,
     titleFallback,
     codePlaceholder,
@@ -80,6 +92,8 @@
     id: string;
     data: DomRuntimeData;
     selected?: boolean;
+    width?: number;
+    height?: number;
     objectType: string;
     titleFallback: string;
     codePlaceholder: string;
@@ -99,7 +113,7 @@
     onRunReady?: (run: () => void) => void;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNode, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
 
@@ -118,6 +132,7 @@
   const eventBus = PatchiesEventBus.getInstance();
   const jsRunner = JSRunner.getInstance();
   const customConsole = $derived.by(() => createCustomConsole(nodeId));
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   let rootContainer = $state<HTMLDivElement | undefined>();
   let previewContainer = $state<HTMLDivElement | undefined>();
@@ -130,12 +145,28 @@
 
   let containerWidth = $derived(data.width);
   let containerHeight = $derived(data.height);
-  let previewWidth = $derived(transientSize?.width ?? containerWidth);
-  let previewHeight = $derived(transientSize?.height ?? containerHeight);
+  let previewWidth = $derived(transientSize?.width ?? nodeWidth ?? containerWidth);
+  let previewHeight = $derived(transientSize?.height ?? nodeHeight ?? containerHeight);
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
+  const fluidCanvas = useFluidCanvas({
+    getNodeId: () => nodeId,
+    getData: () => data,
+    getNodeSize: () => ({ width: nodeWidth, height: nodeHeight }),
+    getPreviewSize: () => ({ width: previewWidth ?? 400, height: previewHeight ?? 300 }),
+    getCanvasSize: () => ({ width: previewWidth ?? 400, height: previewHeight ?? 300 }),
+    setCanvasSize: (size) => (transientSize = size),
+    updateNode,
+    updateNodeData,
+    commitNodeData: (key, oldValue, newValue) => tracker.commit(key, oldValue, newValue),
+    warn: (message) => customConsole.warn(message),
+    onResizeCallback: (callback) =>
+      callback({ width: previewWidth ?? 400, height: previewHeight ?? 300 }),
+    previewScaleFactor: 1
+  });
 
   $effect(() => {
     onRunReady(runCode);
@@ -191,6 +222,11 @@
   }
 
   function setSize(width: number, height: number) {
+    if (fluidCanvas.isFluid) {
+      fluidCanvas.setFixedCanvasSize(width, height);
+      return;
+    }
+
     updateNodeData(nodeId, { width, height });
   }
 
@@ -219,6 +255,8 @@
     dragEnabled = true;
     panEnabled = true;
     wheelEnabled = true;
+    fluidCanvas.reset();
+
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     const resetSize = shouldResetDomSize(data.code);
@@ -258,6 +296,9 @@
         return;
       }
 
+      const usesFluidSize = fluidCanvas.usesFluidSize(processedCode);
+      const dimensions = fluidCanvas.getExecutionDimensions(processedCode);
+
       const result = await jsRunner.executeJavaScript(nodeId, processedCode, {
         customConsole,
         setPortCount,
@@ -266,9 +307,11 @@
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           root: runtimeRoot.root,
-          width: resetSize ? undefined : containerWidth,
-          height: resetSize ? undefined : containerHeight,
+          width: usesFluidSize ? dimensions.width : resetSize ? undefined : containerWidth,
+          height: usesFluidSize ? dimensions.height : resetSize ? undefined : containerHeight,
           setSize,
+          setFluidSize: fluidCanvas.setFluidSize,
+          onResize: fluidCanvas.onCanvasResize,
           noDrag: () => {
             dragEnabled = false;
           },
@@ -294,6 +337,10 @@
 
       runtimeRoot.handleResult?.(result);
       afterRun();
+
+      if (!fluidCanvas.isFluid && (nodeWidth !== undefined || nodeHeight !== undefined)) {
+        updateNode(nodeId, { width: undefined, height: undefined });
+      }
     } catch (error) {
       handleCodeError(error, data.code, nodeId, customConsole, errorOffset);
     } finally {
@@ -315,6 +362,7 @@
   });
 
   onDestroy(() => {
+    fluidCanvas.reset();
     cleanupRuntime();
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
     jsRunner.destroy(nodeId);
@@ -331,118 +379,144 @@
   });
 </script>
 
-<ObjectPreviewLayout
-  title={data.title ?? titleFallback}
-  {objectType}
-  {nodeId}
-  {codePlaceholder}
-  onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
-  onrun={runCode}
-  {editorReady}
-  settingsSchema={data.settingsSchema}
-  settingsValues={data.settings ?? {}}
-  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
-  onSettingsRevertAll={() => settingsManager.revertAll()}
->
-  {#snippet topHandle()}
-    {#each Array.from({ length: inletCount }) as _, index (index)}
-      <TypedHandle
-        port="inlet"
-        spec={{ handleId: index }}
-        title={`Inlet ${index}`}
-        total={inletCount}
-        {index}
-        class={handleClass}
-        {nodeId}
+<div class="relative">
+  {#if selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible}
+    {#if fluidCanvas.resizeAxis === 'both' || fluidCanvas.keepAspectRatio}
+      <NodeResizer
+        class="z-1"
+        minWidth={100}
+        minHeight={80}
+        keepAspectRatio={fluidCanvas.keepAspectRatio}
+        onResize={fluidCanvas.handleResize}
       />
-    {/each}
-  {/snippet}
-
-  {#snippet preview()}
-    <div
-      bind:this={previewContainer}
-      class={[
-        'overflow-hidden rounded-md',
-        getBorderChromeClass({
-          hasError: lineErrors !== undefined,
-          selected,
-          noBorder: data.noBorder,
-          errorClass: 'border-red-500/70',
-          selectedClass: 'shadow-glow-md ring ring-zinc-400',
-          idleClass: 'hover:shadow-glow-sm',
-          borderlessClass: 'shadow-none ring-0'
-        }),
-        !dragEnabled && 'nodrag',
-        !panEnabled && 'nopan',
-        !wheelEnabled && 'nowheel'
-      ]}
-      style={previewWidth !== undefined && previewHeight !== undefined
-        ? `width: ${previewWidth}px; height: ${previewHeight}px;`
-        : ''}
-    >
-      {#if htmlCanvasRootActive}
-        {#key htmlCanvasContextMode}
-          <canvas bind:this={htmlCanvasElement} class="block overflow-hidden">
-            <div bind:this={rootContainer} class={htmlRootClass}></div>
-          </canvas>
-        {/key}
-      {:else}
-        <div bind:this={rootContainer} class="h-full w-full"></div>
-      {/if}
-    </div>
-  {/snippet}
-
-  {#snippet bottomHandle()}
-    {#if htmlCanvasEnabled}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleType: 'video', handleId: '0' }}
-        title="Video output"
-        total={outletCount + 1}
-        index={0}
-        class={handleClass}
-        {nodeId}
-      />
+    {:else}
+      {#each fluidCanvas.resizeControlPositions as position (position)}
+        <NodeResizeControl
+          class="z-1"
+          {position}
+          variant={ResizeControlVariant.Line}
+          minWidth={100}
+          minHeight={80}
+          onResize={fluidCanvas.handleResize}
+        />
+      {/each}
     {/if}
+  {/if}
 
-    {#each Array.from({ length: outletCount }) as _, index (index)}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleId: index }}
-        title={`Outlet ${index}`}
-        total={htmlCanvasEnabled ? outletCount + 1 : outletCount}
-        index={htmlCanvasEnabled ? index + 1 : index}
-        class={handleClass}
+  <ObjectPreviewLayout
+    title={data.title ?? titleFallback}
+    {objectType}
+    {nodeId}
+    {codePlaceholder}
+    onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
+    onrun={runCode}
+    {editorReady}
+    settingsSchema={data.settingsSchema}
+    settingsValues={data.settings ?? {}}
+    onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+    onSettingsRevertAll={() => settingsManager.revertAll()}
+    displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
+  >
+    {#snippet topHandle()}
+      {#each Array.from({ length: inletCount }) as _, index (index)}
+        <TypedHandle
+          port="inlet"
+          spec={{ handleId: index }}
+          title={`Inlet ${index}`}
+          total={inletCount}
+          {index}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
+    {/snippet}
+
+    {#snippet preview()}
+      <div
+        bind:this={previewContainer}
+        class={[
+          'overflow-hidden rounded-md',
+          getBorderChromeClass({
+            hasError: lineErrors !== undefined,
+            selected,
+            noBorder: data.noBorder,
+            errorClass: 'border-red-500/70',
+            selectedClass: 'shadow-glow-md ring ring-zinc-400',
+            idleClass: 'hover:shadow-glow-sm',
+            borderlessClass: 'shadow-none ring-0'
+          }),
+          !dragEnabled && 'nodrag',
+          !panEnabled && 'nopan',
+          !wheelEnabled && 'nowheel'
+        ]}
+        style={previewWidth !== undefined && previewHeight !== undefined
+          ? `width: ${previewWidth}px; height: ${previewHeight}px;`
+          : ''}
+      >
+        {#if htmlCanvasRootActive}
+          {#key htmlCanvasContextMode}
+            <canvas bind:this={htmlCanvasElement} class="block overflow-hidden">
+              <div bind:this={rootContainer} class={htmlRootClass}></div>
+            </canvas>
+          {/key}
+        {:else}
+          <div bind:this={rootContainer} class="h-full w-full"></div>
+        {/if}
+      </div>
+    {/snippet}
+
+    {#snippet bottomHandle()}
+      {#if htmlCanvasEnabled}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleType: 'video', handleId: '0' }}
+          title="Video output"
+          total={outletCount + 1}
+          index={0}
+          class={handleClass}
+          {nodeId}
+        />
+      {/if}
+
+      {#each Array.from({ length: outletCount }) as _, index (index)}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleId: index }}
+          title={`Outlet ${index}`}
+          total={htmlCanvasEnabled ? outletCount + 1 : outletCount}
+          index={htmlCanvasEnabled ? index + 1 : index}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
+    {/snippet}
+
+    {#snippet codeEditor()}
+      <CodeEditor
+        value={data.code}
+        language="javascript"
+        nodeType={objectType}
+        placeholder={codePlaceholder}
+        class="nodrag h-64 w-full resize-none"
+        onrun={runCode}
+        onchange={(newCode) => {
+          updateNodeData(nodeId, { code: newCode });
+        }}
+        onready={() => (editorReady = true)}
+        {lineErrors}
         {nodeId}
       />
-    {/each}
-  {/snippet}
+    {/snippet}
 
-  {#snippet codeEditor()}
-    <CodeEditor
-      value={data.code}
-      language="javascript"
-      nodeType={objectType}
-      placeholder={codePlaceholder}
-      class="nodrag h-64 w-full resize-none"
-      onrun={runCode}
-      onchange={(newCode) => {
-        updateNodeData(nodeId, { code: newCode });
-      }}
-      onready={() => (editorReady = true)}
-      {lineErrors}
-      {nodeId}
-    />
-  {/snippet}
-
-  {#snippet console()}
-    <div class="mt-3 w-full" class:hidden={!data.showConsole}>
-      <VirtualConsole
-        bind:this={consoleRef}
-        {nodeId}
-        placeholder={consolePlaceholder}
-        maxHeight="200px"
-      />
-    </div>
-  {/snippet}
-</ObjectPreviewLayout>
+    {#snippet console()}
+      <div class="mt-3 w-full" class:hidden={!data.showConsole}>
+        <VirtualConsole
+          bind:this={consoleRef}
+          {nodeId}
+          placeholder={consolePlaceholder}
+          maxHeight="200px"
+        />
+      </div>
+    {/snippet}
+  </ObjectPreviewLayout>
+</div>

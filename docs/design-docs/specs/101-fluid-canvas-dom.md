@@ -25,6 +25,10 @@ The node overflow menu provides Enable/Disable resizing, and the user's
 persisted choice wins on later code runs. This is an editor control, not an
 object setting.
 
+The `dom` and `vue` objects share the same `setFluidSize` options and editor
+controls. Their resize callback is named `onResize`, because it applies to an
+HTML container rather than a canvas bitmap.
+
 ## Implementation boundary
 
 `useFluidCanvas.svelte.ts` owns fluid-mode state, the generated-code API,

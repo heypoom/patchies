@@ -183,6 +183,7 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
     get displayExtraMenuItems() {
       return displayExtraMenuItems;
     },
+    usesFluidSize: usesFluidCanvas,
     getExecutionDimensions: (code: string) =>
       usesFluidCanvas(code)
         ? { width: widthDimension, height: heightDimension }

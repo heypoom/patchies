@@ -14,7 +14,9 @@
   let {
     id,
     data,
-    selected
+    selected,
+    width,
+    height
   }: {
     id: string;
     data: {
@@ -30,8 +32,11 @@
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
       noBorder?: boolean;
+      fluidCanvasResizerVisible?: boolean;
     };
     selected?: boolean;
+    width?: number;
+    height?: number;
   } = $props();
 
   const updateNodeInternals = useUpdateNodeInternals();
@@ -138,6 +143,8 @@
   {id}
   {data}
   {selected}
+  {width}
+  {height}
   objectType="vue"
   titleFallback="vue"
   codePlaceholder="Write your Vue code here..."

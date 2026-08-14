@@ -163,21 +163,26 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('canvas.dom', 'setP')).toContain('setPrimaryButton');
   });
 
-  it('shows fluid canvas completions only for canvas.dom nodes', () => {
+  it('shows fluid-size completions for their supported node types', () => {
     expect(getCompletionLabels('canvas.dom', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('canvas.dom', 'onCanvasR')).toContain('onCanvasResize');
+    expect(getCompletionLabels('dom', 'setF')).toContain('setFluidSize');
+    expect(getCompletionLabels('vue', 'setF')).toContain('setFluidSize');
+    expect(getCompletionLabels('dom', 'onR')).toContain('onResize');
+    expect(getCompletionLabels('vue', 'onR')).toContain('onResize');
     expect(getCompletionLabels('canvas', 'setF')).not.toContain('setFluidSize');
     expect(getCompletionLabels('canvas', 'onCanvasR')).not.toContain('onCanvasResize');
+    expect(getCompletionLabels('canvas.dom', 'onR')).not.toContain('onResize');
   });
 
   it('shows noBorder completions only for native UI nodes', () => {
-    expect(getCompletionLabels('dom', 'hideB')).toContain('noBorder');
-    expect(getCompletionLabels('vue', 'hideB')).toContain('noBorder');
-    expect(getCompletionLabels('p5', 'hideB')).toContain('noBorder');
-    expect(getCompletionLabels('canvas.dom', 'hideB')).toContain('noBorder');
-    expect(getCompletionLabels('three.dom', 'hideB')).toContain('noBorder');
-    expect(getCompletionLabels('js', 'hideB')).not.toContain('noBorder');
-    expect(getCompletionLabels('hydra', 'hideB')).not.toContain('noBorder');
+    expect(getCompletionLabels('dom', 'noB')).toContain('noBorder');
+    expect(getCompletionLabels('vue', 'noB')).toContain('noBorder');
+    expect(getCompletionLabels('p5', 'noB')).toContain('noBorder');
+    expect(getCompletionLabels('canvas.dom', 'noB')).toContain('noBorder');
+    expect(getCompletionLabels('three.dom', 'noB')).toContain('noBorder');
+    expect(getCompletionLabels('js', 'noB')).not.toContain('noBorder');
+    expect(getCompletionLabels('hydra', 'noB')).not.toContain('noBorder');
   });
 
   it('shows showAudioInput completions only for simple DSP audio nodes', () => {

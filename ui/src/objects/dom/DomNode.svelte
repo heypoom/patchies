@@ -14,7 +14,9 @@
   let {
     id,
     data,
-    selected
+    selected,
+    width,
+    height
   }: {
     id: string;
     data: {
@@ -30,8 +32,11 @@
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
       noBorder?: boolean;
+      fluidCanvasResizerVisible?: boolean;
     };
     selected?: boolean;
+    width?: number;
+    height?: number;
   } = $props();
 
   const updateNodeInternals = useUpdateNodeInternals();
@@ -85,6 +90,8 @@
   {id}
   {data}
   {selected}
+  {width}
+  {height}
   objectType="dom"
   titleFallback="dom"
   codePlaceholder="Write your DOM code here..."
