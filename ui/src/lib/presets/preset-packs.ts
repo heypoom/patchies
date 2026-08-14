@@ -4,6 +4,7 @@ import { CHUCK_DEMO_PRESET_KEYS } from '$presets/chuck';
 import { HYDRA_DEMO_PRESET_KEYS } from '$presets/hydra';
 import { PAPER_SHADER_PRESET_NAMES } from '$presets/glsl/paper-shaders';
 import { PEPPERMINT_PRESET_KEYS } from '$presets/peppermint';
+import { UXN_DEMO_PRESET_KEYS } from '$presets/uxn';
 
 export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
 
@@ -342,6 +343,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'modulo-counter.asm',
       'delta.asm'
     ]
+  },
+  {
+    id: 'uxn-demos',
+    name: 'Uxn Demos',
+    description: 'Visual programs written in Uxntal',
+    icon: 'CircuitBoard',
+    requiredObjects: ['uxn'],
+    presets: [...UXN_DEMO_PRESET_KEYS]
   },
   {
     id: 'supersonic-demos',

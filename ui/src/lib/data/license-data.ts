@@ -624,6 +624,14 @@ export const portedCode: PortedCode[] = [
     copyright: '© Karnpapon Boonput',
     notes:
       'The WASM binary is built from an unpublished branch and bundled as-is. No Rust source code was modified or ported. The node embeds xterm.js to render the terminal UI and converts raw MIDI output to Patchies messages.'
+  },
+  {
+    name: 'Keijiro Uxn Sketches',
+    description: 'The Uxn Demos preset pack includes sketches by Keijiro.',
+    authors: 'Keijiro',
+    repository: 'https://github.com/keijiro/uxn-sketches',
+    license: 'No license',
+    notes: 'Includes the checker, counter, sprite, and PRNG Uxntal sketches.'
   }
 ];
 
