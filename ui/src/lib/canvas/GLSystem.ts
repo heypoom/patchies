@@ -1059,9 +1059,13 @@ export class GLSystem {
   }
 
   setBitmapSource(nodeId: string, source: ImageBitmapSource, options?: ImageBitmapOptions) {
-    createImageBitmap(source, options).then((bitmap) => {
-      this.setBitmap(nodeId, bitmap);
-    });
+    return createImageBitmap(source, options)
+      .then((bitmap) => {
+        this.setBitmap(nodeId, bitmap);
+      })
+      .catch((error) => {
+        console.warn('GLSystem: failed to create bitmap source', error);
+      });
   }
 
   /**

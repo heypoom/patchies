@@ -17,6 +17,7 @@
 
   let {
     nodeId,
+    class: className = '',
     selected,
     isPaused,
     canvas = $bindable(),
@@ -31,6 +32,7 @@
     onMeasureContainerWidth
   }: {
     nodeId: string;
+    class?: string;
     selected: boolean;
     isPaused: boolean;
     canvas?: HTMLCanvasElement;
@@ -152,7 +154,7 @@
   </div>
 </div>
 
-<div class="relative">
+<div class={['relative', className]}>
   <TypedHandle
     port="inlet"
     spec={uxnSchema.inlets[0].handle!}
