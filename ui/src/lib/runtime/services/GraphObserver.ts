@@ -27,20 +27,31 @@ export type GraphSnapshot = {
 
 export type GraphChangeCallback = (snapshot: GraphSnapshot) => void;
 
+export type GraphChange = {
+  changedObjectIds: ReadonlySet<string>;
+  changedConnectionNodeIds: ReadonlySet<string>;
+};
+
 type Subscription = {
   query: GraphChangeQuery;
   callback: GraphChangeCallback;
   lastSnapshotKey?: string;
+  matchingNodeIds: Set<string>;
 };
 
 export class GraphObserver {
   private subscriptions = new Set<Subscription>();
+
   private notificationQueued = false;
+  private fullNotificationQueued = false;
+
+  private changedObjectIds = new Set<string>();
+  private changedConnectionNodeIds = new Set<string>();
 
   constructor(private getGraph: () => RuntimeGraphSpec) {}
 
   subscribe(query: GraphChangeQuery, callback: GraphChangeCallback): () => void {
-    const subscription = { query, callback };
+    const subscription = { query, callback, matchingNodeIds: new Set<string>() };
 
     this.subscriptions.add(subscription);
     this.notifySubscription(subscription);
@@ -48,7 +59,19 @@ export class GraphObserver {
     return () => this.subscriptions.delete(subscription);
   }
 
-  notify(): void {
+  notify(change?: GraphChange): void {
+    if (change) {
+      for (const nodeId of change.changedObjectIds) {
+        this.changedObjectIds.add(nodeId);
+      }
+
+      for (const nodeId of change.changedConnectionNodeIds) {
+        this.changedConnectionNodeIds.add(nodeId);
+      }
+    } else {
+      this.fullNotificationQueued = true;
+    }
+
     if (this.notificationQueued) return;
 
     this.notificationQueued = true;
@@ -56,8 +79,31 @@ export class GraphObserver {
     queueMicrotask(() => {
       this.notificationQueued = false;
 
+      const graph = this.getGraph();
+
+      const change = this.fullNotificationQueued
+        ? undefined
+        : {
+            changedObjectIds: this.changedObjectIds,
+            changedConnectionNodeIds: this.changedConnectionNodeIds
+          };
+
+      this.fullNotificationQueued = false;
+      this.changedObjectIds = new Set<string>();
+      this.changedConnectionNodeIds = new Set<string>();
+
+      const objectsById = new Map(graph.objects.map((object) => [object.id, object]));
+
       for (const subscription of this.subscriptions) {
-        this.notifySubscription(subscription);
+        const canAffectSubscription = this.changeCanAffectSubscription(
+          subscription,
+          change,
+          objectsById
+        );
+
+        if (!change || canAffectSubscription) {
+          this.notifySubscription(subscription, graph);
+        }
       }
     });
   }
@@ -66,9 +112,7 @@ export class GraphObserver {
     this.subscriptions.clear();
   }
 
-  private getSnapshot(query: GraphChangeQuery): GraphSnapshot {
-    const graph = this.getGraph();
-
+  private getSnapshot(query: GraphChangeQuery, graph: RuntimeGraphSpec): GraphSnapshot {
     const nodes = graph.objects.flatMap((node) => {
       const tags = getUserTags(node.data.tags);
 
@@ -95,8 +139,9 @@ export class GraphObserver {
     return { nodes, edges };
   }
 
-  private notifySubscription(subscription: Subscription): void {
-    const snapshot = this.getSnapshot(subscription.query);
+  private notifySubscription(subscription: Subscription, graph = this.getGraph()): void {
+    const snapshot = this.getSnapshot(subscription.query, graph);
+    subscription.matchingNodeIds = new Set(snapshot.nodes.map((node) => node.id));
 
     if (snapshot.nodes.length === 0) {
       subscription.lastSnapshotKey = undefined;
@@ -114,6 +159,33 @@ export class GraphObserver {
     } catch (error) {
       logger.warn('Error in onGraphChange() handler:', error);
     }
+  }
+
+  private changeCanAffectSubscription(
+    subscription: Subscription,
+    change: GraphChange,
+    objectsById: Map<string, RuntimeObjectSpec>
+  ): boolean {
+    for (const nodeId of change.changedObjectIds) {
+      if (this.nodeCanAffectSubscription(subscription, nodeId, objectsById)) return true;
+    }
+
+    for (const nodeId of change.changedConnectionNodeIds) {
+      if (this.nodeCanAffectSubscription(subscription, nodeId, objectsById)) return true;
+    }
+
+    return false;
+  }
+
+  private nodeCanAffectSubscription(
+    subscription: Subscription,
+    nodeId: string,
+    objectsById: Map<string, RuntimeObjectSpec>
+  ): boolean {
+    if (subscription.matchingNodeIds.has(nodeId)) return true;
+
+    const node = objectsById.get(nodeId);
+    return node ? nodeMatchesTags(getUserTags(node.data.tags), subscription.query.tags) : false;
   }
 }
 

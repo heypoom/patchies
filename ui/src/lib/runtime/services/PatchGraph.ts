@@ -4,11 +4,7 @@ import type {
   RuntimeObjectSpec
 } from '../types/runtime-object';
 
-import {
-  areStringMapsEqual,
-  normalizeConnection,
-  areConnectionMapsEqual
-} from '../utils/patch-graph-utils';
+import { normalizeConnection, getChangedConnectionNodeIds } from '../utils/patch-graph-utils';
 
 import { getObjectKey } from '../utils/runtime-object-keys';
 
@@ -29,19 +25,21 @@ export class PatchGraph {
     return Array.from(this.connectionsById.values());
   }
 
-  setObjects(objects: RuntimeObjectSpec[]): boolean {
+  setObjects(objects: RuntimeObjectSpec[]): { changed: boolean; changedObjectIds: Set<string> } {
     const nextObjectsById = new Map(objects.map((object) => [object.id, object]));
     const nextObjectKeysById = new Map(objects.map((object) => [object.id, getObjectKey(object)]));
-
-    const objectsChanged = !areStringMapsEqual(this.objectKeysById, nextObjectKeysById);
+    const changedObjectIds = getChangedKeys(this.objectKeysById, nextObjectKeysById);
 
     this.objectsById = nextObjectsById;
     this.objectKeysById = nextObjectKeysById;
 
-    return objectsChanged;
+    return { changed: changedObjectIds.size > 0, changedObjectIds };
   }
 
-  setConnections(connections: RuntimeConnectionSpec[]): boolean {
+  setConnections(connections: RuntimeConnectionSpec[]): {
+    changed: boolean;
+    changedConnectionNodeIds: Set<string>;
+  } {
     const nextConnectionsById = new Map(
       connections.map((connection) => {
         const normalized = normalizeConnection(connection);
@@ -50,17 +48,30 @@ export class PatchGraph {
       })
     );
 
-    const connectionsChanged = !areConnectionMapsEqual(this.connectionsById, nextConnectionsById);
+    const changedConnectionNodeIds = getChangedConnectionNodeIds(
+      this.connectionsById,
+      nextConnectionsById
+    );
     this.connectionsById = nextConnectionsById;
 
-    return connectionsChanged;
+    return { changed: changedConnectionNodeIds.size > 0, changedConnectionNodeIds };
   }
 
-  setGraph(graph: RuntimeGraphSpec): { objectsChanged: boolean; connectionsChanged: boolean } {
-    const objectsChanged = this.setObjects(graph.objects);
-    const connectionsChanged = this.setConnections(graph.connections ?? []);
+  setGraph(graph: RuntimeGraphSpec): {
+    objectsChanged: boolean;
+    connectionsChanged: boolean;
+    changedObjectIds: Set<string>;
+    changedConnectionNodeIds: Set<string>;
+  } {
+    const objectUpdate = this.setObjects(graph.objects);
+    const connectionUpdate = this.setConnections(graph.connections ?? []);
 
-    return { objectsChanged, connectionsChanged };
+    return {
+      objectsChanged: objectUpdate.changed,
+      connectionsChanged: connectionUpdate.changed,
+      changedObjectIds: objectUpdate.changedObjectIds,
+      changedConnectionNodeIds: connectionUpdate.changedConnectionNodeIds
+    };
   }
 
   upsertObject(object: RuntimeObjectSpec): void {
@@ -89,4 +100,18 @@ export class PatchGraph {
   removeConnection(connectionId: string): void {
     this.connectionsById.delete(connectionId);
   }
+}
+
+function getChangedKeys(left: Map<string, string>, right: Map<string, string>): Set<string> {
+  const changedKeys = new Set<string>();
+
+  for (const [key, value] of left) {
+    if (right.get(key) !== value) changedKeys.add(key);
+  }
+
+  for (const [key, value] of right) {
+    if (left.get(key) !== value) changedKeys.add(key);
+  }
+
+  return changedKeys;
 }

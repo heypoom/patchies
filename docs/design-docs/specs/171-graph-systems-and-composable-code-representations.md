@@ -154,6 +154,10 @@ run when no nodes match, including after all matching nodes disappear.
 Patchies coalesces rapid edits into one callback for a settled graph update.
 It does not include editor position in the first API.
 
+`PatchRuntime` supplies changed object IDs and connection endpoints to the
+subscription kernel. A subscription re-evaluates only when those changes could
+affect its previous or current matching subgraph.
+
 Each subscription reconciles independently. A slow compiler must not delay an
 unrelated graph system. If a callback is asynchronous, only its latest snapshot
 may emit a result. A stale callback must not overwrite a newer result.

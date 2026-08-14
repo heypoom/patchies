@@ -15,7 +15,12 @@ describe('GraphObserver', () => {
     const snapshots: unknown[] = [];
 
     observer.subscribe({ tags: ['shader/foo/*'] }, (snapshot) => snapshots.push(snapshot));
-    observer.notify();
+
+    observer.notify({
+      changedObjectIds: new Set(['compiler']),
+      changedConnectionNodeIds: new Set()
+    });
+
     await Promise.resolve();
 
     expect(snapshots).toEqual([]);
@@ -35,10 +40,45 @@ describe('GraphObserver', () => {
     );
 
     graph = { objects: [], connections: [] };
-    observer.notify();
-    await Promise.resolve();
+
+    observer.notify({
+      changedObjectIds: new Set(['fragment']),
+      changedConnectionNodeIds: new Set()
+    });
 
     expect(snapshots).toEqual([['fragment']]);
+  });
+
+  it('notifies when a matching node changes', async () => {
+    let graph: RuntimeGraphSpec = {
+      objects: [
+        { id: 'fragment', type: 'js', data: { tags: ['shader/foo/function'], code: 'v1' } }
+      ],
+      connections: []
+    };
+
+    const observer = new GraphObserver(() => graph);
+    const snapshots: string[] = [];
+
+    observer.subscribe({ tags: ['shader/foo/*'] }, ({ nodes }) => {
+      const code = nodes[0].data.code;
+
+      if (typeof code === 'string') snapshots.push(code);
+    });
+
+    graph = {
+      ...graph,
+      objects: [{ id: 'fragment', type: 'js', data: { tags: ['shader/foo/function'], code: 'v2' } }]
+    };
+
+    observer.notify({
+      changedObjectIds: new Set(['fragment']),
+      changedConnectionNodeIds: new Set()
+    });
+
+    await Promise.resolve();
+
+    expect(snapshots).toEqual(['v1', 'v2']);
   });
 
   it('does not notify when an untagged node changes', async () => {
@@ -69,10 +109,43 @@ describe('GraphObserver', () => {
       ]
     };
 
-    observer.notify();
-    await Promise.resolve();
+    observer.notify({
+      changedObjectIds: new Set(['compiler']),
+      changedConnectionNodeIds: new Set()
+    });
 
     expect(snapshots).toEqual([['fragment']]);
+  });
+
+  it('notifies when an edge between matching nodes changes', async () => {
+    let graph: RuntimeGraphSpec = {
+      objects: [
+        { id: 'function', type: 'js', data: { tags: ['shader/foo/function'] } },
+        { id: 'noise', type: 'js', data: { tags: ['shader/foo/noise'] } }
+      ],
+      connections: []
+    };
+
+    const observer = new GraphObserver(() => graph);
+    const snapshots: string[][] = [];
+
+    observer.subscribe({ tags: ['shader/foo/*'] }, ({ edges }) =>
+      snapshots.push(edges.map(({ id }) => id))
+    );
+
+    graph = {
+      ...graph,
+      connections: [{ id: 'function-noise', source: 'function', target: 'noise' }]
+    };
+
+    observer.notify({
+      changedObjectIds: new Set(),
+      changedConnectionNodeIds: new Set(['function', 'noise'])
+    });
+
+    await Promise.resolve();
+
+    expect(snapshots).toEqual([[], ['function-noise']]);
   });
 
   it('continues notifying subscriptions when a callback fails', () => {
