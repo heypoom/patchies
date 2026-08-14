@@ -1058,8 +1058,8 @@ export class GLSystem {
     this.send('setBackgroundSize', { width, height });
   }
 
-  setBitmapSource(nodeId: string, source: ImageBitmapSource) {
-    createImageBitmap(source).then((bitmap) => {
+  setBitmapSource(nodeId: string, source: ImageBitmapSource, options?: ImageBitmapOptions) {
+    createImageBitmap(source, options).then((bitmap) => {
       this.setBitmap(nodeId, bitmap);
     });
   }

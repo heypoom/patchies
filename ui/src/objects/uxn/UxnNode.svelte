@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Play, X } from '@lucide/svelte/icons';
   import { onMount, onDestroy, tick } from 'svelte';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
@@ -11,6 +11,8 @@
   import { uxnMessages } from '$objects/uxn/schema';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { capPreviewSize } from '$lib/canvas/constants';
+  import { useNodeDataTracker } from '$lib/history';
   import UxnCompactLayout from './uxn/UxnCompactLayout.svelte';
   import UxnFullLayout from './uxn/UxnFullLayout.svelte';
   import { VirtualFilesystem } from '$lib/vfs';
@@ -27,15 +29,22 @@
       showConsole?: boolean;
       showEditor?: boolean;
       consoleOutput?: string;
-      /** Compact mode hides the screen and disables screen/input devices */
-      compact?: boolean;
+
       /** VFS path to the ROM file for persistence */
       vfsPath?: string;
+
+      /** Compact mode hides the screen and disables screen/input devices */
+      compact?: boolean;
+
+      /** Downscale outgoing video frames to reduce chained-video cost */
+      lowVideoResolution?: boolean;
     };
     selected: boolean;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   function getInitialState() {
     return {
@@ -63,6 +72,7 @@
   let bitmapFrameId: number | null = null;
   const fileName = $derived(data.fileName || 'No ROM loaded');
   const code = $derived(data.code || '');
+  const lowVideoResolution = $derived(data.lowVideoResolution ?? false);
 
   useCodeSidebarTarget(() => ({
     nodeId,
@@ -85,6 +95,20 @@
       previewContainerWidth = previewContainer.clientWidth;
     }
   }
+
+  $effect(() => {
+    const container = previewContainer;
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      measureContainerWidth();
+      updateNodeInternals(nodeId);
+    });
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  });
 
   // Compact mode button width matches CodeBlockBase: 100px
   const compactWidth = 100;
@@ -498,7 +522,19 @@
     if (!canvas || !emulator || isPaused) return;
 
     if (glSystem.hasOutgoingVideoConnections(nodeId)) {
-      await glSystem.setBitmapSource(nodeId, canvas);
+      let options: ImageBitmapOptions | undefined;
+
+      if (lowVideoResolution) {
+        const [previewWidth, previewHeight] = capPreviewSize(canvas.width, canvas.height);
+
+        options = {
+          resizeWidth: previewWidth,
+          resizeHeight: previewHeight,
+          resizeQuality: 'pixelated'
+        };
+      }
+
+      glSystem.setBitmapSource(nodeId, canvas, options);
     }
 
     bitmapFrameId = requestAnimationFrame(uploadBitmap);
@@ -506,6 +542,7 @@
 
   function startBitmapUpload() {
     if (bitmapFrameId !== null) return;
+
     bitmapFrameId = requestAnimationFrame(uploadBitmap);
   }
 
@@ -528,6 +565,16 @@
   function handleToggleEditor() {
     showEditor = !showEditor;
     updateNodeData(nodeId, { showEditor });
+  }
+
+  async function handleToggleLowVideoResolution() {
+    const nextValue = !lowVideoResolution;
+    updateNodeData(nodeId, { lowVideoResolution: nextValue });
+    tracker.commit('lowVideoResolution', lowVideoResolution, nextValue);
+
+    await tick();
+
+    measureContainerWidth();
   }
 
   async function toggleCompact() {
@@ -591,6 +638,8 @@
           onOpenFileDialog={openFileDialog}
           onToggleConsole={handleToggleConsole}
           onToggleEditor={handleToggleEditor}
+          {lowVideoResolution}
+          onToggleLowVideoResolution={handleToggleLowVideoResolution}
           onHideScreen={toggleCompact}
           onMeasureContainerWidth={measureContainerWidth}
         />

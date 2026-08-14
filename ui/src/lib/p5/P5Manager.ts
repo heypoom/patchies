@@ -77,6 +77,53 @@ interface P5CanvasSnapshot {
   displayHeight: number;
 }
 
+type P5PointerSketch = {
+  _hasMouseInteracted?: boolean;
+  _updatePointerCoords?: (this: P5PointerSketch, event: PointerEvent) => void;
+  canvas?: HTMLCanvasElement;
+  mouseX: number;
+  mouseY: number;
+  pmouseX: number;
+  pmouseY: number;
+};
+
+/**
+ * Correct p5's pointer coordinates when the canvas is scaled by XYFlow.
+ *
+ * p5 measures pointer offsets against the untransformed layout width. Hooking
+ * its update method means its per-frame pmouse bookkeeping sees normalized
+ * coordinates, rather than repeatedly transforming a previous-frame value.
+ */
+export function installInlinePointerCoordinateNormalization(pointerSketch: P5PointerSketch) {
+  const updatePointerCoords = pointerSketch._updatePointerCoords;
+
+  if (!updatePointerCoords) return;
+
+  pointerSketch._updatePointerCoords = function (event: PointerEvent) {
+    const isFirstPointerUpdate = !this._hasMouseInteracted;
+    updatePointerCoords.call(this, event);
+
+    const canvas = this.canvas;
+    if (!canvas) return;
+
+    const bounds = canvas.getBoundingClientRect();
+    const scaleX = canvas.scrollWidth / bounds.width;
+    const scaleY = canvas.scrollHeight / bounds.height;
+
+    if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) return;
+
+    this.mouseX *= scaleX;
+    this.mouseY *= scaleY;
+
+    // p5 initializes pmouse from mouse during its first pointer update. On
+    // following events it is already the previous normalized frame value.
+    if (isFirstPointerUpdate) {
+      this.pmouseX *= scaleX;
+      this.pmouseY *= scaleY;
+    }
+  };
+}
+
 export class P5Manager {
   public p5: Sketch | null = null;
   public glSystem = GLSystem.getInstance();
@@ -245,57 +292,9 @@ export class P5Manager {
           userCode?.preload?.call(p);
         };
 
-        // p5 derives pointer coordinates from the canvas's untransformed layout width.
-        // Inline canvases are scaled by XYFlow, so correct them immediately after p5
-        // receives an event. Doing this at the source keeps mouseX and pmouseX in the
-        // same coordinate space for draw(), including line(pmouseX, ..., mouseX, ...).
-        const installInlinePointerCoordinateNormalization = () => {
-          if (config.normalizeInlineMouseCoordinates === false) return;
-
-          const pointerSketch = p as Sketch & {
-            _hasMouseInteracted?: boolean;
-            _updatePointerCoords?: (event: PointerEvent) => void;
-            canvas?: HTMLCanvasElement;
-          };
-          const updatePointerCoords = pointerSketch._updatePointerCoords;
-
-          if (!updatePointerCoords) return;
-
-          pointerSketch._updatePointerCoords = function (event: PointerEvent) {
-            const isFirstPointerUpdate = !this._hasMouseInteracted;
-            updatePointerCoords.call(this, event);
-
-            const canvas = this.canvas;
-            if (!canvas) return;
-
-            const bounds = canvas.getBoundingClientRect();
-            const scaleX = canvas.scrollWidth / bounds.width;
-            const scaleY = canvas.scrollHeight / bounds.height;
-
-            if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) return;
-
-            // p5's public coordinate properties are typed as readonly even though
-            // its own pointer implementation updates them at runtime.
-            const mutablePointerSketch = this as unknown as {
-              mouseX: number;
-              mouseY: number;
-              pmouseX: number;
-              pmouseY: number;
-            };
-
-            mutablePointerSketch.mouseX *= scaleX;
-            mutablePointerSketch.mouseY *= scaleY;
-
-            // p5 initializes pmouse from mouse during its first pointer update. On
-            // following events it is already the previous normalized frame value.
-            if (isFirstPointerUpdate) {
-              mutablePointerSketch.pmouseX *= scaleX;
-              mutablePointerSketch.pmouseY *= scaleY;
-            }
-          };
-        };
-
-        installInlinePointerCoordinateNormalization();
+        if (config.normalizeInlineMouseCoordinates !== false) {
+          installInlinePointerCoordinateNormalization(p as unknown as P5PointerSketch);
+        }
 
         // Guard: only dispatch mouse events that originate within the canvas bounds.
         // P5.js v2 listens on the window, so events outside the canvas still fire.
