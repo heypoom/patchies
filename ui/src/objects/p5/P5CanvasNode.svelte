@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useSvelteFlow, useUpdateNodeInternals, useViewport } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { P5Manager } from '$lib/p5/P5Manager';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -53,7 +53,6 @@
 
   const { getNodes, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const viewport = useViewport();
 
   // Settings manager — persists across code re-runs
   const settingsManager = new SettingsManager(
@@ -168,7 +167,7 @@
 
   onMount(() => {
     messageContext = new MessageContext(nodeId);
-    p5Manager = new P5Manager(nodeId, containerElement, viewport);
+    p5Manager = new P5Manager(nodeId, containerElement);
     glSystem.upsertNode(nodeId, 'img', {});
 
     // Listen for console output events to capture lineErrors
@@ -307,7 +306,7 @@
           },
           settings: settingsAPI,
           pauseOnMount: onMount && !!data.paused,
-          useViewportMouseScale: !surfaceMode.isExpanded,
+          normalizeInlineMouseCoordinates: !surfaceMode.isExpanded,
           customConsole,
           onRuntimeError: (error) => handleRuntimeError(error, nextCode),
           onPreserveFrame: surfaceMode.isExpanded ? undefined : preserveFrameCanvas,
