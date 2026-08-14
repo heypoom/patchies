@@ -16,6 +16,22 @@ Call `noBorder()` when the DOM UI should blend into the patch without
 showing Patchies' border or selected glow. Remove
 the call and run the node again to restore the border.
 
+## Resizable layouts
+
+Use `setFluidSize()` when your interface should fill a user-resized node:
+
+```js
+setFluidSize({ initialSize: { width: 400, height: 240 }, resize: 'horizontal' });
+
+onResize(({ width }) => {
+  root.style.setProperty('--panel-width', `${width}px`);
+});
+```
+
+`resize` can be `'horizontal'`, `'vertical'`, or `'both'` (the default).
+`keepAspectRatio`, `showResizer`, and `initialSize` work like `canvas.dom`.
+Users can enable or disable the resize handles from the overflow menu.
+
 ## Canvas Interaction
 
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see
@@ -52,5 +68,6 @@ canvas or GLSL layers. See [HTML in Canvas](/docs/html-in-canvas) for
 ## See Also
 
 - [vue](/docs/objects/vue) - Vue.js interfaces
+- [canvas.dom](/docs/objects/canvas.dom) - Canvas widgets
 - [HTML in Canvas](/docs/html-in-canvas) - Experimental HTML rendering APIs
 - [JavaScript Runner](/docs/javascript-runner) - messaging API

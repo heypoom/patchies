@@ -343,7 +343,7 @@ const patchiesAPICompletions: Completion[] = [
     type: 'function',
     detail:
       "(options?: { showResizer?: boolean; resize?: 'horizontal' | 'vertical' | 'both'; keepAspectRatio?: boolean; initialSize?: { width: number; height: number } }) => void",
-    info: 'Make a canvas.dom widget follow its node size. Set an initial logical canvas size, limit resizing to an axis, or preserve its aspect ratio; users can enable or disable resizing from the overflow menu.',
+    info: 'Make this widget follow its node size. Set an initial size, limit resizing to an axis, or preserve its aspect ratio; users can enable or disable resizing from the overflow menu.',
     apply: 'setFluidSize({ initialSize: { width: 800, height: 600 } })'
   },
   {
@@ -359,6 +359,13 @@ const patchiesAPICompletions: Completion[] = [
     detail: '(width: number, height: number) => void',
     info: 'Set fixed container dimensions for DOM and Vue nodes',
     apply: 'setSize(250, 100)'
+  },
+  {
+    label: 'onResize',
+    type: 'function',
+    detail: '(callback: ({ width, height }) => void) => void',
+    info: 'Run after a fluid DOM or Vue node is resized',
+    apply: 'onResize(({ width, height }) => {\n  \n})'
   },
   {
     label: 'onKeyDown',
@@ -619,8 +626,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setAudioPortCount: ['dsp~'],
   showAudioInput: ['tone~', 'sonic~', 'elem~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
-  setFluidSize: ['canvas.dom'],
+  setFluidSize: ['canvas.dom', 'dom', 'vue'],
   onCanvasResize: ['canvas.dom'],
+  onResize: ['dom', 'vue'],
   setSize: ['dom', 'vue'],
   setHidePorts: [
     'p5',

@@ -443,6 +443,7 @@
     wheelEnabled = true;
     videoOutputEnabled = true;
     fluidCanvas.reset();
+
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     const resetSize = resetCanvasSize(canvas, DEFAULT_OUTPUT_SIZE);

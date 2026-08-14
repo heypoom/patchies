@@ -353,6 +353,7 @@
     panEnabled = true;
     wheelEnabled = true;
     videoOutputEnabled = true;
+
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     // Clear keyboard callbacks when code is re-run
