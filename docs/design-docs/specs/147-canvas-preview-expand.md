@@ -27,9 +27,16 @@ This pass covers existing render nodes that already participate in
 `SurfaceMouseForwarder`: `glsl`, `swgl`, `regl`, `hydra`, `canvas`, `textmode`,
 `shaderpark`, and `three`.
 
-DOM-renderer objects that use `CanvasPreviewLayout` can still be pinned as
-background output if they already upload bitmap frames through `GLSystem`, but
-their DOM-specific local preview input is not moved into the overlay.
+`canvas.dom` has a dedicated expanded path. It moves its existing live DOM
+canvas into `SurfaceOverlay`'s custom-content host instead of displaying its
+render-output bitmap. The canvas keeps its own mouse, touch, and keyboard
+listeners, and its bitmap resolution remains unchanged. The expanded display
+must preserve that bitmap's aspect ratio, use the largest contain-fit inside
+the viewport, and leave black letterboxing where needed.
+
+Other DOM-renderer objects can still be pinned as background output if they
+already upload bitmap frames through `GLSystem`, but their DOM-specific local
+preview input is not moved into the overlay by this pass.
 
 ## Implementation Notes
 
@@ -39,6 +46,11 @@ rather than duplicating surface-specific code in every node component.
 `surface` keeps its custom implementation because it draws directly into the
 overlay canvas and exposes surface-specific JavaScript APIs such as `expandSurface()`,
 `collapseSurface()`, `onTouch()`, and `hideExitButton()`.
+
+The `canvas.dom` path reuses the overlay's custom-content mode, UI-hiding
+lifecycle, and exit affordance, but must not use `SurfaceMouseForwarder`,
+`SurfaceListeners`, output override pinning, canvas swapping, or output-window
+mirroring. Its direct DOM event handlers remain the source of interaction.
 
 `ObjectPreviewLayout` should own the shared menu action because it already owns
 background-output pinning and the overflow/context menus used by
@@ -56,3 +68,9 @@ Add unit coverage for the controller:
 - entering stores and replaces the current background override
 - pointer and wheel events use the default forwarding rules
 - exiting restores the previous override and disposes listeners/forwarder
+
+Add unit coverage for the `canvas.dom` controller:
+
+- entering activates custom overlay content without changing render output
+  routing
+- exit and displaced-overlay callbacks restore the inline canvas state

@@ -59,6 +59,8 @@
     showPauseButton = false,
     showBgOutputOption = false,
     showExpandOption = false,
+    onCustomExpandToggle = undefined,
+    customExpanded = false,
 
     topHandle,
     bottomHandle,
@@ -91,6 +93,8 @@
     showPauseButton?: boolean;
     showBgOutputOption?: boolean;
     showExpandOption?: boolean;
+    onCustomExpandToggle?: () => void;
+    customExpanded?: boolean;
 
     topHandle?: Snippet;
     bottomHandle?: Snippet;
@@ -264,19 +268,27 @@
   });
 
   let canPin = $derived($transportStore.isPlaying);
+  let expanded = $derived(onCustomExpandToggle ? customExpanded : isExpanded);
 
   let isOutputOverride = $derived(
     showBgOutputOption && nodeId !== undefined && $overrideOutputNodeId === nodeId
   );
 
-  let canExpand = $derived(
+  let canRenderExpand = $derived(
     showExpandOption && nodeId !== undefined && $outputTarget === 'background'
+  );
+
+  let expandToggle = $derived(
+    showExpandOption
+      ? (onCustomExpandToggle ?? (canRenderExpand ? handleExpandToggle : undefined))
+      : undefined
   );
 
   const codeEditorOverlay = useCodeEditorOverlayTarget(
     () => nodeId,
     () => codeDataKey
   );
+
   const detachedSettings = $derived(
     settingsSchema && settingsSchema.length > 0
       ? {
@@ -416,7 +428,7 @@
   }
 
   function handleExpandToggle() {
-    if (!canExpand) return;
+    if (!canRenderExpand) return;
 
     const controller = getExpandController();
     if (!controller) return;
@@ -485,8 +497,8 @@
                 {previewVisible}
                 onSettingsToggle={settingsSidebarTarget.toggle}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : handleCodeOpen}
-                onExpandToggle={canExpand ? handleExpandToggle : undefined}
-                {isExpanded}
+                onExpandToggle={expandToggle}
+                isExpanded={expanded}
                 onBgOutputToggle={handleBgOutputToggle}
                 onPlaybackToggle={handlePlaybackToggle}
                 onSaveAsPreset={nodeId ? handleSaveAsPreset : undefined}
@@ -575,8 +587,8 @@
       {showSettings}
       onSettingsToggle={settingsSidebarTarget.toggle}
       onCodeToggle={handleCodeOpen}
-      onExpandToggle={canExpand ? handleExpandToggle : undefined}
-      {isExpanded}
+      onExpandToggle={expandToggle}
+      isExpanded={expanded}
       onBgOutputToggle={handleBgOutputToggle}
       onPlaybackToggle={handlePlaybackToggle}
       onSaveAsPreset={nodeId ? handleSaveAsPreset : undefined}

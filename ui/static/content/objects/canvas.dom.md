@@ -63,6 +63,15 @@ Resize the canvas resolution dynamically:
 setCanvasSize(800, 600);
 ```
 
+## Focused Interactive View
+
+Open the node overflow menu and choose **Expand** to focus the live canvas.
+Your canvas keeps receiving mouse, touch, and keyboard input while Patchies
+hides the rest of the editor. The view preserves the canvas aspect ratio and
+fits it inside the screen, leaving black borders when needed.
+
+Use **Exit surface** or `Shift+Esc` to return to the patch.
+
 ## Resizable Widgets
 
 Build a widget that fills its Patchies node instead of choosing a fixed canvas size:

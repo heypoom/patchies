@@ -9,6 +9,7 @@
   import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
   import { COOK_DEBUG_RENDER_NODE_TYPES } from '../../workers/rendering/cooking/policies';
   import { getBorderChromeClass } from './border-chrome';
+  import { portal } from '$lib/dom/portal';
 
   const COOK_DEBUG_OBJECT_TYPES = new Set<string>(COOK_DEBUG_RENDER_NODE_TYPES);
 
@@ -54,6 +55,9 @@
     displayExtraMenuItems = undefined,
     showBgOutputOption = true,
     showExpandOption = true,
+    onCustomExpandToggle = undefined,
+    customExpanded = false,
+    previewPortalTarget = undefined,
     showCookDebugOption = undefined,
     noBorder = false,
     class: className = ''
@@ -99,6 +103,9 @@
     displayExtraMenuItems?: ExtraMenuItem[];
     showBgOutputOption?: boolean;
     showExpandOption?: boolean;
+    onCustomExpandToggle?: () => void;
+    customExpanded?: boolean;
+    previewPortalTarget?: HTMLElement | null;
     showCookDebugOption?: boolean;
     noBorder?: boolean;
     class?: string;
@@ -151,6 +158,8 @@
   {showPauseButton}
   {showBgOutputOption}
   {showExpandOption}
+  {onCustomExpandToggle}
+  {customExpanded}
   {topHandle}
   {bottomHandle}
   {codeEditor}
@@ -169,13 +178,25 @@
   class={className}
 >
   {#snippet preview()}
-    <div class="relative">
+    <div
+      use:portal={previewPortalTarget}
+      class={customExpanded
+        ? 'fixed inset-0 flex items-center justify-center overflow-hidden bg-black'
+        : 'relative'}
+    >
       <canvas
         bind:this={previewCanvas}
-        class={['rounded-md border', chromeClass, interactionClass]}
+        class={[
+          'rounded-md border',
+          customExpanded ? 'shadow-none' : chromeClass,
+          interactionClass
+        ]}
         {tabindex}
         width={typeof width === 'number' ? width : undefined}
         height={typeof height === 'number' ? height : undefined}
+        style:border-width={customExpanded ? '0' : undefined}
+        style:border-radius={customExpanded ? '0' : undefined}
+        style:box-shadow={customExpanded ? 'none' : undefined}
         style={typeof width === 'number' && typeof height === 'number'
           ? `width:${width}px;height:${height}px;background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
           : `background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
