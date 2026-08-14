@@ -14,27 +14,24 @@ type P5SurfaceModeOptions = {
   getGlSystem: () => GLSystem;
   getP5Manager: () => P5Manager | null;
   getPreviewContainer: () => HTMLElement | null;
-  isSurfaceModeEnabled: () => boolean | undefined;
+  isSurfaceCanvasEnabled: () => boolean | undefined;
   measureWidth: (timeout: number) => void;
   updateSketch: () => void;
 };
 
 export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
   let isExpanded = $state(false);
+  let isSurfaceCanvasExpanded = false;
   const mouseForwarder = new SurfaceMouseForwarder(options.getNodes);
 
-  const menuItems: ExtraMenuItem[] = $derived(
-    options.isSurfaceModeEnabled()
-      ? [
-          {
-            label: isExpanded ? 'Exit surface' : 'Expand',
-            icon: isExpanded ? Shrink : Expand,
-            onclick: () => (isExpanded ? exit() : enter()),
-            variant: isExpanded ? 'danger' : 'default'
-          }
-        ]
-      : []
-  );
+  const menuItems: ExtraMenuItem[] = $derived([
+    {
+      label: isExpanded ? 'Exit surface' : 'Expand',
+      icon: isExpanded ? Shrink : Expand,
+      onclick: () => (isExpanded ? exit() : enter()),
+      variant: isExpanded ? 'danger' : 'default'
+    }
+  ]);
 
   function getCanvasSize() {
     const [width, height] = options.getGlSystem().outputSize;
@@ -42,11 +39,16 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
     return { width, height };
   }
 
-  function styleCanvas(canvas: HTMLCanvasElement) {
-    const { width, height } = getCanvasSize();
+  function styleCanvas(canvas: HTMLCanvasElement, dimensions = getCanvasSize()) {
+    applyCanvasStyle(canvas, dimensions);
+  }
 
+  function applyCanvasStyle(
+    canvas: HTMLCanvasElement,
+    { width, height }: { width: number; height: number }
+  ) {
     if (isExpanded) {
-      const scale = Math.max(window.innerWidth / width, window.innerHeight / height);
+      const scale = Math.min(window.innerWidth / width, window.innerHeight / height);
       const displayWidth = width * scale;
       const displayHeight = height * scale;
 
@@ -79,7 +81,7 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
   }
 
   function requestMirrorFrame(canvas: HTMLCanvasElement) {
-    if (!isExpanded) return;
+    if (!isExpanded || !isSurfaceCanvasExpanded) return;
 
     options.getGlSystem().ipcSystem.requestSurfaceOverlayFrame(canvas);
   }
@@ -91,14 +93,14 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
   function setMouseForwarding(rules?: SurfaceMouseForwardingRules) {
     mouseForwarder.setForwardingRules(rules);
 
-    if (isExpanded) {
+    if (isExpanded && isSurfaceCanvasExpanded) {
       mouseForwarder.forceHydraScope('local');
       mouseForwarder.forceHydraScope('global');
     }
   }
 
   function forwardPointer(x: number, y: number, buttons: number, type: string) {
-    if (!isExpanded) return;
+    if (!isExpanded || !isSurfaceCanvasExpanded) return;
 
     mouseForwarder.forward(x, y, buttons, type);
   }
@@ -110,7 +112,7 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
     deltaY: number;
     deltaMode: number;
   }) {
-    if (!isExpanded) return;
+    if (!isExpanded || !isSurfaceCanvasExpanded) return;
 
     mouseForwarder.forwardWheel(event);
   }
@@ -118,33 +120,49 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
   function enter() {
     const p5Manager = options.getP5Manager();
 
-    if (isExpanded || !options.isSurfaceModeEnabled() || !p5Manager) return;
+    if (isExpanded || !p5Manager) return;
 
     isExpanded = true;
+    isSurfaceCanvasExpanded = Boolean(options.isSurfaceCanvasEnabled());
 
     const glSystem = options.getGlSystem();
     const overlay = SurfaceOverlay.getInstance();
     const nodes = options.getNodes().map((node) => ({ id: node.id, type: node.type }));
-    const presentation = glSystem.ipcSystem.hasConnectedOutputWindow() ? 'secondary' : 'main';
+
+    const presentation =
+      isSurfaceCanvasExpanded && glSystem.ipcSystem.hasConnectedOutputWindow()
+        ? 'secondary'
+        : 'main';
 
     overlay.activate(options.nodeId, nodes, () => exit(), {
       presentation,
       content: 'custom'
     });
 
-    glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
+    overlay.customHost.style.background = isSurfaceCanvasExpanded ? 'transparent' : 'black';
+
+    if (isSurfaceCanvasExpanded) {
+      glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
+    }
+
     p5Manager.setContainer(overlay.customHost);
 
-    mouseForwarder.refreshForwardingTargets();
-    mouseForwarder.forceHydraScope('global');
+    if (isSurfaceCanvasExpanded) {
+      mouseForwarder.refreshForwardingTargets();
+      mouseForwarder.forceHydraScope('global');
+    }
 
     options.updateSketch();
   }
 
   function deactivateMouse() {
     SurfaceOverlay.getInstance().deactivate(options.nodeId);
-    options.getGlSystem().ipcSystem.sendSurfaceOverlayState(null);
-    mouseForwarder.forceHydraScope('local');
+    SurfaceOverlay.getInstance().customHost.style.background = '';
+
+    if (isSurfaceCanvasExpanded) {
+      options.getGlSystem().ipcSystem.sendSurfaceOverlayState(null);
+      mouseForwarder.forceHydraScope('local');
+    }
   }
 
   function exit() {
@@ -152,6 +170,7 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
 
     isExpanded = false;
     deactivateMouse();
+    isSurfaceCanvasExpanded = false;
 
     options.getP5Manager()?.setContainer(options.getPreviewContainer());
 
@@ -172,6 +191,9 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
   return {
     get isExpanded() {
       return isExpanded;
+    },
+    get isSurfaceCanvasExpanded() {
+      return isExpanded && isSurfaceCanvasExpanded;
     },
     get menuItems() {
       return menuItems;

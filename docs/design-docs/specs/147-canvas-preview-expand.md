@@ -52,6 +52,14 @@ lifecycle, and exit affordance, but must not use `SurfaceMouseForwarder`,
 `SurfaceListeners`, output override pinning, canvas swapping, or output-window
 mirroring. Its direct DOM event handlers remain the source of interaction.
 
+`p5` surface mode already moves its live P5 canvas into the same custom-content
+host. Its Expand view must also use contain-fit sizing so a
+`createSurfaceCanvas()` sketch remains interactive without cropping or
+stretching. Ordinary P5 `createCanvas()` sketches also support Expand: their
+live canvas moves into a black focused host and does not forward pointer events
+or mirror to the secondary output window. `createSurfaceCanvas()` retains its
+transparent overlay, render-node forwarding, and output-window mirroring.
+
 `ObjectPreviewLayout` should own the shared menu action because it already owns
 background-output pinning and the overflow/context menus used by
 `CanvasPreviewLayout`.

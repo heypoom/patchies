@@ -20,6 +20,7 @@
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
   import { getBorderChromeClass, getBorderResetDataForRun } from '$lib/components/border-chrome';
+  import { getP5PreviewDimensions } from './preview-dimensions';
 
   let consoleRef: VirtualConsole | null = $state(null);
 
@@ -93,7 +94,7 @@
     getGlSystem: () => glSystem,
     getP5Manager: () => p5Manager,
     getPreviewContainer: () => containerElement ?? null,
-    isSurfaceModeEnabled: () => isSurfaceModeAvailable,
+    isSurfaceCanvasEnabled: () => isSurfaceModeAvailable,
     measureWidth,
     updateSketch: () => void updateSketch()
   });
@@ -310,13 +311,24 @@
           onRuntimeError: (error) => handleRuntimeError(error, nextCode),
           onPreserveFrame: surfaceMode.isExpanded ? undefined : preserveFrameCanvas,
           onFrameReady: ({ width, height }) => {
-            preloadCanvasWidth = width;
-            preloadCanvasHeight = height;
+            const previewDimensions = getP5PreviewDimensions({
+              width,
+              height,
+              isSurfaceCanvas: nextSurfaceModeEnabled
+            });
+
+            preloadCanvasWidth = previewDimensions.width;
+            preloadCanvasHeight = previewDimensions.height;
 
             clearPreservedFrameCanvas();
             setVideoOutputEnabled(nextVideoOutputEnabled);
           },
           getSurfaceCanvasSize: surfaceMode.getCanvasSize,
+          onCanvasCreated: (canvas, dimensions) => {
+            if (surfaceMode.isExpanded) {
+              surfaceMode.styleCanvas(canvas, dimensions);
+            }
+          },
           onSurfaceModeChange: (enabled) => {
             nextSurfaceModeEnabled = enabled;
 
@@ -341,7 +353,7 @@
           updateNodeData(nodeId, { surfaceMode: nextSurfaceModeEnabled });
         }
 
-        if (!nextSurfaceModeEnabled && surfaceMode.isExpanded) {
+        if (!nextSurfaceModeEnabled && surfaceMode.isSurfaceCanvasExpanded) {
           surfaceMode.exit();
         }
 
