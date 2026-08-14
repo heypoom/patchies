@@ -44,8 +44,8 @@ describe('asm completions', () => {
   });
 
   it('inserts only the instruction keyword', () => {
-    expect(getCompletion('pu', 'push').apply).toBeUndefined();
-    expect(getCompletion('.st', '.string').apply).toBeUndefined();
+    expect(getCompletion('pu', 'push')).not.toHaveProperty('apply');
+    expect(getCompletion('.st', '.string')).not.toHaveProperty('apply');
   });
 
   it('does not indent the next instruction when Enter is pressed', () => {

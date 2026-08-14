@@ -21,7 +21,7 @@ export const ASM_DEFAULT_PAGE_SIZE = 64;
 export const ASM_MAX_VALID_PAGE = Math.floor(ASM_MEMORY_SIZE / ASM_DEFAULT_PAGE_SIZE) - 1; // 63
 
 // Machine execution defaults
-export const ASM_DEFAULT_DELAY_MS = 100;
+export const ASM_DEFAULT_DELAY_MS = 12;
 export const ASM_DEFAULT_STEP_BY = 1;
 
 // Node port defaults

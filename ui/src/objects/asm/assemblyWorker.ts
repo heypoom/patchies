@@ -108,7 +108,7 @@ class AssemblyWorkerController {
     // Initialize default config
     this.machineConfigs.set(id, {
       isRunning: false,
-      delayMs: 100,
+      delayMs: ASM_DEFAULT_DELAY_MS,
       stepBy: 1
     });
   }
@@ -248,7 +248,7 @@ class AssemblyWorkerController {
     return (
       this.machineConfigs.get(machineId) || {
         isRunning: false,
-        delayMs: 100,
+        delayMs: ASM_DEFAULT_DELAY_MS,
         stepBy: 1
       }
     );
