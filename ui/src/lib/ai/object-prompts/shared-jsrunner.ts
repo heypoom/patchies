@@ -93,7 +93,7 @@ export const jsRunnerInstructions = `
 - only add a few settings by default where it makes sense.
   - tell the user in the response what settings they have and how to show it i.e. in the overflow menu > "Settings"
   - do NOT add too much settings, 1 - 3 is enough. users can always ask to add more in a follow-up.
-- await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
+- await settings.define([...schema]) - register settings. A schema with UI fields exposes a settings panel on the node (gear icon appears).
   - on P5.js: do NOT await in setup() - do it at top level outside setup()
 - settings.get(key) - read current value (sync, after define resolves)
   - IMPORTANT: do NOT access settings[key] - that does NOT exist!
@@ -102,9 +102,10 @@ export const jsRunnerInstructions = `
   - useful for updating sliders/toggles from recv() messages or clock callbacks
 - settings.onChange((key, value, all) => {}) - react to value changes (from UI or settings.set)
 - settings.clear() - reset all settings to defaults and clear persisted values
-- Each field: { key, label, type, default?, persistence?: 'node'|'kv'|'none', ...type-specific }
-- Schema field types: slider, number, boolean, string, select, color
+- UI fields: { key, label, type, default?, persistence?: 'node'|'kv'|'none', ...type-specific }
+- Schema field types: slider, number, boolean, string, select, color, json
 - slider: requires min, max. Add step for float precision (e.g. step: 0.01 for 2 decimal places; omitting step defaults to integer steps)
+- json: hidden JSON-serializable node state. Use { key, type: 'json', default?, persistence? } with no label or UI properties. It accepts null, booleans, finite numbers, strings, arrays, and plain objects. \`get()\` returns a snapshot: after mutating an array/object, call \`settings.set(key, value)\` to persist it. A JSON-only schema does not show a gear.
 - For full settings docs call get_doc_content({ kind: 'topic', slug: 'object-settings' })
 `.trim();
 
