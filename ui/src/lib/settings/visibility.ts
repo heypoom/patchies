@@ -9,6 +9,7 @@ export function getSettingsFieldValue(
   if (value !== undefined) return value;
 
   const field = schema.find((candidate) => candidate.key === key);
+
   return field && 'default' in field ? field.default : undefined;
 }
 
@@ -24,9 +25,8 @@ export function isSettingsFieldVisible(
 }
 
 /** Whether a schema has at least one field that can render a settings control. */
-export function hasVisibleSettingsFields(schema: SettingsSchema): boolean {
-  return schema.some((field) => field.type !== 'json');
-}
+export const hasVisibleSettingsFields = (schema: SettingsSchema): boolean =>
+  schema.some((field) => field.type !== 'json');
 
 function isVisibilityConditionMet(
   schema: SettingsSchema,

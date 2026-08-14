@@ -4,6 +4,7 @@ import type { KVStore } from '$lib/storage';
 
 import { SettingsManager } from './SettingsManager';
 import { createSettingsAPI } from './create-settings-api';
+import { cloneJsonValue } from './json';
 import type { SettingsSchema } from './types';
 
 const fakeKVStore = {
@@ -13,6 +14,29 @@ const fakeKVStore = {
 } as unknown as KVStore;
 
 describe('SettingsManager', () => {
+  it('clones JSON object keys and dense array values without invoking accessors', () => {
+    const withProtoKey = JSON.parse('{"__proto__":{"x":1}}');
+    const cloned = cloneJsonValue(withProtoKey) as Record<string, unknown>;
+
+    expect(Object.hasOwn(cloned, '__proto__')).toBe(true);
+    expect(cloned.__proto__).toEqual({ x: 1 });
+    expect(Object.getPrototypeOf(cloned)).toBe(Object.prototype);
+    expect(() => cloneJsonValue(Array.from({ length: 1 }))).toThrow(TypeError);
+
+    const accessorArray: unknown[] = [];
+
+    Object.defineProperty(accessorArray, 0, {
+      enumerable: true,
+      get: () => {
+        throw new Error('array getter should not run');
+      }
+    });
+
+    accessorArray.length = 1;
+
+    expect(() => cloneJsonValue(accessorArray)).toThrow(TypeError);
+  });
+
   it('preserves earlier synchronous node-persisted settings updates', async () => {
     const persistedSettings: Record<string, unknown> = {};
     const updates: Record<string, unknown>[] = [];

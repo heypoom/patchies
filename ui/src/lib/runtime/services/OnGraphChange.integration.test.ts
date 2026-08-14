@@ -126,4 +126,38 @@ describe('js onGraphChange', () => {
 
     runtime.destroy();
   });
+
+  it('routes rejected callbacks to the subscribing JS node', async () => {
+    const runtime = createTestPatchRuntime();
+
+    await runtime.setGraph({
+      objects: [
+        {
+          id: compilerId,
+          type: 'js',
+          data: {
+            runOnMount: true,
+            code: `onGraphChange({ tags: ['shader/foo/*'] }, async () => { throw new Error('rejected graph callback') })`
+          }
+        },
+        {
+          id: 'fragment',
+          type: 'js',
+          data: { tags: ['shader/foo/function'] }
+        }
+      ],
+      connections: []
+    });
+
+    await Promise.resolve();
+
+    expect(logger.getNodeLogs(compilerId)).toMatchObject([
+      {
+        level: 'error',
+        args: ['rejected graph callback']
+      }
+    ]);
+
+    runtime.destroy();
+  });
 });

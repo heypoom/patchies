@@ -167,6 +167,7 @@ describe('GraphObserver', () => {
       objects: [{ id: 'fragment', type: 'js', data: { tags: ['shader/foo/function'] } }],
       connections: []
     }));
+
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
     const snapshots: string[][] = [];
 
@@ -179,6 +180,30 @@ describe('GraphObserver', () => {
       );
 
       expect(snapshots).toEqual([['fragment']]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('contains rejected subscription callbacks', async () => {
+    const observer = new GraphObserver(() => ({
+      objects: [{ id: 'fragment', type: 'js', data: { tags: ['shader/foo/function'] } }],
+      connections: []
+    }));
+
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+    try {
+      observer.subscribe({ tags: ['shader/foo/*'] }, async () => {
+        throw new Error('rejected callback');
+      });
+
+      await Promise.resolve();
+
+      expect(warn).toHaveBeenCalledWith(
+        'Error in onGraphChange() handler:',
+        expect.objectContaining({ message: 'rejected callback' })
+      );
     } finally {
       warn.mockRestore();
     }

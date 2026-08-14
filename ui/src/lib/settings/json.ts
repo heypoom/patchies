@@ -65,7 +65,21 @@ function cloneJsonValueAt(value: unknown, path: string, ancestors: Set<object>):
 
   try {
     if (Array.isArray(value)) {
-      return value.map((item, index) => cloneJsonValueAt(item, `${path}[${index}]`, ancestors));
+      const result: JsonValue[] = [];
+
+      for (let index = 0; index < value.length; index++) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, index);
+
+        if (!descriptor || !('value' in descriptor)) {
+          throw new TypeError(
+            `Invalid JSON value at ${path}[${index}]: sparse arrays and accessors are not supported`
+          );
+        }
+
+        result.push(cloneJsonValueAt(descriptor.value, `${path}[${index}]`, ancestors));
+      }
+
+      return result;
     }
 
     const prototype = Object.getPrototypeOf(value);
@@ -82,7 +96,12 @@ function cloneJsonValueAt(value: unknown, path: string, ancestors: Set<object>):
         throw new TypeError(`Invalid JSON value at ${path}.${key}: accessors are not supported`);
       }
 
-      result[key] = cloneJsonValueAt(descriptor.value, `${path}.${key}`, ancestors);
+      Object.defineProperty(result, key, {
+        value: cloneJsonValueAt(descriptor.value, `${path}.${key}`, ancestors),
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
     }
 
     return result;

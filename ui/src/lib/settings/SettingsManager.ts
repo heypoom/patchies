@@ -240,11 +240,14 @@ export class SettingsManager {
       if (field.default === undefined) continue;
 
       const current = this.get(field.key);
-      if (
+      const clonedJsonValue = current as ReturnType<typeof cloneJsonValue>;
+
+      const hasChangedFromDefault =
         field.type === 'json'
-          ? !jsonValuesEqual(current as ReturnType<typeof cloneJsonValue>, field.default)
-          : current !== field.default
-      ) {
+          ? !jsonValuesEqual(clonedJsonValue, field.default)
+          : current !== field.default;
+
+      if (hasChangedFromDefault) {
         return true;
       }
     }

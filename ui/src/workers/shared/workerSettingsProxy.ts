@@ -49,6 +49,7 @@ export function createWorkerSettingsProxy(
     async define(nextSchema: SettingsSchema): Promise<void> {
       const requestId = `settings-${nodeId}-${++requestIdCounter}`;
       const normalizedSchema = normalizeSettingsSchema(nextSchema);
+
       schema = normalizedSchema;
 
       return new Promise<void>((resolve) => {
@@ -61,6 +62,7 @@ export function createWorkerSettingsProxy(
     get(key: string): unknown {
       const field = schema.find((candidate) => candidate.key === key);
       const value = cachedValues[key];
+
       return field && value !== undefined ? cloneSettingsFieldValue(field, value) : value;
     },
 
@@ -71,7 +73,9 @@ export function createWorkerSettingsProxy(
     set(key: string, value: unknown): void {
       const field = schema.find((candidate) => candidate.key === key);
       const storedValue = field ? cloneSettingsFieldValue(field, value) : value;
+
       cachedValues[key] = storedValue;
+
       postMessage({ type: 'settingsSet', nodeId, key, value: storedValue });
     },
 
