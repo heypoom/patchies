@@ -85,6 +85,7 @@
       if (!('default' in field) || field.default === undefined) return false;
 
       const currentValue = getCurrentValue(field);
+
       return field.type === 'json'
         ? !jsonValuesEqual(currentValue as typeof field.default, field.default)
         : !settingsValueEquals(currentValue, field.default);

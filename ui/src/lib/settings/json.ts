@@ -6,21 +6,18 @@ import type { JsonValue, SettingsField, SettingsSchema } from './types';
  * This avoids a JSON stringify/parse round trip for large persisted values
  * while ensuring the value will survive Patchies' JSON patch format unchanged.
  */
-export function cloneJsonValue(value: unknown): JsonValue {
-  return cloneJsonValueAt(value, '$', new Set<object>());
-}
+export const cloneJsonValue = (value: unknown): JsonValue =>
+  cloneJsonValueAt(value, '$', new Set<object>());
 
-export function cloneSettingsFieldValue(field: SettingsField, value: unknown): unknown {
-  return field.type === 'json' ? cloneJsonValue(value) : value;
-}
+export const cloneSettingsFieldValue = (field: SettingsField, value: unknown): unknown =>
+  field.type === 'json' ? cloneJsonValue(value) : value;
 
-export function normalizeSettingsSchema(schema: SettingsSchema): SettingsSchema {
-  return schema.map((field) => {
+export const normalizeSettingsSchema = (schema: SettingsSchema): SettingsSchema =>
+  schema.map((field) => {
     if (field.type !== 'json' || field.default === undefined) return field;
 
     return { ...field, default: cloneJsonValue(field.default) };
   });
-}
 
 export function jsonValuesEqual(left: JsonValue, right: JsonValue): boolean {
   if (Object.is(left, right)) return true;
@@ -52,6 +49,7 @@ function cloneJsonValueAt(value: unknown, path: string, ancestors: Set<object>):
 
   if (typeof value === 'number') {
     if (Number.isFinite(value)) return value;
+
     throw new TypeError(`Invalid JSON value at ${path}: numbers must be finite`);
   }
 
@@ -64,6 +62,7 @@ function cloneJsonValueAt(value: unknown, path: string, ancestors: Set<object>):
   }
 
   ancestors.add(value);
+
   try {
     if (Array.isArray(value)) {
       return value.map((item, index) => cloneJsonValueAt(item, `${path}[${index}]`, ancestors));
@@ -75,13 +74,17 @@ function cloneJsonValueAt(value: unknown, path: string, ancestors: Set<object>):
     }
 
     const result: { [key: string]: JsonValue } = {};
+
     for (const key of Object.keys(value)) {
       const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
       if (!descriptor || !('value' in descriptor)) {
         throw new TypeError(`Invalid JSON value at ${path}.${key}: accessors are not supported`);
       }
+
       result[key] = cloneJsonValueAt(descriptor.value, `${path}.${key}`, ancestors);
     }
+
     return result;
   } finally {
     ancestors.delete(value);
