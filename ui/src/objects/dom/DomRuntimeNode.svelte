@@ -39,6 +39,7 @@
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { LivePreviewExpandController } from '$lib/canvas/LivePreviewExpandController';
   import { getLivePreviewContainScale } from '$lib/canvas/live-preview-contain';
+  import { replaceUserTags } from '$lib/runtime/services/graph-tags';
 
   export type DomRuntimeRoot = {
     root: HTMLElement;
@@ -67,6 +68,7 @@
     settings?: Record<string, unknown>;
     noBorder?: boolean;
     fluidCanvasResizerVisible?: boolean;
+    tags?: string[];
   };
 
   let {
@@ -376,6 +378,9 @@
         setPortCount,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+        setTags(tags: string[]) {
+          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+        },
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           root: runtimeRoot.root,

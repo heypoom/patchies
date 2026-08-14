@@ -34,6 +34,7 @@
   import { useFluidCanvas } from './useFluidCanvas.svelte';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { CanvasDomExpandController } from '$lib/canvas/CanvasDomExpandController';
+  import { replaceUserTags } from '$lib/runtime/services/graph-tags';
 
   let {
     id: nodeId,
@@ -56,6 +57,7 @@
       settings?: Record<string, unknown>;
       noBorder?: boolean;
       fluidCanvasResizerVisible?: boolean;
+      tags?: string[];
     };
     selected?: boolean;
     width?: number;
@@ -477,6 +479,9 @@
         setPortCount,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+        setTags(tags: string[]) {
+          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+        },
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           canvas,

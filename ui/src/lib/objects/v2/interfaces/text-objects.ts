@@ -45,6 +45,9 @@ export interface TextObjectV2 {
    */
   onMessage?(data: unknown, meta: MessageMeta): void;
 
+  /** Re-execute after an imported local library changes. */
+  runAsLibraryDependent?(): void | Promise<void>;
+
   /**
    * Get dynamic outlets for this instance.
    * Use this when outlet count depends on runtime state or creation params.
