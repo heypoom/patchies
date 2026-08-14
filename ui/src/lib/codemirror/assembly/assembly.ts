@@ -1,6 +1,5 @@
 import { parser } from './syntax.js';
 import {
-  continuedIndent,
   indentNodeProp,
   foldNodeProp,
   foldInside,
@@ -15,9 +14,9 @@ export const assemblyLanguage = LRLanguage.define({
     props: [
       indentNodeProp.add({
         Program: () => 0,
-        StringDefinition: continuedIndent(),
-        ValueDefinition: continuedIndent(),
-        InstructionExpression: continuedIndent(),
+        StringDefinition: () => 0,
+        ValueDefinition: () => 0,
+        InstructionExpression: () => 0,
         LabelDefinition: () => 0
       }),
       foldNodeProp.add({

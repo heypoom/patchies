@@ -130,9 +130,19 @@ export async function loadLanguageExtension(
       return extensions;
     })
     .with('assembly', async () => {
-      const { assembly } = await import('$lib/codemirror/assembly/assembly');
+      const [{ autocompletion }, { assembly }, { asmCompletionsSource }] = await Promise.all([
+        import('@codemirror/autocomplete'),
+        import('$lib/codemirror/assembly/assembly'),
+        import('$lib/codemirror/asm-completions')
+      ]);
 
-      return assembly();
+      const extensions: Extension[] = [assembly()];
+
+      if (autocompleteEnabled && context?.nodeType === 'asm') {
+        extensions.push(autocompletion({ override: [asmCompletionsSource] }));
+      }
+
+      return extensions;
     })
     .with('python', async () => {
       const { python } = await import('@codemirror/lang-python');

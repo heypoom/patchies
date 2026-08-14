@@ -95,7 +95,7 @@
   }
 
   async function createOrUpdateEditor() {
-    const assemblyExtension = await loadLanguageExtension('assembly');
+    const assemblyExtension = await loadLanguageExtension('assembly', { nodeType: 'asm' });
 
     if (!editorContainer) return;
 
