@@ -60,6 +60,7 @@
     previewPortalTarget = undefined,
     showCookDebugOption = undefined,
     noBorder = false,
+    hideBorder = false,
     class: className = ''
   }: {
     title: string;
@@ -108,6 +109,7 @@
     previewPortalTarget?: HTMLElement | null;
     showCookDebugOption?: boolean;
     noBorder?: boolean;
+    hideBorder?: boolean;
     class?: string;
   } = $props();
 
@@ -125,6 +127,7 @@
       hasError,
       selected,
       noBorder,
+      hideBorder,
       errorClass: 'border-red-500/70',
       selectedClass: 'shadow-glow-md border-zinc-300 [&>canvas]:rounded-[7px]',
       idleClass: 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',

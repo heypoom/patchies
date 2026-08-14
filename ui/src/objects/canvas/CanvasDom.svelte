@@ -626,10 +626,14 @@
 
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
+
+  const resizeControlsVisible = $derived(
+    selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible
+  );
 </script>
 
 <div class="relative">
-  {#if selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible}
+  {#if resizeControlsVisible}
     {#if fluidCanvas.resizeAxis === 'both' || fluidCanvas.keepAspectRatio}
       <NodeResizer
         class="z-1"
@@ -679,6 +683,7 @@
     onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
     onSettingsRevertAll={() => settingsManager.revertAll()}
     noBorder={data.noBorder}
+    hideBorder={resizeControlsVisible}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
   >
     {#snippet topHandle()}

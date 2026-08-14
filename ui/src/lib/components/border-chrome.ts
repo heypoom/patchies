@@ -2,6 +2,7 @@ export function getBorderChromeClass({
   hasError = false,
   selected = false,
   noBorder = false,
+  hideBorder = false,
   errorClass,
   selectedClass,
   idleClass,
@@ -14,7 +15,11 @@ export function getBorderChromeClass({
   selectedClass: string;
   idleClass: string;
   borderlessClass: string;
+
+  /** Temporarily suppress chrome, including error chrome (for resize controls). */
+  hideBorder?: boolean;
 }) {
+  if (hideBorder) return borderlessClass;
   if (hasError) return errorClass;
   if (noBorder) return borderlessClass;
   if (selected && !noBorder) return selectedClass;

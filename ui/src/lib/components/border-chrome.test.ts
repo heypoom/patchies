@@ -43,6 +43,20 @@ describe('border chrome helpers', () => {
     ).toBe('error');
   });
 
+  it('suppresses error chrome while resize controls are visible', () => {
+    expect(
+      getBorderChromeClass({
+        hasError: true,
+        selected: true,
+        hideBorder: true,
+        borderlessClass: 'borderless',
+        idleClass: 'idle',
+        selectedClass: 'selected',
+        errorClass: 'error'
+      })
+    ).toBe('borderless');
+  });
+
   it('restores the border at run start when noBorder is no longer called', () => {
     expect(getBorderResetDataForRun({ noBorder: true })).toEqual({ noBorder: false });
     expect(getBorderResetDataForRun({ noBorder: false })).toEqual({});

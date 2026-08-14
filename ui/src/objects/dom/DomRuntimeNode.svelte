@@ -469,12 +469,16 @@
 
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
+
+  const resizeControlsVisible = $derived(
+    selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible
+  );
 </script>
 
 <svelte:window onresize={updateViewportSize} />
 
 <div class="relative">
-  {#if selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible}
+  {#if resizeControlsVisible}
     {#if fluidCanvas.resizeAxis === 'both' || fluidCanvas.keepAspectRatio}
       <NodeResizer
         class="z-1"
@@ -545,6 +549,7 @@
                 hasError: lineErrors !== undefined,
                 selected,
                 noBorder: data.noBorder,
+                hideBorder: resizeControlsVisible,
                 errorClass: 'border-red-500/70',
                 selectedClass: 'shadow-glow-md ring ring-zinc-400',
                 idleClass: 'hover:shadow-glow-sm',
