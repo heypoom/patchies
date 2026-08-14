@@ -178,7 +178,7 @@ describe('uniformDefsToSettingsSchema', () => {
       { name: 'strength', type: 'float', min: 0, max: 1, description: 'Aberration strength' }
     ]);
 
-    expect(fields[0].label).toBe('Aberration strength');
+    expect(fields[0]).toMatchObject({ label: 'Aberration strength' });
   });
 
   it('generates slider for int with min/max', () => {
@@ -192,7 +192,7 @@ describe('uniformDefsToSettingsSchema', () => {
       { name: 'invert', type: 'bool', description: 'Invert output' }
     ]);
 
-    expect(fields[0].label).toBe('Invert output');
+    expect(fields[0]).toMatchObject({ label: 'Invert output' });
   });
 });
 

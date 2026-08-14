@@ -1,6 +1,12 @@
 import type { SettingsField, SettingsSchema } from './types';
 import type { KVStore } from '$lib/storage/KVStore';
 import { match } from 'ts-pattern';
+import {
+  cloneJsonValue,
+  cloneSettingsFieldValue,
+  jsonValuesEqual,
+  normalizeSettingsSchema
+} from './json';
 
 type ChangeCallback = (key: string, value: unknown, allValues: Record<string, unknown>) => void;
 
@@ -43,10 +49,10 @@ export class SettingsManager {
   ) {}
 
   async define(fields: SettingsField[]): Promise<void> {
-    this.schema = fields;
+    this.schema = normalizeSettingsSchema(fields);
 
     // Load KV-persisted field values before returning
-    for (const field of fields) {
+    for (const field of this.schema) {
       if (field.persistence === 'kv') {
         const value = await this.kvStore.get(`settings:${field.key}`);
 
@@ -60,15 +66,15 @@ export class SettingsManager {
     const currentSettings = this.getCurrentNodeSettings();
     const nextSettings: Record<string, unknown> = { ...currentSettings };
 
-    for (const field of fields) {
+    for (const field of this.schema) {
       if (!field.persistence || field.persistence === 'node') {
         if (nextSettings[field.key] === undefined && field.default !== undefined) {
-          nextSettings[field.key] = field.default;
+          nextSettings[field.key] = cloneSettingsFieldValue(field, field.default);
         }
       }
     }
 
-    this.updateNodeSettingsWithCache(nextSettings, fields);
+    this.updateNodeSettingsWithCache(nextSettings, this.schema);
   }
 
   get(key: string): unknown {
@@ -81,7 +87,8 @@ export class SettingsManager {
       .with('node', () => this.getCurrentNodeSettings()[key])
       .exhaustive();
 
-    return value !== undefined ? value : field.default;
+    const resolvedValue = value !== undefined ? value : field.default;
+    return resolvedValue === undefined ? undefined : cloneSettingsFieldValue(field, resolvedValue);
   }
 
   getAll(): Record<string, unknown> {
@@ -100,18 +107,20 @@ export class SettingsManager {
     const field = this.schema.find((f) => f.key === key);
     if (!field) return;
 
+    const storedValue = cloneSettingsFieldValue(field, value);
+
     match(field.persistence ?? 'node')
       .with('none', () => {
-        this.memoryStore.set(key, value);
+        this.memoryStore.set(key, storedValue);
       })
       .with('kv', () => {
-        this.kvCache.set(key, value);
-        this.kvStore.set(`settings:${key}`, value);
+        this.kvCache.set(key, storedValue);
+        this.kvStore.set(`settings:${key}`, storedValue);
       })
       .with('node', () => {
         const settings = this.getCurrentNodeSettings();
 
-        this.updateNodeSettingsWithCache({ ...settings, [key]: value }, this.schema);
+        this.updateNodeSettingsWithCache({ ...settings, [key]: storedValue }, this.schema);
       })
       .exhaustive();
 
@@ -120,7 +129,7 @@ export class SettingsManager {
 
     for (const callback of this.changeCallbacks) {
       try {
-        callback(key, value, settingsValues);
+        callback(key, cloneSettingsFieldValue(field, storedValue), settingsValues);
       } catch (error) {
         console.error('settings.onChange callback error:', error);
       }
@@ -136,15 +145,16 @@ export class SettingsManager {
       match(field.persistence ?? 'node')
         .with('none', () => {
           if (hasDefault) {
-            this.memoryStore.set(field.key, field.default);
+            this.memoryStore.set(field.key, cloneSettingsFieldValue(field, field.default));
           } else {
             this.memoryStore.delete(field.key);
           }
         })
         .with('kv', () => {
           if (hasDefault) {
-            this.kvCache.set(field.key, field.default);
-            this.kvStore.set(`settings:${field.key}`, field.default);
+            const defaultValue = cloneSettingsFieldValue(field, field.default);
+            this.kvCache.set(field.key, defaultValue);
+            this.kvStore.set(`settings:${field.key}`, defaultValue);
           } else {
             this.kvCache.delete(field.key);
             this.kvStore.delete(`settings:${field.key}`);
@@ -152,7 +162,7 @@ export class SettingsManager {
         })
         .with('node', () => {
           if (hasDefault) {
-            newSettings[field.key] = field.default;
+            newSettings[field.key] = cloneSettingsFieldValue(field, field.default);
           }
         })
         .exhaustive();
@@ -230,7 +240,13 @@ export class SettingsManager {
       if (field.default === undefined) continue;
 
       const current = this.get(field.key);
-      if (current !== field.default) return true;
+      if (
+        field.type === 'json'
+          ? !jsonValuesEqual(current as ReturnType<typeof cloneJsonValue>, field.default)
+          : current !== field.default
+      ) {
+        return true;
+      }
     }
 
     return false;

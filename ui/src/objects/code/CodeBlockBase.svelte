@@ -26,6 +26,7 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import type { SettingsSchema } from '$lib/settings';
+  import { hasVisibleSettingsFields } from '$lib/settings';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
     closeCodeEditorOverlay,
@@ -150,7 +151,11 @@
   // Resolved primary — falls back to 'code' if 'settings' is requested but no
   // schema exists, or if 'run' is requested (not supported in CodeBlockBase).
   let resolvedPrimary = $derived.by<'code' | 'settings'>(() => {
-    if (primaryButton === 'settings' && settingsSchema && settingsSchema.length > 0) {
+    if (
+      primaryButton === 'settings' &&
+      settingsSchema &&
+      hasVisibleSettingsFields(settingsSchema)
+    ) {
       return 'settings';
     }
 
@@ -166,7 +171,7 @@
   );
 
   const detachedSettings = $derived(
-    settingsSchema && settingsSchema.length > 0
+    settingsSchema && hasVisibleSettingsFields(settingsSchema)
       ? {
           schema: settingsSchema,
           values: settingsValues,
@@ -411,7 +416,7 @@
 
   const settingsSidebarTarget = useSettingsSidebarTarget({
     getTarget: () =>
-      settingsSchema && settingsSchema.length > 0
+      settingsSchema && hasVisibleSettingsFields(settingsSchema)
         ? {
             id: nodeId,
             label: settingsSidebarLabel,
@@ -498,7 +503,7 @@
 
         <div class="node-floating-controls flex items-center sm:group-hover/header:opacity-100">
           {#if !(supportsLibraries && data.libraryName)}
-            {#if settingsSchema && settingsSchema.length > 0}
+            {#if settingsSchema && hasVisibleSettingsFields(settingsSchema)}
               <CodeBlockOverflowMenu
                 showConsole={data.showConsole ?? false}
                 {showSettings}
@@ -744,7 +749,7 @@
     </div>
   {/if}
 
-  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+  {#if showSettings && settingsSchema && hasVisibleSettingsFields(settingsSchema)}
     <div class="absolute top-0" style="left: {contentWidth + 10}px">
       <ObjectSettings
         {nodeId}

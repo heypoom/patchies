@@ -4,6 +4,7 @@ import type { Snippet } from 'svelte';
 import type { InlineDecoration } from '$lib/codemirror/inline-decorations';
 import type { SupportedLanguage } from '$lib/codemirror/types';
 import type { SettingsSchema } from '$lib/settings';
+import { hasVisibleSettingsFields } from '$lib/settings';
 import { isSidebarOpen, sidebarView } from './ui.store';
 import { showSidebarTab } from './sidebar-visibility.store';
 import { requestCodeSidebarTargetId } from './code-sidebar.store';
@@ -139,7 +140,7 @@ export function hasCodeEditorTargetSettings(
   if (!target) return false;
   if (target.customSettings) return true;
 
-  return (target.settings?.schema.length ?? 0) > 0;
+  return target.settings !== undefined && hasVisibleSettingsFields(target.settings.schema);
 }
 
 export const hasCodeEditorTargetConsole = (

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SettingsSchema } from './types';
-import { isSettingsFieldVisible } from './visibility';
+import { hasVisibleSettingsFields, isSettingsFieldVisible } from './visibility';
 
 describe('settings field visibility', () => {
   const schema: SettingsSchema = [
@@ -92,5 +92,13 @@ describe('settings field visibility', () => {
     expect(
       isSettingsFieldVisible(negatedConditionSchema, { kit: 'Custom' }, negatedConditionSchema[2])
     ).toBe(false);
+  });
+
+  it('hides JSON fields and does not treat a JSON-only schema as renderable', () => {
+    const jsonSchema: SettingsSchema = [{ key: 'grid', type: 'json', default: [[false]] }];
+
+    expect(isSettingsFieldVisible(jsonSchema, {}, jsonSchema[0])).toBe(false);
+    expect(hasVisibleSettingsFields(jsonSchema)).toBe(false);
+    expect(hasVisibleSettingsFields([...jsonSchema, schema[0]])).toBe(true);
   });
 });

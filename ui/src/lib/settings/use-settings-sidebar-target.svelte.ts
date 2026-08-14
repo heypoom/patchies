@@ -1,4 +1,5 @@
 import type { SettingsSidebarTarget } from '../../stores/settings-sidebar.store';
+import { hasVisibleSettingsFields } from './visibility';
 import {
   isSchemaSettingsSidebarTarget,
   openObjectSettingsInSidebarIfPreferred,
@@ -25,7 +26,11 @@ export function useSettingsSidebarTarget({ getTarget, floating }: SettingsSideba
 } {
   $effect(() => {
     const target = getTarget();
-    if (!target || (isSchemaSettingsSidebarTarget(target) && target.schema.length === 0)) return;
+    if (
+      !target ||
+      (isSchemaSettingsSidebarTarget(target) && !hasVisibleSettingsFields(target.schema))
+    )
+      return;
 
     return registerSettingsSidebarTarget(target);
   });

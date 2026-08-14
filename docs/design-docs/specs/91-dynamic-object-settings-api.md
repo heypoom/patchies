@@ -22,7 +22,8 @@ A data-driven settings system that lets nodes declare a settings schema and rend
 | onChange trigger         | On-commit (debounced)                          | Fires on blur for text, pointerup for slider, click for toggle/select. Not every keystroke.   |
 | Revert                   | Single "Revert All" button                     | Resets all fields to defaults. Shown only when schema has defaults and current values differ. |
 | Worker support           | Main-thread only (v1)                          | ✅ v2: `worker`, `canvas`, `hydra` supported via `workerSettingsProxy.ts`.                    |
-| Field types (v1)         | number, string, boolean, select, color, slider | Covers most use cases. Extensible later.                                                      |
+| Field types (v1)         | number, string, boolean, select, color, slider | Covers most UI-controlled use cases.                                                           |
+| Hidden data fields       | `json`                                        | Stores portable JSON state without adding a settings control.                                  |
 
 ## Settings Schema
 
@@ -77,6 +78,15 @@ interface SliderField extends SettingsFieldBase {
   step?: number
 }
 
+type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
+
+interface JsonField {
+  key: string
+  type: 'json'
+  default?: JsonValue
+  persistence?: SettingsPersistence
+}
+
 type SettingsField =
   | NumberField
   | StringField
@@ -84,6 +94,7 @@ type SettingsField =
   | SelectField
   | ColorField
   | SliderField
+  | JsonField
 
 type SettingsSchema = SettingsField[]
 ```
@@ -102,6 +113,12 @@ Fields with `persistence: 'none'` are NOT stored in `settings` — they exist on
 Fields with `persistence: 'kv'` are stored in the node's KV store under the key `settings:${key}`. They are NOT in `settings` either, so they don't get exported with the patch.
 
 Fields with `persistence: 'node'` (the default) are stored in `settings` and exported with the patch.
+
+`json` fields use the same persistence modes but do not render in `<ObjectSettings>`. They accept
+only JSON values and snapshot values on `set()`, `get()`, `getAll()`, and `onChange()`. This keeps
+mutable arrays and objects from changing saved node data without an explicit `set()`. A JSON-only
+schema does not show a settings gear. Validation and snapshotting run in both direct and worker
+runtimes, so invalid values fail before worker code updates its local cache.
 
 ## JSRunner API
 
@@ -236,6 +253,7 @@ Each field type maps to a UI element:
 | `select`   | Pill button group (SequencerSettings output/clock mode pattern)                                 |
 | `color`    | Color swatch grid (PostItNode pattern) or swatch+picker (SequencerSettings track color pattern) |
 | `slider`   | `<SettingsSlider>` component (`$lib/components/SettingsSlider.svelte`) with label+value header. The value is double-clickable on desktop and tappable on touch devices for precise numeric entry. |
+| `json`     | Nothing. The value is hidden state managed through the `settings` API. |
 
 ### UI Patterns (Reference Components)
 

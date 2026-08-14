@@ -10,6 +10,7 @@
   import type { SettingsField, SettingsSchema } from '$lib/settings/types';
   import { filterSettingsOptions, normalizeSettingsOptions } from '$lib/settings/options';
   import { isSettingsFieldVisible } from '$lib/settings/visibility';
+  import { jsonValuesEqual } from '$lib/settings/json';
   import { useFloatingSettingsScroll } from './use-floating-settings-scroll.svelte';
 
   let {
@@ -83,7 +84,10 @@
     return schema.some((field) => {
       if (!('default' in field) || field.default === undefined) return false;
 
-      return !settingsValueEquals(getCurrentValue(field), field.default);
+      const currentValue = getCurrentValue(field);
+      return field.type === 'json'
+        ? !jsonValuesEqual(currentValue as typeof field.default, field.default)
+        : !settingsValueEquals(currentValue, field.default);
     });
   }
 

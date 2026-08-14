@@ -3,6 +3,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import type { SettingsSchema } from '$lib/settings';
+  import { hasVisibleSettingsFields } from '$lib/settings';
 
   let {
     showConsole,
@@ -35,7 +36,7 @@
   </Tooltip.Root>
 
   <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
-    {#if settingsSchema.length > 0}
+    {#if hasVisibleSettingsFields(settingsSchema)}
       <Popover.Close class="contents">
         <button
           class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"

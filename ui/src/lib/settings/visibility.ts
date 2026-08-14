@@ -17,9 +17,15 @@ export function isSettingsFieldVisible(
   values: Record<string, unknown>,
   field: SettingsField
 ): boolean {
+  if (field.type === 'json') return false;
   if (!field.visibleWhen) return true;
 
   return isVisibilityConditionMet(schema, values, field.visibleWhen);
+}
+
+/** Whether a schema has at least one field that can render a settings control. */
+export function hasVisibleSettingsFields(schema: SettingsSchema): boolean {
+  return schema.some((field) => field.type !== 'json');
 }
 
 function isVisibilityConditionMet(

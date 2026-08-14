@@ -26,6 +26,9 @@ export type SettingsOption = {
   description?: string;
 };
 
+export type JsonPrimitive = null | boolean | number | string;
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+
 export interface NumberField extends SettingsFieldBase {
   type: 'number';
   default?: number;
@@ -83,6 +86,19 @@ export interface Vec2Field extends SettingsFieldBase {
   step?: number;
 }
 
+/**
+ * Persist arbitrary JSON data without rendering a settings control.
+ *
+ * JSON fields deliberately omit UI-only properties such as `label` and
+ * `visibleWhen`. Update them through `settings.set()`.
+ */
+export interface JsonField {
+  key: string;
+  type: 'json';
+  default?: JsonValue;
+  persistence?: SettingsPersistence;
+}
+
 export type SettingsField =
   | NumberField
   | StringField
@@ -91,7 +107,8 @@ export type SettingsField =
   | ComboboxField
   | ColorField
   | SliderField
-  | Vec2Field;
+  | Vec2Field
+  | JsonField;
 
 export type SettingsSchema = SettingsField[];
 

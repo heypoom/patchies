@@ -12,6 +12,7 @@
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
   import { isSidebarOpen } from '../../stores/ui.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
+  import { hasVisibleSettingsFields } from '$lib/settings';
 
   let {
     onClose,
@@ -146,7 +147,7 @@
           <div class="absolute top-11 right-0">
             {#if customSettings}
               {@render customSettings()}
-            {:else if settings && settings.schema.length > 0 && nodeId}
+            {:else if settings && hasVisibleSettingsFields(settings.schema) && nodeId}
               <ObjectSettings
                 {nodeId}
                 schema={settings.schema}
