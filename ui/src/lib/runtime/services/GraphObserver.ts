@@ -60,6 +60,8 @@ export class GraphObserver {
   }
 
   notify(change?: GraphChange): void {
+    if (this.subscriptions.size === 0) return;
+
     if (change) {
       for (const nodeId of change.changedObjectIds) {
         this.changedObjectIds.add(nodeId);

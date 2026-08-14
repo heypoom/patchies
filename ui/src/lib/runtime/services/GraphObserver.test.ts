@@ -6,6 +6,20 @@ import { GraphObserver } from './GraphObserver';
 import type { RuntimeGraphSpec } from '../types/runtime-object';
 
 describe('GraphObserver', () => {
+  it('does not read the graph when there are no subscriptions', async () => {
+    const getGraph = vi.fn(() => ({ objects: [], connections: [] }));
+    const observer = new GraphObserver(getGraph);
+
+    observer.notify({
+      changedObjectIds: new Set(['fragment']),
+      changedConnectionNodeIds: new Set()
+    });
+
+    await Promise.resolve();
+
+    expect(getGraph).not.toHaveBeenCalled();
+  });
+
   it('does not call a subscription when no nodes match its tags', async () => {
     const observer = new GraphObserver(() => ({
       objects: [{ id: 'output', type: 'glsl', data: { tags: ['shader/output'] } }],
