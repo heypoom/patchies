@@ -52,6 +52,11 @@ interface P5SketchConfig {
   onSurfaceFrame?: (canvas: HTMLCanvasElement) => void;
   onSurfacePointer?: (x: number, y: number, buttons: number, type: string) => void;
 
+  onCanvasCreated?: (
+    canvas: HTMLCanvasElement,
+    dimensions: { width: number; height: number }
+  ) => void;
+
   onSurfaceWheel?: (event: {
     x: number;
     y: number;
@@ -200,6 +205,12 @@ export class P5Manager {
         p.setup = function () {
           try {
             userCode?.setup?.call(p);
+
+            const canvas = (p as unknown as { canvas?: unknown }).canvas;
+
+            if (canvas instanceof HTMLCanvasElement) {
+              config.onCanvasCreated?.(canvas, { width: p.width, height: p.height });
+            }
 
             if (!userCode?.draw) {
               requestAnimationFrame(signalFrameReady);
