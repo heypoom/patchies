@@ -30,6 +30,7 @@ import { SHADERPARK_PRESETS } from './shaderpark.presets';
 import { FLOAT_TEXTURE_PRESETS } from './float-texture.presets';
 import { SURFACE_PRESETS } from './surface.presets';
 import { CHARTS_PRESETS } from './charts.presets';
+import { UXN_DEMO_PRESETS } from './uxn';
 
 // Re-export individual preset collections
 export {
@@ -61,7 +62,8 @@ export {
   SHADERPARK_PRESETS,
   FLOAT_TEXTURE_PRESETS,
   SURFACE_PRESETS,
-  CHARTS_PRESETS
+  CHARTS_PRESETS,
+  UXN_DEMO_PRESETS
 };
 
 /**
@@ -100,5 +102,6 @@ export const BUILTIN_PRESETS: Record<
   ...SHADERPARK_PRESETS,
   ...FLOAT_TEXTURE_PRESETS,
   ...SURFACE_PRESETS,
-  ...CHARTS_PRESETS
+  ...CHARTS_PRESETS,
+  ...UXN_DEMO_PRESETS
 };

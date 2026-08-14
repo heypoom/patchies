@@ -26,7 +26,8 @@ import {
   FileHeadphone,
   Grid3x3,
   Usb,
-  Waypoints
+  Waypoints,
+  CircuitBoard
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 
@@ -63,5 +64,6 @@ export function getPackIcon(iconName: string) {
     .with('Usb', () => Usb)
     .with('Eye', () => Eye)
     .with('Waypoints', () => Waypoints)
+    .with('CircuitBoard', () => CircuitBoard)
     .otherwise(() => Package);
 }
