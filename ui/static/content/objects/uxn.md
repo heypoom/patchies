@@ -17,6 +17,14 @@ Run programs like [Orca](https://100r.co/site/orca.html) and
 Supports video chaining - connect the video outlet to other visual objects
 (e.g. `hydra` and `glsl`) to process the Uxn screen output.
 
+For large chains, use Menu → **Low Video Resolution**. It sends video to
+downstream objects at the same maximum size as visual-node previews while
+preserving the Uxn screen's aspect ratio. This makes previews and video
+processing less demanding. The displayed Uxn screen uses the same height as
+visual-node previews, with its width derived from the ROM's aspect ratio—no
+black bars, cropping, or stretching. Programs continue to render at native
+resolution.
+
 ## Controls
 
 - **Load ROM**: Drop a `.rom` file, or use the menu
@@ -24,6 +32,8 @@ Supports video chaining - connect the video outlet to other visual objects
 - **Pause**: Pauses and resumes program execution
 - **Keyboard/Mouse**: Click on the canvas to focus it for input
 - **Edit Code**: Opens the Uxntal assembly code editor
+- **Low Video Resolution**: Reduces the resolution sent through the video outlet
+  for faster video chaining
 
 ## Headless Mode
 

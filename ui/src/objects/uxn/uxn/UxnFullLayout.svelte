@@ -3,6 +3,7 @@
     Code,
     EllipsisVertical,
     FolderOpen,
+    ImageDown,
     Monitor,
     Pause,
     Play,
@@ -11,6 +12,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { MAX_PREVIEW_SIZE } from '$lib/canvas/constants';
   import { uxnSchema } from '$objects/uxn/schema';
 
   let {
@@ -23,6 +25,8 @@
     onOpenFileDialog,
     onToggleConsole,
     onToggleEditor,
+    lowVideoResolution,
+    onToggleLowVideoResolution,
     onHideScreen,
     onMeasureContainerWidth
   }: {
@@ -35,6 +39,8 @@
     onOpenFileDialog: () => void;
     onToggleConsole: () => void;
     onToggleEditor: () => void;
+    lowVideoResolution: boolean;
+    onToggleLowVideoResolution: () => void;
     onHideScreen: () => void;
     onMeasureContainerWidth: () => void;
   } = $props();
@@ -112,6 +118,17 @@
         <button
           class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
           onclick={() => {
+            onToggleLowVideoResolution();
+            menuOpen = false;
+          }}
+        >
+          <ImageDown class="h-4 w-4" />
+          {lowVideoResolution ? 'Full Video Resolution' : 'Low Video Resolution'}
+        </button>
+
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
+          onclick={() => {
             onToggleConsole();
             menuOpen = false;
           }}
@@ -155,7 +172,9 @@
       ]}
       width={512}
       height={320}
-      style="width: 512px; height: 320px; image-rendering: pixelated; image-rendering: crisp-edges;"
+      style={lowVideoResolution
+        ? `width: auto; height: ${MAX_PREVIEW_SIZE[1]}px; image-rendering: pixelated; image-rendering: crisp-edges;`
+        : 'width: 512px; height: 320px; image-rendering: pixelated; image-rendering: crisp-edges;'}
     ></canvas>
   </div>
 

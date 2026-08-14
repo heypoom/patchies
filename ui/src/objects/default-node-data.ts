@@ -272,7 +272,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       code: '',
       showConsole: false,
       showEditor: false,
-      consoleOutput: ''
+      consoleOutput: '',
+      lowVideoResolution: false
     }))
     .with('mqtt', () => ({
       topics: [],

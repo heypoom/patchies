@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import { P5Manager } from './P5Manager';
+import { installInlinePointerCoordinateNormalization, P5Manager } from './P5Manager';
 
 const executeJavaScript = vi.fn();
 
@@ -58,5 +58,56 @@ describe('P5Manager', () => {
         primaryButton: 'settings'
       }
     ]);
+  });
+
+  it('keeps mouse and previous-mouse coordinates in canvas space across scaled pointer events', () => {
+    const canvas = {
+      scrollWidth: 400,
+      scrollHeight: 300,
+      getBoundingClientRect: () => ({ width: 800, height: 600 })
+    } as HTMLCanvasElement;
+
+    const pointerSketch = {
+      _hasMouseInteracted: false,
+      mouseX: 0,
+      mouseY: 0,
+      pmouseX: 0,
+      pmouseY: 0,
+      canvas,
+      _updatePointerCoords(event: PointerEvent) {
+        this.mouseX = event.clientX;
+        this.mouseY = event.clientY;
+
+        if (!this._hasMouseInteracted) {
+          this.pmouseX = this.mouseX;
+          this.pmouseY = this.mouseY;
+          this._hasMouseInteracted = true;
+        }
+      }
+    };
+
+    installInlinePointerCoordinateNormalization(pointerSketch);
+
+    pointerSketch._updatePointerCoords!({ clientX: 200, clientY: 120 } as PointerEvent);
+
+    expect(pointerSketch).toMatchObject({
+      mouseX: 100,
+      mouseY: 60,
+      pmouseX: 100,
+      pmouseY: 60
+    });
+
+    // p5 saves the normalized current position at the end of the frame.
+    pointerSketch.pmouseX = pointerSketch.mouseX;
+    pointerSketch.pmouseY = pointerSketch.mouseY;
+
+    pointerSketch._updatePointerCoords!({ clientX: 300, clientY: 180 } as PointerEvent);
+
+    expect(pointerSketch).toMatchObject({
+      mouseX: 150,
+      mouseY: 90,
+      pmouseX: 100,
+      pmouseY: 60
+    });
   });
 });
