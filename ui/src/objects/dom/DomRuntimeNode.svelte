@@ -35,6 +35,10 @@
   } from '$objects/dom/runtime-size';
   import { useNodeDataTracker } from '$lib/history';
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
+  import { portal } from '$lib/dom/portal';
+  import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
+  import { LivePreviewExpandController } from '$lib/canvas/LivePreviewExpandController';
+  import { getLivePreviewContainScale } from '$lib/canvas/live-preview-contain';
 
   export type DomRuntimeRoot = {
     root: HTMLElement;
@@ -113,7 +117,7 @@
     onRunReady?: (run: () => void) => void;
   } = $props();
 
-  const { updateNode, updateNodeData } = useSvelteFlow();
+  const { getNodes, updateNode, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
 
@@ -142,6 +146,10 @@
   let wheelEnabled = $state(true);
   let editorReady = $state(false);
   let runRevision = 0;
+  let isExpanded = $state(false);
+  let expandedPreviewSize = $state<DomSize | null>(null);
+  let viewportSize = $state<DomSize>({ width: 0, height: 0 });
+  let expandController: LivePreviewExpandController | null = null;
 
   let containerWidth = $derived(data.width);
   let containerHeight = $derived(data.height);
@@ -151,6 +159,26 @@
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
+  const expandedPreviewPortalTarget = $derived(
+    isExpanded && typeof document !== 'undefined' ? SurfaceOverlay.getInstance().customHost : null
+  );
+
+  const expandedPreviewScale = $derived(
+    expandedPreviewSize && viewportSize.width > 0 && viewportSize.height > 0
+      ? getLivePreviewContainScale(expandedPreviewSize, viewportSize)
+      : 1
+  );
+
+  const previewStyle = $derived.by(() => {
+    if (isExpanded && expandedPreviewSize) {
+      return `width: ${expandedPreviewSize.width}px; height: ${expandedPreviewSize.height}px; transform: scale(${expandedPreviewScale}); transform-origin: center;`;
+    }
+
+    return previewWidth !== undefined && previewHeight !== undefined
+      ? `width: ${previewWidth}px; height: ${previewHeight}px;`
+      : '';
+  });
 
   const fluidCanvas = useFluidCanvas({
     getNodeId: () => nodeId,
@@ -230,6 +258,48 @@
     updateNodeData(nodeId, { width, height });
   }
 
+  function updateViewportSize() {
+    viewportSize = { width: window.innerWidth, height: window.innerHeight };
+  }
+
+  function getExpandedPreviewSize(): DomSize | null {
+    if (!previewContainer) return null;
+
+    const rect = previewContainer.getBoundingClientRect();
+    const zoom = viewport.current.zoom || 1;
+    const width = rect.width / zoom;
+    const height = rect.height / zoom;
+
+    return width > 0 && height > 0 ? { width, height } : null;
+  }
+
+  function focusPreview() {
+    const selector =
+      'input, button, select, textarea, a[href], [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
+
+    const container =
+      rootContainer?.shadowRoot?.querySelector<HTMLElement>(selector) ??
+      previewContainer?.querySelector<HTMLElement>(selector);
+
+    container?.focus();
+  }
+
+  function toggleExpandedPreview() {
+    if (!expandController) return;
+
+    if (expandController.isActive) {
+      expandController.exit();
+      return;
+    }
+
+    const size = getExpandedPreviewSize();
+    if (!size) return;
+
+    expandedPreviewSize = size;
+    updateViewportSize();
+    expandController.enter();
+  }
+
   function stopLongRunningTasks() {
     const messageContext = jsRunner.getMessageContext(nodeId);
     messageContext.clearTimers();
@@ -246,6 +316,8 @@
 
   async function runCode() {
     if (!rootContainer) return;
+
+    expandController?.exit();
 
     const runId = ++runRevision;
 
@@ -356,12 +428,27 @@
 
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
+    expandController = new LivePreviewExpandController({
+      nodeId,
+      getNodes,
+      overlay: SurfaceOverlay.getInstance(),
+      onActiveChange: (active) => {
+        isExpanded = active;
+
+        if (!active) {
+          expandedPreviewSize = null;
+        }
+      },
+      focusPreview
+    });
+
     setTimeout(() => {
       runCode();
     }, 50);
   });
 
   onDestroy(() => {
+    expandController?.exit();
     fluidCanvas.reset();
     cleanupRuntime();
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
@@ -378,6 +465,8 @@
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
 </script>
+
+<svelte:window onresize={updateViewportSize} />
 
 <div class="relative">
   {#if selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible}
@@ -416,6 +505,9 @@
     onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
     onSettingsRevertAll={() => settingsManager.revertAll()}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
+    showExpandOption={true}
+    onCustomExpandToggle={toggleExpandedPreview}
+    customExpanded={isExpanded}
   >
     {#snippet topHandle()}
       {#each Array.from({ length: inletCount }) as _, index (index)}
@@ -433,35 +525,42 @@
 
     {#snippet preview()}
       <div
-        bind:this={previewContainer}
-        class={[
-          'overflow-hidden rounded-md',
-          getBorderChromeClass({
-            hasError: lineErrors !== undefined,
-            selected,
-            noBorder: data.noBorder,
-            errorClass: 'border-red-500/70',
-            selectedClass: 'shadow-glow-md ring ring-zinc-400',
-            idleClass: 'hover:shadow-glow-sm',
-            borderlessClass: 'shadow-none ring-0'
-          }),
-          !dragEnabled && 'nodrag',
-          !panEnabled && 'nopan',
-          !wheelEnabled && 'nowheel'
-        ]}
-        style={previewWidth !== undefined && previewHeight !== undefined
-          ? `width: ${previewWidth}px; height: ${previewHeight}px;`
-          : ''}
+        use:portal={expandedPreviewPortalTarget}
+        class={isExpanded
+          ? 'fixed inset-0 flex items-center justify-center overflow-hidden bg-black'
+          : 'relative'}
       >
-        {#if htmlCanvasRootActive}
-          {#key htmlCanvasContextMode}
-            <canvas bind:this={htmlCanvasElement} class="block overflow-hidden">
-              <div bind:this={rootContainer} class={htmlRootClass}></div>
-            </canvas>
-          {/key}
-        {:else}
-          <div bind:this={rootContainer} class="h-full w-full"></div>
-        {/if}
+        <div
+          bind:this={previewContainer}
+          class={[
+            'overflow-hidden',
+            !isExpanded && 'rounded-md',
+            !isExpanded &&
+              getBorderChromeClass({
+                hasError: lineErrors !== undefined,
+                selected,
+                noBorder: data.noBorder,
+                errorClass: 'border-red-500/70',
+                selectedClass: 'shadow-glow-md ring ring-zinc-400',
+                idleClass: 'hover:shadow-glow-sm',
+                borderlessClass: 'shadow-none ring-0'
+              }),
+            !dragEnabled && 'nodrag',
+            !panEnabled && 'nopan',
+            !wheelEnabled && 'nowheel'
+          ]}
+          style={previewStyle}
+        >
+          {#if htmlCanvasRootActive}
+            {#key htmlCanvasContextMode}
+              <canvas bind:this={htmlCanvasElement} class="block overflow-hidden">
+                <div bind:this={rootContainer} class={htmlRootClass}></div>
+              </canvas>
+            {/key}
+          {:else}
+            <div bind:this={rootContainer} class="h-full w-full"></div>
+          {/if}
+        </div>
       </div>
     {/snippet}
 

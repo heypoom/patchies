@@ -13,7 +13,7 @@ describe('CanvasDomExpandController', () => {
   it('uses custom overlay content and keeps the live canvas focused', () => {
     let overlayExit: (() => void) | undefined;
     let active = false;
-    const focusCanvas = vi.fn();
+    const focusPreview = vi.fn();
 
     const overlay = {
       activate: vi.fn(
@@ -37,13 +37,13 @@ describe('CanvasDomExpandController', () => {
       onActiveChange: (next) => {
         active = next;
       },
-      focusCanvas
+      focusPreview
     });
 
     controller.enter();
 
     expect(active).toBe(true);
-    expect(focusCanvas).toHaveBeenCalledOnce();
+    expect(focusPreview).toHaveBeenCalledOnce();
 
     expect(overlay.activate).toHaveBeenCalledWith(
       'canvas-dom-1',

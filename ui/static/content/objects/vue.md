@@ -24,6 +24,16 @@ Call `noBorder()` when the Vue UI should blend into the patch without
 showing Patchies' border or selected glow. Remove
 the call and run the node again to restore the border.
 
+## Expand
+
+Choose **Expand** from the overflow menu or right-click menu to focus the live
+Vue interface on screen. The app keeps running and remains interactive.
+Patchies preserves the preview's current aspect ratio, scales it to fit the
+screen, and uses black space where needed instead of stretching the layout.
+
+Expand also works with HTML-in-Canvas modes. It changes only where the live
+preview is shown; video output and canvas layers keep running as before.
+
 ## Resizable layouts
 
 Use `setFluidSize()` when your component should fill a user-resized node:

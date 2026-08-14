@@ -575,7 +575,7 @@
       onActiveChange: (active) => {
         isExpanded = active;
       },
-      focusCanvas: () => canvas?.focus()
+      focusPreview: () => canvas?.focus()
     });
 
     const cleanupMouse = setupMouseListeners();
