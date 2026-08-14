@@ -14,6 +14,7 @@ import {
   Shrink
 } from '@lucide/svelte/icons';
 import type { SettingsSchema } from '$lib/settings';
+import { hasVisibleSettingsFields } from '$lib/settings';
 import type { Component } from 'svelte';
 
 export interface ExtraMenuItem {
@@ -64,7 +65,7 @@ export interface ObjectPreviewMenuGroup {
 }
 
 function hasSettings(settingsSchema?: SettingsSchema) {
-  return settingsSchema !== undefined && settingsSchema.length > 0;
+  return settingsSchema !== undefined && hasVisibleSettingsFields(settingsSchema);
 }
 
 export function getObjectPreviewMenuGroups({

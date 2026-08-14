@@ -4,6 +4,7 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings/types';
+  import { hasVisibleSettingsFields } from '$lib/settings';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
 
@@ -68,7 +69,7 @@
 
   const settingsSidebarTarget = useSettingsSidebarTarget({
     getTarget: () =>
-      schema.length > 0
+      hasVisibleSettingsFields(schema)
         ? {
             id: nodeId,
             label: title,

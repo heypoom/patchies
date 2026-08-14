@@ -16,6 +16,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
+  import { hasVisibleSettingsFields } from '$lib/settings';
   import type { ExtraMenuItem } from './object-preview-menu-actions';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { outputTarget } from '../../stores/canvas.store';
@@ -148,7 +149,10 @@
   // Resolved primary — falls back to 'code' if the requested mode isn't usable
   // (e.g. 'settings' selected but no schema yet, 'run' selected but no onrun).
   let resolvedPrimary = $derived.by<PrimaryButton>(() => {
-    if (primaryButton === 'settings' && (!settingsSchema || settingsSchema.length === 0)) {
+    if (
+      primaryButton === 'settings' &&
+      (!settingsSchema || !hasVisibleSettingsFields(settingsSchema))
+    ) {
       return 'code';
     }
 
@@ -290,7 +294,7 @@
   );
 
   const detachedSettings = $derived(
-    settingsSchema && settingsSchema.length > 0
+    settingsSchema && hasVisibleSettingsFields(settingsSchema)
       ? {
           schema: settingsSchema,
           values: settingsValues,
@@ -329,7 +333,7 @@
 
   const settingsSidebarTarget = useSettingsSidebarTarget({
     getTarget: () =>
-      nodeId && settingsSchema && settingsSchema.length > 0
+      nodeId && settingsSchema && hasVisibleSettingsFields(settingsSchema)
         ? {
             id: nodeId,
             label: title,
@@ -598,7 +602,7 @@
     />
   </ContextMenu.Root>
 
-  {#if showSettings && settingsSchema && settingsSchema.length > 0 && nodeId}
+  {#if showSettings && settingsSchema && hasVisibleSettingsFields(settingsSchema) && nodeId}
     <div class="absolute top-0" style="left: {editorLeftPos}px;">
       <ObjectSettings
         {nodeId}

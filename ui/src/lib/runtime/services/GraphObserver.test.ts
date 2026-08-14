@@ -6,6 +6,20 @@ import { GraphObserver } from './GraphObserver';
 import type { RuntimeGraphSpec } from '../types/runtime-object';
 
 describe('GraphObserver', () => {
+  it('does not read the graph when there are no subscriptions', async () => {
+    const getGraph = vi.fn(() => ({ objects: [], connections: [] }));
+    const observer = new GraphObserver(getGraph);
+
+    observer.notify({
+      changedObjectIds: new Set(['fragment']),
+      changedConnectionNodeIds: new Set()
+    });
+
+    await Promise.resolve();
+
+    expect(getGraph).not.toHaveBeenCalled();
+  });
+
   it('does not call a subscription when no nodes match its tags', async () => {
     const observer = new GraphObserver(() => ({
       objects: [{ id: 'output', type: 'glsl', data: { tags: ['shader/output'] } }],
@@ -153,6 +167,7 @@ describe('GraphObserver', () => {
       objects: [{ id: 'fragment', type: 'js', data: { tags: ['shader/foo/function'] } }],
       connections: []
     }));
+
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
     const snapshots: string[][] = [];
 
@@ -165,6 +180,30 @@ describe('GraphObserver', () => {
       );
 
       expect(snapshots).toEqual([['fragment']]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('contains rejected subscription callbacks', async () => {
+    const observer = new GraphObserver(() => ({
+      objects: [{ id: 'fragment', type: 'js', data: { tags: ['shader/foo/function'] } }],
+      connections: []
+    }));
+
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+    try {
+      observer.subscribe({ tags: ['shader/foo/*'] }, async () => {
+        throw new Error('rejected callback');
+      });
+
+      await Promise.resolve();
+
+      expect(warn).toHaveBeenCalledWith(
+        'Error in onGraphChange() handler:',
+        expect.objectContaining({ message: 'rejected callback' })
+      );
     } finally {
       warn.mockRestore();
     }

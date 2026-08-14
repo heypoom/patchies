@@ -1,4 +1,5 @@
 import type { SettingsSidebarTarget } from '../../stores/settings-sidebar.store';
+import { hasVisibleSettingsFields } from './visibility';
 import {
   isSchemaSettingsSidebarTarget,
   openObjectSettingsInSidebarIfPreferred,
@@ -25,14 +26,24 @@ export function useSettingsSidebarTarget({ getTarget, floating }: SettingsSideba
 } {
   $effect(() => {
     const target = getTarget();
-    if (!target || (isSchemaSettingsSidebarTarget(target) && target.schema.length === 0)) return;
+
+    const targetUnavailable =
+      !target ||
+      (isSchemaSettingsSidebarTarget(target) && !hasVisibleSettingsFields(target.schema));
+
+    if (targetUnavailable) return;
 
     return registerSettingsSidebarTarget(target);
   });
 
   function toggle(event?: MouseEvent): void {
     const target = getTarget();
-    if (!target) return;
+
+    const targetUnavailable =
+      !target ||
+      (isSchemaSettingsSidebarTarget(target) && !hasVisibleSettingsFields(target.schema));
+
+    if (targetUnavailable) return;
 
     if (openObjectSettingsInSidebarIfPreferred(target.id, event?.shiftKey)) {
       floating.setOpen(false);
@@ -42,7 +53,9 @@ export function useSettingsSidebarTarget({ getTarget, floating }: SettingsSideba
     const nextOpen = !floating.isOpen();
     floating.setOpen(nextOpen);
 
-    if (nextOpen) floating.onOpenFloating?.();
+    if (nextOpen) {
+      floating.onOpenFloating?.();
+    }
   }
 
   return { toggle };

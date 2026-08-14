@@ -1,4 +1,5 @@
 import type { SettingsSchema } from '$lib/settings/types';
+import { cloneSettingsFieldValue, normalizeSettingsSchema } from '$lib/settings/json';
 
 type ChangeCallback = (key: string, value: unknown, allValues: Record<string, unknown>) => void;
 
@@ -40,34 +41,42 @@ export function createWorkerSettingsProxy(
   const pendingDefines = new Map<string, (values: Record<string, unknown>) => void>();
 
   let cachedValues: Record<string, unknown> = {};
+  let schema: SettingsSchema = [];
   let requestIdCounter = 0;
   let onChangeCallbacks: ChangeCallback[] = [];
 
   const settings = {
-    async define(schema: SettingsSchema): Promise<void> {
+    async define(nextSchema: SettingsSchema): Promise<void> {
       const requestId = `settings-${nodeId}-${++requestIdCounter}`;
+      const normalizedSchema = normalizeSettingsSchema(nextSchema);
+
+      schema = normalizedSchema;
 
       return new Promise<void>((resolve) => {
-        pendingDefines.set(requestId, (values) => {
-          cachedValues = values;
-          resolve();
-        });
+        pendingDefines.set(requestId, () => resolve());
 
-        postMessage({ type: 'settingsDefine', nodeId, requestId, schema });
+        postMessage({ type: 'settingsDefine', nodeId, requestId, schema: normalizedSchema });
       });
     },
 
     get(key: string): unknown {
-      return cachedValues[key];
+      const field = schema.find((candidate) => candidate.key === key);
+      const value = cachedValues[key];
+
+      return field && value !== undefined ? cloneSettingsFieldValue(field, value) : value;
     },
 
     getAll(): Record<string, unknown> {
-      return { ...cachedValues };
+      return Object.fromEntries(Object.keys(cachedValues).map((key) => [key, settings.get(key)]));
     },
 
     set(key: string, value: unknown): void {
-      cachedValues[key] = value;
-      postMessage({ type: 'settingsSet', nodeId, key, value });
+      const field = schema.find((candidate) => candidate.key === key);
+      const storedValue = field ? cloneSettingsFieldValue(field, value) : value;
+
+      cachedValues[key] = storedValue;
+
+      postMessage({ type: 'settingsSet', nodeId, key, value: storedValue });
     },
 
     onChange(callback: ChangeCallback): void {
@@ -94,25 +103,35 @@ export function createWorkerSettingsProxy(
       }
       pendingDefines.clear();
       cachedValues = {};
+      schema = [];
     },
 
     _receiveValuesInit(requestId: string, values: Record<string, unknown>) {
       const resolve = pendingDefines.get(requestId);
 
       if (resolve) {
+        cachedValues = Object.fromEntries(
+          Object.entries(values).map(([key, value]) => {
+            const field = schema.find((candidate) => candidate.key === key);
+
+            return [key, field ? cloneSettingsFieldValue(field, value) : value];
+          })
+        );
         pendingDefines.delete(requestId);
         resolve(values);
       }
     },
 
     _receiveValueChanged(key: string, value: unknown) {
-      cachedValues[key] = value;
+      const field = schema.find((candidate) => candidate.key === key);
+      cachedValues[key] = field ? cloneSettingsFieldValue(field, value) : value;
 
-      const allValues = { ...cachedValues };
+      const callbackValue = settings.get(key);
+      const allValues = settings.getAll();
 
       for (const callback of onChangeCallbacks) {
         try {
-          callback(key, value, allValues);
+          callback(key, callbackValue, allValues);
         } catch {
           // ignore callback errors
         }

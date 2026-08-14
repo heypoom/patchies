@@ -191,6 +191,37 @@ Use `presets` to show a swatch grid above the picker:
 }
 ```
 
+### `json`
+
+Store JSON data without adding a control to the settings panel. Use it for state that
+belongs to the node, such as a sequencer grid or saved drawing data.
+
+```javascript
+await settings.define([
+  {
+    key: 'grid',
+    type: 'json',
+    default: [
+      [false, false, false, false],
+      [false, false, false, false]
+    ]
+  }
+]);
+
+const grid = settings.get('grid');
+grid[0][1] = true;
+settings.set('grid', grid); // Persist an updated snapshot
+```
+
+JSON fields accept `null`, booleans, finite numbers, strings, arrays, and plain objects.
+They reject values that cannot round-trip through a patch file, including `undefined`,
+functions, `Date`, `Map`, `Set`, and circular references. `get()`, `getAll()`, and
+`onChange()` return snapshots, so mutate a value and pass it back to `set()` to save it.
+
+`json` fields use the same `node`, `kv`, and `none` persistence modes as other fields.
+They do not use `label`, `description`, or `visibleWhen`, and a JSON-only schema does not
+show a settings gear.
+
 ## Common Field Properties
 
 All field types use these properties:
@@ -198,10 +229,10 @@ All field types use these properties:
 | Property | Type | Description |
 | -------- | ---- | ----------- |
 | `key` | string | Unique identifier, used with `settings.get(key)` |
-| `label` | string | Display name shown in the panel |
-| `type` | string | Field type: `slider`, `number`, `boolean`, `string`, `select`, `color` |
+| `label` | string | Display name shown in the panel; not used by `json` |
+| `type` | string | Field type: `slider`, `number`, `boolean`, `string`, `select`, `color`, `json` |
 | `description` | string | Optional tooltip shown on the label |
-| `default` | any | Default value |
+| `default` | any | Default value; a JSON value for `json` |
 | `persistence` | string | Where to store the value (see below) |
 
 ## Persistence

@@ -7,6 +7,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
+  import { hasVisibleSettingsFields } from '$lib/settings';
   import {
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
@@ -83,7 +84,7 @@
   );
 
   const detachedSettings = $derived(
-    settingsSchema && settingsSchema.length > 0
+    settingsSchema && hasVisibleSettingsFields(settingsSchema)
       ? {
           schema: settingsSchema,
           values: settingsValues,
@@ -213,7 +214,7 @@
 
   const settingsSidebarTarget = useSettingsSidebarTarget({
     getTarget: () =>
-      settingsSchema && settingsSchema.length > 0
+      settingsSchema && hasVisibleSettingsFields(settingsSchema)
         ? {
             id: nodeId,
             label: displayTitle,
@@ -246,7 +247,7 @@
         <div class="flex items-center">
           {@render actionButtons?.()}
 
-          {#if settingsSchema && settingsSchema.length > 0}
+          {#if settingsSchema && hasVisibleSettingsFields(settingsSchema)}
             <Tooltip.Root>
               <Tooltip.Trigger>
                 <button
@@ -445,7 +446,7 @@
     </div>
   {/if}
 
-  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+  {#if showSettings && settingsSchema && hasVisibleSettingsFields(settingsSchema)}
     <div class="absolute top-0" style="left: {contentWidth + 10}px">
       <ObjectSettings
         {nodeId}

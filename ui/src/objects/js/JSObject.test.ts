@@ -113,6 +113,78 @@ describe('JSObject', () => {
     context.destroy();
   });
 
+  it('routes graph callback errors to the node virtual console', async () => {
+    let graphCallback: GraphChangeCallback | undefined;
+    const messageContext = new MessageContext(compilerId);
+
+    const context = new ObjectContext(
+      compilerId,
+      messageContext,
+      [],
+      {
+        code: `onGraphChange({ tags: ['shader/foo/*'] }, () => { throw new Error('broken graph callback') })`,
+        runOnMount: true
+      },
+      {
+        subscribeGraph: (_query, callback) => {
+          graphCallback = callback;
+          return () => {};
+        }
+      }
+    );
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(() => graphCallback?.({ nodes: [], edges: [] })).not.toThrow();
+
+    expect(logger.getNodeLogs(compilerId)).toMatchObject([
+      {
+        level: 'error',
+        args: ['broken graph callback']
+      }
+    ]);
+
+    object.destroy();
+    context.destroy();
+  });
+
+  it('routes rejected graph callbacks to the node virtual console', async () => {
+    let graphCallback: GraphChangeCallback | undefined;
+    const messageContext = new MessageContext(compilerId);
+    const context = new ObjectContext(
+      compilerId,
+      messageContext,
+      [],
+      {
+        code: `onGraphChange({ tags: ['shader/foo/*'] }, async () => { throw new Error('rejected graph callback') })`,
+        runOnMount: true
+      },
+      {
+        subscribeGraph: (_query, callback) => {
+          graphCallback = callback;
+          return () => {};
+        }
+      }
+    );
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(() => graphCallback?.({ nodes: [], edges: [] })).not.toThrow();
+    await Promise.resolve();
+
+    expect(logger.getNodeLogs(compilerId)).toMatchObject([
+      {
+        level: 'error',
+        args: ['rejected graph callback']
+      }
+    ]);
+
+    object.destroy();
+    context.destroy();
+  });
+
   it('clears the graph subscription indicator after the final unsubscribe', async () => {
     const unsubscribe = vi.fn();
 

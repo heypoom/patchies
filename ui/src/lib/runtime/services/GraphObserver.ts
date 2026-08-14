@@ -60,6 +60,8 @@ export class GraphObserver {
   }
 
   notify(change?: GraphChange): void {
+    if (this.subscriptions.size === 0) return;
+
     if (change) {
       for (const nodeId of change.changedObjectIds) {
         this.changedObjectIds.add(nodeId);
@@ -149,7 +151,11 @@ export class GraphObserver {
     subscription.lastSnapshotKey = snapshotKey;
 
     try {
-      subscription.callback(snapshot);
+      const result = subscription.callback(snapshot) as unknown;
+
+      Promise.resolve(result).catch((error) =>
+        logger.warn('Error in onGraphChange() handler:', error)
+      );
     } catch (error) {
       logger.warn('Error in onGraphChange() handler:', error);
     }

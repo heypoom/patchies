@@ -8,6 +8,7 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import type { SettingsSchema } from '$lib/settings';
+  import { hasVisibleSettingsFields } from '$lib/settings';
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
 
   import type { SmplrRuntimeStatus } from './SmplrInstrumentAudioNode';
@@ -98,7 +99,7 @@
 
   const settingsSidebarTarget = useSettingsSidebarTarget({
     getTarget: () =>
-      settingsSchema.length > 0
+      hasVisibleSettingsFields(settingsSchema)
         ? {
             id: node.id,
             label: descriptor.title,
@@ -126,24 +127,22 @@
       return descriptor.settingsSchema;
     }
 
-    return descriptor.settingsSchema.map((field) =>
-      field.key === 'instrument'
-        ? {
-            key: field.key,
-            label: field.label,
-            description: field.description,
-            persistence: field.persistence,
-            type: 'combobox' as const,
-            options: instrumentNames,
-            default: instrumentNames[0] ?? '',
-            searchPlaceholder:
-              descriptor.type === 'soundfont2~'
-                ? 'Search SF2 instruments...'
-                : 'Search instruments...',
-            emptyMessage: 'No instrument found.'
-          }
-        : field
-    );
+    return descriptor.settingsSchema.map((field) => {
+      if (field.key !== 'instrument' || field.type === 'json') return field;
+
+      return {
+        key: field.key,
+        label: field.label,
+        description: field.description,
+        persistence: field.persistence,
+        type: 'combobox' as const,
+        options: instrumentNames,
+        default: instrumentNames[0] ?? '',
+        searchPlaceholder:
+          descriptor.type === 'soundfont2~' ? 'Search SF2 instruments...' : 'Search instruments...',
+        emptyMessage: 'No instrument found.'
+      };
+    });
   }
 
   async function loadInstrumentCatalogPatch(): Promise<Record<string, unknown>> {

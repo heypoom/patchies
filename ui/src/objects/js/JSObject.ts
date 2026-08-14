@@ -183,6 +183,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
           this.context.setData({ runOnMount }, { notifyUI: true }),
 
         setTitle: (title) => this.context.setData({ title }, { notifyUI: true }),
+
         setTags: (tags) =>
           this.context.setData(
             { tags: replaceUserTags(this.context.getData().tags, tags) },
@@ -190,7 +191,19 @@ export class JSObject implements RuntimeObject<JSObjectData> {
           ),
 
         onGraphChange: (query, callback) => {
-          const unsubscribe = this.context.subscribeGraph(query, callback);
+          const notifyGraphChange = (snapshot: Parameters<typeof callback>[0]) => {
+            try {
+              const result = callback(snapshot) as unknown;
+
+              Promise.resolve(result).catch((error) =>
+                handleCodeError(error, code, this.nodeId, customConsole)
+              );
+            } catch (error) {
+              handleCodeError(error, code, this.nodeId, customConsole);
+            }
+          };
+
+          const unsubscribe = this.context.subscribeGraph(query, notifyGraphChange);
 
           if (!unsubscribe) return () => {};
 
