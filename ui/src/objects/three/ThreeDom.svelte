@@ -25,7 +25,7 @@
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
-  import { getUserTags } from '$lib/runtime/services/graph-tags';
+  import { replaceUserTags } from '$lib/runtime/services/graph-tags';
 
   let {
     id: nodeId,
@@ -45,6 +45,7 @@
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
       noBorder?: boolean;
+      tags?: string[];
     };
     selected?: boolean;
   } = $props();
@@ -395,7 +396,7 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags: (tags: string[]) => {
-          updateNodeData(nodeId, { tags: getUserTags(tags) });
+          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
         },
         extraContext: {
           settings: createSettingsAPI(settingsManager),

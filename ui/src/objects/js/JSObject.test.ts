@@ -91,6 +91,28 @@ describe('JSObject', () => {
     context.destroy();
   });
 
+  it('routes execution errors to the node virtual console', async () => {
+    const messageContext = new MessageContext(compilerId);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: "throw new Error('broken js')",
+      runOnMount: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(logger.getNodeLogs(compilerId)).toMatchObject([
+      {
+        level: 'error',
+        args: ['broken js']
+      }
+    ]);
+
+    object.destroy();
+    context.destroy();
+  });
+
   it('clears the graph subscription indicator after the final unsubscribe', async () => {
     const unsubscribe = vi.fn();
 
@@ -136,6 +158,47 @@ describe('JSObject', () => {
     context.destroy();
   });
 
+  it('replaces settings callbacks when code reruns', async () => {
+    const messageContext = new MessageContext(compilerId);
+    const targetQueue = messageSystem.registerNode(targetId);
+    const received: unknown[] = [];
+
+    targetQueue.addCallback((message) => received.push(message));
+    messageSystem.updateEdges([
+      {
+        id: 'compiler-target',
+        source: compilerId,
+        sourceHandle: 'message-out',
+        target: targetId,
+        targetHandle: 'message-in'
+      }
+    ]);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: `
+        await settings.define([{ key: 'gain', label: 'Gain', type: 'number' }]);
+        settings.onChange((_, value) => send(value));
+      `,
+      runOnMount: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+    await object.runAsLibraryDependent();
+    object.onMessage({ type: 'setSetting', key: 'gain', value: 0.75 });
+
+    expect(received).toEqual([0.75]);
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: true });
+
+    object.onMessage({ type: 'stop' });
+    object.onMessage({ type: 'setSetting', key: 'gain', value: 1 });
+
+    expect(received).toEqual([0.75]);
+
+    object.destroy();
+    context.destroy();
+  });
+
   it('registers libraries and asks the runtime to re-run their dependents', async () => {
     const rerunLibraryDependents = vi.fn();
 
@@ -147,7 +210,7 @@ describe('JSObject', () => {
       [],
       {
         code: '// @lib shader-utils\nexport const value = 1;',
-        runOnMount: true
+        libraryName: 'shader-utils'
       },
       { rerunLibraryDependents }
     );

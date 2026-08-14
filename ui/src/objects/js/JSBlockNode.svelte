@@ -32,26 +32,22 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
   const viewMessageContext = useNodeViewMessageContext(
     () => nodeId,
     () => {}
   );
 
-  async function executeCode() {
+  // JSObject observes executeCode and owns the actual execution.
+  const handleRuntimeExecute = async () => {};
+
+  const executeCode = async () =>
     updateNodeData(nodeId, { executeCode: (data.executeCode ?? 0) + 1 });
-  }
 
-  async function handleRuntimeExecute() {
-    // JSObject observes executeCode and owns the actual execution.
-  }
+  const cleanupRunningTasks = async () => viewMessageContext.send({ type: 'stop' });
 
-  async function cleanupRunningTasks() {
-    viewMessageContext.send({ type: 'stop' });
-  }
-
-  function setSetting(key: string, value: unknown) {
+  const setSetting = (key: string, value: unknown) =>
     viewMessageContext.send({ type: 'setSetting', key, value });
-  }
 </script>
 
 <CodeBlockBase

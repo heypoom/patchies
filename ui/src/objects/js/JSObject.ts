@@ -1,5 +1,6 @@
 import { JSRunner } from '$lib/js-runner/JSRunner';
-import { getUserTags } from '$lib/runtime/services/graph-tags';
+import { handleCodeError } from '$lib/js-runner/handleCodeError';
+import { replaceUserTags } from '$lib/runtime/services/graph-tags';
 import { messages } from '$lib/objects/schemas/common';
 import { SettingsManager, createSettingsAPI } from '$lib/settings';
 import { createKVStore } from '$lib/storage';
@@ -52,13 +53,17 @@ export class JSObject implements RuntimeObject<JSObjectData> {
         this.context.setData({ settings, settingsSchema }, { notifyUI: true }),
       createKVStore(nodeId)
     );
+
+    this.settingsManager.onChangeCallbackRegistered = () => {
+      this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true });
+    };
   }
 
   async create(): Promise<void> {
     const data = this.context.getData<JSObjectData>();
     this.lastExecuteCode = data.executeCode;
 
-    if (data.runOnMount) {
+    if (data.runOnMount || data.libraryName) {
       await this.execute();
     }
   }
@@ -113,6 +118,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
 
   private async execute({ rerunLibraryDependents = true } = {}): Promise<void> {
     this.clearSubscriptions();
+    this.settingsManager.clearCallbacks();
 
     const messageContext = this.context.getMessageContext();
 
@@ -140,63 +146,72 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     const data = this.context.getData<JSObjectData>();
     const code = typeof data.code === 'string' ? data.code : '';
     const runner = JSRunner.getInstance();
+    const customConsole = createCustomConsole(this.nodeId);
 
     let libraryName: string | null = null;
 
-    const processedCode = await runner.preprocessCode(code, {
-      nodeId: this.nodeId,
-      setLibraryName: (nextLibraryName) => {
-        libraryName = nextLibraryName;
+    try {
+      const processedCode = await runner.preprocessCode(code, {
+        nodeId: this.nodeId,
+        setLibraryName: (nextLibraryName) => {
+          libraryName = nextLibraryName;
 
-        const updates = nextLibraryName
-          ? { libraryName: nextLibraryName, inletCount: 0, outletCount: 0 }
-          : { libraryName: null };
+          const updates = nextLibraryName
+            ? { libraryName: nextLibraryName, inletCount: 0, outletCount: 0 }
+            : { libraryName: null };
 
-        this.context.setData(updates, { notifyUI: true });
+          this.context.setData(updates, { notifyUI: true });
+        }
+      });
+
+      if (processedCode === null) {
+        if (rerunLibraryDependents && libraryName) {
+          this.context.rerunLibraryDependents(this.nodeId, libraryName);
+        }
+
+        return;
       }
-    });
 
-    if (processedCode === null) {
-      if (rerunLibraryDependents && libraryName) {
-        this.context.rerunLibraryDependents(this.nodeId, libraryName);
-      }
+      await runner.executeJavaScript(this.nodeId, processedCode, {
+        customConsole,
+        messageContext,
 
-      return;
+        setPortCount: (inletCount = 1, outletCount = 1) =>
+          this.context.setData({ inletCount, outletCount }, { notifyUI: true }),
+
+        setRunOnMount: (runOnMount = true) =>
+          this.context.setData({ runOnMount }, { notifyUI: true }),
+
+        setTitle: (title) => this.context.setData({ title }, { notifyUI: true }),
+        setTags: (tags) =>
+          this.context.setData(
+            { tags: replaceUserTags(this.context.getData().tags, tags) },
+            { notifyUI: true }
+          ),
+
+        onGraphChange: (query, callback) => {
+          const unsubscribe = this.context.subscribeGraph(query, callback);
+
+          if (!unsubscribe) return () => {};
+
+          this.subscriptions.add(unsubscribe);
+          this.context.setData({ isGraphSubscriptionActive: true }, { notifyUI: true });
+
+          return () => {
+            this.subscriptions.delete(unsubscribe);
+            unsubscribe();
+
+            if (this.subscriptions.size === 0) {
+              this.context.setData({ isGraphSubscriptionActive: false }, { notifyUI: true });
+            }
+          };
+        },
+
+        extraContext: { settings: createSettingsAPI(this.settingsManager) }
+      });
+    } catch (error) {
+      handleCodeError(error, code, this.nodeId, customConsole);
     }
-
-    await runner.executeJavaScript(this.nodeId, processedCode, {
-      customConsole: createCustomConsole(this.nodeId),
-      messageContext,
-
-      setPortCount: (inletCount = 1, outletCount = 1) =>
-        this.context.setData({ inletCount, outletCount }, { notifyUI: true }),
-
-      setRunOnMount: (runOnMount = true) =>
-        this.context.setData({ runOnMount }, { notifyUI: true }),
-
-      setTitle: (title) => this.context.setData({ title }, { notifyUI: true }),
-      setTags: (tags) => this.context.setData({ tags: getUserTags(tags) }, { notifyUI: true }),
-
-      onGraphChange: (query, callback) => {
-        const unsubscribe = this.context.subscribeGraph(query, callback);
-
-        if (!unsubscribe) return () => {};
-
-        this.subscriptions.add(unsubscribe);
-        this.context.setData({ isGraphSubscriptionActive: true }, { notifyUI: true });
-
-        return () => {
-          this.subscriptions.delete(unsubscribe);
-          unsubscribe();
-
-          if (this.subscriptions.size === 0) {
-            this.context.setData({ isGraphSubscriptionActive: false }, { notifyUI: true });
-          }
-        };
-      },
-
-      extraContext: { settings: createSettingsAPI(this.settingsManager) }
-    });
   }
 
   private clearSubscriptions(): void {
@@ -210,6 +225,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
 
   private stop(): void {
     this.clearSubscriptions();
+    this.settingsManager.clearCallbacks();
 
     const messageContext = this.context.getMessageContext();
 

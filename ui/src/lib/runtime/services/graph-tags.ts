@@ -15,3 +15,13 @@ export function getUserTags(tags: unknown): string[] {
 
   return uniq(normalizedTags);
 }
+
+export function replaceUserTags(currentTags: unknown, nextUserTags: unknown): string[] {
+  const coreTags = Array.isArray(currentTags)
+    ? currentTags.filter(
+        (tag): tag is string => typeof tag === 'string' && tag.startsWith(RESERVED_TAG_PREFIX)
+      )
+    : [];
+
+  return uniq([...coreTags, ...getUserTags(nextUserTags)]);
+}

@@ -52,9 +52,13 @@ export class PatchGraph {
       this.connectionsById,
       nextConnectionsById
     );
+
     this.connectionsById = nextConnectionsById;
 
-    return { changed: changedConnectionNodeIds.size > 0, changedConnectionNodeIds };
+    return {
+      changedConnectionNodeIds,
+      changed: changedConnectionNodeIds.size > 0
+    };
   }
 
   setGraph(graph: RuntimeGraphSpec): {
@@ -106,11 +110,15 @@ function getChangedKeys(left: Map<string, string>, right: Map<string, string>): 
   const changedKeys = new Set<string>();
 
   for (const [key, value] of left) {
-    if (right.get(key) !== value) changedKeys.add(key);
+    if (right.get(key) !== value) {
+      changedKeys.add(key);
+    }
   }
 
   for (const [key, value] of right) {
-    if (left.get(key) !== value) changedKeys.add(key);
+    if (left.get(key) !== value) {
+      changedKeys.add(key);
+    }
   }
 
   return changedKeys;

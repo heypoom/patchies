@@ -95,13 +95,7 @@ export class GraphObserver {
       const objectsById = new Map(graph.objects.map((object) => [object.id, object]));
 
       for (const subscription of this.subscriptions) {
-        const canAffectSubscription = this.changeCanAffectSubscription(
-          subscription,
-          change,
-          objectsById
-        );
-
-        if (!change || canAffectSubscription) {
+        if (!change || this.changeCanAffectSubscription(subscription, change, objectsById)) {
           this.notifySubscription(subscription, graph);
         }
       }

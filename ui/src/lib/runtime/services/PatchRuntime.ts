@@ -127,7 +127,10 @@ export class PatchRuntime {
     }
 
     if (objectsChanged || connectionsChanged) {
-      this.graphObserver.notify({ changedObjectIds, changedConnectionNodeIds });
+      this.graphObserver.notify({
+        changedObjectIds,
+        changedConnectionNodeIds
+      });
     }
   }
 
@@ -137,7 +140,11 @@ export class PatchRuntime {
 
     await this.startObjectSync();
     this.syncNodeTypes();
-    this.graphObserver.notify({ changedObjectIds, changedConnectionNodeIds: new Set() });
+
+    this.graphObserver.notify({
+      changedObjectIds,
+      changedConnectionNodeIds: new Set()
+    });
   }
 
   async setConnections(connections: RuntimeConnectionSpec[]): Promise<void> {
@@ -145,9 +152,12 @@ export class PatchRuntime {
     if (!changed) return;
 
     await this.waitForObjectSync();
-
     this.syncConnections();
-    this.graphObserver.notify({ changedObjectIds: new Set(), changedConnectionNodeIds });
+
+    this.graphObserver.notify({
+      changedObjectIds: new Set(),
+      changedConnectionNodeIds
+    });
   }
 
   getGraph(): RuntimeGraphSpec {
@@ -165,6 +175,7 @@ export class PatchRuntime {
 
     await this.startObjectSync();
     this.syncNodeTypes();
+
     this.graphObserver.notify({
       changedObjectIds: new Set([spec.id]),
       changedConnectionNodeIds: new Set()
@@ -182,6 +193,7 @@ export class PatchRuntime {
 
     await this.startObjectSync();
     this.syncNodeTypes();
+
     this.graphObserver.notify({
       changedObjectIds: new Set([nodeId]),
       changedConnectionNodeIds: new Set()
@@ -194,6 +206,7 @@ export class PatchRuntime {
     this.destroyAudioObject(nodeId);
     this.syncNodeTypes();
     this.syncConnections();
+
     this.graphObserver.notify({
       changedObjectIds: new Set([nodeId]),
       changedConnectionNodeIds: new Set()
@@ -212,6 +225,7 @@ export class PatchRuntime {
   connect(connection: RuntimeConnectionSpec): string {
     const connectionId = this.graph.upsertConnection(connection);
     this.syncConnections();
+
     this.graphObserver.notify({
       changedObjectIds: new Set(),
       changedConnectionNodeIds: new Set([connection.source, connection.target])
@@ -224,6 +238,7 @@ export class PatchRuntime {
     const connection = this.graph.getConnections().find(({ id }) => id === connectionId);
     this.graph.removeConnection(connectionId);
     this.syncConnections();
+
     this.graphObserver.notify({
       changedObjectIds: new Set(),
       changedConnectionNodeIds: connection
