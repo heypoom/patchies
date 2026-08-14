@@ -65,8 +65,8 @@
     updateNodeData(nodeId, { expr: newExpr });
   }
 
-  function handleRun() {
-    const parsed = parseMultiOutletExpressions(data.expr || '');
+  function handleRun(expression = data.expr) {
+    const parsed = parseMultiOutletExpressions(expression || '');
 
     // Send multi-outlet expressions to audio node (triggers worklet recreation if outlet count changed)
     audioService.send(nodeId, 'expressions', {
@@ -146,6 +146,7 @@
   handles={audioHandles}
   outlets={audioOutlets}
   onRun={handleRun}
+  persistOnInput={false}
   exitOnRun={false}
   runOnExit
 />

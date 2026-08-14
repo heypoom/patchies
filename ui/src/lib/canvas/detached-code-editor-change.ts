@@ -7,6 +7,9 @@ export function commitDetachedCodeEditorChange(
   nextValue: string,
   updateNodeData: UpdateNodeData
 ): void {
-  updateNodeData(target.nodeId, { [target.dataKey]: nextValue });
+  if (target.persistOnChange !== false) {
+    updateNodeData(target.nodeId, { [target.dataKey]: nextValue });
+  }
+
   target.onchange?.(nextValue);
 }

@@ -10,7 +10,8 @@ interface CommonExprEditorTargetOptions {
   title?: string;
   placeholder?: string;
   onchange?: (value: string) => void | Promise<void>;
-  onrun?: () => void;
+  onrun?: (code?: string) => void;
+  persistOnChange?: boolean;
   customActions?: Snippet;
   customSettings?: Snippet;
 }
@@ -24,6 +25,7 @@ export function createCommonExprEditorTarget({
   placeholder,
   onchange,
   onrun,
+  persistOnChange,
   customActions,
   customSettings
 }: CommonExprEditorTargetOptions): OpenCodeEditorOverlayTarget {
@@ -36,6 +38,7 @@ export function createCommonExprEditorTarget({
     placeholder,
     onchange,
     onrun,
+    persistOnChange,
     customActions,
     customSettings
   };
