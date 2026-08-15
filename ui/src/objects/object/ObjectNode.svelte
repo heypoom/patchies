@@ -896,7 +896,7 @@
         </div>
 
         <!-- Dynamic outlets -->
-        {#if outlets}
+        {#if outlets.length > 0}
           {#each outlets as outlet, index (index)}
             <StandardHandle
               port="outlet"
@@ -909,6 +909,9 @@
               {nodeId}
             />
           {/each}
+        {:else if !objectMeta}
+          <!-- Fallback generic outlet while Quick Insert is waiting for an object name. -->
+          <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
         {/if}
       </div>
     </div>

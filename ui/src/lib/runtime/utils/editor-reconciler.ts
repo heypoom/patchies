@@ -15,6 +15,13 @@ interface EditorTextObjectData {
   [key: string]: unknown;
 }
 
+interface PreviewEdgeData {
+  edgeInsertionPreview?: unknown;
+}
+
+const isEdgeInsertionPreview = (edge: Edge): boolean =>
+  (edge.data as PreviewEdgeData | undefined)?.edgeInsertionPreview === true;
+
 /**
  * Using the XYFlow nodes and edges, update the patcher's headless runtime graph.
  */
@@ -25,7 +32,9 @@ export const setRuntimeGraphFromEditorGraph = async (
 ): Promise<void> =>
   runtime.setGraph({
     objects: nodes.flatMap(getRuntimeObjectSpecFromEditorNode),
-    connections: edges.map(getRuntimeConnectionSpecFromEditorEdge)
+    connections: edges
+      .filter((edge) => !isEdgeInsertionPreview(edge))
+      .map(getRuntimeConnectionSpecFromEditorEdge)
   });
 
 export const setRuntimeObjectsFromEditorNodes = async (
@@ -36,7 +45,12 @@ export const setRuntimeObjectsFromEditorNodes = async (
 export const setRuntimeConnectionsFromEditorEdges = (
   runtime: EditorRuntime,
   edges: Edge[]
-): Promise<void> => runtime.setConnections(edges.map(getRuntimeConnectionSpecFromEditorEdge));
+): Promise<void> =>
+  runtime.setConnections(
+    edges
+      .filter((edge) => !isEdgeInsertionPreview(edge))
+      .map(getRuntimeConnectionSpecFromEditorEdge)
+  );
 
 const getRuntimeConnectionSpecFromEditorEdge = (edge: Edge): RuntimeConnectionSpec => ({
   id: edge.id,

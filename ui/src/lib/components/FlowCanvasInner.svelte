@@ -60,6 +60,14 @@
   } from '../../stores/canvas.store';
 
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
+  import { objectSchemas } from '$lib/objects/schemas';
+  import {
+    createEdgeInsertionPreview,
+    getCenteredNodeInsertionPosition,
+    getEdgeInsertionPosition,
+    planEdgeInsertion
+  } from '$lib/canvas/edge-insertion';
+  import { prepareNodeForEdgeInsertion } from '$lib/canvas/edge-insertion-adapters';
   import { deleteSearchParam } from '$lib/utils/search-params';
 
   import { Toaster } from '$lib/components/ui/sonner';
@@ -122,6 +130,7 @@
   import {
     HistoryManager,
     AddNodeCommand,
+    AddEdgesCommand,
     DeleteNodesCommand,
     ReplaceNodesCommand,
     UpdateNodeDataCommand,
@@ -154,6 +163,14 @@
   import { buildChatViewportSummary } from '$lib/ai/chat/viewport-summary';
 
   const AUTOSAVE_INTERVAL = 2500;
+  // Svelte Flow raises a selected edge to z-index 1000. Keep the inserted node
+  // above that layer so the selected wire is visually split by the node body.
+  const INSERTED_NODE_Z_INDEX = 1001;
+
+  interface PendingEdgeInsertion {
+    edge: Edge;
+    previewEdgeIds: string[];
+  }
 
   // Initial nodes and edges
   let nodes = $state.raw<Node[]>([]);
@@ -387,6 +404,7 @@
 
   let selectedNodeIds = $state.raw<string[]>([]);
   let selectedEdgeIds = $state.raw<string[]>([]);
+  let pendingEdgeInsertion = $state.raw<PendingEdgeInsertion | null>(null);
   let visualGroupSelectionStartIds = $state.raw<string[]>([]);
 
   // Track node positions at drag start for undo/redo
@@ -855,7 +873,7 @@
       toggleSidebar: () => {
         if (!$isFullscreenActive) $isSidebarOpen = !$isSidebarOpen;
       },
-      openObjectBrowser: () => ($isObjectBrowserOpen = true),
+      openObjectBrowser: openObjectBrowser,
       openSettings: () => ($isSettingsOpen = true),
       openCommandPalette: triggerCommandPalette,
       togglePlayPause: () => {
@@ -872,9 +890,9 @@
       triggerAiPrompt,
       checkGeminiApiKey: checkAndHandleGeminiApiKey,
       quickAddNode: () => {
-        const position = screenToFlowPosition(lastMousePosition);
-
-        nodeOps.createNode('object', position, undefined, { skipHistory: true });
+        const edge = getSingleSelectedEdge();
+        const position = edge ? getEdgeInsertionPosition(edge, nodes) : null;
+        createQuickInsertNode(position ?? screenToFlowPosition(lastMousePosition), edge);
       },
       toggleAllPreviews: () => {
         const willDisable = !$allPreviewsDisabled;
@@ -1105,19 +1123,26 @@
   }
 
   // Handle Quick Add confirmation - record the final node to history
-  function handleQuickAddConfirmed(event: { type: 'quickAddConfirmed'; finalNodeId: string }) {
-    const node = nodes.find((n) => n.id === event.finalNodeId);
-
-    if (node) {
-      // Record the final node state (after any transformation) to history
-      historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
-    }
+  async function handleQuickAddConfirmed(event: {
+    type: 'quickAddConfirmed';
+    finalNodeId: string;
+  }) {
+    await recordInsertedNode(event.finalNodeId);
   }
 
   // Handle Quick Add cancellation - remove node directly without history
   function handleQuickAddCancelled(event: { type: 'quickAddCancelled'; nodeId: string }) {
     // Remove the node directly, bypassing SvelteFlow's onbeforedelete (which records to history)
     nodes = nodes.filter((n) => n.id !== event.nodeId);
+
+    const pending = pendingEdgeInsertion;
+    pendingEdgeInsertion = null;
+    if (!pending) return;
+
+    edges = [
+      ...edges.filter((edge) => !pending.previewEdgeIds.includes(edge.id)),
+      ...(edges.some((edge) => edge.id === pending.edge.id) ? [] : [pending.edge])
+    ];
   }
 
   // Handle ObjectNode data commit (undo tracking for expr/name/params changes)
@@ -1173,14 +1198,159 @@
     };
   }
 
-  function handleObjectBrowserSelect(name: string) {
+  async function handleObjectBrowserSelect(name: string) {
     // Get the center of the viewport in screen coordinates
     const viewportCenterX = window.innerWidth / 2;
     const viewportCenterY = window.innerHeight / 2;
 
     // Convert to flow coordinates (accounts for pan and zoom)
-    const position = screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
-    nodeOps.createNodeFromName(name, position);
+    const edge = pendingEdgeInsertion?.edge;
+    const position =
+      (edge && getEdgeInsertionPosition(edge, nodes)) ??
+      screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
+    const nodeId = nodeOps.createNodeFromName(name, position, { skipHistory: true });
+    await recordInsertedNode(nodeId);
+  }
+
+  function getSingleSelectedEdge(): Edge | undefined {
+    if (selectedEdgeIds.length !== 1) return undefined;
+    return edges.find((edge) => edge.id === selectedEdgeIds[0]);
+  }
+
+  function openObjectBrowser() {
+    const edge = getSingleSelectedEdge();
+    pendingEdgeInsertion = edge ? { edge, previewEdgeIds: [] } : null;
+    $isObjectBrowserOpen = true;
+  }
+
+  function createQuickInsertNode(position: { x: number; y: number }, edge?: Edge) {
+    const nodeId = nodeOps.createNode('object', position, undefined, { skipHistory: true });
+    if (!edge) return;
+
+    const previewEdges = createEdgeInsertionPreview(edge, nodeId, [
+      canvasContext.nextEdgeId(),
+      canvasContext.nextEdgeId()
+    ]);
+
+    pendingEdgeInsertion = { edge, previewEdgeIds: previewEdges.map((preview) => preview.id) };
+    nodes = nodes.map((node) =>
+      node.id === nodeId ? { ...node, zIndex: INSERTED_NODE_Z_INDEX } : node
+    );
+    edges = [...edges.filter((candidate) => candidate.id !== edge.id), ...previewEdges];
+    void centerQuickInsertPreview(nodeId, edge);
+  }
+
+  async function centerQuickInsertPreview(nodeId: string, edge: Edge) {
+    await tick();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    const node = nodes.find((candidate) => candidate.id === nodeId);
+    if (!node || pendingEdgeInsertion?.edge.id !== edge.id) return;
+
+    const position = getCenteredNodeInsertionPosition(edge, nodes, node);
+    if (!position) return;
+
+    nodes = nodes.map((candidate) =>
+      candidate.id === nodeId ? { ...candidate, position } : candidate
+    );
+  }
+
+  function getNodeObjectName(node: Node): string | undefined {
+    if (node.type === 'object') {
+      const data = node.data as { name?: string; expr?: string };
+      return data.name ?? (data.expr ? getObjectNameFromExpr(data.expr) : undefined);
+    }
+
+    return node.type;
+  }
+
+  async function recordInsertedNode(nodeId: string) {
+    await tick();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    let node = nodes.find((candidate) => candidate.id === nodeId);
+    if (!node) return;
+
+    const pending = pendingEdgeInsertion;
+    const edge = pending?.edge;
+    pendingEdgeInsertion = null;
+
+    if (!edge) {
+      historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
+      return;
+    }
+
+    node = prepareNodeForEdgeInsertion(node, edge);
+
+    const centeredPosition = getCenteredNodeInsertionPosition(edge, nodes, node);
+
+    if (centeredPosition) {
+      node = { ...node, position: centeredPosition };
+    }
+
+    node = { ...node, zIndex: INSERTED_NODE_Z_INDEX };
+    nodes = nodes.map((candidate) => (candidate.id === nodeId ? node : candidate));
+
+    const plan = planEdgeInsertion(
+      edge,
+      node,
+      nodes.find((candidate) => candidate.id === edge.target),
+      objectSchemas,
+      getNodeObjectName
+    );
+
+    if (!plan) {
+      if (!edges.some((candidate) => candidate.id === edge.id)) {
+        edges = [
+          ...edges.filter((candidate) => !pending.previewEdgeIds.includes(candidate.id)),
+          edge
+        ];
+      } else if (pending.previewEdgeIds.length > 0) {
+        edges = edges.filter((candidate) => !pending.previewEdgeIds.includes(candidate.id));
+      }
+
+      historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
+      return;
+    }
+
+    const insertedEdges: Edge[] = [
+      {
+        id: canvasContext.nextEdgeId(),
+        source: edge.source,
+        sourceHandle: plan.sourceHandle,
+        target: node.id,
+        targetHandle: plan.insertedInletHandle,
+        zIndex: 0
+      },
+      {
+        id: canvasContext.nextEdgeId(),
+        source: node.id,
+        sourceHandle: plan.insertedOutletHandle,
+        target: edge.target,
+        targetHandle: plan.targetHandle,
+        zIndex: 0
+      }
+    ];
+
+    // The new node is already mounted (so Quick Add can edit it); record the equivalent
+    // atomic command for undo/redo, then apply only the edge replacement now.
+    edges = [
+      ...edges.filter(
+        (candidate) => candidate.id !== edge.id && !pending.previewEdgeIds.includes(candidate.id)
+      ),
+      ...insertedEdges
+    ];
+
+    historyManager.record(
+      new BatchCommand(
+        [
+          new AddNodeCommand({ ...node }, canvasAccessors),
+          new DeleteEdgesCommand([edge], canvasAccessors),
+          new AddEdgesCommand(insertedEdges, canvasAccessors)
+        ],
+        `Insert ${getNodeObjectName(node) ?? 'object'} into connection`
+      )
+    );
   }
 
   const isValidConnection: IsValidConnection = (connection) => {
@@ -1216,13 +1386,15 @@
   }
 
   function insertObjectWithButton() {
+    const edge = getSingleSelectedEdge();
+    const edgePosition = edge ? getEdgeInsertionPosition(edge, nodes) : null;
     const position = screenToFlowPosition({
       x: $isMobile ? window.innerWidth / 2 : window.innerWidth / 2 - 200,
       y: $isMobile ? window.innerHeight / 3 : 50
     });
 
     setTimeout(() => {
-      nodeOps.createNode('object', position);
+      createQuickInsertNode(edgePosition ?? position, edge);
     }, 50);
   }
 
@@ -1649,7 +1821,7 @@
             if (tab) startupInitialTab = tab;
             showStartupModal = true;
           }}
-          onBrowseObjects={() => ($isObjectBrowserOpen = true)}
+          onBrowseObjects={openObjectBrowser}
           onSavePatch={() => (showSavePatchModal = true)}
           onExportPatch={() => (showExportPatchModal = true)}
           onLoadPatch={() => {
@@ -1685,7 +1857,7 @@
         {startupInitialTab}
         onDelete={() => nodeOps.deleteSelectedElements(selectedNodeIds, selectedEdgeIds)}
         onInsertObject={insertObjectWithButton}
-        onBrowseObjects={() => ($isObjectBrowserOpen = true)}
+        onBrowseObjects={openObjectBrowser}
         onCopy={copySelectedNodes}
         onPaste={() => pasteNode('button')}
         onCancelConnectionMode={cancelConnectionMode}
@@ -1720,6 +1892,7 @@
     <ObjectBrowserModal
       bind:open={$isObjectBrowserOpen}
       onSelectObject={handleObjectBrowserSelect}
+      onClose={() => (pendingEdgeInsertion = null)}
     />
 
     <!-- Settings Modal -->
