@@ -103,27 +103,6 @@ interface XYDragState {
 
 type ActiveDragState = DragState | XYDragState;
 
-type SpectrumColorControl = HTMLElement & {
-  color?: unknown;
-  value?: string | number;
-  valid?: boolean;
-};
-
-let spectrumColorPickerReady: Promise<void> | null = null;
-
-function loadSpectrumColorPicker() {
-  spectrumColorPickerReady ??= Promise.all([
-    import('@spectrum-web-components/color-area/sp-color-area.js'),
-    import('@spectrum-web-components/color-field/sp-color-field.js'),
-    import('@spectrum-web-components/color-slider/sp-color-slider.js'),
-    import('@spectrum-web-components/theme/sp-theme.js'),
-    import('@spectrum-web-components/theme/theme-dark.js'),
-    import('@spectrum-web-components/theme/scale-medium.js')
-  ]).then(() => undefined);
-
-  return spectrumColorPickerReady;
-}
-
 function updateVectorWidgetComponents(
   widget: InlineValueWidgetInfo,
   nextTexts: VectorComponentTexts
@@ -167,7 +146,7 @@ export function inlineValueWidgets(
     numberModifierActive = false;
     xyGrid: HTMLElement | null = null;
     colorInput: HTMLDivElement | null = null;
-    colorControls: SpectrumColorControl[] = [];
+    colorTextInput: HTMLInputElement | null = null;
 
     constructor(readonly view: EditorView) {
       this.decorations = buildValueDecorations(this.numberModifierActive, this.hoveredWidget);
@@ -241,131 +220,65 @@ export function inlineValueWidgets(
       return true;
     }
 
-    async openColorPicker(widget: InlineValueWidgetInfo) {
+    openColorPicker(widget: InlineValueWidgetInfo) {
       if (!widget.colorPicker) return false;
 
-      await loadSpectrumColorPicker();
       this.destroyColorInput();
 
-      const value = hexColorForComponents(widget.components, widget.colorScale);
       const picker = document.createElement('div');
-
       picker.className = 'cm-value-widget-color-picker';
       picker.dataset.valueWidgetFrom = String(widget.from);
       picker.dataset.valueWidgetTo = String(widget.to);
 
-      const theme = document.createElement('sp-theme');
-      theme.setAttribute('color', 'dark');
-      theme.setAttribute('scale', 'medium');
-
-      Object.assign(theme.style, {
-        display: 'grid',
-        gap: '12px'
-      });
-
-      const area = document.createElement('sp-color-area') as SpectrumColorControl;
-      area.color = value;
-      area.setAttribute('label-x', 'Saturation');
-      area.setAttribute('label-y', 'Brightness');
-
-      Object.assign(area.style, {
-        display: 'block',
-        width: '100%',
-        height: '128px'
-      });
-
-      area.style.setProperty('--mod-colorarea-width', '100%');
-      area.style.setProperty('--mod-colorarea-min-width', '0px');
-      area.style.setProperty('--mod-colorarea-height', '128px');
-      area.style.setProperty('--mod-colorarea-min-height', '0px');
-
-      const slider = document.createElement('sp-color-slider') as SpectrumColorControl;
-      slider.color = value;
-      slider.setAttribute('label', 'Hue');
-
-      Object.assign(slider.style, {
-        display: 'block',
-        width: '100%',
-        height: '24px'
-      });
-
-      const field = document.createElement('sp-color-field') as SpectrumColorControl;
-      field.value = value;
-      field.setAttribute('view-color', '');
-      field.setAttribute('aria-label', 'Hex color');
-
-      Object.assign(field.style, {
-        display: 'block',
-        width: '100%'
-      });
-
-      field.style.setProperty('--mod-textfield-focus-indicator-width', '0');
-      field.style.setProperty('--mod-textfield-focus-indicator-gap', '0');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.inputMode = 'text';
+      input.maxLength = 7;
+      input.spellcheck = false;
+      input.value = hexColorForComponents(widget.components, widget.colorScale);
+      input.setAttribute('aria-label', 'Hex color');
 
       Object.assign(picker.style, {
         position: 'fixed',
-        zIndex: '10001',
-        width: '224px',
-        padding: '12px',
-        boxSizing: 'border-box',
-        border: '1px solid rgba(82, 82, 91, 1)',
-        borderRadius: '8px',
-        backgroundColor: 'rgba(24, 24, 27, 0.98)',
-        boxShadow: '0 10px 28px rgba(0, 0, 0, 0.45)'
+        zIndex: '10001'
       });
 
-      for (const control of [area, slider, field]) {
-        control.addEventListener('input', this.handleColorInput);
-      }
-
-      theme.append(area, slider, field);
-      picker.appendChild(theme);
+      input.addEventListener('input', this.handleColorInput);
+      picker.appendChild(input);
 
       document.body.appendChild(picker);
 
       this.colorInput = picker;
-      this.colorControls = [area, slider, field];
+      this.colorTextInput = input;
       this.activeColorWidget = widget;
       this.positionColorInput(widget, picker);
       document.addEventListener('mousedown', this.handleDocumentMouseDown);
 
-      field.focus({ preventScroll: true });
+      input.focus({ preventScroll: true });
       return true;
     }
 
     positionColorInput(widget: InlineValueWidgetInfo, input: HTMLElement) {
       const coords = this.view.coordsAtPos(widget.to);
       const margin = 8;
-      const rect = input.getBoundingClientRect();
-
       if (!coords) {
         input.style.left = `${margin}px`;
         input.style.top = `${margin}px`;
         return;
       }
 
-      const left = Math.max(margin, Math.min(window.innerWidth - rect.width - margin, coords.left));
-      const below = coords.bottom + 8;
-      const above = coords.top - rect.height - 8;
-      const top =
-        below + rect.height <= window.innerHeight - margin
-          ? below
-          : Math.max(margin, Math.min(window.innerHeight - rect.height - margin, above));
-
-      input.style.left = `${left}px`;
-      input.style.top = `${top}px`;
+      input.style.left = `${Math.max(margin, Math.min(window.innerWidth - 24 - margin, coords.left))}px`;
+      input.style.top = `${Math.max(margin, Math.min(window.innerHeight - 24 - margin, coords.bottom + 8))}px`;
     }
 
     destroyColorInput() {
       if (!this.colorInput) return;
 
-      for (const control of this.colorControls) {
-        control.removeEventListener('input', this.handleColorInput);
-      }
+      this.colorTextInput?.removeEventListener('input', this.handleColorInput);
 
       this.colorInput.remove();
       this.colorInput = null;
-      this.colorControls = [];
+      this.colorTextInput = null;
       this.activeColorWidget = null;
 
       if (!this.xyGrid) {
@@ -374,27 +287,15 @@ export function inlineValueWidgets(
     }
 
     handleColorInput = (event: Event) => {
-      if (!(event.currentTarget instanceof HTMLElement)) return;
-
-      const control = event.currentTarget as SpectrumColorControl;
-      if (control.valid === false) return;
-
-      const value =
-        typeof control.color === 'string'
-          ? control.color
-          : typeof control.value === 'string'
-            ? control.value
-            : null;
-
-      if (!value) return;
+      if (!(event.target instanceof HTMLInputElement)) return;
 
       const widget =
         this.activeColorWidget ??
-        findWidgetFromDataset(this.view.state, language, control, context);
+        findWidgetFromDataset(this.view.state, language, event.target, context);
 
       if (!widget || widget.kind !== 'color') return;
 
-      this.applyColor(widget, value);
+      this.applyColor(widget, event.target.value);
     };
 
     applyColor(widget: InlineValueWidgetInfo, hex: string) {
@@ -417,25 +318,11 @@ export function inlineValueWidgets(
       if (this.colorInput) {
         this.colorInput.dataset.valueWidgetFrom = String(nextWidget.from);
         this.colorInput.dataset.valueWidgetTo = String(nextWidget.to);
-
-        this.syncColorPickerColor(
-          hexColorForComponents(nextWidget.components, nextWidget.colorScale)
-        );
       }
 
       this.refreshDecorations();
 
       return true;
-    }
-
-    syncColorPickerColor(value: string) {
-      for (const control of this.colorControls) {
-        if (control.tagName === 'SP-COLOR-FIELD') {
-          control.value = value;
-        } else {
-          control.color = value;
-        }
-      }
     }
 
     syncXYGrid() {
