@@ -58,7 +58,9 @@ export default defineConfig(() => ({
     topicTitlesManifest(),
     objectSchemasPlugin(),
     wasm(),
-    topLevelAwait(),
+    // Keep the top-level-await transform out of the app bundle. It rewrites any
+    // chunk containing import(), which can make shared startup chunks async.
+    // Workers use it below for their actual top-level await support.
     bundleAudioWorkletPlugin(),
     tailwindcss(),
     sveltekit(),
