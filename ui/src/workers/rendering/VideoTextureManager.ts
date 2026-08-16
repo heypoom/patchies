@@ -275,7 +275,6 @@ export class VideoTextureManager {
     }
 
     const existingDestTexture = this.destinationTextures.get(nodeId);
-    let destFBO = this.destinationFBOs.get(nodeId);
     const needsResize =
       !existingDestTexture ||
       existingDestTexture.width !== safeWidth ||
@@ -283,6 +282,7 @@ export class VideoTextureManager {
       this.destinationTextureFormats.get(nodeId) !== 'rgba8';
 
     let destTexture = existingDestTexture;
+    let destFBO = this.destinationFBOs.get(nodeId);
 
     if (needsResize) {
       destFBO?.destroy();
@@ -305,9 +305,11 @@ export class VideoTextureManager {
     const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
     const previousActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE) as number;
     const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
+    const previousUnpackFlipY = gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL) as boolean;
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, rawTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
 
     if (needsResize) {
       gl.texImage2D(
@@ -339,6 +341,7 @@ export class VideoTextureManager {
       );
     }
 
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, previousUnpackFlipY ? 1 : 0);
     gl.bindTexture(gl.TEXTURE_2D, previousTexture);
     gl.activeTexture(previousActiveTexture);
     gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);

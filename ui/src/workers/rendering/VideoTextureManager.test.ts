@@ -53,7 +53,7 @@ describe('VideoTextureManager', () => {
     expect(Array.from(texImageArgs[8] as Uint8Array)).toEqual([0, 128, 255, 255]);
   });
 
-  it('uploads worker video frames as RGBA8 bytes without float conversion', () => {
+  it('uploads worker video frames as flipped RGBA8 bytes without float conversion', () => {
     const { regl } = createMockRegl();
     const gl = createMockWebGL2Context();
     const manager = new VideoTextureManager(regl as never, gl as never);
@@ -61,12 +61,8 @@ describe('VideoTextureManager', () => {
 
     manager.setVideoFrame('worker-1', 1, 1, pixels);
 
-    const texImageArgs = gl.texImage2D.mock.calls[0];
-
-    expect(texImageArgs[2]).toBe(gl.RGBA8);
-    expect(texImageArgs[6]).toBe(gl.RGBA);
-    expect(texImageArgs[7]).toBe(gl.UNSIGNED_BYTE);
-    expect(texImageArgs[8]).toBe(pixels);
+    expect(gl.pixelStorei).toHaveBeenNthCalledWith(1, gl.UNPACK_FLIP_Y_WEBGL, 1);
+    expect(gl.pixelStorei).toHaveBeenNthCalledWith(2, gl.UNPACK_FLIP_Y_WEBGL, 0);
   });
 
   it('skips float texture uploads when the data length does not match dimensions', () => {
