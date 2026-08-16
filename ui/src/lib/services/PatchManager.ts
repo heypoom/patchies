@@ -100,13 +100,13 @@ export class PatchManager {
     const isEmbed = embedParam === 'true';
     const helpMode = get(helpModeObject);
 
-    // Do not autosave while a Quick Insert preview has temporarily replaced an edge.
-    // The original edge is restored or permanently replaced when the object is confirmed.
+    // Do not autosave when in embed mode, help mode, read-only mode, or shared patch session
     if (
       isEmbed ||
       helpMode ||
       isReadOnlyMode ||
       this._isSharedPatchSession ||
+      // A Quick Insert preview temporarily replaces an edge until the object is confirmed.
       this.ctx.edges.some(isEdgeInsertionPreview)
     ) {
       return false;

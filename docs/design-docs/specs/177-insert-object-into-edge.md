@@ -48,3 +48,9 @@ when their preset data omits the default port counts.
 - Insert an incompatible audio-only node into that edge and verify the original edge remains.
 - Verify undo restores the original edge and removes the inserted node; redo restores the insertion.
 - Verify Enter Quick Insert and object-browser object and preset cards have the same behavior.
+
+## Implementation Boundary
+
+`use-edge-insertion.svelte.ts` owns the provisional splice state, preset preparation, final
+compatibility rewiring, and insertion history. `FlowCanvasInner.svelte` only supplies user events,
+selected-edge IDs, and fallback positions.
