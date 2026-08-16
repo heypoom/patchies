@@ -17,6 +17,7 @@ import {
   createEdgeInsertionPreview,
   getCenteredNodeInsertionPosition,
   getEdgeInsertionPosition,
+  isEdgeInsertionPreview,
   planEdgeInsertion
 } from './edge-insertion';
 
@@ -195,6 +196,30 @@ describe('getEdgeInsertionPosition', () => {
     ).toEqual({ x: 60, y: 30 });
   });
 
+  test('uses absolute positions for nodes inside visual groups', () => {
+    expect(
+      getEdgeInsertionPosition(edge, [
+        { id: 'group', position: { x: 100, y: 200 }, data: {} },
+        {
+          id: 'left',
+          parentId: 'group',
+          position: { x: 10, y: 20 },
+          width: 20,
+          height: 20,
+          data: {}
+        },
+        {
+          id: 'right',
+          parentId: 'group',
+          position: { x: 110, y: 60 },
+          width: 20,
+          height: 20,
+          data: {}
+        }
+      ])
+    ).toEqual({ x: 170, y: 250 });
+  });
+
   test('centers the inserted node on the edge midpoint', () => {
     const nodes = [
       { id: 'left', position: { x: 0, y: 0 }, width: 20, height: 20, data: {} },
@@ -236,5 +261,12 @@ describe('createEdgeInsertionPreview', () => {
         data: { edgeInsertionPreview: true }
       }
     ]);
+  });
+
+  test('marks previews so persistence can exclude them', () => {
+    expect(
+      isEdgeInsertionPreview(createEdgeInsertionPreview(edge, 'quick-add', ['left', 'right'])[0]!)
+    ).toBe(true);
+    expect(isEdgeInsertionPreview(edge)).toBe(false);
   });
 });

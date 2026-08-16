@@ -15,12 +15,14 @@ const adapters: Record<string, EdgeInsertionAdapter | undefined> = {
 /** Uses an object's companion pipe preset when that object is inserted into an edge. */
 export function getEdgeInsertionObjectName(name: string): string {
   const pipePresetName = `${name}>`;
+
   return OBJECT_PIPE_PRESETS.includes(pipePresetName) ? pipePresetName : name;
 }
 
 /** Replaces a Quick Insert base object with its companion pipe preset. */
 export function applyEdgeInsertionPipePreset(node: Node, objectName: string): Node {
   const presetName = getEdgeInsertionObjectName(objectName);
+
   const preset = PRESETS[presetName];
   if (presetName === objectName || !preset) return node;
 

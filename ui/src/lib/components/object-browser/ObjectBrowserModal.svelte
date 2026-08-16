@@ -93,7 +93,7 @@
     $isSidebarOpen = true;
     $sidebarView = 'help';
     $selectedNodeInfo = { type: objectName, id: 'browser' };
-    open = false;
+    handleClose();
   }
 
   const objectCategories = $derived(

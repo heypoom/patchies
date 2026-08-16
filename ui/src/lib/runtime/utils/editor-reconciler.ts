@@ -1,5 +1,7 @@
 import type { Edge, Node } from '@xyflow/svelte';
 
+import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
+
 import type { EditorRuntime } from '../types/editor-runtime';
 import type { RuntimeConnectionSpec, RuntimeObjectSpec } from '../types/runtime-object';
 
@@ -14,13 +16,6 @@ interface EditorTextObjectData {
 
   [key: string]: unknown;
 }
-
-interface PreviewEdgeData {
-  edgeInsertionPreview?: unknown;
-}
-
-const isEdgeInsertionPreview = (edge: Edge): boolean =>
-  (edge.data as PreviewEdgeData | undefined)?.edgeInsertionPreview === true;
 
 /**
  * Using the XYFlow nodes and edges, update the patcher's headless runtime graph.

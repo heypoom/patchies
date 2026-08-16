@@ -20,6 +20,7 @@ import { GLSystem } from '$lib/canvas/GLSystem';
 import { get } from 'svelte/store';
 import type { CanvasContext } from './CanvasContext';
 import { logger } from '$lib/utils/logger';
+import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
 
 export interface LoadPatchResult {
   mode: 'autosave' | 'help' | 'src' | 'shared' | 'none';
@@ -99,8 +100,15 @@ export class PatchManager {
     const isEmbed = embedParam === 'true';
     const helpMode = get(helpModeObject);
 
-    // Do not autosave when in embed mode, help mode, read-only mode, or shared patch session
-    if (isEmbed || helpMode || isReadOnlyMode || this._isSharedPatchSession) {
+    // Do not autosave while a Quick Insert preview has temporarily replaced an edge.
+    // The original edge is restored or permanently replaced when the object is confirmed.
+    if (
+      isEmbed ||
+      helpMode ||
+      isReadOnlyMode ||
+      this._isSharedPatchSession ||
+      this.ctx.edges.some(isEdgeInsertionPreview)
+    ) {
       return false;
     }
 

@@ -20,6 +20,9 @@ When exactly one edge is selected, insertion is contextual:
   without connections.
 - The insertion and any edge replacement are one undoable action.
 - The inserted node renders above its replacement edges.
+- Provisional Quick Insert edges are editor-only: they are never autosaved, and cancelling restores
+  the selected edge.
+- Edge midpoint calculations use canvas positions, including endpoints nested in visual groups.
 
 Normal insertion behavior remains unchanged when zero or multiple edges are selected.
 

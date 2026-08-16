@@ -409,6 +409,7 @@
   let selectedNodeIds = $state.raw<string[]>([]);
   let selectedEdgeIds = $state.raw<string[]>([]);
   let pendingEdgeInsertion = $state.raw<PendingEdgeInsertion | null>(null);
+  const confirmedQuickInsertNodeIds = new SvelteSet<string>();
   let visualGroupSelectionStartIds = $state.raw<string[]>([]);
 
   // Track node positions at drag start for undo/redo
@@ -1132,6 +1133,9 @@
     finalNodeId: string;
     objectName: string;
   }) {
+    if (confirmedQuickInsertNodeIds.has(event.finalNodeId)) return;
+
+    confirmedQuickInsertNodeIds.add(event.finalNodeId);
     await recordInsertedNode(event.finalNodeId, event.objectName);
   }
 
@@ -1142,6 +1146,7 @@
 
     const pending = pendingEdgeInsertion;
     pendingEdgeInsertion = null;
+
     if (!pending) return;
 
     edges = [

@@ -1,7 +1,9 @@
 import type { Edge, Node } from '@xyflow/svelte';
+
 import type { ObjectSchemaRegistry } from '$lib/objects/schemas';
 import type { InletSchema } from '$lib/objects/schemas/types';
 import { deriveHandleId } from '$lib/utils/handle-id';
+
 import {
   isAcceptsFloatInlet,
   isAudioParamInlet,
@@ -52,25 +54,29 @@ function getInletCandidates(
 ): InletCandidate[] {
   const staticInlets = getStaticInletCandidates(schemaInlets);
   const uniformDefs = (node.data as { glUniformDefs?: unknown } | undefined)?.glUniformDefs;
+
   const patternInlets = getDynamicVideoHandles(
     node,
     dynamicVideoInletTemplate,
     'videoInletCount'
   ).map((handle) => ({ handle }));
+
   if (!Array.isArray(uniformDefs)) return [...staticInlets, ...patternInlets];
 
   const dynamicInlets = uniformDefs.flatMap((uniform, index) => {
-    if (
+    const withoutInlets =
       !uniform ||
       typeof uniform !== 'object' ||
       (uniform as { hideInlet?: unknown }).hideInlet === true ||
       typeof (uniform as { name?: unknown }).name !== 'string' ||
-      typeof (uniform as { type?: unknown }).type !== 'string'
-    ) {
+      typeof (uniform as { type?: unknown }).type !== 'string';
+
+    if (withoutInlets) {
       return [];
     }
 
     const { name, type } = uniform as { name: string; type: string };
+
     return [
       {
         handle: deriveHandleId({
@@ -91,6 +97,10 @@ export interface EdgeInsertionPlan {
   insertedOutletHandle: string;
   targetHandle: string;
 }
+
+/** Preview edges only exist while a Quick Insert object is awaiting confirmation. */
+export const isEdgeInsertionPreview = (edge: Edge): boolean =>
+  (edge.data as { edgeInsertionPreview?: unknown } | undefined)?.edgeInsertionPreview === true;
 
 /**
  * Creates the temporary pair of edges shown while a Quick Insert object is
@@ -140,6 +150,7 @@ export function planEdgeInsertion(
 
   const insertedName = getNodeName(insertedNode);
   const targetName = getNodeName(targetNode);
+
   const schema = insertedName ? schemas[insertedName] : undefined;
   if (!schema) return null;
 
@@ -202,10 +213,36 @@ export function getEdgeInsertionPosition(
   const target = nodes.find((node) => node.id === edge.target);
   if (!source || !target) return null;
 
-  const center = (node: Node) => ({
-    x: node.position.x + (node.measured?.width ?? node.width ?? 0) / 2,
-    y: node.position.y + (node.measured?.height ?? node.height ?? 0) / 2
-  });
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+
+  const getAbsolutePosition = (
+    node: Node,
+    visited = new Set<string>()
+  ): { x: number; y: number } => {
+    if (!node.parentId || visited.has(node.id)) return node.position;
+
+    const parent = nodesById.get(node.parentId);
+    if (!parent) return node.position;
+
+    visited.add(node.id);
+
+    const parentPosition = getAbsolutePosition(parent, visited);
+
+    return {
+      x: parentPosition.x + node.position.x,
+      y: parentPosition.y + node.position.y
+    };
+  };
+
+  const center = (node: Node) => {
+    const position = getAbsolutePosition(node);
+
+    return {
+      x: position.x + (node.measured?.width ?? node.width ?? 0) / 2,
+      y: position.y + (node.measured?.height ?? node.height ?? 0) / 2
+    };
+  };
+
   const sourceCenter = center(source);
   const targetCenter = center(target);
 
@@ -222,6 +259,7 @@ export function getCenteredNodeInsertionPosition(
   insertedNode: Node
 ): { x: number; y: number } | null {
   const midpoint = getEdgeInsertionPosition(edge, nodes);
+
   const width = insertedNode.measured?.width ?? insertedNode.width;
   const height = insertedNode.measured?.height ?? insertedNode.height;
   if (!midpoint || width === undefined || height === undefined) return midpoint;
