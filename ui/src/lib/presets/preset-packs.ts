@@ -429,10 +429,16 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
   {
     id: 'opencv-demos',
     name: 'OpenCV Demos',
-    description: 'Worker-based OpenCV demos for processing video frames',
+    description: 'OpenCV video-processing textures for float.tex, glsl>, and hydra>',
     icon: 'ScanSearch',
     requiredObjects: ['worker'],
-    presets: ['opencv-threshold.worker', 'opencv-contours.worker']
+    presets: [
+      'opencv-threshold.worker',
+      'opencv-contours.worker',
+      'opencv-edges.worker',
+      'opencv-color-mask.worker',
+      'opencv-motion.worker'
+    ]
   },
   {
     id: 'scripting-demos',

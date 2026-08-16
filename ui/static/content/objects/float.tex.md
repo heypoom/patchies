@@ -89,6 +89,14 @@ send texture data into `float.tex`:
 Create one of those presets, connect it to `float.tex`, then connect `float.tex`
 to `glsl>` to inspect the texture.
 
+The **OpenCV Demos** pack contains video-processing worker presets for thresholding,
+contours, Canny edges, blue-hue masking, and frame-to-frame motion. Connect a video
+source to the worker, then use the same path:
+
+```text
+[video source] → [opencv edges.worker] → [float.tex] → [glsl>]
+```
+
 `rgba-scan.float.js` reuses one shared interleaved RGBA buffer and bumps
 `version` every frame:
 

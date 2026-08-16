@@ -1,9 +1,10 @@
-const code = `setTitle('opencv threshold')
+const code = `setTitle('opencv motion')
 setVideoCount(1)
 setPortCount(0, 1)
 
 const cv = await opencv()
 let processing = false
+let previous = null
 
 onVideoFrame(async ([frame]) => {
   if (!frame || processing) return
@@ -13,13 +14,22 @@ onVideoFrame(async ([frame]) => {
   try {
     const source = cv.matFromImageData(frame)
     const gray = new cv.Mat()
-    const binary = new cv.Mat()
+    const difference = new cv.Mat()
     const output = new cv.Mat()
 
     try {
       cv.cvtColor(source, gray, cv.COLOR_RGBA2GRAY)
-      cv.threshold(gray, binary, 128, 255, cv.THRESH_BINARY)
-      cv.cvtColor(binary, output, cv.COLOR_GRAY2RGBA)
+
+      if (!previous || previous.rows !== gray.rows || previous.cols !== gray.cols) {
+        previous?.delete()
+        previous = gray.clone()
+        return
+      }
+
+      cv.absdiff(gray, previous, difference)
+      cv.threshold(difference, difference, 24, 255, cv.THRESH_BINARY)
+      cv.cvtColor(difference, output, cv.COLOR_GRAY2RGBA)
+      gray.copyTo(previous)
 
       send({
         type: 'rgba',
@@ -31,18 +41,17 @@ onVideoFrame(async ([frame]) => {
     } finally {
       source.delete()
       gray.delete()
-      binary.delete()
+      difference.delete()
       output.delete()
     }
-
   } finally {
     processing = false
   }
-}, { fps: 12 })`;
+}, { fps: 15 })`;
 
 export const preset = {
   type: 'worker',
   description:
-    'Convert video to a black-and-white texture. Connect it to float.tex, then glsl> or hydra>.',
+    'Show areas that changed between video frames. Connect it to float.tex, then glsl> or hydra>.',
   data: { code: code.trim(), showConsole: false, runOnMount: true }
 };

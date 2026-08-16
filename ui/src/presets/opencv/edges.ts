@@ -1,4 +1,4 @@
-const code = `setTitle('opencv threshold')
+const code = `setTitle('opencv edges')
 setVideoCount(1)
 setPortCount(0, 1)
 
@@ -13,13 +13,13 @@ onVideoFrame(async ([frame]) => {
   try {
     const source = cv.matFromImageData(frame)
     const gray = new cv.Mat()
-    const binary = new cv.Mat()
+    const edges = new cv.Mat()
     const output = new cv.Mat()
 
     try {
       cv.cvtColor(source, gray, cv.COLOR_RGBA2GRAY)
-      cv.threshold(gray, binary, 128, 255, cv.THRESH_BINARY)
-      cv.cvtColor(binary, output, cv.COLOR_GRAY2RGBA)
+      cv.Canny(gray, edges, 80, 160)
+      cv.cvtColor(edges, output, cv.COLOR_GRAY2RGBA)
 
       send({
         type: 'rgba',
@@ -31,18 +31,17 @@ onVideoFrame(async ([frame]) => {
     } finally {
       source.delete()
       gray.delete()
-      binary.delete()
+      edges.delete()
       output.delete()
     }
-
   } finally {
     processing = false
   }
-}, { fps: 12 })`;
+}, { fps: 15 })`;
 
 export const preset = {
   type: 'worker',
   description:
-    'Convert video to a black-and-white texture. Connect it to float.tex, then glsl> or hydra>.',
+    'Turn video into a Canny edge texture. Connect it to float.tex, then glsl> or hydra>.',
   data: { code: code.trim(), showConsole: false, runOnMount: true }
 };

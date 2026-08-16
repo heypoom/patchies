@@ -16,12 +16,15 @@ loader in every `js` or `worker` object is noisy and makes patches fragile.
 
 ## Presets
 
-The **OpenCV Image Processing** preset pack captures the first connected video inlet
-with `onVideoFrame()`. Video callbacks default to raw `{ data, width, height }` RGBA
-frames and may set `resolution` and an optional maximum `fps`. `format: 'bitmap'`
-remains available for Canvas APIs. The threshold preset emits an RGBA message and the
-contour preset emits contour bounding boxes. This keeps the first release useful
-without promising a generic OpenCV video-output node.
+The **OpenCV Demos** preset pack captures the first connected video inlet with
+`onVideoFrame()`. Video callbacks default to raw `{ data, width, height }` RGBA frames
+and may set `resolution` and an optional maximum `fps`. `format: 'bitmap'` remains
+available for Canvas APIs.
+
+The threshold, contours, edges, color-mask, and motion presets emit normalized
+`Float32Array` RGBA messages with `textureFormat: 'rgba8'`. Connect them to `float.tex`
+and then a visual node such as `glsl>` or `hydra>` to view their output. This reuses the
+existing message-to-video bridge without promising a generic OpenCV video-output node.
 
 ## Verification
 
