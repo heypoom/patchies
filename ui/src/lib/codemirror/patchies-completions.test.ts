@@ -95,9 +95,11 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'settings.')).toContain('define');
   });
 
-  it('shows OpenCV only in js and worker nodes', () => {
+  it('shows OpenCV in supported JSRunner nodes', () => {
     expect(getCompletionLabels('js', 'open')).toContain('opencv');
     expect(getCompletionLabels('worker', 'open')).toContain('opencv');
+    expect(getCompletionLabels('canvas', 'open')).toContain('opencv');
+    expect(getCompletionLabels('canvas.dom', 'open')).toContain('opencv');
     expect(getCompletionLabels('hydra', 'open')).not.toContain('opencv');
   });
 

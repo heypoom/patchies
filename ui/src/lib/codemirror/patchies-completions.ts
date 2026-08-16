@@ -509,7 +509,7 @@ const patchiesAPICompletions: Completion[] = [
     label: 'opencv',
     type: 'function',
     detail: '() => Promise<OpenCV>',
-    info: 'Lazy-load OpenCV.js and wait until its WebAssembly runtime is ready. Available in js and worker nodes.',
+    info: 'Lazy-load OpenCV.js and wait until its WebAssembly runtime is ready.',
     apply: 'await opencv()'
   }
 ];
@@ -621,7 +621,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three.dom',
     'tone~'
   ],
-  opencv: ['js', 'worker'],
+  opencv: ['js', 'worker', 'canvas', 'canvas.dom'],
   noDrag: MOUSE_INTERACTION_JS_NODES,
   noPan: MOUSE_INTERACTION_JS_NODES,
   noWheel: MOUSE_INTERACTION_JS_NODES,
