@@ -79,6 +79,46 @@ function draw(t) {
   renderer.render(scene, camera)
 }`;
 
+const GLTF_LOADER_THREE = `setTitle('GLTF Loader')
+
+const { Scene, PerspectiveCamera, HemisphereLight, DirectionalLight, Color, SRGBColorSpace } = THREE
+const { GLTFLoader } = await esm('three/addons/loaders/GLTFLoader.js')
+
+const scene = new Scene()
+scene.background = new Color(0x171717)
+
+const camera = new PerspectiveCamera(45, width / height, 0.1, 100)
+camera.position.set(0, 0.4, 3)
+
+const controls = new OrbitControls(camera)
+controls.enablePan = false
+controls.minDistance = 1.5
+controls.maxDistance = 6
+
+scene.add(new HemisphereLight(0xffffff, 0x222233, 2))
+
+const keyLight = new DirectionalLight(0xffffff, 3)
+keyLight.position.set(3, 3, 4)
+
+scene.add(keyLight)
+
+renderer.outputColorSpace = SRGBColorSpace
+
+const loader = new GLTFLoader()
+
+// Replace this URL with: await getVfsUrl('user://your-model.glb')
+const modelUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb'
+const gltf = await loader.loadAsync(modelUrl)
+
+const model = gltf.scene
+scene.add(model)
+
+function draw() {
+  model.rotation.y += 0.005
+  controls.update()
+  renderer.render(scene, camera)
+}`;
+
 const CRATE_THREE = `const { Scene, PerspectiveCamera, BoxGeometry, Mesh, MeshBasicMaterial, ImageBitmapLoader, CanvasTexture } = THREE
 
 const scene = new Scene()
@@ -423,6 +463,7 @@ export const THREE_PRESETS: Record<string, { type: string; data: { code: string 
   'video-cube.three': { type: 'three', data: { code: VIDEO_CUBE_THREE.trim() } },
   'video-torus.three': { type: 'three', data: { code: VIDEO_TORUS_THREE.trim() } },
   'video-sphere.three': { type: 'three', data: { code: VIDEO_SPHERE_THREE.trim() } },
+  'gltf-loader.three': { type: 'three', data: { code: GLTF_LOADER_THREE.trim() } },
   'crate.three': { type: 'three', data: { code: CRATE_THREE.trim() } },
   'mouse-cube.three': { type: 'three', data: { code: MOUSE_CUBE_THREE.trim() } },
   'point-cloud-from-texture.three': {

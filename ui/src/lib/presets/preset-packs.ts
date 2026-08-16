@@ -300,6 +300,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'video-cube.three',
       'video-torus.three',
       'video-sphere.three',
+      'gltf-loader.three',
       'crate.three',
       'mouse-cube.three'
     ]
