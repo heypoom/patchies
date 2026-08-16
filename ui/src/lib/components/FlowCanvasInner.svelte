@@ -60,6 +60,7 @@
   } from '../../stores/canvas.store';
 
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
+  import { useEdgeInsertion } from '$lib/canvas/use-edge-insertion.svelte';
   import { deleteSearchParam } from '$lib/utils/search-params';
 
   import { Toaster } from '$lib/components/ui/sonner';
@@ -121,7 +122,6 @@
 
   import {
     HistoryManager,
-    AddNodeCommand,
     DeleteNodesCommand,
     ReplaceNodesCommand,
     UpdateNodeDataCommand,
@@ -154,7 +154,6 @@
   import { buildChatViewportSummary } from '$lib/ai/chat/viewport-summary';
 
   const AUTOSAVE_INTERVAL = 2500;
-
   // Initial nodes and edges
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
@@ -182,6 +181,7 @@
 
   // Node operations service for creating/deleting/replacing nodes
   const nodeOps = new NodeOperationsService(canvasContext);
+  const edgeInsertion = useEdgeInsertion(canvasContext, nodeOps);
 
   // AI operations service for AI-related node insertion/editing
   const aiOps = new AiOperationsService(canvasContext, nodeOps);
@@ -855,7 +855,7 @@
       toggleSidebar: () => {
         if (!$isFullscreenActive) $isSidebarOpen = !$isSidebarOpen;
       },
-      openObjectBrowser: () => ($isObjectBrowserOpen = true),
+      openObjectBrowser: openObjectBrowser,
       openSettings: () => ($isSettingsOpen = true),
       openCommandPalette: triggerCommandPalette,
       togglePlayPause: () => {
@@ -871,11 +871,8 @@
       saveAs: () => (showSavePatchModal = true),
       triggerAiPrompt,
       checkGeminiApiKey: checkAndHandleGeminiApiKey,
-      quickAddNode: () => {
-        const position = screenToFlowPosition(lastMousePosition);
-
-        nodeOps.createNode('object', position, undefined, { skipHistory: true });
-      },
+      quickAddNode: () =>
+        edgeInsertion.quickAdd(selectedEdgeIds, screenToFlowPosition(lastMousePosition)),
       toggleAllPreviews: () => {
         const willDisable = !$allPreviewsDisabled;
         $allPreviewsDisabled = willDisable;
@@ -1104,21 +1101,14 @@
     }
   }
 
-  // Handle Quick Add confirmation - record the final node to history
-  function handleQuickAddConfirmed(event: { type: 'quickAddConfirmed'; finalNodeId: string }) {
-    const node = nodes.find((n) => n.id === event.finalNodeId);
+  const handleQuickAddConfirmed = (event: {
+    type: 'quickAddConfirmed';
+    finalNodeId: string;
+    objectName: string;
+  }) => edgeInsertion.confirmQuickAdd(event.finalNodeId, event.objectName);
 
-    if (node) {
-      // Record the final node state (after any transformation) to history
-      historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
-    }
-  }
-
-  // Handle Quick Add cancellation - remove node directly without history
-  function handleQuickAddCancelled(event: { type: 'quickAddCancelled'; nodeId: string }) {
-    // Remove the node directly, bypassing SvelteFlow's onbeforedelete (which records to history)
-    nodes = nodes.filter((n) => n.id !== event.nodeId);
-  }
+  const handleQuickAddCancelled = (event: { type: 'quickAddCancelled'; nodeId: string }) =>
+    edgeInsertion.cancelQuickAdd(event.nodeId);
 
   // Handle ObjectNode data commit (undo tracking for expr/name/params changes)
   function handleObjectDataCommit(event: ObjectDataCommitEvent) {
@@ -1173,14 +1163,20 @@
     };
   }
 
-  function handleObjectBrowserSelect(name: string) {
+  async function handleObjectBrowserSelect(name: string) {
     // Get the center of the viewport in screen coordinates
     const viewportCenterX = window.innerWidth / 2;
     const viewportCenterY = window.innerHeight / 2;
 
-    // Convert to flow coordinates (accounts for pan and zoom)
-    const position = screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
-    nodeOps.createNodeFromName(name, position);
+    await edgeInsertion.selectObject(
+      name,
+      screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY })
+    );
+  }
+
+  function openObjectBrowser() {
+    edgeInsertion.beginObjectBrowser(selectedEdgeIds);
+    $isObjectBrowserOpen = true;
   }
 
   const isValidConnection: IsValidConnection = (connection) => {
@@ -1222,7 +1218,7 @@
     });
 
     setTimeout(() => {
-      nodeOps.createNode('object', position);
+      edgeInsertion.quickAdd(selectedEdgeIds, position);
     }, 50);
   }
 
@@ -1649,7 +1645,7 @@
             if (tab) startupInitialTab = tab;
             showStartupModal = true;
           }}
-          onBrowseObjects={() => ($isObjectBrowserOpen = true)}
+          onBrowseObjects={openObjectBrowser}
           onSavePatch={() => (showSavePatchModal = true)}
           onExportPatch={() => (showExportPatchModal = true)}
           onLoadPatch={() => {
@@ -1685,7 +1681,7 @@
         {startupInitialTab}
         onDelete={() => nodeOps.deleteSelectedElements(selectedNodeIds, selectedEdgeIds)}
         onInsertObject={insertObjectWithButton}
-        onBrowseObjects={() => ($isObjectBrowserOpen = true)}
+        onBrowseObjects={openObjectBrowser}
         onCopy={copySelectedNodes}
         onPaste={() => pasteNode('button')}
         onCancelConnectionMode={cancelConnectionMode}
@@ -1720,6 +1716,7 @@
     <ObjectBrowserModal
       bind:open={$isObjectBrowserOpen}
       onSelectObject={handleObjectBrowserSelect}
+      onClose={edgeInsertion.clearPendingInsertion}
     />
 
     <!-- Settings Modal -->

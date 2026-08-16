@@ -284,13 +284,14 @@
 
     if (save) {
       if (expr.trim()) {
+        const objectName = getNameAndParams().name;
         handleNameChange();
 
         // For Quick Add nodes, emit event so FlowCanvasInner can record to history
         // We use setTimeout to ensure the node transformation (if any) is complete
         if (isQuickAdd) {
           setTimeout(() => {
-            eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId });
+            eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId, objectName });
           }, 0);
         } else {
           // For existing nodes, commit undo tracking after data is updated
@@ -896,7 +897,7 @@
         </div>
 
         <!-- Dynamic outlets -->
-        {#if outlets}
+        {#if outlets.length > 0}
           {#each outlets as outlet, index (index)}
             <StandardHandle
               port="outlet"
@@ -909,6 +910,9 @@
               {nodeId}
             />
           {/each}
+        {:else if !objectMeta}
+          <!-- Fallback generic outlet while Quick Insert is waiting for an object name. -->
+          <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
         {/if}
       </div>
     </div>

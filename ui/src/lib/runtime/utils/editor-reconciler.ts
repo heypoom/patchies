@@ -1,5 +1,7 @@
 import type { Edge, Node } from '@xyflow/svelte';
 
+import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
+
 import type { EditorRuntime } from '../types/editor-runtime';
 import type { RuntimeConnectionSpec, RuntimeObjectSpec } from '../types/runtime-object';
 
@@ -25,7 +27,9 @@ export const setRuntimeGraphFromEditorGraph = async (
 ): Promise<void> =>
   runtime.setGraph({
     objects: nodes.flatMap(getRuntimeObjectSpecFromEditorNode),
-    connections: edges.map(getRuntimeConnectionSpecFromEditorEdge)
+    connections: edges
+      .filter((edge) => !isEdgeInsertionPreview(edge))
+      .map(getRuntimeConnectionSpecFromEditorEdge)
   });
 
 export const setRuntimeObjectsFromEditorNodes = async (
@@ -36,7 +40,12 @@ export const setRuntimeObjectsFromEditorNodes = async (
 export const setRuntimeConnectionsFromEditorEdges = (
   runtime: EditorRuntime,
   edges: Edge[]
-): Promise<void> => runtime.setConnections(edges.map(getRuntimeConnectionSpecFromEditorEdge));
+): Promise<void> =>
+  runtime.setConnections(
+    edges
+      .filter((edge) => !isEdgeInsertionPreview(edge))
+      .map(getRuntimeConnectionSpecFromEditorEdge)
+  );
 
 const getRuntimeConnectionSpecFromEditorEdge = (edge: Edge): RuntimeConnectionSpec => ({
   id: edge.id,

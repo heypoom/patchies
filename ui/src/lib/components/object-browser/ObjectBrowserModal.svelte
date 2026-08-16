@@ -68,8 +68,13 @@
 
   let {
     open = $bindable(false),
-    onSelectObject
-  }: { open?: boolean; onSelectObject: (name: string) => void } = $props();
+    onSelectObject,
+    onClose = () => {}
+  }: {
+    open?: boolean;
+    onSelectObject: (name: string) => void | Promise<void>;
+    onClose?: () => void;
+  } = $props();
 
   let searchQuery = $state('');
   let searchInput = $state<HTMLInputElement>();
@@ -88,7 +93,7 @@
     $isSidebarOpen = true;
     $sidebarView = 'help';
     $selectedNodeInfo = { type: objectName, id: 'browser' };
-    open = false;
+    handleClose();
   }
 
   const objectCategories = $derived(
@@ -420,10 +425,11 @@
     expandedPackId = null;
     mobileCategoryOpen = false;
     $objectBrowserMode = 'insert';
+    onClose();
   }
 
-  function handleSelectObject(name: string) {
-    onSelectObject(name);
+  async function handleSelectObject(name: string) {
+    await onSelectObject(name);
     handleClose();
   }
 

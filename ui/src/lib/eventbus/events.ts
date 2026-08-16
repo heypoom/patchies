@@ -372,6 +372,9 @@ export interface QuickAddConfirmedEvent {
    * transformed during quick add.
    **/
   finalNodeId: string;
+
+  /** The object name entered into the Quick Insert node before it transformed. */
+  objectName: string;
 }
 
 export interface QuickAddCancelledEvent {

@@ -66,16 +66,25 @@ export class NodeOperationsService {
    * Textual objects (like out~, expr, adsr) are created as 'object' nodes.
    * Visual nodes (like p5, hydra, glsl) are created with their actual type.
    */
-  createNodeFromName(name: string, position: { x: number; y: number }): string {
+  createNodeFromName(
+    name: string,
+    position: { x: number; y: number },
+    options?: CreateNodeOptions
+  ): string {
     // Check if it's a visual node type
     if (nodeTypes[name as keyof typeof nodeTypes]) {
-      return this.createNode(name, position);
+      return this.createNode(name, position, undefined, options);
     }
 
     // Check if it's a preset
     const preset = PRESETS[name];
     if (preset) {
-      return this.createNode(preset.type, position, preset.data as Record<string, unknown>);
+      return this.createNode(
+        preset.type,
+        position,
+        preset.data as Record<string, unknown>,
+        options
+      );
     }
 
     // Check if it's a textual object (audio or text object)
@@ -85,21 +94,22 @@ export class NodeOperationsService {
     if (audioRegistry.isDefined(name) || objectRegistry.isDefined(name)) {
       // Create an 'object' node with the textual object name and default params
       const defaultParams = parseObjectParamFromString(name, []);
-      return this.createNode('object', position, {
-        expr: name,
-        name: name,
-        params: defaultParams
-      });
+      return this.createNode(
+        'object',
+        position,
+        { expr: name, name: name, params: defaultParams },
+        options
+      );
     }
 
     // Fallback: try shorthand transformation
     const shorthandResult = ObjectShorthandRegistry.getInstance().tryTransform(name);
     if (shorthandResult) {
-      return this.createNode(shorthandResult.nodeType, position, shorthandResult.data);
+      return this.createNode(shorthandResult.nodeType, position, shorthandResult.data, options);
     }
 
     // Last resort: create as-is
-    return this.createNode(name, position);
+    return this.createNode(name, position, undefined, options);
   }
 
   /**
