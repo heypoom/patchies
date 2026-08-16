@@ -31,6 +31,7 @@ import { FLOAT_TEXTURE_PRESETS } from './float-texture.presets';
 import { SURFACE_PRESETS } from './surface.presets';
 import { CHARTS_PRESETS } from './charts.presets';
 import { UXN_DEMO_PRESETS } from './uxn';
+import { OPENCV_PRESETS } from './opencv';
 
 // Re-export individual preset collections
 export {
@@ -63,7 +64,8 @@ export {
   FLOAT_TEXTURE_PRESETS,
   SURFACE_PRESETS,
   CHARTS_PRESETS,
-  UXN_DEMO_PRESETS
+  UXN_DEMO_PRESETS,
+  OPENCV_PRESETS
 };
 
 /**
@@ -103,5 +105,6 @@ export const BUILTIN_PRESETS: Record<
   ...FLOAT_TEXTURE_PRESETS,
   ...SURFACE_PRESETS,
   ...CHARTS_PRESETS,
-  ...UXN_DEMO_PRESETS
+  ...UXN_DEMO_PRESETS,
+  ...OPENCV_PRESETS
 };

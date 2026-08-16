@@ -13,6 +13,10 @@ ${runOnMountInstructions}
 - fft() is NOT available (no main-thread audio access)
 - No \`// @lib\` declaration (cannot create libraries, but CAN import them)
 - Libraries created with \`// @lib\` in regular \`js\` nodes can be imported here
+- onVideoFrame(callback, { resolution?, fps?, format? }) captures connected video inlets
+  - format defaults to 'raw': frames are { data: Uint8ClampedArray, width, height }, ready for cv.matFromImageData()
+  - use format: 'bitmap' only for Canvas APIs, then call frame.close() after use
+  - fps is optional and limits capture work before GPU readback (maximum 30)
 
 **Use Cases:**
 - Heavy data processing without UI freezing

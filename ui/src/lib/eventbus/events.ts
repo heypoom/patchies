@@ -279,6 +279,7 @@ export interface RequestWorkerVideoFramesEvent {
   nodeId: string;
   sourceNodeIds: (string | null)[];
   resolution?: [number, number];
+  format?: 'raw' | 'bitmap';
 }
 
 export interface RequestWorkerVideoFramesBatchEvent {
@@ -287,6 +288,7 @@ export interface RequestWorkerVideoFramesBatchEvent {
     targetNodeId: string;
     sourceNodeIds: (string | null)[];
     resolution?: [number, number];
+    format?: 'raw' | 'bitmap';
   }>;
 }
 

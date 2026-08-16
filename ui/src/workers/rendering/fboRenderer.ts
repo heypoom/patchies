@@ -43,6 +43,7 @@ import type {
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
+import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { renderElementImageToBitmap } from './elementImageBitmap.js';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
@@ -2395,6 +2396,7 @@ export class FBORenderer {
       targetNodeId: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
+      format?: 'raw' | 'bitmap';
     }>
   ): void {
     this.captureRenderer.initiateVideoFrameBatchAsync(
@@ -2410,7 +2412,7 @@ export class FBORenderer {
    */
   harvestVideoFrames(): Array<{
     targetNodeId: string;
-    frames: (ImageBitmap | null)[];
+    frames: CapturedVideoFrame[];
     timestamp: number;
   }> {
     return this.captureRenderer.harvestVideoFrameBatches();

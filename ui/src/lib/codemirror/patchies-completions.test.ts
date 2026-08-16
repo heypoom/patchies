@@ -95,6 +95,12 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'settings.')).toContain('define');
   });
 
+  it('shows OpenCV only in js and worker nodes', () => {
+    expect(getCompletionLabels('js', 'open')).toContain('opencv');
+    expect(getCompletionLabels('worker', 'open')).toContain('opencv');
+    expect(getCompletionLabels('hydra', 'open')).not.toContain('opencv');
+  });
+
   it('shows FFTAnalysis member completions after fft()', () => {
     expect(getCompletionLabels('hydra', 'fft().')).toEqual(
       expect.arrayContaining(['a', 'f', 'sum', 'avg', 'centroid', 'rms', 'getEnergy'])

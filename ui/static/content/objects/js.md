@@ -7,6 +7,25 @@ These methods are exclusive to the `js` object:
 - **`setRunOnMount(true)`** - run the code automatically when the object is created. By default, code only runs when you hit the "Play" button.
 - **`flash()`** - briefly flash the node's border, useful for visual feedback when processing messages.
 
+## OpenCV
+
+Use `await opencv()` to lazy-load OpenCV.js and wait for its WebAssembly runtime.
+The module is cached across `js` objects, so separate nodes do not repeat initialization.
+
+```js
+const cv = await opencv();
+const source = cv.matFromImageData(imageData);
+const gray = new cv.Mat();
+
+cv.cvtColor(source, gray, cv.COLOR_RGBA2GRAY);
+
+source.delete();
+gray.delete();
+```
+
+OpenCV allocations are manual: call `.delete()` on every `Mat`, vector, and other
+OpenCV object when you finish using it.
+
 ## Examples
 
 Here is how to log incoming messages while also flashing the console.

@@ -427,6 +427,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presetFolders: GREGGMAN_BYTEBEAT_PRESET_FOLDERS
   },
   {
+    id: 'opencv-demos',
+    name: 'OpenCV Demos',
+    description: 'Worker-based OpenCV demos for processing video frames',
+    icon: 'ScanSearch',
+    requiredObjects: ['worker'],
+    presets: ['opencv-threshold.worker', 'opencv-contours.worker']
+  },
+  {
     id: 'scripting-demos',
     name: 'Scripting Demos',
     description: 'JS scripts for control flow',

@@ -252,7 +252,8 @@ export class GLSystem {
         this.send('captureWorkerVideoFrames', {
           targetNodeId: event.nodeId,
           sourceNodeIds: event.sourceNodeIds,
-          resolution: event.resolution
+          resolution: event.resolution,
+          format: event.format
         });
       }
     );
