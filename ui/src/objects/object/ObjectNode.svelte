@@ -284,13 +284,14 @@
 
     if (save) {
       if (expr.trim()) {
+        const objectName = getNameAndParams().name;
         handleNameChange();
 
         // For Quick Add nodes, emit event so FlowCanvasInner can record to history
         // We use setTimeout to ensure the node transformation (if any) is complete
         if (isQuickAdd) {
           setTimeout(() => {
-            eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId });
+            eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId, objectName });
           }, 0);
         } else {
           // For existing nodes, commit undo tracking after data is updated

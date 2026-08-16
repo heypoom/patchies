@@ -30,12 +30,13 @@ analysis, audio-parameter, and accepts-float behavior. Only schema ports that re
 participate, plus object-owned dynamic ports where available; objects without a known compatible
 inlet and outlet are placed without rewiring.
 
-GLSL sampler uniforms are dynamic video inlets. When a default `glsl` generator is inserted into a
-video edge, Patchies initializes it as an editable pass-through shader with a `source` sampler so it
-can participate in the chain immediately.
+When an object has a companion `name>` pipe preset, inserting its base object name into a selected
+edge creates that pipe preset instead. This includes `js>`, `hydra>`, `glsl>`, `regl>`, `swgl>`,
+`three>`, and `tone>`. This applies equally to Object Browser cards and typed Quick Insert names.
 
-The `hydra>`, `three>`, and `regl>` video pipe presets expose one video inlet and outlet when
-inserted into a video edge, including when their preset data omits the default port counts.
+GLSL sampler uniforms are dynamic video inlets and are derived before edge compatibility is checked.
+The video pipe presets expose one video inlet and outlet when inserted into a video edge, including
+when their preset data omits the default port counts.
 
 ## Verification
 

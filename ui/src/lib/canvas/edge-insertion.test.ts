@@ -2,10 +2,16 @@ import { describe, expect, test } from 'vitest';
 import type { Edge, Node } from '@xyflow/svelte';
 import type { ObjectSchemaRegistry } from '$lib/objects/schemas';
 import { glslSchema } from '$objects/glsl/schema';
+import { preset as glslPipePreset } from '$presets/glsl/passthru';
+import { PRESETS } from '$lib/presets/presets';
 import { hydraSchema } from '$objects/hydra/schema';
 import { threeSchema } from '$objects/three/schema';
 import { reglSchema } from '$objects/regl/schema';
-import { prepareNodeForEdgeInsertion } from './edge-insertion-adapters';
+import {
+  applyEdgeInsertionPipePreset,
+  getEdgeInsertionObjectName,
+  prepareNodeForEdgeInsertion
+} from './edge-insertion-adapters';
 import { DEFAULT_GLSL_CODE } from '$lib/canvas/constants';
 import {
   createEdgeInsertionPreview,
@@ -89,7 +95,7 @@ describe('planEdgeInsertion', () => {
     });
   });
 
-  test('turns a default GLSL generator into a video pass-through when inserted into a video edge', () => {
+  test('turns a default GLSL generator into the GLSL pipe preset when inserted into a video edge', () => {
     const videoEdge: Edge = { ...edge, sourceHandle: 'video-out' };
     const prepared = prepareNodeForEdgeInsertion(
       {
@@ -101,8 +107,23 @@ describe('planEdgeInsertion', () => {
       videoEdge
     );
 
-    expect((prepared.data.glUniformDefs as { name: string }[])[0]?.name).toBe('source');
-    expect(prepared.data.code as string).toContain('texture(source, uv)');
+    expect((prepared.data.glUniformDefs as { name: string }[])[0]?.name).toBe('image');
+    expect(prepared.data.code).toBe(glslPipePreset.data.code);
+  });
+
+  test('keeps the glsl pipe preset code and derives its sampler inlet', () => {
+    const prepared = prepareNodeForEdgeInsertion(
+      {
+        id: 'glsl-1',
+        type: 'glsl',
+        position: { x: 0, y: 0 },
+        data: { code: 'uniform sampler2D image;' }
+      },
+      { ...edge, sourceHandle: 'video-out' }
+    );
+
+    expect(prepared.data.code).toBe('uniform sampler2D image;');
+    expect(prepared.data.glUniformDefs).toMatchObject([{ name: 'image', type: 'sampler2D' }]);
   });
 
   test.each([
@@ -135,6 +156,33 @@ describe('planEdgeInsertion', () => {
       targetHandle: 'video-in-0'
     });
   });
+});
+
+describe('getEdgeInsertionObjectName', () => {
+  test.each(['js', 'glsl', 'hydra', 'regl', 'swgl', 'three', 'tone'])(
+    'uses the %s pipe preset for edge insertion',
+    (name) => {
+      expect(getEdgeInsertionObjectName(name)).toBe(`${name}>`);
+    }
+  );
+
+  test('keeps objects without a pipe preset unchanged', () => {
+    expect(getEdgeInsertionObjectName('p5')).toBe('p5');
+  });
+
+  test.each(['js', 'glsl', 'hydra', 'regl', 'swgl', 'three', 'tone'])(
+    'replaces the %s Quick Insert node with its pipe preset data',
+    (name) => {
+      const pipePresetName = `${name}>`;
+      const node = applyEdgeInsertionPipePreset(
+        { id: `${name}-1`, type: name, position: { x: 0, y: 0 }, data: {} },
+        name
+      );
+
+      expect(node.type).toBe(PRESETS[pipePresetName]?.type);
+      expect(node.data).toEqual(PRESETS[pipePresetName]?.data);
+    }
+  );
 });
 
 describe('getEdgeInsertionPosition', () => {

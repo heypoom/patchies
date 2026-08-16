@@ -67,7 +67,11 @@
     getEdgeInsertionPosition,
     planEdgeInsertion
   } from '$lib/canvas/edge-insertion';
-  import { prepareNodeForEdgeInsertion } from '$lib/canvas/edge-insertion-adapters';
+  import {
+    applyEdgeInsertionPipePreset,
+    getEdgeInsertionObjectName,
+    prepareNodeForEdgeInsertion
+  } from '$lib/canvas/edge-insertion-adapters';
   import { deleteSearchParam } from '$lib/utils/search-params';
 
   import { Toaster } from '$lib/components/ui/sonner';
@@ -1126,8 +1130,9 @@
   async function handleQuickAddConfirmed(event: {
     type: 'quickAddConfirmed';
     finalNodeId: string;
+    objectName: string;
   }) {
-    await recordInsertedNode(event.finalNodeId);
+    await recordInsertedNode(event.finalNodeId, event.objectName);
   }
 
   // Handle Quick Add cancellation - remove node directly without history
@@ -1208,7 +1213,11 @@
     const position =
       (edge && getEdgeInsertionPosition(edge, nodes)) ??
       screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
-    const nodeId = nodeOps.createNodeFromName(name, position, { skipHistory: true });
+    const nodeId = nodeOps.createNodeFromName(
+      edge ? getEdgeInsertionObjectName(name) : name,
+      position,
+      { skipHistory: true }
+    );
     await recordInsertedNode(nodeId);
   }
 
@@ -1264,7 +1273,7 @@
     return node.type;
   }
 
-  async function recordInsertedNode(nodeId: string) {
+  async function recordInsertedNode(nodeId: string, quickInsertObjectName?: string) {
     await tick();
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
@@ -1278,6 +1287,10 @@
     if (!edge) {
       historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
       return;
+    }
+
+    if (quickInsertObjectName) {
+      node = applyEdgeInsertionPipePreset(node, quickInsertObjectName);
     }
 
     node = prepareNodeForEdgeInsertion(node, edge);
