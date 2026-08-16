@@ -174,8 +174,12 @@ let superSonicRequestIdCounter = 0;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let superSonicModule: any = null;
 
-function postResponse(response: WorkerResponse) {
-  self.postMessage(response);
+function postResponse(response: WorkerResponse, transfer?: Transferable[]) {
+  if (transfer) {
+    self.postMessage(response, { transfer });
+  } else {
+    self.postMessage(response);
+  }
 }
 
 function createWorkerContext(nodeId: string) {
@@ -394,6 +398,18 @@ function createWorkerContext(nodeId: string) {
     });
   };
 
+  const setVideoFrame = (frame: { data: Uint8ClampedArray; width: number; height: number }) => {
+    if (
+      !(frame?.data instanceof Uint8ClampedArray) ||
+      !Number.isFinite(frame.width) ||
+      !Number.isFinite(frame.height)
+    ) {
+      throw new TypeError('setVideoFrame() expects { data: Uint8ClampedArray, width, height }');
+    }
+
+    postResponse({ type: 'setVideoFrame', nodeId, frame }, [frame.data.buffer]);
+  };
+
   // Create KV store for this node
   const kv = createKVStore(nodeId);
 
@@ -440,6 +456,7 @@ function createWorkerContext(nodeId: string) {
     setVideoCount,
     onVideoFrame,
     getVideoFrames,
+    setVideoFrame,
     kv,
     settings: settingsProxy.settings,
     getSuperSonicChannel,
@@ -555,6 +572,7 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setVideoCount',
     'onVideoFrame',
     'getVideoFrames',
+    'setVideoFrame',
     'kv',
     'settings',
     'getSuperSonicChannel',
@@ -581,6 +599,7 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setVideoCount,
     ctx.onVideoFrame,
     ctx.getVideoFrames,
+    ctx.setVideoFrame,
     ctx.kv,
     ctx.settings,
     ctx.getSuperSonicChannel,

@@ -7,6 +7,7 @@ describe('detached code editor output override policy', () => {
     expect(isFBOCompatible('hydra')).toBe(true);
     expect(isFBOCompatible('canvas')).toBe(true);
     expect(isFBOCompatible('three')).toBe(true);
+    expect(isFBOCompatible('worker')).toBe(true);
   });
 
   it('does not auto-pin non-render-graph nodes when opening the expanded editor', () => {

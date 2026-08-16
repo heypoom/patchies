@@ -103,6 +103,11 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('hydra', 'open')).not.toContain('opencv');
   });
 
+  it('shows direct video output only in worker nodes', () => {
+    expect(getCompletionLabels('worker', 'setVideoF')).toContain('setVideoFrame');
+    expect(getCompletionLabels('js', 'setVideoF')).not.toContain('setVideoFrame');
+  });
+
   it('shows FFTAnalysis member completions after fft()', () => {
     expect(getCompletionLabels('hydra', 'fft().')).toEqual(
       expect.arrayContaining(['a', 'f', 'sum', 'avg', 'centroid', 'rms', 'getEnergy'])

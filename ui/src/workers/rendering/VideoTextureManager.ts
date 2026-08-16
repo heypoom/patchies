@@ -249,6 +249,106 @@ export class VideoTextureManager {
     }
   }
 
+  /** Upload worker-produced RGBA8 pixels without converting through float texture data. */
+  setVideoFrame(nodeId: string, width: number, height: number, data: Uint8ClampedArray): void {
+    const safeWidth = Math.max(1, Math.round(width));
+    const safeHeight = Math.max(1, Math.round(height));
+    const expectedLength = safeWidth * safeHeight * 4;
+
+    if (data.length !== expectedLength) {
+      console.warn(
+        `[worker] Expected RGBA data length ${expectedLength}, received ${data.length}; skipping upload`
+      );
+      return;
+    }
+
+    const pendingBitmap = this.pendingBitmaps.get(nodeId);
+    if (pendingBitmap) {
+      pendingBitmap.close();
+      this.pendingBitmaps.delete(nodeId);
+    }
+
+    const sourceTexture = this.sourceTextures.get(nodeId);
+    if (sourceTexture) {
+      sourceTexture.destroy();
+      this.sourceTextures.delete(nodeId);
+    }
+
+    const existingDestTexture = this.destinationTextures.get(nodeId);
+    let destFBO = this.destinationFBOs.get(nodeId);
+    const needsResize =
+      !existingDestTexture ||
+      existingDestTexture.width !== safeWidth ||
+      existingDestTexture.height !== safeHeight ||
+      this.destinationTextureFormats.get(nodeId) !== 'rgba8';
+
+    let destTexture = existingDestTexture;
+
+    if (needsResize) {
+      destFBO?.destroy();
+      destFBO = undefined;
+      existingDestTexture?.destroy();
+
+      destTexture = this.regl.texture({
+        width: safeWidth,
+        height: safeHeight,
+        wrapS: 'clamp',
+        wrapT: 'clamp'
+      });
+
+      this.destinationTextures.set(nodeId, destTexture);
+      this.destinationTextureFormats.set(nodeId, 'rgba8');
+    }
+
+    const gl = this.gl;
+    const rawTexture = getRawTexture(destTexture);
+    const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
+    const previousActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE) as number;
+    const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, rawTexture);
+
+    if (needsResize) {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA8,
+        safeWidth,
+        safeHeight,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        data
+      );
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } else {
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0,
+        0,
+        0,
+        safeWidth,
+        safeHeight,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        data
+      );
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, previousTexture);
+    gl.activeTexture(previousActiveTexture);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
+
+    if (!destFBO) {
+      destFBO = this.regl.framebuffer({ color: destTexture });
+      this.destinationFBOs.set(nodeId, destFBO);
+    }
+  }
+
   /**
    * Remove all textures/FBOs for a video node.
    * Called when node is deleted from the graph.

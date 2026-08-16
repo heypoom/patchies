@@ -58,8 +58,8 @@ const patchiesAPICompletions: Completion[] = [
     label: 'setVideoCount',
     type: 'function',
     detail: '(inlets?: number, outlets?: number) => void',
-    info: 'Set the number of video inlets and outlets. For Hydra/Three max 4 each, for Worker nodes outlets not supported.',
-    apply: 'setVideoCount(1, 0)'
+    info: 'Set the number of video inlets and outlets. Worker nodes support one RGBA video output via setVideoFrame().',
+    apply: 'setVideoCount(1, 1)'
   },
   {
     label: 'getTexture',
@@ -103,6 +103,13 @@ const patchiesAPICompletions: Completion[] = [
     detail: '(config?) => Promise<RawVideoFrame[] | ImageBitmap[]>',
     info: 'Manually request current video frames. Raw RGBA frames are the default; request { format: "bitmap" } for ImageBitmaps.',
     apply: 'await getVideoFrames()'
+  },
+  {
+    label: 'setVideoFrame',
+    type: 'function',
+    detail: '({ data: Uint8ClampedArray, width: number, height: number }) => void',
+    info: 'Upload raw RGBA bytes to a worker node video outlet. Call setVideoCount(inlets, 1) first.',
+    apply: 'setVideoFrame({ data: pixels, width, height })'
   },
   {
     label: 'setMouseScope',
@@ -723,6 +730,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   onWheel: ['three'],
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
+  setVideoFrame: ['worker'],
   getVfsUrl: [
     'js',
     'worker',

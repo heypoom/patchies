@@ -1,6 +1,6 @@
 const code = `setTitle('opencv edges')
-setVideoCount(1)
-setPortCount(0, 1)
+setVideoCount(1, 1)
+setPortCount(0, 0)
 
 const cv = await opencv()
 let processing = false
@@ -21,12 +21,10 @@ onVideoFrame(async ([frame]) => {
       cv.Canny(gray, edges, 80, 160)
       cv.cvtColor(edges, output, cv.COLOR_GRAY2RGBA)
 
-      send({
-        type: 'rgba',
-        data: Float32Array.from(output.data, (value) => value / 255),
+      setVideoFrame({
+        data: new Uint8ClampedArray(output.data),
         width: frame.width,
-        height: frame.height,
-        textureFormat: 'rgba8'
+        height: frame.height
       })
     } finally {
       source.delete()
@@ -41,7 +39,6 @@ onVideoFrame(async ([frame]) => {
 
 export const preset = {
   type: 'worker',
-  description:
-    'Turn video into a Canny edge texture. Connect it to float.tex, then glsl> or hydra>.',
+  description: 'Turn video into a Canny edge output with OpenCV.',
   data: { code: code.trim(), showConsole: false, runOnMount: true }
 };

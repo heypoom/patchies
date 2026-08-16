@@ -33,6 +33,10 @@ export const workerSchema: ObjectSchema = {
   hasDynamicOutlets: true,
   handlePatterns: {
     inlet: { template: 'in-{index}', description: 'Message inlets (0-indexed)' },
-    outlet: { template: 'out-{index}', description: 'Message outlets (0-indexed)' }
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video output at index 0 from setVideoFrame(), message outlets use out-{index}'
+    }
   }
 };

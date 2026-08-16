@@ -41,7 +41,7 @@ export function createRenderNodeCookPolicy(node: RenderNode, renderGraph: Render
     .with({ type: 'regl' }, (node) => createReglCookPolicy(node.data.code))
     .with({ type: 'textmode' }, (node) => createTextmodeCookPolicy(node.data.code))
     .with(
-      { type: P.union('img', 'float.tex', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap') },
+      { type: P.union('img', 'float.tex', 'worker', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap') },
       () => ({ mode: 'on-demand' as const })
     )
     .otherwise(() => ({ mode: 'always' as const }));

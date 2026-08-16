@@ -20,6 +20,12 @@ export interface RawVideoFrame {
   height: number;
 }
 
+export interface WorkerVideoFrame {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
 export type CapturedVideoFrame = ImageBitmap | RawVideoFrame | null;
 
 export interface VideoFrameConfig {
@@ -77,6 +83,7 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
   | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
+  | { type: 'setVideoFrame'; frame: WorkerVideoFrame }
   | { type: 'videoFrameCallbackRegistered'; config?: VideoFrameConfig }
   | { type: 'requestVideoFrames'; requestId: string; config?: VideoFrameConfig }
   | { type: 'sendToChannel'; channel: string; data: unknown }

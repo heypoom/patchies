@@ -110,6 +110,18 @@ export function installRenderWorkerRuntime() {
           );
         }
       })
+      .with('setVideoFrame', () => {
+        const frame = data.frame;
+
+        if (!(frame?.data instanceof Uint8ClampedArray)) {
+          console.warn(
+            '[renderWorker] Invalid setVideoFrame payload: data must be Uint8ClampedArray'
+          );
+          return;
+        }
+
+        fboRenderer.setVideoFrame(data.nodeId, frame.width, frame.height, frame.data);
+      })
       .with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
       .with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
       .with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))

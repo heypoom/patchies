@@ -1,6 +1,6 @@
 const code = `setTitle('opencv motion')
-setVideoCount(1)
-setPortCount(0, 1)
+setVideoCount(1, 1)
+setPortCount(0, 0)
 
 const cv = await opencv()
 let processing = false
@@ -31,12 +31,10 @@ onVideoFrame(async ([frame]) => {
       cv.cvtColor(difference, output, cv.COLOR_GRAY2RGBA)
       gray.copyTo(previous)
 
-      send({
-        type: 'rgba',
-        data: Float32Array.from(output.data, (value) => value / 255),
+      setVideoFrame({
+        data: new Uint8ClampedArray(output.data),
         width: frame.width,
-        height: frame.height,
-        textureFormat: 'rgba8'
+        height: frame.height
       })
     } finally {
       source.delete()
@@ -51,7 +49,6 @@ onVideoFrame(async ([frame]) => {
 
 export const preset = {
   type: 'worker',
-  description:
-    'Show areas that changed between video frames. Connect it to float.tex, then glsl> or hydra>.',
+  description: 'Show areas that changed between video frames with OpenCV.',
   data: { code: code.trim(), showConsole: false, runOnMount: true }
 };

@@ -1,6 +1,6 @@
 const code = `setTitle('opencv contours')
-setVideoCount(1)
-setPortCount(0, 1)
+setVideoCount(1, 1)
+setPortCount(0, 0)
 
 const cv = await opencv()
 const contourColor = new cv.Scalar(255, 32, 180, 255)
@@ -29,12 +29,10 @@ onVideoFrame(async ([frame]) => {
         cv.drawContours(output, contours, i, contourColor, 2)
       }
 
-      send({
-        type: 'rgba',
-        data: Float32Array.from(output.data, (value) => value / 255),
+      setVideoFrame({
+        data: new Uint8ClampedArray(output.data),
         width: frame.width,
-        height: frame.height,
-        textureFormat: 'rgba8'
+        height: frame.height
       })
     } finally {
       source.delete()
@@ -52,6 +50,6 @@ onVideoFrame(async ([frame]) => {
 
 export const preset = {
   type: 'worker',
-  description: 'Draw Canny contours over video. Connect it to float.tex, then glsl> or hydra>.',
+  description: 'Draw Canny contours over video with OpenCV.',
   data: { code: code.trim(), showConsole: false, runOnMount: true }
 };

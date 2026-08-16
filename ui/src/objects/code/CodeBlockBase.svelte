@@ -80,6 +80,7 @@
 
     // Video inlet count (optional, for worker nodes)
     videoInletCount = 0,
+    videoOutletCount = 0,
 
     // Settings panel (optional, for JSRunner-enabled nodes)
     settingsSchema = undefined,
@@ -116,6 +117,7 @@
     editorPlaceholder?: string;
     nodeType?: string;
     videoInletCount?: number;
+    videoOutletCount?: number;
     settingsSchema?: SettingsSchema;
     settingsValues?: Record<string, unknown>;
     onSettingsValueChange?: (key: string, value: unknown) => void;
@@ -454,7 +456,10 @@
     const inletWidth = 15;
     const totalInlets = inletCount + videoInletCount;
 
-    return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(outletCount, 2)) * inletWidth;
+    return (
+      baseWidth +
+      Math.max(Math.max(totalInlets, 2), Math.max(outletCount + videoOutletCount, 2)) * inletWidth
+    );
   });
 
   const toggleCode = (event?: MouseEvent) => {
@@ -662,13 +667,25 @@
         {/if}
 
         <div>
+          {#each Array.from({ length: videoOutletCount }) as _, index (index)}
+            <TypedHandle
+              port="outlet"
+              spec={{ handleType: 'video', handleId: index }}
+              title={`Video Output ${index}`}
+              total={videoOutletCount + outletCount}
+              {index}
+              class="bottom-0"
+              {nodeId}
+            />
+          {/each}
+
           {#each Array.from({ length: outletCount }) as _, index (index)}
             <TypedHandle
               port="outlet"
               spec={{ handleId: index }}
               title={`Outlet ${index}`}
-              total={outletCount}
-              {index}
+              total={videoOutletCount + outletCount}
+              index={index + videoOutletCount}
               class="bottom-0"
               {nodeId}
             />

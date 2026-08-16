@@ -17,6 +17,9 @@ ${runOnMountInstructions}
   - format defaults to 'raw': frames are { data: Uint8ClampedArray, width, height }, ready for cv.matFromImageData()
   - use format: 'bitmap' only for Canvas APIs, then call frame.close() after use
   - fps is optional and limits capture work before GPU readback (maximum 30)
+- setVideoFrame({ data, width, height }) uploads raw RGBA Uint8ClampedArray pixels to video outlet 0
+  - call setVideoCount(inletCount, 1) to show the output port
+  - use it for processed video output instead of send() + float.tex
 
 **Use Cases:**
 - Heavy data processing without UI freezing

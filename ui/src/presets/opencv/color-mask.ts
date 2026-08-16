@@ -1,6 +1,6 @@
 const code = `setTitle('opencv color mask')
-setVideoCount(1)
-setPortCount(0, 1)
+setVideoCount(1, 1)
+setPortCount(0, 0)
 
 const cv = await opencv()
 let processing = false
@@ -23,12 +23,10 @@ onVideoFrame(async ([frame]) => {
       cv.inRange(hsv, new cv.Scalar(90, 80, 50), new cv.Scalar(125, 255, 255), mask)
       cv.bitwise_and(source, source, output, mask)
 
-      send({
-        type: 'rgba',
-        data: Float32Array.from(output.data, (value) => value / 255),
+      setVideoFrame({
+        data: new Uint8ClampedArray(output.data),
         width: frame.width,
-        height: frame.height,
-        textureFormat: 'rgba8'
+        height: frame.height
       })
     } finally {
       source.delete()
@@ -44,7 +42,6 @@ onVideoFrame(async ([frame]) => {
 
 export const preset = {
   type: 'worker',
-  description:
-    'Keep blue hues from video with an HSV mask. Connect it to float.tex, then glsl> or hydra>.',
+  description: 'Keep blue hues from video with an HSV mask.',
   data: { code: code.trim(), showConsole: false, runOnMount: true }
 };

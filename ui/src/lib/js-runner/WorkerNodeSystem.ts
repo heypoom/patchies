@@ -247,6 +247,9 @@ export class WorkerNodeSystem {
       .with({ type: 'setVideoCount' }, (event) => {
         this.handleSetVideoCount(nodeId, event.inletCount, event.outletCount);
       })
+      .with({ type: 'setVideoFrame' }, (event) => {
+        this.eventBus.dispatch({ type: 'workerVideoFrame', nodeId, frame: event.frame });
+      })
       .with({ type: 'videoFrameCallbackRegistered' }, (event) => {
         this.handleVideoFrameCallbackRegistered(nodeId, event.config);
       })

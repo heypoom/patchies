@@ -61,6 +61,8 @@ import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { Transport, type TransportState } from '$lib/transport';
 import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
+import type { WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
+import type { WorkerVideoFrameEvent } from '$lib/eventbus/events';
 
 export type UserUniformValue = number | boolean | number[] | boolean[] | number[][];
 
@@ -267,6 +269,10 @@ export class GLSystem {
         });
       }
     );
+
+    this.eventBus.addEventListener('workerVideoFrame', (event: WorkerVideoFrameEvent) => {
+      this.setVideoFrame(event.nodeId, event.frame);
+    });
 
     // Pre-warm singleton caches to avoid repeated dynamic imports on hot paths.
     // Store promises so frame delivery handlers can await if not yet resolved.
@@ -1132,6 +1138,13 @@ export class GLSystem {
         textureFormat
       },
       { transfer: [uploadData.buffer] }
+    );
+  }
+
+  setVideoFrame(nodeId: string, frame: WorkerVideoFrame) {
+    this.renderWorker.postMessage(
+      { type: 'setVideoFrame', nodeId, frame },
+      { transfer: [frame.data.buffer] }
     );
   }
 

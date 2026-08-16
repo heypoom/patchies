@@ -1,6 +1,6 @@
 const code = `setTitle('opencv threshold')
-setVideoCount(1)
-setPortCount(0, 1)
+setVideoCount(1, 1)
+setPortCount(0, 0)
 
 const cv = await opencv()
 let processing = false
@@ -21,12 +21,10 @@ onVideoFrame(async ([frame]) => {
       cv.threshold(gray, binary, 128, 255, cv.THRESH_BINARY)
       cv.cvtColor(binary, output, cv.COLOR_GRAY2RGBA)
 
-      send({
-        type: 'rgba',
-        data: Float32Array.from(output.data, (value) => value / 255),
+      setVideoFrame({
+        data: new Uint8ClampedArray(output.data),
         width: frame.width,
-        height: frame.height,
-        textureFormat: 'rgba8'
+        height: frame.height
       })
     } finally {
       source.delete()
@@ -42,7 +40,6 @@ onVideoFrame(async ([frame]) => {
 
 export const preset = {
   type: 'worker',
-  description:
-    'Convert video to a black-and-white texture. Connect it to float.tex, then glsl> or hydra>.',
+  description: 'Convert video to a black-and-white video output with OpenCV.',
   data: { code: code.trim(), showConsole: false, runOnMount: true }
 };

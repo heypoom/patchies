@@ -645,6 +645,7 @@ export class FBORenderer {
           .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
           .with({ type: 'img' }, () => this.createEmptyRenderer())
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
+          .with({ type: 'worker' }, () => this.createEmptyRenderer())
           .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
           .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
           .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
@@ -2184,6 +2185,11 @@ export class FBORenderer {
     this.cookState.markDirty(nodeId, 'bitmap');
   }
 
+  setVideoFrame(nodeId: string, width: number, height: number, data: Uint8ClampedArray) {
+    this.videoTextures.setVideoFrame(nodeId, width, height, data);
+    this.cookState.markDirty(nodeId, 'bitmap');
+  }
+
   /**
    * Removes a persistent bitmap image.
    *
@@ -2303,6 +2309,7 @@ export class FBORenderer {
           'shaderpark',
           'img',
           'float.tex',
+          'worker',
           'bg.out',
           'send.vdo',
           'recv.vdo',
