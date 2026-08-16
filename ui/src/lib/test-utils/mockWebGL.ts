@@ -143,10 +143,23 @@ export function createMockFramebuffer(): regl.Framebuffer2D {
 }
 
 export function createMockTexture(width: number, height: number): regl.Texture2D {
-  return Object.assign(vi.fn(), {
+  const texture = vi.fn((options?: { data?: unknown; width?: number; height?: number }) => {
+    // regl cannot infer typed-array dimensions when updating a texture.
+    if (
+      options?.data instanceof Uint8ClampedArray &&
+      options.width == null &&
+      options.height == null
+    ) {
+      texture.width = 0;
+      texture.height = 0;
+    }
+  }) as ReturnType<typeof vi.fn> & { width: number; height: number };
+
+  return Object.assign(texture, {
     width,
     height,
     destroy: vi.fn(),
+    subimage: vi.fn(),
     _texture: { texture: {} }
   }) as unknown as regl.Texture2D;
 }

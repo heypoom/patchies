@@ -60,7 +60,6 @@ describe('VideoTextureManager', () => {
     const pixels = new Uint8ClampedArray(2 * 2 * 4);
 
     manager.setVideoFrame('worker-1', 2, 2, pixels);
-
     expect(gl.blitFramebuffer).toHaveBeenCalledWith(
       0,
       2,
@@ -73,6 +72,9 @@ describe('VideoTextureManager', () => {
       gl.COLOR_BUFFER_BIT,
       gl.NEAREST
     );
+
+    manager.setVideoFrame('worker-1', 2, 2, pixels);
+    expect(regl.texture).toHaveBeenCalledTimes(2);
   });
 
   it('preserves texture bindings when uploading a float texture', () => {

@@ -315,7 +315,7 @@ export class VideoTextureManager {
 
     // Typed-array uploads keep their row order. Flip while copying into the
     // destination texture so raw frames retain ImageData's top-down layout.
-    sourceTexture({ data });
+    sourceTexture.subimage({ data, width: safeWidth, height: safeHeight });
     const sourceFBO = this.regl.framebuffer({ color: sourceTexture });
 
     this.gl.bindFramebuffer(this.gl.READ_FRAMEBUFFER, getFramebuffer(sourceFBO));
