@@ -21,11 +21,16 @@ async function waitForOpenCv(module: OpenCvModule | Promise<OpenCvModule>): Prom
 
 /** Load OpenCV.js once per JavaScript realm and wait for its WASM runtime. */
 export function opencv(esm: EsmLoader): Promise<OpenCvModule> {
-  openCvPromise ??= esm('@techstark/opencv-js').then((imported) => {
-    const module = (imported as { default?: unknown }).default ?? imported;
+  openCvPromise ??= esm('@techstark/opencv-js')
+    .then((imported) => {
+      const module = (imported as { default?: unknown }).default ?? imported;
 
-    return waitForOpenCv(module as OpenCvModule | Promise<OpenCvModule>);
-  });
+      return waitForOpenCv(module as OpenCvModule | Promise<OpenCvModule>);
+    })
+    .catch((error) => {
+      openCvPromise = null;
+      throw error;
+    });
 
   return openCvPromise;
 }

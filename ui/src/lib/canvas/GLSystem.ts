@@ -124,11 +124,21 @@ export class GLSystem {
 
   /** Cached singleton references to avoid repeated dynamic imports on hot paths */
   private workerNodeSystem: null | {
-    deliverVideoFrames(targetNodeId: string, frames: unknown, timestamp: number): void;
+    deliverVideoFrames(
+      targetNodeId: string,
+      frames: unknown,
+      timestamp: number,
+      requestId?: string
+    ): void;
   } = null;
 
   private workerNodeSystemReady: Promise<{
-    deliverVideoFrames(targetNodeId: string, frames: unknown, timestamp: number): void;
+    deliverVideoFrames(
+      targetNodeId: string,
+      frames: unknown,
+      timestamp: number,
+      requestId?: string
+    ): void;
   }>;
 
   private mediaPipeNodeSystem: null | {
@@ -253,6 +263,7 @@ export class GLSystem {
       (event: RequestWorkerVideoFramesEvent) => {
         this.send('captureWorkerVideoFrames', {
           targetNodeId: event.nodeId,
+          requestId: event.requestId,
           sourceNodeIds: event.sourceNodeIds,
           resolution: event.resolution,
           format: event.format
@@ -470,13 +481,18 @@ export class GLSystem {
       })
       .with({ type: 'workerVideoFramesCaptured' }, async (data) => {
         const sys = this.workerNodeSystem ?? (await this.workerNodeSystemReady);
-        sys.deliverVideoFrames(data.targetNodeId, data.frames, data.timestamp);
+        sys.deliverVideoFrames(data.targetNodeId, data.frames, data.timestamp, data.requestId);
       })
       .with({ type: 'workerVideoFramesCapturedBatch' }, async (data) => {
         const sys = this.workerNodeSystem ?? (await this.workerNodeSystemReady);
 
         for (const result of data.results) {
-          sys.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
+          sys.deliverVideoFrames(
+            result.targetNodeId,
+            result.frames,
+            data.timestamp,
+            result.requestId
+          );
         }
       })
       .with({ type: 'mediaPipeVideoFramesCapturedBatch' }, async (data) => {

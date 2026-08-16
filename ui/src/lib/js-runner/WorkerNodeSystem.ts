@@ -254,7 +254,7 @@ export class WorkerNodeSystem {
         this.handleVideoFrameCallbackRegistered(nodeId, event.config);
       })
       .with({ type: 'requestVideoFrames' }, (event) => {
-        this.handleRequestVideoFrames(nodeId, event.config);
+        this.handleRequestVideoFrames(nodeId, event.requestId, event.config);
       })
       // User-Defined Settings API
       .with({ type: 'settingsDefine' }, (event) => {
@@ -419,7 +419,7 @@ export class WorkerNodeSystem {
   /**
    * Handle manual video frame request.
    */
-  private handleRequestVideoFrames(nodeId: string, config?: VideoFrameConfig) {
+  private handleRequestVideoFrames(nodeId: string, requestId: string, config?: VideoFrameConfig) {
     // Request frames immediately for manual grab (single node)
     const videoState = this.videoStates.get(nodeId);
     if (!videoState || videoState.sourceNodeIds.length === 0) return;
@@ -427,6 +427,7 @@ export class WorkerNodeSystem {
     this.eventBus.dispatch({
       type: 'requestWorkerVideoFrames',
       nodeId,
+      requestId,
       sourceNodeIds: videoState.sourceNodeIds,
       resolution: config?.resolution,
       format: config?.format ?? 'raw'
@@ -601,7 +602,12 @@ export class WorkerNodeSystem {
    * Deliver captured video frames to a worker node.
    * Called by GLSystem when frames are received from render worker.
    */
-  deliverVideoFrames(nodeId: string, frames: CapturedVideoFrame[], timestamp: number) {
+  deliverVideoFrames(
+    nodeId: string,
+    frames: CapturedVideoFrame[],
+    timestamp: number,
+    requestId?: string
+  ) {
     const instance = this.workers.get(nodeId);
     if (!instance) return;
 
@@ -609,6 +615,7 @@ export class WorkerNodeSystem {
       {
         type: 'videoFramesReady',
         nodeId,
+        requestId,
         frames,
         timestamp
       } satisfies WorkerMessage,

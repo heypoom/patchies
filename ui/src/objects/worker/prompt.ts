@@ -20,6 +20,7 @@ ${runOnMountInstructions}
 - setVideoFrame({ data, width, height }) uploads raw RGBA Uint8ClampedArray pixels to video outlet 0
   - call setVideoCount(inletCount, 1) to show the output port
   - use it for processed video output instead of send() + float.tex
+  - it transfers data.buffer, so do not reuse or mutate data after the call
 
 **Use Cases:**
 - Heavy data processing without UI freezing

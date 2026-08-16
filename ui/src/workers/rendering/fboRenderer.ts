@@ -2401,6 +2401,7 @@ export class FBORenderer {
   initiateVideoFrameCaptureAsync(
     requests: Array<{
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
       format?: 'raw' | 'bitmap';
@@ -2419,6 +2420,7 @@ export class FBORenderer {
    */
   harvestVideoFrames(): Array<{
     targetNodeId: string;
+    requestId?: string;
     frames: CapturedVideoFrame[];
     timestamp: number;
   }> {

@@ -36,7 +36,8 @@ export const workerSchema: ObjectSchema = {
     outlet: {
       template: 'video-out-{index}',
       handleType: 'video',
-      description: 'Video output at index 0 from setVideoFrame(), message outlets use out-{index}'
+      description:
+        'Video outputs from setVideoFrame() use video-out-{index}; message outlets use out-{index}'
     }
   }
 };

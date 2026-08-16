@@ -401,8 +401,11 @@ function createWorkerContext(nodeId: string) {
   const setVideoFrame = (frame: { data: Uint8ClampedArray; width: number; height: number }) => {
     if (
       !(frame?.data instanceof Uint8ClampedArray) ||
-      !Number.isFinite(frame.width) ||
-      !Number.isFinite(frame.height)
+      !Number.isSafeInteger(frame.width) ||
+      !Number.isSafeInteger(frame.height) ||
+      frame.width <= 0 ||
+      frame.height <= 0 ||
+      frame.data.length !== frame.width * frame.height * 4
     ) {
       throw new TypeError('setVideoFrame() expects { data: Uint8ClampedArray, width, height }');
     }
@@ -791,10 +794,17 @@ function handleFFTData(
 // Handle video frames from main thread
 function handleVideoFramesReady(
   nodeId: string,
-  payload: { frames: CapturedVideoFrame[]; timestamp: number }
+  payload: { requestId?: string; frames: CapturedVideoFrame[]; timestamp: number }
 ) {
   const state = nodeStates.get(nodeId);
   if (!state) return;
+
+  if (payload.requestId) {
+    const pendingRequest = state.pendingVideoFrameResolvers.get(payload.requestId);
+    pendingRequest?.resolve(payload.frames);
+    state.pendingVideoFrameResolvers.delete(payload.requestId);
+    return;
+  }
 
   // Invoke callback if registered
   if (state.videoFrameCallback) {
@@ -803,13 +813,6 @@ function handleVideoFramesReady(
         state.videoFrameCallback!(payload.frames, payload.timestamp)
       )
     );
-  }
-
-  // Resolve any pending manual request (first one only)
-  for (const [requestId, { resolve }] of state.pendingVideoFrameResolvers) {
-    resolve(payload.frames);
-    state.pendingVideoFrameResolvers.delete(requestId);
-    break;
   }
 }
 
@@ -892,7 +895,10 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       );
     })
     .with({ type: 'videoFramesReady' }, (data) => {
-      handleVideoFramesReady(nodeId, data as { frames: CapturedVideoFrame[]; timestamp: number });
+      handleVideoFramesReady(
+        nodeId,
+        data as { requestId?: string; frames: CapturedVideoFrame[]; timestamp: number }
+      );
     })
     .with({ type: 'setRenderPort' }, () => {
       const state = getNodeState(nodeId);

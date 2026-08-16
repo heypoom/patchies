@@ -44,7 +44,12 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
   | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
-  | { type: 'videoFramesReady'; frames: CapturedVideoFrame[]; timestamp: number }
+  | {
+      type: 'videoFramesReady';
+      requestId?: string;
+      frames: CapturedVideoFrame[];
+      timestamp: number;
+    }
   | { type: 'setRenderPort' }
   | { type: 'updateRenderConnections'; connections: RenderConnection[] }
   | { type: 'setWorkerPort'; targetNodeId?: string; sourceNodeId?: string }

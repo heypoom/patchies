@@ -14,6 +14,7 @@ interface PendingVideoFrameRead {
 
 interface PendingVideoFrameBatch {
   targetNodeId: string;
+  requestId?: string;
   sourceNodeIds: (string | null)[];
   reads: PendingVideoFrameRead[];
   initiatedAt: number;
@@ -108,6 +109,7 @@ export class CaptureRenderer {
   initiateVideoFrameBatchAsync(
     requests: Array<{
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
       format?: VideoFrameFormat;
@@ -188,6 +190,7 @@ export class CaptureRenderer {
 
       this.pendingVideoFrameBatches.push({
         targetNodeId: request.targetNodeId,
+        requestId: request.requestId,
         sourceNodeIds: request.sourceNodeIds,
         reads,
         initiatedAt: performance.now(),
@@ -277,12 +280,14 @@ export class CaptureRenderer {
    */
   harvestVideoFrameBatches(): Array<{
     targetNodeId: string;
+    requestId?: string;
     frames: CapturedVideoFrame[];
     timestamp: number;
   }> {
     const gl = this.gl;
     const results: Array<{
       targetNodeId: string;
+      requestId?: string;
       frames: CapturedVideoFrame[];
       timestamp: number;
     }> = [];
@@ -441,6 +446,7 @@ export class CaptureRenderer {
 
       results.push({
         targetNodeId: batch.targetNodeId,
+        requestId: batch.requestId,
         frames,
         timestamp: performance.now()
       });

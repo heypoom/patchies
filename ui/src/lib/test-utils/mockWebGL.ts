@@ -143,12 +143,12 @@ export function createMockFramebuffer(): regl.Framebuffer2D {
 }
 
 export function createMockTexture(width: number, height: number): regl.Texture2D {
-  return {
+  return Object.assign(vi.fn(), {
     width,
     height,
     destroy: vi.fn(),
     _texture: { texture: {} }
-  } as unknown as regl.Texture2D;
+  }) as unknown as regl.Texture2D;
 }
 
 export function createMockRegl() {

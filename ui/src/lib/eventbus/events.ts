@@ -285,6 +285,7 @@ export interface WorkerFlashEvent {
 export interface RequestWorkerVideoFramesEvent {
   type: 'requestWorkerVideoFrames';
   nodeId: string;
+  requestId: string;
   sourceNodeIds: (string | null)[];
   resolution?: [number, number];
   format?: 'raw' | 'bitmap';
@@ -294,6 +295,7 @@ export interface RequestWorkerVideoFramesBatchEvent {
   type: 'requestWorkerVideoFramesBatch';
   requests: Array<{
     targetNodeId: string;
+    requestId?: string;
     sourceNodeIds: (string | null)[];
     resolution?: [number, number];
     format?: 'raw' | 'bitmap';

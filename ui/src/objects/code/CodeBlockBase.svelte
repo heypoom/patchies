@@ -682,7 +682,7 @@
           {#each Array.from({ length: outletCount }) as _, index (index)}
             <TypedHandle
               port="outlet"
-              spec={{ handleId: index }}
+              spec={{ handleId: index + videoOutletCount }}
               title={`Outlet ${index}`}
               total={videoOutletCount + outletCount}
               index={index + videoOutletCount}

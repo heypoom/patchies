@@ -3,11 +3,12 @@
 ## Problem
 
 OpenCV.js needs asynchronous WebAssembly initialization. Repeating its package-specific
-loader in every `js` or `worker` object is noisy and makes patches fragile.
+loader in every JavaScript runner object is noisy and makes patches fragile.
 
 ## Behavior
 
-- `opencv()` is a top-level async API in `js` and `worker` objects.
+- `opencv()` is a top-level async API in `js`, `worker`, `canvas`, and `canvas.dom`
+  objects.
 - It lazy-loads `@techstark/opencv-js`, resolves only after `cv.Mat` is available, and
   returns the ready OpenCV module.
 - The load promise is cached once per JavaScript realm. Main-thread `js` objects share
@@ -34,6 +35,7 @@ output. Connect them directly to a visual node such as `glsl>` or `hydra>`.
 
 - Calling `opencv()` twice in one realm imports the package once and both calls wait for
   readiness.
-- The completion is available in `js` and `worker`, but not unrelated JavaScript objects.
+- The completion is available in `js`, `worker`, `canvas`, and `canvas.dom`, but not
+  unrelated JavaScript objects.
 - A worker can publish a transferred RGBA8 frame through video outlet 0.
 - Every OpenCV preset is registered once in the OpenCV preset pack.

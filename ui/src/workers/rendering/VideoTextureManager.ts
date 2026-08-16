@@ -197,11 +197,11 @@ export class VideoTextureManager {
     const gl = this.gl;
     const upload = this.createFloatTextureUpload(data, uploadFormat);
 
-    const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
     const previousActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE) as number;
     const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
 
     gl.activeTexture(gl.TEXTURE0);
+    const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
     gl.bindTexture(gl.TEXTURE_2D, rawTexture);
 
     if (needsResize) {
@@ -268,18 +268,26 @@ export class VideoTextureManager {
       this.pendingBitmaps.delete(nodeId);
     }
 
-    const sourceTexture = this.sourceTextures.get(nodeId);
-    if (sourceTexture) {
-      sourceTexture.destroy();
-      this.sourceTextures.delete(nodeId);
-    }
-
+    let sourceTexture = this.sourceTextures.get(nodeId);
     const existingDestTexture = this.destinationTextures.get(nodeId);
     const needsResize =
+      !sourceTexture ||
+      sourceTexture.width !== safeWidth ||
+      sourceTexture.height !== safeHeight ||
       !existingDestTexture ||
       existingDestTexture.width !== safeWidth ||
       existingDestTexture.height !== safeHeight ||
       this.destinationTextureFormats.get(nodeId) !== 'rgba8';
+
+    if (
+      !sourceTexture ||
+      sourceTexture.width !== safeWidth ||
+      sourceTexture.height !== safeHeight
+    ) {
+      sourceTexture?.destroy();
+      sourceTexture = this.regl.texture({ width: safeWidth, height: safeHeight });
+      this.sourceTextures.set(nodeId, sourceTexture);
+    }
 
     let destTexture = existingDestTexture;
     let destFBO = this.destinationFBOs.get(nodeId);
@@ -300,56 +308,32 @@ export class VideoTextureManager {
       this.destinationTextureFormats.set(nodeId, 'rgba8');
     }
 
-    const gl = this.gl;
-    const rawTexture = getRawTexture(destTexture);
-    const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
-    const previousActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE) as number;
-    const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
-    const previousUnpackFlipY = gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL) as boolean;
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, rawTexture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-
-    if (needsResize) {
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA8,
-        safeWidth,
-        safeHeight,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        data
-      );
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    } else {
-      gl.texSubImage2D(
-        gl.TEXTURE_2D,
-        0,
-        0,
-        0,
-        safeWidth,
-        safeHeight,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        data
-      );
-    }
-
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, previousUnpackFlipY ? 1 : 0);
-    gl.bindTexture(gl.TEXTURE_2D, previousTexture);
-    gl.activeTexture(previousActiveTexture);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
-
     if (!destFBO) {
       destFBO = this.regl.framebuffer({ color: destTexture });
       this.destinationFBOs.set(nodeId, destFBO);
     }
+
+    // Typed-array uploads keep their row order. Flip while copying into the
+    // destination texture so raw frames retain ImageData's top-down layout.
+    sourceTexture({ data });
+    const sourceFBO = this.regl.framebuffer({ color: sourceTexture });
+
+    this.gl.bindFramebuffer(this.gl.READ_FRAMEBUFFER, getFramebuffer(sourceFBO));
+    this.gl.bindFramebuffer(this.gl.DRAW_FRAMEBUFFER, getFramebuffer(destFBO));
+    this.gl.blitFramebuffer(
+      0,
+      safeHeight,
+      safeWidth,
+      0,
+      0,
+      0,
+      safeWidth,
+      safeHeight,
+      this.gl.COLOR_BUFFER_BIT,
+      this.gl.NEAREST
+    );
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+    sourceFBO.destroy();
   }
 
   /**

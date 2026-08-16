@@ -175,13 +175,19 @@ export type WorkerMessage =
   | {
       type: 'captureWorkerVideoFrames';
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
+      resolution?: [number, number];
+      format?: 'raw' | 'bitmap';
     }
   | {
       type: 'captureWorkerVideoFramesBatch';
       requests: Array<{
         targetNodeId: string;
+        requestId?: string;
         sourceNodeIds: (string | null)[];
+        resolution?: [number, number];
+        format?: 'raw' | 'bitmap';
       }>;
     }
   | {
@@ -282,6 +288,7 @@ export type RenderWorkerMessage =
   | {
       type: 'workerVideoFramesCaptured';
       targetNodeId: string;
+      requestId?: string;
       frames: CapturedVideoFrame[];
       timestamp: number;
     }
@@ -289,6 +296,7 @@ export type RenderWorkerMessage =
       type: 'workerVideoFramesCapturedBatch';
       results: Array<{
         targetNodeId: string;
+        requestId?: string;
         frames: CapturedVideoFrame[];
       }>;
       timestamp: number;

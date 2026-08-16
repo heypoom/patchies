@@ -164,6 +164,7 @@ export function installRenderWorkerRuntime() {
       .with('captureWorkerVideoFrames', () => {
         handleCaptureWorkerVideoFrames(
           data.targetNodeId,
+          data.requestId,
           data.sourceNodeIds,
           data.resolution,
           data.format
@@ -313,6 +314,7 @@ export function installRenderWorkerRuntime() {
               type: 'workerVideoFramesCapturedBatch',
               results: completedBatches.map((b) => ({
                 targetNodeId: b.targetNodeId,
+                requestId: b.requestId,
                 frames: b.frames
               })),
               timestamp: performance.now()
@@ -415,13 +417,14 @@ export function installRenderWorkerRuntime() {
    */
   function handleCaptureWorkerVideoFrames(
     targetNodeId: string,
+    requestId: string | undefined,
     sourceNodeIds: (string | null)[],
     resolution?: [number, number],
     format: 'raw' | 'bitmap' = 'raw'
   ) {
     if (format === 'raw') {
       fboRenderer.initiateVideoFrameCaptureAsync([
-        { targetNodeId, sourceNodeIds, resolution, format }
+        { targetNodeId, requestId, sourceNodeIds, resolution, format }
       ]);
       return;
     }
@@ -447,6 +450,7 @@ export function installRenderWorkerRuntime() {
       {
         type: 'workerVideoFramesCaptured',
         targetNodeId,
+        requestId,
         frames,
         timestamp: performance.now()
       },
