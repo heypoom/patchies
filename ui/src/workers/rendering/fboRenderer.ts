@@ -624,8 +624,7 @@ export class FBORenderer {
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
           .with({ type: 'worker' }, () => this.createEmptyRenderer())
           .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
-          .with({ type: 'send.vdo' }, () => this.createPassthroughRenderer())
-          .with({ type: 'recv.vdo' }, () => this.createPassthroughRenderer())
+          .with({ type: P.union('send.vdo', 'recv.vdo') }, () => this.createEmptyRenderer())
           .exhaustive()
       )
     );
@@ -866,18 +865,6 @@ export class FBORenderer {
     const inlet = node.inletMap.get(0);
 
     return inlet ? this.resolveFeedbackStorageNodeId(inlet.sourceNodeId, graph, visited) : null;
-  }
-
-  /**
-   * Create a renderer for video routing nodes (send.vdo, recv.vdo).
-   *
-   * Routing nodes are texture aliases. They must not draw their inlet into a
-   * full-output FBO, because that would resample and stretch sources whose
-   * native aspect ratio differs from the patch output. getInputTextureMap()
-   * resolves the alias when a downstream node binds its sampler.
-   */
-  createPassthroughRenderer(): { render: RenderFunction; cleanup: () => void } {
-    return this.createEmptyRenderer();
   }
 
   async createHydraRenderer(
