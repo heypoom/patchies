@@ -116,6 +116,19 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('hydra', 'fft().get')).toEqual(['getEnergy']);
   });
 
+  it('shows VFS method completions after vfs.', () => {
+    expect(getCompletionLabels('js', 'vfs.')).toEqual(
+      expect.arrayContaining(['getUrl', 'list', 'search'])
+    );
+    expect(getCompletionLabels('js', 'vfs.ge')).toEqual(['getUrl']);
+    expect(getCompletionLabels('js', 'vfs.se')).toEqual(['search']);
+  });
+
+  it('shows the VFS object completion in nodes with main-thread VFS access', () => {
+    expect(getCompletionLabels('dom', 'vf')).toEqual(['vfs']);
+    expect(getCompletionLabels('vue', 'vf')).toEqual(['vfs']);
+  });
+
   it('shows the documented surface JavaScript API completions', () => {
     const labels = getCompletionLabels('surface', '');
 

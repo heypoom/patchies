@@ -743,6 +743,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'dom',
+    'vue',
     'tone~',
     'sonic~',
     'elem~'
@@ -836,6 +838,30 @@ const memberCompletions: Record<string, Completion[]> = {
       detail: "(range: 'bass' | 'lowMid' | 'mid' | 'highMid' | 'treble') => number",
       info: 'Get normalized energy for a named frequency range, or pass two frequency values in Hz for a custom range.',
       apply: "getEnergy('bass')"
+    }
+  ],
+
+  vfs: [
+    {
+      label: 'getUrl',
+      type: 'method',
+      detail: '(path: string) => Promise<string>',
+      info: 'Resolve a virtual filesystem file to a browser URL. Relative paths use the user:// namespace.',
+      apply: "getUrl('./file.png')"
+    },
+    {
+      label: 'list',
+      type: 'method',
+      detail: '(path?: string) => Promise<string[]>',
+      info: 'List a folder’s immediate children. Defaults to the user:// namespace.',
+      apply: "list('.')"
+    },
+    {
+      label: 'search',
+      type: 'method',
+      detail: '(query: string, path?: string) => Promise<string[]>',
+      info: 'Search all descendants of a folder. The path defaults to the user:// namespace.',
+      apply: "search('')"
     }
   ],
 
