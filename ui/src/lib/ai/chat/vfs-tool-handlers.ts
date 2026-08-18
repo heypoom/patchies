@@ -3,8 +3,9 @@ import { guessMimeType } from '$lib/vfs/path-utils';
 import { isExternalUrl, normalizeUserVfsPath } from '$lib/vfs/user-api-paths';
 import type { VFSEntry, VFSListPage, VFSSearchPage } from '$lib/vfs/types';
 
-const DEFAULT_READ_LENGTH = 16 * 1024;
 export const MAX_VFS_TEXT_READ_LENGTH = 32 * 1024;
+
+const DEFAULT_READ_LENGTH = 16 * 1024;
 const DEFAULT_VFS_PAGE_LIMIT = 50;
 const MAX_VFS_PAGE_LIMIT = 100;
 
@@ -56,11 +57,13 @@ interface ChatVfs {
   getEntryOrLinkedFile(path: string): VFSEntry | undefined;
   isFolder(path: string): boolean;
   listChildrenPage(path: string, options: { offset: number; limit: number }): Promise<VFSListPage>;
+
   searchPage(
     query: string,
     path: string,
     options: { offset: number; limit: number }
   ): Promise<VFSSearchPage>;
+
   resolve(path: string): Promise<File | Blob>;
 }
 
@@ -108,15 +111,15 @@ function getBoundedInteger(value: unknown, defaultValue: number): number {
   return Number.isFinite(numericValue) ? Math.max(0, Math.floor(numericValue)) : defaultValue;
 }
 
-function isUtf8ContinuationByte(byte: number | undefined): boolean {
-  return byte !== undefined && (byte & 0b11000000) === 0b10000000;
-}
+const isUtf8ContinuationByte = (byte: number | undefined): boolean =>
+  byte !== undefined && (byte & 0b11000000) === 0b10000000;
 
 async function readUtf8Range(file: File | Blob, offset: number, length: number) {
   const windowStart = Math.max(0, offset - 3);
   const requestedEnd = Math.min(offset + length, file.size);
   const windowEnd = Math.min(file.size, requestedEnd + 3);
   const bytes = new Uint8Array(await file.slice(windowStart, windowEnd).arrayBuffer());
+
   let start = offset - windowStart;
   let end = requestedEnd - windowStart;
 
@@ -135,6 +138,7 @@ export async function listVfsFiles(args: Record<string, unknown>, vfs?: ChatVfs)
   const offset = getBoundedInteger(args.offset, 0);
   const requestedLimit = getBoundedInteger(args.limit, DEFAULT_VFS_PAGE_LIMIT);
   const limit = Math.min(Math.max(requestedLimit, 1), MAX_VFS_PAGE_LIMIT);
+
   const page = await getVfs(vfs).listChildrenPage(path, { offset, limit });
 
   return { path, ...page };
@@ -147,7 +151,9 @@ export async function searchVfsFiles(args: Record<string, unknown>, vfs?: ChatVf
   const requestedLimit = getBoundedInteger(args.limit, DEFAULT_VFS_PAGE_LIMIT);
   const limit = Math.min(Math.max(requestedLimit, 1), MAX_VFS_PAGE_LIMIT);
 
-  if (!query) return { path, query, entries: [], offset, limit, truncated: false };
+  if (!query) {
+    return { path, query, entries: [], offset, limit, truncated: false };
+  }
 
   const page = await getVfs(vfs).searchPage(query, path, { offset, limit });
 
@@ -159,8 +165,13 @@ export function statVfsFile(args: Record<string, unknown>, vfs?: ChatVfs) {
   const filesystem = getVfs(vfs);
   const entry = filesystem.getEntryOrLinkedFile(path);
 
-  if (!entry) return { error: `VFS path not found: ${path}` };
-  if (filesystem.isFolder(path)) return { path, name: entry.filename, kind: 'directory' as const };
+  if (!entry) {
+    return { error: `VFS path not found: ${path}` };
+  }
+
+  if (filesystem.isFolder(path)) {
+    return { path, name: entry.filename, kind: 'directory' as const };
+  }
 
   return fileMetadata(path, entry);
 }
@@ -170,8 +181,13 @@ export async function readVfsText(args: Record<string, unknown>, vfs?: ChatVfs) 
   const filesystem = getVfs(vfs);
   const entry = filesystem.getEntryOrLinkedFile(path);
 
-  if (!entry) return { error: `VFS path not found: ${path}` };
-  if (filesystem.isFolder(path)) return { error: `VFS path is a directory: ${path}` };
+  if (!entry) {
+    return { error: `VFS path not found: ${path}` };
+  }
+
+  if (filesystem.isFolder(path)) {
+    return { error: `VFS path is a directory: ${path}` };
+  }
 
   const metadata = fileMetadata(path, entry);
 
@@ -182,6 +198,7 @@ export async function readVfsText(args: Record<string, unknown>, vfs?: ChatVfs) 
   const requestedOffset = getBoundedInteger(args.offset, 0);
   const requestedLength = getBoundedInteger(args.length, DEFAULT_READ_LENGTH);
   const length = Math.min(Math.max(requestedLength, 1), MAX_VFS_TEXT_READ_LENGTH);
+
   const file = await filesystem.resolve(path);
   const mimeType = file.type || metadata.mimeType || undefined;
 
