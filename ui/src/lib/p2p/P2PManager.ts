@@ -98,6 +98,15 @@ export class P2PManager {
     });
   }
 
+  public sendToPeerOnChannel(channel: string, peerId: string, data: unknown): void {
+    const entry = this.ensureChannelEntry(channel);
+    if (!entry) return;
+
+    entry.send(data as DataPayload, peerId).catch((error) => {
+      console.error('[p2p] Error sending to peer:', error);
+    });
+  }
+
   public getPeerCount(): number {
     return this.peers.size;
   }

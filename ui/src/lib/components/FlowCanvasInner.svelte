@@ -152,6 +152,9 @@
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { ChatViewportSummary } from '$lib/ai/chat/resolver';
   import { buildChatViewportSummary } from '$lib/ai/chat/viewport-summary';
+  import { RemoteChatToolAdapter } from '$lib/remote-control/RemoteChatToolAdapter';
+  import { remoteControlManager } from '$lib/remote-control/RemoteControlManager';
+  import { remoteControlStore } from '../../stores/remote-control.store';
 
   const AUTOSAVE_INTERVAL = 2500;
   // Initial nodes and edges
@@ -820,6 +823,20 @@
 
     loadPatch();
 
+    const remoteToolAdapter = new RemoteChatToolAdapter({
+      callbacks: aiCallbacks,
+      getNodeById,
+      getGraphSummary,
+      getViewportSummary
+    });
+    const unsubscribeRemoteControl = remoteControlStore.subscribe(({ enabled, capability }) => {
+      if (enabled && capability) {
+        void remoteControlManager.enable(capability, remoteToolAdapter);
+      } else {
+        remoteControlManager.disable();
+      }
+    });
+
     // Check if the user wants to see the startup modal on launch
     // Don't show if loading from URL params (src or id)
     const params = new URLSearchParams(window.location.search);
@@ -922,6 +939,8 @@
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
     return () => {
+      unsubscribeRemoteControl();
+      remoteControlManager.disable();
       keyboardManager?.detach();
 
       if (autosaveInterval) {

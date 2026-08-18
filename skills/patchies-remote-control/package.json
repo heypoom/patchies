@@ -1,0 +1,9 @@
+{
+  "name": "patchies-remote-control-skill",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "trystero": "0.23.0",
+    "werift": "0.24.4"
+  }
+}

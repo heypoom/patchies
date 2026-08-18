@@ -87,4 +87,20 @@ describe('P2PManager (Trystero)', () => {
     peerEvents.leaveHandler?.('peer-a');
     expect(manager.getPeerCount()).toBe(1);
   });
+
+  it('sends a channel message to a specific peer', async () => {
+    const manager = P2PManager.getInstance();
+    await manager.initialize();
+
+    const received: Array<{ data: unknown; peerId: string }> = [];
+    const unsubscribe = manager.subscribeToChannel('chat', (data, peerId) => {
+      received.push({ data, peerId });
+    });
+
+    manager.sendToPeerOnChannel('chat', 'peer-a', { pong: true });
+
+    expect(received).toEqual([{ data: { pong: true }, peerId: 'peer-a' }]);
+
+    unsubscribe();
+  });
 });

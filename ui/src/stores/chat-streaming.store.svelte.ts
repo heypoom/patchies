@@ -21,6 +21,7 @@ import {
 import { modeDescriptors } from '$lib/ai/modes/descriptors';
 import { toolNameToMode } from '$lib/ai/chat/canvas-tools';
 import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
+import { applyChatAction } from '$lib/ai/chat/apply-chat-action';
 import type { ThreadMessage, ThreadActionRef, ThreadToolCall } from '$lib/ai/chat/types';
 import { saveChatMessages, loadChatMessages, deleteChatMessages } from './chat-history.store';
 import { flattenedPresets } from './preset-library.store';
@@ -102,30 +103,6 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
 
       return mode?.label ?? name;
     });
-
-const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbacks): void => {
-  if (!action.result) return;
-  match(action.result)
-    .with({ kind: 'single' }, (r) => aiCallbacks.onInsertObject(r.type, r.data, r.position))
-    .with({ kind: 'multi' }, (r) =>
-      aiCallbacks.onInsertMultipleObjects(r.nodes, r.edges, r.basePosition)
-    )
-    .with({ kind: 'edit' }, (r) => aiCallbacks.onEditObject(r.nodeId, r.data))
-    .with({ kind: 'replace' }, (r) => aiCallbacks.onReplaceObject(r.nodeId, r.newType, r.newData))
-    .with({ kind: 'connect-edges' }, (r) => {
-      aiCallbacks.onConnectEdges(r.edges);
-    })
-    .with({ kind: 'disconnect-edges' }, (r) => {
-      aiCallbacks.onDisconnectEdges(r.edgeIds);
-    })
-    .with({ kind: 'delete-objects' }, (r) => {
-      aiCallbacks.onDeleteObjects(r.nodeIds);
-    })
-    .with({ kind: 'move-objects' }, (r) => {
-      aiCallbacks.onMoveObjects(r.positions);
-    })
-    .exhaustive();
-};
 
 export interface StartStreamParams {
   chatHistory: ChatMessage[];
@@ -256,7 +233,7 @@ export const chatStreamStore = {
               session.pendingActions = [...session.pendingActions, action.id];
 
               if (params.autoApprove && action.state !== 'failed') {
-                applyActionToCallbacks(action, params.aiCallbacks!);
+                applyChatAction(action, params.aiCallbacks!);
                 const existing = session.actions.get(action.id);
                 if (existing) session.actions.set(action.id, { ...existing, state: 'applied' });
               }
