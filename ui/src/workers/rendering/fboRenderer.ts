@@ -406,21 +406,7 @@ export class FBORenderer {
     // since existing FBOs retain their content until overwritten.
     for (const [nodeId, fboNode] of this.fboNodes) {
       if (!newNodeIds.has(nodeId)) {
-        fboNode.framebuffer.destroy();
-
-        for (const texture of fboNode.colorAttachments) {
-          texture.destroy();
-        }
-
-        for (const framebuffer of fboNode.prevFramebuffers ?? []) {
-          framebuffer?.destroy();
-        }
-
-        for (const texture of fboNode.prevTextures ?? []) {
-          texture?.destroy();
-        }
-
-        fboNode.cleanup?.();
+        this.destroyFboNode(fboNode);
 
         this.fboNodes.delete(nodeId);
         this.cookState.removeNode(nodeId);
@@ -474,6 +460,19 @@ export class FBORenderer {
 
     for (const node of mergedGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
+
+      // Routing nodes are texture aliases. They do not render into an FBO, and
+      // their preview would otherwise be a blank readback of that unused FBO.
+      if (isPassthroughNodeType(node.type)) {
+        if (existingFbo) {
+          this.destroyFboNode(existingFbo);
+          this.fboNodes.delete(node.id);
+        }
+
+        this.previewRenderer.setPreviewEnabled(node.id, false);
+
+        continue;
+      }
 
       // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park
       // nodes can request multiple color attachments.
@@ -554,23 +553,7 @@ export class FBORenderer {
 
           const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
 
-          if (!isHydra && !isShaderPark3D && !isReusableThree) {
-            existingFbo.cleanup?.();
-          }
-
-          existingFbo.framebuffer.destroy();
-
-          for (const texture of existingFbo.colorAttachments) {
-            texture.destroy();
-          }
-
-          for (const framebuffer of existingFbo.prevFramebuffers ?? []) {
-            framebuffer?.destroy();
-          }
-
-          for (const texture of existingFbo.prevTextures ?? []) {
-            texture?.destroy();
-          }
+          this.destroyFboNode(existingFbo, !isHydra && !isShaderPark3D && !isReusableThree);
 
           this.fboNodes.delete(node.id);
         }
@@ -742,6 +725,26 @@ export class FBORenderer {
     return { render: () => {}, cleanup: () => {} };
   }
 
+  private destroyFboNode(fboNode: FBONode, cleanup = true): void {
+    fboNode.framebuffer.destroy();
+
+    for (const texture of fboNode.colorAttachments) {
+      texture.destroy();
+    }
+
+    for (const framebuffer of fboNode.prevFramebuffers ?? []) {
+      framebuffer?.destroy();
+    }
+
+    for (const texture of fboNode.prevTextures ?? []) {
+      texture?.destroy();
+    }
+
+    if (cleanup) {
+      fboNode.cleanup?.();
+    }
+  }
+
   private rebuildCookingPolicies(mergedGraph: RenderGraph) {
     this.cookState.setOutputsByNode(
       new Map(mergedGraph.nodes.map((node) => [node.id, [...node.outputs]]))
@@ -804,9 +807,15 @@ export class FBORenderer {
     renderGraph: RenderGraph,
     virtualEdges: RenderGraph['edges']
   ): RenderGraph {
+    const edgesById = new Map<string, RenderGraph['edges'][number]>();
+
+    for (const edge of [...renderGraph.edges, ...virtualEdges]) {
+      edgesById.set(edge.id, edge);
+    }
+
     const mergedGraph: RenderGraph = {
       ...renderGraph,
-      edges: [...renderGraph.edges, ...virtualEdges]
+      edges: [...edgesById.values()]
     };
 
     this.applyVirtualEdgesToNodes(mergedGraph);
@@ -822,12 +831,41 @@ export class FBORenderer {
       mergedGraph.edges
     );
 
+    // A routing node has no FBO of its own. If it is the source of a
+    // back-edge, preserve the previous frame on the underlying render node.
+    const feedbackStorageNodeIds = new Set<string>();
+
+    for (const nodeId of feedbackNodeIds) {
+      const sourceNodeId = this.resolveFeedbackStorageNodeId(nodeId, mergedGraph);
+
+      if (sourceNodeId) {
+        feedbackStorageNodeIds.add(sourceNodeId);
+      }
+    }
+
     return {
       ...mergedGraph,
       sortedNodes,
       backEdges: backEdgeIds,
-      feedbackNodes: feedbackNodeIds
+      feedbackNodes: feedbackStorageNodeIds
     };
+  }
+
+  private resolveFeedbackStorageNodeId(
+    nodeId: string,
+    graph: RenderGraph,
+    visited = new Set<string>()
+  ): string | null {
+    if (visited.has(nodeId)) return null;
+    visited.add(nodeId);
+
+    const node = graph.nodes.find((candidate) => candidate.id === nodeId);
+    if (!node) return null;
+    if (!isPassthroughNodeType(node.type)) return nodeId;
+
+    const inlet = node.inletMap.get(0);
+
+    return inlet ? this.resolveFeedbackStorageNodeId(inlet.sourceNodeId, graph, visited) : null;
   }
 
   /**
@@ -1455,7 +1493,13 @@ export class FBORenderer {
   }
 
   setPreviewEnabled(nodeId: string, enabled: boolean) {
-    this.previewRenderer.setPreviewEnabled(nodeId, enabled);
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+
+    this.previewRenderer.setPreviewEnabled(
+      nodeId,
+      node ? enabled && !isPassthroughNodeType(node.type) : enabled
+    );
+
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
   }
 
@@ -1829,7 +1873,9 @@ export class FBORenderer {
   }
 
   private hasValidOutputOverride(): boolean {
-    return Boolean(this.overrideOutputNodeId && this.fboNodes.has(this.overrideOutputNodeId));
+    return Boolean(
+      this.overrideOutputNodeId && this.resolveVideoSource(this.overrideOutputNodeId, 0)
+    );
   }
 
   private getEffectiveOutputNodeId(isOverride = this.hasValidOutputOverride()): string | null {

@@ -24,7 +24,7 @@ describe('send.vdo and recv.vdo routing', () => {
 
     const { FBORenderer } = await import('./fboRenderer');
 
-    const sourceTexture = { width: 640, height: 480 };
+    const sourceTexture = { width: 1080, height: 1920 };
     const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
 
     const state = renderer as unknown as {
@@ -61,10 +61,19 @@ describe('send.vdo and recv.vdo routing', () => {
 
     state.renderGraph = { nodes: [send, receive, consumer] };
 
+    const source = (
+      renderer as never as {
+        resolveVideoSource: (
+          nodeId: string
+        ) => { texture: unknown; width: number; height: number } | null;
+      }
+    ).resolveVideoSource('receive');
+
     const textureMap = (
       renderer as never as { getInputTextureMap: (node: RenderNode) => Map<number, unknown> }
     ).getInputTextureMap(consumer);
 
+    expect(source).toEqual({ texture: sourceTexture, width: 1080, height: 1920 });
     expect(textureMap.get(0)).toBe(sourceTexture);
   });
 
@@ -95,6 +104,7 @@ describe('send.vdo and recv.vdo routing', () => {
       data: {},
       backEdgeInlets: new Set<number>()
     } as RenderNode;
+
     const send = {
       id: 'send',
       type: 'send.vdo',
@@ -104,6 +114,7 @@ describe('send.vdo and recv.vdo routing', () => {
       data: { channel: 'loop' },
       backEdgeInlets: new Set<number>()
     } as RenderNode;
+
     const receive = {
       id: 'receive',
       type: 'recv.vdo',
@@ -114,9 +125,17 @@ describe('send.vdo and recv.vdo routing', () => {
       backEdgeInlets: new Set<number>()
     } as RenderNode;
 
+    const virtualEdge = {
+      id: 'virtual-video-loop-send-receive',
+      source: 'send',
+      target: 'receive',
+      sourceHandle: 'video-out',
+      targetHandle: 'video-in-0'
+    };
+
     const baseGraph = {
-      nodes: [feedback, send, receive],
-      edges: [],
+      nodes: [send, feedback, receive],
+      edges: [virtualEdge],
       sortedNodes: [],
       outputNodeId: null,
       outputOutletIndex: 0,
@@ -128,21 +147,14 @@ describe('send.vdo and recv.vdo routing', () => {
       renderer as never as {
         mergeVirtualEdges: (graph: RenderGraph, edges: RenderGraph['edges']) => RenderGraph;
       }
-    ).mergeVirtualEdges(baseGraph, [
-      {
-        id: 'virtual-video-loop-send-receive',
-        source: 'send',
-        target: 'receive',
-        sourceHandle: 'video-out',
-        targetHandle: 'video-in-0'
-      }
-    ]);
+    ).mergeVirtualEdges(baseGraph, [virtualEdge]);
 
     const state = renderer as unknown as {
       fboNodes: Map<string, unknown>;
       renderGraph: RenderGraph;
       videoTextures: { getDestinationTexture: () => undefined };
     };
+
     state.fboNodes = new Map([
       [
         'feedback',
@@ -153,11 +165,12 @@ describe('send.vdo and recv.vdo routing', () => {
         }
       ]
     ]);
+
     state.renderGraph = mergedGraph;
     state.videoTextures = { getDestinationTexture: () => undefined };
 
     expect(mergedGraph.feedbackNodes).toEqual(new Set(['feedback']));
-    expect(send.backEdgeInlets).toEqual(new Set([0]));
+    expect(mergedGraph.edges).toHaveLength(1);
 
     const textureMap = (
       renderer as never as { getInputTextureMap: (node: RenderNode) => Map<number, unknown> }

@@ -50,7 +50,7 @@ the transformed source over a background.
 
 ```text
 [img] → [Transform: Contain] ──┐
-                                ├→ [Over] → [bg.out]
+                               ├→ [Over] → [bg.out]
 [video / background] ──────────┘
 ```
 
