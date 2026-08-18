@@ -1,8 +1,8 @@
 /**
- * VFS URL Helper
+ * Per-node VFS API
  *
- * Provides a `vfsUrl()` helper to resolve VFS paths (user://, obj://) to object URLs.
- * Usage: loadImage(await vfsUrl('user://images/photo.jpg'))
+ * Creates the `vfs` object exposed to JavaScript nodes and tracks object URLs
+ * created by `vfs.getUrl()` for cleanup when the node is destroyed.
  */
 
 import { createVfsApi, type VfsApi } from './user-api';
@@ -32,17 +32,14 @@ export function revokeObjectUrls(nodeId: string): void {
 }
 
 /**
- * Create the vfsUrl helper function for a specific node.
+ * Create the `vfs` object for a specific node.
  *
- * Resolves a VFS path to an object URL that can be loaded.
- * If the path is not a VFS path, returns it unchanged.
+ * The object provides `getUrl()`, `list()`, and `search()`. URLs created by
+ * `getUrl()` are tied to the node lifecycle and revoked on destroy.
  *
  * @example
- * // In preload or setup:
- * img = await loadImage(vfsUrl('user://images/photo.jpg'));
- *
- * // Or with regular URLs (passes through unchanged):
- * img = await loadImage(vfsUrl('https://example.com/image.png'));
+ * const files = await vfs.list('.');
+ * const url = await vfs.getUrl(files[0].path);
  */
 export const createVfs = (nodeId: string): VfsApi =>
   createVfsApi((url) => trackObjectUrl(nodeId, url));
