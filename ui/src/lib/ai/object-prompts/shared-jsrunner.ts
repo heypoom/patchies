@@ -37,6 +37,7 @@ export const jsRunnerInstructions = `
 - delay(ms) - Promise that resolves after ms (rejects if node stops)
 - requestAnimationFrame(cb) - Animation frame with auto-cleanup
 - onCleanup(cb) - Register cleanup callback for unmount/re-execution
+- await getVfsUrl(path) - Resolve a virtual filesystem file to a browser URL. Paths are usually \`user://...\` (e.g. \`await getVfsUrl('user://photo.jpg')\`).
 - await llm(prompt, options?) - Call the configured AI provider (requires API key in settings)
   * Options: { model?: string, abortSignal?: AbortSignal, imageNodeId?: string }
 
