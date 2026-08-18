@@ -7,6 +7,29 @@ Use this guide to move a UI-owned Svelte object to the headless runtime model.
 The Svelte node becomes a view only. Put runtime behavior, message handling, port
 metadata, and docs and search schemas in `ui/src/objects/<object>/`.
 
+## Migration Roadmap
+
+Only migrate visual objects whose graph-visible behavior is useful without a
+mounted UI. Keep display-only objects view-owned.
+
+Completed:
+
+- `sequencer`
+- `trigger`, `curve`, `msg`
+
+Migrate the remaining objects in this order. Objects grouped in one item form a
+single migration batch:
+
+1. `expr`
+2. `filter`, `map`, `tap`, `scan`
+3. `uniq`
+4. `mqtt`, `sse`, `netsend`, `netrecv`
+5. `worker`
+6. `orca`
+7. `python`, `ruby`
+8. `midi.in`, `midi.out`, `serial`, `serial.dmx`, `tts`, `stt`
+9. `uxn`, `uiua`
+
 ## Migration Steps
 
 1. Create an object class next to the view.
