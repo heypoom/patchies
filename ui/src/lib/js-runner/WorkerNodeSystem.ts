@@ -5,7 +5,11 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
-import { listVfsPaths, resolveVfsUrl, searchVfsPaths } from '$lib/vfs/worker-requests';
+import {
+  listVfsEntries,
+  resolveVfsUrl,
+  searchVfsEntries
+} from '$lib/vfs/worker-vfs-request-handler';
 import { profiler, ProfilerCoordinator } from '$lib/profiler';
 import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
@@ -242,7 +246,7 @@ export class WorkerNodeSystem {
           type: 'vfsPathsResolved',
           nodeId,
           requestId: event.requestId,
-          ...(await listVfsPaths(event.path))
+          ...(await listVfsEntries(event.path))
         } satisfies WorkerMessage);
       })
       .with({ type: 'searchVfs' }, async (event) => {
@@ -250,7 +254,7 @@ export class WorkerNodeSystem {
           type: 'vfsPathsResolved',
           nodeId,
           requestId: event.requestId,
-          ...(await searchVfsPaths(event.query, event.path))
+          ...(await searchVfsEntries(event.query, event.path))
         } satisfies WorkerMessage);
       })
       // LLM proxy messages

@@ -12,12 +12,12 @@ const loading = ref(false)
 const error = ref('')
 let searchRequest = 0
 
-function createNode(path) {
+function createNode(entry) {
   return {
-    path,
-    name: path.split('/').filter(Boolean).pop() || path,
+    path: entry.path,
+    name: entry.name,
     children: null,
-    isDirectory: null,
+    isDirectory: entry.kind === 'directory',
     expanded: false,
     loading: false
   }
@@ -44,17 +44,6 @@ async function loadChildren(node, quiet = false) {
   try {
     node.children = (await vfs.list(node.path)).map(createNode)
     node.isDirectory = true
-    await Promise.all(
-      node.children.map(async (child) => {
-        try {
-          child.children = (await vfs.list(child.path)).map(createNode)
-          child.isDirectory = true
-        } catch {
-          child.children = []
-          child.isDirectory = false
-        }
-      })
-    )
     return node.isDirectory
   } catch (cause) {
     if (!quiet) error.value = String(cause)
@@ -70,17 +59,18 @@ async function refresh() {
   loading.value = true
   selectedPath.value = ''
   selectedUrl.value = ''
-  const root = createNode('.')
+  const root = createNode({ path: '.', name: '.', kind: 'directory' })
   await loadChildren(root)
   tree.value = root.children
   loading.value = false
 }
 
 async function toggle(node) {
-  if (node.isDirectory === null) await loadChildren(node, true)
-
   if (node.isDirectory) {
+    if (node.children === null) await loadChildren(node, true)
+
     node.expanded = !node.expanded
+
     return
   }
 
@@ -119,6 +109,26 @@ async function selectFile(path) {
   } catch (cause) {
     selectedUrl.value = ''
     error.value = \`Could not resolve \${path}: \${String(cause)}\`
+  }
+}
+
+async function selectSearchResult(entry) {
+  if (entry.kind === 'file') {
+    await selectFile(entry.path)
+    return
+  }
+
+  query.value = ''
+  const segments = entry.path.replace('user://', '').split('/').filter(Boolean)
+  let nodes = tree.value
+  let path = 'user://'
+
+  for (const segment of segments) {
+    path = path.endsWith('://') ? path + segment : path + '/' + segment
+    const node = nodes.find((item) => item.path === path)
+    if (!node || !node.isDirectory) return
+    if (!node.expanded) await toggle(node)
+    nodes = node.children || []
   }
 }
 
@@ -166,6 +176,7 @@ createApp({
       refresh,
       searchResults,
       selectFile,
+      selectSearchResult,
       selectedPath,
       selectedUrl,
       toggle,
@@ -203,15 +214,16 @@ createApp({
           <p v-if="searchResults.length === 0" class="px-2 py-5 text-center text-xs text-zinc-500">No matching files in this patch.</p>
           <div v-else class="space-y-px">
             <button
-              v-for="path in searchResults"
-              :key="path"
+              v-for="entry in searchResults"
+              :key="entry.path"
               data-vfs-browser-row
-              :data-vfs-path="path"
+              :data-vfs-path="entry.path"
               class="nodrag flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left font-mono text-xs text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/70"
-              @click="selectFile(path)"
+              @click="selectSearchResult(entry)"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5 shrink-0 text-zinc-500" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
-              <code class="truncate">{{ path }}</code>
+              <svg v-if="entry.kind === 'directory'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5 shrink-0 text-orange-400" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h5l1.8 2h8.2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="M3 9h18"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5 shrink-0 text-zinc-500" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+              <code class="truncate">{{ entry.path }}</code>
             </button>
           </div>
         </template>

@@ -364,8 +364,8 @@ JavaScript-capable objects expose a single asynchronous `vfs` helper. It replace
 ```javascript
 await vfs.getUrl("./foo.png"); // resolves user://foo.png to an object URL
 await vfs.getUrl("user://foo.png"); // explicit VFS path
-await vfs.list("."); // direct children of user://
-await vfs.search("foo", "./assets"); // recursively search user://assets
+await vfs.list("."); // direct entries of user:// as { path, name, kind }
+await vfs.search("foo", "./assets"); // recursively search entries under user://assets
 ```
 
-Relative paths default to `user://`; absolute external URLs passed to `getUrl` pass through unchanged. `list` is non-recursive and returns full VFS paths. `search` is case-insensitive, recursive, and returns matching full VFS paths. Both methods traverse linked local folders after permission has been granted.
+Relative paths default to `user://`; absolute external URLs passed to `getUrl` pass through unchanged. `list` is non-recursive and returns entries with full VFS paths, names, and file or directory kinds. `search` is case-insensitive, recursive, and returns matching entries in the same shape. Both methods traverse linked local folders after permission has been granted.

@@ -3,6 +3,7 @@ import type { PrimaryButton } from '$lib/eventbus/events';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import type { Message } from '$lib/messages/MessageSystem';
 import type { ProfilerCategory, TimingStats } from '$lib/profiler/types';
+import type { VFSListEntry } from '$lib/vfs/types';
 
 /** Render connection for direct worker-to-render messaging. */
 export interface RenderConnection {
@@ -42,7 +43,13 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'cleanup' }
   | { type: 'destroy' }
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
-  | { type: 'vfsPathsResolved'; requestId: string; paths?: string[]; error?: string }
+  | {
+      type: 'vfsPathsResolved';
+      requestId: string;
+      paths?: string[];
+      entries?: VFSListEntry[];
+      error?: string;
+    }
   | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   | {

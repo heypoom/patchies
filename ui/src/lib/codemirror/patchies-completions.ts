@@ -852,15 +852,15 @@ const memberCompletions: Record<string, Completion[]> = {
     {
       label: 'list',
       type: 'method',
-      detail: '(path?: string) => Promise<string[]>',
-      info: 'List a folder’s immediate children. Defaults to the user:// namespace.',
+      detail: '(path?: string) => Promise<VFSListEntry[]>',
+      info: 'List direct entries with path, name, and kind. Defaults to the user:// namespace.',
       apply: "list('.')"
     },
     {
       label: 'search',
       type: 'method',
-      detail: '(query: string, path?: string) => Promise<string[]>',
-      info: 'Search all descendants of a folder. The path defaults to the user:// namespace.',
+      detail: '(query: string, path?: string) => Promise<VFSListEntry[]>',
+      info: 'Search entries with path, name, and kind. The path defaults to the user:// namespace.',
       apply: "search('')"
     }
   ],

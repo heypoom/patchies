@@ -5,15 +5,16 @@
  * The main thread resolves the path using VirtualFilesystem, creates an object URL,
  * and sends back the URL string. Workers can use it directly (same origin).
  */
+import type { VFSListEntry } from '$lib/vfs/types';
 
 export interface WorkerVfs {
   getUrl(path: string): Promise<string>;
-  list(path?: string): Promise<string[]>;
-  search(query: string, path?: string): Promise<string[]>;
+  list(path?: string): Promise<VFSListEntry[]>;
+  search(query: string, path?: string): Promise<VFSListEntry[]>;
 }
 
 type PendingVfsRequest = {
-  resolve: (value: string | string[]) => void;
+  resolve: (value: string | string[] | VFSListEntry[]) => void;
   reject: (error: Error) => void;
 };
 
@@ -53,6 +54,7 @@ export function handleVfsUrlResolved(data: {
 export function handleVfsPathsResolved(data: {
   requestId: string;
   paths?: string[];
+  entries?: VFSListEntry[];
   error?: string;
 }): void {
   const pending = pendingVfsRequests.get(data.requestId);
@@ -68,6 +70,10 @@ export function handleVfsPathsResolved(data: {
     return pending.resolve(data.paths);
   }
 
+  if (data.entries) {
+    return pending.resolve(data.entries);
+  }
+
   pending.reject(new Error('Invalid VFS listing response'));
 }
 
@@ -75,7 +81,7 @@ export function handleVfsPathsResolved(data: {
  * Create the VFS API for user code. Requests are resolved on the main thread.
  */
 export function createWorkerVfs(nodeId: string): WorkerVfs {
-  const request = <T extends string | string[]>(
+  const request = <T extends string | string[] | VFSListEntry[]>(
     type: 'resolveVfsUrl' | 'listVfs' | 'searchVfs',
     payload: Record<string, string>
   ): Promise<T> => {
@@ -83,7 +89,7 @@ export function createWorkerVfs(nodeId: string): WorkerVfs {
 
     return new Promise((resolve, reject) => {
       pendingVfsRequests.set(requestId, {
-        resolve: resolve as (value: string | string[]) => void,
+        resolve: resolve as (value: string | string[] | VFSListEntry[]) => void,
         reject
       });
 
@@ -98,7 +104,7 @@ export function createWorkerVfs(nodeId: string): WorkerVfs {
 
   return {
     getUrl: (path) => request<string>('resolveVfsUrl', { path }),
-    list: (path = '.') => request<string[]>('listVfs', { path }),
-    search: (query, path = '.') => request<string[]>('searchVfs', { query, path })
+    list: (path = '.') => request<VFSListEntry[]>('listVfs', { path }),
+    search: (query, path = '.') => request<VFSListEntry[]>('searchVfs', { query, path })
   };
 }

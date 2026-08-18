@@ -18,6 +18,7 @@ import type { TextmodeRenderNode } from '$objects/textmode/render-types';
 import type { ThreeRenderNode } from '$objects/three/render-types';
 import type { WorkerRenderNode } from '$objects/worker/render-types';
 import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
+import type { VFSListEntry } from '$lib/vfs/types';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
@@ -213,6 +214,7 @@ export type WorkerMessage =
       requestId: string;
       nodeId: string;
       paths?: string[];
+      entries?: VFSListEntry[];
       error?: string;
     }
   | { type: 'vfsTextResolved'; requestId: string; nodeId: string; text?: string; error?: string };

@@ -28,15 +28,20 @@ describe('VFS user API paths', () => {
     vfs.registerEntry('user://samples/kick.wav', entry);
     vfs.registerEntry('user://samples/snares/snare.wav', entry);
 
-    expect(await vfs.listChildren('user://')).toEqual(['user://image.png', 'user://samples']);
+    expect(await vfs.listChildren('user://')).toEqual([
+      { path: 'user://image.png', name: 'image.png', kind: 'file' },
+      { path: 'user://samples', name: 'samples', kind: 'directory' }
+    ]);
     expect(await vfs.listChildren('user://samples')).toEqual([
-      'user://samples/kick.wav',
-      'user://samples/snares'
+      { path: 'user://samples/kick.wav', name: 'kick.wav', kind: 'file' },
+      { path: 'user://samples/snares', name: 'snares', kind: 'directory' }
     ]);
     await expect(vfs.listChildren('user://image.png')).rejects.toThrow(
       'VFS: Path is not a directory: user://image.png'
     );
-    expect(await vfs.search('snare', 'user://')).toEqual(['user://samples/snares/snare.wav']);
+    expect(await vfs.search('snare', 'user://')).toEqual([
+      { path: 'user://samples/snares/snare.wav', name: 'snare.wav', kind: 'file' }
+    ]);
   });
 
   it('lists and searches the contents of linked local folders', async () => {
@@ -78,12 +83,12 @@ describe('VFS user API paths', () => {
     vfs.registerEntry('user://samples', { provider: 'local-folder', filename: 'samples' });
 
     expect(await vfs.listChildren('user://samples')).toEqual([
-      'user://samples/kicks',
-      'user://samples/snare.wav'
+      { path: 'user://samples/kicks', name: 'kicks', kind: 'directory' },
+      { path: 'user://samples/snare.wav', name: 'snare.wav', kind: 'file' }
     ]);
     expect(await vfs.search('kick', 'user://')).toEqual([
-      'user://samples/kicks',
-      'user://samples/kicks/kick.wav'
+      { path: 'user://samples/kicks', name: 'kicks', kind: 'directory' },
+      { path: 'user://samples/kicks/kick.wav', name: 'kick.wav', kind: 'file' }
     ]);
   });
 });

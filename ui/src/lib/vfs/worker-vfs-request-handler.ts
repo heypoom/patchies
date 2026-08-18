@@ -1,8 +1,9 @@
 import { VirtualFilesystem } from './VirtualFilesystem';
+import type { VFSListEntry } from './types';
 import { isExternalUrl, normalizeUserVfsPath } from './user-api-paths';
 
 type VfsUrlResponse = { url: string } | { error: string };
-type VfsPathsResponse = { paths: string[] } | { error: string };
+type VfsEntriesResponse = { entries: VFSListEntry[] } | { error: string };
 type VfsTextResponse = { text: string } | { error: string };
 
 const getErrorMessage = (error: unknown): string =>
@@ -23,12 +24,12 @@ export async function resolveVfsUrl(path: string): Promise<VfsUrlResponse> {
 }
 
 /** List a worker VFS directory request on the main thread. */
-export async function listVfsPaths(path: string): Promise<VfsPathsResponse> {
+export async function listVfsEntries(path: string): Promise<VfsEntriesResponse> {
   try {
     const vfs = VirtualFilesystem.getInstance();
 
     return {
-      paths: await vfs.listChildren(normalizeUserVfsPath(path))
+      entries: await vfs.listChildren(normalizeUserVfsPath(path))
     };
   } catch (error) {
     return { error: getErrorMessage(error) };
@@ -36,12 +37,12 @@ export async function listVfsPaths(path: string): Promise<VfsPathsResponse> {
 }
 
 /** Search a worker VFS directory request on the main thread. */
-export async function searchVfsPaths(query: string, path: string): Promise<VfsPathsResponse> {
+export async function searchVfsEntries(query: string, path: string): Promise<VfsEntriesResponse> {
   try {
     const vfs = VirtualFilesystem.getInstance();
 
     return {
-      paths: await vfs.search(query, normalizeUserVfsPath(path))
+      entries: await vfs.search(query, normalizeUserVfsPath(path))
     };
   } catch (error) {
     return { error: getErrorMessage(error) };

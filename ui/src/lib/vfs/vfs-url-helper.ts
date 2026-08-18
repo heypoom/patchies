@@ -44,6 +44,5 @@ export function revokeObjectUrls(nodeId: string): void {
  * // Or with regular URLs (passes through unchanged):
  * img = await loadImage(vfsUrl('https://example.com/image.png'));
  */
-export function createVfs(nodeId: string): VfsApi {
-  return createVfsApi((url) => trackObjectUrl(nodeId, url));
-}
+export const createVfs = (nodeId: string): VfsApi =>
+  createVfsApi((url) => trackObjectUrl(nodeId, url));

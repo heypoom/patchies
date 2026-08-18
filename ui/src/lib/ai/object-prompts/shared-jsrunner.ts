@@ -38,8 +38,8 @@ export const jsRunnerInstructions = `
 - requestAnimationFrame(cb) - Animation frame with auto-cleanup
 - onCleanup(cb) - Register cleanup callback for unmount/re-execution
 - await vfs.getUrl(path) - Resolve a virtual filesystem file to a browser URL. Relative paths use the \`user://\` namespace (e.g. \`await vfs.getUrl('./photo.jpg')\`).
-- await vfs.list(path?) - List a folder's direct children. Relative paths use the \`user://\` namespace (e.g. \`await vfs.list('./samples')\`).
-- await vfs.search(query, path?) - Search matching paths under a folder. Relative paths use the \`user://\` namespace (e.g. \`await vfs.search('kick', './samples')\`).
+- await vfs.list(path?) - List a folder's direct entries as {path, name, kind}. Relative paths use the \`user://\` namespace (e.g. \`await vfs.list('./samples')\`).
+- await vfs.search(query, path?) - Search matching entries as {path, name, kind}. Relative paths use the \`user://\` namespace (e.g. \`await vfs.search('kick', './samples')\`).
 - await llm(prompt, options?) - Call the configured AI provider (requires API key in settings)
   * Options: { model?: string, abortSignal?: AbortSignal, imageNodeId?: string }
 

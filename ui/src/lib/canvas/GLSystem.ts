@@ -60,11 +60,11 @@ import { match, P } from 'ts-pattern';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem } from '$lib/vfs';
 import {
-  listVfsPaths,
+  listVfsEntries,
   resolveVfsText,
   resolveVfsUrl,
-  searchVfsPaths
-} from '$lib/vfs/worker-requests';
+  searchVfsEntries
+} from '$lib/vfs/worker-vfs-request-handler';
 import { Transport, type TransportState } from '$lib/transport';
 import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
 import type { CapturedVideoFrame, WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
@@ -487,14 +487,14 @@ export class GLSystem {
         this.send('vfsPathsResolved', {
           requestId: data.requestId,
           nodeId: data.nodeId,
-          ...(await listVfsPaths(data.path))
+          ...(await listVfsEntries(data.path))
         });
       })
       .with({ type: 'searchVfs' }, async (data) => {
         this.send('vfsPathsResolved', {
           requestId: data.requestId,
           nodeId: data.nodeId,
-          ...(await searchVfsPaths(data.query, data.path))
+          ...(await searchVfsEntries(data.query, data.path))
         });
       })
       .with({ type: 'resolveVfsText' }, async (data) => {

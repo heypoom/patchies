@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { VirtualFilesystem } from './VirtualFilesystem';
-import { listVfsPaths, resolveVfsText, resolveVfsUrl, searchVfsPaths } from './worker-requests';
+import {
+  listVfsEntries,
+  resolveVfsText,
+  resolveVfsUrl,
+  searchVfsEntries
+} from './worker-vfs-request-handler';
 
 describe('worker VFS requests', () => {
   beforeEach(() => {
@@ -11,12 +16,22 @@ describe('worker VFS requests', () => {
   it('normalizes and resolves VFS path requests', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const entry = { provider: 'url' as const, filename: 'placeholder' };
+
     vfs.registerEntry('user://image.png', entry);
     vfs.registerEntry('user://samples/kick.wav', entry);
 
-    expect(await listVfsPaths('.')).toEqual({ paths: ['user://image.png', 'user://samples'] });
-    expect(await searchVfsPaths('kick', '.')).toEqual({ paths: ['user://samples/kick.wav'] });
-    expect(await listVfsPaths('./image.png')).toEqual({
+    expect(await listVfsEntries('.')).toEqual({
+      entries: [
+        { path: 'user://image.png', name: 'image.png', kind: 'file' },
+        { path: 'user://samples', name: 'samples', kind: 'directory' }
+      ]
+    });
+
+    expect(await searchVfsEntries('kick', '.')).toEqual({
+      entries: [{ path: 'user://samples/kick.wav', name: 'kick.wav', kind: 'file' }]
+    });
+
+    expect(await listVfsEntries('./image.png')).toEqual({
       error: 'VFS: Path is not a directory: user://image.png'
     });
   });
@@ -25,6 +40,7 @@ describe('worker VFS requests', () => {
     expect(await resolveVfsUrl('//cdn.example.com/file.png')).toEqual({
       url: '//cdn.example.com/file.png'
     });
+
     expect(await resolveVfsText('obj://node/file.txt')).toEqual({
       error: 'Invalid VFS path: "obj://node/file.txt". Only user:// paths are supported.'
     });

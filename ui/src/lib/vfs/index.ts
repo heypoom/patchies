@@ -7,6 +7,7 @@ export { useVfsMedia, type UseVfsMediaOptions, type UseVfsMediaReturn } from './
 
 export {
   type VFSEntry,
+  type VFSListEntry,
   type VFSTree,
   type VFSTreeNode,
   type VFSProvider,

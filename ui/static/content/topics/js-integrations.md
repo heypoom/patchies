@@ -16,6 +16,7 @@ List one folder level or search recursively:
 ```javascript
 const files = await vfs.list(".");
 const samples = await vfs.search("kick", "./samples");
+const folders = files.filter((entry) => entry.kind === "directory");
 ```
 
 See [Virtual Filesystem](/docs/virtual-filesystem) to add files to a patch.
