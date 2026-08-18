@@ -59,8 +59,15 @@ export function handleVfsPathsResolved(data: {
   if (!pending) return;
 
   pendingVfsRequests.delete(data.requestId);
-  if (data.error) return pending.reject(new Error(data.error));
-  if (data.paths) return pending.resolve(data.paths);
+
+  if (data.error) {
+    return pending.reject(new Error(data.error));
+  }
+
+  if (data.paths) {
+    return pending.resolve(data.paths);
+  }
+
   pending.reject(new Error('Invalid VFS listing response'));
 }
 

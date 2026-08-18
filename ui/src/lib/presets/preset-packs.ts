@@ -22,19 +22,11 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: ['logger.js', ...OBJECT_PIPE_PRESETS]
   },
   {
-    id: 'vfs-tools',
-    name: 'VFS Tools',
-    description: 'Browse and search files stored with a patch',
-    icon: 'ScanSearch',
-    requiredObjects: ['vue'],
-    presets: ['File Browser']
-  },
-  {
     id: 'canvas-widgets',
     name: 'Canvas Widgets',
     description: 'Interactive widgets you can play with',
     icon: 'Layout',
-    requiredObjects: ['canvas.dom', 'dom', 'surface'],
+    requiredObjects: ['canvas.dom', 'dom', 'surface', 'vue'],
     presets: [
       'XY Pad',
       'HSL Picker',
@@ -42,6 +34,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'plotter.canvas',
       'particle.canvas',
       'Drawing Surface',
+      'File Browser',
       'MIDI Keyboard',
       'fractal-tree.canvas',
       'bitmaprenderer'

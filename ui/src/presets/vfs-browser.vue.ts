@@ -120,6 +120,37 @@ async function selectFile(path) {
   }
 }
 
+async function navigateRows(event) {
+  if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  const rows = Array.from(event.currentTarget.querySelectorAll('[data-vfs-browser-row]'))
+  if (rows.length === 0) return
+
+  const focusedRow = event.target.closest('[data-vfs-browser-row]')
+
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    const path = focusedRow?.dataset.vfsPath
+    const row = visibleRows.value.find((item) => item.node.path === path)
+    const isFolder = row?.node.children && row.node.children.length > 0
+
+    if (isFolder && ((event.key === 'ArrowRight' && !row.node.expanded) || (event.key === 'ArrowLeft' && row.node.expanded))) {
+      await toggle(row.node)
+    }
+    return
+  }
+
+  const currentIndex = rows.indexOf(focusedRow)
+  const direction = event.key === 'ArrowDown' ? 1 : -1
+  const nextIndex = currentIndex === -1
+    ? (direction > 0 ? 0 : rows.length - 1)
+    : Math.max(0, Math.min(rows.length - 1, currentIndex + direction))
+
+  rows[nextIndex].focus()
+}
+
 watch(query, search)
 refresh()
 
@@ -135,11 +166,12 @@ createApp({
       selectedPath,
       selectedUrl,
       toggle,
+      navigateRows,
       visibleRows
     }
   },
   template: \`
-    <main class="flex h-full min-h-0 flex-col overflow-hidden rounded-[10px] border border-zinc-700 bg-[#09090b] font-sans text-sm text-zinc-100 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+    <main class="flex h-full min-h-0 flex-col overflow-hidden rounded-[10px] border border-zinc-700 bg-[#09090b] font-sans text-sm text-zinc-100 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" @keydown="navigateRows">
       <section class="border-b border-zinc-800 px-3 py-2.5">
         <div class="flex items-center gap-2">
           <label class="relative min-w-0 flex-1">
@@ -170,6 +202,8 @@ createApp({
             <button
               v-for="path in searchResults"
               :key="path"
+              data-vfs-browser-row
+              :data-vfs-path="path"
               class="nodrag flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left font-mono text-xs text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/70"
               @click="selectFile(path)"
             >
@@ -185,6 +219,8 @@ createApp({
             <button
               v-for="row in visibleRows"
               :key="row.node.path"
+              data-vfs-browser-row
+              :data-vfs-path="row.node.path"
               class="nodrag flex h-7 w-full cursor-pointer items-center gap-1 rounded-md py-1 text-left text-[12px] text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/70"
               :class="selectedPath === row.node.path ? 'bg-orange-400/15 text-zinc-50 ring-1 ring-inset ring-orange-400/30' : ''"
               :style="{ paddingLeft: (row.depth * 16 + 8) + 'px' }"
