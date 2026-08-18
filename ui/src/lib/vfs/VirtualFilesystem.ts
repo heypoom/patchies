@@ -609,6 +609,7 @@ export class VirtualFilesystem {
 
     for (const child of await this.listLinkedFolderChildren(directory, linkedFolderPath)) {
       matches.push(this.createListEntry(child.path, child.kind));
+
       if (child.kind === 'directory') {
         matches.push(...(await this.searchLinkedFolder(child.path, linkedFolderPath)));
       }
