@@ -42,3 +42,4 @@ because that would require traversing every result.
 4. An agent cannot read a binary VFS asset through the text tool.
 5. A broad VFS search returns a bounded page without materializing every match.
 6. A large VFS directory returns a bounded list page without returning every child to chat.
+7. An empty directory returns an empty page, while a missing directory returns an error.

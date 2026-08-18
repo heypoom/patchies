@@ -483,12 +483,19 @@ export class VirtualFilesystem {
   /** List the immediate children of a VFS directory, including linked local folders. */
   async listChildren(directory: string): Promise<VFSListEntry[]> {
     const entry = this.entries.get(directory);
+    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
+    const linkedFolderPath = this.getLinkedFolderForPath(directory);
+    const hasChildren = [...this.entries.keys()].some((path) => path.startsWith(prefix));
+    const isNamespaceRoot = directory === VFS_PREFIXES.USER || directory === VFS_PREFIXES.OBJECT;
 
     if (entry && entry.provider !== 'folder' && entry.provider !== 'local-folder') {
       throw new TypeError(`VFS: Path is not a directory: ${directory}`);
     }
 
-    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
+    if (!entry && !linkedFolderPath && !hasChildren && !isNamespaceRoot) {
+      throw new Error(`VFS: Directory not found: ${directory}`);
+    }
+
     const children = new Map<string, VFSListEntry>();
 
     for (const path of this.entries.keys()) {
@@ -500,8 +507,6 @@ export class VirtualFilesystem {
       const childPath = `${prefix}${child}`;
       children.set(childPath, this.createListEntry(childPath));
     }
-
-    const linkedFolderPath = this.getLinkedFolderForPath(directory);
 
     if (linkedFolderPath) {
       const linkedChildren = await this.listLinkedFolderChildren(directory, linkedFolderPath);
@@ -623,9 +628,7 @@ export class VirtualFilesystem {
           }
         }
 
-        const visited = await visit(child.path);
-
-        if (child.kind === 'directory' && visited) {
+        if (child.kind === 'directory' && (await visit(child.path))) {
           return true;
         }
       }

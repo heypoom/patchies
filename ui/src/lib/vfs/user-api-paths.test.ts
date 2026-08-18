@@ -21,6 +21,26 @@ describe('VFS user API paths', () => {
     expect(isExternalUrl('user://file.png')).toBe(false);
   });
 
+  it('distinguishes an empty directory from a missing directory', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+
+    vfs.createFolder('user://', 'empty');
+    await expect(vfs.listChildren('user://empty')).resolves.toEqual([]);
+
+    await expect(vfs.listChildrenPage('user://empty')).resolves.toMatchObject({
+      entries: [],
+      truncated: false
+    });
+
+    await expect(vfs.listChildren('user://missing')).rejects.toThrow(
+      'VFS: Directory not found: user://missing'
+    );
+
+    await expect(vfs.listChildrenPage('user://missing')).rejects.toThrow(
+      'VFS: Directory not found: user://missing'
+    );
+  });
+
   it('lists direct children and searches descendants', async () => {
     const vfs = VirtualFilesystem.getInstance();
 
