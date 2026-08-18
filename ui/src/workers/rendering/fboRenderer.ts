@@ -647,8 +647,8 @@ export class FBORenderer {
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
           .with({ type: 'worker' }, () => this.createEmptyRenderer())
           .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
-          .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
-          .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
+          .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node))
+          .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node))
           .exhaustive()
       )
     );
@@ -802,49 +802,18 @@ export class FBORenderer {
   }
 
   /**
-   * Create a passthrough renderer for video routing nodes (send.vdo, recv.vdo).
-   * Copies input texture from inlet 0 to the output framebuffer.
+   * Create a renderer for video routing nodes (send.vdo, recv.vdo).
+   *
+   * Routing nodes are texture aliases. They must not draw their inlet into a
+   * full-output FBO, because that would resample and stretch sources whose
+   * native aspect ratio differs from the patch output. getInputTextureMap()
+   * resolves the alias when a downstream node binds its sampler.
    */
-  createPassthroughRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): { render: RenderFunction; cleanup: () => void } {
+  createPassthroughRenderer(node: RenderNode): { render: RenderFunction; cleanup: () => void } {
     const nodeId = node.id;
 
     return {
-      render: () => {
-        // Get input texture from inlet 0
-        const inlet0 = node.inletMap.get(0);
-        if (!inlet0) return;
-
-        const externalTexture = this.videoTextures.getDestinationTexture(inlet0.sourceNodeId);
-
-        const externalSourceFramebuffer = externalTexture
-          ? this.videoTextures.getDestinationFBO(inlet0.sourceNodeId)
-          : undefined;
-
-        const sourceFbo = this.fboNodes.get(inlet0.sourceNodeId);
-        const sourceFramebuffer = externalSourceFramebuffer ?? sourceFbo?.framebuffer;
-        if (!sourceFramebuffer) return;
-
-        // Blit input FBO to output framebuffer.
-        // Source and destination may differ when the source uses @resolution.
-        const srcW = externalTexture?.width ?? sourceFbo?.texture.width;
-        const srcH = externalTexture?.height ?? sourceFbo?.texture.height;
-        if (!srcW || !srcH) return;
-
-        const dstFbo = this.fboNodes.get(node.id);
-        const dstW = dstFbo?.texture.width ?? srcW;
-        const dstH = dstFbo?.texture.height ?? srcH;
-        const gl = this.gl;
-
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFramebuffer));
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
-
-        gl.blitFramebuffer(0, 0, srcW, srcH, 0, 0, dstW, dstH, gl.COLOR_BUFFER_BIT, gl.LINEAR);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      },
+      render: () => {},
       cleanup: () => {
         // Unsubscribe from video channel when node is destroyed
         this.videoChannelRegistry.unsubscribeAll(nodeId);
@@ -1637,11 +1606,7 @@ export class FBORenderer {
     if (isOverride) this.outputOutletIndex = 0;
 
     if (effectiveOutputNodeId !== null) {
-      const outputFBONode = this.fboNodes.get(effectiveOutputNodeId);
-
-      if (outputFBONode) {
-        this.profiler.measureOp('blit', () => this.renderNodeToMainOutput(outputFBONode));
-      }
+      this.profiler.measureOp('blit', () => this.renderNodeToMainOutput(effectiveOutputNodeId));
     }
 
     this.outputOutletIndex = savedOutletIndex;
@@ -1957,7 +1922,7 @@ export class FBORenderer {
     return this.profiler.measureOp(op, fn);
   }
 
-  private renderNodeToMainOutput(node: FBONode): void {
+  private renderNodeToMainOutput(nodeId: string): void {
     // outputSize controls the offscreen canvas dimensions (blit destination).
     // backgroundSize is used only for the cover-mode aspect ratio crop.
     const [outputWidth, outputHeight] = this.outputSize;
@@ -1967,35 +1932,15 @@ export class FBORenderer {
       return;
     }
 
-    if (!node) {
+    const source = this.resolveVideoSource(nodeId, this.outputOutletIndex);
+
+    if (!source) {
       console.warn('Could not find source framebuffer for final texture');
       return;
     }
 
     const gl = this.regl._gl as WebGL2RenderingContext;
-
-    let framebuffer: regl.Framebuffer2D | null = null;
-    let texture = node.colorAttachments[this.outputOutletIndex] ?? node.texture;
-
-    // Source size comes from the node's FBO (not the background)
-    let sourceWidth = node.texture.width;
-    let sourceHeight = node.texture.height;
-
-    if (this.videoTextures.has(node.id)) {
-      const tex = this.videoTextures.getDestinationTexture(node.id)!;
-
-      // Use cached FBO instead of creating new one every frame (fixes massive leak)
-      framebuffer = this.videoTextures.getDestinationFBO(node.id) || null;
-      texture = tex;
-      sourceWidth = tex.width;
-      sourceHeight = tex.height;
-    } else {
-      framebuffer = node.framebuffer;
-    }
-
-    if (!framebuffer) {
-      return;
-    }
+    const { texture, width: sourceWidth, height: sourceHeight } = source;
 
     // Cover-mode blit: crop the source to match the background's aspect ratio,
     // so the output fills the screen without stretching (spec 128).
@@ -2086,12 +2031,6 @@ export class FBORenderer {
     for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
       const inputFBO = this.fboNodes.get(sourceNodeId);
 
-      // If there exists an external texture for an input node, use it (always outlet 0).
-      if (this.videoTextures.has(sourceNodeId)) {
-        textureMap.set(inletIndex, this.videoTextures.getDestinationTexture(sourceNodeId)!);
-        continue;
-      }
-
       if (inputFBO) {
         // For back-edge inlets (feedback loops), read from the previous frame's texture.
         // This implements the 1-frame delay that prevents the cycle from deadlocking.
@@ -2100,14 +2039,48 @@ export class FBORenderer {
           textureMap.set(inletIndex, prevTex);
         } else {
           // Index into the correct color attachment for MRT sources
-          const texture = inputFBO.colorAttachments[outletIndex] ?? inputFBO.colorAttachments[0];
-
-          textureMap.set(inletIndex, texture);
+          const texture = this.resolveVideoSource(sourceNodeId, outletIndex)?.texture;
+          if (texture) textureMap.set(inletIndex, texture);
         }
+      } else {
+        const texture = this.resolveVideoSource(sourceNodeId, outletIndex)?.texture;
+        if (texture) textureMap.set(inletIndex, texture);
       }
     }
 
     return textureMap;
+  }
+
+  /** Resolve a node outlet to its underlying texture without resampling routing nodes. */
+  private resolveVideoSource(
+    nodeId: string,
+    outletIndex = 0,
+    visited = new Set<string>()
+  ): { texture: regl.Texture2D; width: number; height: number } | null {
+    if (visited.has(nodeId)) return null;
+    visited.add(nodeId);
+
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+
+    if (node?.type === 'send.vdo' || node?.type === 'recv.vdo') {
+      const inlet = node.inletMap.get(0);
+      return inlet ? this.resolveVideoSource(inlet.sourceNodeId, inlet.outletIndex, visited) : null;
+    }
+
+    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
+    if (externalTexture) {
+      return {
+        texture: externalTexture,
+        width: externalTexture.width,
+        height: externalTexture.height
+      };
+    }
+
+    const fboNode = this.fboNodes.get(nodeId);
+    const texture = fboNode?.colorAttachments[outletIndex] ?? fboNode?.texture;
+    if (!texture) return null;
+
+    return { texture, width: texture.width, height: texture.height };
   }
 
   /**

@@ -40,12 +40,31 @@ To show a visual, connect the final object to `bg.out`. You can also select **Us
 3. Connect each visual object to an inlet of `sub.hydra`.
 4. Connect `sub.hydra` to `bg.out` to subtract the two visuals.
 
+## Mixed Image Sizes
+
+Video sources keep their own pixel dimensions. Use **Transform** when you want
+to place an image or video with a different aspect ratio into the patch output.
+Choose **Contain** to show the full source without distortion, or **Cover** to
+fill the output and crop its edges. Then use **Over** or **Composite** to place
+the transformed source over a background.
+
+```text
+[img] → [Transform: Contain] ──┐
+                                ├→ [Over] → [bg.out]
+[video / background] ──────────┘
+```
+
+The transparent area around a contained source lets the background show
+through. Use **Stretch** only when you intentionally want the source to fill
+the output regardless of its proportions.
+
 ## Getting Started with Presets
 
 The preset library contains objects for video chaining. Enable them from [Preset Packs](/docs/manage-packs):
 
 - **`hydra>`, `glsl>`, `regl>`, `swgl>`, `three>`** — Pass video through unchanged.
 - **`diff.hydra`, `add.hydra`, `sub.hydra`** — Blend two video inputs with Hydra.
+- **`Fit`, `Transform`, `Over`, `Composite`** — Preserve proportions, place a source, and layer it over another video input.
 - Read the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more presets.
 
 ## Sending to output

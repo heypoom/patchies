@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type regl from 'regl';
-import type { RenderNode, RenderParams } from '$lib/rendering/types';
+import type { RenderNode } from '$lib/rendering/types';
 import type { FBORenderer } from './fboRenderer';
 
 vi.mock('./hydraRenderer', () => ({ HydraRenderer: class {} }));
@@ -12,8 +11,8 @@ vi.mock('./swglRenderer', () => ({ SwissGLRenderer: class {} }));
 vi.mock('./shaderParkThreeRenderer', () => ({ ShaderParkThreeRenderer: class {} }));
 vi.mock('$lib/projmap/ProjectionMapRenderer', () => ({ ProjectionMapRenderer: class {} }));
 
-describe('send.vdo passthrough', () => {
-  it('copies a directly connected external video texture', async () => {
+describe('send.vdo and recv.vdo routing', () => {
+  it('binds the original external texture after wireless routing', async () => {
     vi.stubGlobal('self', {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -25,57 +24,44 @@ describe('send.vdo passthrough', () => {
 
     const { FBORenderer } = await import('./fboRenderer');
 
-    const bindFramebuffer = vi.fn();
-    const blitFramebuffer = vi.fn();
-
     const sourceTexture = { width: 640, height: 480 };
-    const sourceFramebuffer = { _framebuffer: { framebuffer: 'webcam-fbo' } };
-    const destinationTexture = { width: 1280, height: 720 };
     const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
 
     const state = renderer as unknown as {
-      fboNodes: Map<string, { texture: typeof destinationTexture; framebuffer: object }>;
+      fboNodes: Map<string, unknown>;
+      renderGraph: { nodes: RenderNode[] };
       videoTextures: {
         getDestinationTexture: (nodeId: string) => typeof sourceTexture | undefined;
-        getDestinationFBO: (nodeId: string) => typeof sourceFramebuffer | undefined;
       };
-      gl: WebGL2RenderingContext;
     };
 
-    state.fboNodes = new Map([
-      [
-        'send',
-        { texture: destinationTexture, framebuffer: { _framebuffer: { framebuffer: 'send-fbo' } } }
-      ]
-    ]);
+    state.fboNodes = new Map();
 
     state.videoTextures = {
-      getDestinationTexture: (nodeId) => (nodeId === 'webcam' ? sourceTexture : undefined),
-      getDestinationFBO: (nodeId) => (nodeId === 'webcam' ? sourceFramebuffer : undefined)
+      getDestinationTexture: (nodeId) => (nodeId === 'webcam' ? sourceTexture : undefined)
     };
 
-    state.gl = {
-      READ_FRAMEBUFFER: 1,
-      DRAW_FRAMEBUFFER: 2,
-      FRAMEBUFFER: 3,
-      COLOR_BUFFER_BIT: 4,
-      LINEAR: 5,
-      bindFramebuffer,
-      blitFramebuffer
-    } as unknown as WebGL2RenderingContext;
-
-    const node = {
+    const send = {
       id: 'send',
+      type: 'send.vdo',
       inletMap: new Map([[0, { sourceNodeId: 'webcam', outletIndex: 0 }]])
     } as RenderNode;
+    const receive = {
+      id: 'receive',
+      type: 'recv.vdo',
+      inletMap: new Map([[0, { sourceNodeId: 'send', outletIndex: 0 }]])
+    } as RenderNode;
+    const consumer = {
+      id: 'consumer',
+      type: 'glsl',
+      inletMap: new Map([[0, { sourceNodeId: 'receive', outletIndex: 0 }]])
+    } as RenderNode;
+    state.renderGraph = { nodes: [send, receive, consumer] };
 
-    renderer
-      .createPassthroughRenderer(node, {
-        _framebuffer: { framebuffer: 'send-fbo' }
-      } as unknown as regl.Framebuffer2D)
-      .render({} as RenderParams);
+    const textureMap = (
+      renderer as never as { getInputTextureMap: (node: RenderNode) => Map<number, unknown> }
+    ).getInputTextureMap(consumer);
 
-    expect(bindFramebuffer).toHaveBeenNthCalledWith(1, 1, 'webcam-fbo');
-    expect(blitFramebuffer).toHaveBeenCalledWith(0, 0, 640, 480, 0, 0, 1280, 720, 4, 5);
+    expect(textureMap.get(0)).toBe(sourceTexture);
   });
 });
