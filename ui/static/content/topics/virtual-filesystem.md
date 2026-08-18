@@ -61,14 +61,6 @@ const buffer = await fetch(await vfs.getUrl("user://audio.wav")).then(r => r.arr
 const text = await fetch(await vfs.getUrl("user://data.csv")).then(r => r.text());
 ```
 
----
-
-## Inspecting Files with Chat
-
-Chat agents can inspect your patch files without changing them. They can list folders and search paths in bounded pages, then use `nextOffset` when another page is needed. They can also check a file's stored size and MIME type. For code and data files, they can read a bounded text range, then request another range when more content remains.
-
-Chat does not read binary assets such as images, audio, or video files.
-
 ## Supported Objects
 
 Use `vfs` in all [JavaScript Runner](/docs/javascript-runner)-based objects.

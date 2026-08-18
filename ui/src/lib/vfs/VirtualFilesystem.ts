@@ -521,6 +521,7 @@ export class VirtualFilesystem {
   ): Promise<VFSListPage> {
     const offset = Math.max(0, Math.floor(options.offset ?? 0));
     const limit = Math.max(1, Math.floor(options.limit ?? 50));
+
     const linkedFolderPath = this.getLinkedFolderForPath(directory);
 
     if (linkedFolderPath) {
@@ -528,7 +529,9 @@ export class VirtualFilesystem {
         offset,
         limit: limit + 1
       });
+
       const truncated = children.length > limit;
+
       const entries = children
         .slice(0, limit)
         .map((child) => this.createListEntry(child.path, child.kind));
@@ -543,6 +546,7 @@ export class VirtualFilesystem {
     }
 
     const children = await this.listChildren(directory);
+
     const entries = children.slice(offset, offset + limit);
     const truncated = offset + entries.length < children.length;
 
@@ -599,12 +603,16 @@ export class VirtualFilesystem {
   ): Promise<VFSSearchPage> {
     const offset = Math.max(0, Math.floor(options.offset ?? 0));
     const limit = Math.max(1, Math.floor(options.limit ?? 50));
+
     const normalizedQuery = query.toLowerCase();
     const entries: VFSListEntry[] = [];
+
     let skipped = 0;
 
     const visit = async (currentDirectory: string): Promise<boolean> => {
-      for (const child of await this.listChildren(currentDirectory)) {
+      const children = await this.listChildren(currentDirectory);
+
+      for (const child of children) {
         if (child.path.toLowerCase().includes(normalizedQuery)) {
           if (skipped < offset) {
             skipped++;
@@ -615,7 +623,11 @@ export class VirtualFilesystem {
           }
         }
 
-        if (child.kind === 'directory' && (await visit(child.path))) return true;
+        const visited = await visit(child.path);
+
+        if (child.kind === 'directory' && visited) {
+          return true;
+        }
       }
 
       return false;
@@ -776,6 +788,7 @@ export class VirtualFilesystem {
           const needs = await (
             provider as VFSProvider & { needsPermission: (path: string) => Promise<boolean> }
           ).needsPermission(path);
+
           if (needs) {
             this.pendingPermissions.add(path);
           }
@@ -797,6 +810,7 @@ export class VirtualFilesystem {
           } else {
             // Handle exists, check permission
             const hasPermission = await localProvider.hasDirPermission(path);
+
             if (!hasPermission) {
               this.pendingPermissions.add(path);
             }
