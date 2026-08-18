@@ -3,19 +3,18 @@ import type { GLSLPreset } from './types';
 const code = `// @title Fit
 // @primaryButton settings
 // @param mode 0 (0: Contain, 1: Cover, 2: Stretch) "Mode"
-// @param inputAspect 1.7778 0.1 4.0 0.0001 "Input Aspect"
 // @param background color #000000 "Background"
 // @param backgroundAlpha 0.0 0.0 1.0 0.001 "Background Alpha"
 
 uniform sampler2D source;
 uniform float mode;
-uniform float inputAspect;
 uniform vec3 background;
 uniform float backgroundAlpha;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float outputAspect = iResolution.x / max(iResolution.y, 0.0001);
-  float sourceAspect = max(inputAspect, 0.0001);
+  ivec2 sourceSize = textureSize(source, 0);
+  float sourceAspect = float(sourceSize.x) / max(float(sourceSize.y), 0.0001);
   vec2 p = uv;
 
   if (mode < 1.5) {

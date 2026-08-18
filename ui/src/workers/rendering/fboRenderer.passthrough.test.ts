@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type regl from 'regl';
-import type { RenderNode, RenderParams } from '$lib/rendering/types';
+import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import type { FBORenderer } from './fboRenderer';
 
 vi.mock('./hydraRenderer', () => ({ HydraRenderer: class {} }));
@@ -12,8 +11,8 @@ vi.mock('./swglRenderer', () => ({ SwissGLRenderer: class {} }));
 vi.mock('./shaderParkThreeRenderer', () => ({ ShaderParkThreeRenderer: class {} }));
 vi.mock('$lib/projmap/ProjectionMapRenderer', () => ({ ProjectionMapRenderer: class {} }));
 
-describe('send.vdo passthrough', () => {
-  it('copies a directly connected external video texture', async () => {
+describe('send.vdo and recv.vdo routing', () => {
+  it('binds the original external texture after wireless routing', async () => {
     vi.stubGlobal('self', {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -25,57 +24,194 @@ describe('send.vdo passthrough', () => {
 
     const { FBORenderer } = await import('./fboRenderer');
 
-    const bindFramebuffer = vi.fn();
-    const blitFramebuffer = vi.fn();
-
-    const sourceTexture = { width: 640, height: 480 };
-    const sourceFramebuffer = { _framebuffer: { framebuffer: 'webcam-fbo' } };
-    const destinationTexture = { width: 1280, height: 720 };
+    const sourceTexture = { width: 1080, height: 1920 };
+    const sourceFramebuffer = {};
     const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
 
     const state = renderer as unknown as {
-      fboNodes: Map<string, { texture: typeof destinationTexture; framebuffer: object }>;
+      fboNodes: Map<string, unknown>;
+      renderGraph: { nodes: RenderNode[] };
       videoTextures: {
         getDestinationTexture: (nodeId: string) => typeof sourceTexture | undefined;
         getDestinationFBO: (nodeId: string) => typeof sourceFramebuffer | undefined;
       };
-      gl: WebGL2RenderingContext;
     };
 
-    state.fboNodes = new Map([
-      [
-        'send',
-        { texture: destinationTexture, framebuffer: { _framebuffer: { framebuffer: 'send-fbo' } } }
-      ]
-    ]);
+    state.fboNodes = new Map();
 
     state.videoTextures = {
       getDestinationTexture: (nodeId) => (nodeId === 'webcam' ? sourceTexture : undefined),
       getDestinationFBO: (nodeId) => (nodeId === 'webcam' ? sourceFramebuffer : undefined)
     };
 
-    state.gl = {
-      READ_FRAMEBUFFER: 1,
-      DRAW_FRAMEBUFFER: 2,
-      FRAMEBUFFER: 3,
-      COLOR_BUFFER_BIT: 4,
-      LINEAR: 5,
-      bindFramebuffer,
-      blitFramebuffer
-    } as unknown as WebGL2RenderingContext;
-
-    const node = {
+    const send = {
       id: 'send',
+      type: 'send.vdo',
       inletMap: new Map([[0, { sourceNodeId: 'webcam', outletIndex: 0 }]])
     } as RenderNode;
 
-    renderer
-      .createPassthroughRenderer(node, {
-        _framebuffer: { framebuffer: 'send-fbo' }
-      } as unknown as regl.Framebuffer2D)
-      .render({} as RenderParams);
+    const receive = {
+      id: 'receive',
+      type: 'recv.vdo',
+      inletMap: new Map([[0, { sourceNodeId: 'send', outletIndex: 0 }]])
+    } as RenderNode;
 
-    expect(bindFramebuffer).toHaveBeenNthCalledWith(1, 1, 'webcam-fbo');
-    expect(blitFramebuffer).toHaveBeenCalledWith(0, 0, 640, 480, 0, 0, 1280, 720, 4, 5);
+    const consumer = {
+      id: 'consumer',
+      type: 'glsl',
+      inletMap: new Map([[0, { sourceNodeId: 'receive', outletIndex: 0 }]])
+    } as RenderNode;
+
+    state.renderGraph = { nodes: [send, receive, consumer] };
+
+    const source = (
+      renderer as never as {
+        resolveVideoSource: (
+          nodeId: string
+        ) => { texture: unknown; width: number; height: number } | null;
+      }
+    ).resolveVideoSource('receive');
+
+    const textureMap = (
+      renderer as never as { getInputTextureMap: (node: RenderNode) => Map<number, unknown> }
+    ).getInputTextureMap(consumer);
+
+    expect(source).toEqual({ texture: sourceTexture, width: 1080, height: 1920 });
+    expect(textureMap.get(0)).toBe(sourceTexture);
+
+    const captureSource = (
+      renderer as never as {
+        resolveCaptureSource: (
+          nodeId: string
+        ) => { framebuffer: unknown; width: number; height: number } | null;
+      }
+    ).resolveCaptureSource('receive');
+
+    expect(captureSource).toMatchObject({
+      framebuffer: sourceFramebuffer,
+      width: 1080,
+      height: 1920
+    });
+  });
+
+  it('uses the previous frame when wireless routing closes a feedback loop', async () => {
+    vi.stubGlobal('self', {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval
+    });
+
+    const { FBORenderer } = await import('./fboRenderer');
+    const currentTexture = { width: 1280, height: 720 };
+    const previousTexture = { width: 1280, height: 720 };
+    const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
+
+    const feedback = {
+      id: 'feedback',
+      type: 'glsl',
+      inputs: ['source', 'receive'],
+      outputs: ['send'],
+      inletMap: new Map([
+        [0, { sourceNodeId: 'source', outletIndex: 0 }],
+        [1, { sourceNodeId: 'receive', outletIndex: 0 }]
+      ]),
+      data: {},
+      backEdgeInlets: new Set<number>()
+    } as RenderNode;
+
+    const send = {
+      id: 'send',
+      type: 'send.vdo',
+      inputs: ['feedback'],
+      outputs: [],
+      inletMap: new Map([[0, { sourceNodeId: 'feedback', outletIndex: 0 }]]),
+      data: { channel: 'loop' },
+      backEdgeInlets: new Set<number>()
+    } as RenderNode;
+
+    const receive = {
+      id: 'receive',
+      type: 'recv.vdo',
+      inputs: [],
+      outputs: ['feedback'],
+      inletMap: new Map<number, { sourceNodeId: string; outletIndex: number }>(),
+      data: { channel: 'loop' },
+      backEdgeInlets: new Set<number>()
+    } as RenderNode;
+
+    const virtualEdge = {
+      id: 'virtual-video-loop-send-receive',
+      source: 'send',
+      target: 'receive',
+      sourceHandle: 'video-out',
+      targetHandle: 'video-in-0'
+    };
+
+    const baseGraph = {
+      nodes: [send, feedback, receive],
+      edges: [virtualEdge],
+      sortedNodes: [],
+      outputNodeId: null,
+      outputOutletIndex: 0,
+      backEdges: new Set<string>(),
+      feedbackNodes: new Set<string>()
+    } as RenderGraph;
+
+    const mergedGraph = (
+      renderer as never as {
+        mergeVirtualEdges: (graph: RenderGraph, edges: RenderGraph['edges']) => RenderGraph;
+      }
+    ).mergeVirtualEdges(baseGraph, [virtualEdge]);
+
+    const state = renderer as unknown as {
+      fboNodes: Map<string, unknown>;
+      renderGraph: RenderGraph;
+      videoTextures: { getDestinationTexture: () => undefined };
+    };
+
+    state.fboNodes = new Map([
+      [
+        'feedback',
+        {
+          colorAttachments: [currentTexture],
+          prevTextures: [previousTexture],
+          texture: currentTexture
+        }
+      ]
+    ]);
+
+    state.renderGraph = mergedGraph;
+    state.videoTextures = { getDestinationTexture: () => undefined };
+
+    expect(mergedGraph.feedbackNodes).toEqual(new Set(['feedback']));
+    expect(mergedGraph.edges).toHaveLength(1);
+
+    const textureMap = (
+      renderer as never as { getInputTextureMap: (node: RenderNode) => Map<number, unknown> }
+    ).getInputTextureMap(feedback);
+
+    expect(textureMap.get(1)).toBe(previousTexture);
+  });
+
+  it('releases obsolete feedback resources', async () => {
+    const { FBORenderer } = await import('./fboRenderer');
+    const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
+    const framebuffer = { destroy: vi.fn() };
+    const texture = { destroy: vi.fn() };
+    const fboNode = { prevFramebuffers: [framebuffer], prevTextures: [texture] };
+
+    (
+      renderer as never as {
+        destroyFeedbackResources: (node: typeof fboNode) => void;
+      }
+    ).destroyFeedbackResources(fboNode);
+
+    expect(framebuffer.destroy).toHaveBeenCalledOnce();
+    expect(texture.destroy).toHaveBeenCalledOnce();
+    expect(fboNode.prevFramebuffers).toBeUndefined();
+    expect(fboNode.prevTextures).toBeUndefined();
   });
 });
