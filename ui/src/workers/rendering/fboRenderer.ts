@@ -2040,11 +2040,17 @@ export class FBORenderer {
         } else {
           // Index into the correct color attachment for MRT sources
           const texture = this.resolveVideoSource(sourceNodeId, outletIndex)?.texture;
-          if (texture) textureMap.set(inletIndex, texture);
+
+          if (texture) {
+            textureMap.set(inletIndex, texture);
+          }
         }
       } else {
         const texture = this.resolveVideoSource(sourceNodeId, outletIndex)?.texture;
-        if (texture) textureMap.set(inletIndex, texture);
+
+        if (texture) {
+          textureMap.set(inletIndex, texture);
+        }
       }
     }
 
@@ -2064,10 +2070,12 @@ export class FBORenderer {
 
     if (node?.type === 'send.vdo' || node?.type === 'recv.vdo') {
       const inlet = node.inletMap.get(0);
+
       return inlet ? this.resolveVideoSource(inlet.sourceNodeId, inlet.outletIndex, visited) : null;
     }
 
     const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
+
     if (externalTexture) {
       return {
         texture: externalTexture,

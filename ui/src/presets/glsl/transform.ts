@@ -6,7 +6,7 @@ const code = `// @title Transform
 // @param translateY 0.0 -1.0 1.0 0.001 "Translate Y"
 // @param scale 1.0 0.05 4.0 0.001 "Scale"
 // @param rotation 0.0 -3.1416 3.1416 0.001 "Rotation"
-// @param fitMode 0 (0: Stretch, 1: Contain, 2: Cover) "Fit"
+// @param fitMode 0 (0: Contain, 1: Cover, 2: Stretch) "Fit"
 // @param repeatMode 0 (0: Clamp, 1: Repeat, 2: Mirror) "Repeat Mode"
 
 uniform sampler2D source;
@@ -42,15 +42,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
   vec2 sampleUv;
 
-  if (fitMode < 0.5) {
-    // Stretch deliberately preserves the historical full-frame behaviour.
-    sampleUv = p / vec2(outputAspect, 1.0) + 0.5;
-  } else {
-    float fitScale = fitMode < 1.5
+  if (fitMode < 1.5) {
+    float fitScale = fitMode < 0.5
       ? min(outputAspect / sourceAspect, 1.0)
       : max(outputAspect / sourceAspect, 1.0);
 
     sampleUv = p / vec2(sourceAspect * fitScale, fitScale) + 0.5;
+  } else {
+    // Stretch remains available when filling the output matters more than
+    // preserving the source proportions.
+    sampleUv = p / vec2(outputAspect, 1.0) + 0.5;
   }
 
   float alpha = 1.0;

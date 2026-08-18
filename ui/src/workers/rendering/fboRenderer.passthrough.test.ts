@@ -46,16 +46,19 @@ describe('send.vdo and recv.vdo routing', () => {
       type: 'send.vdo',
       inletMap: new Map([[0, { sourceNodeId: 'webcam', outletIndex: 0 }]])
     } as RenderNode;
+
     const receive = {
       id: 'receive',
       type: 'recv.vdo',
       inletMap: new Map([[0, { sourceNodeId: 'send', outletIndex: 0 }]])
     } as RenderNode;
+
     const consumer = {
       id: 'consumer',
       type: 'glsl',
       inletMap: new Map([[0, { sourceNodeId: 'receive', outletIndex: 0 }]])
     } as RenderNode;
+
     state.renderGraph = { nodes: [send, receive, consumer] };
 
     const textureMap = (
