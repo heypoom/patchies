@@ -42,13 +42,13 @@ describe('pack card behavior', () => {
     ).toBe(true);
   });
 
-  test('disables tile content expansion while searching', () => {
+  test('allows tile content expansion while searching', () => {
     expect(
       canManuallyExpandPackContents({
         searchQuery: 'visual',
         hasMatchingItems: false,
         variant: 'tile'
       })
-    ).toBe(false);
+    ).toBe(true);
   });
 });

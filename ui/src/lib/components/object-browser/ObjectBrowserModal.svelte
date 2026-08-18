@@ -353,9 +353,7 @@
     getIconComponent(expandedObjectPack?.icon ?? expandedPresetPack?.icon ?? 'package')
   );
 
-  const hasExpandedPack = $derived(
-    Boolean((expandedObjectPack || expandedPresetPack) && !searchQuery.trim())
-  );
+  const hasExpandedPack = $derived(Boolean(expandedObjectPack || expandedPresetPack));
 
   const dialogTitle = $derived(
     $objectBrowserMode === 'packs'
@@ -439,7 +437,6 @@
   }
 
   function togglePackExpansion(packId: string) {
-    if (searchQuery.trim()) return;
     expandedPackId = expandedPackId === packId ? null : packId;
   }
 
@@ -667,7 +664,7 @@
                         {searchQuery}
                         locked={isPackLocked(pack.id)}
                         variant="tile"
-                        selected={!searchQuery.trim() && expandedPackId === pack.id}
+                        selected={expandedPackId === pack.id}
                         onSelect={() => togglePackExpansion(pack.id)}
                       />
                     {/each}
@@ -680,7 +677,7 @@
                         {searchQuery}
                         locked={isPresetPackLocked(pack.id)}
                         variant="tile"
-                        selected={!searchQuery.trim() && expandedPackId === pack.id}
+                        selected={expandedPackId === pack.id}
                         onSelect={() => togglePackExpansion(pack.id)}
                       />
                     {/each}

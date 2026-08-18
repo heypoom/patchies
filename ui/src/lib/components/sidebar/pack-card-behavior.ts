@@ -19,5 +19,5 @@ export function canManuallyExpandPackContents({
 }): boolean {
   if (searchQuery.trim().length === 0) return true;
 
-  return variant === 'row' && !hasMatchingItems;
+  return variant === 'tile' || !hasMatchingItems;
 }

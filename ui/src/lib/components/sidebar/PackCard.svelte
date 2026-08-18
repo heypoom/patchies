@@ -102,7 +102,7 @@
       aria-label={`${enabled ? 'Disable' : 'Enable'} ${name}`}
       class={[
         'flex h-full min-h-[120px] w-full cursor-pointer flex-col pt-3 pr-14 pl-3 text-left transition-colors outline-none focus-visible:bg-white/[0.04] focus-visible:ring-1 focus-visible:ring-orange-500/70 focus-visible:ring-inset disabled:cursor-not-allowed',
-        searchQuery.trim() ? 'pb-3' : 'pb-12 sm:pb-10'
+        'pb-12 sm:pb-10'
       ]}
     >
       <div class="mb-1.5 flex items-center gap-2">
@@ -172,24 +172,22 @@
       {/if}
     </div>
 
-    {#if !searchQuery.trim()}
-      <button
-        type="button"
-        onclick={handleToggleManualExpansion}
-        disabled={!manualExpansionAllowed}
-        class={[
-          'absolute inset-x-0 bottom-0 flex h-11 cursor-pointer items-center gap-1 border-t border-white/6 px-3 font-mono text-[9px] transition-colors outline-none focus-visible:bg-white/[0.045] focus-visible:text-orange-400 disabled:cursor-not-allowed sm:h-9',
-          selected
-            ? 'bg-orange-500/[0.025] text-orange-400'
-            : 'text-zinc-600 hover:bg-white/[0.025] hover:text-zinc-400'
-        ]}
-        aria-label={selected ? `Hide ${name} contents` : `Show ${name} contents`}
-        aria-pressed={selected}
-      >
-        <span>{selected ? 'Viewing contents' : `View ${items.length} items`}</span>
-        <ChevronRight class={['h-3 w-3 transition-transform', selected && 'translate-x-0.5']} />
-      </button>
-    {/if}
+    <button
+      type="button"
+      onclick={handleToggleManualExpansion}
+      disabled={!manualExpansionAllowed}
+      class={[
+        'absolute inset-x-0 bottom-0 flex h-11 cursor-pointer items-center gap-1 border-t border-white/6 px-3 font-mono text-[9px] transition-colors outline-none focus-visible:bg-white/[0.045] focus-visible:text-orange-400 disabled:cursor-not-allowed sm:h-9',
+        selected
+          ? 'bg-orange-500/[0.025] text-orange-400'
+          : 'text-zinc-600 hover:bg-white/[0.025] hover:text-zinc-400'
+      ]}
+      aria-label={selected ? `Hide ${name} contents` : `Show ${name} contents`}
+      aria-pressed={selected}
+    >
+      <span>{selected ? 'Viewing contents' : `View ${items.length} items`}</span>
+      <ChevronRight class={['h-3 w-3 transition-transform', selected && 'translate-x-0.5']} />
+    </button>
 
     {#if searchQuery.trim()}
       <div class="border-t border-white/6 px-3 py-2">
