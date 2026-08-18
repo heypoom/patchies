@@ -1,10 +1,12 @@
 import { VirtualFilesystem } from '$lib/vfs';
 import { guessMimeType } from '$lib/vfs/path-utils';
 import { isExternalUrl, normalizeUserVfsPath } from '$lib/vfs/user-api-paths';
-import type { VFSEntry, VFSListEntry } from '$lib/vfs/types';
+import type { VFSEntry, VFSListEntry, VFSSearchPage } from '$lib/vfs/types';
 
 const DEFAULT_READ_LENGTH = 16 * 1024;
 export const MAX_VFS_TEXT_READ_LENGTH = 32 * 1024;
+const DEFAULT_VFS_SEARCH_LIMIT = 50;
+const MAX_VFS_SEARCH_LIMIT = 100;
 
 const TEXT_MIME_TYPES = new Set([
   'application/javascript',
@@ -54,7 +56,11 @@ interface ChatVfs {
   getEntryOrLinkedFile(path: string): VFSEntry | undefined;
   isFolder(path: string): boolean;
   listChildren(path: string): Promise<VFSListEntry[]>;
-  search(query: string, path: string): Promise<VFSListEntry[]>;
+  searchPage(
+    query: string,
+    path: string,
+    options: { offset: number; limit: number }
+  ): Promise<VFSSearchPage>;
   resolve(path: string): Promise<File | Blob>;
 }
 
@@ -134,12 +140,15 @@ export async function listVfsFiles(args: Record<string, unknown>, vfs?: ChatVfs)
 export async function searchVfsFiles(args: Record<string, unknown>, vfs?: ChatVfs) {
   const query = typeof args.query === 'string' ? args.query.trim() : '';
   const path = normalizePath(args.path);
+  const offset = getBoundedInteger(args.offset, 0);
+  const requestedLimit = getBoundedInteger(args.limit, DEFAULT_VFS_SEARCH_LIMIT);
+  const limit = Math.min(Math.max(requestedLimit, 1), MAX_VFS_SEARCH_LIMIT);
 
-  if (!query) return { path, query, entries: [], total: 0 };
+  if (!query) return { path, query, entries: [], offset, limit, truncated: false };
 
-  const entries = await getVfs(vfs).search(query, path);
+  const page = await getVfs(vfs).searchPage(query, path, { offset, limit });
 
-  return { path, query, entries, total: entries.length };
+  return { path, query, ...page };
 }
 
 export function statVfsFile(args: Record<string, unknown>, vfs?: ChatVfs) {

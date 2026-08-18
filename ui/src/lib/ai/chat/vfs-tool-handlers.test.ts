@@ -18,9 +18,11 @@ const vfs = {
   listChildren: async (path: string) => [
     { path: `${path}notes`, name: 'notes', kind: 'directory' as const }
   ],
-  search: async (query: string, path: string) => [
-    { path: `${path}notes/${query}.txt`, name: `${query}.txt`, kind: 'file' as const }
-  ],
+  searchPage: async (query: string, path: string, options: { offset: number; limit: number }) => ({
+    entries: [{ path: `${path}notes/${query}.txt`, name: `${query}.txt`, kind: 'file' as const }],
+    ...options,
+    truncated: false
+  }),
   resolve: async (path: string) =>
     path.endsWith('.txt') ? new Blob(['hello world'], { type: 'text/plain' }) : new Blob(['png'])
 };
@@ -31,7 +33,18 @@ describe('chat VFS tool handlers', () => {
     await expect(searchVfsFiles({ query: 'kick', path: './samples' }, vfs)).resolves.toMatchObject({
       path: 'user://samples',
       query: 'kick',
-      total: 1
+      offset: 0,
+      limit: 50,
+      truncated: false
+    });
+  });
+
+  test('caps requested VFS search pages', async () => {
+    await expect(
+      searchVfsFiles({ query: 'kick', offset: 5, limit: 999 }, vfs)
+    ).resolves.toMatchObject({
+      offset: 5,
+      limit: 100
     });
   });
 

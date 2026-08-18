@@ -8,6 +8,7 @@ import {
   type VFSTreeNode,
   type VFSProvider,
   type VFSListEntry,
+  type VFSSearchPage,
   isVFSFolder,
   isVFSEntry,
   isVFSPath,
@@ -543,6 +544,50 @@ export class VirtualFilesystem {
     }
 
     return [...matches.values()].sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  /**
+   * Recursively search VFS paths without materializing more than one result page.
+   * Entries are visited in deterministic directory traversal order.
+   */
+  async searchPage(
+    query: string,
+    directory: string,
+    options: { offset?: number; limit?: number } = {}
+  ): Promise<VFSSearchPage> {
+    const offset = Math.max(0, Math.floor(options.offset ?? 0));
+    const limit = Math.max(1, Math.floor(options.limit ?? 50));
+    const normalizedQuery = query.toLowerCase();
+    const entries: VFSListEntry[] = [];
+    let skipped = 0;
+
+    const visit = async (currentDirectory: string): Promise<boolean> => {
+      for (const child of await this.listChildren(currentDirectory)) {
+        if (child.path.toLowerCase().includes(normalizedQuery)) {
+          if (skipped < offset) {
+            skipped++;
+          } else if (entries.length < limit) {
+            entries.push(child);
+          } else {
+            return true;
+          }
+        }
+
+        if (child.kind === 'directory' && (await visit(child.path))) return true;
+      }
+
+      return false;
+    };
+
+    const truncated = await visit(directory);
+
+    return {
+      entries,
+      offset,
+      limit,
+      truncated,
+      ...(truncated ? { nextOffset: offset + entries.length } : {})
+    };
   }
 
   private createListEntry(path: string, kind?: VFSListEntry['kind']): VFSListEntry {

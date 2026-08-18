@@ -21,6 +21,7 @@ Patchies is a visual programming environment for audio-visual patches.
 
 - Use blank lines to separate distinct steps in a function: declarations, guards, control-flow blocks, and returns.
 - Keep declarations that form one setup step together; add a blank line before the next operation or branch, including a conditional that follows an operation inside a loop.
+- Separate assertion blocks that verify distinct behavior with blank lines.
 - If a function only returns a value without interim computation, use an arrow function with inline returns: `const foo = () => bar()`, don't use a block body with `return` or `function` keyword.
 
 ## How to run

@@ -18,7 +18,8 @@ Patch agents can inspect canvas state, documentation, presets, and logs, but can
 The chat resolver exposes four context tools backed by `VirtualFilesystem`:
 
 - `list_vfs_files({ path? })` lists immediate child files and directories.
-- `search_vfs_files({ query, path? })` recursively searches paths below a directory.
+- `search_vfs_files({ query, path?, offset?, limit? })` recursively searches paths below a
+  directory in pages.
 - `stat_vfs_file({ path })` returns the entry's path, kind, provider, stored size, and MIME type.
 - `read_vfs_text({ path, offset?, length? })` returns a textual byte range.
 
@@ -26,9 +27,15 @@ Relative paths are resolved under `user://`, while explicit `user://` and `obj:/
 
 `read_vfs_text` accepts known textual MIME types and source/data extensions. It refuses binary formats, including images, audio, and video. Reads default to 16 KiB and are capped at 32 KiB. The result reports `offset`, `bytesRead`, `size`, and `truncated`, allowing the agent to request the next range without overflowing the chat context.
 
+VFS search pages default to 50 results and cap at 100. Traversal stops after it finds the page
+plus one additional match, which sets `truncated: true` and returns `nextOffset`. The chat agent
+uses that offset only when it needs another page; it does not request an exact total because that
+would require traversing every match.
+
 ## Acceptance Criteria
 
 1. An agent can list and search the patch VFS without mutating it.
 2. An agent can inspect stored file metadata before reading content.
 3. An agent can read a partial text range and continue when `truncated` is true.
 4. An agent cannot read a binary VFS asset through the text tool.
+5. A broad VFS search returns a bounded page without materializing every match.

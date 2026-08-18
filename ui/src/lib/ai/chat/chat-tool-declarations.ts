@@ -367,12 +367,17 @@ export const contextToolDeclarations = [
   {
     name: SEARCH_VFS_FILES,
     description:
-      'Recursively search virtual filesystem paths below a directory. Returns matching files and folders, not file contents.',
+      'Recursively search virtual filesystem paths below a directory. Returns one bounded page of matching files and folders, not file contents. Use nextOffset only when truncated is true to request the next page.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Case-insensitive path/name search query' },
-        path: { type: 'string', description: 'Directory to search below (default "." for user://)' }
+        path: {
+          type: 'string',
+          description: 'Directory to search below (default "." for user://)'
+        },
+        offset: { type: 'number', description: 'Matching result offset (default 0)' },
+        limit: { type: 'number', description: 'Results per page (default 50, max 100)' }
       },
       required: ['query']
     }
