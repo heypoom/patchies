@@ -24,6 +24,7 @@ import type {
 
 import JsWorker from '../../workers/js/jsWorker?worker';
 import { currentPatchId } from '../../stores/ui.store';
+import type { VideoFrameRequest } from '$lib/eventbus/events';
 
 type Edge = { source: string; target: string; targetHandle?: string | null };
 
@@ -567,12 +568,7 @@ export class WorkerNodeSystem {
    * Request video frames for multiple nodes in a single batched request.
    */
   private requestBatchedVideoFrames(nodeIds: string[], now: number) {
-    const requests: Array<{
-      targetNodeId: string;
-      sourceNodeIds: (string | null)[];
-      resolution?: [number, number];
-      format: VideoFrameFormat;
-    }> = [];
+    const requests: VideoFrameRequest[] = [];
 
     for (const nodeId of nodeIds) {
       const videoState = this.videoStates.get(nodeId);

@@ -1,6 +1,6 @@
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import type { RenderCookStatus } from '$lib/rendering/types';
-import type { WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
+import type { VideoFrameFormat, WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
 import type { Node } from '@xyflow/svelte';
 
 export type PatchiesEvent =
@@ -291,15 +291,18 @@ export interface RequestWorkerVideoFramesEvent {
   format?: 'raw' | 'bitmap';
 }
 
+export interface VideoFrameRequest {
+  requestId?: string;
+
+  targetNodeId: string;
+  sourceNodeIds: (string | null)[];
+  resolution?: [number, number];
+  format: VideoFrameFormat;
+}
+
 export interface RequestWorkerVideoFramesBatchEvent {
   type: 'requestWorkerVideoFramesBatch';
-  requests: Array<{
-    targetNodeId: string;
-    requestId?: string;
-    sourceNodeIds: (string | null)[];
-    resolution?: [number, number];
-    format?: 'raw' | 'bitmap';
-  }>;
+  requests: VideoFrameRequest[];
 }
 
 export interface RequestMediaPipeVideoFramesBatchEvent {
