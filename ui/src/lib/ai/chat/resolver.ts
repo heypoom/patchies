@@ -35,7 +35,6 @@ import {
   resolveRewriteObjectDataSubtask
 } from './subtask-tool-handlers';
 import {
-  SYSTEM_PROMPT,
   CONTEXT_TOOL_NAMES,
   SUBTASK_TOOL_NAMES,
   CONNECT_EDGES,
@@ -64,6 +63,10 @@ import {
   SEARCH_PRESETS,
   SEARCH_SAMPLES,
   SEARCH_FREESOUND,
+  LIST_VFS_FILES,
+  SEARCH_VFS_FILES,
+  STAT_VFS_FILE,
+  READ_VFS_TEXT,
   contextToolDeclarations,
   connectEdgesDeclaration,
   deleteObjectsDeclaration,
@@ -77,8 +80,10 @@ import {
   updateObjectDataDeclaration
 } from './chat-tool-declarations';
 import { resolveSearchSamples, resolveSearchFreesound } from './sample-tool-handlers';
+import { listVfsFiles, readVfsText, searchVfsFiles, statVfsFile } from './vfs-tool-handlers';
 import type { ChatViewportSummary } from './viewport-summary';
 import { buildNodeContextSystemInstruction, type ChatNodeContext } from './node-context';
+import { SYSTEM_PROMPT } from './chat-system-prompt';
 
 export type { ChatViewportSummary } from './viewport-summary';
 export type { ChatNodeContext } from './node-context';
@@ -216,6 +221,7 @@ export async function streamChatMessage(
         disconnectEdgesDeclaration
       ]
     : [];
+
   const tools = [
     ...contextToolDeclarations,
     ...subtaskToolDeclarations,
@@ -546,6 +552,10 @@ export async function streamChatMessage(
             return respond(result);
           })
           .with(SEARCH_FREESOUND, async () => respond(await resolveSearchFreesound(args)))
+          .with(LIST_VFS_FILES, async () => respond(await listVfsFiles(args)))
+          .with(SEARCH_VFS_FILES, async () => respond(await searchVfsFiles(args)))
+          .with(STAT_VFS_FILE, async () => respond(statVfsFile(args)))
+          .with(READ_VFS_TEXT, async () => respond(await readVfsText(args)))
           .with(ENABLE_PACK, async () => {
             const packId = (args.packId as string) ?? '';
             const kind = (args.kind as string) ?? '';

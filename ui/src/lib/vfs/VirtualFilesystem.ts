@@ -8,6 +8,8 @@ import {
   type VFSTreeNode,
   type VFSProvider,
   type VFSListEntry,
+  type VFSListPage,
+  type VFSSearchPage,
   isVFSFolder,
   isVFSEntry,
   isVFSPath,
@@ -481,12 +483,19 @@ export class VirtualFilesystem {
   /** List the immediate children of a VFS directory, including linked local folders. */
   async listChildren(directory: string): Promise<VFSListEntry[]> {
     const entry = this.entries.get(directory);
+    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
+    const linkedFolderPath = this.getLinkedFolderForPath(directory);
+    const hasChildren = [...this.entries.keys()].some((path) => path.startsWith(prefix));
+    const isNamespaceRoot = directory === VFS_PREFIXES.USER || directory === VFS_PREFIXES.OBJECT;
 
     if (entry && entry.provider !== 'folder' && entry.provider !== 'local-folder') {
       throw new TypeError(`VFS: Path is not a directory: ${directory}`);
     }
 
-    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
+    if (!entry && !linkedFolderPath && !hasChildren && !isNamespaceRoot) {
+      throw new Error(`VFS: Directory not found: ${directory}`);
+    }
+
     const children = new Map<string, VFSListEntry>();
 
     for (const path of this.entries.keys()) {
@@ -499,8 +508,6 @@ export class VirtualFilesystem {
       children.set(childPath, this.createListEntry(childPath));
     }
 
-    const linkedFolderPath = this.getLinkedFolderForPath(directory);
-
     if (linkedFolderPath) {
       const linkedChildren = await this.listLinkedFolderChildren(directory, linkedFolderPath);
 
@@ -510,6 +517,51 @@ export class VirtualFilesystem {
     }
 
     return [...children.values()].sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  /** List one bounded page of immediate VFS directory entries. */
+  async listChildrenPage(
+    directory: string,
+    options: { offset?: number; limit?: number } = {}
+  ): Promise<VFSListPage> {
+    const offset = Math.max(0, Math.floor(options.offset ?? 0));
+    const limit = Math.max(1, Math.floor(options.limit ?? 50));
+
+    const linkedFolderPath = this.getLinkedFolderForPath(directory);
+
+    if (linkedFolderPath) {
+      const children = await this.listLinkedFolderChildren(directory, linkedFolderPath, {
+        offset,
+        limit: limit + 1
+      });
+
+      const truncated = children.length > limit;
+
+      const entries = children
+        .slice(0, limit)
+        .map((child) => this.createListEntry(child.path, child.kind));
+
+      return {
+        entries,
+        offset,
+        limit,
+        truncated,
+        ...(truncated ? { nextOffset: offset + entries.length } : {})
+      };
+    }
+
+    const children = await this.listChildren(directory);
+
+    const entries = children.slice(offset, offset + limit);
+    const truncated = offset + entries.length < children.length;
+
+    return {
+      entries,
+      offset,
+      limit,
+      truncated,
+      ...(truncated ? { nextOffset: offset + entries.length } : {})
+    };
   }
 
   /** Recursively find VFS paths whose path includes the query, case-insensitively. */
@@ -545,6 +597,56 @@ export class VirtualFilesystem {
     return [...matches.values()].sort((a, b) => a.path.localeCompare(b.path));
   }
 
+  /**
+   * Recursively search VFS paths without materializing more than one result page.
+   * Entries are visited in deterministic directory traversal order.
+   */
+  async searchPage(
+    query: string,
+    directory: string,
+    options: { offset?: number; limit?: number } = {}
+  ): Promise<VFSSearchPage> {
+    const offset = Math.max(0, Math.floor(options.offset ?? 0));
+    const limit = Math.max(1, Math.floor(options.limit ?? 50));
+
+    const normalizedQuery = query.toLowerCase();
+    const entries: VFSListEntry[] = [];
+
+    let skipped = 0;
+
+    const visit = async (currentDirectory: string): Promise<boolean> => {
+      const children = await this.listChildren(currentDirectory);
+
+      for (const child of children) {
+        if (child.path.toLowerCase().includes(normalizedQuery)) {
+          if (skipped < offset) {
+            skipped++;
+          } else if (entries.length < limit) {
+            entries.push(child);
+          } else {
+            return true;
+          }
+        }
+
+        if (child.kind === 'directory' && (await visit(child.path))) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    const truncated = await visit(directory);
+
+    return {
+      entries,
+      offset,
+      limit,
+      truncated,
+      ...(truncated ? { nextOffset: offset + entries.length } : {})
+    };
+  }
+
   private createListEntry(path: string, kind?: VFSListEntry['kind']): VFSListEntry {
     const name = path.split('/').filter(Boolean).pop() ?? path;
 
@@ -568,7 +670,8 @@ export class VirtualFilesystem {
 
   private async listLinkedFolderChildren(
     directory: string,
-    linkedFolderPath: string
+    linkedFolderPath: string,
+    options?: { offset?: number; limit?: number }
   ): Promise<Array<{ path: string; kind: 'file' | 'directory' }>> {
     const localProvider = this.getLocalProvider();
 
@@ -595,7 +698,7 @@ export class VirtualFilesystem {
       handle = await handle.getDirectoryHandle(segment);
     }
 
-    const entries = await localProvider.listHandleContents(handle);
+    const entries = await localProvider.listHandleContents(handle, options);
     const pathPrefix = directory.endsWith('/') ? directory : `${directory}/`;
 
     return entries.map((entry) => ({ path: `${pathPrefix}${entry.name}`, kind: entry.kind }));
@@ -688,6 +791,7 @@ export class VirtualFilesystem {
           const needs = await (
             provider as VFSProvider & { needsPermission: (path: string) => Promise<boolean> }
           ).needsPermission(path);
+
           if (needs) {
             this.pendingPermissions.add(path);
           }
@@ -709,6 +813,7 @@ export class VirtualFilesystem {
           } else {
             // Handle exists, check permission
             const hasPermission = await localProvider.hasDirPermission(path);
+
             if (!hasPermission) {
               this.pendingPermissions.add(path);
             }

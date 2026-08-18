@@ -17,10 +17,14 @@ Patchies is a visual programming environment for audio-visual patches.
 - TailwindCSS 4
 - CodeMirror 6
 
-## Code Style
+## Code style
 
 - Use blank lines to separate distinct steps in a function: declarations, guards, control-flow blocks, and returns.
 - Keep declarations that form one setup step together; add a blank line before the next operation or branch, including a conditional that follows an operation inside a loop.
+- Separate assertion blocks that verify distinct behavior with blank lines.
+- If a function only returns a value without interim computation, use an arrow function with inline returns: `const foo = () => bar()`, don't use a block body with `return` or `function` keyword.
+
+## How to run
 
 Run project commands from `ui/`:
 
@@ -33,7 +37,7 @@ bun run test
 
 Do not run `bun run dev` unless Poom explicitly asks.
 
-## Local Skills
+## Local skills
 
 Load these repo-local skills when the task matches:
 
@@ -44,8 +48,6 @@ Load these repo-local skills when the task matches:
 - `patchies-rendering`: rendering pipeline, render graph, FBO, worker, and preview guidance.
 - `patchies-assembly-module`: VASM Rust/WASM build and linked UI asset workflow.
 - `docs-style`: topic and object documentation style for `ui/static/content/**/*.md`.
-
-## Agent skills
 
 ### Issue tracker
 

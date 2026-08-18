@@ -316,18 +316,28 @@ export class LocalFilesystemProvider implements VFSProvider {
    * List contents of a directory handle directly.
    */
   async listHandleContents(
-    handle: FileSystemDirectoryHandle
+    handle: FileSystemDirectoryHandle,
+    options?: { offset?: number; limit?: number }
   ): Promise<Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>> {
     const entries: Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }> =
       [];
+    const offset = Math.max(0, Math.floor(options?.offset ?? 0));
+    const limit = options?.limit === undefined ? undefined : Math.max(1, Math.floor(options.limit));
+    let index = 0;
 
     for await (const entryHandle of handle.values()) {
+      if (index++ < offset) continue;
+
       entries.push({
         name: entryHandle.name,
         kind: entryHandle.kind,
         handle: entryHandle
       });
+
+      if (limit && entries.length >= limit) break;
     }
+
+    if (limit) return entries;
 
     // Sort: directories first, then alphabetically
     entries.sort((a, b) => {
