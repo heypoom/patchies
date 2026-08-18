@@ -1,35 +1,61 @@
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import {
-  CONTEXT_TOOL_NAMES,
-  GET_VIEWPORT,
-  LIST_VFS_FILES,
-  READ_VFS_TEXT,
-  contextToolDeclarations
-} from './chat-tool-declarations';
+const { streamTurn } = vi.hoisted(() => ({ streamTurn: vi.fn() }));
 
-describe('chat tool declarations', () => {
-  test('declares get_viewport as an empty-args context tool', () => {
-    const declaration = contextToolDeclarations.find((tool) => tool.name === GET_VIEWPORT);
+vi.mock('../providers', () => ({
+  getTextProvider: () => ({ streamTurn })
+}));
 
-    expect(CONTEXT_TOOL_NAMES.has(GET_VIEWPORT)).toBe(true);
+vi.mock('./sample-tool-handlers', () => ({
+  resolveSearchSamples: vi.fn(),
+  resolveSearchFreesound: vi.fn()
+}));
 
-    expect(declaration).toMatchObject({
-      name: GET_VIEWPORT,
-      parametersJsonSchema: { type: 'object', properties: {} }
-    });
+import { VirtualFilesystem } from '$lib/vfs';
+import { streamChatMessage } from './resolver';
+
+describe('chat VFS tools', () => {
+  beforeEach(() => {
+    VirtualFilesystem.resetInstance();
+    streamTurn.mockReset();
   });
 
-  test('declares bounded VFS inspection tools as context tools', () => {
-    const list = contextToolDeclarations.find((tool) => tool.name === LIST_VFS_FILES);
-    const read = contextToolDeclarations.find((tool) => tool.name === READ_VFS_TEXT);
+  test('returns a VFS listing to the model through the chat tool flow', async () => {
+    const vfs = VirtualFilesystem.getInstance();
 
-    expect(CONTEXT_TOOL_NAMES.has(LIST_VFS_FILES)).toBe(true);
-    expect(CONTEXT_TOOL_NAMES.has(READ_VFS_TEXT)).toBe(true);
-    expect(list?.parametersJsonSchema).toMatchObject({ type: 'object' });
-    expect(read?.parametersJsonSchema).toMatchObject({
-      properties: { path: { type: 'string' }, length: { type: 'number' } },
-      required: ['path']
+    vfs.registerEntry('user://notes/readme.txt', {
+      provider: 'url',
+      filename: 'readme.txt',
+      mimeType: 'text/plain',
+      size: 12
+    });
+    streamTurn
+      .mockResolvedValueOnce({
+        text: '',
+        toolCalls: [{ id: 'list-files', name: 'list_vfs_files', args: { path: './notes' } }],
+        _rawModelTurn: undefined
+      })
+      .mockResolvedValueOnce({ text: 'Found it.', toolCalls: [], _rawModelTurn: undefined });
+
+    await expect(
+      streamChatMessage([{ role: 'user', content: 'List my notes.' }], null, () => {})
+    ).resolves.toBe('Found it.');
+
+    expect(streamTurn).toHaveBeenCalledTimes(2);
+    expect(streamTurn.mock.calls[1][0]).toContainEqual({
+      role: 'user',
+      content: '',
+      toolResults: [
+        {
+          callId: 'list-files',
+          name: 'list_vfs_files',
+          result: {
+            path: 'user://notes',
+            entries: [{ path: 'user://notes/readme.txt', name: 'readme.txt', kind: 'file' }],
+            total: 1
+          }
+        }
+      ]
     });
   });
 });

@@ -77,4 +77,31 @@ describe('chat VFS tool handlers', () => {
       readVfsText({ path: './large.txt', length: 40 * 1024 }, largeVfs)
     ).resolves.toMatchObject({ bytesRead: 32 * 1024, truncated: true });
   });
+
+  test('aligns a range that starts inside a UTF-8 character', async () => {
+    const unicodeVfs = {
+      ...vfs,
+      getEntryOrLinkedFile: () => ({
+        provider: 'local' as const,
+        filename: 'unicode.txt',
+        mimeType: 'text/plain'
+      }),
+      resolve: async () => new Blob(['aéz'], { type: 'text/plain' })
+    };
+
+    await expect(
+      readVfsText({ path: './unicode.txt', offset: 2, length: 1 }, unicodeVfs)
+    ).resolves.toMatchObject({ offset: 1, bytesRead: 2, content: 'é' });
+  });
+
+  test('clamps post-EOF offsets to an empty range', async () => {
+    await expect(
+      readVfsText({ path: './notes/readme.txt', offset: 99 }, vfs)
+    ).resolves.toMatchObject({
+      offset: 11,
+      bytesRead: 0,
+      truncated: false,
+      content: ''
+    });
+  });
 });

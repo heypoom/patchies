@@ -96,6 +96,34 @@ const fileMetadata = (path: string, entry: VFSEntry) => ({
   mimeType: entry.mimeType ?? guessMimeType(entry.filename) ?? null
 });
 
+function getBoundedInteger(value: unknown, defaultValue: number): number {
+  const numericValue = Number(value);
+
+  return Number.isFinite(numericValue) ? Math.max(0, Math.floor(numericValue)) : defaultValue;
+}
+
+function isUtf8ContinuationByte(byte: number | undefined): boolean {
+  return byte !== undefined && (byte & 0b11000000) === 0b10000000;
+}
+
+async function readUtf8Range(file: File | Blob, offset: number, length: number) {
+  const windowStart = Math.max(0, offset - 3);
+  const requestedEnd = Math.min(offset + length, file.size);
+  const windowEnd = Math.min(file.size, requestedEnd + 3);
+  const bytes = new Uint8Array(await file.slice(windowStart, windowEnd).arrayBuffer());
+  let start = offset - windowStart;
+  let end = requestedEnd - windowStart;
+
+  while (start > 0 && isUtf8ContinuationByte(bytes[start])) start--;
+  while (end > start && isUtf8ContinuationByte(bytes[end])) end--;
+
+  return {
+    offset: windowStart + start,
+    end: windowStart + end,
+    content: new TextDecoder().decode(bytes.slice(start, end))
+  };
+}
+
 export async function listVfsFiles(args: Record<string, unknown>, vfs?: ChatVfs) {
   const path = normalizePath(args.path);
   const entries = await getVfs(vfs).listChildren(path);
@@ -139,8 +167,8 @@ export async function readVfsText(args: Record<string, unknown>, vfs?: ChatVfs) 
     return { error: `VFS file is not a supported text format: ${path}`, ...metadata };
   }
 
-  const offset = Math.max(0, Math.floor(Number(args.offset) || 0));
-  const requestedLength = Math.floor(Number(args.length) || DEFAULT_READ_LENGTH);
+  const requestedOffset = getBoundedInteger(args.offset, 0);
+  const requestedLength = getBoundedInteger(args.length, DEFAULT_READ_LENGTH);
   const length = Math.min(Math.max(requestedLength, 1), MAX_VFS_TEXT_READ_LENGTH);
   const file = await filesystem.resolve(path);
   const mimeType = file.type || metadata.mimeType || undefined;
@@ -149,16 +177,16 @@ export async function readVfsText(args: Record<string, unknown>, vfs?: ChatVfs) 
     return { error: `VFS file is not a supported text format: ${path}`, ...metadata, mimeType };
   }
 
-  const end = Math.min(offset + length, file.size);
-  const content = await file.slice(offset, end).text();
+  const offset = Math.min(requestedOffset, file.size);
+  const range = await readUtf8Range(file, offset, length);
 
   return {
     ...metadata,
     size: file.size,
     mimeType: mimeType || null,
-    offset,
-    bytesRead: end - offset,
-    truncated: end < file.size,
-    content
+    offset: range.offset,
+    bytesRead: range.end - range.offset,
+    truncated: range.end < file.size,
+    content: range.content
   };
 }
