@@ -373,6 +373,14 @@ function createWorkerContext(nodeId: string) {
 
   // Video frame APIs
   const setVideoCount = (inletCount = 1, outletCount = 0) => {
+    if (!Number.isSafeInteger(inletCount) || inletCount < 0) {
+      throw new RangeError('setVideoCount() expects a non-negative integer inlet count');
+    }
+
+    if (!Number.isSafeInteger(outletCount) || outletCount < 0 || outletCount > 1) {
+      throw new RangeError('worker supports at most one video output');
+    }
+
     postResponse({ type: 'setVideoCount', nodeId, inletCount, outletCount });
   };
 

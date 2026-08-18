@@ -350,6 +350,8 @@ export class WorkerNodeSystem {
    * Handle setVideoCount from worker - update video port count and dispatch event.
    */
   private handleSetVideoCount(nodeId: string, inletCount: number, outletCount: number) {
+    const supportedOutletCount = Math.min(Math.max(outletCount, 0), 1);
+
     // Initialize or update video state, preserving any existing hasVideoCallback
     let videoState = this.videoStates.get(nodeId);
     if (!videoState) {
@@ -366,7 +368,7 @@ export class WorkerNodeSystem {
 
     // Update counts but preserve hasVideoCallback (may have been set before setVideoCount was called)
     videoState.inletCount = inletCount;
-    videoState.outletCount = outletCount;
+    videoState.outletCount = supportedOutletCount;
 
     // Update connections from stored edges (handles case where edges existed before setVideoCount was called)
     this.updateEdgesForNode(nodeId, videoState, this.currentEdges);
@@ -377,7 +379,7 @@ export class WorkerNodeSystem {
       portType: 'video',
       nodeId,
       inletCount,
-      outletCount
+      outletCount: supportedOutletCount
     });
   }
 
@@ -406,6 +408,7 @@ export class WorkerNodeSystem {
     videoState.resolution = config?.resolution;
     videoState.format = config?.format ?? 'raw';
     videoState.fps = config?.fps && config.fps > 0 ? Math.min(config.fps, 30) : undefined;
+
     this.startGlobalVideoLoop();
 
     // Dispatch event for UI to show long-running indicator (treat as interval-like)
@@ -585,6 +588,7 @@ export class WorkerNodeSystem {
           resolution: videoState.resolution,
           format: videoState.format
         });
+
         videoState.lastCaptureTime = now;
       }
     }

@@ -22,7 +22,7 @@ The **OpenCV Demos** preset pack captures the first connected video inlet with
 and may set `resolution` and an optional maximum `fps`. `format: 'bitmap'` remains
 available for Canvas APIs.
 
-`worker` nodes can expose one video output with `setVideoCount(inlets, 1)` and publish
+`worker` nodes can expose at most one video output with `setVideoCount(inlets, 1)` and publish
 an RGBA8 frame with `setVideoFrame({ data, width, height })`. The frame buffer transfers
 from the dedicated worker to the render worker through the main-thread broker, avoiding
 the Float32 expansion and texture conversion required by `float.tex`. OpenCV results must

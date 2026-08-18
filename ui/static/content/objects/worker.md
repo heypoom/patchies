@@ -42,7 +42,8 @@ Worker nodes can capture video frames from connected visual nodes:
 
 `setVideoCount(inletCount, outletCount?)`
 
-Configure video ports. Worker video output supports one RGBA frame stream.
+Configure video ports. Worker video output supports at most one RGBA frame stream;
+calling `setVideoCount()` with more than one output throws an error.
 
 ```js
 // Create one input and one output for a video-processing worker
