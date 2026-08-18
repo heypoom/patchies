@@ -115,6 +115,7 @@ export const jsRunnerInstructions = `
  */
 export const esmInstructions = `
 - esm(moduleName) - Load NPM packages: await esm("lodash")
+- opencv() - Load the ready OpenCV.js WebAssembly API: const cv = await opencv()
 `.trim();
 
 /**

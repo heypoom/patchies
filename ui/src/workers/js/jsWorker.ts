@@ -5,7 +5,13 @@
 
 import { match } from 'ts-pattern';
 
-import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/js-worker-types';
+import type {
+  CapturedVideoFrame,
+  VideoFrameConfig,
+  WorkerMessage,
+  WorkerResponse
+} from '$lib/js-runner/js-worker-types';
+import { opencv } from '$lib/js-runner/opencv';
 import type { PrimaryButton } from '$lib/eventbus/events';
 import type { Message } from '$lib/messages/MessageSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
@@ -55,11 +61,11 @@ interface NodeState {
   fftDataCache: Map<string, { data: Uint8Array | Float32Array; timestamp: number }>;
 
   // Video frame state
-  videoFrameCallback: ((frames: (ImageBitmap | null)[], timestamp: number) => void) | null;
+  videoFrameCallback: ((frames: CapturedVideoFrame[], timestamp: number) => void) | null;
 
   pendingVideoFrameResolvers: Map<
     string,
-    { resolve: (frames: (ImageBitmap | null)[]) => void; reject: (err: Error) => void }
+    { resolve: (frames: CapturedVideoFrame[]) => void; reject: (err: Error) => void }
   >;
 
   videoFrameRequestIdCounter: number;
@@ -168,8 +174,12 @@ let superSonicRequestIdCounter = 0;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let superSonicModule: any = null;
 
-function postResponse(response: WorkerResponse) {
-  self.postMessage(response);
+function postResponse(response: WorkerResponse, transfer?: Transferable[]) {
+  if (transfer) {
+    self.postMessage(response, { transfer });
+  } else {
+    self.postMessage(response);
+  }
 }
 
 function createWorkerContext(nodeId: string) {
@@ -362,23 +372,27 @@ function createWorkerContext(nodeId: string) {
   };
 
   // Video frame APIs
-  interface VideoFrameConfig {
-    resolution?: [number, number];
-  }
-
   const setVideoCount = (inletCount = 1, outletCount = 0) => {
+    if (!Number.isSafeInteger(inletCount) || inletCount < 0) {
+      throw new RangeError('setVideoCount() expects a non-negative integer inlet count');
+    }
+
+    if (!Number.isSafeInteger(outletCount) || outletCount < 0 || outletCount > 1) {
+      throw new RangeError('worker supports at most one video output');
+    }
+
     postResponse({ type: 'setVideoCount', nodeId, inletCount, outletCount });
   };
 
   const onVideoFrame = (
-    callback: (frames: (ImageBitmap | null)[], timestamp: number) => void,
+    callback: (frames: CapturedVideoFrame[], timestamp: number) => void,
     config?: VideoFrameConfig
   ) => {
     state.videoFrameCallback = callback;
-    postResponse({ type: 'videoFrameCallbackRegistered', nodeId, resolution: config?.resolution });
+    postResponse({ type: 'videoFrameCallbackRegistered', nodeId, config });
   };
 
-  const getVideoFrames = (config?: VideoFrameConfig): Promise<(ImageBitmap | null)[]> => {
+  const getVideoFrames = (config?: VideoFrameConfig): Promise<CapturedVideoFrame[]> => {
     const requestId = `vf-${nodeId}-${++state.videoFrameRequestIdCounter}`;
 
     return new Promise((resolve, reject) => {
@@ -387,9 +401,24 @@ function createWorkerContext(nodeId: string) {
         type: 'requestVideoFrames',
         nodeId,
         requestId,
-        resolution: config?.resolution
+        config
       });
     });
+  };
+
+  const setVideoFrame = (frame: { data: Uint8ClampedArray; width: number; height: number }) => {
+    if (
+      !(frame?.data instanceof Uint8ClampedArray) ||
+      !Number.isSafeInteger(frame.width) ||
+      !Number.isSafeInteger(frame.height) ||
+      frame.width <= 0 ||
+      frame.height <= 0 ||
+      frame.data.length !== frame.width * frame.height * 4
+    ) {
+      throw new TypeError('setVideoFrame() expects { data: Uint8ClampedArray, width, height }');
+    }
+
+    postResponse({ type: 'setVideoFrame', nodeId, frame }, [frame.data.buffer]);
   };
 
   // Create KV store for this node
@@ -438,9 +467,11 @@ function createWorkerContext(nodeId: string) {
     setVideoCount,
     onVideoFrame,
     getVideoFrames,
+    setVideoFrame,
     kv,
     settings: settingsProxy.settings,
-    getSuperSonicChannel
+    getSuperSonicChannel,
+    opencv: () => opencv((name) => import(/* @vite-ignore */ `https://esm.sh/${name}`))
   };
 }
 
@@ -552,9 +583,11 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setVideoCount',
     'onVideoFrame',
     'getVideoFrames',
+    'setVideoFrame',
     'kv',
     'settings',
-    'getSuperSonicChannel'
+    'getSuperSonicChannel',
+    'opencv'
   ];
 
   const functionArgs = [
@@ -577,9 +610,11 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setVideoCount,
     ctx.onVideoFrame,
     ctx.getVideoFrames,
+    ctx.setVideoFrame,
     ctx.kv,
     ctx.settings,
-    ctx.getSuperSonicChannel
+    ctx.getSuperSonicChannel,
+    ctx.opencv
   ];
 
   try {
@@ -767,23 +802,25 @@ function handleFFTData(
 // Handle video frames from main thread
 function handleVideoFramesReady(
   nodeId: string,
-  payload: { frames: (ImageBitmap | null)[]; timestamp: number }
+  payload: { requestId?: string; frames: CapturedVideoFrame[]; timestamp: number }
 ) {
   const state = nodeStates.get(nodeId);
   if (!state) return;
 
-  // Invoke callback if registered
-  if (state.videoFrameCallback) {
-    invokeCallbackSafely(nodeId, () =>
-      state.videoFrameCallback!(payload.frames, payload.timestamp)
-    );
+  if (payload.requestId) {
+    const pendingRequest = state.pendingVideoFrameResolvers.get(payload.requestId);
+    pendingRequest?.resolve(payload.frames);
+    state.pendingVideoFrameResolvers.delete(payload.requestId);
+    return;
   }
 
-  // Resolve any pending manual request (first one only)
-  for (const [requestId, { resolve }] of state.pendingVideoFrameResolvers) {
-    resolve(payload.frames);
-    state.pendingVideoFrameResolvers.delete(requestId);
-    break;
+  // Invoke callback if registered
+  if (state.videoFrameCallback) {
+    workerProfiler.measure(nodeId, 'draw', () =>
+      invokeCallbackSafely(nodeId, () =>
+        state.videoFrameCallback!(payload.frames, payload.timestamp)
+      )
+    );
   }
 }
 
@@ -866,7 +903,10 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       );
     })
     .with({ type: 'videoFramesReady' }, (data) => {
-      handleVideoFramesReady(nodeId, data as { frames: (ImageBitmap | null)[]; timestamp: number });
+      handleVideoFramesReady(
+        nodeId,
+        data as { requestId?: string; frames: CapturedVideoFrame[]; timestamp: number }
+      );
     })
     .with({ type: 'setRenderPort' }, () => {
       const state = getNodeState(nodeId);

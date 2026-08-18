@@ -2,6 +2,7 @@
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { WorkerNodeSystem } from '$lib/js-runner';
+  import { GLSystem } from '$lib/canvas/GLSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type {
     WorkerCallbackRegisteredEvent,
@@ -15,6 +16,7 @@
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
+  import { removeExcessVideoOutletEdges } from '$objects/object-layout/outlet-edges';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -31,6 +33,7 @@
       inletCount?: number;
       outletCount?: number;
       videoInletCount?: number;
+      videoOutletCount?: number;
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
@@ -41,10 +44,11 @@
   } = $props();
 
   // Get flow utilities to update node data
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   const workerSystem = WorkerNodeSystem.getInstance();
+  const glSystem = GLSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
 
   // Settings manager — persists across code re-runs
@@ -62,6 +66,11 @@
   let isTimerCallbackActive = $state(false);
 
   const code = $derived(data.code || '');
+  const videoOutletCount = $derived(data.videoOutletCount ?? 0);
+
+  $effect(() => {
+    removeExcessVideoOutletEdges(nodeId, videoOutletCount, getEdges, deleteElements);
+  });
 
   // Reference to base component for flash
   let baseRef: CodeBlockBase | null = $state(null);
@@ -79,8 +88,8 @@
       })
       .with({ portType: 'video' }, (m) => {
         updateNodeData(nodeId, {
-          videoInletCount: m.inletCount
-          // Note: worker nodes don't support video outlets (only inputs for processing)
+          videoInletCount: m.inletCount,
+          videoOutletCount: m.outletCount
         });
       })
       .exhaustive();
@@ -120,6 +129,7 @@
   onMount(async () => {
     // Create the worker for this node
     await workerSystem.create(nodeId);
+    glSystem.upsertNode(nodeId, 'worker', {});
 
     // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
     workerSystem.registerSettingsCallbacks(
@@ -152,6 +162,7 @@
 
     // Destroy the worker (also unregisters settings callbacks internally)
     workerSystem.destroy(nodeId);
+    glSystem.removeNode(nodeId);
   });
 
   function cleanupRunningTasks() {
@@ -210,6 +221,7 @@
   editorPlaceholder="Write your JavaScript code here..."
   nodeType="worker"
   videoInletCount={data.videoInletCount ?? 0}
+  {videoOutletCount}
   settingsSchema={data.settingsSchema}
   settingsValues={data.settings ?? {}}
   onSettingsValueChange={(key, value) => {

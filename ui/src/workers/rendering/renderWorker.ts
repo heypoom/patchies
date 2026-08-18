@@ -110,6 +110,18 @@ export function installRenderWorkerRuntime() {
           );
         }
       })
+      .with('setVideoFrame', () => {
+        const frame = data.frame;
+
+        if (!(frame?.data instanceof Uint8ClampedArray)) {
+          console.warn(
+            '[renderWorker] Invalid setVideoFrame payload: data must be Uint8ClampedArray'
+          );
+          return;
+        }
+
+        fboRenderer.setVideoFrame(data.nodeId, frame.width, frame.height, frame.data);
+      })
       .with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
       .with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
       .with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
@@ -150,7 +162,13 @@ export function installRenderWorkerRuntime() {
         handleVfsTextResolved(data);
       })
       .with('captureWorkerVideoFrames', () => {
-        handleCaptureWorkerVideoFrames(data.targetNodeId, data.sourceNodeIds, data.resolution);
+        handleCaptureWorkerVideoFrames(
+          data.targetNodeId,
+          data.requestId,
+          data.sourceNodeIds,
+          data.resolution,
+          data.format
+        );
       })
       .with('captureWorkerVideoFramesBatch', () => {
         handleCaptureWorkerVideoFramesBatch(data.requests);
@@ -281,12 +299,13 @@ export function installRenderWorkerRuntime() {
         );
 
         if (completedBatches.length > 0) {
-          // Collect all bitmaps for transfer
-          const transferList: ImageBitmap[] = [];
+          // Transfer bitmap handles or raw pixel buffers without cloning.
+          const transferList: Transferable[] = [];
 
           for (const batch of completedBatches) {
             for (const frame of batch.frames) {
-              if (frame) transferList.push(frame);
+              if (frame instanceof ImageBitmap) transferList.push(frame);
+              else if (frame) transferList.push(frame.data.buffer as ArrayBuffer);
             }
           }
 
@@ -295,6 +314,7 @@ export function installRenderWorkerRuntime() {
               type: 'workerVideoFramesCapturedBatch',
               results: completedBatches.map((b) => ({
                 targetNodeId: b.targetNodeId,
+                requestId: b.requestId,
                 frames: b.frames
               })),
               timestamp: performance.now()
@@ -397,9 +417,18 @@ export function installRenderWorkerRuntime() {
    */
   function handleCaptureWorkerVideoFrames(
     targetNodeId: string,
+    requestId: string | undefined,
     sourceNodeIds: (string | null)[],
-    resolution?: [number, number]
+    resolution?: [number, number],
+    format: 'raw' | 'bitmap' = 'raw'
   ) {
+    if (format === 'raw') {
+      fboRenderer.initiateVideoFrameCaptureAsync([
+        { targetNodeId, requestId, sourceNodeIds, resolution, format }
+      ]);
+      return;
+    }
+
     const frames: (ImageBitmap | null)[] = [];
     const transferList: ImageBitmap[] = [];
 
@@ -421,6 +450,7 @@ export function installRenderWorkerRuntime() {
       {
         type: 'workerVideoFramesCaptured',
         targetNodeId,
+        requestId,
         frames,
         timestamp: performance.now()
       },
@@ -440,8 +470,10 @@ export function installRenderWorkerRuntime() {
   function handleCaptureWorkerVideoFramesBatch(
     requests: Array<{
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
+      format?: 'raw' | 'bitmap';
     }>
   ) {
     // Initiate async captures - results will be harvested in the render loop

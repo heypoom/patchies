@@ -43,6 +43,7 @@ import type {
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
+import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { renderElementImageToBitmap } from './elementImageBitmap.js';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
@@ -644,6 +645,7 @@ export class FBORenderer {
           .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
           .with({ type: 'img' }, () => this.createEmptyRenderer())
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
+          .with({ type: 'worker' }, () => this.createEmptyRenderer())
           .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
           .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
           .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
@@ -2183,6 +2185,11 @@ export class FBORenderer {
     this.cookState.markDirty(nodeId, 'bitmap');
   }
 
+  setVideoFrame(nodeId: string, width: number, height: number, data: Uint8ClampedArray) {
+    this.videoTextures.setVideoFrame(nodeId, width, height, data);
+    this.cookState.markDirty(nodeId, 'bitmap');
+  }
+
   /**
    * Removes a persistent bitmap image.
    *
@@ -2302,6 +2309,7 @@ export class FBORenderer {
           'shaderpark',
           'img',
           'float.tex',
+          'worker',
           'bg.out',
           'send.vdo',
           'recv.vdo',
@@ -2393,8 +2401,10 @@ export class FBORenderer {
   initiateVideoFrameCaptureAsync(
     requests: Array<{
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
+      format?: 'raw' | 'bitmap';
     }>
   ): void {
     this.captureRenderer.initiateVideoFrameBatchAsync(
@@ -2410,7 +2420,8 @@ export class FBORenderer {
    */
   harvestVideoFrames(): Array<{
     targetNodeId: string;
-    frames: (ImageBitmap | null)[];
+    requestId?: string;
+    frames: CapturedVideoFrame[];
     timestamp: number;
   }> {
     return this.captureRenderer.harvestVideoFrameBatches();

@@ -53,6 +53,61 @@ describe('VideoTextureManager', () => {
     expect(Array.from(texImageArgs[8] as Uint8Array)).toEqual([0, 128, 255, 255]);
   });
 
+  it('uploads worker video frames as flipped RGBA8 bytes without float conversion', () => {
+    const { regl } = createMockRegl();
+    const gl = createMockWebGL2Context();
+    const manager = new VideoTextureManager(regl as never, gl as never);
+    const pixels = new Uint8ClampedArray(2 * 2 * 4);
+
+    manager.setVideoFrame('worker-1', 2, 2, pixels);
+    expect(gl.blitFramebuffer).toHaveBeenCalledWith(
+      0,
+      2,
+      2,
+      0,
+      0,
+      0,
+      2,
+      2,
+      gl.COLOR_BUFFER_BIT,
+      gl.NEAREST
+    );
+
+    manager.setVideoFrame('worker-1', 2, 2, pixels);
+    expect(regl.texture).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves texture bindings when uploading a float texture', () => {
+    const { regl } = createMockRegl();
+    const gl = createMockWebGL2Context();
+    const texture0 = {} as WebGLTexture;
+    const texture1 = {} as WebGLTexture;
+    const bindings = new Map<number, WebGLTexture | null>([
+      [gl.TEXTURE0, texture0],
+      [gl.TEXTURE0 + 1, texture1]
+    ]);
+    let activeTexture = gl.TEXTURE0 + 1;
+
+    gl.getParameter.mockImplementation((parameter: number) => {
+      if (parameter === gl.ACTIVE_TEXTURE) return activeTexture;
+      if (parameter === gl.TEXTURE_BINDING_2D) return bindings.get(activeTexture) ?? null;
+      return null;
+    });
+    gl.activeTexture.mockImplementation((texture: number) => {
+      activeTexture = texture;
+    });
+    gl.bindTexture.mockImplementation((_: number, texture: WebGLTexture | null) => {
+      bindings.set(activeTexture, texture);
+    });
+
+    const manager = new VideoTextureManager(regl as never, gl as never);
+    manager.setFloatTexture('float-1', 1, 1, new Float32Array(4));
+
+    expect(activeTexture).toBe(gl.TEXTURE0 + 1);
+    expect(bindings.get(gl.TEXTURE0)).toBe(texture0);
+    expect(bindings.get(gl.TEXTURE0 + 1)).toBe(texture1);
+  });
+
   it('skips float texture uploads when the data length does not match dimensions', () => {
     const { regl } = createMockRegl();
     const gl = createMockWebGL2Context();

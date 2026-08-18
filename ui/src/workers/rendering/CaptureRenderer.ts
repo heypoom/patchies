@@ -2,6 +2,7 @@ import type regl from 'regl';
 import type { FBONode } from '../../lib/rendering/types';
 import { getFramebuffer } from './utils';
 import type { PixelReadbackService } from './PixelReadbackService';
+import type { CapturedVideoFrame, VideoFrameFormat } from '$lib/js-runner/js-worker-types';
 
 interface PendingVideoFrameRead {
   pbo: WebGLBuffer;
@@ -13,9 +14,11 @@ interface PendingVideoFrameRead {
 
 interface PendingVideoFrameBatch {
   targetNodeId: string;
+  requestId?: string;
   sourceNodeIds: (string | null)[];
   reads: PendingVideoFrameRead[];
   initiatedAt: number;
+  format: VideoFrameFormat;
 }
 
 /**
@@ -106,8 +109,10 @@ export class CaptureRenderer {
   initiateVideoFrameBatchAsync(
     requests: Array<{
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
+      format?: VideoFrameFormat;
     }>,
     fboNodes: Map<string, FBONode>,
     externalTextures?: Map<string, regl.Texture2D>
@@ -185,9 +190,11 @@ export class CaptureRenderer {
 
       this.pendingVideoFrameBatches.push({
         targetNodeId: request.targetNodeId,
+        requestId: request.requestId,
         sourceNodeIds: request.sourceNodeIds,
         reads,
-        initiatedAt: performance.now()
+        initiatedAt: performance.now(),
+        format: request.format ?? 'raw'
       });
     }
 
@@ -265,7 +272,7 @@ export class CaptureRenderer {
 
   /**
    * Harvest completed video frame batches.
-   * Returns array of completed batches with their ImageBitmaps.
+   * Returns array of completed batches with raw RGBA or ImageBitmap frames.
    *
    * Smart cloning: When multiple targets need the same source, each gets
    * its own bitmap created from the cached pixel data. When only one target
@@ -273,13 +280,15 @@ export class CaptureRenderer {
    */
   harvestVideoFrameBatches(): Array<{
     targetNodeId: string;
-    frames: (ImageBitmap | null)[];
+    requestId?: string;
+    frames: CapturedVideoFrame[];
     timestamp: number;
   }> {
     const gl = this.gl;
     const results: Array<{
       targetNodeId: string;
-      frames: (ImageBitmap | null)[];
+      requestId?: string;
+      frames: CapturedVideoFrame[];
       timestamp: number;
     }> = [];
 
@@ -361,7 +370,7 @@ export class CaptureRenderer {
       }
 
       // Build frames array matching sourceNodeIds order
-      const frames: (ImageBitmap | null)[] = [];
+      const frames: CapturedVideoFrame[] = [];
 
       for (const sourceId of batch.sourceNodeIds) {
         if (!sourceId) {
@@ -378,6 +387,16 @@ export class CaptureRenderer {
         const pixelData = completedPixelData.get(read);
         if (!pixelData) {
           frames.push(null);
+          continue;
+        }
+
+        if (batch.format === 'raw') {
+          frames.push({
+            data: new Uint8ClampedArray(pixelData.pixels),
+            width: pixelData.width,
+            height: pixelData.height
+          });
+          sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
           continue;
         }
 
@@ -427,6 +446,7 @@ export class CaptureRenderer {
 
       results.push({
         targetNodeId: batch.targetNodeId,
+        requestId: batch.requestId,
         frames,
         timestamp: performance.now()
       });

@@ -14,7 +14,13 @@ import { AudioService } from '$lib/audio/v2/AudioService';
 
 import { JSRunner } from './JSRunner';
 import { WorkerLLMProxy } from './WorkerLLMProxy';
-import type { WorkerMessage, WorkerResponse } from './js-worker-types';
+import type {
+  CapturedVideoFrame,
+  VideoFrameConfig,
+  VideoFrameFormat,
+  WorkerMessage,
+  WorkerResponse
+} from './js-worker-types';
 
 import JsWorker from '../../workers/js/jsWorker?worker';
 import { currentPatchId } from '../../stores/ui.store';
@@ -38,6 +44,9 @@ interface WorkerVideoState {
   sourceNodeIds: (string | null)[]; // Maps inlet index to source node ID
   hasVideoCallback: boolean;
   resolution?: [number, number]; // Custom capture resolution
+  format: VideoFrameFormat;
+  fps?: number;
+  lastCaptureTime: number;
 }
 
 /**
@@ -238,11 +247,14 @@ export class WorkerNodeSystem {
       .with({ type: 'setVideoCount' }, (event) => {
         this.handleSetVideoCount(nodeId, event.inletCount, event.outletCount);
       })
+      .with({ type: 'setVideoFrame' }, (event) => {
+        this.eventBus.dispatch({ type: 'workerVideoFrame', nodeId, frame: event.frame });
+      })
       .with({ type: 'videoFrameCallbackRegistered' }, (event) => {
-        this.handleVideoFrameCallbackRegistered(nodeId, event.resolution);
+        this.handleVideoFrameCallbackRegistered(nodeId, event.config);
       })
       .with({ type: 'requestVideoFrames' }, (event) => {
-        this.handleRequestVideoFrames(nodeId, event.resolution);
+        this.handleRequestVideoFrames(nodeId, event.requestId, event.config);
       })
       // User-Defined Settings API
       .with({ type: 'settingsDefine' }, (event) => {
@@ -338,6 +350,8 @@ export class WorkerNodeSystem {
    * Handle setVideoCount from worker - update video port count and dispatch event.
    */
   private handleSetVideoCount(nodeId: string, inletCount: number, outletCount: number) {
+    const supportedOutletCount = Math.min(Math.max(outletCount, 0), 1);
+
     // Initialize or update video state, preserving any existing hasVideoCallback
     let videoState = this.videoStates.get(nodeId);
     if (!videoState) {
@@ -345,14 +359,16 @@ export class WorkerNodeSystem {
         inletCount: 0,
         outletCount: 0,
         sourceNodeIds: [],
-        hasVideoCallback: false
+        hasVideoCallback: false,
+        format: 'raw',
+        lastCaptureTime: 0
       };
       this.videoStates.set(nodeId, videoState);
     }
 
     // Update counts but preserve hasVideoCallback (may have been set before setVideoCount was called)
     videoState.inletCount = inletCount;
-    videoState.outletCount = outletCount;
+    videoState.outletCount = supportedOutletCount;
 
     // Update connections from stored edges (handles case where edges existed before setVideoCount was called)
     this.updateEdgesForNode(nodeId, videoState, this.currentEdges);
@@ -363,7 +379,7 @@ export class WorkerNodeSystem {
       portType: 'video',
       nodeId,
       inletCount,
-      outletCount
+      outletCount: supportedOutletCount
     });
   }
 
@@ -371,7 +387,7 @@ export class WorkerNodeSystem {
    * Handle video frame callback registration - start frame capture loop.
    * Initializes videoState if absent (handles registration before setVideoCount).
    */
-  private handleVideoFrameCallbackRegistered(nodeId: string, resolution?: [number, number]) {
+  private handleVideoFrameCallbackRegistered(nodeId: string, config?: VideoFrameConfig) {
     let videoState = this.videoStates.get(nodeId);
 
     if (!videoState) {
@@ -380,14 +396,19 @@ export class WorkerNodeSystem {
         inletCount: 0,
         outletCount: 0,
         sourceNodeIds: [],
-        hasVideoCallback: false
+        hasVideoCallback: false,
+        format: 'raw',
+        lastCaptureTime: 0
       };
 
       this.videoStates.set(nodeId, videoState);
     }
 
     videoState.hasVideoCallback = true;
-    videoState.resolution = resolution;
+    videoState.resolution = config?.resolution;
+    videoState.format = config?.format ?? 'raw';
+    videoState.fps = config?.fps && config.fps > 0 ? Math.min(config.fps, 30) : undefined;
+
     this.startGlobalVideoLoop();
 
     // Dispatch event for UI to show long-running indicator (treat as interval-like)
@@ -401,7 +422,7 @@ export class WorkerNodeSystem {
   /**
    * Handle manual video frame request.
    */
-  private handleRequestVideoFrames(nodeId: string, resolution?: [number, number]) {
+  private handleRequestVideoFrames(nodeId: string, requestId: string, config?: VideoFrameConfig) {
     // Request frames immediately for manual grab (single node)
     const videoState = this.videoStates.get(nodeId);
     if (!videoState || videoState.sourceNodeIds.length === 0) return;
@@ -409,8 +430,10 @@ export class WorkerNodeSystem {
     this.eventBus.dispatch({
       type: 'requestWorkerVideoFrames',
       nodeId,
+      requestId,
       sourceNodeIds: videoState.sourceNodeIds,
-      resolution
+      resolution: config?.resolution,
+      format: config?.format ?? 'raw'
     });
   }
 
@@ -515,7 +538,7 @@ export class WorkerNodeSystem {
       const now = performance.now();
 
       if (now - this.lastGlobalFrameTime >= WorkerNodeSystem.VIDEO_FRAME_INTERVAL_MS) {
-        this.requestBatchedVideoFrames(nodesWithCallbacks);
+        this.requestBatchedVideoFrames(nodesWithCallbacks, now);
         this.lastGlobalFrameTime = now;
       }
 
@@ -543,22 +566,30 @@ export class WorkerNodeSystem {
   /**
    * Request video frames for multiple nodes in a single batched request.
    */
-  private requestBatchedVideoFrames(nodeIds: string[]) {
+  private requestBatchedVideoFrames(nodeIds: string[], now: number) {
     const requests: Array<{
       targetNodeId: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
+      format: VideoFrameFormat;
     }> = [];
 
     for (const nodeId of nodeIds) {
       const videoState = this.videoStates.get(nodeId);
 
-      if (videoState && videoState.sourceNodeIds.length > 0) {
+      if (
+        videoState &&
+        videoState.sourceNodeIds.length > 0 &&
+        (!videoState.fps || now - videoState.lastCaptureTime >= 1000 / videoState.fps)
+      ) {
         requests.push({
           targetNodeId: nodeId,
           sourceNodeIds: videoState.sourceNodeIds,
-          resolution: videoState.resolution
+          resolution: videoState.resolution,
+          format: videoState.format
         });
+
+        videoState.lastCaptureTime = now;
       }
     }
 
@@ -575,7 +606,12 @@ export class WorkerNodeSystem {
    * Deliver captured video frames to a worker node.
    * Called by GLSystem when frames are received from render worker.
    */
-  deliverVideoFrames(nodeId: string, frames: (ImageBitmap | null)[], timestamp: number) {
+  deliverVideoFrames(
+    nodeId: string,
+    frames: CapturedVideoFrame[],
+    timestamp: number,
+    requestId?: string
+  ) {
     const instance = this.workers.get(nodeId);
     if (!instance) return;
 
@@ -583,10 +619,16 @@ export class WorkerNodeSystem {
       {
         type: 'videoFramesReady',
         nodeId,
+        requestId,
         frames,
         timestamp
       } satisfies WorkerMessage,
-      { transfer: frames.filter((f): f is ImageBitmap => f !== null) }
+      {
+        transfer: frames.flatMap<Transferable>((frame) => {
+          if (frame instanceof ImageBitmap) return [frame];
+          return frame ? [frame.data.buffer as ArrayBuffer] : [];
+        })
+      }
     );
   }
 

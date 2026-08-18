@@ -1,5 +1,6 @@
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import type { RenderCookStatus } from '$lib/rendering/types';
+import type { WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
 import type { Node } from '@xyflow/svelte';
 
 export type PatchiesEvent =
@@ -8,6 +9,7 @@ export type PatchiesEvent =
   | PyodideConsoleOutputEvent
   | PyodideSendMessageEvent
   | NodePortCountUpdateEvent
+  | WorkerVideoFrameEvent
   | NodeTitleUpdateEvent
   | NodeRunOnMountUpdateEvent
   | NodeHidePortsUpdateEvent
@@ -99,6 +101,12 @@ export interface NodePortCountUpdateEvent {
   nodeId: string;
   inletCount: number;
   outletCount: number;
+}
+
+export interface WorkerVideoFrameEvent {
+  type: 'workerVideoFrame';
+  nodeId: string;
+  frame: WorkerVideoFrame;
 }
 
 export interface NodeTitleUpdateEvent {
@@ -277,16 +285,20 @@ export interface WorkerFlashEvent {
 export interface RequestWorkerVideoFramesEvent {
   type: 'requestWorkerVideoFrames';
   nodeId: string;
+  requestId: string;
   sourceNodeIds: (string | null)[];
   resolution?: [number, number];
+  format?: 'raw' | 'bitmap';
 }
 
 export interface RequestWorkerVideoFramesBatchEvent {
   type: 'requestWorkerVideoFramesBatch';
   requests: Array<{
     targetNodeId: string;
+    requestId?: string;
     sourceNodeIds: (string | null)[];
     resolution?: [number, number];
+    format?: 'raw' | 'bitmap';
   }>;
 }
 

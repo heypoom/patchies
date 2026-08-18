@@ -125,8 +125,6 @@ clock.every('1:0:0', () => {
 
 See [Clock API](/docs/clock-api) for the full scheduling API.
 
-
-
 ## AI
 
 Call the configured AI provider from a patch:
@@ -171,6 +169,23 @@ setBackgroundOutput(null); // clear it
 pauseObject('p5-1');
 unpauseObject('p5-1');
 ```
+
+### OpenCV
+
+In `js` and `worker` objects, `await opencv()` lazy-loads OpenCV.js and resolves
+when its WebAssembly runtime is ready. It is cached once per execution realm.
+
+```javascript
+const cv = await opencv();
+
+const gray = new cv.Mat();
+
+// Use OpenCV, then release every OpenCV allocation.
+gray.delete();
+```
+
+Use `worker` for CPU-intensive image processing. See the **OpenCV Image Processing**
+preset pack for message-based examples.
 
 ## See Also
 

@@ -1,4 +1,5 @@
 import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
+import { opencv } from './opencv';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { profiler, typeFromNodeId } from '$lib/profiler';
 import { debounce } from 'lodash';
@@ -427,6 +428,7 @@ export class JSRunner {
       'onGraphChange',
       'getVfsUrl',
       'clock',
+      'opencv',
       ...Object.keys(extraContext)
     ];
 
@@ -539,6 +541,7 @@ export class JSRunner {
       onGraphChange,
       createGetVfsUrl(nodeId),
       clock,
+      () => opencv((name) => import(/* @vite-ignore */ `${this.moduleProviderUrl}${name}`)),
       ...Object.values(extraContext)
     ];
 

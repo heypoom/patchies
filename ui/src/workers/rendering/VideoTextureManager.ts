@@ -197,11 +197,11 @@ export class VideoTextureManager {
     const gl = this.gl;
     const upload = this.createFloatTextureUpload(data, uploadFormat);
 
-    const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
     const previousActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE) as number;
     const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
 
     gl.activeTexture(gl.TEXTURE0);
+    const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
     gl.bindTexture(gl.TEXTURE_2D, rawTexture);
 
     if (needsResize) {
@@ -247,6 +247,93 @@ export class VideoTextureManager {
       destFBO = this.regl.framebuffer({ color: destTexture });
       this.destinationFBOs.set(nodeId, destFBO);
     }
+  }
+
+  /** Upload worker-produced RGBA8 pixels without converting through float texture data. */
+  setVideoFrame(nodeId: string, width: number, height: number, data: Uint8ClampedArray): void {
+    const safeWidth = Math.max(1, Math.round(width));
+    const safeHeight = Math.max(1, Math.round(height));
+    const expectedLength = safeWidth * safeHeight * 4;
+
+    if (data.length !== expectedLength) {
+      console.warn(
+        `[worker] Expected RGBA data length ${expectedLength}, received ${data.length}; skipping upload`
+      );
+      return;
+    }
+
+    const pendingBitmap = this.pendingBitmaps.get(nodeId);
+    if (pendingBitmap) {
+      pendingBitmap.close();
+      this.pendingBitmaps.delete(nodeId);
+    }
+
+    let sourceTexture = this.sourceTextures.get(nodeId);
+    const existingDestTexture = this.destinationTextures.get(nodeId);
+    const needsResize =
+      !sourceTexture ||
+      sourceTexture.width !== safeWidth ||
+      sourceTexture.height !== safeHeight ||
+      !existingDestTexture ||
+      existingDestTexture.width !== safeWidth ||
+      existingDestTexture.height !== safeHeight ||
+      this.destinationTextureFormats.get(nodeId) !== 'rgba8';
+
+    if (
+      !sourceTexture ||
+      sourceTexture.width !== safeWidth ||
+      sourceTexture.height !== safeHeight
+    ) {
+      sourceTexture?.destroy();
+      sourceTexture = this.regl.texture({ width: safeWidth, height: safeHeight });
+      this.sourceTextures.set(nodeId, sourceTexture);
+    }
+
+    let destTexture = existingDestTexture;
+    let destFBO = this.destinationFBOs.get(nodeId);
+
+    if (needsResize) {
+      destFBO?.destroy();
+      destFBO = undefined;
+      existingDestTexture?.destroy();
+
+      destTexture = this.regl.texture({
+        width: safeWidth,
+        height: safeHeight,
+        wrapS: 'clamp',
+        wrapT: 'clamp'
+      });
+
+      this.destinationTextures.set(nodeId, destTexture);
+      this.destinationTextureFormats.set(nodeId, 'rgba8');
+    }
+
+    if (!destFBO) {
+      destFBO = this.regl.framebuffer({ color: destTexture });
+      this.destinationFBOs.set(nodeId, destFBO);
+    }
+
+    // Typed-array uploads keep their row order. Flip while copying into the
+    // destination texture so raw frames retain ImageData's top-down layout.
+    sourceTexture.subimage({ data, width: safeWidth, height: safeHeight });
+    const sourceFBO = this.regl.framebuffer({ color: sourceTexture });
+
+    this.gl.bindFramebuffer(this.gl.READ_FRAMEBUFFER, getFramebuffer(sourceFBO));
+    this.gl.bindFramebuffer(this.gl.DRAW_FRAMEBUFFER, getFramebuffer(destFBO));
+    this.gl.blitFramebuffer(
+      0,
+      safeHeight,
+      safeWidth,
+      0,
+      0,
+      0,
+      safeWidth,
+      safeHeight,
+      this.gl.COLOR_BUFFER_BIT,
+      this.gl.NEAREST
+    );
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+    sourceFBO.destroy();
   }
 
   /**

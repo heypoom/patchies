@@ -12,6 +12,28 @@ export interface RenderConnection {
   inletKey?: string;
 }
 
+export type VideoFrameFormat = 'raw' | 'bitmap';
+
+export interface RawVideoFrame {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+export interface WorkerVideoFrame {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+export type CapturedVideoFrame = ImageBitmap | RawVideoFrame | null;
+
+export interface VideoFrameConfig {
+  resolution?: [number, number];
+  format?: VideoFrameFormat;
+  fps?: number;
+}
+
 export type WorkerMessage = { nodeId: string } & (
   | { type: 'setPatchId'; patchId: string }
   | { type: 'executeCode'; code: string; processedCode: string }
@@ -22,7 +44,12 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
   | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
-  | { type: 'videoFramesReady'; frames: (ImageBitmap | null)[]; timestamp: number }
+  | {
+      type: 'videoFramesReady';
+      requestId?: string;
+      frames: CapturedVideoFrame[];
+      timestamp: number;
+    }
   | { type: 'setRenderPort' }
   | { type: 'updateRenderConnections'; connections: RenderConnection[] }
   | { type: 'setWorkerPort'; targetNodeId?: string; sourceNodeId?: string }
@@ -61,8 +88,9 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
   | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
-  | { type: 'videoFrameCallbackRegistered'; resolution?: [number, number] }
-  | { type: 'requestVideoFrames'; requestId: string; resolution?: [number, number] }
+  | { type: 'setVideoFrame'; frame: WorkerVideoFrame }
+  | { type: 'videoFrameCallbackRegistered'; config?: VideoFrameConfig }
+  | { type: 'requestVideoFrames'; requestId: string; config?: VideoFrameConfig }
   | { type: 'sendToChannel'; channel: string; data: unknown }
   | { type: 'subscribeChannel'; channel: string }
   | { type: 'unsubscribeChannel'; channel: string }

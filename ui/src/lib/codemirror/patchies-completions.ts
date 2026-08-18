@@ -58,8 +58,8 @@ const patchiesAPICompletions: Completion[] = [
     label: 'setVideoCount',
     type: 'function',
     detail: '(inlets?: number, outlets?: number) => void',
-    info: 'Set the number of video inlets and outlets. For Hydra/Three max 4 each, for Worker nodes outlets not supported.',
-    apply: 'setVideoCount(1, 0)'
+    info: 'Set the number of video inlets and outlets. Worker nodes support one RGBA video output via setVideoFrame().',
+    apply: 'setVideoCount(1, 1)'
   },
   {
     label: 'getTexture',
@@ -92,17 +92,24 @@ const patchiesAPICompletions: Completion[] = [
   {
     label: 'onVideoFrame',
     type: 'function',
-    detail: '(callback: (frames, timestamp) => void) => void',
-    info: 'Register a callback to receive video frames from connected video inlets. Frames are ImageBitmap[] - call .close() when done!',
+    detail: '(callback: (frames, timestamp) => void, config?) => void',
+    info: 'Register a callback for connected video inlets. Frames default to raw RGBA { data, width, height }; use { format: "bitmap" } for ImageBitmap frames.',
     apply:
-      'onVideoFrame((frames, time) => {\n  // frames[0] is ImageBitmap from first video inlet\n  frames.forEach(f => f?.close())\n})'
+      'onVideoFrame((frames, time) => {\n  // frames[0] is raw RGBA from the first video inlet\n  const frame = frames[0]\n})'
   },
   {
     label: 'getVideoFrames',
     type: 'function',
-    detail: '() => Promise<(ImageBitmap | null)[]>',
-    info: 'Manually request current video frames from connected inlets. Returns array of ImageBitmaps - call .close() when done!',
+    detail: '(config?) => Promise<RawVideoFrame[] | ImageBitmap[]>',
+    info: 'Manually request current video frames. Raw RGBA frames are the default; request { format: "bitmap" } for ImageBitmaps.',
     apply: 'await getVideoFrames()'
+  },
+  {
+    label: 'setVideoFrame',
+    type: 'function',
+    detail: '({ data: Uint8ClampedArray, width: number, height: number }) => void',
+    info: 'Upload raw RGBA bytes to a worker node video outlet. Call setVideoCount(inlets, 1) first.',
+    apply: 'setVideoFrame({ data: pixels, width, height })'
   },
   {
     label: 'setMouseScope',
@@ -502,6 +509,15 @@ const patchiesAPICompletions: Completion[] = [
     detail: '() => Promise<{ channel, osc? }>',
     info: 'Get a SuperSonic OscChannel for sending OSC messages directly to scsynth. In workers, also returns osc encoder. In dsp~, returns channel only. Lazy-loads SuperSonic on first call.',
     apply: 'getSuperSonicChannel()'
+  },
+
+  // Computer vision
+  {
+    label: 'opencv',
+    type: 'function',
+    detail: '() => Promise<OpenCV>',
+    info: 'Lazy-load OpenCV.js and wait until its WebAssembly runtime is ready.',
+    apply: 'await opencv()'
   }
 ];
 
@@ -612,6 +628,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three.dom',
     'tone~'
   ],
+  opencv: ['js', 'worker', 'canvas', 'canvas.dom'],
   noDrag: MOUSE_INTERACTION_JS_NODES,
   noPan: MOUSE_INTERACTION_JS_NODES,
   noWheel: MOUSE_INTERACTION_JS_NODES,
@@ -713,6 +730,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   onWheel: ['three'],
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
+  setVideoFrame: ['worker'],
   getVfsUrl: [
     'js',
     'worker',

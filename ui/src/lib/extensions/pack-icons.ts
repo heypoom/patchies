@@ -27,7 +27,8 @@ import {
   Grid3x3,
   Usb,
   Waypoints,
-  CircuitBoard
+  CircuitBoard,
+  ScanSearch
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 
@@ -65,5 +66,6 @@ export function getPackIcon(iconName: string) {
     .with('Eye', () => Eye)
     .with('Waypoints', () => Waypoints)
     .with('CircuitBoard', () => CircuitBoard)
+    .with('ScanSearch', () => ScanSearch)
     .otherwise(() => Package);
 }

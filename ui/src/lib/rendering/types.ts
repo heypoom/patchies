@@ -16,6 +16,8 @@ import type { ShaderParkRenderNode } from '$objects/shaderpark/render-types';
 import type { SwglRenderNode } from '$objects/swgl/render-types';
 import type { TextmodeRenderNode } from '$objects/textmode/render-types';
 import type { ThreeRenderNode } from '$objects/three/render-types';
+import type { WorkerRenderNode } from '$objects/worker/render-types';
+import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
@@ -49,6 +51,7 @@ export type RenderNode = {
   | BackgroundOutputRenderNode
   | SendVideoRenderNode
   | RecvVideoRenderNode
+  | WorkerRenderNode
 );
 
 export interface RenderEdge {
@@ -172,13 +175,19 @@ export type WorkerMessage =
   | {
       type: 'captureWorkerVideoFrames';
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
+      resolution?: [number, number];
+      format?: 'raw' | 'bitmap';
     }
   | {
       type: 'captureWorkerVideoFramesBatch';
       requests: Array<{
         targetNodeId: string;
+        requestId?: string;
         sourceNodeIds: (string | null)[];
+        resolution?: [number, number];
+        format?: 'raw' | 'bitmap';
       }>;
     }
   | {
@@ -279,14 +288,16 @@ export type RenderWorkerMessage =
   | {
       type: 'workerVideoFramesCaptured';
       targetNodeId: string;
-      frames: (ImageBitmap | null)[];
+      requestId?: string;
+      frames: CapturedVideoFrame[];
       timestamp: number;
     }
   | {
       type: 'workerVideoFramesCapturedBatch';
       results: Array<{
         targetNodeId: string;
-        frames: (ImageBitmap | null)[];
+        requestId?: string;
+        frames: CapturedVideoFrame[];
       }>;
       timestamp: number;
     }
@@ -348,6 +359,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'projmap',
   'img',
   'float.tex',
+  'worker',
   'send.vdo',
   'recv.vdo'
 ];
