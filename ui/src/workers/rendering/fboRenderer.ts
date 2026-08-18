@@ -2066,14 +2066,8 @@ export class FBORenderer {
     if (visited.has(nodeId)) return null;
     visited.add(nodeId);
 
-    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
-
-    if (node?.type === 'send.vdo' || node?.type === 'recv.vdo') {
-      const inlet = node.inletMap.get(0);
-
-      return inlet ? this.resolveVideoSource(inlet.sourceNodeId, inlet.outletIndex, visited) : null;
-    }
-
+    // External sources are the common direct-input case. Resolve them before
+    // looking up the graph so image/video sampling stays on the fast path.
     const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
 
     if (externalTexture) {
@@ -2082,6 +2076,14 @@ export class FBORenderer {
         width: externalTexture.width,
         height: externalTexture.height
       };
+    }
+
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+
+    if (node?.type === 'send.vdo' || node?.type === 'recv.vdo') {
+      const inlet = node.inletMap.get(0);
+
+      return inlet ? this.resolveVideoSource(inlet.sourceNodeId, inlet.outletIndex, visited) : null;
     }
 
     const fboNode = this.fboNodes.get(nodeId);
