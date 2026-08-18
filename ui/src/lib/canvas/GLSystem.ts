@@ -59,7 +59,12 @@ import {
 import { match, P } from 'ts-pattern';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem } from '$lib/vfs';
-import { isExternalUrl, normalizeUserVfsPath } from '$lib/vfs/user-api-paths';
+import {
+  listVfsPaths,
+  resolveVfsText,
+  resolveVfsUrl,
+  searchVfsPaths
+} from '$lib/vfs/worker-requests';
 import { Transport, type TransportState } from '$lib/transport';
 import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
 import type { CapturedVideoFrame, WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
@@ -472,16 +477,32 @@ export class GLSystem {
         this.audioAnalysis.handleRenderWorkerMessage(data);
       })
       .with({ type: 'resolveVfsUrl' }, async (data) => {
-        this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
+        this.send('vfsUrlResolved', {
+          requestId: data.requestId,
+          nodeId: data.nodeId,
+          ...(await resolveVfsUrl(data.path))
+        });
       })
       .with({ type: 'listVfs' }, async (data) => {
-        this.handleVfsPathListing(data.requestId, data.nodeId, data.path);
+        this.send('vfsPathsResolved', {
+          requestId: data.requestId,
+          nodeId: data.nodeId,
+          ...(await listVfsPaths(data.path))
+        });
       })
       .with({ type: 'searchVfs' }, async (data) => {
-        this.handleVfsPathSearch(data.requestId, data.nodeId, data.query, data.path);
+        this.send('vfsPathsResolved', {
+          requestId: data.requestId,
+          nodeId: data.nodeId,
+          ...(await searchVfsPaths(data.query, data.path))
+        });
       })
       .with({ type: 'resolveVfsText' }, async (data) => {
-        this.handleVfsTextResolution(data.requestId, data.nodeId, data.path);
+        this.send('vfsTextResolved', {
+          requestId: data.requestId,
+          nodeId: data.nodeId,
+          ...(await resolveVfsText(data.path))
+        });
       })
       .with({ type: 'floatTextureBufferReleased' }, (data) => {
         this.floatTextureUploadBuffers.release(data.buffer);
@@ -622,86 +643,6 @@ export class GLSystem {
       })
       .otherwise(() => {});
   };
-
-  /**
-   * Resolves a VFS path from the worker and sends back an object URL.
-   * Object URLs created on main thread are accessible from workers (same origin).
-   */
-  private async handleVfsUrlResolution(requestId: string, nodeId: string, path: string) {
-    try {
-      // If not a VFS path, send back the original path unchanged
-      if (isExternalUrl(path)) {
-        this.send('vfsUrlResolved', { requestId, nodeId, url: path });
-        return;
-      }
-
-      const vfs = VirtualFilesystem.getInstance();
-      const blob = await vfs.resolve(normalizeUserVfsPath(path));
-
-      // Create object URL on main thread - workers can use it (same origin)
-      const url = URL.createObjectURL(blob);
-
-      // TODO: Track for cleanup when node is destroyed
-      this.send('vfsUrlResolved', { requestId, nodeId, url });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
-    }
-  }
-
-  private async handleVfsPathListing(requestId: string, nodeId: string, path: string) {
-    try {
-      const paths = await VirtualFilesystem.getInstance().listChildren(normalizeUserVfsPath(path));
-      this.send('vfsPathsResolved', { requestId, nodeId, paths });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.send('vfsPathsResolved', { requestId, nodeId, error: errorMessage });
-    }
-  }
-
-  private async handleVfsPathSearch(
-    requestId: string,
-    nodeId: string,
-    query: string,
-    path: string
-  ) {
-    try {
-      const paths = await VirtualFilesystem.getInstance().search(query, normalizeUserVfsPath(path));
-      this.send('vfsPathsResolved', { requestId, nodeId, paths });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.send('vfsPathsResolved', { requestId, nodeId, error: errorMessage });
-    }
-  }
-
-  /**
-   * Resolves a VFS path from the worker and sends back the text content.
-   * Used by the GLSL #include preprocessor to inline VFS shader files.
-   */
-  private async handleVfsTextResolution(requestId: string, nodeId: string, path: string) {
-    if (!path.startsWith('user://')) {
-      this.send('vfsTextResolved', {
-        requestId,
-        nodeId,
-        error: `Invalid VFS path: "${path}". Only user:// paths are supported.`
-      });
-
-      return;
-    }
-
-    try {
-      const vfs = VirtualFilesystem.getInstance();
-
-      const blob = await vfs.resolve(path);
-      const text = await blob.text();
-
-      this.send('vfsTextResolved', { requestId, nodeId, text });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      this.send('vfsTextResolved', { requestId, nodeId, error: errorMessage });
-    }
-  }
 
   registerSettingsCallbacks(
     nodeId: string,

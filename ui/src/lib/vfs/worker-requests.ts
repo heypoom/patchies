@@ -1,0 +1,67 @@
+import { VirtualFilesystem } from './VirtualFilesystem';
+import { isExternalUrl, normalizeUserVfsPath } from './user-api-paths';
+
+type VfsUrlResponse = { url: string } | { error: string };
+type VfsPathsResponse = { paths: string[] } | { error: string };
+type VfsTextResponse = { text: string } | { error: string };
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+/** Resolve a worker VFS URL request on the main thread. */
+export async function resolveVfsUrl(path: string): Promise<VfsUrlResponse> {
+  try {
+    if (isExternalUrl(path)) return { url: path };
+
+    const vfs = VirtualFilesystem.getInstance();
+    const blob = await vfs.resolve(normalizeUserVfsPath(path));
+
+    return { url: URL.createObjectURL(blob) };
+  } catch (error) {
+    return { error: getErrorMessage(error) };
+  }
+}
+
+/** List a worker VFS directory request on the main thread. */
+export async function listVfsPaths(path: string): Promise<VfsPathsResponse> {
+  try {
+    const vfs = VirtualFilesystem.getInstance();
+
+    return {
+      paths: await vfs.listChildren(normalizeUserVfsPath(path))
+    };
+  } catch (error) {
+    return { error: getErrorMessage(error) };
+  }
+}
+
+/** Search a worker VFS directory request on the main thread. */
+export async function searchVfsPaths(query: string, path: string): Promise<VfsPathsResponse> {
+  try {
+    const vfs = VirtualFilesystem.getInstance();
+
+    return {
+      paths: await vfs.search(query, normalizeUserVfsPath(path))
+    };
+  } catch (error) {
+    return { error: getErrorMessage(error) };
+  }
+}
+
+/** Resolve a text-only VFS request used by render-worker GLSL includes. */
+export async function resolveVfsText(path: string): Promise<VfsTextResponse> {
+  if (!path.startsWith('user://')) {
+    return {
+      error: `Invalid VFS path: "${path}". Only user:// paths are supported.`
+    };
+  }
+
+  try {
+    const vfs = VirtualFilesystem.getInstance();
+    const file = await vfs.resolve(path);
+
+    return { text: await file.text() };
+  } catch (error) {
+    return { error: getErrorMessage(error) };
+  }
+}

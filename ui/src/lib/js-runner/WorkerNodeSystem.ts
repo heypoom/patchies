@@ -5,8 +5,7 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
-import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
-import { isExternalUrl, normalizeUserVfsPath } from '$lib/vfs/user-api-paths';
+import { listVfsPaths, resolveVfsUrl, searchVfsPaths } from '$lib/vfs/worker-requests';
 import { profiler, ProfilerCoordinator } from '$lib/profiler';
 import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
@@ -230,14 +229,29 @@ export class WorkerNodeSystem {
         this.audioAnalysis.registerFFTRequest(nodeId, event.analysisType, event.format);
       })
       // VFS proxy messages
-      .with({ type: 'resolveVfsUrl' }, (event) => {
-        this.handleVfsUrlResolution(nodeId, worker, event.requestId, event.path);
+      .with({ type: 'resolveVfsUrl' }, async (event) => {
+        worker.postMessage({
+          type: 'vfsUrlResolved',
+          nodeId,
+          requestId: event.requestId,
+          ...(await resolveVfsUrl(event.path))
+        } satisfies WorkerMessage);
       })
-      .with({ type: 'listVfs' }, (event) => {
-        this.handleVfsPathListing(nodeId, worker, event.requestId, event.path);
+      .with({ type: 'listVfs' }, async (event) => {
+        worker.postMessage({
+          type: 'vfsPathsResolved',
+          nodeId,
+          requestId: event.requestId,
+          ...(await listVfsPaths(event.path))
+        } satisfies WorkerMessage);
       })
-      .with({ type: 'searchVfs' }, (event) => {
-        this.handleVfsPathSearch(nodeId, worker, event.requestId, event.query, event.path);
+      .with({ type: 'searchVfs' }, async (event) => {
+        worker.postMessage({
+          type: 'vfsPathsResolved',
+          nodeId,
+          requestId: event.requestId,
+          ...(await searchVfsPaths(event.query, event.path))
+        } satisfies WorkerMessage);
       })
       // LLM proxy messages
       .with({ type: 'llmRequest' }, (event) => {
@@ -309,95 +323,6 @@ export class WorkerNodeSystem {
         }
       })
       .otherwise(() => {});
-  }
-
-  /**
-   * Resolve VFS path and send URL back to worker.
-   */
-  private async handleVfsUrlResolution(
-    nodeId: string,
-    worker: Worker,
-    requestId: string,
-    path: string
-  ) {
-    try {
-      // If not a VFS path, send back the original path unchanged
-      if (isExternalUrl(path)) {
-        worker.postMessage({
-          type: 'vfsUrlResolved',
-          nodeId,
-          requestId,
-          url: path
-        } satisfies WorkerMessage);
-        return;
-      }
-
-      const vfs = VirtualFilesystem.getInstance();
-      const blob = await vfs.resolve(normalizeUserVfsPath(path));
-      const url = URL.createObjectURL(blob);
-
-      worker.postMessage({
-        type: 'vfsUrlResolved',
-        nodeId,
-        requestId,
-        url
-      } satisfies WorkerMessage);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      worker.postMessage({
-        type: 'vfsUrlResolved',
-        nodeId,
-        requestId,
-        error: errorMessage
-      } satisfies WorkerMessage);
-    }
-  }
-
-  private async handleVfsPathListing(
-    nodeId: string,
-    worker: Worker,
-    requestId: string,
-    path: string
-  ) {
-    try {
-      worker.postMessage({
-        type: 'vfsPathsResolved',
-        nodeId,
-        requestId,
-        paths: await VirtualFilesystem.getInstance().listChildren(normalizeUserVfsPath(path))
-      } satisfies WorkerMessage);
-    } catch (error) {
-      worker.postMessage({
-        type: 'vfsPathsResolved',
-        nodeId,
-        requestId,
-        error: String(error)
-      } satisfies WorkerMessage);
-    }
-  }
-
-  private async handleVfsPathSearch(
-    nodeId: string,
-    worker: Worker,
-    requestId: string,
-    query: string,
-    path: string
-  ) {
-    try {
-      worker.postMessage({
-        type: 'vfsPathsResolved',
-        nodeId,
-        requestId,
-        paths: await VirtualFilesystem.getInstance().search(query, normalizeUserVfsPath(path))
-      } satisfies WorkerMessage);
-    } catch (error) {
-      worker.postMessage({
-        type: 'vfsPathsResolved',
-        nodeId,
-        requestId,
-        error: String(error)
-      } satisfies WorkerMessage);
-    }
   }
 
   /**
