@@ -61,7 +61,7 @@ import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { Transport, type TransportState } from '$lib/transport';
 import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
-import type { WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
+import type { CapturedVideoFrame, WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
 import type { WorkerVideoFrameEvent } from '$lib/eventbus/events';
 
 export type UserUniformValue = number | boolean | number[] | boolean[] | number[][];
@@ -126,7 +126,7 @@ export class GLSystem {
   private workerNodeSystem: null | {
     deliverVideoFrames(
       targetNodeId: string,
-      frames: unknown,
+      frames: CapturedVideoFrame[],
       timestamp: number,
       requestId?: string
     ): void;
@@ -135,7 +135,7 @@ export class GLSystem {
   private workerNodeSystemReady: Promise<{
     deliverVideoFrames(
       targetNodeId: string,
-      frames: unknown,
+      frames: CapturedVideoFrame[],
       timestamp: number,
       requestId?: string
     ): void;

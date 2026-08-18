@@ -470,6 +470,7 @@ export function installRenderWorkerRuntime() {
   function handleCaptureWorkerVideoFramesBatch(
     requests: Array<{
       targetNodeId: string;
+      requestId?: string;
       sourceNodeIds: (string | null)[];
       resolution?: [number, number];
       format?: 'raw' | 'bitmap';
