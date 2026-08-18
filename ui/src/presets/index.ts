@@ -32,6 +32,7 @@ import { SURFACE_PRESETS } from './surface.presets';
 import { CHARTS_PRESETS } from './charts.presets';
 import { UXN_DEMO_PRESETS } from './uxn';
 import { OPENCV_PRESETS } from './opencv';
+import { vfsBrowserPreset } from './vfs-browser.vue';
 
 // Re-export individual preset collections
 export {
@@ -106,5 +107,6 @@ export const BUILTIN_PRESETS: Record<
   ...SURFACE_PRESETS,
   ...CHARTS_PRESETS,
   ...UXN_DEMO_PRESETS,
-  ...OPENCV_PRESETS
+  ...OPENCV_PRESETS,
+  'File Browser': vfsBrowserPreset
 };

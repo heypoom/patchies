@@ -106,7 +106,7 @@ renderer.outputColorSpace = SRGBColorSpace
 
 const loader = new GLTFLoader()
 
-// Replace this URL with: await getVfsUrl('user://your-model.glb')
+// Replace this URL with: await vfs.getUrl('user://your-model.glb')
 const modelUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb'
 const gltf = await loader.loadAsync(modelUrl)
 

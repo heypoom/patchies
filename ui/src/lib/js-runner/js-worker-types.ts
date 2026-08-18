@@ -42,6 +42,7 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'cleanup' }
   | { type: 'destroy' }
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
+  | { type: 'vfsPathsResolved'; requestId: string; paths?: string[]; error?: string }
   | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   | {
@@ -86,6 +87,8 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'fftEnabled'; enabled: boolean }
   | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
+  | { type: 'listVfs'; requestId: string; path: string }
+  | { type: 'searchVfs'; requestId: string; query: string; path: string }
   | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
   | { type: 'setVideoFrame'; frame: WorkerVideoFrame }

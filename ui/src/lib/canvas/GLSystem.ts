@@ -58,7 +58,8 @@ import {
 } from '../../stores/renderer.store';
 import { match, P } from 'ts-pattern';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
-import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+import { VirtualFilesystem } from '$lib/vfs';
+import { isExternalUrl, normalizeUserVfsPath } from '$lib/vfs/user-api-paths';
 import { Transport, type TransportState } from '$lib/transport';
 import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
 import type { CapturedVideoFrame, WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
@@ -473,6 +474,12 @@ export class GLSystem {
       .with({ type: 'resolveVfsUrl' }, async (data) => {
         this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
       })
+      .with({ type: 'listVfs' }, async (data) => {
+        this.handleVfsPathListing(data.requestId, data.nodeId, data.path);
+      })
+      .with({ type: 'searchVfs' }, async (data) => {
+        this.handleVfsPathSearch(data.requestId, data.nodeId, data.query, data.path);
+      })
       .with({ type: 'resolveVfsText' }, async (data) => {
         this.handleVfsTextResolution(data.requestId, data.nodeId, data.path);
       })
@@ -623,13 +630,13 @@ export class GLSystem {
   private async handleVfsUrlResolution(requestId: string, nodeId: string, path: string) {
     try {
       // If not a VFS path, send back the original path unchanged
-      if (!isVFSPath(path)) {
+      if (isExternalUrl(path)) {
         this.send('vfsUrlResolved', { requestId, nodeId, url: path });
         return;
       }
 
       const vfs = VirtualFilesystem.getInstance();
-      const blob = await vfs.resolve(path);
+      const blob = await vfs.resolve(normalizeUserVfsPath(path));
 
       // Create object URL on main thread - workers can use it (same origin)
       const url = URL.createObjectURL(blob);
@@ -639,6 +646,31 @@ export class GLSystem {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
+    }
+  }
+
+  private async handleVfsPathListing(requestId: string, nodeId: string, path: string) {
+    try {
+      const paths = await VirtualFilesystem.getInstance().listChildren(normalizeUserVfsPath(path));
+      this.send('vfsPathsResolved', { requestId, nodeId, paths });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.send('vfsPathsResolved', { requestId, nodeId, error: errorMessage });
+    }
+  }
+
+  private async handleVfsPathSearch(
+    requestId: string,
+    nodeId: string,
+    query: string,
+    path: string
+  ) {
+    try {
+      const paths = await VirtualFilesystem.getInstance().search(query, normalizeUserVfsPath(path));
+      this.send('vfsPathsResolved', { requestId, nodeId, paths });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.send('vfsPathsResolved', { requestId, nodeId, error: errorMessage });
     }
   }
 

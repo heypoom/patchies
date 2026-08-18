@@ -85,6 +85,10 @@ canvas or GLSL layers. See [HTML in Canvas](/docs/html-in-canvas) for
 `htmlCanvas.videoOutput()`, `htmlCanvas.canvasLayer()`, and
 `htmlCanvas.glslLayer()`.
 
+## Presets
+
+- `File Browser` — a resizable file explorer that demonstrates `vfs.list()`, `vfs.search()`, and `vfs.getUrl()`.
+
 ## See Also
 
 - [dom](/docs/objects/dom) - vanilla JS interfaces

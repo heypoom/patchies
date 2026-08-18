@@ -423,11 +423,11 @@ const patchiesAPICompletions: Completion[] = [
 
   // VFS
   {
-    label: 'getVfsUrl',
-    type: 'function',
-    detail: '(path: string) => Promise<string>',
-    info: 'Resolve a VFS path (user://, obj://) to an object URL. Regular URLs pass through unchanged.',
-    apply: "getVfsUrl('user://')"
+    label: 'vfs',
+    type: 'variable',
+    detail: '{ getUrl(path), list(path?), search(query, path?) }',
+    info: 'Access VFS files. Relative paths use the user:// namespace.',
+    apply: "vfs.getUrl('./file.png')"
   },
 
   // Console
@@ -591,7 +591,7 @@ const MOUSE_INTERACTION_JS_NODES = [
 // Note on JSRunner defaults (main-thread nodes):
 // JSRunner.executeJavaScript() provides these by default for main-thread nodes:
 //   console, send, onMessage/recv, setInterval, setTimeout, requestAnimationFrame,
-//   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, setTags, getVfsUrl
+//   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, setTags, vfs
 //
 // Worker nodes (hydra, canvas, textmode, three, swgl) must provide their own
 // implementations via extraContext since JSRunner defaults are for main thread.
@@ -731,7 +731,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
   setVideoFrame: ['worker'],
-  getVfsUrl: [
+  vfs: [
     'js',
     'worker',
     'p5',

@@ -208,6 +208,13 @@ export type WorkerMessage =
   | { type: 'settingsValueChanged'; nodeId: string; key: string; value: unknown }
   // VFS resolution responses (main → render worker)
   | { type: 'vfsUrlResolved'; requestId: string; nodeId: string; url?: string; error?: string }
+  | {
+      type: 'vfsPathsResolved';
+      requestId: string;
+      nodeId: string;
+      paths?: string[];
+      error?: string;
+    }
   | { type: 'vfsTextResolved'; requestId: string; nodeId: string; text?: string; error?: string };
 
 export type MouseScope = 'local' | 'global';
@@ -283,6 +290,8 @@ export type RenderWorkerMessage =
   | { type: 'renderFrameStats'; stats: RenderFrameStats }
   | { type: 'error'; message: string }
   | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string }
+  | { type: 'listVfs'; requestId: string; nodeId: string; path: string }
+  | { type: 'searchVfs'; requestId: string; nodeId: string; query: string; path: string }
   | { type: 'resolveVfsText'; requestId: string; nodeId: string; path: string }
   | { type: 'floatTextureBufferReleased'; nodeId: string; buffer: ArrayBuffer }
   | {

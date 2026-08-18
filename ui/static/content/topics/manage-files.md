@@ -33,7 +33,7 @@ Click the **add link** button to store a URL as a virtual file.
 
 ## Use Files in Code
 
-Use `getVfsUrl()` to load files in an object. See [Virtual Filesystem](/docs/virtual-filesystem) for details.
+Use `vfs.getUrl()` to load files in an object. See [Virtual Filesystem](/docs/virtual-filesystem) for details.
 
 ## See Also
 

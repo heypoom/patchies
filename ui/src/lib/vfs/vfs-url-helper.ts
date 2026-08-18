@@ -5,7 +5,7 @@
  * Usage: loadImage(await vfsUrl('user://images/photo.jpg'))
  */
 
-import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+import { createVfsApi, type VfsApi } from './user-api';
 
 /** Object URLs created during the node lifecycle - must be revoked on destroy */
 const objectUrls = new Map<string, Set<string>>();
@@ -44,19 +44,6 @@ export function revokeObjectUrls(nodeId: string): void {
  * // Or with regular URLs (passes through unchanged):
  * img = await loadImage(vfsUrl('https://example.com/image.png'));
  */
-export function createGetVfsUrl(nodeId: string): (path: string) => Promise<string> {
-  return async function vfsUrl(path: string): Promise<string> {
-    // VFS is only accessible on the main thread for now
-    if (typeof window === 'undefined') return path;
-
-    if (!isVFSPath(path)) {
-      return path;
-    }
-
-    const vfs = VirtualFilesystem.getInstance();
-    const blob = await vfs.resolve(path);
-    const url = URL.createObjectURL(blob);
-    trackObjectUrl(nodeId, url);
-    return url;
-  };
+export function createVfs(nodeId: string): VfsApi {
+  return createVfsApi((url) => trackObjectUrl(nodeId, url));
 }

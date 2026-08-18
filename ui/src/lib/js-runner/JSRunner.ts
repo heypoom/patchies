@@ -3,7 +3,7 @@ import { opencv } from './opencv';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { profiler, typeFromNodeId } from '$lib/profiler';
 import { debounce } from 'lodash';
-import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
+import { createVfs, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
 import { logger } from '$lib/utils/logger';
 import { createKVStore } from '$lib/storage';
@@ -426,7 +426,7 @@ export class JSRunner {
       'setHidePorts',
       'setTags',
       'onGraphChange',
-      'getVfsUrl',
+      'vfs',
       'clock',
       'opencv',
       ...Object.keys(extraContext)
@@ -539,7 +539,7 @@ export class JSRunner {
       setHidePorts,
       setTags,
       onGraphChange,
-      createGetVfsUrl(nodeId),
+      createVfs(nodeId),
       clock,
       () => opencv((name) => import(/* @vite-ignore */ `${this.moduleProviderUrl}${name}`)),
       ...Object.values(extraContext)
