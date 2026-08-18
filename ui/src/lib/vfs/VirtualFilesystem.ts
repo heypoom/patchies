@@ -8,6 +8,7 @@ import {
   type VFSTreeNode,
   type VFSProvider,
   type VFSListEntry,
+  type VFSListPage,
   type VFSSearchPage,
   isVFSFolder,
   isVFSEntry,
@@ -513,6 +514,47 @@ export class VirtualFilesystem {
     return [...children.values()].sort((a, b) => a.path.localeCompare(b.path));
   }
 
+  /** List one bounded page of immediate VFS directory entries. */
+  async listChildrenPage(
+    directory: string,
+    options: { offset?: number; limit?: number } = {}
+  ): Promise<VFSListPage> {
+    const offset = Math.max(0, Math.floor(options.offset ?? 0));
+    const limit = Math.max(1, Math.floor(options.limit ?? 50));
+    const linkedFolderPath = this.getLinkedFolderForPath(directory);
+
+    if (linkedFolderPath) {
+      const children = await this.listLinkedFolderChildren(directory, linkedFolderPath, {
+        offset,
+        limit: limit + 1
+      });
+      const truncated = children.length > limit;
+      const entries = children
+        .slice(0, limit)
+        .map((child) => this.createListEntry(child.path, child.kind));
+
+      return {
+        entries,
+        offset,
+        limit,
+        truncated,
+        ...(truncated ? { nextOffset: offset + entries.length } : {})
+      };
+    }
+
+    const children = await this.listChildren(directory);
+    const entries = children.slice(offset, offset + limit);
+    const truncated = offset + entries.length < children.length;
+
+    return {
+      entries,
+      offset,
+      limit,
+      truncated,
+      ...(truncated ? { nextOffset: offset + entries.length } : {})
+    };
+  }
+
   /** Recursively find VFS paths whose path includes the query, case-insensitively. */
   async search(query: string, directory: string): Promise<VFSListEntry[]> {
     const prefix = directory.endsWith('://') ? directory : `${directory}/`;
@@ -613,7 +655,8 @@ export class VirtualFilesystem {
 
   private async listLinkedFolderChildren(
     directory: string,
-    linkedFolderPath: string
+    linkedFolderPath: string,
+    options?: { offset?: number; limit?: number }
   ): Promise<Array<{ path: string; kind: 'file' | 'directory' }>> {
     const localProvider = this.getLocalProvider();
 
@@ -640,7 +683,7 @@ export class VirtualFilesystem {
       handle = await handle.getDirectoryHandle(segment);
     }
 
-    const entries = await localProvider.listHandleContents(handle);
+    const entries = await localProvider.listHandleContents(handle, options);
     const pathPrefix = directory.endsWith('/') ? directory : `${directory}/`;
 
     return entries.map((entry) => ({ path: `${pathPrefix}${entry.name}`, kind: entry.kind }));

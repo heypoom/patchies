@@ -356,11 +356,13 @@ export const contextToolDeclarations = [
   {
     name: LIST_VFS_FILES,
     description:
-      'List the immediate files and folders in a virtual filesystem directory. Paths default to user:// and may use relative paths such as "./samples". This only reads VFS metadata.',
+      'List one bounded page of immediate files and folders in a virtual filesystem directory. Paths default to user:// and may use relative paths such as "./samples". Use nextOffset only when truncated is true to request the next page.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: 'Directory to list (default "." for user://)' }
+        path: { type: 'string', description: 'Directory to list (default "." for user://)' },
+        offset: { type: 'number', description: 'Directory entry offset (default 0)' },
+        limit: { type: 'number', description: 'Results per page (default 50, max 100)' }
       }
     }
   },

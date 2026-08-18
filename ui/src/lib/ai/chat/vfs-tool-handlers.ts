@@ -1,12 +1,12 @@
 import { VirtualFilesystem } from '$lib/vfs';
 import { guessMimeType } from '$lib/vfs/path-utils';
 import { isExternalUrl, normalizeUserVfsPath } from '$lib/vfs/user-api-paths';
-import type { VFSEntry, VFSListEntry, VFSSearchPage } from '$lib/vfs/types';
+import type { VFSEntry, VFSListPage, VFSSearchPage } from '$lib/vfs/types';
 
 const DEFAULT_READ_LENGTH = 16 * 1024;
 export const MAX_VFS_TEXT_READ_LENGTH = 32 * 1024;
-const DEFAULT_VFS_SEARCH_LIMIT = 50;
-const MAX_VFS_SEARCH_LIMIT = 100;
+const DEFAULT_VFS_PAGE_LIMIT = 50;
+const MAX_VFS_PAGE_LIMIT = 100;
 
 const TEXT_MIME_TYPES = new Set([
   'application/javascript',
@@ -55,7 +55,7 @@ const TEXT_EXTENSIONS = new Set([
 interface ChatVfs {
   getEntryOrLinkedFile(path: string): VFSEntry | undefined;
   isFolder(path: string): boolean;
-  listChildren(path: string): Promise<VFSListEntry[]>;
+  listChildrenPage(path: string, options: { offset: number; limit: number }): Promise<VFSListPage>;
   searchPage(
     query: string,
     path: string,
@@ -132,17 +132,20 @@ async function readUtf8Range(file: File | Blob, offset: number, length: number) 
 
 export async function listVfsFiles(args: Record<string, unknown>, vfs?: ChatVfs) {
   const path = normalizePath(args.path);
-  const entries = await getVfs(vfs).listChildren(path);
+  const offset = getBoundedInteger(args.offset, 0);
+  const requestedLimit = getBoundedInteger(args.limit, DEFAULT_VFS_PAGE_LIMIT);
+  const limit = Math.min(Math.max(requestedLimit, 1), MAX_VFS_PAGE_LIMIT);
+  const page = await getVfs(vfs).listChildrenPage(path, { offset, limit });
 
-  return { path, entries, total: entries.length };
+  return { path, ...page };
 }
 
 export async function searchVfsFiles(args: Record<string, unknown>, vfs?: ChatVfs) {
   const query = typeof args.query === 'string' ? args.query.trim() : '';
   const path = normalizePath(args.path);
   const offset = getBoundedInteger(args.offset, 0);
-  const requestedLimit = getBoundedInteger(args.limit, DEFAULT_VFS_SEARCH_LIMIT);
-  const limit = Math.min(Math.max(requestedLimit, 1), MAX_VFS_SEARCH_LIMIT);
+  const requestedLimit = getBoundedInteger(args.limit, DEFAULT_VFS_PAGE_LIMIT);
+  const limit = Math.min(Math.max(requestedLimit, 1), MAX_VFS_PAGE_LIMIT);
 
   if (!query) return { path, query, entries: [], offset, limit, truncated: false };
 

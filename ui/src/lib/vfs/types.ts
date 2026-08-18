@@ -29,6 +29,15 @@ export interface VFSListEntry {
   kind: 'file' | 'directory';
 }
 
+/** A bounded page of immediate VFS directory entries. */
+export interface VFSListPage {
+  entries: VFSListEntry[];
+  offset: number;
+  limit: number;
+  truncated: boolean;
+  nextOffset?: number;
+}
+
 /** A bounded page of recursively searched VFS entries. */
 export interface VFSSearchPage {
   entries: VFSListEntry[];

@@ -29,6 +29,7 @@ describe('chat VFS tools', () => {
       mimeType: 'text/plain',
       size: 12
     });
+
     streamTurn
       .mockResolvedValueOnce({
         text: '',
@@ -42,6 +43,7 @@ describe('chat VFS tools', () => {
     ).resolves.toBe('Found it.');
 
     expect(streamTurn).toHaveBeenCalledTimes(2);
+
     expect(streamTurn.mock.calls[1][0]).toContainEqual({
       role: 'user',
       content: '',
@@ -52,7 +54,9 @@ describe('chat VFS tools', () => {
           result: {
             path: 'user://notes',
             entries: [{ path: 'user://notes/readme.txt', name: 'readme.txt', kind: 'file' }],
-            total: 1
+            offset: 0,
+            limit: 50,
+            truncated: false
           }
         }
       ]

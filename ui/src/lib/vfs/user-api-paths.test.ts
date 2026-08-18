@@ -39,6 +39,21 @@ describe('VFS user API paths', () => {
       { path: 'user://samples/snares', name: 'snares', kind: 'directory' }
     ]);
 
+    expect(await vfs.listChildrenPage('user://', { limit: 1 })).toEqual({
+      entries: [{ path: 'user://image.png', name: 'image.png', kind: 'file' }],
+      offset: 0,
+      limit: 1,
+      truncated: true,
+      nextOffset: 1
+    });
+
+    expect(await vfs.listChildrenPage('user://', { offset: 1, limit: 1 })).toEqual({
+      entries: [{ path: 'user://samples', name: 'samples', kind: 'directory' }],
+      offset: 1,
+      limit: 1,
+      truncated: false
+    });
+
     await expect(vfs.listChildren('user://image.png')).rejects.toThrow(
       'VFS: Path is not a directory: user://image.png'
     );
@@ -88,7 +103,10 @@ describe('VFS user API paths', () => {
       storeDirHandle: async () => {},
       getDirHandle: async () => linkedFolder,
       hasDirPermission: async () => true,
-      listHandleContents: async (handle: FileSystemDirectoryHandle) => {
+      listHandleContents: async (
+        handle: FileSystemDirectoryHandle,
+        options?: { offset?: number; limit?: number }
+      ) => {
         const entries = [] as Array<{
           name: string;
           kind: 'file' | 'directory';
@@ -99,7 +117,10 @@ describe('VFS user API paths', () => {
           entries.push({ ...handleEntry, handle: handleEntry as FileSystemHandle });
         }
 
-        return entries;
+        const offset = options?.offset ?? 0;
+        const limit = options?.limit ?? entries.length;
+
+        return entries.slice(offset, offset + limit);
       }
     };
 
@@ -111,6 +132,14 @@ describe('VFS user API paths', () => {
       { path: 'user://samples/kicks', name: 'kicks', kind: 'directory' },
       { path: 'user://samples/snare.wav', name: 'snare.wav', kind: 'file' }
     ]);
+
+    expect(await vfs.listChildrenPage('user://samples', { limit: 1 })).toEqual({
+      entries: [{ path: 'user://samples/kicks', name: 'kicks', kind: 'directory' }],
+      offset: 0,
+      limit: 1,
+      truncated: true,
+      nextOffset: 1
+    });
 
     expect(await vfs.search('kick', 'user://')).toEqual([
       { path: 'user://samples/kicks', name: 'kicks', kind: 'directory' },

@@ -15,9 +15,11 @@ const entries = new Map([
 const vfs = {
   getEntryOrLinkedFile: (path: string) => entries.get(path),
   isFolder: (path: string) => path === 'user://notes',
-  listChildren: async (path: string) => [
-    { path: `${path}notes`, name: 'notes', kind: 'directory' as const }
-  ],
+  listChildrenPage: async (path: string, options: { offset: number; limit: number }) => ({
+    entries: [{ path: `${path}notes`, name: 'notes', kind: 'directory' as const }],
+    ...options,
+    truncated: false
+  }),
   searchPage: async (query: string, path: string, options: { offset: number; limit: number }) => ({
     entries: [{ path: `${path}notes/${query}.txt`, name: `${query}.txt`, kind: 'file' as const }],
     ...options,
@@ -29,7 +31,12 @@ const vfs = {
 
 describe('chat VFS tool handlers', () => {
   test('lists and searches normalized VFS paths', async () => {
-    await expect(listVfsFiles({}, vfs)).resolves.toMatchObject({ path: 'user://', total: 1 });
+    await expect(listVfsFiles({}, vfs)).resolves.toMatchObject({
+      path: 'user://',
+      offset: 0,
+      limit: 50,
+      truncated: false
+    });
     await expect(searchVfsFiles({ query: 'kick', path: './samples' }, vfs)).resolves.toMatchObject({
       path: 'user://samples',
       query: 'kick',
@@ -43,6 +50,13 @@ describe('chat VFS tool handlers', () => {
     await expect(
       searchVfsFiles({ query: 'kick', offset: 5, limit: 999 }, vfs)
     ).resolves.toMatchObject({
+      offset: 5,
+      limit: 100
+    });
+  });
+
+  test('caps requested VFS list pages', async () => {
+    await expect(listVfsFiles({ offset: 5, limit: 999 }, vfs)).resolves.toMatchObject({
       offset: 5,
       limit: 100
     });
