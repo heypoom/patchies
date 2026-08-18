@@ -35,7 +35,6 @@ import {
   resolveRewriteObjectDataSubtask
 } from './subtask-tool-handlers';
 import {
-  SYSTEM_PROMPT,
   CONTEXT_TOOL_NAMES,
   SUBTASK_TOOL_NAMES,
   CONNECT_EDGES,
@@ -84,6 +83,7 @@ import { resolveSearchSamples, resolveSearchFreesound } from './sample-tool-hand
 import { listVfsFiles, readVfsText, searchVfsFiles, statVfsFile } from './vfs-tool-handlers';
 import type { ChatViewportSummary } from './viewport-summary';
 import { buildNodeContextSystemInstruction, type ChatNodeContext } from './node-context';
+import { SYSTEM_PROMPT } from './chat-system-prompt';
 
 export type { ChatViewportSummary } from './viewport-summary';
 export type { ChatNodeContext } from './node-context';
@@ -221,6 +221,7 @@ export async function streamChatMessage(
         disconnectEdgesDeclaration
       ]
     : [];
+
   const tools = [
     ...contextToolDeclarations,
     ...subtaskToolDeclarations,
