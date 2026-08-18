@@ -844,7 +844,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       );
     })
     .with({ type: 'vfsPathsResolved' }, (data) => {
-      handleVfsPathsResolved(data as { requestId: string; paths?: string[]; error?: string });
+      handleVfsPathsResolved(data);
     })
     .with({ type: 'llmConfig' }, (data) => {
       handleLLMConfig(

@@ -43,13 +43,8 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'cleanup' }
   | { type: 'destroy' }
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
-  | {
-      type: 'vfsPathsResolved';
-      requestId: string;
-      paths?: string[];
-      entries?: VFSListEntry[];
-      error?: string;
-    }
+  | { type: 'vfsPathsResolved'; requestId: string; entries: VFSListEntry[]; error?: never }
+  | { type: 'vfsPathsResolved'; requestId: string; error: string; entries?: never }
   | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   | {

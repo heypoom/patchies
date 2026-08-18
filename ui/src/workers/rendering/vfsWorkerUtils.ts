@@ -14,7 +14,7 @@ export interface WorkerVfs {
 }
 
 type PendingVfsRequest = {
-  resolve: (value: string | string[] | VFSListEntry[]) => void;
+  resolve: (value: string | VFSListEntry[]) => void;
   reject: (error: Error) => void;
 };
 
@@ -53,7 +53,6 @@ export function handleVfsUrlResolved(data: {
 
 export function handleVfsPathsResolved(data: {
   requestId: string;
-  paths?: string[];
   entries?: VFSListEntry[];
   error?: string;
 }): void {
@@ -64,10 +63,6 @@ export function handleVfsPathsResolved(data: {
 
   if (data.error) {
     return pending.reject(new Error(data.error));
-  }
-
-  if (data.paths) {
-    return pending.resolve(data.paths);
   }
 
   if (data.entries) {
@@ -81,7 +76,7 @@ export function handleVfsPathsResolved(data: {
  * Create the VFS API for user code. Requests are resolved on the main thread.
  */
 export function createWorkerVfs(nodeId: string): WorkerVfs {
-  const request = <T extends string | string[] | VFSListEntry[]>(
+  const request = <T extends string | VFSListEntry[]>(
     type: 'resolveVfsUrl' | 'listVfs' | 'searchVfs',
     payload: Record<string, string>
   ): Promise<T> => {
@@ -89,7 +84,7 @@ export function createWorkerVfs(nodeId: string): WorkerVfs {
 
     return new Promise((resolve, reject) => {
       pendingVfsRequests.set(requestId, {
-        resolve: resolve as (value: string | string[] | VFSListEntry[]) => void,
+        resolve: resolve as (value: string | VFSListEntry[]) => void,
         reject
       });
 

@@ -213,9 +213,15 @@ export type WorkerMessage =
       type: 'vfsPathsResolved';
       requestId: string;
       nodeId: string;
-      paths?: string[];
-      entries?: VFSListEntry[];
-      error?: string;
+      entries: VFSListEntry[];
+      error?: never;
+    }
+  | {
+      type: 'vfsPathsResolved';
+      requestId: string;
+      nodeId: string;
+      error: string;
+      entries?: never;
     }
   | { type: 'vfsTextResolved'; requestId: string; nodeId: string; text?: string; error?: string };
 
