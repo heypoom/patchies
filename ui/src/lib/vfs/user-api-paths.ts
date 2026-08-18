@@ -14,6 +14,8 @@ export function normalizeUserVfsPath(path: string): string {
 
 /** True when a path is an external URL that should not be looked up in the VFS. */
 export function isExternalUrl(path: string): boolean {
+  if (path.startsWith('//')) return true;
+
   try {
     return !isVFSPath(path) && new URL(path).protocol !== '';
   } catch {

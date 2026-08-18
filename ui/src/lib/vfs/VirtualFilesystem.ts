@@ -478,6 +478,11 @@ export class VirtualFilesystem {
 
   /** List the immediate children of a VFS directory, including linked local folders. */
   async listChildren(directory: string): Promise<string[]> {
+    const entry = this.entries.get(directory);
+    if (entry && entry.provider !== 'folder' && entry.provider !== 'local-folder') {
+      throw new TypeError(`VFS: Path is not a directory: ${directory}`);
+    }
+
     const prefix = directory.endsWith('://') ? directory : `${directory}/`;
     const children = new Set<string>();
 
@@ -499,9 +504,9 @@ export class VirtualFilesystem {
   /** Recursively find VFS paths whose path includes the query, case-insensitively. */
   async search(query: string, directory: string): Promise<string[]> {
     const prefix = directory.endsWith('://') ? directory : `${directory}/`;
-    const normalizedQuery = query.toLocaleLowerCase();
+    const normalizedQuery = query.toLowerCase();
     const matches = new Set(
-      this.list(prefix).filter((path) => path.toLocaleLowerCase().includes(normalizedQuery))
+      this.list(prefix).filter((path) => path.toLowerCase().includes(normalizedQuery))
     );
 
     const containingLinkedFolder = this.getLinkedFolderForPath(directory);
@@ -514,7 +519,7 @@ export class VirtualFilesystem {
     for (const linkedFolderPath of linkedFolderPaths) {
       const searchRoot = containingLinkedFolder ? directory : linkedFolderPath;
       for (const path of await this.searchLinkedFolder(searchRoot, linkedFolderPath)) {
-        if (path.toLocaleLowerCase().includes(normalizedQuery)) matches.add(path);
+        if (path.toLowerCase().includes(normalizedQuery)) matches.add(path);
       }
     }
 

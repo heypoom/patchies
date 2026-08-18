@@ -10,12 +10,14 @@ const selectedPath = ref('')
 const selectedUrl = ref('')
 const loading = ref(false)
 const error = ref('')
+let searchRequest = 0
 
 function createNode(path) {
   return {
     path,
     name: path.split('/').filter(Boolean).pop() || path,
     children: null,
+    isDirectory: null,
     expanded: false,
     loading: false
   }
@@ -41,19 +43,23 @@ async function loadChildren(node, quiet = false) {
 
   try {
     node.children = (await vfs.list(node.path)).map(createNode)
+    node.isDirectory = true
     await Promise.all(
       node.children.map(async (child) => {
         try {
           child.children = (await vfs.list(child.path)).map(createNode)
+          child.isDirectory = true
         } catch {
           child.children = []
+          child.isDirectory = false
         }
       })
     )
-    return node.children.length > 0
+    return node.isDirectory
   } catch (cause) {
     if (!quiet) error.value = String(cause)
     node.children = []
+    node.isDirectory = false
     return false
   } finally {
     node.loading = false
@@ -71,17 +77,10 @@ async function refresh() {
 }
 
 async function toggle(node) {
-  if (node.expanded) {
-    node.expanded = false
-    return
-  }
+  if (node.isDirectory === null) await loadChildren(node, true)
 
-  const hasChildren = node.children === null ? await loadChildren(node, true) : node.children.length > 0
-  if (hasChildren) {
-    await Promise.all(
-      node.children.filter((child) => child.children === null).map((child) => loadChildren(child, true))
-    )
-    node.expanded = true
+  if (node.isDirectory) {
+    node.expanded = !node.expanded
     return
   }
 
@@ -89,9 +88,11 @@ async function toggle(node) {
 }
 
 async function search() {
+  const request = ++searchRequest
   const trimmed = query.value.trim()
   if (!trimmed) {
     searchResults.value = []
+    loading.value = false
     return
   }
 
@@ -99,11 +100,12 @@ async function search() {
   error.value = ''
 
   try {
-    searchResults.value = await vfs.search(trimmed, '.')
+    const results = await vfs.search(trimmed, '.')
+    if (request === searchRequest) searchResults.value = results
   } catch (cause) {
-    error.value = String(cause)
+    if (request === searchRequest) error.value = String(cause)
   } finally {
-    loading.value = false
+    if (request === searchRequest) loading.value = false
   }
 }
 
@@ -123,18 +125,19 @@ async function selectFile(path) {
 async function navigateRows(event) {
   if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return
 
+  const focusedRow = event.target.closest('[data-vfs-browser-row]')
+  if (!focusedRow) return
+
   event.preventDefault()
   event.stopPropagation()
 
   const rows = Array.from(event.currentTarget.querySelectorAll('[data-vfs-browser-row]'))
   if (rows.length === 0) return
 
-  const focusedRow = event.target.closest('[data-vfs-browser-row]')
-
   if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
     const path = focusedRow?.dataset.vfsPath
     const row = visibleRows.value.find((item) => item.node.path === path)
-    const isFolder = row?.node.children && row.node.children.length > 0
+    const isFolder = row?.node.isDirectory === true
 
     if (isFolder && ((event.key === 'ArrowRight' && !row.node.expanded) || (event.key === 'ArrowLeft' && row.node.expanded))) {
       await toggle(row.node)
@@ -228,9 +231,9 @@ createApp({
             >
               <span class="flex size-4 shrink-0 items-center justify-center text-zinc-500">
                 <svg v-if="row.node.loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-3 animate-spin" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/></svg>
-                <svg v-else-if="row.node.children && row.node.children.length" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-3 transition-transform" :class="row.node.expanded ? 'rotate-90' : ''" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                <svg v-else-if="row.node.isDirectory" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-3 transition-transform" :class="row.node.expanded ? 'rotate-90' : ''" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
               </span>
-              <svg v-if="row.node.children && row.node.children.length" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5 shrink-0 text-orange-400" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h5l1.8 2h8.2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="M3 9h18"/></svg>
+              <svg v-if="row.node.isDirectory" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5 shrink-0 text-orange-400" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h5l1.8 2h8.2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="M3 9h18"/></svg>
               <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5 shrink-0 text-zinc-500" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
               <span class="truncate">{{ row.node.name }}</span>
             </button>

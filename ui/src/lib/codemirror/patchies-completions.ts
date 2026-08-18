@@ -426,8 +426,8 @@ const patchiesAPICompletions: Completion[] = [
     label: 'vfs',
     type: 'variable',
     detail: '{ getUrl(path), list(path?), search(query, path?) }',
-    info: 'Access VFS files. Relative paths use the user:// namespace.',
-    apply: "vfs.getUrl('./file.png')"
+    info: "Access VFS files. Relative paths use the user:// namespace. Example: await vfs.getUrl('./file.png')",
+    apply: 'vfs'
   },
 
   // Console
@@ -1226,6 +1226,8 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
     const fftMemberMatch = context.matchBefore(/fft\(\)\.\w*/);
 
     if (fftMemberMatch) {
+      if (!isCompletionAllowedForNode({ label: 'fft' }, patchiesContext)) return null;
+
       const partial = fftMemberMatch.text.slice('fft().'.length).toLowerCase();
       const methods = memberCompletions.fft;
 
@@ -1245,6 +1247,8 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
       const methods = memberCompletions[obj];
 
       if (methods) {
+        if (!isCompletionAllowedForNode({ label: obj }, patchiesContext)) return null;
+
         const partial = memberMatch.text.slice(dotIdx + 1).toLowerCase();
 
         return {

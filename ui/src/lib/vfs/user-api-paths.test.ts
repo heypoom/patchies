@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { VirtualFilesystem } from './VirtualFilesystem';
-import { normalizeUserVfsPath } from './user-api-paths';
+import { isExternalUrl, normalizeUserVfsPath } from './user-api-paths';
 
 describe('VFS user API paths', () => {
   beforeEach(() => {
@@ -13,6 +13,12 @@ describe('VFS user API paths', () => {
     expect(normalizeUserVfsPath('./images/cat.png')).toBe('user://images/cat.png');
     expect(normalizeUserVfsPath('images/cat.png')).toBe('user://images/cat.png');
     expect(normalizeUserVfsPath('obj://node/file.txt')).toBe('obj://node/file.txt');
+  });
+
+  it('recognizes external URLs, including protocol-relative URLs', () => {
+    expect(isExternalUrl('https://example.com/file.png')).toBe(true);
+    expect(isExternalUrl('//cdn.example.com/file.png')).toBe(true);
+    expect(isExternalUrl('user://file.png')).toBe(false);
   });
 
   it('lists direct children and searches descendants', async () => {
@@ -27,6 +33,9 @@ describe('VFS user API paths', () => {
       'user://samples/kick.wav',
       'user://samples/snares'
     ]);
+    await expect(vfs.listChildren('user://image.png')).rejects.toThrow(
+      'VFS: Path is not a directory: user://image.png'
+    );
     expect(await vfs.search('snare', 'user://')).toEqual(['user://samples/snares/snare.wav']);
   });
 

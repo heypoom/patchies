@@ -34,7 +34,7 @@ VFS paths use the `user://` prefix for uploaded files. Patchies clears object UR
 
 ## Browsing Files in Code
 
-Use `vfs.list()` to inspect one folder level at a time. Use `vfs.search()` to find matching files anywhere below a folder:
+Use `vfs.list()` to inspect one folder level at a time. Use `vfs.search()` to find matching paths anywhere below a folder:
 
 ```javascript
 // Direct children of the user:// root, including folders.
