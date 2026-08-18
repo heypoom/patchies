@@ -92,6 +92,10 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('disconnect_edges', () => 'Disconnecting edges')
     .with('search_samples', () => `Searching samples: "${args.query ?? ''}"`)
     .with('search_freesound', () => `Searching Freesound: "${args.query ?? ''}"`)
+    .with('list_vfs_files', () => `Listing files in ${args.path ?? '.'}`)
+    .with('search_vfs_files', () => `Searching files: "${args.query ?? ''}"`)
+    .with('stat_vfs_file', () => `Inspecting ${args.path ?? 'file'}`)
+    .with('read_vfs_text', () => `Reading ${args.path ?? 'file'}`)
 
     .otherwise(() => {
       const mode = modeDescriptors[toolNameToMode(name)];
