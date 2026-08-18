@@ -16,6 +16,8 @@ Help with:
 - Audio DSP concepts (oscillators, filters, envelopes, effects)
 - Creative coding techniques and algorithms
 
+You can inspect the patch virtual filesystem with read-only context tools. Use list_vfs_files or search_vfs_files to discover paths, then stat_vfs_file before read_vfs_text. Read only textual files in bounded chunks; never try to read binary assets such as images, audio, or video.
+
 You have canvas tools to create, edit, replace, or fix objects on the user's behalf.
 However, NEVER use these tools unless the user has explicitly asked you to create, modify, or fix something.
 If the user is just asking a question, exploring ideas, or having a conversation, respond with text only.
@@ -92,6 +94,10 @@ export const SEARCH_PRESETS = 'search_presets';
 export const GET_PRESET_CONTENT = 'get_preset_content';
 export const SEARCH_SAMPLES = 'search_samples';
 export const SEARCH_FREESOUND = 'search_freesound';
+export const LIST_VFS_FILES = 'list_vfs_files';
+export const SEARCH_VFS_FILES = 'search_vfs_files';
+export const STAT_VFS_FILE = 'stat_vfs_file';
+export const READ_VFS_TEXT = 'read_vfs_text';
 export const GENERATE_OBJECT_DATA = 'generate_object_data';
 export const REWRITE_OBJECT_DATA = 'rewrite_object_data';
 export const GENERATE_OBJECT_GRAPH = 'generate_object_graph';
@@ -120,7 +126,11 @@ export const CONTEXT_TOOL_NAMES = new Set([
   SEARCH_PRESETS,
   GET_PRESET_CONTENT,
   SEARCH_SAMPLES,
-  SEARCH_FREESOUND
+  SEARCH_FREESOUND,
+  LIST_VFS_FILES,
+  SEARCH_VFS_FILES,
+  STAT_VFS_FILE,
+  READ_VFS_TEXT
 ]);
 
 export const SUBTASK_TOOL_NAMES = new Set([
@@ -341,6 +351,54 @@ export const contextToolDeclarations = [
         }
       },
       required: ['query']
+    }
+  },
+  {
+    name: LIST_VFS_FILES,
+    description:
+      'List the immediate files and folders in a virtual filesystem directory. Paths default to user:// and may use relative paths such as "./samples". This only reads VFS metadata.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Directory to list (default "." for user://)' }
+      }
+    }
+  },
+  {
+    name: SEARCH_VFS_FILES,
+    description:
+      'Recursively search virtual filesystem paths below a directory. Returns matching files and folders, not file contents.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Case-insensitive path/name search query' },
+        path: { type: 'string', description: 'Directory to search below (default "." for user://)' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: STAT_VFS_FILE,
+    description:
+      'Get virtual filesystem file metadata: path, name, kind, provider, stored size in bytes when available, and MIME type when available. Call this before reading a file.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: { path: { type: 'string', description: 'VFS file path' } },
+      required: ['path']
+    }
+  },
+  {
+    name: READ_VFS_TEXT,
+    description:
+      'Read a bounded byte range from a textual virtual filesystem file. Call stat_vfs_file first. Refuses binary formats such as images, audio, and video. Defaults to 16 KiB; length is capped at 32 KiB. Use offset plus truncated to continue a large text file.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Text file path in the VFS' },
+        offset: { type: 'number', description: 'Zero-based byte offset (default 0)' },
+        length: { type: 'number', description: 'Maximum bytes to read (default 16384, max 32768)' }
+      },
+      required: ['path']
     }
   },
   {
