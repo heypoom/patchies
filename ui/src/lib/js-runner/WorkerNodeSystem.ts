@@ -7,6 +7,7 @@ import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSyst
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import {
   listVfsEntries,
+  revokeWorkerVfsObjectUrls,
   resolveVfsUrl,
   searchVfsEntries
 } from '$lib/vfs/worker-vfs-request-handler';
@@ -238,7 +239,7 @@ export class WorkerNodeSystem {
           type: 'vfsUrlResolved',
           nodeId,
           requestId: event.requestId,
-          ...(await resolveVfsUrl(event.path))
+          ...(await resolveVfsUrl(nodeId, event.path))
         } satisfies WorkerMessage);
       })
       .with({ type: 'listVfs' }, async (event) => {
@@ -744,6 +745,8 @@ export class WorkerNodeSystem {
   }
 
   destroy(nodeId: string): void {
+    revokeWorkerVfsObjectUrls(nodeId);
+
     const instance = this.workers.get(nodeId);
     if (!instance) return;
 

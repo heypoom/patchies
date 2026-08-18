@@ -9,18 +9,42 @@ type VfsTextResponse = { text: string } | { error: string };
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+const objectUrlsByNode = new Map<string, Set<string>>();
+
+function trackObjectUrl(nodeId: string, url: string): void {
+  const urls = objectUrlsByNode.get(nodeId) ?? new Set<string>();
+
+  urls.add(url);
+  objectUrlsByNode.set(nodeId, urls);
+}
+
 /** Resolve a worker VFS URL request on the main thread. */
-export async function resolveVfsUrl(path: string): Promise<VfsUrlResponse> {
+export async function resolveVfsUrl(nodeId: string, path: string): Promise<VfsUrlResponse> {
   try {
     if (isExternalUrl(path)) return { url: path };
 
     const vfs = VirtualFilesystem.getInstance();
     const blob = await vfs.resolve(normalizeUserVfsPath(path));
 
-    return { url: URL.createObjectURL(blob) };
+    const url = URL.createObjectURL(blob);
+    trackObjectUrl(nodeId, url);
+
+    return { url };
   } catch (error) {
     return { error: getErrorMessage(error) };
   }
+}
+
+/** Revoke all Blob URLs created for a worker node. */
+export function revokeWorkerVfsObjectUrls(nodeId: string): void {
+  const urls = objectUrlsByNode.get(nodeId);
+  if (!urls) return;
+
+  for (const url of urls) {
+    URL.revokeObjectURL(url);
+  }
+
+  objectUrlsByNode.delete(nodeId);
 }
 
 /** List a worker VFS directory request on the main thread. */

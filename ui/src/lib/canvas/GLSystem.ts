@@ -61,6 +61,7 @@ import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem } from '$lib/vfs';
 import {
   listVfsEntries,
+  revokeWorkerVfsObjectUrls,
   resolveVfsText,
   resolveVfsUrl,
   searchVfsEntries
@@ -480,7 +481,7 @@ export class GLSystem {
         this.send('vfsUrlResolved', {
           requestId: data.requestId,
           nodeId: data.nodeId,
-          ...(await resolveVfsUrl(data.path))
+          ...(await resolveVfsUrl(data.nodeId, data.path))
         });
       })
       .with({ type: 'listVfs' }, async (data) => {
@@ -851,6 +852,8 @@ export class GLSystem {
   }
 
   removeNode(nodeId: string) {
+    revokeWorkerVfsObjectUrls(nodeId);
+
     const node = this.nodes.find((n) => n.id === nodeId);
     if (!node) return;
 
