@@ -85,6 +85,9 @@ export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   premultipliedAlpha: false
 };
 
+const isPassthroughNodeType = (nodeType: RenderNode['type']): boolean =>
+  nodeType === 'send.vdo' || nodeType === 'recv.vdo';
+
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
   public backgroundSize: [number, number] = [...DEFAULT_OUTPUT_SIZE];
@@ -512,7 +515,7 @@ export class FBORenderer {
       // Passthrough nodes (send.vdo, recv.vdo) capture inletMap in their closure
       // so they must always be recreated when the graph changes.
       const fingerprint = this.computeNodeFingerprint(node);
-      const isPassthroughNode = node.type === 'send.vdo' || node.type === 'recv.vdo';
+      const isPassthroughNode = isPassthroughNodeType(node.type);
 
       if (
         canReuseFbo &&
@@ -2080,7 +2083,7 @@ export class FBORenderer {
 
     const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
 
-    if (node?.type === 'send.vdo' || node?.type === 'recv.vdo') {
+    if (node && isPassthroughNodeType(node.type)) {
       const inlet = node.inletMap.get(0);
 
       return inlet ? this.resolveVideoSource(inlet.sourceNodeId, inlet.outletIndex, visited) : null;
