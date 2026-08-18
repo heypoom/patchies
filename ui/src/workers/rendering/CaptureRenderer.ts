@@ -21,6 +21,13 @@ interface PendingVideoFrameBatch {
   format: VideoFrameFormat;
 }
 
+export interface VideoFrameCaptureSource {
+  framebuffer: regl.Framebuffer2D;
+  width: number;
+  height: number;
+  previewSize: [number, number];
+}
+
 /**
  * CaptureRenderer handles on-demand frame capture for video frames and LLM previews.
  *
@@ -115,7 +122,8 @@ export class CaptureRenderer {
       format?: VideoFrameFormat;
     }>,
     fboNodes: Map<string, FBONode>,
-    externalTextures?: Map<string, regl.Texture2D>
+    externalTextures?: Map<string, regl.Texture2D>,
+    resolvedSources?: Map<string, VideoFrameCaptureSource>
   ): void {
     // Track temporary FBOs created for external textures (need cleanup after read)
     const tempFbos: regl.Framebuffer2D[] = [];
@@ -145,29 +153,52 @@ export class CaptureRenderer {
 
         // Check if we already have a read for this source at this resolution
         const cachedRead = readCache.get(cacheKey);
+
         if (cachedRead) {
           reads.push(cachedRead);
           continue;
         }
 
+        const resolvedSource = resolvedSources?.get(sourceId);
+
+        if (resolvedSource) {
+          const read = this.initiateVideoFrameRead(
+            sourceId,
+            resolvedSource.framebuffer,
+            [resolvedSource.width, resolvedSource.height],
+            validResolution ?? resolvedSource.previewSize
+          );
+
+          if (read) {
+            readCache.set(cacheKey, read);
+            reads.push(read);
+          }
+
+          continue;
+        }
+
         // Check external textures first (img, webcam nodes)
         const externalTexture = externalTextures?.get(sourceId);
+
         if (externalTexture) {
           // Create a temporary framebuffer wrapping the texture
           const tempFbo = this.regl.framebuffer({ color: externalTexture });
           tempFbos.push(tempFbo);
 
-          const texSize: [number, number] = [externalTexture.width, externalTexture.height];
+          const textureSize: [number, number] = [externalTexture.width, externalTexture.height];
+
           const read = this.initiateVideoFrameRead(
             sourceId,
             tempFbo,
-            texSize,
-            validResolution ?? texSize
+            textureSize,
+            validResolution ?? textureSize
           );
+
           if (read) {
             readCache.set(cacheKey, read);
             reads.push(read);
           }
+
           continue;
         }
 

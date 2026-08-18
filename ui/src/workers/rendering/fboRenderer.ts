@@ -21,7 +21,7 @@ import {
 } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
-import { CaptureRenderer } from './CaptureRenderer';
+import { CaptureRenderer, type VideoFrameCaptureSource } from './CaptureRenderer';
 import { match, P } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
@@ -686,7 +686,14 @@ export class FBORenderer {
 
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
 
-    // Phase 4 (sync): allocate previous-frame textures for feedback nodes.
+    // Phase 4 (sync): release previous-frame textures no longer needed, then
+    // allocate them for the feedback nodes in the current graph.
+    for (const [nodeId, fboNode] of this.fboNodes) {
+      if (!mergedGraph.feedbackNodes.has(nodeId)) {
+        this.destroyFeedbackResources(fboNode);
+      }
+    }
+
     // Idempotent — skipped if the node already has prevTextures from a prior build.
     // One prev texture + framebuffer is allocated per color attachment so MRT
     // feedback nodes can provide previous-frame data for each outlet independently.
@@ -731,6 +738,14 @@ export class FBORenderer {
       texture.destroy();
     }
 
+    this.destroyFeedbackResources(fboNode);
+
+    if (cleanup) {
+      fboNode.cleanup?.();
+    }
+  }
+
+  private destroyFeedbackResources(fboNode: FBONode): void {
     for (const framebuffer of fboNode.prevFramebuffers ?? []) {
       framebuffer?.destroy();
     }
@@ -739,9 +754,8 @@ export class FBORenderer {
       texture?.destroy();
     }
 
-    if (cleanup) {
-      fboNode.cleanup?.();
-    }
+    fboNode.prevFramebuffers = undefined;
+    fboNode.prevTextures = undefined;
   }
 
   private rebuildCookingPolicies(mergedGraph: RenderGraph) {
@@ -1402,13 +1416,7 @@ export class FBORenderer {
 
   destroyNodes(newNodeIds?: Set<string>) {
     for (const fboNode of this.fboNodes.values()) {
-      fboNode.framebuffer.destroy();
-
-      for (const texture of fboNode.colorAttachments) {
-        texture.destroy();
-      }
-
-      fboNode.cleanup?.();
+      this.destroyFboNode(fboNode);
     }
 
     this.fboNodes.clear();
@@ -2391,6 +2399,7 @@ export class FBORenderer {
    */
   capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
     const fboNode = this.fboNodes.get(nodeId);
+    const captureSource = this.resolveCaptureSource(nodeId);
 
     const defaultPreview: [number, number] = [
       Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
@@ -2398,31 +2407,12 @@ export class FBORenderer {
     ];
 
     const fallbackSize = customSize ?? fboNode?.previewSize ?? defaultPreview;
-
-    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
-
-    if (externalTexture) {
-      // Use cached FBO to avoid creating/destroying on every capture
-      const sourceFbo = this.videoTextures.getDestinationFBO(nodeId);
-
-      if (sourceFbo) {
-        const bitmap = this.captureRenderer.capturePreviewBitmapSync(
-          sourceFbo,
-          externalTexture.width,
-          externalTexture.height,
-          fallbackSize
-        );
-
-        return bitmap;
-      }
-    }
-
-    if (!fboNode) return null;
+    if (!captureSource) return null;
 
     return this.captureRenderer.capturePreviewBitmapSync(
-      fboNode.framebuffer,
-      fboNode.texture.width,
-      fboNode.texture.height,
+      captureSource.framebuffer,
+      captureSource.width,
+      captureSource.height,
       fallbackSize
     );
   }
@@ -2440,11 +2430,64 @@ export class FBORenderer {
       format?: 'raw' | 'bitmap';
     }>
   ): void {
+    const resolvedSources = new Map<string, VideoFrameCaptureSource>();
+
+    for (const request of requests) {
+      for (const sourceNodeId of request.sourceNodeIds) {
+        if (!sourceNodeId || resolvedSources.has(sourceNodeId)) continue;
+
+        const node = this.renderGraph?.nodes.find((candidate) => candidate.id === sourceNodeId);
+        if (!node || !isPassthroughNodeType(node.type)) continue;
+
+        const source = this.resolveCaptureSource(sourceNodeId);
+        if (source) resolvedSources.set(sourceNodeId, source);
+      }
+    }
+
     this.captureRenderer.initiateVideoFrameBatchAsync(
       requests,
       this.fboNodes,
-      this.videoTextures.destinationTextures
+      this.videoTextures.destinationTextures,
+      resolvedSources
     );
+  }
+
+  private resolveCaptureSource(
+    nodeId: string,
+    visited = new Set<string>()
+  ): VideoFrameCaptureSource | null {
+    if (visited.has(nodeId)) return null;
+    visited.add(nodeId);
+
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+
+    if (node && isPassthroughNodeType(node.type)) {
+      const inlet = node.inletMap.get(0);
+
+      return inlet ? this.resolveCaptureSource(inlet.sourceNodeId, visited) : null;
+    }
+
+    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
+    const externalFbo = this.videoTextures.getDestinationFBO(nodeId);
+
+    if (externalTexture && externalFbo) {
+      return {
+        framebuffer: externalFbo,
+        width: externalTexture.width,
+        height: externalTexture.height,
+        previewSize: [externalTexture.width, externalTexture.height]
+      };
+    }
+
+    const fboNode = this.fboNodes.get(nodeId);
+    if (!fboNode) return null;
+
+    return {
+      framebuffer: fboNode.framebuffer,
+      width: fboNode.texture.width,
+      height: fboNode.texture.height,
+      previewSize: fboNode.previewSize
+    };
   }
 
   /**

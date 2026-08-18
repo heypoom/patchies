@@ -25,6 +25,7 @@ describe('send.vdo and recv.vdo routing', () => {
     const { FBORenderer } = await import('./fboRenderer');
 
     const sourceTexture = { width: 1080, height: 1920 };
+    const sourceFramebuffer = {};
     const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
 
     const state = renderer as unknown as {
@@ -32,13 +33,15 @@ describe('send.vdo and recv.vdo routing', () => {
       renderGraph: { nodes: RenderNode[] };
       videoTextures: {
         getDestinationTexture: (nodeId: string) => typeof sourceTexture | undefined;
+        getDestinationFBO: (nodeId: string) => typeof sourceFramebuffer | undefined;
       };
     };
 
     state.fboNodes = new Map();
 
     state.videoTextures = {
-      getDestinationTexture: (nodeId) => (nodeId === 'webcam' ? sourceTexture : undefined)
+      getDestinationTexture: (nodeId) => (nodeId === 'webcam' ? sourceTexture : undefined),
+      getDestinationFBO: (nodeId) => (nodeId === 'webcam' ? sourceFramebuffer : undefined)
     };
 
     const send = {
@@ -75,6 +78,20 @@ describe('send.vdo and recv.vdo routing', () => {
 
     expect(source).toEqual({ texture: sourceTexture, width: 1080, height: 1920 });
     expect(textureMap.get(0)).toBe(sourceTexture);
+
+    const captureSource = (
+      renderer as never as {
+        resolveCaptureSource: (
+          nodeId: string
+        ) => { framebuffer: unknown; width: number; height: number } | null;
+      }
+    ).resolveCaptureSource('receive');
+
+    expect(captureSource).toMatchObject({
+      framebuffer: sourceFramebuffer,
+      width: 1080,
+      height: 1920
+    });
   });
 
   it('uses the previous frame when wireless routing closes a feedback loop', async () => {
@@ -177,5 +194,24 @@ describe('send.vdo and recv.vdo routing', () => {
     ).getInputTextureMap(feedback);
 
     expect(textureMap.get(1)).toBe(previousTexture);
+  });
+
+  it('releases obsolete feedback resources', async () => {
+    const { FBORenderer } = await import('./fboRenderer');
+    const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
+    const framebuffer = { destroy: vi.fn() };
+    const texture = { destroy: vi.fn() };
+    const fboNode = { prevFramebuffers: [framebuffer], prevTextures: [texture] };
+
+    (
+      renderer as never as {
+        destroyFeedbackResources: (node: typeof fboNode) => void;
+      }
+    ).destroyFeedbackResources(fboNode);
+
+    expect(framebuffer.destroy).toHaveBeenCalledOnce();
+    expect(texture.destroy).toHaveBeenCalledOnce();
+    expect(fboNode.prevFramebuffers).toBeUndefined();
+    expect(fboNode.prevTextures).toBeUndefined();
   });
 });
