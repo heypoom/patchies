@@ -423,11 +423,11 @@ const patchiesAPICompletions: Completion[] = [
 
   // VFS
   {
-    label: 'getVfsUrl',
-    type: 'function',
-    detail: '(path: string) => Promise<string>',
-    info: 'Resolve a VFS path (user://, obj://) to an object URL. Regular URLs pass through unchanged.',
-    apply: "getVfsUrl('user://')"
+    label: 'vfs',
+    type: 'variable',
+    detail: '{ getUrl(path), list(path?), search(query, path?) }',
+    info: "Access VFS files. Relative paths use the user:// namespace. Example: await vfs.getUrl('./file.png')",
+    apply: 'vfs'
   },
 
   // Console
@@ -591,7 +591,7 @@ const MOUSE_INTERACTION_JS_NODES = [
 // Note on JSRunner defaults (main-thread nodes):
 // JSRunner.executeJavaScript() provides these by default for main-thread nodes:
 //   console, send, onMessage/recv, setInterval, setTimeout, requestAnimationFrame,
-//   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, setTags, getVfsUrl
+//   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, setTags, vfs
 //
 // Worker nodes (hydra, canvas, textmode, three, swgl) must provide their own
 // implementations via extraContext since JSRunner defaults are for main thread.
@@ -731,7 +731,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
   setVideoFrame: ['worker'],
-  getVfsUrl: [
+  vfs: [
     'js',
     'worker',
     'p5',
@@ -743,6 +743,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'dom',
+    'vue',
     'tone~',
     'sonic~',
     'elem~'
@@ -836,6 +838,30 @@ const memberCompletions: Record<string, Completion[]> = {
       detail: "(range: 'bass' | 'lowMid' | 'mid' | 'highMid' | 'treble') => number",
       info: 'Get normalized energy for a named frequency range, or pass two frequency values in Hz for a custom range.',
       apply: "getEnergy('bass')"
+    }
+  ],
+
+  vfs: [
+    {
+      label: 'getUrl',
+      type: 'method',
+      detail: '(path: string) => Promise<string>',
+      info: 'Resolve a virtual filesystem file to a browser URL. Relative paths use the user:// namespace.',
+      apply: "getUrl('./file.png')"
+    },
+    {
+      label: 'list',
+      type: 'method',
+      detail: '(path?: string) => Promise<VFSListEntry[]>',
+      info: 'List direct entries with path, name, and kind. Defaults to the user:// namespace.',
+      apply: "list('.')"
+    },
+    {
+      label: 'search',
+      type: 'method',
+      detail: '(query: string, path?: string) => Promise<VFSListEntry[]>',
+      info: 'Search entries with path, name, and kind. The path defaults to the user:// namespace.',
+      apply: "search('')"
     }
   ],
 
@@ -1200,6 +1226,8 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
     const fftMemberMatch = context.matchBefore(/fft\(\)\.\w*/);
 
     if (fftMemberMatch) {
+      if (!isCompletionAllowedForNode({ label: 'fft' }, patchiesContext)) return null;
+
       const partial = fftMemberMatch.text.slice('fft().'.length).toLowerCase();
       const methods = memberCompletions.fft;
 
@@ -1219,6 +1247,8 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
       const methods = memberCompletions[obj];
 
       if (methods) {
+        if (!isCompletionAllowedForNode({ label: obj }, patchiesContext)) return null;
+
         const partial = memberMatch.text.slice(dotIdx + 1).toLowerCase();
 
         return {

@@ -7,6 +7,8 @@ import {
   type VFSTree,
   type VFSTreeNode,
   type VFSProvider,
+  type VFSListEntry,
+  isVFSFolder,
   isVFSEntry,
   isVFSPath,
   parseVFSPath,
@@ -474,6 +476,146 @@ export class VirtualFilesystem {
     const paths = Array.from(this.entries.keys());
     if (!prefix) return paths;
     return paths.filter((p) => p.startsWith(prefix));
+  }
+
+  /** List the immediate children of a VFS directory, including linked local folders. */
+  async listChildren(directory: string): Promise<VFSListEntry[]> {
+    const entry = this.entries.get(directory);
+
+    if (entry && entry.provider !== 'folder' && entry.provider !== 'local-folder') {
+      throw new TypeError(`VFS: Path is not a directory: ${directory}`);
+    }
+
+    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
+    const children = new Map<string, VFSListEntry>();
+
+    for (const path of this.entries.keys()) {
+      if (!path.startsWith(prefix)) continue;
+
+      const child = path.slice(prefix.length).split('/')[0];
+      if (!child) continue;
+
+      const childPath = `${prefix}${child}`;
+      children.set(childPath, this.createListEntry(childPath));
+    }
+
+    const linkedFolderPath = this.getLinkedFolderForPath(directory);
+
+    if (linkedFolderPath) {
+      const linkedChildren = await this.listLinkedFolderChildren(directory, linkedFolderPath);
+
+      for (const child of linkedChildren) {
+        children.set(child.path, this.createListEntry(child.path, child.kind));
+      }
+    }
+
+    return [...children.values()].sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  /** Recursively find VFS paths whose path includes the query, case-insensitively. */
+  async search(query: string, directory: string): Promise<VFSListEntry[]> {
+    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
+    const normalizedQuery = query.toLowerCase();
+    const matches = new Map<string, VFSListEntry>();
+
+    for (const path of this.list(prefix)) {
+      if (path.toLowerCase().includes(normalizedQuery)) {
+        matches.set(path, this.createListEntry(path));
+      }
+    }
+
+    const containingLinkedFolder = this.getLinkedFolderForPath(directory);
+
+    const linkedFolderPaths = containingLinkedFolder
+      ? [containingLinkedFolder]
+      : [...this.entries]
+          .filter(([path, entry]) => entry.provider === 'local-folder' && path.startsWith(prefix))
+          .map(([path]) => path);
+
+    for (const linkedFolderPath of linkedFolderPaths) {
+      const searchRoot = containingLinkedFolder ? directory : linkedFolderPath;
+
+      for (const entry of await this.searchLinkedFolder(searchRoot, linkedFolderPath)) {
+        if (entry.path.toLowerCase().includes(normalizedQuery)) {
+          matches.set(entry.path, entry);
+        }
+      }
+    }
+
+    return [...matches.values()].sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  private createListEntry(path: string, kind?: VFSListEntry['kind']): VFSListEntry {
+    const name = path.split('/').filter(Boolean).pop() ?? path;
+
+    return { path, name, kind: kind ?? this.getPathKind(path) };
+  }
+
+  private getPathKind(path: string): VFSListEntry['kind'] {
+    const entry = this.entries.get(path);
+    if (entry && isVFSFolder(entry)) return 'directory';
+
+    return [...this.entries.keys()].some((entryPath) => entryPath.startsWith(`${path}/`))
+      ? 'directory'
+      : 'file';
+  }
+
+  private getLinkedFolderForPath(path: string): string | null {
+    return this.entries.get(path)?.provider === 'local-folder'
+      ? path
+      : this.findLinkedFolderForPath(path);
+  }
+
+  private async listLinkedFolderChildren(
+    directory: string,
+    linkedFolderPath: string
+  ): Promise<Array<{ path: string; kind: 'file' | 'directory' }>> {
+    const localProvider = this.getLocalProvider();
+
+    if (!localProvider) {
+      throw new Error('VFS: Local provider not available for linked folder listing');
+    }
+
+    let handle = await localProvider.getDirHandle(linkedFolderPath);
+
+    if (!handle) {
+      throw new Error(`VFS: No directory handle for linked folder: ${linkedFolderPath}`);
+    }
+
+    const hasDirectoryPermission = await localProvider.hasDirPermission(linkedFolderPath);
+
+    if (!hasDirectoryPermission) {
+      throw new Error(`VFS: Permission denied for linked folder: ${linkedFolderPath}`);
+    }
+
+    const relativeSegments =
+      directory === linkedFolderPath ? [] : directory.slice(linkedFolderPath.length + 1).split('/');
+
+    for (const segment of relativeSegments) {
+      handle = await handle.getDirectoryHandle(segment);
+    }
+
+    const entries = await localProvider.listHandleContents(handle);
+    const pathPrefix = directory.endsWith('/') ? directory : `${directory}/`;
+
+    return entries.map((entry) => ({ path: `${pathPrefix}${entry.name}`, kind: entry.kind }));
+  }
+
+  private async searchLinkedFolder(
+    directory: string,
+    linkedFolderPath: string
+  ): Promise<VFSListEntry[]> {
+    const matches: VFSListEntry[] = [];
+
+    for (const child of await this.listLinkedFolderChildren(directory, linkedFolderPath)) {
+      matches.push(this.createListEntry(child.path, child.kind));
+
+      if (child.kind === 'directory') {
+        matches.push(...(await this.searchLinkedFolder(child.path, linkedFolderPath)));
+      }
+    }
+
+    return matches;
   }
 
   /**

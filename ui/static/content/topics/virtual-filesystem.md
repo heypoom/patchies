@@ -14,23 +14,37 @@ See [Files](/docs/manage-files) for file management details.
 
 ## Loading Files in Code
 
-Use `await getVfsUrl(path)` to get the URL for a VFS file:
+Use `await vfs.getUrl(path)` to get the URL for a VFS file. Relative paths use the `user://` namespace:
 
 ```javascript
 // In p5:
 let img;
 
 async function setup() {
-  let url = await getVfsUrl("user://photo.jpg");
+  let url = await vfs.getUrl("./photo.jpg");
   img = await loadImage(url);
 }
 
 // In js or canvas.dom:
-const url = await getVfsUrl("user://data.json");
+const url = await vfs.getUrl("user://data.json");
 const data = await fetch(url).then(r => r.json());
 ```
 
 VFS paths use the `user://` prefix for uploaded files. Patchies clears object URLs when it destroys the object.
+
+## Browsing Files in Code
+
+Use `vfs.list()` to inspect one folder level at a time. Use `vfs.search()` to find matching entries anywhere below a folder. Both return objects with `path`, `name`, and `kind` (`file` or `directory`):
+
+```javascript
+// Direct children of the user:// root, including folders.
+const rootEntries = await vfs.list(".");
+
+// Every matching path under user://samples.
+const kicks = await vfs.search("kick", "./samples");
+```
+
+Both methods also browse linked local folders after you grant Patchies permission.
 
 ## Getting File Content
 
@@ -38,18 +52,18 @@ Get the underlying Blob or raw data:
 
 ```javascript
 // Get as Blob
-const blob = await fetch(await getVfsUrl("user://image.png")).then(r => r.blob());
+const blob = await fetch(await vfs.getUrl("user://image.png")).then(r => r.blob());
 
 // Get as ArrayBuffer (for binary data)
-const buffer = await fetch(await getVfsUrl("user://audio.wav")).then(r => r.arrayBuffer());
+const buffer = await fetch(await vfs.getUrl("user://audio.wav")).then(r => r.arrayBuffer());
 
 // Get as text
-const text = await fetch(await getVfsUrl("user://data.csv")).then(r => r.text());
+const text = await fetch(await vfs.getUrl("user://data.csv")).then(r => r.text());
 ```
 
 ## Supported Objects
 
-Use `getVfsUrl()` in all [JavaScript Runner](/docs/javascript-runner) objects.
+Use `vfs` in all [JavaScript Runner](/docs/javascript-runner)-based objects.
 
 ## See Also
 

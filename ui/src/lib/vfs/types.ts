@@ -22,6 +22,13 @@ export interface VFSEntry {
   size?: number;
 }
 
+/** A file or directory returned from the user-facing VFS browsing API. */
+export interface VFSListEntry {
+  path: string;
+  name: string;
+  kind: 'file' | 'directory';
+}
+
 /**
  * Check if a VFSEntry is a folder (regular or linked)
  */
@@ -94,9 +101,8 @@ export const VFS_DEFAULT_EXPANDED = [VFS_PREFIXES.USER, VFS_PREFIXES.OBJECT] as 
 /**
  * Check if a path is a VFS path (has user:// or obj:// prefix)
  */
-export function isVFSPath(path: string): boolean {
-  return path.startsWith(VFS_PREFIXES.USER) || path.startsWith(VFS_PREFIXES.OBJECT);
-}
+export const isVFSPath = (path: string): boolean =>
+  path.startsWith(VFS_PREFIXES.USER) || path.startsWith(VFS_PREFIXES.OBJECT);
 
 /**
  * Parse a VFS path into its components.
@@ -107,11 +113,15 @@ export function parseVFSPath(
 ): { namespace: 'user' | 'obj'; segments: string[] } | null {
   if (path.startsWith(VFS_PREFIXES.USER)) {
     const rest = path.slice(VFS_PREFIXES.USER.length);
+
     return { namespace: 'user', segments: rest.split('/').filter(Boolean) };
   }
+
   if (path.startsWith(VFS_PREFIXES.OBJECT)) {
     const rest = path.slice(VFS_PREFIXES.OBJECT.length);
+
     return { namespace: 'obj', segments: rest.split('/').filter(Boolean) };
   }
+
   return null;
 }

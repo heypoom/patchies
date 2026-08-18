@@ -17,6 +17,11 @@ Patchies is a visual programming environment for audio-visual patches.
 - TailwindCSS 4
 - CodeMirror 6
 
+## Code Style
+
+- Use blank lines to separate distinct steps in a function: declarations, guards, control-flow blocks, and returns.
+- Keep declarations that form one setup step together; add a blank line before the next operation or branch, including a conditional that follows an operation inside a loop.
+
 Run project commands from `ui/`:
 
 ```bash

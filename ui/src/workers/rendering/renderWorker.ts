@@ -5,7 +5,7 @@ import { handleVfsTextResolved } from '$lib/glsl-include/vfs-resolver';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 
 import { FBORenderer } from './fboRenderer';
-import { handleVfsUrlResolved } from './vfsWorkerUtils';
+import { handleVfsPathsResolved, handleVfsUrlResolved } from './vfsWorkerUtils';
 import { MediaBunnyService } from './MediaBunnyService';
 import { RenderWorkerLifecycle } from './RenderWorkerLifecycle';
 
@@ -157,6 +157,9 @@ export function installRenderWorkerRuntime() {
       })
       .with('vfsUrlResolved', () => {
         handleVfsUrlResolved(data);
+      })
+      .with('vfsPathsResolved', () => {
+        handleVfsPathsResolved(data);
       })
       .with('vfsTextResolved', () => {
         handleVfsTextResolved(data);

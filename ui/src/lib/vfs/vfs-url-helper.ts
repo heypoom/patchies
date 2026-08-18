@@ -1,11 +1,11 @@
 /**
- * VFS URL Helper
+ * Per-node VFS API
  *
- * Provides a `vfsUrl()` helper to resolve VFS paths (user://, obj://) to object URLs.
- * Usage: loadImage(await vfsUrl('user://images/photo.jpg'))
+ * Creates the `vfs` object exposed to JavaScript nodes and tracks object URLs
+ * created by `vfs.getUrl()` for cleanup when the node is destroyed.
  */
 
-import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+import { createVfsApi, type VfsApi } from './user-api';
 
 /** Object URLs created during the node lifecycle - must be revoked on destroy */
 const objectUrls = new Map<string, Set<string>>();
@@ -32,31 +32,14 @@ export function revokeObjectUrls(nodeId: string): void {
 }
 
 /**
- * Create the vfsUrl helper function for a specific node.
+ * Create the `vfs` object for a specific node.
  *
- * Resolves a VFS path to an object URL that can be loaded.
- * If the path is not a VFS path, returns it unchanged.
+ * The object provides `getUrl()`, `list()`, and `search()`. URLs created by
+ * `getUrl()` are tied to the node lifecycle and revoked on destroy.
  *
  * @example
- * // In preload or setup:
- * img = await loadImage(vfsUrl('user://images/photo.jpg'));
- *
- * // Or with regular URLs (passes through unchanged):
- * img = await loadImage(vfsUrl('https://example.com/image.png'));
+ * const files = await vfs.list('.');
+ * const url = await vfs.getUrl(files[0].path);
  */
-export function createGetVfsUrl(nodeId: string): (path: string) => Promise<string> {
-  return async function vfsUrl(path: string): Promise<string> {
-    // VFS is only accessible on the main thread for now
-    if (typeof window === 'undefined') return path;
-
-    if (!isVFSPath(path)) {
-      return path;
-    }
-
-    const vfs = VirtualFilesystem.getInstance();
-    const blob = await vfs.resolve(path);
-    const url = URL.createObjectURL(blob);
-    trackObjectUrl(nodeId, url);
-    return url;
-  };
-}
+export const createVfs = (nodeId: string): VfsApi =>
+  createVfsApi((url) => trackObjectUrl(nodeId, url));

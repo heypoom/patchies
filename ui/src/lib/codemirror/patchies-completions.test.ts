@@ -16,6 +16,14 @@ function getCompletionLabels(nodeType: string, doc: string) {
   return result?.options.map((option) => option.label) ?? [];
 }
 
+function getCompletion(nodeType: string, doc: string, label: string) {
+  const state = EditorState.create({ doc });
+  const context = new CompletionContext(state, doc.length, true);
+  return createPatchiesCompletionSource({ nodeType })(context)?.options.find(
+    (option) => option.label === label
+  );
+}
+
 function getShaderParkCompletionLabels(nodeType: string, doc: string) {
   const state = EditorState.create({ doc });
   const context = new CompletionContext(state, doc.length, true);
@@ -114,6 +122,28 @@ describe('patchies completions', () => {
     );
 
     expect(getCompletionLabels('hydra', 'fft().get')).toEqual(['getEnergy']);
+  });
+
+  it('shows VFS method completions after vfs.', () => {
+    expect(getCompletionLabels('js', 'vfs.')).toEqual(
+      expect.arrayContaining(['getUrl', 'list', 'search'])
+    );
+    expect(getCompletionLabels('js', 'vfs.ge')).toEqual(['getUrl']);
+    expect(getCompletionLabels('js', 'vfs.se')).toEqual(['search']);
+  });
+
+  it('applies the VFS completion as an object', () => {
+    expect(getCompletion('vue', 'vf', 'vfs')?.apply).toBe('vfs');
+  });
+
+  it('hides member completions when their owning API is unavailable', () => {
+    expect(getCompletionLabels('dsp~', 'vfs.')).toEqual([]);
+    expect(getCompletionLabels('dsp~', 'fft().')).toEqual([]);
+  });
+
+  it('shows the VFS object completion in nodes with main-thread VFS access', () => {
+    expect(getCompletionLabels('dom', 'vf')).toEqual(['vfs']);
+    expect(getCompletionLabels('vue', 'vf')).toEqual(['vfs']);
   });
 
   it('shows the documented surface JavaScript API completions', () => {

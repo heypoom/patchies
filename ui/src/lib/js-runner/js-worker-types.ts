@@ -3,6 +3,7 @@ import type { PrimaryButton } from '$lib/eventbus/events';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import type { Message } from '$lib/messages/MessageSystem';
 import type { ProfilerCategory, TimingStats } from '$lib/profiler/types';
+import type { VFSListEntry } from '$lib/vfs/types';
 
 /** Render connection for direct worker-to-render messaging. */
 export interface RenderConnection {
@@ -42,6 +43,8 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'cleanup' }
   | { type: 'destroy' }
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
+  | { type: 'vfsPathsResolved'; requestId: string; entries: VFSListEntry[]; error?: never }
+  | { type: 'vfsPathsResolved'; requestId: string; error: string; entries?: never }
   | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   | {
@@ -86,6 +89,8 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'fftEnabled'; enabled: boolean }
   | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
+  | { type: 'listVfs'; requestId: string; path: string }
+  | { type: 'searchVfs'; requestId: string; query: string; path: string }
   | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
   | { type: 'setVideoFrame'; frame: WorkerVideoFrame }

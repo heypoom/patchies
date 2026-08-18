@@ -81,7 +81,6 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 ## Integration Paths
 
 - persist uploaded media in media source objects
-
   - images (`img`)
   - video (`video`)
   - sound (`soundfile~`)
@@ -183,10 +182,10 @@ class VirtualFilesystem {
 
 async function storeHandle(
   path: string,
-  handle: FileSystemFileHandle
+  handle: FileSystemFileHandle,
 ): Promise<void>;
 async function getHandle(
-  path: string
+  path: string,
 ): Promise<FileSystemFileHandle | undefined>;
 async function removeHandle(path: string): Promise<void>;
 async function getAllHandles(): Promise<Map<string, FileSystemFileHandle>>;
@@ -199,7 +198,7 @@ async function clearHandles(): Promise<void>;
 // path-utils.ts
 function generateUserPath(
   filename: string,
-  existingPaths: Set<string>
+  existingPaths: Set<string>,
 ): string {
   // Input: 'photo.jpg'
   // Output: 'user://images/photo.jpg' or 'user://images/photo-1.jpg' if collision
@@ -357,3 +356,16 @@ export const migration002: Migration = {
 - [x] Collision handling → `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`
 - [x] Delete node → VFS entry remains (intentional, for undo support)
 - [x] Clear patch → VFS cleared
+
+## User-Code API
+
+JavaScript-capable objects expose a single asynchronous `vfs` helper. It replaces the former `getVfsUrl` global.
+
+```javascript
+await vfs.getUrl("./foo.png"); // resolves user://foo.png to an object URL
+await vfs.getUrl("user://foo.png"); // explicit VFS path
+await vfs.list("."); // direct entries of user:// as { path, name, kind }
+await vfs.search("foo", "./assets"); // recursively search entries under user://assets
+```
+
+Relative paths default to `user://`; absolute external URLs passed to `getUrl` pass through unchanged. `list` is non-recursive and returns entries with full VFS paths, names, and file or directory kinds. `search` is case-insensitive, recursive, and returns matching entries in the same shape. Both methods traverse linked local folders after permission has been granted.

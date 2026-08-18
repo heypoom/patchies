@@ -174,7 +174,7 @@ export abstract class BaseWorkerRenderer<
       height,
       mouse: this.createMouseObject(),
       fft: this.createFFTFunction(),
-      getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
+      vfs: createWorkerVfs(this.config.nodeId),
       onMessage: this.msgContext.createOnMessageFunction(),
       send: this.sendMessage.bind(this),
       noDrag: () => this.setInteraction('drag', false),

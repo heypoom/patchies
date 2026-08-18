@@ -26,7 +26,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Canvas Widgets',
     description: 'Interactive widgets you can play with',
     icon: 'Layout',
-    requiredObjects: ['canvas.dom', 'dom', 'surface'],
+    requiredObjects: ['canvas.dom', 'dom', 'surface', 'vue'],
     presets: [
       'XY Pad',
       'HSL Picker',
@@ -34,6 +34,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'plotter.canvas',
       'particle.canvas',
       'Drawing Surface',
+      'File Browser',
       'MIDI Keyboard',
       'fractal-tree.canvas',
       'bitmaprenderer'

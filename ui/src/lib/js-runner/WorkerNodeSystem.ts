@@ -5,8 +5,12 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
-import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
-import { isVFSPath } from '$lib/vfs/types';
+import {
+  listVfsEntries,
+  revokeWorkerVfsObjectUrls,
+  resolveVfsUrl,
+  searchVfsEntries
+} from '$lib/vfs/worker-vfs-request-handler';
 import { profiler, ProfilerCoordinator } from '$lib/profiler';
 import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
@@ -230,8 +234,29 @@ export class WorkerNodeSystem {
         this.audioAnalysis.registerFFTRequest(nodeId, event.analysisType, event.format);
       })
       // VFS proxy messages
-      .with({ type: 'resolveVfsUrl' }, (event) => {
-        this.handleVfsUrlResolution(nodeId, worker, event.requestId, event.path);
+      .with({ type: 'resolveVfsUrl' }, async (event) => {
+        worker.postMessage({
+          type: 'vfsUrlResolved',
+          nodeId,
+          requestId: event.requestId,
+          ...(await resolveVfsUrl(nodeId, event.path))
+        } satisfies WorkerMessage);
+      })
+      .with({ type: 'listVfs' }, async (event) => {
+        worker.postMessage({
+          type: 'vfsPathsResolved',
+          nodeId,
+          requestId: event.requestId,
+          ...(await listVfsEntries(event.path))
+        } satisfies WorkerMessage);
+      })
+      .with({ type: 'searchVfs' }, async (event) => {
+        worker.postMessage({
+          type: 'vfsPathsResolved',
+          nodeId,
+          requestId: event.requestId,
+          ...(await searchVfsEntries(event.query, event.path))
+        } satisfies WorkerMessage);
       })
       // LLM proxy messages
       .with({ type: 'llmRequest' }, (event) => {
@@ -303,48 +328,6 @@ export class WorkerNodeSystem {
         }
       })
       .otherwise(() => {});
-  }
-
-  /**
-   * Resolve VFS path and send URL back to worker.
-   */
-  private async handleVfsUrlResolution(
-    nodeId: string,
-    worker: Worker,
-    requestId: string,
-    path: string
-  ) {
-    try {
-      // If not a VFS path, send back the original path unchanged
-      if (!isVFSPath(path)) {
-        worker.postMessage({
-          type: 'vfsUrlResolved',
-          nodeId,
-          requestId,
-          url: path
-        } satisfies WorkerMessage);
-        return;
-      }
-
-      const vfs = VirtualFilesystem.getInstance();
-      const blob = await vfs.resolve(path);
-      const url = URL.createObjectURL(blob);
-
-      worker.postMessage({
-        type: 'vfsUrlResolved',
-        nodeId,
-        requestId,
-        url
-      } satisfies WorkerMessage);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      worker.postMessage({
-        type: 'vfsUrlResolved',
-        nodeId,
-        requestId,
-        error: errorMessage
-      } satisfies WorkerMessage);
-    }
   }
 
   /**
@@ -762,6 +745,8 @@ export class WorkerNodeSystem {
   }
 
   destroy(nodeId: string): void {
+    revokeWorkerVfsObjectUrls(nodeId);
+
     const instance = this.workers.get(nodeId);
     if (!instance) return;
 

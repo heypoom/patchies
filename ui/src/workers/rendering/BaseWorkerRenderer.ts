@@ -7,7 +7,7 @@ import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSyste
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
-import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
+import { createWorkerVfs } from './vfsWorkerUtils';
 import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { createGlslTag } from '$lib/glsl-include/tagged-template';
@@ -268,7 +268,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       height,
       mouse: this.createMouseObject(),
       fft: this.createFFTFunction(),
-      getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
+      vfs: createWorkerVfs(this.config.nodeId),
       glsl: createGlslTag(resolver),
       processIncludes: (source: string) => processIncludes(source, resolver),
       onMessage: this.msgContext.createOnMessageFunction(),

@@ -23,6 +23,11 @@ import { createKVStore } from '$lib/storage/KVStore';
 
 import { WorkerProfiler } from '../shared/WorkerProfiler';
 import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import {
+  createWorkerVfs,
+  handleVfsPathsResolved,
+  handleVfsUrlResolved
+} from '../rendering/vfsWorkerUtils';
 
 import {
   createDirectChannelHandler,
@@ -141,15 +146,6 @@ function getNodeState(nodeId: string): NodeState {
 
   return nodeStates.get(nodeId)!;
 }
-
-// VFS URL resolution (same pattern as vfsWorkerUtils.ts)
-type PendingVfsRequest = {
-  resolve: (url: string) => void;
-  reject: (error: Error) => void;
-};
-
-const pendingVfsRequests = new Map<string, PendingVfsRequest>();
-let vfsRequestIdCounter = 0;
 
 // LLM config proxying (get credentials from main thread, make HTTP call in worker)
 type PendingLLMConfig = {
@@ -355,21 +351,7 @@ function createWorkerContext(nodeId: string) {
     });
   };
 
-  // getVfsUrl - proxied through main thread (same pattern as vfsWorkerUtils.ts)
-  const getVfsUrl = async (path: string): Promise<string> => {
-    const requestId = `vfs-${nodeId}-${++vfsRequestIdCounter}`;
-
-    return new Promise((resolve, reject) => {
-      pendingVfsRequests.set(requestId, { resolve, reject });
-
-      self.postMessage({
-        type: 'resolveVfsUrl',
-        requestId,
-        nodeId,
-        path
-      });
-    });
-  };
+  const vfs = createWorkerVfs(nodeId);
 
   // Video frame APIs
   const setVideoCount = (inletCount = 1, outletCount = 0) => {
@@ -462,7 +444,7 @@ function createWorkerContext(nodeId: string) {
     requestAnimationFrame,
     fft,
     llm,
-    getVfsUrl,
+    vfs,
     flash,
     setVideoCount,
     onVideoFrame,
@@ -578,7 +560,7 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setRunOnMount',
     'setTitle',
     'setPrimaryButton',
-    'getVfsUrl',
+    'vfs',
     'flash',
     'setVideoCount',
     'onVideoFrame',
@@ -605,7 +587,7 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setRunOnMount,
     ctx.setTitle,
     ctx.setPrimaryButton,
-    ctx.getVfsUrl,
+    ctx.vfs,
     ctx.flash,
     ctx.setVideoCount,
     ctx.onVideoFrame,
@@ -695,31 +677,6 @@ function handleCodeError(nodeId: string, code: string, error: unknown): void {
     level: 'error',
     args: [errorMessage]
   });
-}
-
-// Handle VFS URL resolution response from main thread
-function handleVfsUrlResolved(data: {
-  requestId: string;
-  nodeId: string;
-  url?: string;
-  error?: string;
-}) {
-  const pending = pendingVfsRequests.get(data.requestId);
-  if (!pending) return;
-
-  pendingVfsRequests.delete(data.requestId);
-
-  if (data.error) {
-    pending.reject(new Error(data.error));
-    return;
-  }
-
-  if (data.url) {
-    pending.resolve(data.url);
-    return;
-  }
-
-  pending.reject(new Error('Invalid VFS resolution response'));
 }
 
 // Handle LLM response from main thread (main thread made the actual provider call)
@@ -885,6 +842,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       handleVfsUrlResolved(
         data as { requestId: string; nodeId: string; url?: string; error?: string }
       );
+    })
+    .with({ type: 'vfsPathsResolved' }, (data) => {
+      handleVfsPathsResolved(data);
     })
     .with({ type: 'llmConfig' }, (data) => {
       handleLLMConfig(

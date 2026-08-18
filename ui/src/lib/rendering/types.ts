@@ -18,6 +18,7 @@ import type { TextmodeRenderNode } from '$objects/textmode/render-types';
 import type { ThreeRenderNode } from '$objects/three/render-types';
 import type { WorkerRenderNode } from '$objects/worker/render-types';
 import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
+import type { VFSListEntry } from '$lib/vfs/types';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
@@ -208,6 +209,20 @@ export type WorkerMessage =
   | { type: 'settingsValueChanged'; nodeId: string; key: string; value: unknown }
   // VFS resolution responses (main → render worker)
   | { type: 'vfsUrlResolved'; requestId: string; nodeId: string; url?: string; error?: string }
+  | {
+      type: 'vfsPathsResolved';
+      requestId: string;
+      nodeId: string;
+      entries: VFSListEntry[];
+      error?: never;
+    }
+  | {
+      type: 'vfsPathsResolved';
+      requestId: string;
+      nodeId: string;
+      error: string;
+      entries?: never;
+    }
   | { type: 'vfsTextResolved'; requestId: string; nodeId: string; text?: string; error?: string };
 
 export type MouseScope = 'local' | 'global';
@@ -283,6 +298,8 @@ export type RenderWorkerMessage =
   | { type: 'renderFrameStats'; stats: RenderFrameStats }
   | { type: 'error'; message: string }
   | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string }
+  | { type: 'listVfs'; requestId: string; nodeId: string; path: string }
+  | { type: 'searchVfs'; requestId: string; nodeId: string; query: string; path: string }
   | { type: 'resolveVfsText'; requestId: string; nodeId: string; path: string }
   | { type: 'floatTextureBufferReleased'; nodeId: string; buffer: ArrayBuffer }
   | {

@@ -7,6 +7,7 @@ export { useVfsMedia, type UseVfsMediaOptions, type UseVfsMediaReturn } from './
 
 export {
   type VFSEntry,
+  type VFSListEntry,
   type VFSTree,
   type VFSTreeNode,
   type VFSProvider,
@@ -33,7 +34,8 @@ export {
 } from './path-utils';
 export { UrlProvider } from './providers/UrlProvider';
 export { LocalFilesystemProvider } from './providers/LocalFilesystemProvider';
-export { createGetVfsUrl, revokeObjectUrls } from './vfs-url-helper';
+export { createVfs, revokeObjectUrls } from './vfs-url-helper';
+export type { VfsApi } from './user-api';
 
 // Persistence utilities (for advanced use)
 export {

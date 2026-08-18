@@ -7,8 +7,16 @@ Use JavaScript to call an AI provider, control object presentation, and set GPU 
 Load images, videos, fonts, and other files from the patch virtual filesystem:
 
 ```javascript
-const url = await getVfsUrl("my-image.png");
+const url = await vfs.getUrl("./my-image.png");
 const img = loadImage(url); // works in p5, for example
+```
+
+List one folder level or search recursively:
+
+```javascript
+const files = await vfs.list(".");
+const samples = await vfs.search("kick", "./samples");
+const folders = files.filter((entry) => entry.kind === "directory");
 ```
 
 See [Virtual Filesystem](/docs/virtual-filesystem) to add files to a patch.
