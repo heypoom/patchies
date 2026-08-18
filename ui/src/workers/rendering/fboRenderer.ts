@@ -2084,6 +2084,7 @@ export class FBORenderer {
     const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
 
     if (node && isPassthroughNodeType(node.type)) {
+      // Routing nodes have no texture of their own; preserve the inlet's native texture.
       const inlet = node.inletMap.get(0);
 
       return inlet ? this.resolveVideoSource(inlet.sourceNodeId, inlet.outletIndex, visited) : null;
