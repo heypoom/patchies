@@ -65,6 +65,7 @@ import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
 import { createFinalOutputPresentationCommand } from './finalOutputPresentation';
+import { topologicalSort } from '$lib/rendering/graphUtils';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -450,13 +451,7 @@ export class FBORenderer {
     // Merge virtual edges from video channels into the render graph
     const virtualEdges = this.videoChannelRegistry.getVirtualEdges();
 
-    const mergedGraph: RenderGraph = {
-      ...renderGraph,
-      edges: [...renderGraph.edges, ...virtualEdges]
-    };
-
-    // Update node relationships with virtual edges
-    this.applyVirtualEdgesToNodes(mergedGraph);
+    const mergedGraph = this.mergeVirtualEdges(renderGraph, virtualEdges);
 
     this.renderGraph = mergedGraph;
     this.outputNodeId = mergedGraph.outputNodeId;
@@ -477,7 +472,7 @@ export class FBORenderer {
 
     const pending: PendingNode[] = [];
 
-    for (const node of renderGraph.nodes) {
+    for (const node of mergedGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
 
       // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park
@@ -512,14 +507,10 @@ export class FBORenderer {
       // If both FBO and data are unchanged, skip renderer recreation entirely.
       // This preserves state in JS-based renderers (canvas, three, regl, etc.)
       // that would otherwise lose their scene graphs, animation state, etc.
-      // Passthrough nodes (send.vdo, recv.vdo) capture inletMap in their closure
-      // so they must always be recreated when the graph changes.
       const fingerprint = this.computeNodeFingerprint(node);
-      const isPassthroughNode = isPassthroughNodeType(node.type);
 
       if (
         canReuseFbo &&
-        !isPassthroughNode &&
         existingFbo.nodeType === node.type &&
         existingFbo.dataFingerprint === fingerprint
       ) {
@@ -650,8 +641,8 @@ export class FBORenderer {
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
           .with({ type: 'worker' }, () => this.createEmptyRenderer())
           .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
-          .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node))
-          .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node))
+          .with({ type: 'send.vdo' }, () => this.createPassthroughRenderer())
+          .with({ type: 'recv.vdo' }, () => this.createPassthroughRenderer())
           .exhaustive()
       )
     );
@@ -717,13 +708,13 @@ export class FBORenderer {
     // Idempotent — skipped if the node already has prevTextures from a prior build.
     // One prev texture + framebuffer is allocated per color attachment so MRT
     // feedback nodes can provide previous-frame data for each outlet independently.
-    for (const nodeId of renderGraph.feedbackNodes) {
+    for (const nodeId of mergedGraph.feedbackNodes) {
       const fboNode = this.fboNodes.get(nodeId);
       if (!fboNode || fboNode.prevTextures) continue;
 
       // Match the format of the node's color attachments for feedback textures.
       // Read the format from the render graph node data.
-      const feedbackNode = renderGraph.nodes.find((n) => n.id === nodeId);
+      const feedbackNode = mergedGraph.nodes.find((n) => n.id === nodeId);
       const feedbackData = feedbackNode?.data as Record<string, unknown> | undefined;
       const feedbackFormat: FBOFormat = (feedbackData?.fboFormat as FBOFormat) || 'rgba8';
       const feedbackResolution = feedbackData?.resolution as FBOResolution | undefined;
@@ -805,6 +796,41 @@ export class FBORenderer {
   }
 
   /**
+   * Add wireless video-channel edges before graph analysis so a cycle routed
+   * through send.vdo/recv.vdo receives the same previous-frame semantics as a
+   * visible feedback cable.
+   */
+  private mergeVirtualEdges(
+    renderGraph: RenderGraph,
+    virtualEdges: RenderGraph['edges']
+  ): RenderGraph {
+    const mergedGraph: RenderGraph = {
+      ...renderGraph,
+      edges: [...renderGraph.edges, ...virtualEdges]
+    };
+
+    this.applyVirtualEdgesToNodes(mergedGraph);
+
+    // The incoming graph may have been analyzed before virtual edges existed.
+    // Clear that result before recalculating it against the complete graph.
+    for (const node of mergedGraph.nodes) {
+      node.backEdgeInlets.clear();
+    }
+
+    const { sortedNodes, backEdgeIds, feedbackNodeIds } = topologicalSort(
+      mergedGraph.nodes,
+      mergedGraph.edges
+    );
+
+    return {
+      ...mergedGraph,
+      sortedNodes,
+      backEdges: backEdgeIds,
+      feedbackNodes: feedbackNodeIds
+    };
+  }
+
+  /**
    * Create a renderer for video routing nodes (send.vdo, recv.vdo).
    *
    * Routing nodes are texture aliases. They must not draw their inlet into a
@@ -812,16 +838,8 @@ export class FBORenderer {
    * native aspect ratio differs from the patch output. getInputTextureMap()
    * resolves the alias when a downstream node binds its sampler.
    */
-  createPassthroughRenderer(node: RenderNode): { render: RenderFunction; cleanup: () => void } {
-    const nodeId = node.id;
-
-    return {
-      render: () => {},
-      cleanup: () => {
-        // Unsubscribe from video channel when node is destroyed
-        this.videoChannelRegistry.unsubscribeAll(nodeId);
-      }
-    };
+  createPassthroughRenderer(): { render: RenderFunction; cleanup: () => void } {
+    return this.createEmptyRenderer();
   }
 
   async createHydraRenderer(
@@ -2032,28 +2050,14 @@ export class FBORenderer {
 
     // Use inletMap for proper slot-based assignment
     for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
-      const inputFBO = this.fboNodes.get(sourceNodeId);
+      const texture = this.resolveVideoSource(
+        sourceNodeId,
+        outletIndex,
+        node.backEdgeInlets?.has(inletIndex) ?? false
+      )?.texture;
 
-      if (inputFBO) {
-        // For back-edge inlets (feedback loops), read from the previous frame's texture.
-        // This implements the 1-frame delay that prevents the cycle from deadlocking.
-        if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTextures?.length) {
-          const prevTex = inputFBO.prevTextures[outletIndex] ?? inputFBO.prevTextures[0];
-          textureMap.set(inletIndex, prevTex);
-        } else {
-          // Index into the correct color attachment for MRT sources
-          const texture = this.resolveVideoSource(sourceNodeId, outletIndex)?.texture;
-
-          if (texture) {
-            textureMap.set(inletIndex, texture);
-          }
-        }
-      } else {
-        const texture = this.resolveVideoSource(sourceNodeId, outletIndex)?.texture;
-
-        if (texture) {
-          textureMap.set(inletIndex, texture);
-        }
+      if (texture) {
+        textureMap.set(inletIndex, texture);
       }
     }
 
@@ -2064,6 +2068,7 @@ export class FBORenderer {
   private resolveVideoSource(
     nodeId: string,
     outletIndex = 0,
+    usePreviousFrame = false,
     visited = new Set<string>()
   ): { texture: regl.Texture2D; width: number; height: number } | null {
     if (visited.has(nodeId)) return null;
@@ -2087,11 +2092,19 @@ export class FBORenderer {
       // Routing nodes have no texture of their own; preserve the inlet's native texture.
       const inlet = node.inletMap.get(0);
 
-      return inlet ? this.resolveVideoSource(inlet.sourceNodeId, inlet.outletIndex, visited) : null;
+      return inlet
+        ? this.resolveVideoSource(
+            inlet.sourceNodeId,
+            inlet.outletIndex,
+            usePreviousFrame || (node.backEdgeInlets?.has(0) ?? false),
+            visited
+          )
+        : null;
     }
 
     const fboNode = this.fboNodes.get(nodeId);
-    const texture = fboNode?.colorAttachments[outletIndex] ?? fboNode?.texture;
+    const textures = usePreviousFrame ? fboNode?.prevTextures : fboNode?.colorAttachments;
+    const texture = textures?.[outletIndex] ?? textures?.[0];
     if (!texture) return null;
 
     return { texture, width: texture.width, height: texture.height };

@@ -36,6 +36,10 @@ downstream consumer. They do not copy or rescale a frame into their own FBO.
 When a routing node is selected as the patch output, the renderer uses the
 same resolved source texture.
 
+Virtual video-channel edges are included in graph cycle analysis. A feedback
+loop that passes through `send.vdo` and `recv.vdo` therefore reads the source
+node's previous-frame texture, just like a loop made with visible cables.
+
 ### Output resolution
 
 Normal effect nodes continue to render at their configured FBO resolution,
@@ -54,3 +58,5 @@ on this contract without changing existing shaders.
    with Over and Composite.
 4. Existing shaders that sample `texture(source, uv)` retain their current
    full-frame behaviour.
+5. A feedback loop routed through `send.vdo` and `recv.vdo` has a one-frame
+   delay and does not sample its active framebuffer.
