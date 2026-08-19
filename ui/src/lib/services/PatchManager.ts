@@ -22,9 +22,12 @@ import type { CanvasContext } from './CanvasContext';
 import { logger } from '$lib/utils/logger';
 import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
 
+const DEMO_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 export interface LoadPatchResult {
-  mode: 'autosave' | 'help' | 'src' | 'shared' | 'none';
+  mode: 'autosave' | 'help' | 'shared' | 'none';
   sharedPatch?: PatchSaveFormat;
+  sharedPatchUrl?: string;
   error?: string;
 }
 
@@ -45,7 +48,7 @@ export class PatchManager {
   constructor(private ctx: CanvasContext) {}
 
   /**
-   * Whether this session is viewing a shared patch (loaded via ?id=).
+   * Whether this session is viewing a protected patch loaded via ?id=, ?src=, or ?demo=.
    * When true, autosave is disabled to avoid overwriting the user's own patches.
    */
   get isSharedSession(): boolean {
@@ -138,6 +141,7 @@ export class PatchManager {
       // Remove any URL params related to shared patches
       deleteSearchParam('id');
       deleteSearchParam('src');
+      deleteSearchParam('demo');
 
       // User explicitly saving means they own this patch now — resume autosave
       this._isSharedPatchSession = false;
@@ -161,6 +165,7 @@ export class PatchManager {
     }
 
     const params = new URLSearchParams(window.location.search);
+    const demo = params.get('demo');
     const src = params.get('src');
     const id = params.get('id');
     const help = params.get('help');
@@ -173,12 +178,20 @@ export class PatchManager {
       return { mode: 'help', error: result.error };
     }
 
-    // For ?src= parameter, load directly
-    if (src) {
-      const result = await this.loadFromUrl(src);
-      deleteSearchParam('src');
+    // For ?demo= parameter, resolve a bundled demo by its human-readable slug.
+    if (demo) {
+      if (!DEMO_SLUG_PATTERN.test(demo)) {
+        return { mode: 'shared', error: 'Invalid demo key' };
+      }
 
-      return { mode: 'src', error: result.error };
+      this._isSharedPatchSession = true;
+      return { mode: 'shared', sharedPatchUrl: `/demos/${demo}.json` };
+    }
+
+    // For ?src= parameter, defer loading until the user confirms it.
+    if (src) {
+      this._isSharedPatchSession = true;
+      return { mode: 'shared', sharedPatchUrl: src };
     }
 
     // For ?id= parameter, skip autosave and start from clean slate
@@ -383,6 +396,8 @@ export class PatchManager {
 
     generateNewPatchId();
     deleteSearchParam('id');
+    deleteSearchParam('src');
+    deleteSearchParam('demo');
   }
 
   /**
@@ -396,10 +411,37 @@ export class PatchManager {
   }
 
   /**
-   * Redirect to load a demo patch by ID.
+   * Load a shared source patch after the user confirms the dialog.
+   */
+  async loadSharedPatchFromUrl(url: string): Promise<LoadUrlResult> {
+    try {
+      const result = await loadPatchFromUrl(url);
+
+      if (result.success) {
+        await this.loadSharedPatch(result.data);
+        return { success: true };
+      }
+
+      this._isSharedPatchSession = false;
+      await this.loadAutosave();
+
+      return { success: false, error: result.error };
+    } catch (error) {
+      this._isSharedPatchSession = false;
+      await this.loadAutosave();
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  /**
+   * Redirect to load a bundled demo patch.
    * This uses a page reload to avoid rendering artifacts.
    */
-  loadDemoPatchById(patchId: string): void {
-    window.location.href = `/?id=${patchId}`;
+  loadDemoPatch(slug: string): void {
+    window.location.href = `/?demo=${encodeURIComponent(slug)}`;
   }
 }

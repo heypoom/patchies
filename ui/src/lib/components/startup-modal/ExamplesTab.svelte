@@ -6,7 +6,7 @@
   import StartupTabIntro from './StartupTabIntro.svelte';
   import type { ExampleCategory } from './types';
 
-  let { onLoadPatch }: { onLoadPatch?: (patchId: string) => Promise<void> } = $props();
+  let { onLoadPatch }: { onLoadPatch?: (slug: string) => Promise<void> } = $props();
 
   let exampleCategories = $state<ExampleCategory[]>([]);
   let isLoadingExamples = $state(false);
@@ -40,13 +40,11 @@
     }
   });
 
-  async function loadExample(patchId: string) {
+  async function loadExample(slug: string) {
     if (onLoadPatch) {
-      await onLoadPatch(patchId);
+      await onLoadPatch(slug);
     } else {
-      // Fallback to URL navigation if function not provided
-      // readonly=true is now the default for shared patches, no need to add it
-      window.location.href = `/?id=${patchId}`;
+      window.location.href = `/?demo=${encodeURIComponent(slug)}`;
     }
   }
 </script>
@@ -78,7 +76,7 @@
         </div>
 
         <div class="examples-grid">
-          {#each category.patches as patch (patch.id)}
+          {#each category.patches as patch (patch.slug)}
             <ExampleCard {patch} onLoad={loadExample} />
           {/each}
         </div>

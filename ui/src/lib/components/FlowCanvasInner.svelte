@@ -305,6 +305,7 @@
   // Dialog state for loading shared patch from URL
   let showLoadSharedPatchDialog = $state(false);
   let pendingSharedPatch = $state<PatchSaveFormat | null>(null);
+  let pendingSharedPatchUrl = $state<string | null>(null);
 
   // Dialog state for patch-to-prompt generator
   let showPatchToPromptDialog = $state(false);
@@ -433,7 +434,7 @@
   let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
   let startupInitialTab = $state<'about' | 'demos' | 'sparks' | 'shortcuts' | 'thanks'>('about');
   let isReadOnlyMode = $state(false);
-  let pendingReadOnlyMode = $state(false); // Stores intended readonly state for shared patches until confirmed
+  let pendingReadOnlyMode = $state(false); // Stores intended readonly state for protected patches until confirmed
 
   // Derived: show read-only banner only when no other banners are shown
   const showReadOnlyBanner = $derived(
@@ -821,9 +822,9 @@
     loadPatch();
 
     // Check if the user wants to see the startup modal on launch
-    // Don't show if loading from URL params (src or id)
+    // Don't show if loading from a URL patch parameter.
     const params = new URLSearchParams(window.location.search);
-    const isLoadingFromUrlParam = params.has('src') || params.has('id');
+    const isLoadingFromUrlParam = params.has('demo') || params.has('src') || params.has('id');
 
     // Check for ?startup= param to force-open startup modal at a specific tab
     const startupParam = params.get('startup');
@@ -968,13 +969,13 @@
     if (typeof window === 'undefined') return;
 
     // Check for readonly parameter
-    // For shared patches (?id=), default to read-only unless ?readonly=false is explicit
+    // Shared, source, and demo patches default to read-only unless ?readonly=false is explicit.
     const params = new URLSearchParams(window.location.search);
-    const hasSharedPatchId = params.has('id');
+    const hasProtectedPatchSource = params.has('demo') || params.has('id') || params.has('src');
     const readonlyParam = params.get('readonly');
 
-    if (hasSharedPatchId) {
-      // Shared patches: defer setting readonly until user confirms loading
+    if (hasProtectedPatchSource) {
+      // Protected patches: defer setting readonly until user confirms loading
       // (readonly mode will be set in confirmLoadSharedPatch)
       pendingReadOnlyMode = readonlyParam !== 'false';
     } else if (readonlyParam === 'true') {
@@ -989,7 +990,7 @@
       const result = await patchManager.loadInitialPatch();
 
       // Handle UI state based on result
-      if (result.mode === 'help' || result.mode === 'src') {
+      if (result.mode === 'help') {
         showStartupModal = false;
 
         if (result.error) {
@@ -997,8 +998,9 @@
         }
       } else if (result.mode === 'shared') {
         showStartupModal = false;
-        if (result.sharedPatch) {
-          pendingSharedPatch = result.sharedPatch;
+        if (result.sharedPatch || result.sharedPatchUrl) {
+          pendingSharedPatch = result.sharedPatch ?? null;
+          pendingSharedPatchUrl = result.sharedPatchUrl ?? null;
           showLoadSharedPatchDialog = true;
         } else if (result.error) {
           urlLoadError = result.error;
@@ -1205,10 +1207,10 @@
   }
 
   // Patch lifecycle delegated to PatchManager
-  function loadDemoPatchById(patchId: string) {
+  function loadDemoPatch(slug: string) {
     isLoadingFromUrl = true;
     urlLoadError = null;
-    patchManager.loadDemoPatchById(patchId);
+    patchManager.loadDemoPatch(slug);
   }
 
   function insertObjectWithButton() {
@@ -1232,10 +1234,23 @@
   }
 
   async function confirmLoadSharedPatch() {
-    if (!pendingSharedPatch) return;
+    if (!pendingSharedPatch && !pendingSharedPatchUrl) return;
 
-    await patchManager.loadSharedPatch(pendingSharedPatch);
+    if (pendingSharedPatchUrl) {
+      const result = await patchManager.loadSharedPatchFromUrl(pendingSharedPatchUrl);
+
+      if (!result.success) {
+        pendingSharedPatchUrl = null;
+        pendingReadOnlyMode = false;
+        urlLoadError = result.error ?? 'Unknown error occurred';
+        return;
+      }
+    } else if (pendingSharedPatch) {
+      await patchManager.loadSharedPatch(pendingSharedPatch);
+    }
+
     pendingSharedPatch = null;
+    pendingSharedPatchUrl = null;
 
     // Apply the readonly mode now that user has confirmed loading
     isReadOnlyMode = pendingReadOnlyMode;
@@ -1248,10 +1263,13 @@
 
   function cancelLoadSharedPatch() {
     pendingSharedPatch = null;
+    pendingSharedPatchUrl = null;
     pendingReadOnlyMode = false;
 
     // Clear URL params since user cancelled loading
+    deleteSearchParam('demo');
     deleteSearchParam('id');
+    deleteSearchParam('src');
     deleteSearchParam('readonly');
 
     // Exit shared patch session so autosave resumes and user's patch loads
@@ -1424,7 +1442,7 @@
             {#if $helpModeObject}
               Help for <strong>{$helpModeObject}</strong>. Changes won't be saved.
             {:else}
-              Shared patches are read-only.
+              This patch is read-only.
             {/if}
           </span>
 
@@ -1689,7 +1707,7 @@
         {onAiInsertOrEdit}
         onCommandPalette={triggerCommandPalette}
         onNewPatch={newPatch}
-        onLoadPatch={loadDemoPatchById}
+        onLoadPatch={loadDemoPatch}
         onToggleLeftSidebar={() => {
           $isSidebarOpen = !$isSidebarOpen;
         }}

@@ -1,10 +1,12 @@
 # Patchies.app: creative coding patcher in the browser
 
-<a href="https://patchies.app/?id=ng7a8mcxobde7kv"><img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700"></a>
+<a href="https://patchies.app/?demo=random-walk-world"><img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700"></a>
 
-> Try out [the above demo](https://patchies.app/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
+> Try out [the above demo](https://patchies.app/?demo=random-walk-world) which uses P5.js with Hydra to create a random walk shader.
 
 Patchies is a code-first patcher for exploring computation through audio, visual, hardware and more.
+
+Bundled demos are standalone JSON files in `ui/static/demos/`. Add or edit a file there to update a demo, then run `just check-demos` to verify every example and documentation link resolves to a valid demo.
 
 It's made for creative coding: patch objects and code snippets together to explore visualizations, soundscapes and computations 🎨
 
@@ -46,6 +48,10 @@ Open [patchies.app](https://patchies.app) and get patching.
 - Dunno what to make? Open [sparks](https://patchies.app/?startup=sparks) to generate patch ideas.
 - Follow the [Instagram](https://www.instagram.com/patchiesapp) for demos, inspirations and tutorials.
 - Join the [Discord](https://discord.gg/PpccRb2XjE) to share your creations, ask for help and chat with other patchers.
+
+## Development
+
+See [DEVELOPMENT.md in docs](./docs/DEVELOPMENT.md) for how to develop Patchies locally.
 
 ## Thanks
 

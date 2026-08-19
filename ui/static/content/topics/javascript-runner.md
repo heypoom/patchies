@@ -2,7 +2,7 @@
 
 Patchies provides a JavaScript API for all JavaScript-enabled objects, including `js`, `worker`, `p5`, `canvas`, `hydra`, and `three`. Use the API to send and receive messages, run timers, react to audio, and add custom logic to a patch.
 
-> ✨ [Try the starter patch](/?id=9c5ytrchpoazlez) to see message passing in action.
+> ✨ [Try the starter patch](/?demo=message-passing-basics) to see message passing in action.
 
 ## Supported Objects
 

@@ -4,7 +4,9 @@ import PocketBase from 'pocketbase';
 
 const params = new URLSearchParams(window.location.search);
 
-const DEFAULT_POCKETBASE_INSTANCE = 'https://api.patchies.app';
+// The co-hosted production server and development proxy both expose PocketBase
+// on the browser's origin.
+const DEFAULT_POCKETBASE_INSTANCE = location.origin;
 
 export const appHostUrl = import.meta.env.VITE_HOST_URL ?? location.origin;
 

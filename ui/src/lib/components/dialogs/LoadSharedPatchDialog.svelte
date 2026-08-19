@@ -27,17 +27,25 @@
     onConfirm();
     open = false;
   }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && open) {
+      onCancel();
+    }
+
+    open = nextOpen;
+  }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open onOpenChange={handleOpenChange}>
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Load Shared Patch</Dialog.Title>
+      <Dialog.Title>Load Patch</Dialog.Title>
       <Dialog.Description class="text-left">
         {#if patchName}
           You're about to load "{patchName}".
         {:else}
-          You're about to load a shared patch.
+          You're about to load a patch from a link.
         {/if}
       </Dialog.Description>
     </Dialog.Header>

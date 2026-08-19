@@ -4,7 +4,7 @@ AI Edits creates or changes objects from a natural-language prompt.
 
 ![AI hearts demo](/content/images/patchies-ai-hearts-demo.png)
 
-> ✨ [Try this patch](/?id=rza2o6eoa7338rh) — Generate a starfield shader graph with hearts.
+> ✨ [Try this patch](/?demo=ai-hearts) — Generate a starfield shader graph with hearts.
 
 Press `Ctrl/Cmd + I` to open the AI object prompt. Describe what you want. AI Edits generates or modifies the appropriate objects.
 

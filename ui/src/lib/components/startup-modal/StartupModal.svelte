@@ -18,7 +18,7 @@
   }: {
     open?: boolean;
     initialTab?: Tab;
-    onLoadPatch?: (patchId: string) => Promise<void>;
+    onLoadPatch?: (slug: string) => Promise<void>;
   } = $props();
 
   function getInitialTab() {

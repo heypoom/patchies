@@ -87,7 +87,7 @@
     onAiInsertOrEdit: () => void;
     onCommandPalette: () => void;
     onNewPatch: () => void;
-    onLoadPatch: (patchId: string) => void | Promise<void>;
+    onLoadPatch: (slug: string) => void | Promise<void>;
     onToggleLeftSidebar: () => void;
     onSaveSelectedAsPreset: () => void;
     onQuickSave: () => void;
@@ -575,5 +575,5 @@
 <StartupModal
   bind:open={showStartupModal}
   initialTab={startupInitialTab}
-  onLoadPatch={async (patchId) => onLoadPatch(patchId)}
+  onLoadPatch={async (slug) => onLoadPatch(slug)}
 />
