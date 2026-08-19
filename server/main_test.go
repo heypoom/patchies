@@ -11,7 +11,7 @@ import (
 )
 
 func TestHealthz(t *testing.T) {
-	request := httptest.NewRequest(http.MethodGet, "/api/healthz", nil)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/healthz", nil)
 	response := httptest.NewRecorder()
 	event := &core.RequestEvent{
 		Event: router.Event{Request: request, Response: response},
@@ -51,7 +51,7 @@ func TestFrontendHandlerProxiesToVite(t *testing.T) {
 		t.Fatalf("create frontend handler: %v", err)
 	}
 
-	request := httptest.NewRequest(http.MethodGet, "/_app/immutable/start.js?version=1", nil)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/_app/immutable/start.js?version=1", nil)
 	response := httptest.NewRecorder()
 	frontend.ServeHTTP(response, request)
 

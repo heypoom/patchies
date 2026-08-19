@@ -40,7 +40,7 @@ The frontend selects its same-origin PocketBase API by default. Deployments that
 
 `server/static/` is a staging directory for the contents of `ui/build/`; it is excluded from Git except for a placeholder so local Go tooling can compile. The Docker build creates the frontend build, copies it into that directory, then compiles the Go executable. `just build` follows the same sequence for a local release build; `just docker-build` builds the container image.
 
-The image persists `/app/pb_data` through a Docker volume and starts PocketBase on port `8090`. The root Terraform module builds the Dockerfile, creates the named `patchies-data` volume, and runs the `patchies` container with port `8090` published on the host. Replacing an existing raw PocketBase container is an explicit manual handoff: export its data, remove the old container, apply Terraform, stop the new container, restore the backup into the new volume, and start Patchies again.
+The image persists `/app/pb_data` through a Docker volume and starts PocketBase on port `8090`. It runs as the fixed non-root UID `65532`, and the image-owned data directory uses that UID so Docker can initialize its volume with writable ownership. The root Terraform module builds the Dockerfile, creates the named `patchies-data` volume, and runs the `patchies` container with port `8090` published on the host. Replacing an existing raw PocketBase container is an explicit manual handoff: export its data, remove the old container, apply Terraform, stop the new container, restore the backup into the new volume, and start Patchies again.
 
 ## Data initialization
 
@@ -50,7 +50,7 @@ The embedded PocketBase migrations create the production-compatible `patches` co
 
 `just dev` starts Vite on `127.0.0.1:5173` and Air-managed PocketBase on `127.0.0.1:8090`. The backend detects the development proxy setting and forwards frontend and HMR traffic to Vite. PocketBase routes, including `/api/healthz`, remain local to the Go process. Air watches Go source files, while Vite watches frontend files, so either layer reloads independently without a production build. `just dev` passes the stable absolute `server/pb_data/` path to PocketBase so Air cleanup only removes its compiled executable, never local data.
 
-`just restore /absolute/path/to/data.db` restores a local data snapshot only after validating it with SQLite. It refuses to run while the local database is open. Before replacement, it moves the existing `data.db`, WAL, and shared-memory sidecars to `server/pb_data/backups/<timestamp>/` so the local state remains recoverable.
+`just restore /absolute/path/to/data.db` restores a local data snapshot only after validating it with SQLite. It requires `lsof` to verify that the local database is closed and rejects source files that alias the local database. Before replacement, it moves the existing `data.db`, WAL, and shared-memory sidecars to `server/pb_data/backups/<timestamp>/`; if installation fails, it restores every moved file.
 
 ## Verification
 

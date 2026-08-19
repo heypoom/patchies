@@ -27,7 +27,7 @@ Open [http://127.0.0.1:8090](http://127.0.0.1:8090). Vite updates frontend code 
 To restore a production `data.db` backup into the local PocketBase instance, first stop `just dev`, then run:
 
 ```bash
-just restore /Users/poom/Workspaces/patchies-backup/20260819-144838/data.db
+just restore /absolute/path/to/data.db
 ```
 
 The command validates the backup, moves the current local database and its SQLite sidecars into `server/pb_data/backups/<timestamp>/`, and installs the supplied `data.db`.
@@ -65,7 +65,7 @@ To build a native executable without Docker (Go 1.26+), run:
 
 ```bash
 just build
-../patchies serve --http=0.0.0.0:8090
+./patchies serve --http=0.0.0.0:8090
 ```
 
 Recipes accept positional overrides, for example `just docker-build ghcr.io/heypoom/patchies` and `just build dist/patchies`.
