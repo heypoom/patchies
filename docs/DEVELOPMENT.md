@@ -2,7 +2,7 @@
 
 ## Running Patchies locally
 
-Project commands use [Just](https://github.com/casey/just). Install it before running the commands below.
+Project commands use [Just](https://github.com/casey/just). Install it before running the commands below. Development requires [Bun](https://bun.sh/), [Go 1.26+](https://go.dev/dl/), and Just. Air is managed by the server's Go module, so no separate Air installation is required. Local restores additionally require `sqlite3` to validate backups and `lsof` to confirm the database is closed.
 
 For hot-reloading frontend and backend development, run:
 
@@ -49,7 +49,56 @@ docker stop patchies
 docker run --rm \
   -v patchies-data:/app/pb_data \
   -v /absolute/path/to/data.db:/restore/data.db:ro \
-  alpine sh -c 'rm -f /app/pb_data/data.db /app/pb_data/data.db-wal /app/pb_data/data.db-shm && cp /restore/data.db /app/pb_data/data.db && chown 65532:65532 /app/pb_data/data.db && chmod 600 /app/pb_data/data.db'
+  alpine sh -ceu '
+    apk add --no-cache sqlite
+    data_dir=/app/pb_data
+    target_db="$data_dir/data.db"
+    staging_db=$(mktemp "$data_dir/.data.db.restore.XXXXXX")
+    backup_dir=$(mktemp -d "$data_dir/.restore-backup.XXXXXX")
+    installed=false
+
+    cleanup() {
+      status=$?
+      trap - EXIT HUP INT TERM
+
+      if [ -n "$staging_db" ]; then
+        rm -f "$staging_db" || status=1
+      fi
+
+      if [ "$installed" = false ]; then
+        for name in data.db data.db-wal data.db-shm; do
+          if [ -e "$backup_dir/$name" ]; then
+            mv "$backup_dir/$name" "$data_dir/$name" || status=1
+          fi
+        done
+      else
+        rm -f "$backup_dir/data.db" "$backup_dir/data.db-wal" "$backup_dir/data.db-shm" || status=1
+      fi
+
+      rmdir "$backup_dir" 2>/dev/null || status=1
+      exit "$status"
+    }
+    trap cleanup EXIT HUP INT TERM
+
+    cp /restore/data.db "$staging_db"
+    [ "$(sqlite3 "$staging_db" "PRAGMA quick_check;")" = ok ]
+    chown 65532:65532 "$staging_db"
+    chmod 600 "$staging_db"
+
+    if [ -e "$target_db" ]; then
+      cp -p "$target_db" "$backup_dir/data.db"
+    fi
+
+    for name in data.db-wal data.db-shm; do
+      if [ -e "$data_dir/$name" ]; then
+        mv "$data_dir/$name" "$backup_dir/$name"
+      fi
+    done
+
+    mv "$staging_db" "$target_db"
+    staging_db=
+    installed=true
+  '
 
 docker start patchies
 ```

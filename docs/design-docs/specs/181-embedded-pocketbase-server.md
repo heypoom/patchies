@@ -50,7 +50,7 @@ The embedded PocketBase migrations create the production-compatible `patches` co
 
 `just dev` starts Vite on `127.0.0.1:5173` and Air-managed PocketBase on `127.0.0.1:8090`. The backend detects the development proxy setting and forwards frontend and HMR traffic to Vite. PocketBase routes, including `/api/healthz`, remain local to the Go process. Air watches Go source files, while Vite watches frontend files, so either layer reloads independently without a production build. `just dev` passes the stable absolute `server/pb_data/` path to PocketBase so Air cleanup only removes its compiled executable, never local data.
 
-`just restore /absolute/path/to/data.db` restores a local data snapshot only after validating it with SQLite. It requires `lsof` to verify that the local database is closed and rejects source files that alias the local database. Before replacement, it moves the existing `data.db`, WAL, and shared-memory sidecars to `server/pb_data/backups/<timestamp>/`; if installation fails, it restores every moved file.
+`just restore /absolute/path/to/data.db` restores a local data snapshot only after validating it with SQLite. It requires `lsof` to verify that the local database is closed and rejects source files that alias the local database. Before replacement, it moves the existing `data.db`, WAL, and shared-memory sidecars to `server/pb_data/backups/<timestamp>/`; if installation fails, it restores every moved file. The Docker migration command similarly stages and validates the replacement, retains a rollback copy of `data.db`, and moves sidecars aside until the atomic installation succeeds.
 
 ## Verification
 
