@@ -1,0 +1,8 @@
+.git
+.DS_Store
+**/.DS_Store
+**/node_modules
+ui/.svelte-kit
+ui/build
+ui/dist-embed
+server/static

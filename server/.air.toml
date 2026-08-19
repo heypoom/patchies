@@ -1,0 +1,18 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/patchies ."
+full_bin = "PATCHIES_DEV_PROXY_URL=http://127.0.0.1:5173 ./tmp/patchies serve --http=127.0.0.1:8090"
+include_ext = ["go"]
+exclude_dir = ["pb_data", "static", "tmp"]
+delay = 100
+stop_on_error = true
+send_interrupt = true
+kill_delay = 500
+
+[log]
+time = false
+
+[misc]
+clean_on_exit = true

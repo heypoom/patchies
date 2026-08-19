@@ -10,6 +10,44 @@ It's made for creative coding: patch objects and code snippets together to explo
 
 Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
+## Run Patchies locally
+
+Project commands use [Just](https://github.com/casey/just). Install it before running the commands below.
+
+For hot-reloading frontend and backend development, run:
+
+```bash
+just dev
+```
+
+Open [http://127.0.0.1:8090](http://127.0.0.1:8090). Vite updates frontend code in place, while Air rebuilds and restarts the Go/PocketBase server when Go files change. The development server proxies frontend traffic to Vite and keeps `/api/*` on PocketBase. Local PocketBase data persists at `server/pb_data/` between `just dev` runs.
+
+To restore a production `data.db` backup into the local PocketBase instance, first stop `just dev`, then run:
+
+```bash
+just restore /Users/poom/Workspaces/patchies-backup/20260819-144838/data.db
+```
+
+The command validates the backup, moves the current local database and its SQLite sidecars into `server/pb_data/backups/<timestamp>/`, and installs the supplied `data.db`.
+
+The included Docker build packages the Patchies frontend and PocketBase API in one image. Its data is stored in a Docker volume:
+
+```bash
+just docker-build
+docker run --rm -p 8090:8090 -v patchies-data:/app/pb_data patchies
+```
+
+Open [http://localhost:8090](http://localhost:8090). The health check is available at [http://localhost:8090/api/healthz](http://localhost:8090/api/healthz), and PocketBase's admin UI is at `http://localhost:8090/_/`.
+
+To build a native executable without Docker (Go 1.26+), run:
+
+```bash
+just build
+../patchies serve --http=0.0.0.0:8090
+```
+
+Recipes accept positional overrides, for example `just docker-build ghcr.io/heypoom/patchies` and `just build dist/patchies`.
+
 ## Use tools and libraries you love
 
 Patchies lets you use the audio, visual and computational tools and libraries that you know (and love!), together in one place. For example:
