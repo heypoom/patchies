@@ -13,5 +13,5 @@ Demo filenames are stable, lowercase, human-readable slugs; they are listed in
 
 Source patches use the same confirmation and read-only session as `?id=`
 shared patches. Their `src` parameter remains in the URL after loading, and is
-removed only when the user cancels, creates a new patch, or explicitly saves a
-local copy.
+removed only when the user cancels, creates a new patch, loads a saved local
+patch through the Saves sidebar, or explicitly saves a local copy.

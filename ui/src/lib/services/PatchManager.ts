@@ -25,6 +25,7 @@ import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
 export interface LoadPatchResult {
   mode: 'autosave' | 'help' | 'shared' | 'none';
   sharedPatch?: PatchSaveFormat;
+  sharedPatchUrl?: string;
   error?: string;
 }
 
@@ -176,15 +177,7 @@ export class PatchManager {
     // For ?src= parameter, defer loading until the user confirms it.
     if (src) {
       this._isSharedPatchSession = true;
-
-      const result = await loadPatchFromUrl(src);
-      if (result.success) {
-        return { mode: 'shared', sharedPatch: result.data };
-      }
-
-      this._isSharedPatchSession = false;
-
-      return { mode: 'shared', error: result.error };
+      return { mode: 'shared', sharedPatchUrl: src };
     }
 
     // For ?id= parameter, skip autosave and start from clean slate
@@ -400,6 +393,33 @@ export class PatchManager {
 
     // Clear current patch name to prevent accidentally overwriting user's saved patches
     currentPatchName.set(null);
+  }
+
+  /**
+   * Load a shared source patch after the user confirms the dialog.
+   */
+  async loadSharedPatchFromUrl(url: string): Promise<LoadUrlResult> {
+    try {
+      const result = await loadPatchFromUrl(url);
+
+      if (result.success) {
+        await this.loadSharedPatch(result.data);
+        return { success: true };
+      }
+
+      this._isSharedPatchSession = false;
+      await this.loadAutosave();
+
+      return { success: false, error: result.error };
+    } catch (error) {
+      this._isSharedPatchSession = false;
+      await this.loadAutosave();
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
   }
 
   /**

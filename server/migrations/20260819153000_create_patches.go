@@ -83,7 +83,7 @@ func init() {
 				],
 				"indexes": [],
 				"listRule": null,
-				"viewRule": "",
+				"viewRule": "public = true",
 				"createRule": "",
 				"updateRule": null,
 				"deleteRule": null,

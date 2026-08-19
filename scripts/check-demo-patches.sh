@@ -23,4 +23,9 @@ diff -u "$expected_slugs" "$actual_slugs"
 while IFS= read -r slug; do
   jq -e 'type == "object" and (.nodes | type == "array") and (.edges | type == "array")' \
     "$project_root/ui/static/demos/${slug}.json" > /dev/null
+
+  jq -e '
+    ([.nodes[].id] | length) == ([.nodes[].id] | unique | length)
+    and ([.nodes[].id] as $ids | all(.edges[]; .source as $source | .target as $target | $ids | index($source) != null and index($target) != null))
+  ' "$project_root/ui/static/demos/${slug}.json" > /dev/null
 done < "$actual_slugs"

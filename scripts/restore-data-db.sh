@@ -91,7 +91,8 @@ if [[ -e "$target_db" || -e "$target_db-wal" || -e "$target_db-shm" ]]; then
 fi
 
 temp_db=$(mktemp "$data_dir/.data.db.restore.XXXXXX")
-cp -p "$source_db" "$temp_db"
+cp "$source_db" "$temp_db"
+chmod 600 "$temp_db"
 mv "$temp_db" "$target_db"
 temp_db=""
 rollback_pending=false

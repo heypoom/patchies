@@ -305,6 +305,7 @@
   // Dialog state for loading shared patch from URL
   let showLoadSharedPatchDialog = $state(false);
   let pendingSharedPatch = $state<PatchSaveFormat | null>(null);
+  let pendingSharedPatchUrl = $state<string | null>(null);
 
   // Dialog state for patch-to-prompt generator
   let showPatchToPromptDialog = $state(false);
@@ -997,8 +998,9 @@
         }
       } else if (result.mode === 'shared') {
         showStartupModal = false;
-        if (result.sharedPatch) {
-          pendingSharedPatch = result.sharedPatch;
+        if (result.sharedPatch || result.sharedPatchUrl) {
+          pendingSharedPatch = result.sharedPatch ?? null;
+          pendingSharedPatchUrl = result.sharedPatchUrl ?? null;
           showLoadSharedPatchDialog = true;
         } else if (result.error) {
           urlLoadError = result.error;
@@ -1232,10 +1234,23 @@
   }
 
   async function confirmLoadSharedPatch() {
-    if (!pendingSharedPatch) return;
+    if (!pendingSharedPatch && !pendingSharedPatchUrl) return;
 
-    await patchManager.loadSharedPatch(pendingSharedPatch);
+    if (pendingSharedPatchUrl) {
+      const result = await patchManager.loadSharedPatchFromUrl(pendingSharedPatchUrl);
+
+      if (!result.success) {
+        pendingSharedPatchUrl = null;
+        pendingReadOnlyMode = false;
+        urlLoadError = result.error ?? 'Unknown error occurred';
+        return;
+      }
+    } else if (pendingSharedPatch) {
+      await patchManager.loadSharedPatch(pendingSharedPatch);
+    }
+
     pendingSharedPatch = null;
+    pendingSharedPatchUrl = null;
 
     // Apply the readonly mode now that user has confirmed loading
     isReadOnlyMode = pendingReadOnlyMode;
@@ -1248,6 +1263,7 @@
 
   function cancelLoadSharedPatch() {
     pendingSharedPatch = null;
+    pendingSharedPatchUrl = null;
     pendingReadOnlyMode = false;
 
     // Clear URL params since user cancelled loading
