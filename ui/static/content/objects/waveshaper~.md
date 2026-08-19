@@ -4,7 +4,7 @@ Distortion and waveshaping effects using custom curves.
 
 ![Patchies waveshaper curve](/content/images/patchies-waveshaper-curve.png)
 
-> Try this patch [in the app](/?src=/demos/distortion-curve-waveshaper.json)!
+> Try this patch [in the app](/?demo=distortion-curve-waveshaper)!
 
 Send a
 [distortion curve](https://developer.mozilla.org/en-US/docs/Web/API/WaveShaperNode)

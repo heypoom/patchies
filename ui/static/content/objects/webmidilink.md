@@ -4,7 +4,7 @@ format (link level 0).
 Connect to [iframe](/docs/objects/iframe) to send MIDI messages to
 WebMIDILink-enabled web apps.
 
-> See [this demo](/?src=/demos/virtual-smooth-jazz.json) from @kijjaz
+> See [this demo](/?demo=virtual-smooth-jazz) from @kijjaz
 > using webmidilink with SpessaSynth.
 
 ## See Also

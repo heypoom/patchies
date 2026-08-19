@@ -3,7 +3,7 @@ over WebRTC.
 
 ![Patchies VDO.Ninja loopback demo](/content/images/vdo-ninja-loopback.webp)
 
-> Try this patch [in the app](/?src=/demos/vdo-ninja-loopback-stream.json)!
+> Try this patch [in the app](/?demo=vdo-ninja-loopback-stream)!
 
 ## Settings
 

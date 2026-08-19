@@ -223,6 +223,7 @@
       const migrated = migratePatch(parsed) as PatchSaveFormat;
       localStorage.setItem('patchies-patch-autosave', JSON.stringify(migrated));
       currentPatchName.set(patchToLoad === 'autosave' ? null : patchToLoad);
+      deleteSearchParam('demo');
       deleteSearchParam('id');
       deleteSearchParam('src');
       window.location.reload();

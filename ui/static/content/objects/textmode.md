@@ -2,7 +2,7 @@ The `textmode` object creates ASCII art and text-mode graphics using [textmode.j
 
 ![Textmode demo](/content/images/textmode.webp)
 
-> ✨ [Try this patch](/?src=/demos/animated-wave-pattern.json)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
+> ✨ [Try this patch](/?demo=animated-wave-pattern)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
 
 ## Getting Started
 

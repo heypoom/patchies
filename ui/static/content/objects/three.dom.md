@@ -2,7 +2,7 @@ The `three.dom` object creates 3D graphics using [Three.js](https://threejs.org)
 
 ![Three.js torus demo](/content/images/threejs-torus.webp)
 
-> ✨ [Try this patch](/?src=/demos/sleek-animated-torus.json) showing how to use 2D textures from other objects in Three.js!
+> ✨ [Try this patch](/?demo=sleek-animated-torus) showing how to use 2D textures from other objects in Three.js!
 
 ## Getting Started
 

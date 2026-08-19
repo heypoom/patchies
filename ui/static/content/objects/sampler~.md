@@ -4,7 +4,7 @@ control.
 
 ![Patchies chromatic sampler demo](/content/images/chromatic-sampler.webp)
 
-> Try this patch [in the app](/?src=/demos/chromatic-sampler.json)!
+> Try this patch [in the app](/?demo=chromatic-sampler)!
 > A sampler that changes playback speed based on MIDI notes.
 
 ## Controls

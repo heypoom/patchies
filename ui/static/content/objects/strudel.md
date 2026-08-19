@@ -3,7 +3,7 @@ Create expressive, dynamic music pieces and complex audio patterns.
 
 ![Patchies Strudel demo](/content/images/strudel-haunted.webp)
 
-> Try this patch [in the app](/?src=/demos/haunted-lead.json)!
+> Try this patch [in the app](/?demo=haunted-lead)!
 
 ## Getting Started
 
@@ -68,7 +68,7 @@ send({
 
 ## Examples
 
-Try [funk42 preset by froos](/?src=/demos/funk-42.json) for a
+Try [funk42 preset by froos](/?demo=funk-42) for a
 more complex use of Strudel.
 
 Please consider supporting TidalCycles and Strudel at

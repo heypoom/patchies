@@ -158,9 +158,9 @@ browser to create pre-configured expr~ nodes:
 
 ## Example Patches
 
-- [scales](/?src=/demos/scales.json) by @kijjaz
-  ([alt: sleep](/?src=/demos/scales-ii.json))
-- [kicks](/?src=/demos/kicks.json) by @dtinth
+- [scales](/?demo=scales) by @kijjaz
+  ([alt: sleep](/?demo=scales-ii))
+- [kicks](/?demo=kicks) by @dtinth
 
 ## See Also
 

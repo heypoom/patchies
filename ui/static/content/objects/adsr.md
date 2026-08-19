@@ -2,7 +2,7 @@ ADSR envelope generator for controlling audio parameters like gain.
 
 ![Patchies simple synth keyboard demo](/content/images/simple-synth-keyboard.webp)
 
-> Try this patch [in the app](/?src=/demos/simple-synth-keyboard.json)!
+> Try this patch [in the app](/?demo=simple-synth-keyboard)!
 > A sampler that changes playback speed based on MIDI notes.
 
 ## Inlets
@@ -25,7 +25,7 @@ Under the hood, `adsr` sends [parameter automation messages](/docs/parameter-aut
 You can also send these directly from `js` nodes — see the full API
 in the [Parameter Automation](/docs/parameter-automation) topic.
 
-Try the `midi-adsr.js` preset. See [this patch](/?src=/demos/midi-adsr-synth.json) for usage.
+Try the `midi-adsr.js` preset. See [this patch](/?demo=midi-adsr-synth) for usage.
 
 ## See Also
 

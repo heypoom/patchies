@@ -14,7 +14,7 @@ In this patch, two `slider` objects send values to `expr $1 + $2`. The object ad
 
 The example patch shows basic message connections.
 
-> ✨ [Open this patch](/?src=/demos/message-passing-basics.json) to see message passing live.
+> ✨ [Open this patch](/?demo=message-passing-basics) to see message passing live.
 
 ### Exercise 1 — Button chain
 

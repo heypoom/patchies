@@ -822,9 +822,9 @@
     loadPatch();
 
     // Check if the user wants to see the startup modal on launch
-    // Don't show if loading from URL params (src or id)
+    // Don't show if loading from a URL patch parameter.
     const params = new URLSearchParams(window.location.search);
-    const isLoadingFromUrlParam = params.has('src') || params.has('id');
+    const isLoadingFromUrlParam = params.has('demo') || params.has('src') || params.has('id');
 
     // Check for ?startup= param to force-open startup modal at a specific tab
     const startupParam = params.get('startup');
@@ -969,9 +969,9 @@
     if (typeof window === 'undefined') return;
 
     // Check for readonly parameter
-    // Shared and source patches default to read-only unless ?readonly=false is explicit.
+    // Shared, source, and demo patches default to read-only unless ?readonly=false is explicit.
     const params = new URLSearchParams(window.location.search);
-    const hasProtectedPatchSource = params.has('id') || params.has('src');
+    const hasProtectedPatchSource = params.has('demo') || params.has('id') || params.has('src');
     const readonlyParam = params.get('readonly');
 
     if (hasProtectedPatchSource) {
@@ -1267,6 +1267,7 @@
     pendingReadOnlyMode = false;
 
     // Clear URL params since user cancelled loading
+    deleteSearchParam('demo');
     deleteSearchParam('id');
     deleteSearchParam('src');
     deleteSearchParam('readonly');

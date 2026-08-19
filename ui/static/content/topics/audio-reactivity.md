@@ -6,7 +6,7 @@ Use the `fft~` audio object to get frequency-bin arrays for visualizations in a 
 
 This patch uses audio data to control its visuals.
 
-> ✨ [Try this patch](/?src=/demos/audio-reactive-circle.json) with audio-reactive visuals!
+> ✨ [Try this patch](/?demo=audio-reactive-circle) with audio-reactive visuals!
 
 ## Getting Started
 

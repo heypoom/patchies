@@ -1,8 +1,8 @@
 # Patchies.app: creative coding patcher in the browser
 
-<a href="https://patchies.app/?src=/demos/random-walk-world.json"><img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700"></a>
+<a href="https://patchies.app/?demo=random-walk-world"><img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700"></a>
 
-> Try out [the above demo](https://patchies.app/?src=/demos/random-walk-world.json) which uses P5.js with Hydra to create a random walk shader.
+> Try out [the above demo](https://patchies.app/?demo=random-walk-world) which uses P5.js with Hydra to create a random walk shader.
 
 Patchies is a code-first patcher for exploring computation through audio, visual, hardware and more.
 

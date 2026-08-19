@@ -44,7 +44,7 @@ ROM reloads when re-enabling the screen.
 
 ![Patchies Uxn Compudanzas](/content/images/patchies-uxn-compudanzas.png)
 
-> Try this patch [in the app](/?src=/demos/uxn-pong-game.json)!
+> Try this patch [in the app](/?demo=uxn-pong-game)!
 > Code by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html).
 
 - **Edit Code**: Opens the Uxntal assembly code editor

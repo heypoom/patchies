@@ -44,7 +44,7 @@
     if (onLoadPatch) {
       await onLoadPatch(slug);
     } else {
-      window.location.href = `/?src=${encodeURIComponent(`/demos/${slug}.json`)}`;
+      window.location.href = `/?demo=${encodeURIComponent(slug)}`;
     }
   }
 </script>

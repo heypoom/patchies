@@ -59,6 +59,7 @@
     if (!actualSaveName) return;
 
     // Remove any URL params related to shared patches
+    deleteSearchParam('demo');
     deleteSearchParam('id');
     deleteSearchParam('src');
 

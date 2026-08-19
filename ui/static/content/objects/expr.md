@@ -3,7 +3,7 @@ Evaluate expressions and formulas using the
 
 ![Patchies expression plot](/content/images/patchies-expr-plot.png)
 
-> Try this patch out [in the app](/?src=/demos/plotting-equations.json)!
+> Try this patch out [in the app](/?demo=plotting-equations)!
 
 ## Dynamic Inlets
 

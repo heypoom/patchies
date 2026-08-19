@@ -8,10 +8,10 @@ trap 'rm -f "$expected_slugs" "$actual_slugs"' EXIT
 
 {
   jq -r '.patches[].slug' "$project_root/ui/static/example-patches.json"
-  rg -o '/\?src=/demos/[a-z0-9-]+\.json' \
+  rg -o '/\?demo=[a-z0-9-]+' \
     "$project_root/README.md" \
     "$project_root/ui/static/content" \
-    | sed -E 's#.*demos/([a-z0-9-]+)\.json#\1#'
+    | sed -E 's#.*\?demo=([a-z0-9-]+)#\1#'
 } | sort -u > "$expected_slugs"
 
 find "$project_root/ui/static/demos" -maxdepth 1 -type f -name '*.json' -print \

@@ -46,7 +46,7 @@ Pushing a `v*` tag runs the release workflow. It builds the frontend once, cross
 
 ## Data initialization
 
-The embedded PocketBase migrations create the production-compatible `patches` collection (including its public create and view rules) in an empty data directory. Bundled demos are static files in `ui/static/demos/` and are loaded with `?src=`, so no production patch records are imported into PocketBase.
+The embedded PocketBase migrations create the production-compatible `patches` collection (including its public create and view rules) in an empty data directory. Bundled demos are static files in `ui/static/demos/` and are loaded with `?demo=<slug>`, so no production patch records are imported into PocketBase.
 
 ## Development
 

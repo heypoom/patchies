@@ -3,7 +3,7 @@ real-time sound synthesis and music creation. Runs via [WebChucK](https://chuck.
 
 ![Patchies ChucK demo](/content/images/chuck-demo.webp)
 
-> Try this patch [in the app](/?src=/demos/chuck-the-fourth.json)!
+> Try this patch [in the app](/?demo=chuck-the-fourth)!
 > From @dtinth's [ChucK experiments](https://dt.in.th/ChucKSong4).
 
 ## Getting Started
@@ -55,7 +55,7 @@ code hides the inlet to keep the node compact.
 
 ## Global Variables
 
-The [demo patch](/?src=/demos/chuck-the-fourth.json) shows how global
+The [demo patch](/?demo=chuck-the-fourth) shows how global
 variables let you control ChucK programs with Patchies messages.
 
 Declare variables with `global` (e.g. `global int bpm`) and re-compute

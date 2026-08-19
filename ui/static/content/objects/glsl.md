@@ -2,7 +2,7 @@ The `glsl` object creates a GLSL fragment shader for complex visual effects and 
 
 ![GLSL SDF shader](/content/images/patchies-glsl-sdf.png)
 
-> ✨ [Try this patch](/?src=/demos/signed-distance-flowers.json) featuring a shader from @dtinth's
+> ✨ [Try this patch](/?demo=signed-distance-flowers) featuring a shader from @dtinth's
 > talk, [the power of signed distance functions](https://dt.in.th/SDFTalk)!
 
 ## Getting Started
