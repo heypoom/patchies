@@ -433,7 +433,7 @@
   let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
   let startupInitialTab = $state<'about' | 'demos' | 'sparks' | 'shortcuts' | 'thanks'>('about');
   let isReadOnlyMode = $state(false);
-  let pendingReadOnlyMode = $state(false); // Stores intended readonly state for shared patches until confirmed
+  let pendingReadOnlyMode = $state(false); // Stores intended readonly state for protected patches until confirmed
 
   // Derived: show read-only banner only when no other banners are shown
   const showReadOnlyBanner = $derived(
@@ -968,13 +968,13 @@
     if (typeof window === 'undefined') return;
 
     // Check for readonly parameter
-    // For shared patches (?id=), default to read-only unless ?readonly=false is explicit
+    // Shared and source patches default to read-only unless ?readonly=false is explicit.
     const params = new URLSearchParams(window.location.search);
-    const hasSharedPatchId = params.has('id');
+    const hasProtectedPatchSource = params.has('id') || params.has('src');
     const readonlyParam = params.get('readonly');
 
-    if (hasSharedPatchId) {
-      // Shared patches: defer setting readonly until user confirms loading
+    if (hasProtectedPatchSource) {
+      // Protected patches: defer setting readonly until user confirms loading
       // (readonly mode will be set in confirmLoadSharedPatch)
       pendingReadOnlyMode = readonlyParam !== 'false';
     } else if (readonlyParam === 'true') {
@@ -989,7 +989,7 @@
       const result = await patchManager.loadInitialPatch();
 
       // Handle UI state based on result
-      if (result.mode === 'help' || result.mode === 'src') {
+      if (result.mode === 'help') {
         showStartupModal = false;
 
         if (result.error) {
@@ -1252,6 +1252,7 @@
 
     // Clear URL params since user cancelled loading
     deleteSearchParam('id');
+    deleteSearchParam('src');
     deleteSearchParam('readonly');
 
     // Exit shared patch session so autosave resumes and user's patch loads
@@ -1424,7 +1425,7 @@
             {#if $helpModeObject}
               Help for <strong>{$helpModeObject}</strong>. Changes won't be saved.
             {:else}
-              Shared patches are read-only.
+              This patch is read-only.
             {/if}
           </span>
 

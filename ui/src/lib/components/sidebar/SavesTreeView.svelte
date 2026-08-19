@@ -223,7 +223,8 @@
       const migrated = migratePatch(parsed) as PatchSaveFormat;
       localStorage.setItem('patchies-patch-autosave', JSON.stringify(migrated));
       currentPatchName.set(patchToLoad === 'autosave' ? null : patchToLoad);
-      deleteSearchParam('id'); // Clear shared patch URL since we're loading a different patch
+      deleteSearchParam('id');
+      deleteSearchParam('src');
       window.location.reload();
     } catch (error) {
       console.error('Error loading patch:', error);

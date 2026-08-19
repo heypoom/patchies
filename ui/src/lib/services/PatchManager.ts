@@ -23,7 +23,7 @@ import { logger } from '$lib/utils/logger';
 import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
 
 export interface LoadPatchResult {
-  mode: 'autosave' | 'help' | 'src' | 'shared' | 'none';
+  mode: 'autosave' | 'help' | 'shared' | 'none';
   sharedPatch?: PatchSaveFormat;
   error?: string;
 }
@@ -45,7 +45,7 @@ export class PatchManager {
   constructor(private ctx: CanvasContext) {}
 
   /**
-   * Whether this session is viewing a shared patch (loaded via ?id=).
+   * Whether this session is viewing a protected patch loaded via ?id= or ?src=.
    * When true, autosave is disabled to avoid overwriting the user's own patches.
    */
   get isSharedSession(): boolean {
@@ -173,12 +173,18 @@ export class PatchManager {
       return { mode: 'help', error: result.error };
     }
 
-    // For ?src= parameter, load directly
+    // For ?src= parameter, defer loading until the user confirms it.
     if (src) {
-      const result = await this.loadFromUrl(src);
-      deleteSearchParam('src');
+      this._isSharedPatchSession = true;
 
-      return { mode: 'src', error: result.error };
+      const result = await loadPatchFromUrl(src);
+      if (result.success) {
+        return { mode: 'shared', sharedPatch: result.data };
+      }
+
+      this._isSharedPatchSession = false;
+
+      return { mode: 'shared', error: result.error };
     }
 
     // For ?id= parameter, skip autosave and start from clean slate
@@ -383,6 +389,7 @@ export class PatchManager {
 
     generateNewPatchId();
     deleteSearchParam('id');
+    deleteSearchParam('src');
   }
 
   /**

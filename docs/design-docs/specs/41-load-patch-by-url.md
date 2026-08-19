@@ -10,3 +10,8 @@ Bundled demos use the same contract. Each demo is a standalone JSON file in
 files and lets the frontend load them without requiring a PocketBase record.
 Demo filenames are stable, lowercase, human-readable slugs; they are listed in
 `ui/static/example-patches.json` as `slug` values.
+
+Source patches use the same confirmation and read-only session as `?id=`
+shared patches. Their `src` parameter remains in the URL after loading, and is
+removed only when the user cancels, creates a new patch, or explicitly saves a
+local copy.
