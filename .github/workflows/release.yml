@@ -6,8 +6,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 env:
   REGISTRY: ghcr.io
@@ -20,6 +19,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
 
@@ -62,6 +63,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-go@v6
         with:
@@ -95,9 +98,14 @@ jobs:
   publish-container:
     name: Publish container image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: docker/setup-qemu-action@v3
 
@@ -124,6 +132,8 @@ jobs:
     name: Create GitHub release
     needs: [build-binaries, publish-container]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Download release binaries
