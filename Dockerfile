@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM oven/bun:1.2 AS frontend
+FROM oven/bun:1.3.7 AS frontend
 
 WORKDIR /app/ui
 
