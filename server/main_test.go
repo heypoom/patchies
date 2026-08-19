@@ -72,3 +72,23 @@ func TestNewAppUsesConfiguredDataDir(t *testing.T) {
 		t.Fatalf("data directory = %q, want %q", app.DataDir(), dataDir)
 	}
 }
+
+func TestInitializePatchesCollection(t *testing.T) {
+	app := newApp(t.TempDir())
+	if err := initializeApp(app); err != nil {
+		t.Fatalf("initialize app: %v", err)
+	}
+
+	collection, err := app.FindCollectionByNameOrId("patches")
+	if err != nil {
+		t.Fatalf("find patches collection: %v", err)
+	}
+
+	if collection.Id != "pbc_2440861534" {
+		t.Fatalf("collection id = %q, want production id", collection.Id)
+	}
+
+	if collection.Fields.GetByName("name") == nil || collection.Fields.GetByName("patch") == nil || collection.Fields.GetByName("public") == nil {
+		t.Fatal("patches collection is missing an expected field")
+	}
+}

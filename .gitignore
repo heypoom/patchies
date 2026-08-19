@@ -1,5 +1,8 @@
 .DS_Store
 **/.DS_Store
+.terraform/
+*.tfstate
+*.tfstate.*
 node_modules
 patchies
 pb_data

@@ -13,6 +13,7 @@ Ship Patchies as one Go executable and one container image. The executable embed
 - Expose PocketBase's standard API and dashboard.
 - Provide `GET /api/healthz` for container and orchestration health checks.
 - Keep PocketBase data outside the executable, in `pb_data/`.
+- Initialize the `patches` collection that the frontend uses, without importing production records.
 - Provide a reproducible multi-stage Docker build.
 
 ## Non-goals
@@ -39,7 +40,11 @@ The frontend selects its same-origin PocketBase API by default. Deployments that
 
 `server/static/` is a staging directory for the contents of `ui/build/`; it is excluded from Git except for a placeholder so local Go tooling can compile. The Docker build creates the frontend build, copies it into that directory, then compiles the Go executable. `just build` follows the same sequence for a local release build; `just docker-build` builds the container image.
 
-The image persists `/app/pb_data` through a Docker volume and starts PocketBase on port `8090`.
+The image persists `/app/pb_data` through a Docker volume and starts PocketBase on port `8090`. The root Terraform module builds the Dockerfile, creates the named `patchies-data` volume, and runs the `patchies` container with port `8090` published on the host. Replacing an existing raw PocketBase container is an explicit manual handoff: export its data, remove the old container, apply Terraform, stop the new container, restore the backup into the new volume, and start Patchies again.
+
+## Data initialization
+
+The embedded PocketBase migrations create the production-compatible `patches` collection (including its public create and view rules) in an empty data directory. Bundled demos are static files in `ui/static/demos/` and are loaded with `?src=`, so no production patch records are imported into PocketBase.
 
 ## Development
 
@@ -53,3 +58,4 @@ The image persists `/app/pb_data` through a Docker volume and starts PocketBase 
 - `go build ./...` verifies the embedded server compiles.
 - `bun run build` verifies the frontend can produce the static artifact that is embedded in release builds.
 - The proxy handler test verifies that frontend requests retain their path and query string when forwarded to Vite.
+- Server initialization tests verify the collection schema.

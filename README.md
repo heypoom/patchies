@@ -1,10 +1,12 @@
 # Patchies.app: creative coding patcher in the browser
 
-<a href="https://patchies.app/?id=ng7a8mcxobde7kv"><img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700"></a>
+<a href="https://patchies.app/?src=/demos/random-walk-world.json"><img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700"></a>
 
-> Try out [the above demo](https://patchies.app/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
+> Try out [the above demo](https://patchies.app/?src=/demos/random-walk-world.json) which uses P5.js with Hydra to create a random walk shader.
 
 Patchies is a code-first patcher for exploring computation through audio, visual, hardware and more.
+
+Bundled demos are standalone JSON files in `ui/static/demos/`. Add or edit a file there to update a demo, then run `just check-demos` to verify every example and documentation link resolves to a valid demo.
 
 It's made for creative coding: patch objects and code snippets together to explore visualizations, soundscapes and computations 🎨
 
@@ -30,14 +32,34 @@ just restore /Users/poom/Workspaces/patchies-backup/20260819-144838/data.db
 
 The command validates the backup, moves the current local database and its SQLite sidecars into `server/pb_data/backups/<timestamp>/`, and installs the supplied `data.db`.
 
-The included Docker build packages the Patchies frontend and PocketBase API in one image. Its data is stored in a Docker volume:
+The included Docker build packages the Patchies frontend and PocketBase API in one image. Terraform can build it, run it on port `8090`, and persist PocketBase data in the `patchies-data` Docker volume:
 
 ```bash
-just docker-build
-docker run --rm -p 8090:8090 -v patchies-data:/app/pb_data patchies
+terraform init
+terraform apply
 ```
 
-Open [http://localhost:8090](http://localhost:8090). The health check is available at [http://localhost:8090/api/healthz](http://localhost:8090/api/healthz), and PocketBase's admin UI is at `http://localhost:8090/_/`.
+Open [http://localhost:8090](http://localhost:8090). The health check is available at [http://localhost:8090/api/healthz](http://localhost:8090/api/healthz), and PocketBase's admin UI is at `http://localhost:8090/_/`. `terraform destroy` removes the container and the `patchies-data` volume, including its saved data.
+
+### Migrate from a raw PocketBase container
+
+The Terraform module does not take ownership of an existing PocketBase container. To replace one, first export its data with your current backup process, then stop and remove the old container so Patchies can use port `8090`:
+
+```bash
+docker stop pocketbase
+docker rm pocketbase
+terraform apply
+```
+
+Stop the new container before restoring the backup, then start it again:
+
+```bash
+docker stop patchies
+# Restore the backup into patchies-data at /app/pb_data.
+docker start patchies
+```
+
+This migration has downtime by design; keep the original backup until the Patchies container has started successfully and its data has been verified.
 
 To build a native executable without Docker (Go 1.26+), run:
 

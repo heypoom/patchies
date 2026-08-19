@@ -1,312 +1,312 @@
 {
-	"patches": [
-		{
-			"id": "ng7a8mcxobde7kv",
-			"name": "Random Walk World",
-			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "84et6trrsq2ouoc",
-			"name": "Random Walk Lullaby",
-			"description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "xzydes1peqmuum4",
-			"name": "Raymarch Masker",
-			"description": "Draw masks on top of raymarching shaders with GLSL and surface",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "yi1k9ubhxg4myqi",
-			"name": "Reaction Diffusion Painter",
-			"description": "Paints with the Gray-Scott reaction-diffusion model with GLSL and surface",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "miuavskza1gydmy",
-			"name": "Symmetry and Sphere",
-			"description": "Uses shaderpark to create a symmetrical pattern and a raymarched sphere",
-			"category": "Visual",
-			"author": "@jsqvlC + @heypoom"
-		},
-		{
-			"id": "c6adsknw8iix3m2",
-			"name": "Plotting Equations",
-			"description": "Uses expr node to create mathematical plots",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "3k3qnwk022tfj7e",
-			"name": "Signed Distance Flowers",
-			"description": "GLSL shader from @dtinth's talk 'the power of signed distance functions'",
-			"category": "Visual",
-			"author": "@dtinth"
-		},
-		{
-			"id": "xy5663osmepg063",
-			"name": "X-Y Distance Flowers",
-			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader",
-			"category": "Visual",
-			"author": "@dtinth"
-		},
-		{
-			"id": "1c484xkin7p7p2r",
-			"name": "Sleek Animated Torus",
-			"description": "Uses three.js with texture from hydra.js to create an animated torus knot",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "9r2t5vizvv6xyou",
-			"name": "Patt Vira's P5.js Sketches",
-			"description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials",
-			"category": "Visual",
-			"author": "@pattvira"
-		},
-		{
-			"id": "izs6hjxchit2zad",
-			"name": "Interactive Widget Playground",
-			"description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "3hd88qv62h4zltq",
-			"name": "Animated Wave Pattern",
-			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
-			"category": "Visual",
-			"author": "@humanbydefinition"
-		},
-		{
-			"id": "08wca4jzuz5wpng",
-			"name": "Matter.js Physics Simulation",
-			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "wcpxcm5thb4h1nw",
-			"name": "Assembly Stack Machine",
-			"description": "Example assembly patch demonstrating the virtual stack machine with color-coded memory visualization",
-			"category": "Programming",
-			"author": "@heypoom"
-		},
-		{
-			"id": "08yr3uwuvqxzuck",
-			"name": "Assembly Flag Pixel Art",
-			"description": "Draws a Thai flag with assembly code and canvas object",
-			"category": "Programming",
-			"author": "@heypoom"
-		},
-		{
-			"id": "z7rtmujmtvbv0e0",
-			"name": "Uxn Pong Game",
-			"description": "Pong game written in Uxntal assembly, code from @compudanzas' Uxn tutorial",
-			"category": "Programming",
-			"author": "@compudanzas"
-		},
-		{
-			"id": "w46um7gafe7hgle",
-			"name": "Drum Machine",
-			"description": "Build your own drum machine! Use the W A S D keys on your keyboard to play some drums 🥁",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "ip0chhw6jzuyo6x",
-			"name": "Chord Progression",
-			"description": "An infinitely descending chord progression made with dsp~ 🎹",
-			"category": "Audio",
-			"author": "@dtinth"
-		},
-		{
-			"id": "2ou2y708kz9n3g4",
-			"name": "Haunted Lead",
-			"description": "A slow, haunting lead with an audio-reactive visual made with Strudel and Hydra 😈",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "b17136cy9rxxebw",
-			"name": "FM Synth",
-			"description": "FM synthesis visualized with osc~, expr, gain~ and fft~ 📡",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "2nyuznzjgbp2j0a",
-			"name": "ChucK the Fourth",
-			"description": "ChucK composition with arp, melody, kick drum, bassline & feedback delay 🎹",
-			"category": "Audio",
-			"author": "@dtinth"
-		},
-		{
-			"id": "93ip4c2tmua45ho",
-			"name": "Upbeat Expressions",
-			"description": "A beat made entirely with mathematical expressions in expr~ 🤓",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "ks1srq082zkp4qb",
-			"name": "Dreamy Orca Tones",
-			"description": "A dreamy lullaby made with basic Orca operators and Tone.js polyphonic synth 😴",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "x7q9819cn6zplpk",
-			"name": "Virtual Smooth Jazz",
-			"description": "A virtual smooth jazz band made with SpessaSynth and WebMIDILink. Click on iframe to play 🎷",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "b2vsbbe4jt87qyz",
-			"name": "Drum Sequencer",
-			"description": "Automated drum sequencer that plays samples. Use P to play and K to stop 🥁",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "zntnikb36c47eaw",
-			"name": "Funk 42",
-			"description": "How to funk in 42 lines of code. Original code by @froos using Strudel",
-			"category": "Audio",
-			"author": "@froos"
-		},
-		{
-			"id": "tfjdf019hjyxmeu",
-			"name": "Scales",
-			"description": "Musical scale experiments made with osc~, expr, expr~, delay~ and highpass~",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "xhdtrqenaf6ur81",
-			"name": "Scales II",
-			"description": "Alternative version of the scale experiments with a slightly different feel to it",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "ifeac3e32g9vfm1",
-			"name": "Chromatic Sampler",
-			"description": "A simple sampler that plays your sample at different playback speeds depending on the note",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "geb2h5sc6pf2uj2",
-			"name": "Simple Synth Keyboard",
-			"description": "A simple synth made with virtual midi keyboard, osc~, trigger, expr, adsr, mtof and gain~",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "ocj3v2xp790gq8u",
-			"name": "Periodic Wave Oscillator",
-			"description": "Creates a periodic wave to shape the oscillator output",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "55oju82ir1ujko1",
-			"name": "Distortion Curve Waveshaper",
-			"description": "Creates a distortion curve to shape the waveshaper output",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "y1kbx9b2s903nlj",
-			"name": "Kicks",
-			"description": "Basic drum kicks made with mathematical expressions in expr~",
-			"category": "Audio",
-			"author": "@dtinth"
-		},
-		{
-			"id": "sgov4pl7f9ku4h7",
-			"name": "Audio Reactive Circle",
-			"description": "Uses a shadertoy shader from @airtight with a basic strudel melody",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "dli3wu889pqcnwd",
-			"name": "Oscillated Slider",
-			"description": "Visualize an oscillation using slider, fft~ and js",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "73zo2rxeclhrynw",
-			"name": "8 Pad Sampler",
-			"description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "pdfb7c8skxk4w4s",
-			"name": "IRC Chat Simulator",
-			"description": "Chat with your friends over the network using netsend and netrecv",
-			"category": "Networking",
-			"author": "@heypoom"
-		},
-		{
-			"id": "oc460hxe5cqgk56",
-			"name": "MQTT Client Demo",
-			"description": "Send and receive messages via public MQTT brokers",
-			"category": "Networking",
-			"author": "@heypoom"
-		},
-		{
-			"id": "nahfiov94it8bxr",
-			"name": "Vdo.Ninja Loopback Stream",
-			"description": "Send and receive audio, video and messages over network via vdo.ninja",
-			"category": "Networking",
-			"author": "@heypoom"
-		},
-		{
-			"id": "o5lxdb668heya4i",
-			"name": "Console Stress Test",
-			"description": "Poom uses this patch to stress test the virtual console in the js object",
-			"category": "Dev Patches",
-			"author": "@heypoom"
-		},
-		{
-			"id": "kbo8b87e1l20gi9",
-			"name": "Handle Connection Test",
-			"description": "Poom uses this patch to test handle connection validation in many objects",
-			"category": "Dev Patches",
-			"author": "@heypoom"
-		},
-		{
-			"id": "il660heq9qujme4",
-			"name": "Y-Flip Consistency Matrix",
-			"description": "Poom uses this patch to test the y-flip consistency across all visual nodes",
-			"category": "Dev Patches",
-			"author": "@heypoom"
-		},
-		{
-			"id": "evxzuqh67xa63h5",
-			"name": "Y-Flip Pipeline Test",
-			"description": "Same as the Y-Flip Consistency Matrix patch, but only for nodes on the rendering pipeline",
-			"category": "Dev Patches",
-			"author": "@heypoom"
-		},
-		{
-			"id": "oajrusf4ir2n6nm",
-			"name": "GLSL Stress Test",
-			"description": "Poom uses this patch to stress test the glsl objects",
-			"category": "Dev Patches",
-			"author": "@heypoom"
-		}
-	]
+  "patches": [
+    {
+      "name": "Random Walk World",
+      "description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "random-walk-world"
+    },
+    {
+      "name": "Random Walk Lullaby",
+      "description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "random-walk-lullaby"
+    },
+    {
+      "name": "Raymarch Masker",
+      "description": "Draw masks on top of raymarching shaders with GLSL and surface",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "raymarch-masker"
+    },
+    {
+      "name": "Reaction Diffusion Painter",
+      "description": "Paints with the Gray-Scott reaction-diffusion model with GLSL and surface",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "reaction-diffusion-painter"
+    },
+    {
+      "name": "Symmetry and Sphere",
+      "description": "Uses shaderpark to create a symmetrical pattern and a raymarched sphere",
+      "category": "Visual",
+      "author": "@jsqvlC + @heypoom",
+      "slug": "symmetry-and-sphere"
+    },
+    {
+      "name": "Plotting Equations",
+      "description": "Uses expr node to create mathematical plots",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "plotting-equations"
+    },
+    {
+      "name": "Signed Distance Flowers",
+      "description": "GLSL shader from @dtinth's talk 'the power of signed distance functions'",
+      "category": "Visual",
+      "author": "@dtinth",
+      "slug": "signed-distance-flowers"
+    },
+    {
+      "name": "X-Y Distance Flowers",
+      "description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader",
+      "category": "Visual",
+      "author": "@dtinth",
+      "slug": "x-y-distance-flowers"
+    },
+    {
+      "name": "Sleek Animated Torus",
+      "description": "Uses three.js with texture from hydra.js to create an animated torus knot",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "sleek-animated-torus"
+    },
+    {
+      "name": "Patt Vira's P5.js Sketches",
+      "description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials",
+      "category": "Visual",
+      "author": "@pattvira",
+      "slug": "patt-vira-p5-sketches"
+    },
+    {
+      "name": "Interactive Widget Playground",
+      "description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "interactive-widget-playground"
+    },
+    {
+      "name": "Animated Wave Pattern",
+      "description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
+      "category": "Visual",
+      "author": "@humanbydefinition",
+      "slug": "animated-wave-pattern"
+    },
+    {
+      "name": "Matter.js Physics Simulation",
+      "description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
+      "category": "Visual",
+      "author": "@heypoom",
+      "slug": "matter-js-physics-simulation"
+    },
+    {
+      "name": "Assembly Stack Machine",
+      "description": "Example assembly patch demonstrating the virtual stack machine with color-coded memory visualization",
+      "category": "Programming",
+      "author": "@heypoom",
+      "slug": "assembly-stack-machine"
+    },
+    {
+      "name": "Assembly Flag Pixel Art",
+      "description": "Draws a Thai flag with assembly code and canvas object",
+      "category": "Programming",
+      "author": "@heypoom",
+      "slug": "assembly-flag-pixel-art"
+    },
+    {
+      "name": "Uxn Pong Game",
+      "description": "Pong game written in Uxntal assembly, code from @compudanzas' Uxn tutorial",
+      "category": "Programming",
+      "author": "@compudanzas",
+      "slug": "uxn-pong-game"
+    },
+    {
+      "name": "Drum Machine",
+      "description": "Build your own drum machine! Use the W A S D keys on your keyboard to play some drums 🥁",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "drum-machine"
+    },
+    {
+      "name": "Chord Progression",
+      "description": "An infinitely descending chord progression made with dsp~ 🎹",
+      "category": "Audio",
+      "author": "@dtinth",
+      "slug": "chord-progression"
+    },
+    {
+      "name": "Haunted Lead",
+      "description": "A slow, haunting lead with an audio-reactive visual made with Strudel and Hydra 😈",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "haunted-lead"
+    },
+    {
+      "name": "FM Synth",
+      "description": "FM synthesis visualized with osc~, expr, gain~ and fft~ 📡",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "fm-synth"
+    },
+    {
+      "name": "ChucK the Fourth",
+      "description": "ChucK composition with arp, melody, kick drum, bassline & feedback delay 🎹",
+      "category": "Audio",
+      "author": "@dtinth",
+      "slug": "chuck-the-fourth"
+    },
+    {
+      "name": "Upbeat Expressions",
+      "description": "A beat made entirely with mathematical expressions in expr~ 🤓",
+      "category": "Audio",
+      "author": "@kijjaz",
+      "slug": "upbeat-expressions"
+    },
+    {
+      "name": "Dreamy Orca Tones",
+      "description": "A dreamy lullaby made with basic Orca operators and Tone.js polyphonic synth 😴",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "dreamy-orca-tones"
+    },
+    {
+      "name": "Virtual Smooth Jazz",
+      "description": "A virtual smooth jazz band made with SpessaSynth and WebMIDILink. Click on iframe to play 🎷",
+      "category": "Audio",
+      "author": "@kijjaz",
+      "slug": "virtual-smooth-jazz"
+    },
+    {
+      "name": "Drum Sequencer",
+      "description": "Automated drum sequencer that plays samples. Use P to play and K to stop 🥁",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "drum-sequencer"
+    },
+    {
+      "name": "Funk 42",
+      "description": "How to funk in 42 lines of code. Original code by @froos using Strudel",
+      "category": "Audio",
+      "author": "@froos",
+      "slug": "funk-42"
+    },
+    {
+      "name": "Scales",
+      "description": "Musical scale experiments made with osc~, expr, expr~, delay~ and highpass~",
+      "category": "Audio",
+      "author": "@kijjaz",
+      "slug": "scales"
+    },
+    {
+      "name": "Scales II",
+      "description": "Alternative version of the scale experiments with a slightly different feel to it",
+      "category": "Audio",
+      "author": "@kijjaz",
+      "slug": "scales-ii"
+    },
+    {
+      "name": "Chromatic Sampler",
+      "description": "A simple sampler that plays your sample at different playback speeds depending on the note",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "chromatic-sampler"
+    },
+    {
+      "name": "Simple Synth Keyboard",
+      "description": "A simple synth made with virtual midi keyboard, osc~, trigger, expr, adsr, mtof and gain~",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "simple-synth-keyboard"
+    },
+    {
+      "name": "Periodic Wave Oscillator",
+      "description": "Creates a periodic wave to shape the oscillator output",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "periodic-wave-oscillator"
+    },
+    {
+      "name": "Distortion Curve Waveshaper",
+      "description": "Creates a distortion curve to shape the waveshaper output",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "distortion-curve-waveshaper"
+    },
+    {
+      "name": "Kicks",
+      "description": "Basic drum kicks made with mathematical expressions in expr~",
+      "category": "Audio",
+      "author": "@dtinth",
+      "slug": "kicks"
+    },
+    {
+      "name": "Audio Reactive Circle",
+      "description": "Uses a shadertoy shader from @airtight with a basic strudel melody",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "audio-reactive-circle"
+    },
+    {
+      "name": "Oscillated Slider",
+      "description": "Visualize an oscillation using slider, fft~ and js",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "oscillated-slider"
+    },
+    {
+      "name": "8 Pad Sampler",
+      "description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
+      "category": "Audio",
+      "author": "@heypoom",
+      "slug": "8-pad-sampler"
+    },
+    {
+      "name": "IRC Chat Simulator",
+      "description": "Chat with your friends over the network using netsend and netrecv",
+      "category": "Networking",
+      "author": "@heypoom",
+      "slug": "irc-chat-simulator"
+    },
+    {
+      "name": "MQTT Client Demo",
+      "description": "Send and receive messages via public MQTT brokers",
+      "category": "Networking",
+      "author": "@heypoom",
+      "slug": "mqtt-client-demo"
+    },
+    {
+      "name": "Vdo.Ninja Loopback Stream",
+      "description": "Send and receive audio, video and messages over network via vdo.ninja",
+      "category": "Networking",
+      "author": "@heypoom",
+      "slug": "vdo-ninja-loopback-stream"
+    },
+    {
+      "name": "Console Stress Test",
+      "description": "Poom uses this patch to stress test the virtual console in the js object",
+      "category": "Dev Patches",
+      "author": "@heypoom",
+      "slug": "console-stress-test"
+    },
+    {
+      "name": "Handle Connection Test",
+      "description": "Poom uses this patch to test handle connection validation in many objects",
+      "category": "Dev Patches",
+      "author": "@heypoom",
+      "slug": "handle-connection-test"
+    },
+    {
+      "name": "Y-Flip Consistency Matrix",
+      "description": "Poom uses this patch to test the y-flip consistency across all visual nodes",
+      "category": "Dev Patches",
+      "author": "@heypoom",
+      "slug": "y-flip-consistency-matrix"
+    },
+    {
+      "name": "Y-Flip Pipeline Test",
+      "description": "Same as the Y-Flip Consistency Matrix patch, but only for nodes on the rendering pipeline",
+      "category": "Dev Patches",
+      "author": "@heypoom",
+      "slug": "y-flip-pipeline-test"
+    },
+    {
+      "name": "GLSL Stress Test",
+      "description": "Poom uses this patch to stress test the glsl objects",
+      "category": "Dev Patches",
+      "author": "@heypoom",
+      "slug": "glsl-stress-test"
+    }
+  ]
 }

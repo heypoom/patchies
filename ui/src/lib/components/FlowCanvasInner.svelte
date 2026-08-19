@@ -1205,10 +1205,10 @@
   }
 
   // Patch lifecycle delegated to PatchManager
-  function loadDemoPatchById(patchId: string) {
+  function loadDemoPatch(slug: string) {
     isLoadingFromUrl = true;
     urlLoadError = null;
-    patchManager.loadDemoPatchById(patchId);
+    patchManager.loadDemoPatch(slug);
   }
 
   function insertObjectWithButton() {
@@ -1689,7 +1689,7 @@
         {onAiInsertOrEdit}
         onCommandPalette={triggerCommandPalette}
         onNewPatch={newPatch}
-        onLoadPatch={loadDemoPatchById}
+        onLoadPatch={loadDemoPatch}
         onToggleLeftSidebar={() => {
           $isSidebarOpen = !$isSidebarOpen;
         }}

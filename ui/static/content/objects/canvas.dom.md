@@ -2,7 +2,7 @@ The `canvas.dom` object creates a JavaScript canvas that runs on the main thread
 
 ![Canvas.dom widgets](/content/images/patchies-canvas-dom-widgets.png)
 
-> ✨ [Try this patch](/?id=izs6hjxchit2zad) with interactive canvas.dom widgets!
+> ✨ [Try this patch](/?src=/demos/interactive-widget-playground.json) with interactive canvas.dom widgets!
 
 ## Comparison with canvas
 

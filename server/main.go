@@ -10,6 +10,8 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+
+	_ "github.com/heypoom/patchies/server/migrations"
 )
 
 func main() {
@@ -19,6 +21,10 @@ func main() {
 	}
 
 	app := newApp(os.Getenv("PATCHIES_DATA_DIR"))
+	if err := initializeApp(app); err != nil {
+		log.Fatal(err)
+	}
+
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		se.Router.GET("/api/healthz", healthz)
 		se.Router.GET("/{path...}", serveFrontend(frontend))
@@ -33,6 +39,18 @@ func main() {
 
 func newApp(dataDir string) *pocketbase.PocketBase {
 	return pocketbase.NewWithConfig(pocketbase.Config{DefaultDataDir: dataDir})
+}
+
+func initializeApp(app *pocketbase.PocketBase) error {
+	if err := app.Bootstrap(); err != nil {
+		return fmt.Errorf("bootstrap PocketBase: %w", err)
+	}
+
+	if err := app.RunAllMigrations(); err != nil {
+		return fmt.Errorf("run PocketBase migrations: %w", err)
+	}
+
+	return nil
 }
 
 // healthz responds to orchestration probes without exposing server internals.

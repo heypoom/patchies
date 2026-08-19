@@ -3,7 +3,7 @@ runs on a web worker for fast video chaining.
 
 ![Three.js torus demo](/content/images/threejs-torus.webp)
 
-> ✨ [Try this patch](/?id=1c484xkin7p7p2r) showing how to use 2D textures from
+> ✨ [Try this patch](/?src=/demos/sleek-animated-torus.json) showing how to use 2D textures from
   other objects in Three.js!
 
 ## Getting Started

@@ -4,7 +4,7 @@ and lets you create all kinds of video effects with minimal code.
 
 ![Random walker with Hydra shader](/content/images/patchies-random-walker.png)
 
-> Try out [this demo](/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to
+> Try out [this demo](/?src=/demos/random-walk-world.json) which uses P5.js with Hydra to
 > create a random walk shader.
 
 ## Getting Started

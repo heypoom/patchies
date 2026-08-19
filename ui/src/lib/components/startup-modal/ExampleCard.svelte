@@ -21,7 +21,7 @@
   );
 </script>
 
-<button onclick={() => onLoad(patch.id)} class="ex-card">
+<button onclick={() => onLoad(patch.slug)} class="ex-card">
   <DemoSignal category={patch.category} variant={signalVariant} />
   <span class="ex-topline">
     <span class="ex-category" role="img" aria-label={patch.category}>

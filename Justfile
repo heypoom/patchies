@@ -15,6 +15,9 @@ test:
 server-test:
     cd server && go test ./...
 
+check-demos:
+    ./scripts/check-demo-patches.sh
+
 build binary="patchies":
     cd ui && bun install --frozen-lockfile && bun run build
     rsync -a --delete --exclude='.gitignore' --exclude='.gitkeep' ui/build/ server/static/

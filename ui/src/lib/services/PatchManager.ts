@@ -396,10 +396,10 @@ export class PatchManager {
   }
 
   /**
-   * Redirect to load a demo patch by ID.
+   * Redirect to load a bundled demo patch.
    * This uses a page reload to avoid rendering artifacts.
    */
-  loadDemoPatchById(patchId: string): void {
-    window.location.href = `/?id=${patchId}`;
+  loadDemoPatch(slug: string): void {
+    window.location.href = `/?src=${encodeURIComponent(`/demos/${slug}.json`)}`;
   }
 }
