@@ -27,7 +27,7 @@ build binary="patchies":
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
-    (cd ui && bun run dev -- --host 127.0.0.1) &
+    (cd ui && bun run dev -- --host 127.0.0.1 --logLevel warn) &
     vite_pid=$!
     trap 'kill "$vite_pid" 2>/dev/null || true' EXIT INT TERM
     export PATCHIES_DATA_DIR="{{project_root}}/server/pb_data"
