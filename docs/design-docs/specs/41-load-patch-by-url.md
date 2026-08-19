@@ -15,3 +15,6 @@ Source patches use the same confirmation and read-only session as `?id=`
 shared patches. Their `src` parameter remains in the URL after loading, and is
 removed only when the user cancels, creates a new patch, loads a saved local
 patch through the Saves sidebar, or explicitly saves a local copy.
+
+All bundled documentation examples use `?src=/demos/<slug>.json`; they do not
+depend on PocketBase records that are absent from a new self-hosted instance.

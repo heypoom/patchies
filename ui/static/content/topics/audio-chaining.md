@@ -6,7 +6,7 @@ Connect audio objects to make a signal chain. Sound moves from a source through 
 
 This audio chain sends an oscillator through a gain control to the output.
 
-> ✨ [Try this patch](/?id=b17136cy9rxxebw) — FM synthesis using oscillators, expressions, gain control, and frequency analysis.
+> ✨ [Try this patch](/?src=/demos/fm-synth.json) — FM synthesis using oscillators, expressions, gain control, and frequency analysis.
 
 ## How It Works
 
@@ -52,11 +52,11 @@ See [Audio Reactivity](/docs/audio-reactivity) to use audio data for visuals.
 
 ## Fun Examples
 
-[This patch](/?id=93ip4c2tmua45ho) by [@kijjaz](https://www.instagram.com/kijjaz) creates a beat with mathematical expressions:
+[This patch](/?src=/demos/upbeat-expressions.json) by [@kijjaz](https://www.instagram.com/kijjaz) creates a beat with mathematical expressions:
 
 ![Beat example](/content/images/patchies-audio-super-fun.png)
 
-Build a drum machine with [this patch](/?id=w46um7gafe7hgle). Use `W A S D` to play drums:
+Build a drum machine with [this patch](/?src=/demos/drum-machine.json). Use `W A S D` to play drums:
 
 ![Simple drum machine](/content/images/patchies-simple-drums.png)
 

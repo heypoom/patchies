@@ -27,9 +27,17 @@
     onConfirm();
     open = false;
   }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && open) {
+      onCancel();
+    }
+
+    open = nextOpen;
+  }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open onOpenChange={handleOpenChange}>
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
       <Dialog.Title>Load Patch</Dialog.Title>
