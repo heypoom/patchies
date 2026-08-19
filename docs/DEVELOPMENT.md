@@ -31,80 +31,6 @@ terraform apply
 
 Open [http://localhost:8090](http://localhost:8090). The health check is available at [http://localhost:8090/api/healthz](http://localhost:8090/api/healthz), and PocketBase's admin UI is at `http://localhost:8090/_/`. `terraform destroy` removes the container and the `patchies-data` volume, including its saved data.
 
-### Migrate from a raw PocketBase container
-
-The Terraform module does not take ownership of an existing PocketBase container. To replace one, first export its data with your current backup process, then stop and remove the old container so Patchies can use port `8090`:
-
-```bash
-docker stop pocketbase
-docker rm pocketbase
-terraform apply
-```
-
-Stop the new container before restoring the backup, then start it again:
-
-```bash
-docker stop patchies
-
-docker run --rm \
-  -v patchies-data:/app/pb_data \
-  -v /absolute/path/to/data.db:/restore/data.db:ro \
-  alpine sh -ceu '
-    apk add --no-cache sqlite
-    data_dir=/app/pb_data
-    target_db="$data_dir/data.db"
-    staging_db=$(mktemp "$data_dir/.data.db.restore.XXXXXX")
-    backup_dir=$(mktemp -d "$data_dir/.restore-backup.XXXXXX")
-    installed=false
-
-    cleanup() {
-      status=$?
-      trap - EXIT HUP INT TERM
-
-      if [ -n "$staging_db" ]; then
-        rm -f "$staging_db" || status=1
-      fi
-
-      if [ "$installed" = false ]; then
-        for name in data.db data.db-wal data.db-shm; do
-          if [ -e "$backup_dir/$name" ]; then
-            mv "$backup_dir/$name" "$data_dir/$name" || status=1
-          fi
-        done
-      else
-        rm -f "$backup_dir/data.db" "$backup_dir/data.db-wal" "$backup_dir/data.db-shm" || status=1
-      fi
-
-      rmdir "$backup_dir" 2>/dev/null || status=1
-      exit "$status"
-    }
-    trap cleanup EXIT HUP INT TERM
-
-    cp /restore/data.db "$staging_db"
-    [ "$(sqlite3 "$staging_db" "PRAGMA quick_check;")" = ok ]
-    chown 65532:65532 "$staging_db"
-    chmod 600 "$staging_db"
-
-    if [ -e "$target_db" ]; then
-      cp -p "$target_db" "$backup_dir/data.db"
-    fi
-
-    for name in data.db-wal data.db-shm; do
-      if [ -e "$data_dir/$name" ]; then
-        mv "$data_dir/$name" "$backup_dir/$name"
-      fi
-    done
-
-    mv "$staging_db" "$target_db"
-    staging_db=
-    installed=true
-  '
-
-docker start patchies
-```
-
-This migration has downtime by design; keep the original backup until the Patchies container has started successfully and its data has been verified.
-
 To build a native executable without Docker (Go 1.26+), run:
 
 ```bash
@@ -113,3 +39,7 @@ just build
 ```
 
 Recipes accept overrides, for example `just docker-build ghcr.io/heypoom/patchies` and `just build dist/patchies`.
+
+## Releases
+
+Pushing a version tag such as `v1.0.0` publishes standalone Linux, macOS, and Windows binaries to [GitHub Releases](https://github.com/heypoom/patchies/releases), along with a multi-architecture container image at `ghcr.io/heypoom/patchies:v1.0.0`.

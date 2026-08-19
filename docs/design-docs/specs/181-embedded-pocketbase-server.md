@@ -42,6 +42,8 @@ The frontend selects its same-origin PocketBase API by default. Deployments that
 
 The image persists `/app/pb_data` through a Docker volume and starts PocketBase on port `8090`. It runs as the fixed non-root UID `65532`, and the image-owned data directory uses that UID so Docker can initialize its volume with writable ownership. The root Terraform module builds the Dockerfile, creates the named `patchies-data` volume, and runs the `patchies` container with port `8090` published on the host. Replacing an existing raw PocketBase container is an explicit manual handoff: export its data, remove the old container, apply Terraform, stop the new container, restore the backup into the new volume, and start Patchies again.
 
+Pushing a `v*` tag runs the release workflow. It builds the frontend once, cross-compiles standalone binaries for Linux, macOS, and Windows on `amd64` and `arm64`, pushes a multi-architecture Linux image to `ghcr.io/heypoom/patchies` with the version and `latest` tags, and creates a GitHub Release containing the binaries and their SHA-256 checksums.
+
 ## Data initialization
 
 The embedded PocketBase migrations create the production-compatible `patches` collection (including its public create and view rules) in an empty data directory. Bundled demos are static files in `ui/static/demos/` and are loaded with `?src=`, so no production patch records are imported into PocketBase.
