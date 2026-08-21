@@ -27,14 +27,14 @@ RUN go mod download
 COPY server ./
 COPY --from=frontend /app/ui/build ./static
 RUN go run ./cmd/pack-static -source static -destination static.zip
-RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /patchies .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /patchies-server .
 RUN mkdir -p /runtime/app/pb_data && chown 65532:65532 /runtime/app/pb_data
 
 FROM gcr.io/distroless/static-debian12
 
 WORKDIR /app
 
-COPY --from=server /patchies /patchies
+COPY --from=server /patchies-server /patchies-server
 COPY --from=server --chown=65532:65532 /runtime/app/pb_data /app/pb_data
 
 ENV PATCHIES_RUN_UID=65532
@@ -44,5 +44,5 @@ EXPOSE 8090
 
 USER 65532:65532
 
-ENTRYPOINT ["/patchies"]
+ENTRYPOINT ["/patchies-server"]
 CMD ["serve", "--http=0.0.0.0:8090"]
