@@ -1,6 +1,6 @@
 import type { RenderedChunk } from 'rollup';
 import type { Plugin } from 'vite';
-import { minify } from 'terser';
+import { transform } from 'esbuild';
 
 const SHADER_PARK_CORE_MODULE = 'node_modules/shader-park-core';
 
@@ -31,13 +31,11 @@ export function minifyExceptShaderParkCore(): Plugin {
         return null;
       }
 
-      const result = await minify(code, {
-        module: true,
-        compress: true,
-        mangle: true,
-        format: {
-          comments: false
-        }
+      const result = await transform(code, {
+        format: 'esm',
+        legalComments: 'none',
+        minify: true,
+        target: 'esnext'
       });
 
       if (!result.code) return null;
