@@ -22,6 +22,18 @@ just restore /absolute/path/to/data.db
 
 The command validates the backup, moves the current local database and its SQLite sidecars into `server/pb_data/backups/<timestamp>/`, and installs the supplied `data.db`.
 
+### PocketBase settings encryption
+
+Local development can omit `PATCHIES_ENCRYPTION_KEY`. Production deployments should always set it so PocketBase does not store application settings unencrypted. Generate a random 32-character key once for each production instance:
+
+```bash
+openssl rand -hex 16
+```
+
+Save the generated value as `PATCHIES_ENCRYPTION_KEY` in the deployment platform's secret manager, and keep a separate copy in a password manager. Do not commit it to the repository. Patchies does not include the key in `data.db` or its backups.
+
+When restoring a database with encrypted settings, configure the key used by the source Patchies instance before starting the restored instance. Retrieve it from the source deployment's secret manager; it cannot be derived from the database backup. The key protects PocketBase settings, not collection records or uploaded files.
+
 The included Docker build packages the Patchies frontend and PocketBase API in one image. Terraform can build it, run it on port `8090`, and persist PocketBase data in the `patchies-data` Docker volume:
 
 ```bash

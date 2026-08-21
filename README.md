@@ -67,6 +67,8 @@ Choose the option that works for you:
 
    Then open [http://localhost:8090](http://localhost:8090). Patchies is built with Pocketbase and writes to a single SQLite database file.
 
+Production deployments should always set a 32-character `PATCHIES_ENCRYPTION_KEY`; without it, PocketBase stores application settings unencrypted. For Docker, put `PATCHIES_ENCRYPTION_KEY=<key>` in a protected environment file and pass it with `--env-file /absolute/path/to/patchies.env`. For the native binary, set the variable in the process environment before starting Patchies. Local development can omit the variable, but an existing database with encrypted settings requires its original key.
+
 ### Helpful Links
 
 - Play with the [demos](https://patchies.app/?startup=demos) to see what you can make with Patchies.
