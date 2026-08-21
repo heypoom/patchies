@@ -3,6 +3,7 @@ export { AddNodesCommand } from './add-nodes.command';
 export { DeleteNodesCommand } from './delete-nodes.command';
 export { MoveNodesCommand } from './move-nodes.command';
 export { UpdateNodeDataCommand } from './update-node-data.command';
+export { ApplyRemoteFileCommand } from './apply-remote-file.command';
 export { UpdateObjectDataCommand } from './update-object-data.command';
 export { AddEdgeCommand } from './add-edge.command';
 export { AddEdgesCommand } from './add-edges.command';

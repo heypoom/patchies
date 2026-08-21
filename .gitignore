@@ -5,4 +5,5 @@
 *.tfstate.*
 node_modules
 patchies
+patchies-server
 pb_data
