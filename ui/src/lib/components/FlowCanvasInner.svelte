@@ -40,6 +40,7 @@
     sidebarWidth,
     sidebarView,
     patchObjectTypes,
+    currentPatchId,
     currentPatchName,
     helpModeObject,
     selectedNodeInfo,
@@ -52,7 +53,6 @@
     requestFitView
   } from '../../stores/ui.store';
 
-  import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
@@ -110,6 +110,17 @@
   import { logger } from '$lib/utils/logger';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
   import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
+  import {
+    RemoteControlGraphService,
+    type GraphPort,
+    type GraphPorts
+  } from '$lib/remote-control/graph-service';
+  import { nodeTypes } from '$lib/nodes/node-types';
+  import { AudioRegistry } from '$lib/registry/AudioRegistry';
+  import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+  import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
+  import { PRESETS } from '$lib/presets/presets';
+  import { RemoteControlSyncCoordinator } from '$lib/remote-control/sync-coordinator';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -184,6 +195,51 @@
 
   // Alias for convenience (used by history commands)
   const canvasAccessors = canvasContext.canvasAccessors;
+  let isRemoteControlEnabled = $state(false);
+
+  const remoteControl = new RemoteControlSyncCoordinator({
+    patchId: () => $currentPatchId,
+    filesystem: VirtualFilesystem.getInstance(),
+    graph: new RemoteControlGraphService({
+      accessors: canvasAccessors,
+      history: historyManager,
+      ports: (node) => getRemotePorts(node),
+      create: (command) => {
+        const name = command.name;
+        const objectName = name.trim().split(' ')[0];
+        if (
+          !nodeTypes[name as keyof typeof nodeTypes] &&
+          !PRESETS[name] &&
+          !AudioRegistry.getInstance().isDefined(objectName) &&
+          !ObjectRegistry.getInstance().isDefined(objectName) &&
+          !ObjectShorthandRegistry.getInstance().tryTransform(name)
+        )
+          throw new Error(`Unknown object ${name}`);
+        if (
+          command.data &&
+          Object.keys(command.data).some(
+            (key) => key.startsWith('__') || ['executeCode', 'initialized'].includes(key)
+          )
+        )
+          throw new Error('Internal node data cannot be set remotely');
+
+        return nodeOps.createNodeFromName(name, command.position ?? getViewportSummary().center, {
+          data: command.data
+        });
+      },
+      settle: async () => {
+        await tick();
+        VirtualFilesystem.getInstance().objectFiles.sync(nodes);
+      }
+    }),
+    onEnabledChange: (enabled) => (isRemoteControlEnabled = enabled)
+  });
+
+  $effect(() => {
+    for (const node of nodes) getRemotePorts(node);
+    void edges;
+    remoteControl.notifyPatchChanged($currentPatchId);
+  });
 
   // Clipboard manager for copy/paste operations
   const clipboardManager = new ClipboardManager(canvasContext);
@@ -213,6 +269,8 @@
       new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
     );
   };
+
+  const handleCodeChange = () => VirtualFilesystem.getInstance().objectFiles.sync(nodes);
 
   const syncViewportPausedCommit = (nodeId: string, dataKey: string, newValue: unknown): void => {
     // Viewport-pause edge cases: keep pausedByViewport consistent when the user
@@ -328,7 +386,8 @@
   let showPatchToPromptDialog = $state(false);
 
   // Get flow utilities for coordinate transformation
-  const { screenToFlowPosition, fitView, getViewport, getNode, updateNodeData } = useSvelteFlow();
+  const { screenToFlowPosition, fitView, getViewport, getNode, getInternalNode, updateNodeData } =
+    useSvelteFlow();
 
   const runtime = createPatchRuntime({
     services: runtimeServices,
@@ -859,7 +918,21 @@
     Transport.setBpm(bpm);
     Transport.setTimeSignature(timeSignature[0], timeSignature[1]);
 
-    loadPatch();
+    void loadPatch().then(async () => {
+      await tick();
+      void remoteControl
+        .restore()
+        .then((reconnected) => {
+          if (!reconnected) return;
+
+          toast.success('Remote Control reconnected', {
+            description: 'Your local mount can continue syncing with this patch.'
+          });
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to reclaim Remote Control session', error);
+        });
+    });
 
     // Check if the user wants to see the startup modal on launch
     // Don't show if loading from a URL patch parameter.
@@ -1012,6 +1085,7 @@
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.addEventListener('scatterNodes', handleScatterNodes);
     eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
+    eventBus.addEventListener('codeChange', handleCodeChange);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
     eventBus.addEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
@@ -1031,6 +1105,7 @@
   });
 
   onDestroy(() => {
+    remoteControl.dispose();
     runtime.destroy();
     runtime.cleanupDeletedNodes(nodes.map((node) => node.id));
 
@@ -1047,6 +1122,7 @@
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.removeEventListener('scatterNodes', handleScatterNodes);
     eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
+    eventBus.removeEventListener('codeChange', handleCodeChange);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
     eventBus.removeEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
@@ -1286,6 +1362,30 @@
   function openObjectBrowser() {
     edgeInsertion.beginObjectBrowser(selectedEdgeIds);
     $isObjectBrowserOpen = true;
+  }
+
+  function getRemotePorts(node: Node): GraphPorts {
+    const bounds = getInternalNode(node.id)?.internals.handleBounds;
+    const name = node.type === 'object' ? (node.data.name as string) : undefined;
+    const port = (id: string | null, inlet: boolean): GraphPort => ({
+      id,
+      kind: id?.startsWith('audio-')
+        ? 'audio'
+        : id?.startsWith('video-')
+          ? 'video'
+          : id?.startsWith('analysis-')
+            ? 'analysis'
+            : 'message',
+      ...(inlet
+        ? { isAudioParam: isAudioParamInlet(name, id), acceptsFloat: isAcceptsFloatInlet(name, id) }
+        : {})
+    });
+
+    return {
+      ready: !!bounds,
+      inlets: (bounds?.target ?? []).map((handle) => port(handle.id ?? null, true)),
+      outlets: (bounds?.source ?? []).map((handle) => port(handle.id ?? null, false))
+    };
   }
 
   const isValidConnection: IsValidConnection = (connection) => {
@@ -1633,7 +1733,7 @@
         class="bg-zinc-900"
         snapGrid={$snapGridSize > 0 ? [$snapGridSize, $snapGridSize] : undefined}
         proOptions={{ hideAttribution: true }}
-        onlyRenderVisibleElements={$cullObjects}
+        onlyRenderVisibleElements={$cullObjects && !isRemoteControlEnabled}
         clickConnect={$isConnectionMode}
         {isValidConnection}
         onnodedragstart={() => {
@@ -1756,6 +1856,30 @@
           onBrowseObjects={openObjectBrowser}
           onSavePatch={() => (showSavePatchModal = true)}
           onExportPatch={() => (showExportPatchModal = true)}
+          onEnableRemoteControl={async () => {
+            await remoteControl.enable();
+
+            const command = remoteControl.mountCommand;
+            if (command) {
+              try {
+                await navigator.clipboard.writeText(command);
+              } catch {
+                toast.success('Remote Control enabled', {
+                  description: 'Copy the mount command from Remote Control settings.'
+                });
+                return;
+              }
+            }
+
+            toast.success('Remote Control enabled', {
+              description: 'The mount command has been copied to your clipboard.'
+            });
+          }}
+          onDisableRemoteControl={() => {
+            remoteControl.disable();
+            toast.success('Remote Control disabled');
+          }}
+          remoteControlEnabled={isRemoteControlEnabled}
           onLoadPatch={() => {
             $isSidebarOpen = true;
             $sidebarView = 'saves';
@@ -1826,7 +1950,13 @@
     />
 
     <!-- Settings Modal -->
-    <SettingsModal bind:open={$isSettingsOpen} />
+    <SettingsModal
+      bind:open={$isSettingsOpen}
+      remoteControlEnabled={isRemoteControlEnabled}
+      remoteControlMountCommand={remoteControl.mountCommand}
+      onEnableRemoteControl={() => remoteControl.enable()}
+      onDisableRemoteControl={() => remoteControl.disable()}
+    />
 
     <!-- AI Object Prompt Dialogs — multiple concurrent instances supported -->
     {#each aiPromptInstances as instance (instance.id)}
