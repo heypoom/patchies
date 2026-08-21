@@ -62,7 +62,7 @@ Choose the option that works for you:
    # Store data and SQLite database in this directory
    PATCHIES_DATA_DIR=./patchies-data
 
-   ./patchies serve --http=0.0.0.0:8090
+   ./patchies-server serve --http=0.0.0.0:8090
    ```
 
    Then open [http://localhost:8090](http://localhost:8090). Patchies is built with Pocketbase and writes to a single SQLite database file.

@@ -85,7 +85,7 @@ jobs:
           extension=''
           if [ "$goos" = windows ]; then extension=.exe; fi
           mkdir -p ../release
-          CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags='-s -w' -o "../release/patchies_${goos}_${goarch}${extension}" .
+          CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags='-s -w' -o "../release/patchies-server_${goos}_${goarch}${extension}" .
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -145,7 +145,7 @@ jobs:
 
       - name: Create checksums
         working-directory: release
-        run: sha256sum patchies_* > checksums.txt
+        run: sha256sum patchies-server_* > checksums.txt
 
       - name: Create release and upload binaries
         env:

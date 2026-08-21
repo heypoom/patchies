@@ -37,10 +37,10 @@ To build a native executable without Docker (Go 1.26+), run:
 
 ```bash
 just build
-./patchies serve --http=0.0.0.0:8090
+./patchies-server serve --http=0.0.0.0:8090
 ```
 
-Recipes accept overrides, for example `just docker-build ghcr.io/heypoom/patchies` and `just build dist/patchies`.
+Recipes accept overrides, for example `just docker-build ghcr.io/heypoom/patchies` and `just build dist/patchies-server`.
 
 ## Docker images
 
