@@ -86,7 +86,7 @@ func newFrontendHandler(proxyURL string) (http.Handler, error) {
 		return nil, err
 	}
 
-	return http.FileServer(http.FS(frontend)), nil
+	return newStaticFrontendHandler(frontend), nil
 }
 
 func serveFrontend(frontend http.Handler) func(*core.RequestEvent) error {

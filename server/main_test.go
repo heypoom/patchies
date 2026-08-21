@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/fstest"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
@@ -61,6 +62,36 @@ func TestFrontendHandlerProxiesToVite(t *testing.T) {
 
 	if body := response.Body.String(); body != "/_app/immutable/start.js?version=1" {
 		t.Fatalf("proxied path = %q", body)
+	}
+}
+
+func TestStaticFrontendHandlerServesPrerenderedCleanURLs(t *testing.T) {
+	frontend := newStaticFrontendHandler(fstest.MapFS{
+		"output.html": &fstest.MapFile{Data: []byte("output page")},
+	})
+
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/output?preview=true", nil)
+	response := httptest.NewRecorder()
+	frontend.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+
+	if body := response.Body.String(); body != "output page" {
+		t.Fatalf("body = %q, want output page", body)
+	}
+}
+
+func TestStaticFrontendHandlerKeepsMissingRoutesMissing(t *testing.T) {
+	frontend := newStaticFrontendHandler(fstest.MapFS{})
+
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/missing", nil)
+	response := httptest.NewRecorder()
+	frontend.ServeHTTP(response, request)
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
 	}
 }
 
