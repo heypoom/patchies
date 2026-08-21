@@ -63,6 +63,9 @@
     onUndo?: () => void;
     onRedo?: () => void;
     onExportPatch?: () => void;
+    onEnableRemoteControl?: () => Promise<void>;
+    onDisableRemoteControl?: () => void;
+    remoteControlEnabled?: boolean;
   }
 
   let {
@@ -84,7 +87,10 @@
     onGeneratePrompt,
     onUndo,
     onRedo,
-    onExportPatch
+    onExportPatch,
+    onEnableRemoteControl,
+    onDisableRemoteControl,
+    remoteControlEnabled = false
   }: Props = $props();
 
   let dismissShortcutLabel = $derived(getDismissShortcutLabel($isNativeFullscreen));
@@ -163,6 +169,16 @@
       requiresAi: true
     },
     { id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
+    {
+      id: 'enable-remote-control',
+      name: 'Enable Remote Control',
+      description: 'Mount supported object code in a local folder.'
+    },
+    {
+      id: 'disable-remote-control',
+      name: 'Disable Remote Control',
+      description: 'Revoke the current local mount session.'
+    },
     { id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
     {
       id: 'import-preset-library',
@@ -326,6 +342,8 @@
   // Filtered items based on current stage
   const filteredCommands = $derived.by(() => {
     return commands
+      .filter((cmd) => cmd.id !== 'enable-remote-control' || !remoteControlEnabled)
+      .filter((cmd) => cmd.id !== 'disable-remote-control' || remoteControlEnabled)
       .filter((cmd) => !cmd.requiresAi || $isAiFeaturesVisible)
       .filter((cmd) => !cmd.requiresSelection || selectedNode)
       .filter((cmd) => cmd.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -523,6 +541,19 @@
       .with('share-patch', async () => {
         onCancel();
         await createAndCopyShareLink(nodes, edges);
+      })
+      .with('enable-remote-control', async () => {
+        try {
+          await onEnableRemoteControl?.();
+          onCancel();
+        } catch (error) {
+          console.error('Failed to enable remote control', error);
+          toast.error('Could not enable Remote Control');
+        }
+      })
+      .with('disable-remote-control', () => {
+        onDisableRemoteControl?.();
+        onCancel();
       })
       .with('new-patch', () => {
         onCancel();
