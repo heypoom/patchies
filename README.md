@@ -6,8 +6,6 @@
 
 Patchies is a code-first patcher for exploring computation through audio, visual, hardware and more.
 
-Bundled demos are standalone JSON files in `ui/static/demos/`. Add or edit a file there to update a demo, then run `just check-demos` to verify every example and documentation link resolves to a valid demo.
-
 It's made for creative coding: patch objects and code snippets together to explore visualizations, soundscapes and computations 🎨
 
 Ready to try Patchies? [Get started](#get-started) 😎
