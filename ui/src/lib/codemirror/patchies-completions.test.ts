@@ -79,6 +79,15 @@ function getHydraCompletion(doc: string, label: string) {
 }
 
 describe('patchies completions', () => {
+  it.each(['regl', 'swgl', 'tone~', 'sonic~', 'elem~'])(
+    'shows settings and its methods for %s',
+    (nodeType) => {
+      expect(getCompletionLabels(nodeType, 'sett')).toContain('settings');
+      expect(getCompletionLabels(nodeType, 'settings.')).toContain('define');
+      expect(getCompletionLabels(nodeType, 'settings.')).toContain('onChange');
+    }
+  );
+
   it('does not show Patchies API completions inside strings or template strings', () => {
     expect(getCompletionLabels('hydra', "'se")).toEqual([]);
     expect(getCompletionLabels('hydra', '"se')).toEqual([]);

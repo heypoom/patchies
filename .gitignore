@@ -4,5 +4,7 @@
 *.tfstate
 *.tfstate.*
 node_modules
-patchies
+/patchies
+/patchies-server
+cli/patchies
 pb_data

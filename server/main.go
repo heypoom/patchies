@@ -10,8 +10,10 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/router"
 
 	_ "github.com/heypoom/patchies/server/migrations"
+	"github.com/heypoom/patchies/server/remotecontrol"
 )
 
 const encryptionKeyEnv = "PATCHIES_ENCRYPTION_KEY"
@@ -30,10 +32,10 @@ func main() {
 	if err := initializeApp(app); err != nil {
 		log.Fatal(err)
 	}
+	remoteControl := remotecontrol.NewHTTPHandler(remotecontrol.NewRelay())
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		se.Router.GET("/api/healthz", healthz)
-		se.Router.GET("/{path...}", serveFrontend(frontend))
+		registerServerRoutes(se.Router, remoteControl, frontend)
 
 		return se.Next()
 	})
@@ -50,6 +52,14 @@ func newApp(dataDir string) *pocketbase.PocketBase {
 	})
 }
 
+func registerServerRoutes(router *router.Router[*core.RequestEvent], remoteControl, frontend http.Handler) {
+	router.GET("/api/healthz", healthz)
+	router.GET("/api/remote-control/{path...}", serveRemoteControl(remoteControl))
+	router.POST("/api/remote-control/{path...}", serveRemoteControl(remoteControl))
+	router.DELETE("/api/remote-control/{path...}", serveRemoteControl(remoteControl))
+	router.GET("/{path...}", serveFrontend(frontend))
+}
+
 func initializeApp(app *pocketbase.PocketBase) error {
 	if err := app.Bootstrap(); err != nil {
 		return fmt.Errorf("bootstrap PocketBase: %w", err)
@@ -60,6 +70,14 @@ func initializeApp(app *pocketbase.PocketBase) error {
 	}
 
 	return nil
+}
+
+func serveRemoteControl(handler http.Handler) func(*core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
+		handler.ServeHTTP(e.Response, e.Request)
+
+		return nil
+	}
 }
 
 // healthz responds to orchestration probes without exposing server internals.
