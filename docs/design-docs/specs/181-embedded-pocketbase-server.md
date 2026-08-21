@@ -42,6 +42,8 @@ The frontend selects its same-origin PocketBase API by default. Deployments that
 
 Deployments persist `/app/pb_data` through an externally configured volume, and the image starts PocketBase on port `8090`. It runs as the fixed non-root UID and GID `65532`. The generic `PATCHIES_RUN_UID` and `PATCHIES_RUN_GID` settings let the same executable safely initialize a root-owned Linux data volume: when launched as root, it assigns the data tree to the configured identity, clears supplementary groups, and drops its UID and GID before PocketBase opens the database. Without both settings, native binaries retain their caller's identity. The root Terraform module builds the Dockerfile, creates the named `patchies-data` volume, and runs the `patchies` container with port `8090` published on the host. Replacing an existing raw PocketBase container is an explicit manual handoff: export its data, remove the old container, apply Terraform, stop the new container, restore the backup into the new volume, and start Patchies again.
 
+Patchies uses the optional, platform-neutral `PATCHIES_ENCRYPTION_KEY` environment variable for PocketBase settings encryption. Existing encrypted PocketBase databases require the same 32-character key that was used when their settings were saved. New instances can omit it and use PocketBase's unencrypted-settings behavior.
+
 Pushing a `v*` tag runs the release workflow. It builds the frontend once, cross-compiles standalone binaries for Linux, macOS, and Windows on `amd64` and `arm64`, pushes a multi-architecture Linux image to `ghcr.io/heypoom/patchies` with the version and `latest` tags, and creates a GitHub Release containing the binaries and their SHA-256 checksums.
 
 ## Data initialization

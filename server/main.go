@@ -14,6 +14,8 @@ import (
 	_ "github.com/heypoom/patchies/server/migrations"
 )
 
+const encryptionKeyEnv = "PATCHIES_ENCRYPTION_KEY"
+
 func main() {
 	frontend, err := newFrontendHandler(os.Getenv("PATCHIES_DEV_PROXY_URL"))
 	if err != nil {
@@ -42,7 +44,10 @@ func main() {
 }
 
 func newApp(dataDir string) *pocketbase.PocketBase {
-	return pocketbase.NewWithConfig(pocketbase.Config{DefaultDataDir: dataDir})
+	return pocketbase.NewWithConfig(pocketbase.Config{
+		DefaultDataDir:       dataDir,
+		DefaultEncryptionEnv: encryptionKeyEnv,
+	})
 }
 
 func initializeApp(app *pocketbase.PocketBase) error {

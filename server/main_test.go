@@ -71,6 +71,10 @@ func TestNewAppUsesConfiguredDataDir(t *testing.T) {
 	if app.DataDir() != dataDir {
 		t.Fatalf("data directory = %q, want %q", app.DataDir(), dataDir)
 	}
+
+	if app.EncryptionEnv() != encryptionKeyEnv {
+		t.Fatalf("encryption environment = %q, want %q", app.EncryptionEnv(), encryptionKeyEnv)
+	}
 }
 
 func TestRuntimeIdentityFromEnvironment(t *testing.T) {
