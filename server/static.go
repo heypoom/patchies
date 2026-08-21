@@ -25,8 +25,30 @@ func newStaticFrontendHandler(frontend fs.FS) http.Handler {
 
 	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		cleanPath := strings.Trim(request.URL.Path, "/")
-		if cleanPath == "" || strings.HasSuffix(cleanPath, ".html") {
+		if cleanPath == "" {
 			fileServer.ServeHTTP(response, request)
+
+			return
+		}
+
+		if strings.HasSuffix(cleanPath, ".html") {
+			info, err := fs.Stat(frontend, cleanPath)
+			if err != nil || info.IsDir() {
+				fileServer.ServeHTTP(response, request)
+
+				return
+			}
+
+			canonicalPath := strings.TrimSuffix(cleanPath, ".html")
+			if canonicalPath == "index" {
+				canonicalPath = ""
+			}
+
+			canonicalURL := *request.URL
+			canonicalURL.Path = "/" + canonicalPath
+			canonicalURL.RawPath = ""
+
+			http.Redirect(response, request, canonicalURL.String(), http.StatusPermanentRedirect)
 
 			return
 		}

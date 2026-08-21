@@ -95,6 +95,24 @@ func TestStaticFrontendHandlerKeepsMissingRoutesMissing(t *testing.T) {
 	}
 }
 
+func TestStaticFrontendHandlerRedirectsPrerenderedHTMLRoutes(t *testing.T) {
+	frontend := newStaticFrontendHandler(fstest.MapFS{
+		"docs/ai-chat.html": &fstest.MapFile{Data: []byte("AI chat")},
+	})
+
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/docs/ai-chat.html?source=bookmark", nil)
+	response := httptest.NewRecorder()
+	frontend.ServeHTTP(response, request)
+
+	if response.Code != http.StatusPermanentRedirect {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusPermanentRedirect)
+	}
+
+	if location := response.Header().Get("Location"); location != "/docs/ai-chat?source=bookmark" {
+		t.Fatalf("Location = %q, want %q", location, "/docs/ai-chat?source=bookmark")
+	}
+}
+
 func TestNewAppUsesConfiguredDataDir(t *testing.T) {
 	dataDir := t.TempDir()
 	app := newApp(dataDir)
