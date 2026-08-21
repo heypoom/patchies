@@ -6,4 +6,5 @@
 node_modules
 patchies
 patchies-server
+cli/patchies
 pb_data

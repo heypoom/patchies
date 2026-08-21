@@ -3,14 +3,29 @@ import type { Node } from '@xyflow/svelte';
 export const PATCH_REPRESENTATION_VERSION = 'patchies.representation.v1';
 
 export interface RepresentationAdapter {
-  objectType: string;
+  objectType?: string;
   dataKey: string;
   fileName: string;
   runDataKey?: string;
 }
 
 export const representationAdapters: readonly RepresentationAdapter[] = [
-  { objectType: 'glsl', dataKey: 'code', fileName: 'shader.frag', runDataKey: 'executeCode' }
+  { objectType: 'glsl', dataKey: 'code', fileName: 'shader.frag', runDataKey: 'executeCode' },
+  { objectType: 'hydra', dataKey: 'code', fileName: 'shader.js', runDataKey: 'executeCode' },
+  { objectType: 'p5', dataKey: 'code', fileName: 'sketch.js', runDataKey: 'executeCode' },
+  { objectType: 'shaderpark', dataKey: 'code', fileName: 'sketch.js', runDataKey: 'executeCode' },
+  { objectType: 'chuck~', dataKey: 'expr', fileName: 'code.ck', runDataKey: 'executeCode' },
+  { objectType: 'asm', dataKey: 'code', fileName: 'code.asm', runDataKey: 'executeCode' },
+  { objectType: 'csound~', dataKey: 'expr', fileName: 'score.csd', runDataKey: 'executeCode' },
+  { objectType: 'expr', dataKey: 'expr', fileName: 'expr.js', runDataKey: 'executeCode' },
+  { objectType: 'filter', dataKey: 'expr', fileName: 'expr.js', runDataKey: 'executeCode' },
+  { objectType: 'map', dataKey: 'expr', fileName: 'expr.js', runDataKey: 'executeCode' },
+  { objectType: 'tap', dataKey: 'expr', fileName: 'expr.js', runDataKey: 'executeCode' },
+  { objectType: 'scan', dataKey: 'expr', fileName: 'expr.js', runDataKey: 'executeCode' },
+  { objectType: 'uniq', dataKey: 'expr', fileName: 'expr.js', runDataKey: 'executeCode' },
+  { objectType: 'peek', dataKey: 'expr', fileName: 'expr.js', runDataKey: 'executeCode' },
+  { dataKey: 'code', fileName: 'code.js', runDataKey: 'executeCode' },
+  { dataKey: 'expr', fileName: 'expr.txt', runDataKey: 'executeCode' }
 ];
 
 export interface RepresentationObject {
@@ -62,7 +77,7 @@ export const applyRepresentationFileWrite = (
   const node = nodes.find((candidate) => candidate.id === nodeId);
   if (!node?.type) return { status: 'unsupported' };
 
-  const adapter = findAdapter(node.type, fileName);
+  const adapter = findAdapter(node, fileName);
   const value = adapter ? node.data[adapter.dataKey] : undefined;
   if (!adapter || typeof value !== 'string') return { status: 'unsupported' };
 
@@ -82,9 +97,9 @@ export const applyRepresentationFileWrite = (
 const buildObjectRepresentation = (node: Node): RepresentationObject[] => {
   if (!node.type) return [];
 
-  const files = representationAdapters.flatMap((adapter) => {
+  const files = adaptersForNode(node).flatMap((adapter) => {
     const value = node.data[adapter.dataKey];
-    if (adapter.objectType !== node.type || typeof value !== 'string') return [];
+    if (typeof value !== 'string') return [];
 
     return [[adapter.fileName, value] as const];
   });
@@ -105,7 +120,16 @@ const buildObjectRepresentation = (node: Node): RepresentationObject[] => {
   ];
 };
 
-const findAdapter = (objectType: string, fileName: string) =>
-  representationAdapters.find(
-    (adapter) => adapter.objectType === objectType && adapter.fileName === fileName
+const findAdapter = (node: Node, fileName: string) =>
+  adaptersForNode(node).find((adapter) => adapter.fileName === fileName);
+
+const adaptersForNode = (node: Node): RepresentationAdapter[] =>
+  representationAdapters.filter(
+    (adapter) =>
+      adapter.objectType === node.type ||
+      (!adapter.objectType &&
+        !representationAdapters.some(
+          (specificAdapter) =>
+            specificAdapter.objectType === node.type && specificAdapter.dataKey === adapter.dataKey
+        ))
   );
