@@ -42,9 +42,12 @@ You can the program's composition and in-between results such as audio, video an
 Choose the option that works for you:
 
 1. **Use the hosted app:** Open [patchies.app](https://patchies.app) and get patching.
-2. **Host Patchies with Docker.** Build the included Dockerfile and run the image:
+2. **Host Patchies with Docker.** Run the [published Docker image](https://hub.docker.com/r/phoomparin/patchies), or build the included Dockerfile yourself:
 
    ```bash
+   docker run --rm -p 8090:8090 -v patchies-data:/app/pb_data phoomparin/patchies:latest
+
+   # Or build locally first
    just docker-build
    docker run --rm -p 8090:8090 -v patchies-data:/app/pb_data patchies
    ```

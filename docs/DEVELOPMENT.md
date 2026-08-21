@@ -40,6 +40,15 @@ just build
 
 Recipes accept overrides, for example `just docker-build ghcr.io/heypoom/patchies` and `just build dist/patchies`.
 
+## Docker images
+
+GitHub Actions publishes multi-architecture (`linux/amd64` and `linux/arm64`) images to [Docker Hub](https://hub.docker.com/r/phoomparin/patchies). Commits to `main` update `phoomparin/patchies:latest`; version tags publish a matching version tag, such as `phoomparin/patchies:v1.0.0`.
+
+```bash
+docker pull phoomparin/patchies:latest
+docker run --rm -p 8090:8090 -v patchies-data:/app/pb_data phoomparin/patchies:latest
+```
+
 ## Releases
 
-Pushing a version tag such as `v1.0.0` publishes standalone Linux, macOS, and Windows binaries to [GitHub Releases](https://github.com/heypoom/patchies/releases), along with a multi-architecture container image at `ghcr.io/heypoom/patchies:v1.0.0`.
+Pushing a version tag such as `v1.0.0` publishes standalone Linux, macOS, and Windows binaries to [GitHub Releases](https://github.com/heypoom/patchies/releases), along with multi-architecture container images at `phoomparin/patchies:v1.0.0` on Docker Hub and `ghcr.io/heypoom/patchies:v1.0.0` on GitHub Container Registry.
