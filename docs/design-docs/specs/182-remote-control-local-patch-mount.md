@@ -123,6 +123,14 @@ revision updates. Custom encoders, binary assets, and editable metadata are
 deferred. Deleting or renaming a represented file restores it; unknown files
 are ignored with a diagnostic.
 
+The default adapter set represents every node with a string `data.code` as
+`code.js` and every node with a string `data.expr` as `expr.txt`. JS-expression
+objects (`expr`, `filter`, `map`, `tap`, `scan`, `uniq`, and `peek`) use
+`expr.js`. Object-specific adapters override those defaults when a
+language-specific name is available: GLSL uses `shader.frag`; Hydra uses
+`shader.js`; p5 and Shader Park use `sketch.js`; ChucK uses `code.ck`; Assembly
+uses `code.asm`; and Csound uses `score.csd`.
+
 ## Synchronization and History
 
 The browser sends an Authoritative Snapshot only on attach and reclaim. After
