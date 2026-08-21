@@ -8,12 +8,16 @@ import (
 )
 
 type Operation struct {
-	Path     string
-	Content  string
-	Revision int64
+	BrowserGeneration string
+	ClientID          string
+	Path              string
+	Content           string
+	Revision          int64
 }
 
 type Queue struct {
+	active     bool
+	clientID   string
 	generation string
 	inFlight   *Operation
 	mu         sync.Mutex
@@ -21,11 +25,9 @@ type Queue struct {
 	revision   int64
 }
 
-func New(browserGeneration string, patchRevision int64) *Queue {
+func New() *Queue {
 	return &Queue{
-		generation: browserGeneration,
-		pending:    make(map[string]string),
-		revision:   patchRevision,
+		pending: make(map[string]string),
 	}
 }
 
@@ -40,7 +42,7 @@ func (q *Queue) Next() (Operation, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	if q.inFlight != nil || len(q.pending) == 0 {
+	if !q.active || q.inFlight != nil || len(q.pending) == 0 {
 		return Operation{}, false
 	}
 
@@ -51,11 +53,40 @@ func (q *Queue) Next() (Operation, bool) {
 	sort.Strings(paths)
 
 	path := paths[0]
-	operation := Operation{Path: path, Content: q.pending[path], Revision: q.revision}
+	operation := Operation{
+		BrowserGeneration: q.generation,
+		ClientID:          q.clientID,
+		Path:              path,
+		Content:           q.pending[path],
+		Revision:          q.revision,
+	}
 	delete(q.pending, path)
 	q.inFlight = &operation
 
 	return operation, true
+}
+
+func (q *Queue) Activate(browserGeneration, clientID string, patchRevision int64) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.generation = browserGeneration
+	q.clientID = clientID
+	q.revision = patchRevision
+	q.active = true
+}
+
+func (q *Queue) Disconnect() {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if q.inFlight != nil {
+		q.pending[q.inFlight.Path] = q.inFlight.Content
+		q.inFlight = nil
+	}
+
+	q.active = false
+	q.clientID = ""
 }
 
 func (q *Queue) Acknowledge(patchRevision int64) {

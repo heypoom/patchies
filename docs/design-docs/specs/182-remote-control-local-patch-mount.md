@@ -135,9 +135,12 @@ uses `code.asm`; and Csound uses `score.csd`.
 
 The browser sends an Authoritative Snapshot only on attach and reclaim. After
 that baseline, it publishes revisioned per-object representation updates or
-removals; it never sends the full graph for ordinary code edits. The CLI uses
-atomic writes and suppresses its own watcher events, accepting saves only after
-snapshot completion.
+removals for browser-originated edits; it never sends the full graph for
+ordinary code edits. An accepted CLI save returns its canonical object in the
+operation acknowledgement event, so that path uses one browser-to-relay POST
+rather than a separate object publish. The CLI uses atomic writes and
+suppresses its own watcher events, accepting saves only after snapshot
+completion.
 
 The watcher settles each path for about 200 ms and handles atomic-save rename
 patterns. While disconnected it keeps only the latest settled value per file.

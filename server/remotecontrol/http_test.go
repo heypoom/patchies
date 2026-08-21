@@ -53,6 +53,17 @@ func TestHTTPHandlerOperationAcknowledgementControlsRevision(t *testing.T) {
 		"browserGeneration": "browser-1",
 		"patchRevision":     1,
 		"applied":           true,
+		"objectId":          "glsl-24",
+		"object": map[string]any{
+			"id": "glsl-24",
+			"metadata": map[string]any{
+				"format":     "patchies.representation.v1",
+				"id":         "glsl-24",
+				"objectType": "glsl",
+				"files":      []string{"shader.frag"},
+			},
+			"files": map[string]string{"shader.frag": "void main() {}"},
+		},
 	})
 	if acknowledged.Code != http.StatusOK {
 		t.Fatalf("acknowledge status = %d, want %d: %s", acknowledged.Code, http.StatusOK, acknowledged.Body.String())
@@ -62,6 +73,9 @@ func TestHTTPHandlerOperationAcknowledgementControlsRevision(t *testing.T) {
 	decodeResponse(t, acknowledged, &result)
 	if !result.Terminal || !result.Applied || result.PatchRevision != 1 {
 		t.Fatalf("acknowledged result = %#v, want applied revision 1", result)
+	}
+	if result.ObjectID != "glsl-24" || len(result.Object) == 0 {
+		t.Fatalf("acknowledged result = %#v, want canonical object", result)
 	}
 }
 

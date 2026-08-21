@@ -218,17 +218,29 @@ export class BrowserRemoteControlService {
 
       const applied = write.status === 'applied';
       const patchRevision = applied ? this.patchRevision + 1 : this.patchRevision;
+      const object = applied
+        ? buildObjectRepresentations(this.options.nodes()).find(
+            (candidate) => candidate.id === write.nodeId
+          )
+        : undefined;
+      if (applied && !object)
+        throw new Error(`Remote Control could not represent updated object ${write.nodeId}`);
       const result = await this.request(
         `/api/remote-control/sessions/${this.requireCredentials().sessionId}/operations/${operation.operationId}/ack`,
         {
           method: 'POST',
-          body: { browserGeneration: this.browserGeneration, patchRevision, applied }
+          body: {
+            browserGeneration: this.browserGeneration,
+            patchRevision,
+            applied,
+            ...(object ? { objectId: object.id, object } : {})
+          }
         }
       );
 
       if (applied) {
         this.patchRevision = patchRevision;
-        await this.publishObjectChanges(false);
+        if (object) this.objectSignatures.set(object.id, JSON.stringify(object));
         this.persistSession();
       }
 
