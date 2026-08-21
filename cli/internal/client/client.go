@@ -36,10 +36,12 @@ type OperationRequest struct {
 }
 
 type OperationResult struct {
-	OperationID   string `json:"operationId"`
-	PatchRevision int64  `json:"patchRevision"`
-	Applied       bool   `json:"applied"`
-	Terminal      bool   `json:"terminal"`
+	OperationID   string          `json:"operationId"`
+	PatchRevision int64           `json:"patchRevision"`
+	Applied       bool            `json:"applied"`
+	Terminal      bool            `json:"terminal"`
+	ObjectID      string          `json:"objectId,omitempty"`
+	Object        json.RawMessage `json:"object,omitempty"`
 }
 
 type Event struct {

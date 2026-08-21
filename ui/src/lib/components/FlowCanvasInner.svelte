@@ -226,6 +226,8 @@
     historyManager.record(
       new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
     );
+
+    remoteControl.scheduleCurrentPatchSync();
   };
 
   const syncViewportPausedCommit = (nodeId: string, dataKey: string, newValue: unknown): void => {

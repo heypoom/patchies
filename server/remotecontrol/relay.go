@@ -44,17 +44,21 @@ type OperationRequest struct {
 }
 
 type OperationResult struct {
-	OperationID   string `json:"operationId"`
-	PatchRevision int64  `json:"patchRevision"`
-	Applied       bool   `json:"applied"`
-	Terminal      bool   `json:"terminal"`
+	OperationID   string          `json:"operationId"`
+	PatchRevision int64           `json:"patchRevision"`
+	Applied       bool            `json:"applied"`
+	Terminal      bool            `json:"terminal"`
+	ObjectID      string          `json:"objectId,omitempty"`
+	Object        json.RawMessage `json:"object,omitempty"`
 }
 
 type OperationAcknowledgement struct {
-	OperationID       string `json:"operationId"`
-	BrowserGeneration string `json:"browserGeneration"`
-	PatchRevision     int64  `json:"patchRevision"`
-	Applied           bool   `json:"applied"`
+	OperationID       string          `json:"operationId"`
+	BrowserGeneration string          `json:"browserGeneration"`
+	PatchRevision     int64           `json:"patchRevision"`
+	Applied           bool            `json:"applied"`
+	ObjectID          string          `json:"objectId,omitempty"`
+	Object            json.RawMessage `json:"object,omitempty"`
 }
 
 type SnapshotRequest struct {
@@ -296,8 +300,13 @@ func (r *Relay) AcknowledgeOperation(sessionID, secret string, acknowledgement O
 		if acknowledgement.PatchRevision <= session.patchRevision {
 			return OperationResult{}, ErrRevisionConflict
 		}
+		if acknowledgement.ObjectID == "" || !json.Valid(acknowledgement.Object) {
+			return OperationResult{}, errors.New("applied operation acknowledgement requires a valid object")
+		}
 
 		session.patchRevision = acknowledgement.PatchRevision
+		result.ObjectID = acknowledgement.ObjectID
+		result.Object = append(result.Object[:0], acknowledgement.Object...)
 	}
 
 	result.PatchRevision = session.patchRevision

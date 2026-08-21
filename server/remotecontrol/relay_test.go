@@ -216,6 +216,8 @@ func TestRelayRejectsStaleGenerationAndRevision(t *testing.T) {
 		BrowserGeneration: "browser-1",
 		PatchRevision:     1,
 		Applied:           true,
+		ObjectID:          "glsl-24",
+		Object:            json.RawMessage(`{"id":"glsl-24","files":{"shader.frag":"void main() {}"}}`),
 	})
 	if err != nil {
 		t.Fatalf("acknowledge operation: %v", err)
@@ -223,6 +225,9 @@ func TestRelayRejectsStaleGenerationAndRevision(t *testing.T) {
 
 	if result.PatchRevision != 1 || !result.Applied || !result.Terminal {
 		t.Fatalf("result = %#v, want an applied terminal revision 1", result)
+	}
+	if result.ObjectID != "glsl-24" || string(result.Object) == "" {
+		t.Fatalf("result = %#v, want canonical object representation", result)
 	}
 
 	if _, err := relay.SubmitOperation(credentials.SessionID, credentials.Secret, client.ClientID, OperationRequest{
@@ -267,7 +272,7 @@ func TestRelayReclaimAndOperationRetry(t *testing.T) {
 		t.Fatalf("retry operation: %v", err)
 	}
 
-	if retry != first || retry.Terminal {
+	if retry.OperationID != first.OperationID || retry.PatchRevision != first.PatchRevision || retry.Terminal {
 		t.Fatalf("retry result = %#v, want %#v", retry, first)
 	}
 
@@ -276,6 +281,8 @@ func TestRelayReclaimAndOperationRetry(t *testing.T) {
 		BrowserGeneration: "browser-1",
 		PatchRevision:     1,
 		Applied:           true,
+		ObjectID:          "glsl-24",
+		Object:            json.RawMessage(`{"id":"glsl-24","files":{"shader.frag":"void main() {}"}}`),
 	}); err != nil {
 		t.Fatalf("acknowledge operation: %v", err)
 	}
