@@ -7,6 +7,7 @@
     Image,
     MonitorUp,
     Network,
+    Radio,
     Settings2,
     SlidersHorizontal,
     Timer,
@@ -21,13 +22,22 @@
   import VisualSettings from './categories/VisualSettings.svelte';
   import TransportSettings from './categories/TransportSettings.svelte';
   import NetworkSettings from './categories/NetworkSettings.svelte';
+  import RemoteControlSettings from './categories/RemoteControlSettings.svelte';
 
   let {
     open = $bindable(false),
-    initialCategory = 'general' as SettingsCategory
+    initialCategory = 'general' as SettingsCategory,
+    remoteControlEnabled = false,
+    remoteControlMountCommand = null,
+    onEnableRemoteControl,
+    onDisableRemoteControl
   }: {
     open?: boolean;
     initialCategory?: SettingsCategory;
+    remoteControlEnabled?: boolean;
+    remoteControlMountCommand?: string | null;
+    onEnableRemoteControl?: () => Promise<void>;
+    onDisableRemoteControl?: () => void;
   } = $props();
 
   const CATEGORY_ICONS = {
@@ -38,7 +48,8 @@
     debug: Bug,
     visual: Image,
     transport: Timer,
-    network: Network
+    network: Network,
+    'remote-control': Radio
   };
 
   function getInitialCategory() {
@@ -312,6 +323,13 @@
                 <TransportSettings />
               {:else if activeCategory === 'network'}
                 <NetworkSettings />
+              {:else if activeCategory === 'remote-control'}
+                <RemoteControlSettings
+                  enabled={remoteControlEnabled}
+                  mountCommand={remoteControlMountCommand}
+                  onEnable={onEnableRemoteControl ?? (async () => {})}
+                  onDisable={onDisableRemoteControl ?? (() => {})}
+                />
               {/if}
             </section>
           </div>

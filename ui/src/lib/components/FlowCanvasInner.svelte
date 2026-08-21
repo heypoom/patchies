@@ -36,6 +36,7 @@
     sidebarWidth,
     sidebarView,
     patchObjectTypes,
+    currentPatchId,
     currentPatchName,
     helpModeObject,
     selectedNodeInfo,
@@ -103,6 +104,7 @@
   import { logger } from '$lib/utils/logger';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
   import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
+  import { BrowserRemoteControlService } from '$lib/remote-control/browser-service';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -125,6 +127,7 @@
     DeleteNodesCommand,
     ReplaceNodesCommand,
     UpdateNodeDataCommand,
+    ApplyRemoteFileCommand,
     UpdateObjectDataCommand,
     AddEdgeCommand,
     DeleteEdgesCommand,
@@ -172,6 +175,30 @@
 
   // Alias for convenience (used by history commands)
   const canvasAccessors = canvasContext.canvasAccessors;
+  let isRemoteControlEnabled = $state(false);
+
+  const remoteControl = new BrowserRemoteControlService({
+    patchId: () => $currentPatchId,
+    nodes: () => nodes,
+    applyFileWrite: (write) => {
+      historyManager.execute(
+        new ApplyRemoteFileCommand(
+          write.nodeId,
+          write.dataKey,
+          write.oldValue,
+          write.newValue,
+          write.runDataKey,
+          canvasAccessors
+        )
+      );
+    },
+    onEnabledChange: (enabled) => (isRemoteControlEnabled = enabled)
+  });
+
+  $effect(() => {
+    nodes;
+    remoteControl.scheduleCurrentPatchSync();
+  });
 
   // Clipboard manager for copy/paste operations
   const clipboardManager = new ClipboardManager(canvasContext);
@@ -804,6 +831,19 @@
   };
 
   onMount(() => {
+    void remoteControl
+      .restore()
+      .then((reconnected) => {
+        if (!reconnected) return;
+
+        toast.success('Remote Control reconnected', {
+          description: 'Your local mount can continue syncing with this patch.'
+        });
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to reclaim Remote Control session', error);
+      });
+
     flowContainer?.focus();
 
     // Initialize VFS with providers
@@ -933,6 +973,7 @@
   });
 
   onDestroy(() => {
+    remoteControl.disable();
     runtime.destroy();
     runtime.cleanupDeletedNodes(nodes.map((node) => node.id));
 
@@ -1666,6 +1707,21 @@
           onBrowseObjects={openObjectBrowser}
           onSavePatch={() => (showSavePatchModal = true)}
           onExportPatch={() => (showExportPatchModal = true)}
+          onEnableRemoteControl={async () => {
+            await remoteControl.enable();
+
+            const command = remoteControl.mountCommand;
+            if (command) await navigator.clipboard.writeText(command);
+
+            toast.success('Remote Control enabled', {
+              description: 'The mount command has been copied to your clipboard.'
+            });
+          }}
+          onDisableRemoteControl={() => {
+            remoteControl.disable();
+            toast.success('Remote Control disabled');
+          }}
+          remoteControlEnabled={isRemoteControlEnabled}
           onLoadPatch={() => {
             $isSidebarOpen = true;
             $sidebarView = 'saves';
@@ -1738,7 +1794,13 @@
     />
 
     <!-- Settings Modal -->
-    <SettingsModal bind:open={$isSettingsOpen} />
+    <SettingsModal
+      bind:open={$isSettingsOpen}
+      remoteControlEnabled={isRemoteControlEnabled}
+      remoteControlMountCommand={remoteControl.mountCommand}
+      onEnableRemoteControl={() => remoteControl.enable()}
+      onDisableRemoteControl={() => remoteControl.disable()}
+    />
 
     <!-- AI Object Prompt Dialogs — multiple concurrent instances supported -->
     {#each aiPromptInstances as instance (instance.id)}
