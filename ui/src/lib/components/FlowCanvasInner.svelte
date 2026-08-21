@@ -40,6 +40,7 @@
     sidebarWidth,
     sidebarView,
     patchObjectTypes,
+    currentPatchId,
     currentPatchName,
     helpModeObject,
     selectedNodeInfo,
@@ -109,6 +110,7 @@
   import { logger } from '$lib/utils/logger';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
   import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
+  import { RemoteControlSyncCoordinator } from '$lib/remote-control/sync-coordinator';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -182,6 +184,17 @@
 
   // Alias for convenience (used by history commands)
   const canvasAccessors = canvasContext.canvasAccessors;
+  let isRemoteControlEnabled = $state(false);
+
+  const remoteControl = new RemoteControlSyncCoordinator({
+    patchId: () => $currentPatchId,
+    filesystem: VirtualFilesystem.getInstance(),
+    onEnabledChange: (enabled) => (isRemoteControlEnabled = enabled)
+  });
+
+  $effect(() => {
+    remoteControl.notifyPatchChanged($currentPatchId);
+  });
 
   // Clipboard manager for copy/paste operations
   const clipboardManager = new ClipboardManager(canvasContext);
@@ -211,6 +224,8 @@
       new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
     );
   };
+
+  const handleCodeChange = () => VirtualFilesystem.getInstance().objectFiles.sync(nodes);
 
   const syncViewportPausedCommit = (nodeId: string, dataKey: string, newValue: unknown): void => {
     // Viewport-pause edge cases: keep pausedByViewport consistent when the user
@@ -841,6 +856,19 @@
   };
 
   onMount(() => {
+    void remoteControl
+      .restore()
+      .then((reconnected) => {
+        if (!reconnected) return;
+
+        toast.success('Remote Control reconnected', {
+          description: 'Your local mount can continue syncing with this patch.'
+        });
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to reclaim Remote Control session', error);
+      });
+
     flowContainer?.focus();
 
     // Initialize VFS with providers
@@ -1009,6 +1037,7 @@
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.addEventListener('scatterNodes', handleScatterNodes);
     eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
+    eventBus.addEventListener('codeChange', handleCodeChange);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
     eventBus.addEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
@@ -1028,6 +1057,7 @@
   });
 
   onDestroy(() => {
+    remoteControl.dispose();
     runtime.destroy();
     runtime.cleanupDeletedNodes(nodes.map((node) => node.id));
 
@@ -1044,6 +1074,7 @@
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.removeEventListener('scatterNodes', handleScatterNodes);
     eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
+    eventBus.removeEventListener('codeChange', handleCodeChange);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
     eventBus.removeEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
@@ -1781,6 +1812,30 @@
           onBrowseObjects={openObjectBrowser}
           onSavePatch={() => (showSavePatchModal = true)}
           onExportPatch={() => (showExportPatchModal = true)}
+          onEnableRemoteControl={async () => {
+            await remoteControl.enable();
+
+            const command = remoteControl.mountCommand;
+            if (command) {
+              try {
+                await navigator.clipboard.writeText(command);
+              } catch {
+                toast.success('Remote Control enabled', {
+                  description: 'Copy the mount command from Remote Control settings.'
+                });
+                return;
+              }
+            }
+
+            toast.success('Remote Control enabled', {
+              description: 'The mount command has been copied to your clipboard.'
+            });
+          }}
+          onDisableRemoteControl={() => {
+            remoteControl.disable();
+            toast.success('Remote Control disabled');
+          }}
+          remoteControlEnabled={isRemoteControlEnabled}
           onLoadPatch={() => {
             $isSidebarOpen = true;
             $sidebarView = 'saves';
@@ -1851,7 +1906,13 @@
     />
 
     <!-- Settings Modal -->
-    <SettingsModal bind:open={$isSettingsOpen} />
+    <SettingsModal
+      bind:open={$isSettingsOpen}
+      remoteControlEnabled={isRemoteControlEnabled}
+      remoteControlMountCommand={remoteControl.mountCommand}
+      onEnableRemoteControl={() => remoteControl.enable()}
+      onDisableRemoteControl={() => remoteControl.disable()}
+    />
 
     <!-- AI Object Prompt Dialogs — multiple concurrent instances supported -->
     {#each aiPromptInstances as instance (instance.id)}
