@@ -10,7 +10,7 @@ Bundled demos are standalone JSON files in `ui/static/demos/`. Add or edit a fil
 
 It's made for creative coding: patch objects and code snippets together to explore visualizations, soundscapes and computations 🎨
 
-Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
+Ready to try Patchies? [Get started](#get-started) 😎
 
 ## Use tools and libraries you love
 
@@ -41,11 +41,36 @@ You can the program's composition and in-between results such as audio, video an
 
 <a href="https://patchies.app"><img src="./docs/images/startup-modal.webp" alt="Patchies getting started screen" width="700"></a>
 
-Open [patchies.app](https://patchies.app) and get patching.
+Choose the option that works for you:
+
+1. **Use the hosted app:** Open [patchies.app](https://patchies.app) and get patching.
+2. **Host Patchies with Docker.** Build the included Dockerfile and run the image:
+
+   ```bash
+   just docker-build
+   docker run --rm -p 8090:8090 -v patchies-data:/app/pb_data patchies
+   ```
+
+   Then open [http://localhost:8090](http://localhost:8090). The `patchies-data` volume keeps your PocketBase data between container runs.
+
+3. **Build and run a single binary.** With Bun, Go, and [just](https://github.com/casey/just) installed, build the bundled frontend and server into one executable:
+
+   ```bash
+   just build
+
+   # Store data and SQLite database in this directory
+   PATCHIES_DATA_DIR=./patchies-data
+
+   ./patchies serve --http=0.0.0.0:8090
+   ```
+
+   Then open [http://localhost:8090](http://localhost:8090). Patchies is built with Pocketbase and writes to a single SQLite database file.
+
+### Helpful Links
 
 - Play with the [demos](https://patchies.app/?startup=demos) to see what you can make with Patchies.
 - Skim the [docs](https://patchies.app/docs/adding-objects) for tutorials and object references.
-- Dunno what to make? Open [sparks](https://patchies.app/?startup=sparks) to generate patch ideas.
+- No idea what to make? Open [sparks](https://patchies.app/?startup=sparks) to generate patch ideas.
 - Follow the [Instagram](https://www.instagram.com/patchiesapp) for demos, inspirations and tutorials.
 - Join the [Discord](https://discord.gg/PpccRb2XjE) to share your creations, ask for help and chat with other patchers.
 
