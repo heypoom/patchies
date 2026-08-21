@@ -73,6 +73,41 @@ func TestNewAppUsesConfiguredDataDir(t *testing.T) {
 	}
 }
 
+func TestRuntimeIdentityFromEnvironment(t *testing.T) {
+	t.Setenv(runUIDEnv, "65532")
+	t.Setenv(runGIDEnv, "65531")
+
+	identity, err := runtimeIdentityFromEnvironment()
+	if err != nil {
+		t.Fatalf("read runtime identity: %v", err)
+	}
+
+	if identity == nil {
+		t.Fatal("runtime identity is nil")
+	}
+
+	if identity.uid != 65532 || identity.gid != 65531 {
+		t.Fatalf("runtime identity = %d:%d, want 65532:65531", identity.uid, identity.gid)
+	}
+}
+
+func TestRuntimeIdentityRequiresUIDAndGID(t *testing.T) {
+	t.Setenv(runUIDEnv, "65532")
+
+	if _, err := runtimeIdentityFromEnvironment(); err == nil {
+		t.Fatal("expected an error when only the runtime UID is configured")
+	}
+}
+
+func TestRuntimeIdentityRejectsRoot(t *testing.T) {
+	t.Setenv(runUIDEnv, "0")
+	t.Setenv(runGIDEnv, "0")
+
+	if _, err := runtimeIdentityFromEnvironment(); err == nil {
+		t.Fatal("expected an error for a root runtime identity")
+	}
+}
+
 func TestInitializePatchesCollection(t *testing.T) {
 	app := newApp(t.TempDir())
 	if err := initializeApp(app); err != nil {

@@ -1,6 +1,10 @@
 # syntax=docker/dockerfile:1
 
-FROM oven/bun:1.3.7 AS frontend
+FROM oven/bun:1.3.7 AS bun
+
+FROM node:22-bookworm-slim AS frontend
+
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 
 WORKDIR /app/ui
 
@@ -11,7 +15,7 @@ COPY ui/src/assets/vasm ./src/assets/vasm
 RUN bun install --frozen-lockfile
 
 COPY ui ./
-RUN bun run build
+RUN node ./node_modules/vite/bin/vite.js build
 
 FROM golang:1.26-alpine AS server
 
@@ -33,7 +37,8 @@ WORKDIR /app
 COPY --from=server /patchies /patchies
 COPY --from=server --chown=65532:65532 /runtime/app/pb_data /app/pb_data
 
-VOLUME ["/app/pb_data"]
+ENV PATCHIES_RUN_UID=65532
+ENV PATCHIES_RUN_GID=65532
 
 EXPOSE 8090
 

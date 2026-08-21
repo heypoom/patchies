@@ -21,6 +21,10 @@ func main() {
 	}
 
 	app := newApp(os.Getenv("PATCHIES_DATA_DIR"))
+	if err := prepareRuntimeDataDir(app.DataDir()); err != nil {
+		log.Fatal(err)
+	}
+
 	if err := initializeApp(app); err != nil {
 		log.Fatal(err)
 	}
