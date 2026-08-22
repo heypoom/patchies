@@ -525,6 +525,10 @@
               value = updatedValue;
             }
 
+            if (nodeId) {
+              PatchiesEventBus.getInstance().dispatch({ type: 'codeChange', nodeId, dataKey });
+            }
+
             // Reset flag after microtask to allow external updates
             queueMicrotask(() => {
               isInternalUpdate = false;
