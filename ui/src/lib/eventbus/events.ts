@@ -44,6 +44,7 @@ export type PatchiesEvent =
   | ObjectDataChangedEvent
   | QuickAddConfirmedEvent
   | QuickAddCancelledEvent
+  | CodeChangeEvent
   | CodeCommitEvent
   | NodeDataCommitEvent
   | NodeDataBatchCommitEvent
@@ -406,7 +407,13 @@ export interface QuickAddCancelledEvent {
   nodeId: string;
 }
 
-// Code editor events - for undo/redo tracking
+// Code editor events
+
+export interface CodeChangeEvent {
+  type: 'codeChange';
+  nodeId: string;
+  dataKey: string;
+}
 
 export interface CodeCommitEvent {
   type: 'codeCommit';
