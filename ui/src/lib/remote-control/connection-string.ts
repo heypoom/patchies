@@ -4,7 +4,7 @@ export interface ConnectionDetails {
   secret: string;
 }
 
-const CONNECTION_SCHEME = 'patchies://v1/';
+const CONNECTION_SCHEME = 'patchies://v2/';
 
 export const createConnectionString = (details: ConnectionDetails): string => {
   const payload = JSON.stringify({

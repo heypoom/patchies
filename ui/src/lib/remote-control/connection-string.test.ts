@@ -9,7 +9,7 @@ describe('remote control connection string', () => {
       secret: 'secret-value'
     });
 
-    expect(value).toMatch(/^patchies:\/\/v1\/[A-Za-z0-9_-]+$/);
+    expect(value).toMatch(/^patchies:\/\/v2\/[A-Za-z0-9_-]+$/);
     expect(value).not.toContain('secret-value');
   });
 });

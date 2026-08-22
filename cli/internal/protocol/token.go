@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const ConnectionPrefix = "patchies://v1/"
+const ConnectionPrefix = "patchies://v2/"
 
 type Connection struct {
 	InstanceURL string `json:"instanceURL"`
@@ -18,7 +18,7 @@ type Connection struct {
 
 func ParseConnection(value string) (Connection, error) {
 	if !strings.HasPrefix(value, ConnectionPrefix) {
-		return Connection{}, errors.New("token must use the patchies://v1/ format")
+		return Connection{}, errors.New("token must use the patchies://v2/ format")
 	}
 
 	payload, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(value, ConnectionPrefix))

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestHTTPHandlerOperationAcknowledgementControlsRevision(t *testing.T) {
+func TestHTTPHandlerCanonicalCommitControlsRevision(t *testing.T) {
 	handler := NewHTTPHandler(NewRelay())
 
 	created := serveJSON(t, handler, http.MethodPost, "/api/remote-control/sessions", "", map[string]string{
@@ -35,7 +35,7 @@ func TestHTTPHandlerOperationAcknowledgementControlsRevision(t *testing.T) {
 		"clientId":          client.ClientID,
 		"operationId":       "operation-1",
 		"browserGeneration": "browser-1",
-		"patchRevision":     0,
+		"baseRevision":      0,
 		"path":              "glsl-24/shader.frag",
 		"content":           "void main() {}",
 	})
@@ -45,37 +45,41 @@ func TestHTTPHandlerOperationAcknowledgementControlsRevision(t *testing.T) {
 
 	var pendingResult OperationResult
 	decodeResponse(t, pending, &pendingResult)
-	if pendingResult.Terminal || pendingResult.PatchRevision != 0 {
-		t.Fatalf("pending result = %#v, want non-terminal revision 0", pendingResult)
+	if pendingResult.Terminal {
+		t.Fatalf("pending result = %#v, want non-terminal", pendingResult)
 	}
 
-	acknowledged := serveJSON(t, handler, http.MethodPost, "/api/remote-control/sessions/"+credentials.SessionID+"/operations/operation-1/ack", credentials.Secret, map[string]any{
+	committed := serveJSON(t, handler, http.MethodPost, "/api/remote-control/sessions/"+credentials.SessionID+"/commits", credentials.Secret, map[string]any{
+		"commitId":          "commit-1",
+		"operationId":       "operation-1",
 		"browserGeneration": "browser-1",
-		"patchRevision":     1,
+		"baseRevision":      0,
 		"applied":           true,
-		"objectId":          "glsl-24",
-		"object": map[string]any{
-			"id": "glsl-24",
-			"metadata": map[string]any{
-				"format":     "patchies.representation.v1",
-				"id":         "glsl-24",
-				"objectType": "glsl",
-				"files":      []string{"shader.frag"},
+		"changes": []map[string]any{{
+			"objectId": "glsl-24",
+			"object": map[string]any{
+				"id": "glsl-24",
+				"metadata": map[string]any{
+					"format":     "patchies.representation.v1",
+					"id":         "glsl-24",
+					"objectType": "glsl",
+					"files":      []string{"shader.frag"},
+				},
+				"files": map[string]string{"shader.frag": "void main() {}"},
 			},
-			"files": map[string]string{"shader.frag": "void main() {}"},
-		},
+		}},
 	})
-	if acknowledged.Code != http.StatusOK {
-		t.Fatalf("acknowledge status = %d, want %d: %s", acknowledged.Code, http.StatusOK, acknowledged.Body.String())
+	if committed.Code != http.StatusOK {
+		t.Fatalf("commit status = %d, want %d: %s", committed.Code, http.StatusOK, committed.Body.String())
 	}
 
-	var result OperationResult
-	decodeResponse(t, acknowledged, &result)
-	if !result.Terminal || !result.Applied || result.PatchRevision != 1 {
-		t.Fatalf("acknowledged result = %#v, want applied revision 1", result)
+	var result CanonicalCommit
+	decodeResponse(t, committed, &result)
+	if !result.Applied || result.PatchRevision != 1 {
+		t.Fatalf("canonical commit = %#v, want applied revision 1", result)
 	}
-	if result.ObjectID != "glsl-24" || len(result.Object) == 0 {
-		t.Fatalf("acknowledged result = %#v, want canonical object", result)
+	if result.OperationID != "operation-1" || len(result.Changes) != 1 {
+		t.Fatalf("canonical commit = %#v, want operation and object change", result)
 	}
 }
 

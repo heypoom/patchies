@@ -7,12 +7,15 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v5"
 )
 
-const ProtocolVersion = "patchies.remote-control.v1"
+const ProtocolVersion = "patchies.remote-control.v2"
+const maxProtocolPayload = 64 << 20
 
 type HTTPHandler struct {
 	app   *echo.Echo
@@ -49,7 +52,7 @@ func (strictJSONBinder) Bind(c *echo.Context, target any) error {
 	}
 
 	request := c.Request()
-	request.Body = http.MaxBytesReader(c.Response(), request.Body, 16<<20)
+	request.Body = http.MaxBytesReader(c.Response(), request.Body, maxProtocolPayload)
 	defer request.Body.Close()
 
 	decoder := json.NewDecoder(request.Body)
@@ -111,13 +114,12 @@ func NewHTTPHandler(relay *Relay) *HTTPHandler {
 		handler.publishSnapshot(c.Response(), c.Request(), c.Param("sessionId"), body)
 		return nil
 	})
-	sessions.POST("/:sessionId/objects/:objectId", func(c *echo.Context) error {
-		var body ObjectUpdateRequest
+	sessions.POST("/:sessionId/commits", func(c *echo.Context) error {
+		var body CommitRequest
 		if !handler.bindJSON(c, &body) {
 			return nil
 		}
-		body.ObjectID = c.Param("objectId")
-		handler.publishObject(c.Response(), c.Request(), c.Param("sessionId"), body)
+		handler.publishCommit(c.Response(), c.Request(), c.Param("sessionId"), body)
 		return nil
 	})
 	sessions.GET("/:sessionId/browser/events", func(c *echo.Context) error {
@@ -134,14 +136,6 @@ func NewHTTPHandler(relay *Relay) *HTTPHandler {
 			return nil
 		}
 		handler.submitOperation(c.Response(), c.Request(), c.Param("sessionId"), body)
-		return nil
-	})
-	sessions.POST("/:sessionId/operations/:operationId/ack", func(c *echo.Context) error {
-		var body OperationAcknowledgement
-		if !handler.bindJSON(c, &body) {
-			return nil
-		}
-		handler.acknowledgeOperation(c.Response(), c.Request(), c.Param("sessionId"), c.Param("operationId"), body)
 		return nil
 	})
 
@@ -175,13 +169,14 @@ func (h *HTTPHandler) publishSnapshot(response http.ResponseWriter, request *htt
 	response.WriteHeader(http.StatusNoContent)
 }
 
-func (h *HTTPHandler) publishObject(response http.ResponseWriter, request *http.Request, sessionID string, body ObjectUpdateRequest) {
-	if err := h.relay.PublishObject(sessionID, bearerToken(request), body); err != nil {
+func (h *HTTPHandler) publishCommit(response http.ResponseWriter, request *http.Request, sessionID string, body CommitRequest) {
+	commit, err := h.relay.PublishCommit(sessionID, bearerToken(request), body)
+	if err != nil {
 		h.writeRelayError(response, err)
 		return
 	}
 
-	response.WriteHeader(http.StatusNoContent)
+	h.writeJSON(response, http.StatusOK, commit)
 }
 
 func (h *HTTPHandler) browserEvents(response http.ResponseWriter, request *http.Request, sessionID string) {
@@ -190,7 +185,13 @@ func (h *HTTPHandler) browserEvents(response http.ResponseWriter, request *http.
 		return
 	}
 
-	events, stop, err := h.relay.SubscribeBrowser(sessionID, bearerToken(request))
+	afterEventID, err := lastEventID(request)
+	if err != nil {
+		h.writeError(response, http.StatusBadRequest, "invalid_last_event_id", err.Error())
+		return
+	}
+
+	events, stop, err := h.relay.SubscribeBrowser(sessionID, bearerToken(request), afterEventID)
 	if err != nil {
 		h.writeRelayError(response, err)
 		return
@@ -206,7 +207,13 @@ func (h *HTTPHandler) clientEvents(response http.ResponseWriter, request *http.R
 		return
 	}
 
-	events, stop, err := h.relay.SubscribeClient(sessionID, bearerToken(request), request.URL.Query().Get("clientId"))
+	afterEventID, err := lastEventID(request)
+	if err != nil {
+		h.writeError(response, http.StatusBadRequest, "invalid_last_event_id", err.Error())
+		return
+	}
+
+	events, stop, err := h.relay.SubscribeClient(sessionID, bearerToken(request), request.URL.Query().Get("clientId"), afterEventID)
 	if err != nil {
 		h.writeRelayError(response, err)
 		return
@@ -226,18 +233,31 @@ func (h *HTTPHandler) streamEvents(response http.ResponseWriter, request *http.R
 	if err := http.NewResponseController(response).Flush(); err != nil {
 		return
 	}
+	heartbeat := time.NewTicker(15 * time.Second)
+	defer heartbeat.Stop()
 
 	for {
 		select {
 		case <-request.Context().Done():
 			return
-		case event := <-events:
+		case <-heartbeat.C:
+			if _, err := fmt.Fprint(response, ": keep-alive\n\n"); err != nil {
+				return
+			}
+			if err := http.NewResponseController(response).Flush(); err != nil {
+				return
+			}
+		case event, ok := <-events:
+			if !ok {
+				return
+			}
+
 			payload, err := json.Marshal(event.Data)
 			if err != nil {
 				continue
 			}
 
-			if _, err := fmt.Fprintf(response, "event: %s\ndata: %s\n\n", event.Type, payload); err != nil {
+			if _, err := fmt.Fprintf(response, "id: %d\nevent: %s\ndata: %s\n\n", event.ID, event.Type, payload); err != nil {
 				return
 			}
 
@@ -306,18 +326,6 @@ func (h *HTTPHandler) submitOperation(response http.ResponseWriter, request *htt
 	h.writeJSON(response, http.StatusAccepted, result)
 }
 
-func (h *HTTPHandler) acknowledgeOperation(response http.ResponseWriter, request *http.Request, sessionID, operationID string, acknowledgement OperationAcknowledgement) {
-	acknowledgement.OperationID = operationID
-
-	result, err := h.relay.AcknowledgeOperation(sessionID, bearerToken(request), acknowledgement)
-	if err != nil {
-		h.writeRelayError(response, err)
-		return
-	}
-
-	h.writeJSON(response, http.StatusOK, result)
-}
-
 func (h *HTTPHandler) bindJSON(c *echo.Context, target any) bool {
 	if err := c.Bind(target); err != nil {
 		h.writeError(c.Response(), http.StatusBadRequest, "invalid_request", "invalid remote control request")
@@ -345,6 +353,8 @@ func (h *HTTPHandler) writeRelayError(response http.ResponseWriter, err error) {
 		h.writeError(response, http.StatusConflict, "revision_conflict", err.Error())
 	case errors.Is(err, ErrOperationNotFound):
 		h.writeError(response, http.StatusNotFound, "operation_not_found", err.Error())
+	case errors.Is(err, ErrReplayUnavailable):
+		h.writeError(response, http.StatusConflict, "replay_unavailable", err.Error())
 	default:
 		h.writeError(response, http.StatusBadRequest, "invalid_request", err.Error())
 	}
@@ -367,4 +377,18 @@ func (h *HTTPHandler) writeJSON(response http.ResponseWriter, status int, body a
 
 func bearerToken(request *http.Request) string {
 	return strings.TrimSpace(strings.TrimPrefix(request.Header.Get("Authorization"), "Bearer "))
+}
+
+func lastEventID(request *http.Request) (int64, error) {
+	value := strings.TrimSpace(request.Header.Get("Last-Event-ID"))
+	if value == "" {
+		return 0, nil
+	}
+
+	eventID, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || eventID < 0 {
+		return 0, errors.New("Last-Event-ID must be a non-negative integer")
+	}
+
+	return eventID, nil
 }

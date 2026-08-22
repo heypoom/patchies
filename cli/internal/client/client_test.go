@@ -10,7 +10,7 @@ import (
 
 func TestParseEventStream(t *testing.T) {
 	var events []Event
-	err := parseEventStream(strings.NewReader("event: session.snapshot\ndata: {\"patchRevision\":0}\n\nevent: snapshot.published\ndata: {\"patchRevision\":1}\n\n"), func(event Event) error {
+	err := parseEventStream(strings.NewReader("id: 4\nevent: snapshot.published\ndata: {\"patchRevision\":0}\n\nid: 5\nevent: commit.published\ndata: {\"patchRevision\":1}\n\n"), func(event Event) error {
 		events = append(events, event)
 		return nil
 	})
@@ -18,7 +18,7 @@ func TestParseEventStream(t *testing.T) {
 		t.Fatalf("parse event stream: %v", err)
 	}
 
-	if len(events) != 2 || events[0].Type != "session.snapshot" || string(events[1].Data) != `{"patchRevision":1}` {
+	if len(events) != 2 || events[0].ID != 4 || events[0].Type != "snapshot.published" || events[1].ID != 5 || string(events[1].Data) != `{"patchRevision":1}` {
 		t.Fatalf("events = %#v", events)
 	}
 }

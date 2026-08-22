@@ -15,16 +15,14 @@ alive.
 
 ## Scope
 
-V1 represents code-bearing objects only, starting with GLSL. It provides a
-configuration-based adapter contract for later text-code objects.
-
-V1 excludes editable patch-graph files, binary assets, non-empty mount paths,
+The first release represents code-bearing objects through a configuration-based
+adapter contract. It excludes editable patch-graph files, binary assets, non-empty mount paths,
 background mounts without a reclaimed browser, and concurrent mutating clients.
 
 ## Artist Workflow
 
 1. Choose **Enable Remote control** in the command palette.
-2. Copy and run `patchies mount --token patchies://v1/<opaque-payload> --path
+2. Copy and run `patchies mount --token patchies://v2/<opaque-payload> --path
    ./spectral-garden` with an absent or empty directory.
 3. The directory appears and receives the Patch Representation.
 4. Saving `glsl-24/shader.frag` applies one `Apply remote file` undo command.
@@ -37,7 +35,7 @@ background mounts without a reclaimed browser, and concurrent mutating clients.
 The Connection String is a versioned opaque value:
 
 ```text
-patchies://v1/<base64url payload>
+patchies://v2/<base64url payload>
 ```
 
 It contains the normalized instance URL and high-entropy bearer secret. The
@@ -48,16 +46,15 @@ Enabling Remote control creates a session bound to the currently loaded patch.
 It lasts until the artist disables it or the server exits. A session allows one
 Mutating Client.
 
-Every envelope contains:
+The session handshake advertises `patchies.remote-control.v2`. Mutating
+requests carry the generation and revision information needed to serialize
+them, for example:
 
 ```json
 {
-  "protocolVersion": 1,
-  "sessionId": "opaque-server-session-id",
-  "patchId": "browser-patch-id",
   "browserGeneration": "uuid-created-on-page-load",
   "operationId": "uuid-created-by-sender",
-  "patchRevision": 42
+  "baseRevision": 42
 }
 ```
 
@@ -65,10 +62,10 @@ After a reload, the browser automatically tries to reclaim its persisted
 session. A successful reclaim gets a new Browser Generation, publishes an
 Authoritative Snapshot before the CLI may write, and shows a reconnection
 success toast. The relay rejects mismatched session, patch, generation, and
-stale operations; it never retargets a write to another patch.
+future-revision operations; it never retargets a write to another patch.
 
-The handshake advertises protocol versions and coarse capabilities. V1 offers
-mount/file sync. Future CLI and MCP operations use this envelope but v1 does
+The handshake advertises protocol versions and coarse capabilities. V2 offers
+mount/file sync. Future CLI and MCP operations use this envelope but v2 does
 not define their catalog or fine-grained scopes.
 
 ## Relay Transport
@@ -81,13 +78,38 @@ PocketBase record realtime subscriptions as the broker.
 | --- | --- | --- |
 | Relay → browser | SSE | Deliver CLI operations to the authoritative browser |
 | Relay → CLI | SSE | Deliver snapshots and browser representation events |
-| Browser → relay | HTTP POST | Reclaim, snapshot, and operation acknowledgement |
+| Browser → relay | HTTP POST | Reclaim, snapshots, and canonical commits |
 | CLI → relay | Bearer-authenticated HTTP POST | Attach and submit Remote File Operations |
 
 SSE uses relay sequence IDs and `Last-Event-ID` for resume. Patch Revision
-orders patch content. The relay sends heartbeats, flushes events, retains a
-bounded event buffer and terminal operation results, and only relays—the browser
-alone mutates Patchies state.
+orders canonical patch content independently from transport sequence. The relay
+flushes events and retains a bounded replay log. A slow or disconnected
+consumer is disconnected and resumes from its last sequence; the relay never
+silently drops an event. If the requested sequence is no longer retained, a
+fresh client attachment makes the browser publish a new Authoritative Snapshot
+before the CLI resumes writes.
+
+The relay only coordinates transport and ordering. The browser alone mutates
+Patchies state and publishes Canonical Commits. Both browser-originated edits
+and accepted Remote File Operations use one commit envelope:
+
+```json
+{
+  "commitId": "browser-generated-uuid",
+  "operationId": "present-for-a-remote-file-operation",
+  "browserGeneration": "current-browser-generation",
+  "baseRevision": 41,
+  "patchRevision": 42,
+  "applied": true,
+  "changes": [
+    { "objectId": "glsl-24", "object": { "id": "glsl-24", "files": {} } }
+  ]
+}
+```
+
+An unapplied operation resolves with `applied: false`, no changes, and no
+revision advance. Every applied commit advances Patch Revision by exactly one,
+regardless of how many represented objects changed.
 
 ## Patch Representation
 
@@ -102,9 +124,9 @@ glsl-24/
 
 Tools discover represented objects by scanning directories. `patchies.json`
 contains representation format/version and patch identity. Generated,
-read-only `patchies.object.json` identifies object type, adapter version,
-represented mappings, and content revision/hash. Metadata edits are restored,
-not applied as mutations.
+read-only `patchies.object.json` identifies the representation format, object
+type, and represented filenames. Metadata edits are restored, not applied as
+mutations.
 
 An object-owned Representation Adapter declaratively maps UTF-8 text files to
 named node-data fields:
@@ -133,19 +155,43 @@ uses `code.asm`; and Csound uses `score.csd`.
 
 ## Synchronization and History
 
-The browser sends an Authoritative Snapshot only on attach and reclaim. After
-that baseline, it publishes revisioned per-object representation updates or
-removals for browser-originated edits; it never sends the full graph for
-ordinary code edits. An accepted CLI save returns its canonical object in the
-operation acknowledgement event, so that path uses one browser-to-relay POST
-rather than a separate object publish. The CLI uses atomic writes and
-suppresses its own watcher events, accepting saves only after snapshot
-completion.
+Two deep modules own synchronization state:
+
+- The browser `RemoteControlSyncCoordinator` serializes all patch-change
+  notifications, Remote File Operations, snapshots, commits, revision changes,
+  and stream reconnection behind `enable`, `restore`, `disable`, `dispose`, and
+  `notifyPatchChanged`. Component teardown only disposes the local connection;
+  it never revokes the persistent session.
+- The CLI `MountSession` owns attachment, event replay, Patch Revision, the
+  latest-per-file operation queue, watcher suppression, filesystem projection,
+  and reconnect behavior behind one blocking `Run` operation.
+
+Patchies UI code does not publish protocol events directly. It only notifies
+the coordinator after authoritative patch state changes. Notifications are
+coalesced and the coordinator diffs current representations against its last
+committed baseline. Remote File Operations enter the same serialized work
+queue, apply through the normal history command, and publish their canonical
+result through the same commit endpoint.
+
+The browser sends an Authoritative Snapshot on attach, reclaim, or replay-gap
+recovery. After that baseline, every applied mutation emits a Canonical Commit;
+ordinary code edits never send the full graph. A CLI-originated save therefore
+uses one browser-to-relay commit POST, and Patchies-originated edits use that
+same endpoint and event shape.
+
+The CLI applies Canonical Commits atomically and marks expected filesystem
+contents before writing, so its watcher cannot reinterpret canonical writes as
+local operations. It accepts local saves only after snapshot completion. A
+Canonical Commit for an in-flight Remote File Operation both updates the mount
+and releases the next queued local save.
 
 The watcher settles each path for about 200 ms and handles atomic-save rename
 patterns. While disconnected it keeps only the latest settled value per file.
-After a reclaim snapshot it submits each as a fresh Remote File Operation;
-local content wins without replaying intermediate saves.
+After replay or a reclaim snapshot it submits each as a fresh Remote File
+Operation; local content wins without replaying intermediate saves. A request
+that was created at an older revision remains valid within the same Browser
+Generation: the coordinator serializes it after any earlier canonical commits
+and applies the latest local content on top of current browser state.
 
 Each accepted local save creates exactly one `Apply remote file` history
 command with the complete affected node-data snapshot. Undo and redo therefore
@@ -164,9 +210,9 @@ bounded and redacted: identifiers, path, event kind, duration, and outcome—no
 credentials or file contents. The CLI writes readable stderr events and
 supports `--json` for agents.
 
-Verification has focused Go relay/CLI tests, browser adapter/history tests, and
-one real integration harness that starts the embedded server, drives a browser
-with Playwright, and uses a test CLI against a temporary watched directory.
+Verification uses Go relay/CLI tests, browser coordinator/adapter/history tests,
+and one real integration harness that starts the embedded server, drives a
+browser with Playwright, and uses a test CLI against a temporary watched directory.
 Scenarios wait for explicit acknowledgements and final Patch Revision, never
 sleeps, then assert browser, filesystem, and undo history converge.
 

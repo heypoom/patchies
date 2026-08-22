@@ -54,49 +54,62 @@ func (w *Watcher) Close() error {
 	return w.watcher.Close()
 }
 
-func (w *Watcher) SetSnapshot(representation Representation) error {
+func (w *Watcher) ApplySnapshot(representation Representation) error {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	w.expected = make(map[string]string)
 	for _, object := range representation.Objects {
-		objectRoot := filepath.Join(w.root, object.ID)
-		if err := w.watcher.Add(objectRoot); err != nil {
-			return fmt.Errorf("watch object directory: %w", err)
-		}
 		for _, fileName := range object.Metadata.Files {
 			w.expected[filepath.ToSlash(filepath.Join(object.ID, fileName))] = object.Files[fileName]
 		}
 	}
+	w.mu.Unlock()
+
+	if err := ApplySnapshot(w.root, representation); err != nil {
+		return err
+	}
+	for _, object := range representation.Objects {
+		if err := w.watcher.Add(filepath.Join(w.root, object.ID)); err != nil {
+			return fmt.Errorf("watch object directory: %w", err)
+		}
+	}
 
 	return nil
 }
 
-func (w *Watcher) SetObject(object RepresentationObject) error {
+func (w *Watcher) ApplyObject(object RepresentationObject) error {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	objectRoot := filepath.Join(w.root, object.ID)
-	if err := w.watcher.Add(objectRoot); err != nil {
-		return fmt.Errorf("watch object directory: %w", err)
+	prefix := filepath.ToSlash(object.ID) + "/"
+	for path := range w.expected {
+		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
+			delete(w.expected, path)
+		}
 	}
 	for _, fileName := range object.Metadata.Files {
 		w.expected[filepath.ToSlash(filepath.Join(object.ID, fileName))] = object.Files[fileName]
 	}
+	w.mu.Unlock()
+
+	if err := ApplyObject(w.root, object); err != nil {
+		return err
+	}
+	if err := w.watcher.Add(filepath.Join(w.root, object.ID)); err != nil {
+		return fmt.Errorf("watch object directory: %w", err)
+	}
 
 	return nil
 }
 
-func (w *Watcher) RemoveObject(objectID string) {
+func (w *Watcher) RemoveObject(objectID string) error {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	prefix := filepath.ToSlash(objectID) + "/"
 	for path := range w.expected {
 		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
 			delete(w.expected, path)
 		}
 	}
+	w.mu.Unlock()
+
+	return RemoveObject(w.root, objectID)
 }
 
 func (w *Watcher) run() {
