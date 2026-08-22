@@ -8,6 +8,8 @@ Patchies is a code-first patcher for exploring computation through audio, visual
 
 It's made for creative coding: patch objects and code snippets together to explore visualizations, soundscapes and computations 🎨
 
+Prefer to watch a video? [Check out this quick walkthrough on YouTube](https://www.youtube.com/watch?v=jxFXNnmcOAs)
+
 Ready to try Patchies? [Let's get started.](#get-started)
 
 ## Use tools and libraries you love
