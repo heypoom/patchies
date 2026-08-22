@@ -759,17 +759,21 @@ export class FBORenderer {
   }
 
   private rebuildCookingPolicies(mergedGraph: RenderGraph) {
-    this.cookState.setOutputsByNode(
-      new Map(mergedGraph.nodes.map((node) => [node.id, [...node.outputs]]))
+    const outputs = this.cookState.getCookOutputsByNode(mergedGraph.nodes, (node) =>
+      isPassthroughNodeType(node.type)
     );
+
+    this.cookState.setOutputsByNode(outputs);
 
     for (const node of mergedGraph.nodes) {
       this.cookState.registerNode(node.id, createRenderNodeCookPolicy(node, mergedGraph));
     }
 
-    this.cookState.setGraphSignatures(
-      new Map(mergedGraph.nodes.map((node) => [node.id, this.computeNodeGraphSignature(node)]))
+    const signatures = new Map(
+      mergedGraph.nodes.map((node) => [node.id, this.computeNodeGraphSignature(node)])
     );
+
+    this.cookState.setGraphSignatures(signatures);
   }
 
   /**

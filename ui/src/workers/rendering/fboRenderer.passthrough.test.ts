@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import type { FBORenderer } from './fboRenderer';
+import { CookStateManager } from './CookStateManager';
 
 vi.mock('./hydraRenderer', () => ({ HydraRenderer: class {} }));
 vi.mock('./canvasRenderer', () => ({ CanvasRenderer: class {} }));
@@ -213,5 +214,86 @@ describe('send.vdo and recv.vdo routing', () => {
     expect(texture.destroy).toHaveBeenCalledOnce();
     expect(fboNode.prevFramebuffers).toBeUndefined();
     expect(fboNode.prevTextures).toBeUndefined();
+  });
+
+  it('propagates live-source invalidation past FBO-less routing nodes', async () => {
+    const { FBORenderer } = await import('./fboRenderer');
+
+    const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
+    const cookState = new CookStateManager();
+
+    const source = {
+      id: 'source',
+      type: 'hydra',
+      inputs: [],
+      outputs: ['send'],
+      inletMap: new Map(),
+      data: { code: 'osc(10).out()' },
+      backEdgeInlets: new Set<number>()
+    } as RenderNode;
+
+    const send = {
+      id: 'send',
+      type: 'send.vdo',
+      inputs: ['source'],
+      outputs: ['receive'],
+      inletMap: new Map([[0, { sourceNodeId: 'source', outletIndex: 0 }]]),
+      data: { channel: 'live' },
+      backEdgeInlets: new Set<number>()
+    } as RenderNode;
+
+    const receive = {
+      id: 'receive',
+      type: 'recv.vdo',
+      inputs: ['send'],
+      outputs: ['consumer'],
+      inletMap: new Map([[0, { sourceNodeId: 'send', outletIndex: 0 }]]),
+      data: { channel: 'live' },
+      backEdgeInlets: new Set<number>()
+    } as RenderNode;
+
+    const consumer = {
+      id: 'consumer',
+      type: 'glsl',
+      inputs: ['receive'],
+      outputs: [],
+      inletMap: new Map([[0, { sourceNodeId: 'receive', outletIndex: 0 }]]),
+      data: {
+        code: 'void mainImage(out vec4 c, in vec2 p) { c = vec4(1.0); }',
+        glUniformDefs: []
+      },
+      backEdgeInlets: new Set<number>()
+    } as RenderNode;
+
+    const cookable = renderer as unknown as {
+      cookState: CookStateManager;
+      rebuildCookingPolicies: (graph: RenderGraph) => void;
+    };
+
+    cookable.cookState = cookState;
+
+    const graph = {
+      nodes: [source, send, receive, consumer],
+      edges: [],
+      sortedNodes: ['source', 'send', 'receive', 'consumer'],
+      outputNodeId: 'consumer',
+      outputOutletIndex: 0,
+      backEdges: new Set<string>(),
+      feedbackNodes: new Set<string>()
+    } as RenderGraph;
+
+    cookable.rebuildCookingPolicies(graph);
+
+    cookState.beginFrame({ transportTime: 0, prevTransportTime: 0, isTransportPlaying: true });
+    cookState.markCooked('source', ['first-frame'], 0);
+    cookState.markCooked('consumer', ['first-frame'], 0);
+
+    cookState.beginFrame({ transportTime: 1, prevTransportTime: 0, isTransportPlaying: true });
+    cookState.markCooked('source', ['time'], 0);
+
+    expect(cookState.shouldCook('consumer')).toMatchObject({
+      shouldCook: true,
+      reasons: expect.arrayContaining(['input'])
+    });
   });
 });

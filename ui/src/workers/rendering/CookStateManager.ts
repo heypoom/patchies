@@ -208,6 +208,44 @@ export class CookStateManager {
     return this.cookedNodeIdsThisFrame;
   }
 
+  getCookOutputsByNode<T extends { id: string; outputs: readonly string[] }>(
+    nodes: readonly T[],
+    isPassthroughNode: (node: T) => boolean
+  ): Map<string, string[]> {
+    const nodeById = new Map(nodes.map((node) => [node.id, node]));
+
+    const resolveOutputs = (nodeId: string, visited = new Set<string>()): string[] => {
+      if (visited.has(nodeId)) return [];
+      visited.add(nodeId);
+
+      const node = nodeById.get(nodeId);
+      if (!node) return [];
+
+      const outputs = new Set<string>();
+
+      for (const outputNodeId of node.outputs) {
+        const outputNode = nodeById.get(outputNodeId);
+        if (!outputNode) continue;
+
+        if (isPassthroughNode(outputNode)) {
+          const resolved = resolveOutputs(outputNodeId, new Set(visited));
+
+          for (const resolvedOutputNodeId of resolved) {
+            outputs.add(resolvedOutputNodeId);
+          }
+
+          continue;
+        }
+
+        outputs.add(outputNodeId);
+      }
+
+      return [...outputs];
+    };
+
+    return new Map(nodes.map((node) => [node.id, resolveOutputs(node.id)]));
+  }
+
   private isTimeDependentCookNeeded(policy: CookPolicy): boolean {
     if (!policy.timeDependent) return false;
 
