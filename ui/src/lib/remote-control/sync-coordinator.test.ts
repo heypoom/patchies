@@ -60,6 +60,21 @@ describe('RemoteControlSyncCoordinator', () => {
     });
   });
 
+  it('generates a mount command with a path placeholder', async () => {
+    const coordinator = new RemoteControlSyncCoordinator({
+      patchId: () => 'patch-1',
+      nodes: () => [],
+      applyFileWrite: () => {},
+      instanceURL: 'http://patchies.test'
+    });
+
+    installRelayMock();
+    await coordinator.enable();
+
+    expect(coordinator.mountCommand).toMatch(/^patchies mount --token patchies:\/\/v2\//);
+    expect(coordinator.mountCommand).toContain('--path <new-folder-path>');
+  });
+
   it('applies a filesystem operation through history and publishes the same commit path', async () => {
     let nodes = [glslNode('first')];
     const requests = installRelayMock();
