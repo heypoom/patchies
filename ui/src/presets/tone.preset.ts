@@ -21,7 +21,7 @@ const synth = new Tone.PolySynth(Tone.Synth, {
 reverb.generate();
 
 let sustainPedalDown = false;
-const sustainedNotes = new Set();
+const sustainedNotes = [];
 
 const release = (note, time) => {
   synth.triggerRelease(Tone.Frequency(note, "midi").toNote(), time);
@@ -37,7 +37,7 @@ recv(m => {
     synth.triggerAttack(freq, now, velocity);
   } else if (m.type === 'noteOff') {
     if (sustainPedalDown) {
-      sustainedNotes.add(m.note);
+      sustainedNotes.push(m.note);
     } else {
       release(m.note, now);
     }
@@ -50,7 +50,7 @@ recv(m => {
         release(note, now);
       }
 
-      sustainedNotes.clear();
+      sustainedNotes.length = 0;
     }
   } else if (m.type === 'pitchBend') {
     synth.set({ detune: m.value * 200 });
