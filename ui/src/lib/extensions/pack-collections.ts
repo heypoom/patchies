@@ -32,7 +32,7 @@ export const BUILT_IN_PACK_COLLECTIONS: PackCollection[] = [
   {
     id: 'visuals',
     name: 'Visuals',
-    description: 'Make graphics, video, shaders, and interactive canvases',
+    description: 'Make graphics, video, shaders, and interactive widgets',
     icon: 'Palette',
     primaryObjectPackIds: ['media', 'ui', '2d', 'video-synthesis'],
     primaryPresetPackIds: [
