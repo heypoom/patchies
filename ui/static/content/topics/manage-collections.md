@@ -12,10 +12,9 @@ packs.
 
 The first time you open the object browser with `Ctrl/Cmd + O`, Patchies asks
 what you want to make. Select one or more collections, then select
-**Continue**. **Essentials** is always available.
+**Continue**.
 
-Select **Skip for now** to start with Essentials only. You can add collections
-at any time.
+Select **Skip for now** to only start with _Essentials_, the minimal starter objects. You can add or remove collections at any time.
 
 ![Manage collections onboarding](/content/images/object-browser-packs-onboarding.webp)
 
