@@ -111,7 +111,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: '2D Graphics',
     description: '2D canvas and interactive widgets',
     icon: 'Palette',
-    objects: ['p5', 'canvas', 'canvas.dom', 'surface', 'textmode', 'textmode.dom']
+    objects: ['p5', 'canvas', 'canvas.dom', 'surface', 'textmode', 'textmode.dom', 'bchrn']
   },
   {
     id: 'video-synthesis',
@@ -332,12 +332,5 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'AI-powered generative objects',
     icon: 'Brain',
     objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'ai.stt', 'tts', 'stt']
-  },
-  {
-    id: 'experimental',
-    name: 'Experimental',
-    description: 'Unstable or work-in-progress',
-    icon: 'FlaskConical',
-    objects: ['bchrn']
   }
 ];

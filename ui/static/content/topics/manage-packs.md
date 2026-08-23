@@ -1,34 +1,60 @@
-# Packs
+# Collections
 
-Patchies enables some objects by default. Packs group related objects and presets by use case. Enable a pack to show its objects or presets.
+Patchies keeps your object browser and quick-insert menu focused. Instead of
+starting with every tool, choose a **collection** for the kind of patch you
+want to make.
 
-![Manage library panel](/content/images/object-browser-packs.webp)
+Collections combine the objects and ready-made presets that belong together.
+For example, **Visuals** includes graphics, video, shader, and visual preset
+packs. You do not need to know whether an item comes from an object pack or a
+preset pack before you start.
 
-The packs panel shows object packs and preset packs.
+**Music** is for composition, sequencing, performance, and instruments.
+**Sound Design** is for low-level signals, effects, routing, and audio-reactive
+patches.
 
-## Accessing Packs
+## First-time setup
 
-1. Open the object browser with `Ctrl/Cmd + O`.
-2. Select the **packs** chip in the top-right corner.
+The first time you open the object browser with `Ctrl/Cmd + O`, Patchies asks
+what you want to make. Select one or more collections, then select
+**Continue**. **Essentials** is always available.
 
-The packs panel opens in the object browser. You can also open it from the **Packs** sidebar tab.
+Select **Skip for now** to start with Essentials only. You can add collections
+at any time.
 
-## Object Packs
+![Manage collections onboarding](/content/images/object-browser-packs-onboarding.webp)
 
-Object packs group related objects by use case. Enable an object pack to add its objects to the object browser and quick-insert menu.
+## Manage collections
 
-## Preset Packs
+Open the object browser and select **Manage collections**. You can also open
+the **Packs** sidebar tab.
 
-Preset packs group configured presets by use case. Each preset has code for a common task.
+Each collection expands into its packs, and each pack expands into a read-only
+list of included objects or presets.
 
-> **Note**: Enable a preset's required object pack before you use the preset. Patchies shows a warning with a one-click control to enable a missing pack.
+- Select a collection to enable its complete set of packs.
+- Select an individual pack to fine-tune what appears in your catalog.
+- A mixed checkbox means you manually changed one or more packs in that
+  collection.
+
+![Manage collections panel](/content/images/object-browser-packs.webp)
+
+Some collections list **Included from …** groups. These are the specific
+objects required by presets in that collection, named with the pack they come
+from. Patchies enables those objects without turning on the rest of the source
+pack.
+
+Some large or specialised preset packs are marked **Optional**. They stay
+visible in their collection, but you enable them individually. Optional packs
+do not change the collection’s checkbox state.
 
 ## Tips
 
-- Search packs by name, description, or included objects.
-- Select **All** to enable every pack in a section.
-- Select **Reset** to return to the default packs.
-- Search for a disabled object to get a suggestion that enables its pack.
+- Search collections, packs, objects, and presets from the Packs sidebar or
+  Manage collections view.
+- Select **All** to enable every standard pack. Experimental and heavyweight
+  archives stay opt-in.
+- Search for a disabled object to get a direct **Enable & Add** action.
 
 ## See Also
 

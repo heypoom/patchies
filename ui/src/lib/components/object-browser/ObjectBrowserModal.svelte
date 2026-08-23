@@ -4,6 +4,7 @@
     ArrowRight,
     Bookmark,
     Boxes,
+    Check,
     ChevronDown,
     CircleQuestionMark,
     Package,
@@ -46,7 +47,11 @@
     isPresetPackEnabled,
     isPackLocked,
     isPresetPackLocked,
-    enabledPrimaryObjects
+    enabledPrimaryObjects,
+    BUILT_IN_PACK_COLLECTIONS,
+    completeCollectionOnboarding,
+    packLibraryPreferences,
+    type PackCollectionId
   } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { getPackIcon } from '$lib/extensions/pack-icons';
@@ -56,6 +61,7 @@
   } from '$lib/presets/preset-pack-index';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
+  import PackCollectionsTree from '../sidebar/PackCollectionsTree.svelte';
   import ExtensionPackCard from '../sidebar/ExtensionPackCard.svelte';
   import PresetPackCard from '../sidebar/PresetPackCard.svelte';
   import {
@@ -82,6 +88,7 @@
   let selectedCategoryId = $state<string | null>(null);
   let expandedPackId = $state<string | null>(null);
   let mobileCategoryOpen = $state(false);
+  let onboardingCollectionIds = $state<PackCollectionId[]>([]);
 
   const getIconComponent = getPackIcon;
 
@@ -318,6 +325,10 @@
         : 0
   );
 
+  const isCollectionOnboarding = $derived(
+    $objectBrowserMode === 'insert' && !$packLibraryPreferences.hasCompletedCollectionOnboarding
+  );
+
   const hasEnabledOptionalObjectPacks = $derived(
     $enabledPackIds.some((packId) => !isPackLocked(packId))
   );
@@ -357,7 +368,7 @@
 
   const dialogTitle = $derived(
     $objectBrowserMode === 'packs'
-      ? 'Manage library'
+      ? 'Manage collections'
       : $objectBrowserMode === 'help'
         ? 'Explore object help'
         : 'Add to patch'
@@ -365,7 +376,7 @@
 
   const searchPlaceholder = $derived(
     $objectBrowserMode === 'packs'
-      ? `Search ${catalogKind === 'objects' ? 'object' : 'preset'} packs`
+      ? 'Search collections, packs, objects, and presets'
       : $objectBrowserMode === 'help'
         ? 'Search object help'
         : `Search ${catalogKind}`
@@ -440,6 +451,16 @@
     expandedPackId = expandedPackId === packId ? null : packId;
   }
 
+  function toggleOnboardingCollection(collectionId: PackCollectionId) {
+    onboardingCollectionIds = onboardingCollectionIds.includes(collectionId)
+      ? onboardingCollectionIds.filter((id) => id !== collectionId)
+      : [...onboardingCollectionIds, collectionId];
+  }
+
+  function completeOnboarding() {
+    completeCollectionOnboarding(onboardingCollectionIds);
+  }
+
   function handleWindowKeydown(event: KeyboardEvent) {
     if (open && event.key === 'Escape') handleClose();
   }
@@ -462,109 +483,134 @@
       class="relative z-10 m-0 flex h-full w-full max-w-[1040px] animate-[ob-card-in_0.2s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-none border border-white/12 bg-[#101012] shadow-[0_24px_80px_rgba(0,0,0,0.58)] outline-none sm:m-4 sm:h-[88dvh] sm:max-h-[820px] sm:rounded-xl"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="object-browser-title"
+      aria-labelledby={isCollectionOnboarding ? undefined : 'object-browser-title'}
+      aria-label={isCollectionOnboarding ? 'Build a focused library' : undefined}
       tabindex="-1"
     >
-      <header
-        class="relative z-[2] flex min-h-[60px] shrink-0 items-center gap-4 border-b border-white/7 px-4 py-2 sm:min-h-[72px] sm:px-6 sm:py-3"
-      >
-        {#if $objectBrowserMode === 'packs'}
-          <button
-            type="button"
-            onclick={closePacks}
-            class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors outline-none hover:border-white/16 hover:text-zinc-100 focus-visible:border-orange-500/70"
-            aria-label="Back to catalog"
-          >
-            <ArrowLeft class="h-4 w-4" />
-          </button>
-        {/if}
-
-        <div class="min-w-0 flex-1">
-          <h2
-            id="object-browser-title"
-            class="truncate text-[17px] leading-tight font-medium text-zinc-100"
-          >
-            {dialogTitle}
-          </h2>
-          <p class="mt-1 truncate text-[11px] text-zinc-500 max-[360px]:hidden">
-            {$objectBrowserMode === 'packs'
-              ? 'Choose which objects and presets appear in your catalog.'
-              : $objectBrowserMode === 'help'
-                ? 'Browse object documentation.'
-                : 'Browse Patchies objects.'}
-          </p>
-        </div>
-
-        <div class="flex shrink-0 items-center gap-1.5">
-          {#if $objectBrowserMode !== 'packs'}
+      {#if !isCollectionOnboarding}
+        <header
+          class="relative z-[2] flex min-h-[60px] shrink-0 items-center gap-4 border-b border-white/7 px-4 py-2 sm:min-h-[72px] sm:px-6 sm:py-3"
+        >
+          {#if $objectBrowserMode === 'packs'}
             <button
               type="button"
-              onclick={openPacks}
-              aria-label={`Manage library${onboardingPackCount ? `: enable ${onboardingPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs` : ''}`}
-              class={[
-                'flex h-9 cursor-pointer items-center rounded-md border px-3 text-left transition-colors outline-none focus-visible:border-orange-500/70',
-                onboardingPackCount > 0
-                  ? 'gap-2 border-white/10 bg-white/[0.025] text-zinc-100 hover:border-orange-500/30 hover:bg-orange-500/[0.045]'
-                  : 'gap-2 border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
-              ]}
+              onclick={closePacks}
+              class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-white/8 bg-white/[0.025] text-zinc-400 transition-colors outline-none hover:border-white/16 hover:text-zinc-100 focus-visible:border-orange-500/70"
+              aria-label="Back to catalog"
             >
-              {#if onboardingPackCount > 0}
-                <Package class="h-4 w-4 shrink-0 text-orange-500" />
+              <ArrowLeft class="h-4 w-4" />
+            </button>
+          {/if}
 
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[11px] font-medium text-zinc-100 sm:text-[12px]">
-                    <span class="sm:hidden">{onboardingPackCount} more packs</span>
-                    <span class="hidden sm:inline"
-                      >{onboardingPackCount} more {catalogKind === 'objects' ? 'object' : 'preset'} packs</span
+          <div class="min-w-0 flex-1">
+            <h2
+              id="object-browser-title"
+              class="truncate text-[17px] leading-tight font-medium text-zinc-100"
+            >
+              {dialogTitle}
+            </h2>
+            <p class="mt-1 truncate text-[11px] text-zinc-500 max-[360px]:hidden">
+              {$objectBrowserMode === 'packs'
+                ? 'Choose what you want to make, then fine-tune individual packs.'
+                : $objectBrowserMode === 'help'
+                  ? 'Browse object documentation.'
+                  : 'Browse Patchies objects.'}
+            </p>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-1.5">
+            {#if $objectBrowserMode !== 'packs' && $packLibraryPreferences.hasCompletedCollectionOnboarding}
+              <button
+                type="button"
+                onclick={openPacks}
+                aria-label={`Manage library${onboardingPackCount ? `: enable ${onboardingPackCount} more ${catalogKind === 'objects' ? 'object' : 'preset'} packs` : ''}`}
+                class={[
+                  'flex h-9 cursor-pointer items-center rounded-md border px-3 text-left transition-colors outline-none focus-visible:border-orange-500/70',
+                  onboardingPackCount > 0
+                    ? 'gap-2 border-white/10 bg-white/[0.025] text-zinc-100 hover:border-orange-500/30 hover:bg-orange-500/[0.045]'
+                    : 'gap-2 border-white/8 bg-white/[0.025] text-zinc-500 hover:border-white/16 hover:text-zinc-200'
+                ]}
+              >
+                {#if onboardingPackCount > 0}
+                  <Package class="h-4 w-4 shrink-0 text-orange-500" />
+
+                  <span class="min-w-0 flex-1">
+                    <span
+                      class="block truncate text-[11px] font-medium text-zinc-100 sm:text-[12px]"
                     >
+                      <span class="sm:hidden">Explore collections</span>
+                      <span class="hidden sm:inline">Explore collections</span>
+                    </span>
                   </span>
-                </span>
-                <ArrowRight class="h-4 w-4 shrink-0 text-orange-500" />
-              {:else}
-                <Package class="h-3.5 w-3.5 shrink-0" />
+                  <ArrowRight class="h-4 w-4 shrink-0 text-orange-500" />
+                {:else}
+                  <Package class="h-3.5 w-3.5 shrink-0" />
 
-                <span class="min-w-0 flex-1 truncate text-[12px] font-medium">Manage library</span>
-              {/if}
-            </button>
-          {/if}
-          <button
-            type="button"
-            onclick={handleClose}
-            class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent text-zinc-500 transition-colors outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:border-orange-500/70"
-            aria-label="Close object browser"
-          >
-            <X class="h-5 w-5" />
-          </button>
-        </div>
-      </header>
-
-      <div class="relative z-[1] shrink-0 border-b border-white/7 px-4 py-2 sm:px-6 sm:py-3">
-        <label for="object-browser-search" class="sr-only">{searchPlaceholder}</label>
-        <div class="relative flex items-center">
-          <Search class="pointer-events-none absolute left-3.5 h-4 w-4 text-zinc-500" />
-          <input
-            id="object-browser-search"
-            bind:this={searchInput}
-            type="search"
-            bind:value={searchQuery}
-            placeholder={searchPlaceholder}
-            class="h-11 w-full rounded-lg border border-white/9 bg-white/[0.035] pr-11 pl-10 font-mono text-[13px] text-zinc-100 transition-colors outline-none placeholder:text-zinc-600 focus:border-orange-500/45 focus:bg-white/[0.05]"
-          />
-          {#if searchQuery}
+                  <span class="min-w-0 flex-1 truncate text-[12px] font-medium"
+                    >Manage collections</span
+                  >
+                {/if}
+              </button>
+            {/if}
             <button
               type="button"
-              onclick={() => (searchQuery = '')}
-              class="absolute right-1.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-zinc-500 transition-colors outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:text-orange-400"
-              aria-label="Clear search"
+              onclick={handleClose}
+              class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent text-zinc-500 transition-colors outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:border-orange-500/70"
+              aria-label="Close object browser"
             >
-              <X class="h-4 w-4" />
+              <X class="h-5 w-5" />
             </button>
-          {/if}
+          </div>
+        </header>
+
+        <div
+          class={$objectBrowserMode === 'packs'
+            ? 'relative z-[1] shrink-0 border-b border-white/7 px-4 py-2 sm:px-5 sm:py-3'
+            : 'relative z-[1] shrink-0 border-b border-white/7 px-4 py-2 sm:px-6 sm:py-3'}
+        >
+          <label for="object-browser-search" class="sr-only">{searchPlaceholder}</label>
+          <div class="relative flex items-center">
+            <Search class="pointer-events-none absolute left-3.5 h-4 w-4 text-zinc-500" />
+            <input
+              id="object-browser-search"
+              bind:this={searchInput}
+              type="search"
+              bind:value={searchQuery}
+              placeholder={searchPlaceholder}
+              class="h-11 w-full rounded-lg border border-white/9 bg-white/[0.035] pr-11 pl-10 font-mono text-[13px] text-zinc-100 transition-colors outline-none placeholder:text-zinc-600 focus:border-orange-500/45 focus:bg-white/[0.05]"
+            />
+            {#if searchQuery}
+              <button
+                type="button"
+                onclick={() => (searchQuery = '')}
+                class="absolute right-1.5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-zinc-500 transition-colors outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:text-orange-400"
+                aria-label="Clear search"
+              >
+                <X class="h-4 w-4" />
+              </button>
+            {/if}
+          </div>
         </div>
-      </div>
+      {/if}
+
+      {#if isCollectionOnboarding}
+        <button
+          type="button"
+          onclick={handleClose}
+          class="absolute top-4 right-4 z-[2] flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-transparent text-zinc-500 transition-colors outline-none hover:bg-white/5 hover:text-zinc-100 focus-visible:border-orange-500/70"
+          aria-label="Close library setup"
+        >
+          <X class="h-5 w-5" />
+        </button>
+      {/if}
 
       {#if $objectBrowserMode === 'packs'}
-        <section class="flex min-h-0 flex-1 flex-col" aria-label="Library packs">
+        <section class="flex min-h-0 flex-1 flex-col" aria-label="Manage collections">
+          <div class="ob-scroll min-h-0 flex-1 overflow-y-auto p-2 sm:p-0">
+            <PackCollectionsTree {searchQuery} layout="columns" />
+          </div>
+        </section>
+        <section class="hidden min-h-0 flex-1 flex-col" aria-label="Library packs">
           <div
             class="flex shrink-0 flex-col gap-2 border-b border-white/7 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-3"
           >
@@ -766,6 +812,84 @@
                 </div>
               {/if}
             </aside>
+          </div>
+        </section>
+      {:else if $objectBrowserMode === 'insert' && !$packLibraryPreferences.hasCompletedCollectionOnboarding}
+        <section
+          class="ob-scroll flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-10 sm:py-10"
+          aria-label="Choose your collections"
+        >
+          <div class="mx-auto my-auto w-full max-w-2xl">
+            <h3 class="text-xl font-medium tracking-[-0.02em] text-zinc-100">
+              Build a focused library
+            </h3>
+            <p class="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
+              Patchies starts focused. Choose what you want to make and we’ll enable the objects and
+              presets you need. You can change this anytime.
+            </p>
+            <div class="mt-6 grid gap-2 sm:grid-cols-2">
+              {#each BUILT_IN_PACK_COLLECTIONS.filter((collection) => collection.id !== 'essentials' && collection.id !== 'ai') as collection (collection.id)}
+                {@const selected = onboardingCollectionIds.includes(collection.id)}
+                {@const CollectionIcon = getIconComponent(collection.icon)}
+                <button
+                  type="button"
+                  onclick={() => toggleOnboardingCollection(collection.id)}
+                  aria-pressed={selected}
+                  class={[
+                    'flex min-h-24 cursor-pointer items-start gap-3 rounded-lg border p-4 text-left transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70',
+                    selected
+                      ? 'border-orange-500/45 bg-orange-500/[0.07] text-zinc-100'
+                      : 'border-white/8 bg-white/[0.02] text-zinc-400 hover:border-white/18 hover:bg-white/[0.045]'
+                  ]}
+                >
+                  <span
+                    class={[
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-md border',
+                      selected
+                        ? 'border-orange-500/40 bg-orange-500/12 text-orange-400'
+                        : 'border-white/8 bg-white/[0.035] text-zinc-500'
+                    ]}
+                  >
+                    <CollectionIcon class="h-4 w-4" />
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-medium">{collection.name}</span>
+                    <span class="mt-1 block text-[11px] leading-relaxed text-zinc-500"
+                      >{collection.description}</span
+                    >
+                  </span>
+                  <span
+                    class={[
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border',
+                      selected
+                        ? 'border-orange-500/60 bg-orange-500/15 text-orange-400'
+                        : 'border-zinc-700 text-transparent'
+                    ]}
+                  >
+                    {#if selected}<Check class="h-2.5 w-2.5" />{/if}
+                  </span>
+                </button>
+              {/each}
+            </div>
+            <div
+              class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/7 pt-4"
+            >
+              <p class="text-[11px] text-zinc-600">Essentials are always included.</p>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  onclick={completeOnboarding}
+                  class="h-10 cursor-pointer rounded-md px-3 text-xs text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100 focus-visible:ring-1 focus-visible:ring-orange-500/70"
+                  >Skip for now</button
+                >
+                <button
+                  type="button"
+                  onclick={completeOnboarding}
+                  class="h-10 cursor-pointer rounded-md bg-zinc-100 px-4 text-xs font-medium text-zinc-900 transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-orange-500/70"
+                  >Continue</button
+                >
+              </div>
+            </div>
           </div>
         </section>
       {:else}

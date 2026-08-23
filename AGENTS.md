@@ -8,6 +8,7 @@ Patchies is a visual programming environment for audio-visual patches.
 - Before non-trivial feature, architecture, behavior, or product design changes, update the relevant numbered spec in `docs/design-docs/specs/`.
 - Do not create or update specs for trivial localized changes such as spacing, typo fixes, or aligning a single node with an existing pattern.
 - Keep project guidance in local skills under `.agents/skills/` instead of growing this file.
+- ASK before making assumptions about backwards compatibility. Most of the time, the feature is still in development and DO NOT need backward compatibility. Prefer to ask over doing unnecessary backward compat migrations.
 
 ## Stack
 
