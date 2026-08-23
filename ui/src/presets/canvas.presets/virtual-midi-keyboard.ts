@@ -11,9 +11,10 @@ setTitle('MIDI Keyboard');
 setPortCount(1, 1);
 setPrimaryButton('settings')
 
-const width = 2000;
-const height = 800;
-setCanvasSize(width, height);
+setFluidSize({
+  initialSize: { width: 2000, height: 800 },
+  showResizer: false
+})
 
 // Define Settings Panel
 await settings.define([
