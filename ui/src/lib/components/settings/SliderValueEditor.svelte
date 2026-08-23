@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   let {
@@ -78,7 +79,7 @@
         event.preventDefault();
 
         commit();
-      } else if (event.key === 'Escape') {
+      } else if (isDismissKey(event)) {
         event.preventDefault();
 
         finishEditing();

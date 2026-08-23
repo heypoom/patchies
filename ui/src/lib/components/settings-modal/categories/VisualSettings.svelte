@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import SettingRow from '../SettingRow.svelte';
   import SettingToggle from '../SettingToggle.svelte';
   import SettingDropdown from '../SettingDropdown.svelte';
@@ -54,7 +55,7 @@
       onblur={handleApplyOutputSize}
       onkeydown={(e) => {
         if (e.key === 'Enter') handleApplyOutputSize();
-        if (e.key === 'Escape') isEditingOutputSize = false;
+        if (isDismissKey(e)) isEditingOutputSize = false;
       }}
       placeholder="1920x1080"
       aria-label="Output size"

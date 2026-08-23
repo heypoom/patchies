@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Play, X } from '@lucide/svelte/icons';
   import { onMount, onDestroy, tick } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
@@ -230,7 +231,7 @@
       return true;
     }
     const key = event.key;
-    if (key === 'Escape' || key === 'Home') {
+    if (isDismissKey(event) || key === 'Home') {
       return true;
     }
     if (key.startsWith('Arrow')) {

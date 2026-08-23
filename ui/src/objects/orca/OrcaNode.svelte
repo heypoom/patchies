@@ -40,6 +40,11 @@
     getOrcaFullscreenOverlayBackground
   } from '$lib/orca/layout';
   import type { OrcaForegroundMode } from '$lib/orca/layout';
+  import {
+    getExpandedDismissShortcutLabel,
+    isExpandedDismissKey,
+    isNativeFullscreen
+  } from '$lib/keyboard/dismiss';
 
   let {
     id: nodeId,
@@ -126,6 +131,7 @@
   );
   const colors = $derived(getOrcaColors(displayForegroundMode));
   const displayBackground = $derived(isDetached ? fullscreenBackground : background);
+  const dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
   const canvasBackground = $derived(getOrcaCanvasBackground(displayBackground));
   let TILE_W = $derived(10 * displayFontSize);
   let TILE_H = $derived(15 * displayFontSize);
@@ -666,7 +672,7 @@
     });
 
     const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !event.shiftKey) return;
+      if (!isExpandedDismissKey(event)) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -897,7 +903,7 @@
                     <X class="h-4 w-4" />
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Content>Close Expanded Orca (Shift+Esc)</Tooltip.Content>
+                <Tooltip.Content>Close Expanded Orca ({dismissShortcutLabel})</Tooltip.Content>
               </Tooltip.Root>
             </div>
           {/if}

@@ -34,7 +34,8 @@ Object nodes have two distinct states to optimize both editing and usage:
 - **New nodes**: Start in editing state with auto-focused input
 - **Double-click locked node**: Enter editing state
 - **Enter key**: Exit editing state, save changes, enter locked state
-- **Escape key**: Exit editing state without saving, enter locked state
+- **Escape key** or **Cmd/Ctrl+.**: Exit editing state without saving, enter locked state. The
+  modifier shortcut remains available when browser fullscreen reserves Escape.
 - **Blur (unfocus) with empty input**: Delete the entire node
 - **Blur (unfocus) with content**: Save changes and enter locked state
 

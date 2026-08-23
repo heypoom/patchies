@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Mic, Play, Square, Table, Upload, Volume2 } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -393,7 +394,7 @@
         bind:value={tableNameInput}
         onkeydown={(e) => {
           if (e.key === 'Enter') convertToTable();
-          if (e.key === 'Escape') showTableNameDialog = false;
+          if (isDismissKey(e)) showTableNameDialog = false;
         }}
         autofocus
       />

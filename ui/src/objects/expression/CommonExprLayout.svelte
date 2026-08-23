@@ -341,6 +341,13 @@
                         exitEditingMode(false);
                         return true;
                       }
+                    },
+                    {
+                      key: 'Mod-.',
+                      run: () => {
+                        exitEditingMode(false);
+                        return true;
+                      }
                     }
                   ]),
                   EditorView.focusChangeEffect.of((_, focusing) => {

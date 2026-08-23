@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Settings, X, Mic } from '@lucide/svelte/icons';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount } from 'svelte';
@@ -73,7 +74,7 @@
     if (e.key === 'Enter') {
       applySettings();
       showSettings = false;
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       showSettings = false;
     }
   }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Plus, X } from '@lucide/svelte/icons';
   import ChatView from './ChatView.svelte';
   import { chatSessionsStore } from '../../../stores/chat-sessions.store';
@@ -52,7 +53,7 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       commitRename();
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       renamingId = null;
     }
   }

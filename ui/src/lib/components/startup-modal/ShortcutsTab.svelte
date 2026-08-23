@@ -47,7 +47,8 @@
         },
         { keys: ['Delete'], description: 'Delete selection' },
         { keys: ['Ctrl', 'C'], description: 'Copy selection' },
-        { keys: ['Ctrl', 'V'], description: 'Paste copied objects' }
+        { keys: ['Ctrl', 'V'], description: 'Paste copied objects' },
+        { keys: ['Ctrl', '.'], description: 'Dismiss or cancel' }
       ] satisfies Shortcut[]
     },
     {

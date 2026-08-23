@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     Loader2,
     Sparkles,
@@ -117,7 +118,7 @@
   $effect(() => {
     if (open) {
       const keyHandler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
+        if (isDismissKey(e)) {
           if (isEditing) {
             handleMinimize();
           } else {

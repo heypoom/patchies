@@ -13,6 +13,11 @@
   import { isSidebarOpen } from '../../stores/ui.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { hasVisibleSettingsFields } from '$lib/settings';
+  import {
+    getExpandedDismissShortcutLabel,
+    isExpandedDismissKey,
+    isNativeFullscreen
+  } from '$lib/keyboard/dismiss';
 
   let {
     onClose,
@@ -41,6 +46,7 @@
   let showConsole = $state(false);
   let hasSettings = $derived(hasCodeEditorTargetSettings({ settings, customSettings }));
   let hasConsole = $derived(hasCodeEditorTargetConsole({ console: consoleSnippet }));
+  let dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
 
   function toggleSettings() {
     showSettings = !showSettings;
@@ -59,7 +65,7 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key !== 'Escape' || !event.shiftKey) return;
+    if (!isExpandedDismissKey(event)) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -176,7 +182,7 @@
         </button>
       </Tooltip.Trigger>
 
-      <Tooltip.Content>Close Expanded Editor (Shift+Esc)</Tooltip.Content>
+      <Tooltip.Content>Close Expanded Editor ({dismissShortcutLabel})</Tooltip.Content>
     </Tooltip.Root>
   </div>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { FlattenedPreset } from '$lib/presets/types';
+  import { getDismissShortcutLabel, isNativeFullscreen } from '$lib/keyboard/dismiss';
 
   export type Suggestion = {
     name: string;
@@ -23,6 +24,8 @@
     onSelect: (suggestion: Suggestion) => void;
     resultsContainerRef?: HTMLDivElement | undefined;
   } = $props();
+
+  let dismissShortcutLabel = $derived(getDismissShortcutLabel($isNativeFullscreen));
 </script>
 
 <div class="flex">
@@ -61,7 +64,7 @@
 
     <!-- Footer with keyboard hints -->
     <div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
-      <span>↑↓ navigate • Enter select • Esc cancel</span>
+      <span>↑↓ navigate • Enter select • {dismissShortcutLabel} cancel</span>
     </div>
   </div>
 

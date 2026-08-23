@@ -29,6 +29,12 @@
   } from '../../stores/detached-sheet.store';
   import { editorFontFamily } from '../../stores/editor.store';
   import { isSidebarOpen } from '../../stores/ui.store';
+  import {
+    getExpandedDismissShortcutLabel,
+    isDismissKey,
+    isExpandedDismissKey,
+    isNativeFullscreen
+  } from '$lib/keyboard/dismiss';
 
   import { DEFAULT_SHEET_DATA } from './constants';
   import { SheetClear, SheetGoto, SheetLoad, SheetObjects, SheetRows, sheetSchema } from './schema';
@@ -85,6 +91,7 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
 
   let messageContext: MessageContext;
   let columnsBeforeEdit: string[] | null = null;
@@ -618,7 +625,7 @@
       return;
     }
 
-    if (event.key === 'Escape') {
+    if (isDismissKey(event)) {
       event.preventDefault();
       event.stopPropagation();
 
@@ -632,7 +639,7 @@
   }
 
   function handleHeaderEditKeydown(event: KeyboardEvent, columnIndex: number) {
-    if (event.key !== 'Escape') return;
+    if (!isDismissKey(event)) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -1678,7 +1685,7 @@
     };
 
     const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !event.shiftKey) return;
+      if (!isExpandedDismissKey(event)) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -1884,7 +1891,7 @@
                 </button>
               </Tooltip.Trigger>
 
-              <Tooltip.Content>Close Expanded Sheet (Shift+Esc)</Tooltip.Content>
+              <Tooltip.Content>Close Expanded Sheet ({dismissShortcutLabel})</Tooltip.Content>
             </Tooltip.Root>
           {/if}
         </div>

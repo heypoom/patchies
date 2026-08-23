@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Settings, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -73,7 +74,7 @@
     if (e.key === 'Enter') {
       updateChannels();
       showChannelEditor = false;
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       channelInput = channels.toString();
       showChannelEditor = false;
     }

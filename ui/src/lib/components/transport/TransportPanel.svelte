@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Transport } from '$lib/transport';
   import { toast } from 'svelte-sonner';
   import { transportStore, type TimeDisplayFormat } from '../../../stores/transport.store';
@@ -224,7 +225,7 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       handleTimeSigEditComplete();
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       e.preventDefault();
       isEditingTimeSig = false;
     }
@@ -282,7 +283,7 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       handleTimeEditComplete();
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       e.preventDefault();
       isEditingTime = false;
     }

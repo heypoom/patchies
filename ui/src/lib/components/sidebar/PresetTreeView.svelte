@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     ChevronRight,
     ChevronDown,
@@ -218,7 +219,7 @@
     }
 
     // Escape to deselect
-    if (event.key === 'Escape') {
+    if (isDismissKey(event)) {
       selectedPresetPath = null;
     }
   }
@@ -412,7 +413,7 @@
         presetLibraryStore.renameLibrary(libraryId, renameLibraryValue.trim());
       }
       renamingLibraryId = null;
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       renamingLibraryId = null;
     }
   }
@@ -432,7 +433,7 @@
       }
 
       renamingPath = null;
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       renamingPath = null;
     }
   }
@@ -456,7 +457,7 @@
       }
 
       creatingFolderIn = null;
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       creatingFolderIn = null;
     }
   }
