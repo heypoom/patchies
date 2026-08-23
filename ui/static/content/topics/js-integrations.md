@@ -181,7 +181,7 @@ unpauseObject('p5-1');
 ## OpenCV
 
 In `js` and `worker` objects, `await opencv()` lazy-loads OpenCV.js and resolves
-when its WebAssembly runtime is ready. It is cached once per execution realm.
+when its WebAssembly runtime is ready.
 
 ```javascript
 const cv = await opencv();
