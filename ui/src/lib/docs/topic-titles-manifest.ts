@@ -27,7 +27,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'js-integrations': 'JS Integrations',
   'js-modules': 'JS Modules',
   'manage-files': 'Files',
-  'manage-packs': 'Collections and Packs',
+  'manage-packs': 'Collections',
   'manage-presets': 'Presets',
   'manage-saves': 'Saves',
   'message-passing': 'Message Passing',

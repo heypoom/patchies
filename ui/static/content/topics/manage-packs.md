@@ -1,4 +1,4 @@
-# Collections and Packs
+# Collections
 
 Patchies keeps your object browser and quick-insert menu focused. Instead of
 starting with every tool, choose a **collection** for the kind of patch you
@@ -13,8 +13,6 @@ preset pack before you start.
 **Sound Design** is for low-level signals, effects, routing, and audio-reactive
 patches.
 
-![Manage library panel](/content/images/object-browser-packs.webp)
-
 ## First-time setup
 
 The first time you open the object browser with `Ctrl/Cmd + O`, Patchies asks
@@ -23,6 +21,8 @@ what you want to make. Select one or more collections, then select
 
 Select **Skip for now** to start with Essentials only. You can add collections
 at any time.
+
+![Manage collections onboarding](/content/images/object-browser-packs-onboarding.webp)
 
 ## Manage collections
 
@@ -36,6 +36,8 @@ list of included objects or presets.
 - Select an individual pack to fine-tune what appears in your catalog.
 - A mixed checkbox means you manually changed one or more packs in that
   collection.
+
+![Manage collections panel](/content/images/object-browser-packs.webp)
 
 Some collections list **Included from …** groups. These are the specific
 objects required by presets in that collection, named with the pack they come
