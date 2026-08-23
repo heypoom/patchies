@@ -17,6 +17,7 @@ import {
   getSoundfont2ProgramName
 } from './programs';
 import { DRUM_MACHINE_INSTRUMENTS } from './descriptors';
+import { ChannelSustainPedals, normalizeSustainPedalValue } from './SustainPedal';
 
 type Soundfont2Constructor = (typeof import('soundfont2'))['SoundFont2'];
 const CUSTOM_SOUNDFONT_KIT = 'Custom';
@@ -71,6 +72,11 @@ type LoadedProgramMetadata = {
   preloadPrograms: ProgramRequest[];
 };
 
+type SustainedNoteOff = {
+  instrument: SmplrInstrument | undefined;
+  target: { stopId?: number | string; time?: number };
+};
+
 const GM_PERCUSSION_CHANNEL = 10;
 
 export class GmAudioNode implements AudioNodeV2 {
@@ -106,6 +112,7 @@ export class GmAudioNode implements AudioNodeV2 {
   private instrumentCache = new Map<string, SmplrInstrument>();
   private loads = new Map<string, Promise<SmplrInstrument | null>>();
   private activeNotes = new Map<number, Set<string>>();
+  private sustainPedals = new ChannelSustainPedals<SustainedNoteOff>();
   private programChannels = new Set<number>();
   private preloadRequests = new Map<string, ProgramRequest>();
   private monitorChannels = createInitialMonitorChannels();
@@ -203,8 +210,17 @@ export class GmAudioNode implements AudioNodeV2 {
       })
       .with({ type: 'stop' }, (stopCommand) => {
         const loaded = this.channels.get(channel);
-        loaded?.instrument.stop(stopCommand.target);
-        this.removeActiveNote(channel, stopCommand.target.stopId);
+
+        if (
+          !this.sustainPedals.hold(channel, {
+            instrument: loaded?.instrument,
+            target: stopCommand.target
+          })
+        ) {
+          loaded?.instrument.stop(stopCommand.target);
+          this.removeActiveNote(channel, stopCommand.target.stopId);
+        }
+
         this.updateMonitorChannel(channel, {
           activeNotes: this.getActiveNoteCount(channel),
           lastNote: stopCommand.target.stopId
@@ -212,11 +228,12 @@ export class GmAudioNode implements AudioNodeV2 {
       })
       .with({ type: 'stopAll' }, (stopAllCommand) => {
         this.stopAll(stopAllCommand.time);
+        this.sustainPedals.clearHeld();
         this.clearActiveNotes();
       })
       .with({ type: 'cc' }, (ccCommand) => {
         const loaded = this.channels.get(channel);
-        loaded?.instrument.setCC(ccCommand.control, ccCommand.value);
+        this.applyControlChange(channel, loaded?.instrument, ccCommand.control, ccCommand.value);
         this.updateMonitorChannel(channel, { lastControl: ccCommand.control });
       })
       .with({ type: 'program' }, (programCommand) => {
@@ -260,6 +277,9 @@ export class GmAudioNode implements AudioNodeV2 {
 
     this.channels.set(channel, { key, instrument });
     this.applyLiveSettingsTo(instrument);
+    if (!this.isPercussionChannel(channel)) {
+      instrument.setCC(64, this.sustainPedals.isDown(channel) ? 127 : 0);
+    }
     this.updateMonitorChannel(channel, {
       program,
       instrumentName: this.getMonitorInstrumentName(channel, program),
@@ -546,6 +566,32 @@ export class GmAudioNode implements AudioNodeV2 {
     instrument.output.volume = readNumber(this.settings.volume, 100);
   }
 
+  private applyControlChange(
+    channel: number,
+    instrument: SmplrInstrument | undefined,
+    control: number,
+    value: number
+  ): void {
+    const controlValue =
+      this.isPercussionChannel(channel) || control !== 64
+        ? value
+        : normalizeSustainPedalValue(value);
+    instrument?.setCC(control, controlValue);
+
+    if (this.isPercussionChannel(channel) || control !== 64) return;
+
+    const noteOffs = this.sustainPedals.set(channel, controlValue);
+
+    for (const { instrument: noteInstrument, target } of noteOffs) {
+      noteInstrument?.stop(target);
+      this.removeActiveNote(channel, target.stopId);
+    }
+
+    if (noteOffs.length === 0) return;
+
+    this.updateMonitorChannel(channel, { activeNotes: this.getActiveNoteCount(channel) });
+  }
+
   private stopAll(time?: number): void {
     for (const { instrument } of this.channels.values()) {
       instrument.stop(time === undefined ? undefined : { time });
@@ -615,6 +661,7 @@ export class GmAudioNode implements AudioNodeV2 {
     this.channels.clear();
     this.instrumentCache.clear();
     this.loads.clear();
+    this.sustainPedals.clear();
   }
 }
 

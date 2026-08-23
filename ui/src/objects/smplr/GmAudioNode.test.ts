@@ -120,6 +120,57 @@ describe('GmAudioNode', () => {
     });
   });
 
+  it('sustains melodic channels independently while leaving channel 10 unaffected', async () => {
+    const piano = createInstrument();
+    const drums = createInstrument();
+    const module = {
+      Soundfont: () => piano,
+      DrumMachine: () => drums
+    } as unknown as SmplrModule;
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 100, velocity: 100 }]);
+    await node.send('message', { type: 'noteOn', note: 64, velocity: 90, channel: 2 });
+    await node.send('message', { type: 'controlChange', control: 64, value: 1, channel: 2 });
+    await node.send('message', { type: 'noteOff', note: 64, channel: 2 });
+
+    expect(piano.stop).not.toHaveBeenCalled();
+    expect(piano.setCC).toHaveBeenCalledWith(64, 127);
+
+    await node.send('message', { type: 'controlChange', control: 64, value: 0, channel: 2 });
+
+    expect(piano.stop).toHaveBeenCalledWith({ stopId: 64 });
+
+    await node.send('message', { type: 'noteOn', note: 36, velocity: 90, channel: 10 });
+    await node.send('message', { type: 'controlChange', control: 64, value: 1, channel: 10 });
+    await node.send('message', { type: 'noteOff', note: 36, channel: 10 });
+
+    expect(drums.stop).toHaveBeenCalledWith({ stopId: 36 });
+  });
+
+  it('releases a sustained note on its original instrument after a program change', async () => {
+    const instruments = new Map<string, SmplrInstrument>();
+    const module = {
+      Soundfont: (_context: AudioContext, options: Record<string, unknown>) => {
+        const instrument = createInstrument();
+        instruments.set(String(options.instrument), instrument);
+        return instrument;
+      }
+    } as unknown as SmplrModule;
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([{ source: 'soundfont', kit: 'MusyngKite', volume: 100, velocity: 100 }]);
+    await node.send('message', { type: 'noteOn', note: 64, velocity: 90, channel: 2 });
+    await node.send('message', { type: 'controlChange', control: 64, value: 1, channel: 2 });
+    await node.send('message', { type: 'noteOff', note: 64, channel: 2 });
+    await node.send('message', { type: 'programChange', program: 40, channel: 2 });
+    await node.send('message', { type: 'noteOn', note: 65, velocity: 90, channel: 2 });
+    await node.send('message', { type: 'controlChange', control: 64, value: 0, channel: 2 });
+
+    expect(instruments.get('acoustic_grand_piano')?.stop).toHaveBeenCalledWith({ stopId: 64 });
+    expect(instruments.get('violin')?.stop).not.toHaveBeenCalled();
+  });
+
   it('maps soundfont2 programs by parsed instrument order', async () => {
     const loadInstrument = vi.fn(async () => {});
 

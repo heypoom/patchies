@@ -70,6 +70,13 @@ channel for notes and treat `programChange` as a change to the one active
 instrument. `gm~` is the multi-channel object for Standard MIDI file playback:
 it preserves independent channel state and routes notes by MIDI channel.
 
+Melodic smplr instruments support MIDI CC 64 sustain pedal behavior. Patchies
+uses `1` for pedal down and `0` for pedal up; any positive CC 64 value holds
+subsequent `noteOff` messages, while `0` releases every held note. Normalized
+pedal-on values are sent to smplr as MIDI value `127` so CC-conditioned sample
+regions remain available. `drums~` and `gm~` channel 10 percussion do not use
+sustain-pedal handling.
+
 ## Shared Descriptor Architecture
 
 Each object is described by a smplr instrument descriptor. The Svelte component
@@ -394,6 +401,8 @@ Focused tests should cover:
 - velocity `0` note-on becomes note-off;
 - `noteOff` calls targeted stop with scheduled time;
 - `controlChange` calls `setCC`;
+- melodic smplr instruments defer note-offs while CC 64 is on, then release
+  held notes when the pedal turns off; `drums~` does not;
 - `programChange` updates settings for `soundfont~` and `soundfont2~` mappings;
 - `gm~` keeps program changes scoped to their MIDI channel;
 - `gm~` queues first notes while the target channel's instrument is loading

@@ -13,9 +13,13 @@ velocity, pan, default note, detune, and reverse playback.
 ```text
 { type: "noteOn", note: 64, velocity: 100 }
 { type: "noteOff", note: 64 }
-{ type: "controlChange", control: 64, value: 127 }
+{ type: "controlChange", control: 64, value: 1 }
 { type: "bang", value: 1, duration: 0.25 }
 ```
+
+CC 64 controls the sustain pedal. Patchies sends `1` while the pedal is down
+and `0` when it is released. Any positive value holds notes after their
+`noteOff`; `0` releases those held notes.
 
 ## See Also
 

@@ -14,10 +14,15 @@ note, detune, and reverse playback.
 ```text
 { type: "noteOn", note: 60, velocity: 100, time: audioTime }
 { type: "noteOff", note: 60, time: audioTime }
+{ type: "controlChange", control: 64, value: 1 }
 { type: "bang", value: 1, duration: 0.5 }
 ```
 
 A number triggers the configured default note with that gain multiplier.
+
+Send MIDI CC 64 to use a sustain pedal. Patchies sends `1` while the pedal is
+down and `0` when it is released. Any positive value holds notes after their
+`noteOff`; `0` releases those held notes.
 
 ## See Also
 

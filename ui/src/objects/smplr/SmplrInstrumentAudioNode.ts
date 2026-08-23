@@ -1,7 +1,9 @@
 import type { AudioNodeGroup, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { match } from 'ts-pattern';
 import { normalizeSmplrMessage } from './messages';
 import type { SmplrInstrument, SmplrInstrumentDescriptor, SmplrModule } from './descriptors';
+import { normalizeSustainPedalValue, SustainPedal } from './SustainPedal';
 
 export type SmplrRuntimeStatus =
   | { state: 'idle' }
@@ -33,13 +35,16 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   ];
 
   readonly nodeId: string;
+
   audioNode: GainNode;
   instrument: SmplrInstrument | null = null;
   onStatusChange?: (status: SmplrRuntimeStatus) => void;
   onSettingsPatch?: (patch: Record<string, unknown>) => void;
 
-  private settings: Record<string, unknown> = {};
   private loadToken = 0;
+  private settings: Record<string, unknown> = {};
+
+  private sustainPedal = new SustainPedal<{ stopId?: number | string; time?: number }>();
 
   constructor(
     nodeId: string,
@@ -53,12 +58,14 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
 
   async create(params: unknown[]): Promise<void> {
     const settings = params.length === 1 ? params[0] : params[1];
+
     await this.reload(asSettings(settings));
   }
 
   async send(key: string, message: unknown): Promise<void> {
     if (key === 'settings') {
       await this.applySettings(asSettings(message));
+
       return;
     }
 
@@ -95,6 +102,7 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
 
   private async reload(settings: Record<string, unknown>): Promise<void> {
     const token = ++this.loadToken;
+
     this.settings = { ...settings };
     this.onStatusChange?.({ state: 'loading', loaded: 0, total: 0 });
 
@@ -119,7 +127,11 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
 
       this.disposeInstrument(this.instrument);
       this.instrument = instrument;
+
+      this.sustainPedal.clear();
       this.applyLiveSettings(settings);
+      this.applySustainPedalState();
+
       this.onStatusChange?.({
         state: 'ready',
         instrumentName: this.descriptor.getDisplayName(settings),
@@ -139,34 +151,23 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
     const instrument = this.instrument;
     if (!instrument) return;
 
-    switch (command.type) {
-      case 'start':
-        instrument.start(command.event);
-        break;
-      case 'stop':
-        instrument.stop(command.target);
-        break;
-      case 'stopAll':
-        instrument.stop(command.time === undefined ? undefined : { time: command.time });
-        break;
-      case 'cc':
-        instrument.setCC(command.control, command.value);
-        break;
-      case 'program':
-        this.applyProgramChange(command.program);
-        break;
-      case 'volume':
-        instrument.output.volume = command.value;
-        break;
-      case 'detune':
-        instrument.setDetune(command.value);
-        break;
-      case 'reverse':
-        instrument.setReverse(command.value);
-        break;
-      case 'ignored':
-        break;
-    }
+    match(command)
+      .with({ type: 'start' }, ({ event }) => instrument.start(event))
+      .with({ type: 'stop' }, ({ target }) => this.stopNote(instrument, target))
+      .with({ type: 'stopAll' }, ({ time }) => {
+        this.sustainPedal.clear();
+
+        instrument.stop(time === undefined ? undefined : { time });
+      })
+      .with({ type: 'cc' }, ({ control, value }) =>
+        this.applyControlChange(instrument, control, value)
+      )
+      .with({ type: 'program' }, ({ program }) => this.applyProgramChange(program))
+      .with({ type: 'volume' }, ({ value }) => (instrument.output.volume = value))
+      .with({ type: 'detune' }, ({ value }) => instrument.setDetune(value))
+      .with({ type: 'reverse' }, ({ value }) => instrument.setReverse(value))
+      .with({ type: 'ignored' }, () => {})
+      .exhaustive();
   }
 
   private applyProgramChange(program: number): void {
@@ -178,16 +179,48 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
     if (!patch) return;
 
     this.onSettingsPatch?.(patch);
-    void this.applySettings({ ...this.settings, ...patch });
+    this.applySettings({ ...this.settings, ...patch });
+  }
+
+  private stopNote(
+    instrument: SmplrInstrument,
+    target: { stopId?: number | string; time?: number }
+  ): void {
+    if (this.descriptor.supportsSustainPedal && this.sustainPedal.hold(target)) return;
+
+    instrument.stop(target);
+  }
+
+  private applyControlChange(instrument: SmplrInstrument, control: number, value: number): void {
+    const controlValue =
+      this.descriptor.supportsSustainPedal && control === 64
+        ? normalizeSustainPedalValue(value)
+        : value;
+
+    instrument.setCC(control, controlValue);
+
+    if (!this.descriptor.supportsSustainPedal || control !== 64) return;
+
+    for (const target of this.sustainPedal.set(controlValue)) {
+      instrument.stop(target);
+    }
+  }
+
+  private applySustainPedalState(): void {
+    if (this.descriptor.supportsSustainPedal) {
+      this.instrument?.setCC(64, this.sustainPedal.isDown ? 127 : 0);
+    }
   }
 
   private applyLiveSettings(settings: Record<string, unknown>): void {
     if (!this.instrument) return;
 
     this.instrument.output.volume = readNumber(settings.volume, 100);
+
     if (typeof this.instrument.output.pan === 'number') {
       this.instrument.output.pan = readNumber(settings.pan, 0);
     }
+
     this.instrument.setDetune(readNumber(settings.detune, 0));
     this.instrument.setReverse(Boolean(settings.reverse));
   }
@@ -203,8 +236,8 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   }
 }
 
-export function createSmplrAudioNodeClass(descriptor: SmplrInstrumentDescriptor) {
-  return class DescriptorSmplrAudioNode extends SmplrInstrumentAudioNode {
+export const createSmplrAudioNodeClass = (descriptor: SmplrInstrumentDescriptor) =>
+  class DescriptorSmplrAudioNode extends SmplrInstrumentAudioNode {
     static type = descriptor.type;
     static group: AudioNodeGroup = 'processors';
     static description = descriptor.description;
@@ -216,18 +249,12 @@ export function createSmplrAudioNodeClass(descriptor: SmplrInstrumentDescriptor)
       super(nodeId, audioContext, descriptor);
     }
   };
-}
 
-function asSettings(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-    ? { ...(value as Record<string, unknown>) }
-    : {};
-}
+const asSettings = (value: unknown): Record<string, unknown> =>
+  typeof value === 'object' && value !== null ? { ...(value as Record<string, unknown>) } : {};
 
-function readNumber(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
+const readNumber = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 
-function readNote(value: unknown, fallback: number | string): number | string {
-  return typeof value === 'number' || typeof value === 'string' ? value : fallback;
-}
+const readNote = (value: unknown, fallback: number | string): number | string =>
+  typeof value === 'number' || typeof value === 'string' ? value : fallback;
