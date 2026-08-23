@@ -1,5 +1,6 @@
 import type { AudioNodeGroup, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { match } from 'ts-pattern';
 import { normalizeSmplrMessage } from './messages';
 import type { SmplrInstrument, SmplrInstrumentDescriptor, SmplrModule } from './descriptors';
 import { normalizeSustainPedalValue, SustainPedal } from './SustainPedal';
@@ -34,6 +35,7 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   ];
 
   readonly nodeId: string;
+
   audioNode: GainNode;
   instrument: SmplrInstrument | null = null;
   onStatusChange?: (status: SmplrRuntimeStatus) => void;
@@ -125,9 +127,11 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
 
       this.disposeInstrument(this.instrument);
       this.instrument = instrument;
+
       this.sustainPedal.clear();
       this.applyLiveSettings(settings);
       this.applySustainPedalState();
+
       this.onStatusChange?.({
         state: 'ready',
         instrumentName: this.descriptor.getDisplayName(settings),
@@ -147,35 +151,23 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
     const instrument = this.instrument;
     if (!instrument) return;
 
-    switch (command.type) {
-      case 'start':
-        instrument.start(command.event);
-        break;
-      case 'stop':
-        this.stopNote(instrument, command.target);
-        break;
-      case 'stopAll':
+    match(command)
+      .with({ type: 'start' }, ({ event }) => instrument.start(event))
+      .with({ type: 'stop' }, ({ target }) => this.stopNote(instrument, target))
+      .with({ type: 'stopAll' }, ({ time }) => {
         this.sustainPedal.clear();
-        instrument.stop(command.time === undefined ? undefined : { time: command.time });
-        break;
-      case 'cc':
-        this.applyControlChange(instrument, command.control, command.value);
-        break;
-      case 'program':
-        this.applyProgramChange(command.program);
-        break;
-      case 'volume':
-        instrument.output.volume = command.value;
-        break;
-      case 'detune':
-        instrument.setDetune(command.value);
-        break;
-      case 'reverse':
-        instrument.setReverse(command.value);
-        break;
-      case 'ignored':
-        break;
-    }
+
+        instrument.stop(time === undefined ? undefined : { time });
+      })
+      .with({ type: 'cc' }, ({ control, value }) =>
+        this.applyControlChange(instrument, control, value)
+      )
+      .with({ type: 'program' }, ({ program }) => this.applyProgramChange(program))
+      .with({ type: 'volume' }, ({ value }) => (instrument.output.volume = value))
+      .with({ type: 'detune' }, ({ value }) => instrument.setDetune(value))
+      .with({ type: 'reverse' }, ({ value }) => instrument.setReverse(value))
+      .with({ type: 'ignored' }, () => {})
+      .exhaustive();
   }
 
   private applyProgramChange(program: number): void {
