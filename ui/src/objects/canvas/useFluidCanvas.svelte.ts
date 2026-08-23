@@ -27,6 +27,7 @@ type UseFluidCanvasOptions = {
   warn: (message: string) => void;
   onResizeCallback: (callback: (size: CanvasSize) => void) => void;
   previewScaleFactor: number;
+  deferInitialSize?: boolean;
 };
 
 const usesFluidCanvas = (code: string) =>
@@ -81,6 +82,14 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
     resizeAxis = resolvedOptions.resize;
     keepAspectRatio = resolvedOptions.keepAspectRatio;
 
+    if (options.deferInitialSize) {
+      if (data.fluidCanvasResizerVisible === undefined) {
+        options.updateNodeData(options.getNodeId(), { fluidCanvasResizerVisible: showResizer });
+      }
+
+      return;
+    }
+
     if (
       resolvedOptions.initialSize &&
       nodeSize.width === undefined &&
@@ -106,6 +115,29 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
     if (data.fluidCanvasResizerVisible === undefined) {
       options.updateNodeData(options.getNodeId(), { fluidCanvasResizerVisible: showResizer });
     }
+  }
+
+  function initializeSize(initialSize: CanvasSize) {
+    if (!isFluid) return;
+
+    const nodeSize = options.getNodeSize();
+
+    if (nodeSize.width === undefined && nodeSize.height === undefined) {
+      options.updateNode(options.getNodeId(), {
+        width: initialSize.width / options.previewScaleFactor,
+        height: initialSize.height / options.previewScaleFactor
+      });
+
+      options.setCanvasSize(initialSize);
+      return;
+    }
+
+    const previewSize = options.getPreviewSize();
+
+    options.setCanvasSize({
+      width: Math.round((nodeSize.width ?? previewSize.width) * options.previewScaleFactor),
+      height: Math.round((nodeSize.height ?? previewSize.height) * options.previewScaleFactor)
+    });
   }
 
   function setFixedCanvasSize(width: number, height: number) {
@@ -190,6 +222,7 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
         : options.getCanvasSize(),
     reset,
     setFluidSize,
+    initializeSize,
     setFixedCanvasSize,
     onCanvasResize,
     handleResize

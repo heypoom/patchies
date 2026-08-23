@@ -60,6 +60,23 @@ describe('P5Manager', () => {
     ]);
   });
 
+  it('exposes setFluidSize to p5 user code', async () => {
+    vi.stubGlobal('window', {});
+
+    const setFluidSize = vi.fn();
+
+    executeJavaScript.mockImplementationOnce((_nodeId, _code, options) => {
+      options.extraContext.setFluidSize({ keepAspectRatio: true });
+      return {};
+    });
+
+    const manager = new P5Manager('p5-node', {} as HTMLElement);
+
+    await manager['executeUserCode']({} as never, { code: '', setFluidSize }, {});
+
+    expect(setFluidSize).toHaveBeenCalledWith({ keepAspectRatio: true });
+  });
+
   it('keeps mouse and previous-mouse coordinates in canvas space across scaled pointer events', () => {
     const canvas = {
       scrollWidth: 400,

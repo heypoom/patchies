@@ -20,6 +20,7 @@ ${esmInstructions}
 - noInteract() - Disable all XYFlow canvas interactions (drag, pan, wheel)
 - noBorder() - Hide Patchies border and selected glow
 - noOutput() - Hide video output port (call this when the sketch is self-contained and does not need to feed video to other nodes)
+- setFluidSize({ showResizer?, resize?, keepAspectRatio? }) - Make the canvas follow a user-resized node. createCanvas() supplies the initial size; do not pass initialSize.
 - createSurfaceCanvas(renderer?) - Create a transparent renderer-output-sized canvas and enable Expand so the p5 sketch can run as a fullscreen surface overlay. Do NOT also call createCanvas() when using this.
 - expandSurface() / collapseSurface() - In p5 surface mode, enter or exit fullscreen surface mode from code.
 - hideExitButton() - In expanded p5 surface mode, hide the "Exit surface" badge.
@@ -29,6 +30,7 @@ ${esmInstructions}
 **Default behaviors to apply unless there's a reason not to:**
 - Call noOutput() by default unless the sketch is explicitly meant to output video to another node.
 - For fullscreen transparent overlays over Hydra/GLSL/video output, call createSurfaceCanvas() in setup() instead of createCanvas(), and use clear() in draw() so visuals underneath show through.
+- For a resizable inline sketch, call setFluidSize() and createCanvas(width, height) in setup(). Do not combine setFluidSize() with createSurfaceCanvas().
 - In p5 surface mode, use setMouseForwarding() when only some render nodes should receive mouse/wheel interaction, and setMouseForwarding({ enabled: false }) when p5 should consume interaction without driving Hydra/GLSL/Three.
 - Call noDrag() if the sketch uses mousePressed, mouseDragged, mouseX/mouseY interaction.
 - Call noWheel() if the sketch uses scroll or mouseWheel interaction.

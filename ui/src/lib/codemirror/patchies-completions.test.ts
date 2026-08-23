@@ -189,6 +189,7 @@ describe('patchies completions', () => {
   it('shows p5 surface mode helper completions inside setup', () => {
     expect(getCompletionLabels('p5', 'function setup() { setM')).toContain('setMouseForwarding');
     expect(getCompletionLabels('p5', 'function setup() { hide')).toContain('hideExitButton');
+    expect(getCompletionLabels('p5', 'function setup() { setF')).toContain('setFluidSize');
   });
 
   it('shows surface expansion helper completions inside callbacks', () => {
@@ -216,6 +217,15 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('canvas', 'setF')).not.toContain('setFluidSize');
     expect(getCompletionLabels('canvas', 'onCanvasR')).not.toContain('onCanvasResize');
     expect(getCompletionLabels('canvas.dom', 'onR')).not.toContain('onResize');
+  });
+
+  it('omits initialSize from the p5 fluid-size completion', () => {
+    const p5Completion = getCompletion('p5', 'setF', 'setFluidSize');
+    const canvasCompletion = getCompletion('canvas.dom', 'setF', 'setFluidSize');
+
+    expect(p5Completion?.detail).not.toContain('initialSize');
+    expect(p5Completion?.apply).toBe('setFluidSize()');
+    expect(canvasCompletion?.detail).toContain('initialSize');
   });
 
   it('shows noBorder completions only for native UI nodes', () => {

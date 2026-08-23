@@ -21,6 +21,7 @@ recv(m => {
 })
 
 function setup() {
+  setFluidSize({ showResizer: false })
   createCanvas(W, 200)
   pixelDensity(3)
   noStroke()
@@ -38,6 +39,7 @@ function draw() {
 }`;
 
 const AUDIO_FFT_SMALL_P5 = `function setup() {
+  setFluidSize({ showResizer: false })
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
   strokeWeight(1)
@@ -71,6 +73,7 @@ function draw() {
 }`;
 
 const AUDIO_FFT_FULL_P5 = `function setup() {
+  setFluidSize({ showResizer: false })
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
 }
@@ -105,6 +108,7 @@ function draw() {
 }`;
 
 const AUDIO_FFT_RMS_WIDE_P5 = `function setup() {
+  setFluidSize({ showResizer: false })
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
   strokeWeight(3)
@@ -131,6 +135,7 @@ let vy;
 let size = 40;
 
 function setup() {
+  setFluidSize({ showResizer: false })
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
   noStroke()
@@ -162,6 +167,7 @@ function draw() {
 }`;
 
 const AUDIO_FFT_RMS_NARROW_P5 = `function setup() {
+  setFluidSize({ showResizer: false })
   createCanvas(200, 150)
   pixelDensity(4)
   strokeWeight(3)
@@ -183,6 +189,7 @@ function draw() {
 const TEXT_BANNER_P5 = `const txt = "hello, world!"
 
 function setup() {
+  setFluidSize({ showResizer: false })
   createCanvas(500, 100)
   pixelDensity(4)
   setHidePorts(true)
