@@ -102,7 +102,7 @@ The initial primary collection vocabulary is:
 
 | Collection        | User intent                                                 |
 | ----------------- | ----------------------------------------------------------- |
-| Essentials        | Learn the patching basics and build small patches           |
+| Essentials        | Building blocks and message processors                      |
 | Visuals           | Make graphics, video, shaders, and interactive widgets      |
 | Music             | Compose, sequence, perform, and play instruments            |
 | Sound Design      | Craft signals, effects, routing, and audio-reactive patches |

@@ -22,7 +22,7 @@ export const BUILT_IN_PACK_COLLECTIONS: PackCollection[] = [
   {
     id: 'essentials',
     name: 'Essentials',
-    description: 'Learn the patching basics and build small patches',
+    description: 'Building blocks and message processors',
     icon: 'Boxes',
     primaryObjectPackIds: ['starters', 'control', 'transform'],
     primaryPresetPackIds: ['starters', 'timing-demos', 'scripting-demos'],
