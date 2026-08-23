@@ -1,8 +1,14 @@
 <script lang="ts">
   import { TriangleAlert } from '@lucide/svelte/icons';
+  import { SvelteMap } from 'svelte/reactivity';
   import { getPresetPackDisplayItems } from '$lib/presets/preset-pack-index';
   import type { PresetPack } from '../../../stores/extensions.store';
-  import { enabledObjects, enabledPackIds, BUILT_IN_PACKS } from '../../../stores/extensions.store';
+  import {
+    enabledObjects,
+    enabledPackIds,
+    BUILT_IN_PACKS,
+    enableObjectPacks
+  } from '../../../stores/extensions.store';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import PackCard from './PackCard.svelte';
 
@@ -35,7 +41,7 @@
   const missingObjects = $derived(pack.requiredObjects.filter((obj) => !$enabledObjects.has(obj)));
 
   const missingPacks = $derived.by(() => {
-    const packsNeeded = new Map<string, (typeof BUILT_IN_PACKS)[0]>();
+    const packsNeeded = new SvelteMap<string, (typeof BUILT_IN_PACKS)[0]>();
     for (const obj of missingObjects) {
       const containingPack = BUILT_IN_PACKS.find((p) => p.objects.includes(obj));
       if (containingPack && !$enabledPackIds.includes(containingPack.id)) {
@@ -46,13 +52,7 @@
   });
 
   function enableMissingPacks() {
-    enabledPackIds.update((ids) => {
-      const newIds = [...ids];
-      for (const p of missingPacks) {
-        if (!newIds.includes(p.id)) newIds.push(p.id);
-      }
-      return newIds;
-    });
+    enableObjectPacks(missingPacks.map((pack) => pack.id));
   }
 
   const isUnavailable = $derived(!hasAnyRequiredObjects && pack.requiredObjects.length > 0);
