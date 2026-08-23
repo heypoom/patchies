@@ -1,7 +1,5 @@
 # JS Integrations
 
-Use JavaScript to call an AI provider, control object presentation, and set GPU texture precision.
-
 ## Virtual Filesystem
 
 Load images, videos, fonts, and other files from the patch virtual filesystem:
