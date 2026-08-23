@@ -13,6 +13,7 @@ export const categoryOrder = [
 // Topic order within each category
 export const topicOrder: Record<string, string[]> = {
   'Getting Started': [
+    'introduction',
     'demos',
     'manage-collections',
     'adding-objects',

@@ -74,7 +74,7 @@ Before exposing a self-hosted instance, follow the [production guide](./docs/PRO
 ### Helpful Links
 
 - Play with the [demos](https://patchies.app/?startup=demos) to see what you can make with Patchies.
-- Skim the [docs](https://patchies.app/docs/adding-objects) for tutorials and object references.
+- Skim the [docs](https://patchies.app/docs/manage-collections) for tutorials and object references.
 - No idea what to make? Open [sparks](https://patchies.app/?startup=sparks) to generate patch ideas.
 - Follow the [Instagram](https://www.instagram.com/patchiesapp) for demos, inspirations and tutorials.
 - Join the [Discord](https://discord.gg/PpccRb2XjE) to share your creations, ask for help and chat with other patchers.

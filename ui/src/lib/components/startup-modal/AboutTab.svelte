@@ -129,7 +129,7 @@
         class="learning-paths"
         aria-label="Getting started"
       >
-        <a href="/docs/adding-objects" target="_blank" class="learning-path">
+        <a href="/docs/introduction" target="_blank" class="learning-path">
           <Diamond class="h-3.5 w-3.5 shrink-0" />
           <span>
             <strong>Learn the basics</strong>

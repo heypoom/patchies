@@ -586,7 +586,7 @@
       })
       .with('open-docs', () => {
         onCancel();
-        window.open('/docs/adding-objects', '_blank');
+        window.open('/docs/introduction', '_blank');
       })
       .with('set-room', () => {
         roomName = getRoom();
