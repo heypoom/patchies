@@ -3,16 +3,16 @@ Slew-limiting low-pass filter that limits how fast a signal can change. Useful f
 ## Usage
 
 ```txt
-phasor~ 1 → *~ 1000 → slop~ → vcf~
-                ↑
-             limit
+[osc~ 440] → [slop~ 10000] → [gain~ 0.3] → [out~]
 ```
 
-The limit parameter sets the maximum change per second. A limit of 1000 means the output can change by at most 1000 units per second.
+The limit parameter sets the maximum change per second. Use a high limit for audio-rate signals: a limit of `10000` preserves an audible 440 Hz tone while softening abrupt changes.
+
+To smooth a filter sweep, connect `slop~` to the `frequency` inlet of [vcf~](/docs/objects/vcf~), alongside a separate audio signal connected to `vcf~`'s first inlet.
 
 ## Parameters
 
-- **limit**: Maximum slew rate in units per second (default: 1)
+- **limit**: Maximum slew rate in units per second (default: 1). Values near 1 are intended for slow control signals; use larger values for audio.
 
 ## Applications
 

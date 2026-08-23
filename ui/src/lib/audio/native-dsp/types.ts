@@ -30,6 +30,8 @@ export interface DspAudioParamDescriptor {
   automationRate?: 'a-rate' | 'k-rate';
 }
 
+const FLOAT32_MAX = 3.4028234663852886e38;
+
 /**
  * Extract AudioParam descriptors from inlets marked with isAudioParam.
  */
@@ -39,8 +41,8 @@ export function extractAudioParamDescriptors(inlets: ObjectInlet[]): DspAudioPar
     .map((inlet) => ({
       name: inlet.name!,
       defaultValue: typeof inlet.defaultValue === 'number' ? inlet.defaultValue : 0,
-      minValue: inlet.minNumber ?? -3.4028235e38,
-      maxValue: inlet.maxNumber ?? 3.4028235e38,
+      minValue: inlet.minNumber ?? -FLOAT32_MAX,
+      maxValue: inlet.maxNumber ?? FLOAT32_MAX,
       automationRate: inlet.audioParamAutomationRate ?? 'a-rate'
     }));
 }
