@@ -4,11 +4,11 @@
 
 > Try out [the above demo](https://patchies.app/?demo=random-walk-world) which uses P5.js with Hydra to create a random walk shader.
 
-Patchies is a _creative coding patcher_ where you write small programs using the tools and libraries that you already know, and patch them together to make something new.
+Patchies is a _creative coding patcher_ where you write small programs using the tools and libraries that you already know, and patch them together to make something interesting.
 
-Make interactive widgets, craft synthesizers, design audio-reactive visuals, compose visuals with shader graphs, and more. All running on the web, no install needed.
+It's a playground where you can make interactive widgets, craft synthesizers, design audio-reactive visuals, compose visuals with shader graphs, and see how they all connect. It's all running on the web, no installation needed.
 
-Ready to try Patchies? [Let's get started.](#get-started)
+Want to try out Patchies? [Let's get started.](#get-started)
 
 ## What can I make?
 
