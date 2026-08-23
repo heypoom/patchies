@@ -14,12 +14,14 @@
     enabled,
     mountCommand,
     onEnable,
-    onDisable
+    onDisable,
+    class: className = ''
   }: {
     enabled: boolean;
     mountCommand: string | null;
     onEnable: () => Promise<void>;
     onDisable: () => void;
+    class?: string;
   } = $props();
 
   let copied = $state(false);
@@ -54,7 +56,7 @@
 </script>
 
 {#if enabled}
-  <div class="px-4 py-4 sm:px-5">
+  <div class={['px-4 py-4 sm:px-5', className]}>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="min-w-0">
         <p
@@ -129,7 +131,12 @@
     </div>
   {/if}
 {:else}
-  <div class="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+  <div
+    class={[
+      'flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5',
+      className
+    ]}
+  >
     <div class="min-w-0">
       <p class="text-[13px] font-medium text-zinc-100">Create a local mount</p>
       <p class="mt-1 text-[12px] leading-5 text-zinc-400">

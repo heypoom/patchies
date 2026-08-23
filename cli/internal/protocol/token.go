@@ -32,7 +32,7 @@ func ParseConnection(value string) (Connection, error) {
 	}
 
 	instanceURL, err := url.Parse(connection.InstanceURL)
-	if err != nil || instanceURL.Scheme == "" || instanceURL.Host == "" {
+	if err != nil || (instanceURL.Scheme != "http" && instanceURL.Scheme != "https") || instanceURL.Host == "" {
 		return Connection{}, errors.New("token instance URL is invalid")
 	}
 

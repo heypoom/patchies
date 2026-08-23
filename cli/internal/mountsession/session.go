@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/heypoom/patchies/cli/internal/client"
@@ -54,7 +55,11 @@ func (s *Session) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer watcher.Close()
+	defer func() {
+		if err := watcher.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, "patchies: close filesystem watcher:", err)
+		}
+	}()
 
 	fmt.Fprintf(os.Stderr, "patchies: mounted %s; waiting for browser snapshot\n", s.path)
 
@@ -170,6 +175,7 @@ func (s *Session) Run(ctx context.Context) error {
 					cancelStream()
 					return err
 				} else if ok {
+					discardDeletedPendingWrites(pending, representation)
 					if err := watcher.ApplySnapshot(representation); err != nil {
 						cancelStream()
 						return err
@@ -326,13 +332,30 @@ func eventState(event client.Event, generation string, revision int64) (string, 
 	return generation, body.PatchRevision
 }
 
+func discardDeletedPendingWrites(pending map[string]string, representation mount.Representation) {
+	objects := make(map[string]struct{}, len(representation.Objects))
+	for _, object := range representation.Objects {
+		objects[object.ID] = struct{}{}
+	}
+	for path := range pending {
+		objectID, _, ok := strings.Cut(path, "/")
+		if !ok {
+			delete(pending, path)
+			continue
+		}
+		if _, ok := objects[objectID]; !ok {
+			delete(pending, path)
+		}
+	}
+}
+
 func randomID() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
+	buffer := make([]byte, 32)
+	if _, err := rand.Read(buffer); err != nil {
 		return "", err
 	}
 
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
+	return base64.RawURLEncoding.EncodeToString(buffer), nil
 }
 
 func wait(ctx context.Context, duration time.Duration) error {

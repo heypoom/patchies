@@ -25,6 +25,17 @@ func TestRelayAllowsOneStreamingMutatingClient(t *testing.T) {
 	}
 }
 
+func TestRelayRejectsSecondClientBeforeTheFirstSubscribes(t *testing.T) {
+	relay, credentials := createTestSession(t)
+
+	if _, err := relay.AttachClient(credentials.SessionID, credentials.Secret); err != nil {
+		t.Fatalf("attach first client: %v", err)
+	}
+	if _, err := relay.AttachClient(credentials.SessionID, credentials.Secret); !errors.Is(err, ErrClientAttached) {
+		t.Fatalf("attach second client error = %v, want ErrClientAttached", err)
+	}
+}
+
 func TestRelayPublishesOneCanonicalCommitForAnOperation(t *testing.T) {
 	relay, credentials := createTestSession(t)
 
@@ -223,6 +234,25 @@ func TestRelayReplaysMissedCommitAfterLastEventID(t *testing.T) {
 	published := event.Data.(CanonicalCommit)
 	if published.CommitID != commit.CommitID || published.PatchRevision != 1 {
 		t.Fatalf("replayed commit = %#v", published)
+	}
+}
+
+func TestRelayRejectsReplayBeforeTheEventLog(t *testing.T) {
+	relay, credentials := createTestSession(t)
+	client := attachTestClient(t, relay, credentials)
+
+	for index := 0; index <= eventLogLimit+1; index++ {
+		if err := relay.PublishSnapshot(credentials.SessionID, credentials.Secret, SnapshotRequest{
+			BrowserGeneration: "browser-1",
+			PatchRevision:     0,
+			Representation:    json.RawMessage(`{"format":"patchies.representation.v1","patchId":"patch-1","objects":[]}`),
+		}); err != nil {
+			t.Fatalf("publish snapshot %d: %v", index, err)
+		}
+	}
+
+	if _, _, err := relay.SubscribeClient(credentials.SessionID, credentials.Secret, client.ClientID, 1); !errors.Is(err, ErrReplayUnavailable) {
+		t.Fatalf("subscribe stale replay error = %v, want ErrReplayUnavailable", err)
 	}
 }
 

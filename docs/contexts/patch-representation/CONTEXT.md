@@ -1,6 +1,6 @@
 # Patch Representation
 
-Patch Representation is the Git-friendly local filesystem view of the objects that has code representations in one live Patchies patch.
+Patch Representation is the Git-friendly local filesystem view of the objects that have code representations in one live Patchies patch.
 
 ## Language
 

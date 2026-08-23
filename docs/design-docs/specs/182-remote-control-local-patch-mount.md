@@ -1,6 +1,6 @@
 # 182. Remote Control Local Patch Mount
 
-**Status:** Ready for implementation
+**Status:** Implemented
 
 ## Goal
 

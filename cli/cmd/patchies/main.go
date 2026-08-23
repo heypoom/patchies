@@ -25,7 +25,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 || args[0] != "mount" {
-		return errors.New("usage: patchies mount [--token <connection-string>] [--path <directory>]")
+		return errors.New("usage: patchies mount [--token <connection-string> | --token-fd <file-descriptor>] [--path <directory>]")
 	}
 
 	token, path, err := readMountOptions(args[1:], os.Stdin, os.Stderr)
@@ -48,12 +48,24 @@ func readMountOptions(args []string, input io.Reader, output io.Writer) (string,
 	flags := flag.NewFlagSet("mount", flag.ContinueOnError)
 	flags.SetOutput(output)
 	token := flags.String("token", "", "Remote Control connection string")
+	tokenFD := flags.Int("token-fd", -1, "file descriptor containing the Remote Control connection string")
 	path := flags.String("path", "", "empty or new mount directory")
 	if err := flags.Parse(args); err != nil {
 		return "", "", err
 	}
 
+	if *token != "" && *tokenFD >= 0 {
+		return "", "", errors.New("token and token-fd cannot be used together")
+	}
+
 	reader := bufio.NewReader(input)
+	if *tokenFD >= 0 {
+		value, err := readTokenFileDescriptor(*tokenFD)
+		if err != nil {
+			return "", "", err
+		}
+		*token = value
+	}
 	if *token == "" {
 		value, err := prompt(reader, output, "Remote Control token")
 		if err != nil {
@@ -71,6 +83,27 @@ func readMountOptions(args []string, input io.Reader, output io.Writer) (string,
 	}
 
 	return *token, *path, nil
+}
+
+func readTokenFileDescriptor(fd int) (string, error) {
+	duplicate, err := syscall.Dup(fd)
+	if err != nil {
+		return "", fmt.Errorf("duplicate token file descriptor: %w", err)
+	}
+	file := os.NewFile(uintptr(duplicate), "remote-control-token")
+	defer func() { _ = file.Close() }()
+
+	value, err := io.ReadAll(file)
+	if err != nil {
+		return "", fmt.Errorf("read token file descriptor: %w", err)
+	}
+
+	value = []byte(strings.TrimSpace(string(value)))
+	if len(value) == 0 {
+		return "", errors.New("remote control token cannot be empty")
+	}
+
+	return string(value), nil
 }
 
 func prompt(reader *bufio.Reader, output io.Writer, label string) (string, error) {

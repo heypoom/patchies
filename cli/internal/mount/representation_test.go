@@ -35,3 +35,16 @@ func TestApplySnapshotWritesObjectsAndRemovesDeletedObjects(t *testing.T) {
 		t.Fatalf("deleted object directory error = %v, want not exist", err)
 	}
 }
+
+func TestObjectOperationsRejectTraversalIDs(t *testing.T) {
+	root := t.TempDir()
+	for _, id := range []string{".", "..", "nested/object", `nested\\object`} {
+		object := RepresentationObject{ID: id, Metadata: ObjectMetadata{Format: RepresentationVersion, ID: id}}
+		if err := ApplyObject(root, object); err == nil {
+			t.Fatalf("ApplyObject(%q) succeeded", id)
+		}
+		if err := RemoveObject(root, id); err == nil {
+			t.Fatalf("RemoveObject(%q) succeeded", id)
+		}
+	}
+}

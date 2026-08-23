@@ -48,7 +48,7 @@ func TestSessionRemainsBidirectionalAcrossAlternatingEdits(t *testing.T) {
 				select {
 				case event := <-events:
 					payload, _ := json.Marshal(event.data)
-					fmt.Fprintf(response, "id: %d\nevent: %s\ndata: %s\n\n", event.id, event.eventType, payload)
+					_, _ = fmt.Fprintf(response, "id: %d\nevent: %s\ndata: %s\n\n", event.id, event.eventType, payload)
 					flusher.Flush()
 				case <-request.Context().Done():
 					return

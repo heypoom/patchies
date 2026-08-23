@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const RepresentationVersion = "patchies.representation.v1"
@@ -75,7 +76,7 @@ func ApplySnapshot(root string, representation Representation) error {
 }
 
 func ApplyObject(root string, object RepresentationObject) error {
-	if object.ID == "" || object.ID != object.Metadata.ID || object.Metadata.Format != RepresentationVersion {
+	if !validObjectID(object.ID) || object.ID != object.Metadata.ID || object.Metadata.Format != RepresentationVersion {
 		return fmt.Errorf("invalid representation object")
 	}
 
@@ -106,6 +107,10 @@ func ApplyObject(root string, object RepresentationObject) error {
 }
 
 func RemoveObject(root, objectID string) error {
+	if !validObjectID(objectID) {
+		return fmt.Errorf("invalid representation object")
+	}
+
 	objectRoot := filepath.Join(root, objectID)
 	if _, err := os.Stat(filepath.Join(objectRoot, "patchies.object.json")); err != nil {
 		if os.IsNotExist(err) {
@@ -128,14 +133,14 @@ func writeFile(root, name string, content []byte) error {
 		return fmt.Errorf("create temporary file: %w", err)
 	}
 	temporaryPath := temporary.Name()
-	defer os.Remove(temporaryPath)
+	defer func() { _ = os.Remove(temporaryPath) }()
 
 	if _, err := temporary.Write(content); err != nil {
-		temporary.Close()
+		_ = temporary.Close()
 		return fmt.Errorf("write temporary file: %w", err)
 	}
 	if err := temporary.Chmod(0o644); err != nil {
-		temporary.Close()
+		_ = temporary.Close()
 		return fmt.Errorf("set file permissions: %w", err)
 	}
 	if err := temporary.Close(); err != nil {
@@ -146,4 +151,8 @@ func writeFile(root, name string, content []byte) error {
 	}
 
 	return nil
+}
+
+func validObjectID(id string) bool {
+	return id != "" && id != "." && id != ".." && !strings.ContainsAny(id, `/\\`) && filepath.Base(id) == id && filepath.Clean(id) == id
 }

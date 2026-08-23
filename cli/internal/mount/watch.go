@@ -1,9 +1,11 @@
 package mount
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,7 +32,7 @@ func NewWatcher(root string) (*Watcher, error) {
 		return nil, fmt.Errorf("create filesystem watcher: %w", err)
 	}
 	if err := watcher.Add(root); err != nil {
-		watcher.Close()
+		_ = watcher.Close()
 		return nil, fmt.Errorf("watch mount root: %w", err)
 	}
 
@@ -56,6 +58,7 @@ func (w *Watcher) Close() error {
 
 func (w *Watcher) ApplySnapshot(representation Representation) error {
 	w.mu.Lock()
+	previousObjects := expectedObjectIDs(w.expected)
 	w.expected = make(map[string]string)
 	for _, object := range representation.Objects {
 		for _, fileName := range object.Metadata.Files {
@@ -63,6 +66,19 @@ func (w *Watcher) ApplySnapshot(representation Representation) error {
 		}
 	}
 	w.mu.Unlock()
+
+	currentObjects := make(map[string]struct{}, len(representation.Objects))
+	for _, object := range representation.Objects {
+		currentObjects[object.ID] = struct{}{}
+	}
+	for objectID := range previousObjects {
+		if _, ok := currentObjects[objectID]; ok {
+			continue
+		}
+		if err := w.watcher.Remove(filepath.Join(w.root, objectID)); err != nil && !errors.Is(err, fsnotify.ErrNonExistentWatch) {
+			return fmt.Errorf("unwatch removed object directory: %w", err)
+		}
+	}
 
 	if err := ApplySnapshot(w.root, representation); err != nil {
 		return err
@@ -80,7 +96,7 @@ func (w *Watcher) ApplyObject(object RepresentationObject) error {
 	w.mu.Lock()
 	prefix := filepath.ToSlash(object.ID) + "/"
 	for path := range w.expected {
-		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
+		if strings.HasPrefix(path, prefix) {
 			delete(w.expected, path)
 		}
 	}
@@ -103,11 +119,15 @@ func (w *Watcher) RemoveObject(objectID string) error {
 	w.mu.Lock()
 	prefix := filepath.ToSlash(objectID) + "/"
 	for path := range w.expected {
-		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
+		if strings.HasPrefix(path, prefix) {
 			delete(w.expected, path)
 		}
 	}
 	w.mu.Unlock()
+
+	if err := w.watcher.Remove(filepath.Join(w.root, objectID)); err != nil && !errors.Is(err, fsnotify.ErrNonExistentWatch) {
+		return fmt.Errorf("unwatch object directory: %w", err)
+	}
 
 	return RemoveObject(w.root, objectID)
 }
@@ -179,12 +199,23 @@ func (w *Watcher) capture(path string) {
 		return
 	}
 
-	w.mu.Lock()
-	w.expected[path] = string(content)
-	w.mu.Unlock()
-
 	select {
 	case w.changes <- FileChange{Path: path, Content: string(content)}:
+		w.mu.Lock()
+		w.expected[path] = string(content)
+		w.mu.Unlock()
 	default:
 	}
+}
+
+func expectedObjectIDs(expected map[string]string) map[string]struct{} {
+	objects := make(map[string]struct{})
+	for path := range expected {
+		objectID, _, ok := strings.Cut(path, "/")
+		if ok {
+			objects[objectID] = struct{}{}
+		}
+	}
+
+	return objects
 }

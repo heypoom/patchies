@@ -1,7 +1,6 @@
 package client
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -30,11 +29,26 @@ func TestNewRequestAllowsNoBody(t *testing.T) {
 		Secret:      "secret-1",
 	})
 
-	request, err := client.newRequest(context.Background(), "GET", "/events", nil)
+	request, err := client.newRequest(t.Context(), "GET", "/events", nil)
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}
 	if request.Body != nil {
 		t.Fatalf("request body = %#v, want nil", request.Body)
+	}
+}
+
+func TestParseEventStreamKeepsEventDataAndJoinsMultipleLines(t *testing.T) {
+	var events []Event
+	err := parseEventStream(strings.NewReader("event: one\ndata: first\n\nevent: two\ndata: second\ndata: line\n\n"), func(event Event) error {
+		events = append(events, event)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("parse event stream: %v", err)
+	}
+
+	if string(events[0].Data) != "first" || string(events[1].Data) != "second\nline" {
+		t.Fatalf("event data = %#v", events)
 	}
 }

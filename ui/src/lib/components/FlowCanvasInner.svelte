@@ -1765,7 +1765,16 @@
             await remoteControl.enable();
 
             const command = remoteControl.mountCommand;
-            if (command) await navigator.clipboard.writeText(command);
+            if (command) {
+              try {
+                await navigator.clipboard.writeText(command);
+              } catch {
+                toast.success('Remote Control enabled', {
+                  description: 'Copy the mount command from Remote Control settings.'
+                });
+                return;
+              }
+            }
 
             toast.success('Remote Control enabled', {
               description: 'The mount command has been copied to your clipboard.'

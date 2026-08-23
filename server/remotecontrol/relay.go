@@ -9,11 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 )
 
 const (
-	eventLogLimit     = 512
-	idempotencyWindow = 512
+	eventLogLimit      = 512
+	idempotencyWindow  = 512
+	maxLiveSessions    = 128
+	sessionIdleTimeout = 10 * time.Minute
 )
 
 var (
@@ -26,6 +29,7 @@ var (
 	ErrRevisionConflict  = errors.New("patch revision is stale")
 	ErrOperationNotFound = errors.New("remote control operation not found")
 	ErrReplayUnavailable = errors.New("remote control event replay is unavailable")
+	ErrSessionLimit      = errors.New("remote control session limit reached")
 )
 
 type SessionCredentials struct {
@@ -123,6 +127,7 @@ type session struct {
 	eventLog          []eventRecord
 	browserListeners  map[chan Event]struct{}
 	clientListeners   map[chan Event]struct{}
+	idleTimer         *time.Timer
 }
 
 func NewRelay() *Relay { return &Relay{sessions: make(map[string]*session)} }
@@ -144,8 +149,11 @@ func (r *Relay) CreateSession(patchID, browserGeneration string) (SessionCredent
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if len(r.sessions) >= maxLiveSessions {
+		return SessionCredentials{}, ErrSessionLimit
+	}
 
-	r.sessions[sessionID] = &session{
+	created := &session{
 		id:                sessionID,
 		secretHash:        sha256.Sum256([]byte(secret)),
 		patchID:           patchID,
@@ -155,6 +163,8 @@ func (r *Relay) CreateSession(patchID, browserGeneration string) (SessionCredent
 		browserListeners:  make(map[chan Event]struct{}),
 		clientListeners:   make(map[chan Event]struct{}),
 	}
+	r.sessions[sessionID] = created
+	r.scheduleExpiry(created)
 
 	return SessionCredentials{SessionID: sessionID, Secret: secret}, nil
 }
@@ -167,7 +177,7 @@ func (r *Relay) AttachClient(sessionID, secret string) (SessionSnapshot, error) 
 	if err != nil {
 		return SessionSnapshot{}, err
 	}
-	if session.clientID != "" && len(session.clientListeners) > 0 {
+	if session.clientID != "" {
 		return SessionSnapshot{}, ErrClientAttached
 	}
 
@@ -217,7 +227,7 @@ func (r *Relay) Revoke(sessionID, secret string) error {
 	for listener := range session.clientListeners {
 		close(listener)
 	}
-	delete(r.sessions, sessionID)
+	r.removeSession(sessionID, session)
 
 	return nil
 }
@@ -372,17 +382,23 @@ func (r *Relay) SubscribeBrowser(sessionID, secret string, afterEventID int64) (
 }
 
 func (r *Relay) SubscribeClient(sessionID, secret, clientID string, afterEventID int64) (<-chan Event, func(), error) {
-	events, stop, err := r.subscribe(sessionID, secret, clientID, audienceClient, afterEventID)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	session, err := r.authenticate(sessionID, secret)
 	if err != nil {
 		return nil, nil, err
 	}
-	r.mu.Lock()
-	if session, ok := r.sessions[sessionID]; ok {
-		r.emit(session, audienceBrowser, "client.attached", snapshot(session))
+	if session.clientID == "" || session.clientID != clientID {
+		return nil, nil, ErrClientNotAttached
 	}
-	r.mu.Unlock()
+	if replayUnavailable(session, afterEventID) {
+		return nil, nil, ErrReplayUnavailable
+	}
+	listener := r.addListener(session, audienceClient, afterEventID)
+	r.emit(session, audienceBrowser, "client.attached", snapshot(session))
 
-	return events, stop, nil
+	return listener, func() { r.unsubscribe(sessionID, audienceClient, listener) }, nil
 }
 
 func (r *Relay) subscribe(sessionID, secret, clientID string, audience eventAudience, afterEventID int64) (<-chan Event, func(), error) {
@@ -398,6 +414,16 @@ func (r *Relay) subscribe(sessionID, secret, clientID string, audience eventAudi
 	if replayUnavailable(session, afterEventID) {
 		return nil, nil, ErrReplayUnavailable
 	}
+	listener := r.addListener(session, audience, afterEventID)
+
+	return listener, func() { r.unsubscribe(sessionID, audience, listener) }, nil
+}
+
+func (r *Relay) addListener(session *session, audience eventAudience, afterEventID int64) chan Event {
+	if session.idleTimer != nil {
+		session.idleTimer.Stop()
+		session.idleTimer = nil
+	}
 	listener := make(chan Event, eventLogLimit)
 	for _, record := range session.eventLog {
 		resumeEvent := afterEventID > 0 && record.Event.ID > afterEventID
@@ -412,7 +438,7 @@ func (r *Relay) subscribe(sessionID, secret, clientID string, audience eventAudi
 	}
 	listeners[listener] = struct{}{}
 
-	return listener, func() { r.unsubscribe(sessionID, audience, listener) }, nil
+	return listener
 }
 
 func isResolvedOperation(session *session, record eventRecord) bool {
@@ -441,6 +467,37 @@ func (r *Relay) unsubscribe(sessionID string, audience eventAudience, listener c
 		listeners = session.clientListeners
 	}
 	delete(listeners, listener)
+	if len(session.browserListeners) == 0 && len(session.clientListeners) == 0 {
+		r.scheduleExpiry(session)
+	}
+}
+
+func (r *Relay) scheduleExpiry(session *session) {
+	if session.idleTimer != nil {
+		session.idleTimer.Stop()
+	}
+	sessionID := session.id
+	session.idleTimer = time.AfterFunc(sessionIdleTimeout, func() {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+
+		current, ok := r.sessions[sessionID]
+		if ok && current == session && len(current.browserListeners) == 0 && len(current.clientListeners) == 0 {
+			r.removeSession(sessionID, current)
+		}
+	})
+}
+
+func (r *Relay) removeSession(sessionID string, session *session) {
+	if session.idleTimer != nil {
+		session.idleTimer.Stop()
+	}
+	delete(r.sessions, sessionID)
+	session.eventLog = nil
+	session.operations = nil
+	session.commits = nil
+	session.browserListeners = nil
+	session.clientListeners = nil
 }
 
 func (r *Relay) emit(session *session, audience eventAudience, eventType string, data any) {

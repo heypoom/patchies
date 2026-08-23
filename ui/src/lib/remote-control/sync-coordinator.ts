@@ -11,6 +11,7 @@ import {
 const protocolVersion = 'patchies.remote-control.v2';
 const patchSyncDelay = 150;
 const reconnectDelay = 500;
+const maxCommitAttempts = 3;
 
 interface SessionCredentials {
   sessionId: string;
@@ -219,7 +220,6 @@ export class RemoteControlSyncCoordinator {
           }
           if (error.code === 'replay_unavailable') {
             this.eventCursor = 0;
-            continue;
           }
         }
 
@@ -242,7 +242,7 @@ export class RemoteControlSyncCoordinator {
 
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
     let pending = '';
-    while (true) {
+    for (let attempt = 0; attempt < maxCommitAttempts; attempt++) {
       const { done, value } = await reader.read();
       if (done) return;
 
@@ -339,14 +339,22 @@ export class RemoteControlSyncCoordinator {
     request: Omit<CanonicalCommit, 'patchRevision'>
   ): Promise<CanonicalCommit> {
     const credentials = this.requireCredentials();
-    let commit: CanonicalCommit;
-    while (true) {
+    for (let attempt = 0; attempt < maxCommitAttempts; attempt++) {
       try {
-        commit = await this.request<CanonicalCommit>(
+        const commit = await this.request<CanonicalCommit>(
           `/api/remote-control/sessions/${credentials.sessionId}/commits`,
           { method: 'POST', body: request }
         );
-        break;
+
+        this.patchRevision = commit.patchRevision;
+        for (const change of commit.changes) {
+          if (change.object)
+            this.objectSignatures.set(change.objectId, JSON.stringify(change.object));
+          else this.objectSignatures.delete(change.objectId);
+        }
+        this.persistSession();
+
+        return commit;
       } catch (error) {
         if (
           this.credentials !== credentials ||
@@ -355,18 +363,15 @@ export class RemoteControlSyncCoordinator {
           throw error;
         }
 
-        await wait(reconnectDelay);
+        const signal = this.abortController?.signal;
+        if (signal?.aborted) throw error;
+
+        await wait(reconnectDelay, signal);
+        if (signal?.aborted) throw error;
       }
     }
 
-    this.patchRevision = commit.patchRevision;
-    for (const change of commit.changes) {
-      if (change.object) this.objectSignatures.set(change.objectId, JSON.stringify(change.object));
-      else this.objectSignatures.delete(change.objectId);
-    }
-    this.persistSession();
-
-    return commit;
+    throw new Error('Remote Control commit retry limit reached');
   }
 
   private async request<T = void>(

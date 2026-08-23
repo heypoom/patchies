@@ -11,9 +11,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/heypoom/patchies/cli/internal/protocol"
 )
+
+const requestTimeout = 30 * time.Second
 
 type Client struct {
 	connection protocol.Connection
@@ -128,7 +131,10 @@ func (c *Client) requestJSON(ctx context.Context, method, path string, body, tar
 		payload = bytes.NewReader(encoded)
 	}
 
-	request, err := c.newRequest(ctx, method, path, payload)
+	requestContext, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	request, err := c.newRequest(requestContext, method, path, payload)
 	if err != nil {
 		return err
 	}
@@ -209,7 +215,10 @@ func parseEventStream(body io.Reader, handle func(Event) error) error {
 		}
 
 		if value, ok := strings.CutPrefix(line, "data: "); ok {
-			event.Data = append(event.Data[:0], value...)
+			if event.Data != nil {
+				event.Data = append(event.Data, '\n')
+			}
+			event.Data = append(event.Data, value...)
 		}
 	}
 

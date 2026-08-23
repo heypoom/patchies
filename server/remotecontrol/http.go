@@ -53,7 +53,7 @@ func (strictJSONBinder) Bind(c *echo.Context, target any) error {
 
 	request := c.Request()
 	request.Body = http.MaxBytesReader(c.Response(), request.Body, maxProtocolPayload)
-	defer request.Body.Close()
+	defer func() { _ = request.Body.Close() }()
 
 	decoder := json.NewDecoder(request.Body)
 	decoder.DisallowUnknownFields()
@@ -147,11 +147,6 @@ func (h *HTTPHandler) ServeHTTP(response http.ResponseWriter, request *http.Requ
 }
 
 func (h *HTTPHandler) revoke(response http.ResponseWriter, request *http.Request, sessionID string) {
-	if request.Method != http.MethodDelete {
-		h.methodNotAllowed(response, http.MethodDelete)
-		return
-	}
-
 	if err := h.relay.Revoke(sessionID, bearerToken(request)); err != nil {
 		h.writeRelayError(response, err)
 		return
@@ -180,11 +175,6 @@ func (h *HTTPHandler) publishCommit(response http.ResponseWriter, request *http.
 }
 
 func (h *HTTPHandler) browserEvents(response http.ResponseWriter, request *http.Request, sessionID string) {
-	if request.Method != http.MethodGet {
-		h.methodNotAllowed(response, http.MethodGet)
-		return
-	}
-
 	afterEventID, err := lastEventID(request)
 	if err != nil {
 		h.writeError(response, http.StatusBadRequest, "invalid_last_event_id", err.Error())
@@ -202,11 +192,6 @@ func (h *HTTPHandler) browserEvents(response http.ResponseWriter, request *http.
 }
 
 func (h *HTTPHandler) clientEvents(response http.ResponseWriter, request *http.Request, sessionID string) {
-	if request.Method != http.MethodGet {
-		h.methodNotAllowed(response, http.MethodGet)
-		return
-	}
-
 	afterEventID, err := lastEventID(request)
 	if err != nil {
 		h.writeError(response, http.StatusBadRequest, "invalid_last_event_id", err.Error())
@@ -230,7 +215,8 @@ func (h *HTTPHandler) streamEvents(response http.ResponseWriter, request *http.R
 	response.Header().Set("Content-Type", "text/event-stream")
 	response.WriteHeader(http.StatusOK)
 
-	if err := http.NewResponseController(response).Flush(); err != nil {
+	controller := http.NewResponseController(response)
+	if err := controller.Flush(); err != nil {
 		return
 	}
 	heartbeat := time.NewTicker(15 * time.Second)
@@ -241,10 +227,13 @@ func (h *HTTPHandler) streamEvents(response http.ResponseWriter, request *http.R
 		case <-request.Context().Done():
 			return
 		case <-heartbeat.C:
+			if err := controller.SetWriteDeadline(time.Now().Add(15 * time.Second)); err != nil {
+				return
+			}
 			if _, err := fmt.Fprint(response, ": keep-alive\n\n"); err != nil {
 				return
 			}
-			if err := http.NewResponseController(response).Flush(); err != nil {
+			if err := controller.Flush(); err != nil {
 				return
 			}
 		case event, ok := <-events:
@@ -257,11 +246,14 @@ func (h *HTTPHandler) streamEvents(response http.ResponseWriter, request *http.R
 				continue
 			}
 
+			if err := controller.SetWriteDeadline(time.Now().Add(15 * time.Second)); err != nil {
+				return
+			}
 			if _, err := fmt.Fprintf(response, "id: %d\nevent: %s\ndata: %s\n\n", event.ID, event.Type, payload); err != nil {
 				return
 			}
 
-			if err := http.NewResponseController(response).Flush(); err != nil {
+			if err := controller.Flush(); err != nil {
 				return
 			}
 		}
@@ -355,14 +347,11 @@ func (h *HTTPHandler) writeRelayError(response http.ResponseWriter, err error) {
 		h.writeError(response, http.StatusNotFound, "operation_not_found", err.Error())
 	case errors.Is(err, ErrReplayUnavailable):
 		h.writeError(response, http.StatusConflict, "replay_unavailable", err.Error())
+	case errors.Is(err, ErrSessionLimit):
+		h.writeError(response, http.StatusServiceUnavailable, "session_limit", err.Error())
 	default:
 		h.writeError(response, http.StatusBadRequest, "invalid_request", err.Error())
 	}
-}
-
-func (h *HTTPHandler) methodNotAllowed(response http.ResponseWriter, methods ...string) {
-	response.Header().Set("Allow", strings.Join(methods, ", "))
-	h.writeError(response, http.StatusMethodNotAllowed, "method_not_allowed", "remote control method not allowed")
 }
 
 func (h *HTTPHandler) writeError(response http.ResponseWriter, status int, code, message string) {
