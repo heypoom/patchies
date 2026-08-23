@@ -404,6 +404,10 @@
           },
           getSurfaceCanvasSize: surfaceMode.getCanvasSize,
           onCanvasCreated: (canvas, dimensions) => {
+            if (!fluidCanvas.isFluid && (width !== undefined || height !== undefined)) {
+              updateNode(nodeId, { width: undefined, height: undefined });
+            }
+
             if (fluidCanvas.isFluid) {
               if (nextSurfaceModeEnabled) {
                 if (!warnedAboutFluidSurfaceMode) {
@@ -452,10 +456,6 @@
 
         if (!nextSurfaceModeEnabled && surfaceMode.isSurfaceCanvasExpanded) {
           surfaceMode.exit();
-        }
-
-        if (!fluidCanvas.isFluid && (width !== undefined || height !== undefined)) {
-          updateNode(nodeId, { width: undefined, height: undefined });
         }
 
         measureWidth(100);
