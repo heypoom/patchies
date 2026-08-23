@@ -17,7 +17,7 @@ Want to try out Patchies? [Let's get started.](#get-started)
 Patchies lets you use the audio, visual and computational tools and libraries that you know and love, together in one place. For example:
 
 - Make interactive graphics and widgets with [P5.js](https://patchies.app/docs/objects/p5), [HTML5 Canvas](https://patchies.app/docs/objects/canvas.dom), [Three.js](https://patchies.app/docs/objects/three) and [Textmode.js](https://patchies.app/docs/objects/textmode)
-- Synthesize videos with [Hydra](https://patchies.app/docs/objects/hydra), [Shader Park](https://patchies.app/docs/objects/shaderpark) and [GLSL shaders](https://patchies.app/docs/objects/glsl)
+- Synthesize videos with [Hydra](https://patchies.app/docs/objects/hydra), [GLSL shaders](https://patchies.app/docs/objects/glsl), and [Shader Park](https://patchies.app/docs/objects/shaderpark)
 - Make music from code with [Strudel](https://patchies.app/docs/objects/strudel), [ChucK](https://patchies.app/docs/objects/chuck~), [SuperSonic](https://patchies.app/docs/objects/sonic~), [Bytebeat](https://patchies.app/docs/objects/bytebeat~), [Csound](https://patchies.app/docs/objects/csound~) and [Orca](https://patchies.app/docs/objects/orca)
 - Design sounds with [Pure Data-style](https://patchies.app/docs/audio-chaining) objects, [Tone.js](https://patchies.app/docs/objects/tone~) and [Elementary Audio](https://patchies.app/docs/objects/elem~)
 - Run tiny games and tiny programs on the [Uxn](https://patchies.app/docs/objects/uxn) virtual machine, or code your own with the [Tal](https://wiki.xxiivv.com/site/uxntal.html) assembly language.
