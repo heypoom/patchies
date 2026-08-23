@@ -27,6 +27,7 @@ type UseFluidCanvasOptions = {
   warn: (message: string) => void;
   onResizeCallback: (callback: (size: CanvasSize) => void) => void;
   previewScaleFactor: number;
+  deferInitialSize?: boolean;
 };
 
 const usesFluidCanvas = (code: string) =>
@@ -74,38 +75,48 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
 
     const resolvedOptions = resolveFluidCanvasOptions(fluidOptions);
     const data = options.getData();
-    const nodeSize = options.getNodeSize();
     const showResizer = data.fluidCanvasResizerVisible ?? resolvedOptions.showResizer;
 
     defaultResizerVisible = showResizer;
     resizeAxis = resolvedOptions.resize;
     keepAspectRatio = resolvedOptions.keepAspectRatio;
 
-    if (
-      resolvedOptions.initialSize &&
-      nodeSize.width === undefined &&
-      nodeSize.height === undefined
-    ) {
-      const { width, height } = resolvedOptions.initialSize;
+    if (options.deferInitialSize) {
+      if (data.fluidCanvasResizerVisible === undefined) {
+        options.updateNodeData(options.getNodeId(), { fluidCanvasResizerVisible: showResizer });
+      }
 
-      options.updateNode(options.getNodeId(), {
-        width: width / options.previewScaleFactor,
-        height: height / options.previewScaleFactor
-      });
-
-      options.setCanvasSize({ width, height });
-    } else {
-      const previewSize = options.getPreviewSize();
-
-      options.setCanvasSize({
-        width: Math.round((nodeSize.width ?? previewSize.width) * options.previewScaleFactor),
-        height: Math.round((nodeSize.height ?? previewSize.height) * options.previewScaleFactor)
-      });
+      return;
     }
+
+    initializeSize(resolvedOptions.initialSize);
 
     if (data.fluidCanvasResizerVisible === undefined) {
       options.updateNodeData(options.getNodeId(), { fluidCanvasResizerVisible: showResizer });
     }
+  }
+
+  function initializeSize(initialSize?: CanvasSize) {
+    if (!isFluid) return;
+
+    const nodeSize = options.getNodeSize();
+
+    if (initialSize && nodeSize.width === undefined && nodeSize.height === undefined) {
+      options.updateNode(options.getNodeId(), {
+        width: initialSize.width / options.previewScaleFactor,
+        height: initialSize.height / options.previewScaleFactor
+      });
+
+      options.setCanvasSize(initialSize);
+      return;
+    }
+
+    const previewSize = options.getPreviewSize();
+
+    options.setCanvasSize({
+      width: Math.round((nodeSize.width ?? previewSize.width) * options.previewScaleFactor),
+      height: Math.round((nodeSize.height ?? previewSize.height) * options.previewScaleFactor)
+    });
   }
 
   function setFixedCanvasSize(width: number, height: number) {
@@ -190,6 +201,7 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
         : options.getCanvasSize(),
     reset,
     setFluidSize,
+    initializeSize,
     setFixedCanvasSize,
     onCanvasResize,
     handleResize

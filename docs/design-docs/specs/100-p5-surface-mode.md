@@ -27,6 +27,33 @@ Surface-mode p5 also exposes:
 - `hideExitButton()` to hide the overlay exit badge.
 - `setMouseForwarding({ enabled, only, except })` to forward p5 mouse and wheel interaction to mouse-aware render nodes while expanded.
 
+## Resizable Inline Canvases
+
+Inline p5 sketches can call `setFluidSize()` to make their canvas follow a
+user-resized Patchies node:
+
+```javascript
+function setup() {
+  setFluidSize({ keepAspectRatio: true });
+  createCanvas(400, 240);
+}
+```
+
+`createCanvas()` is the single source of the initial size. When the node has
+not been resized before, Patchies adopts the dimensions of the canvas p5
+actually created. When a persisted node size exists, Patchies calls
+`resizeCanvas()` after `createCanvas()` so the sketch starts at that size.
+Subsequent node resizing also calls `resizeCanvas()`.
+Patchies waits for p5 user setup to finish before deciding whether to clear a
+previously saved node size, so top-level dynamic imports do not discard a
+fluid sketch's resize state.
+
+The fluid options are `showResizer`, `resize`, and `keepAspectRatio`.
+`initialSize` is intentionally not supported for p5 because it would conflict
+with `createCanvas()`. `createSurfaceCanvas()` and `setFluidSize()` are also
+mutually exclusive: surface canvases follow the renderer output instead of a
+node size.
+
 ## Preview And Expand Behavior
 
 - Before expansion, the node shows a scaled preview of the surface-sized p5 canvas.

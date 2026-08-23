@@ -521,6 +521,15 @@ const patchiesAPICompletions: Completion[] = [
   }
 ];
 
+const p5FluidSizeCompletion: Completion = {
+  label: 'setFluidSize',
+  type: 'function',
+  detail:
+    "(options?: { showResizer?: boolean; resize?: 'horizontal' | 'vertical' | 'both'; keepAspectRatio?: boolean }) => void",
+  info: 'Make this p5 canvas follow its node size. createCanvas() sets the initial size; limit resizing to an axis or preserve its aspect ratio.',
+  apply: 'setFluidSize()'
+};
+
 // Setup functions that should only appear at top-level (not in function bodies)
 const topLevelOnlyFunctions = new Set([
   'noDrag',
@@ -565,7 +574,11 @@ const topLevelOnlyFunctions = new Set([
   'setVideoCount'
 ]);
 
-const p5FunctionBodySurfaceHelpers = new Set(['hideExitButton', 'setMouseForwarding']);
+const p5FunctionBodySurfaceHelpers = new Set([
+  'hideExitButton',
+  'setMouseForwarding',
+  'setFluidSize'
+]);
 
 function isAllowedInFunctionBody(completion: Completion, patchiesContext?: PatchiesContext) {
   if (!topLevelOnlyFunctions.has(completion.label)) return true;
@@ -659,7 +672,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setAudioPortCount: ['dsp~'],
   showAudioInput: ['tone~', 'sonic~', 'elem~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
-  setFluidSize: ['canvas.dom', 'dom', 'vue'],
+  setFluidSize: ['canvas.dom', 'dom', 'vue', 'p5'],
   onCanvasResize: ['canvas.dom'],
   onResize: ['dom', 'vue'],
   setSize: ['dom', 'vue'],
@@ -1162,6 +1175,14 @@ function isCompletionAllowedForNode(completion: Completion, context?: PatchiesCo
   return true;
 }
 
+function getCompletionOptions(context?: PatchiesContext): Completion[] {
+  if (context?.nodeType !== 'p5') return patchiesAPICompletions;
+
+  return patchiesAPICompletions.map((completion) =>
+    completion.label === 'setFluidSize' ? p5FluidSizeCompletion : completion
+  );
+}
+
 export function getPatchiesCompletionByLabel(
   label: string,
   context?: PatchiesContext
@@ -1170,7 +1191,7 @@ export function getPatchiesCompletionByLabel(
   if (context?.nodeType === 'expr') return;
   if (context?.nodeType === 'msg') return;
 
-  const completion = patchiesAPICompletions.find((option) => option.label === label);
+  const completion = getCompletionOptions(context).find((option) => option.label === label);
   if (!completion) return;
 
   return isCompletionAllowedForNode(completion, context) ? completion : undefined;
@@ -1290,7 +1311,7 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
     const insideFunction = isInsideFunctionBody(allTextBefore);
 
     // Filter completions based on context
-    let options = patchiesAPICompletions;
+    let options = getCompletionOptions(patchiesContext);
 
     // Filter out top-level only functions when inside a function body
     if (insideFunction) {

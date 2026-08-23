@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import {
+    NodeResizer,
+    NodeResizeControl,
+    ResizeControlVariant,
+    useSvelteFlow,
+    useUpdateNodeInternals
+  } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { P5Manager } from '$lib/p5/P5Manager';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -21,13 +27,18 @@
   import type { SettingsSchema } from '$lib/settings';
   import { getBorderChromeClass, getBorderResetDataForRun } from '$lib/components/border-chrome';
   import { getP5PreviewDimensions } from './preview-dimensions';
+  import { useNodeDataTracker } from '$lib/history';
+  import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
+  import type { FluidCanvasOptions } from '$objects/canvas/fluid-canvas-options';
 
   let consoleRef: VirtualConsole | null = $state(null);
 
   let {
     id: nodeId,
     data,
-    selected
+    selected,
+    width,
+    height
   }: {
     id: string;
     data: {
@@ -43,16 +54,20 @@
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
       noBorder?: boolean;
+      fluidCanvasResizerVisible?: boolean;
     };
     selected: boolean;
+    width?: number;
+    height?: number;
   } = $props();
 
   function initialNodeId() {
     return nodeId;
   }
 
-  const { getNodes, updateNodeData } = useSvelteFlow();
+  const { getNodes, updateNode, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+  const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   // Settings manager — persists across code re-runs
   const settingsManager = new SettingsManager(
@@ -64,6 +79,7 @@
 
   let containerElement: HTMLDivElement;
   let measureElement: HTMLDivElement;
+
   let p5Manager: P5Manager | null = null;
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
@@ -80,12 +96,68 @@
   let outletCount = $derived(data.outletCount ?? 1);
   let isSurfaceModeAvailable = $derived((data.surfaceMode ?? false) || usesP5SurfaceCanvas(code));
   let previousExecuteCode = $state<number | undefined>(undefined);
+  let warnedAboutFluidSurfaceMode = false;
+  let warnedAboutFluidInitialSize = false;
 
   // Local state for pre-parsed canvas dimensions (not persisted)
   // These prevent layout shift by setting min-width/height before P5.js loads
   let preloadCanvasWidth = $state<number | undefined>(0);
   let preloadCanvasHeight = $state<number | undefined>(0);
   let preservedFrameCanvas: HTMLCanvasElement | null = null;
+
+  function setP5CanvasSize({
+    width: nextWidth,
+    height: nextHeight
+  }: {
+    width: number;
+    height: number;
+  }) {
+    const p5 = p5Manager?.p5;
+    if (!p5) return;
+
+    p5.resizeCanvas(nextWidth, nextHeight);
+
+    preloadCanvasWidth = nextWidth;
+    preloadCanvasHeight = nextHeight;
+
+    measureWidth(0);
+    p5Manager?.sendBitmap();
+  }
+
+  const fluidCanvas = useFluidCanvas({
+    getNodeId: () => nodeId,
+    getData: () => data,
+    getNodeSize: () => ({ width, height }),
+    getPreviewSize: () => ({
+      width: preloadCanvasWidth ?? 1,
+      height: preloadCanvasHeight ?? 1
+    }),
+    getCanvasSize: () => {
+      const p5 = p5Manager?.p5;
+
+      return p5 ? { width: p5.width, height: p5.height } : { width: 1, height: 1 };
+    },
+    setCanvasSize: setP5CanvasSize,
+    updateNode,
+    updateNodeData,
+    commitNodeData: (key, oldValue, newValue) => tracker.commit(key, oldValue, newValue),
+    warn: (message) => customConsole.warn(message),
+    onResizeCallback: () => {},
+    previewScaleFactor: 1,
+    deferInitialSize: true
+  });
+
+  function setFluidSize(fluidOptions: FluidCanvasOptions = {}) {
+    if (fluidOptions.initialSize && !warnedAboutFluidInitialSize) {
+      customConsole.warn(
+        'p5 setFluidSize() infers its initial size from createCanvas(); initialSize is ignored.'
+      );
+
+      warnedAboutFluidInitialSize = true;
+    }
+
+    fluidCanvas.setFluidSize({ ...fluidOptions, initialSize: undefined });
+  }
 
   const surfaceMode = createP5SurfaceMode({
     nodeId: initialNodeId(),
@@ -185,6 +257,7 @@
 
   onDestroy(() => {
     clearPreservedFrameCanvas();
+    fluidCanvas.reset();
     surfaceMode.cleanup();
     p5Manager?.destroy();
     glSystem.removeNode(nodeId);
@@ -250,8 +323,14 @@
     enableDrag = true;
     enablePan = true;
     enableWheel = true;
+
+    fluidCanvas.reset();
+
     let nextVideoOutputEnabled = true;
     let nextSurfaceModeEnabled = false;
+
+    warnedAboutFluidSurfaceMode = false;
+    warnedAboutFluidInitialSize = false;
 
     // Clear previous error state at the start of each run
     // If an error occurs during updateCode, it will be set again
@@ -325,6 +404,27 @@
           },
           getSurfaceCanvasSize: surfaceMode.getCanvasSize,
           onCanvasCreated: (canvas, dimensions) => {
+            if (!fluidCanvas.isFluid && (width !== undefined || height !== undefined)) {
+              updateNode(nodeId, { width: undefined, height: undefined });
+            }
+
+            if (fluidCanvas.isFluid) {
+              if (nextSurfaceModeEnabled) {
+                if (!warnedAboutFluidSurfaceMode) {
+                  customConsole.warn(
+                    'setFluidSize() is ignored when createSurfaceCanvas() is active.'
+                  );
+                  warnedAboutFluidSurfaceMode = true;
+                }
+
+                fluidCanvas.reset();
+              } else {
+                requestAnimationFrame(() => {
+                  fluidCanvas.initializeSize(dimensions);
+                });
+              }
+            }
+
             if (surfaceMode.isExpanded) {
               surfaceMode.styleCanvas(canvas, dimensions);
             }
@@ -337,6 +437,7 @@
               setVideoOutputEnabled(false);
             }
           },
+          setFluidSize,
           onSurfaceCanvasCreated: surfaceMode.styleCanvas,
           onSurfaceFrame: surfaceMode.requestMirrorFrame,
           onSurfacePointer: surfaceMode.forwardPointer,
@@ -360,6 +461,7 @@
         measureWidth(100);
       } catch (error) {
         errorMessage = error instanceof Error ? error.message : String(error);
+
         handleCodeError(error, nextCode, nodeId, customConsole);
         setCanvasDimensionsFromCode(nextCode);
       }
@@ -383,116 +485,151 @@
 
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
+
+  const resizeControlsVisible = $derived(
+    selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible
+  );
+
+  const displayExtraMenuItems = $derived(fluidCanvas.displayExtraMenuItems ?? []);
 </script>
 
-<ObjectPreviewLayout
-  title={data.title ?? 'p5'}
-  objectType="p5"
-  {nodeId}
-  onCodeChange={handleCodeChange}
-  onrun={updateSketch}
-  previewWidth={previewContainerWidth}
-  showPauseButton
-  paused={data.paused}
-  onPlaybackToggle={togglePlayback}
-  {editorReady}
-  settingsSchema={data.settingsSchema}
-  settingsValues={data.settings ?? {}}
-  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
-  onSettingsRevertAll={() => settingsManager.revertAll()}
-  displayExtraMenuItems={surfaceMode.menuItems}
->
-  {#snippet topHandle()}
-    {#each Array.from({ length: inletCount }) as _, index (index)}
-      <TypedHandle
-        port="inlet"
-        spec={{ handleId: index }}
-        title={`Inlet ${index}`}
-        total={inletCount}
-        {index}
-        class={handleClass}
-        {nodeId}
+<div class="relative">
+  {#if resizeControlsVisible}
+    {#if fluidCanvas.resizeAxis === 'both' || fluidCanvas.keepAspectRatio}
+      <NodeResizer
+        class="z-1"
+        minWidth={100}
+        minHeight={80}
+        keepAspectRatio={fluidCanvas.keepAspectRatio}
+        onResize={fluidCanvas.handleResize}
       />
-    {/each}
-  {/snippet}
-
-  {#snippet preview()}
-    <div class="relative" bind:this={measureElement}>
-      <div
-        bind:this={containerElement}
-        class={[
-          'rounded-md border bg-transparent',
-          'relative overflow-hidden',
-          enableDrag && enablePan && enableWheel
-            ? 'cursor-grab'
-            : [
-                'cursor-default',
-                !enableDrag && 'nodrag',
-                !enablePan && 'nopan',
-                !enableWheel && 'nowheel'
-              ],
-          getBorderChromeClass({
-            hasError: Boolean(errorMessage),
-            selected,
-            noBorder: data.noBorder,
-            errorClass: 'border-red-500 [&>canvas]:rounded-[7px]',
-            selectedClass: 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]',
-            idleClass: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
-            borderlessClass: 'border-transparent shadow-none [&>canvas]:rounded-md'
-          })
-        ]}
-        style={preloadCanvasWidth && preloadCanvasHeight
-          ? `min-width: ${preloadCanvasWidth}px; min-height: ${preloadCanvasHeight}px;`
-          : ''}
-      ></div>
-    </div>
-  {/snippet}
-
-  {#snippet bottomHandle()}
-    {#if videoOutputEnabled}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleType: 'video', handleId: '0' }}
-        title="Video output"
-        total={outletCount + 1}
-        index={0}
-        class={handleClass}
-        {nodeId}
-      />
+    {:else}
+      {#each fluidCanvas.resizeControlPositions as position (position)}
+        <NodeResizeControl
+          class="z-1"
+          {position}
+          variant={ResizeControlVariant.Line}
+          minWidth={100}
+          minHeight={80}
+          onResize={fluidCanvas.handleResize}
+        />
+      {/each}
     {/if}
+  {/if}
 
-    {#each Array.from({ length: outletCount }) as _, index (index)}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleId: index }}
-        title={`Outlet ${index}`}
-        total={videoOutputEnabled ? outletCount + 1 : outletCount}
-        index={videoOutputEnabled ? index + 1 : index}
-        class={handleClass}
+  <ObjectPreviewLayout
+    title={data.title ?? 'p5'}
+    objectType="p5"
+    {nodeId}
+    onCodeChange={handleCodeChange}
+    onrun={updateSketch}
+    previewWidth={previewContainerWidth}
+    showPauseButton
+    paused={data.paused}
+    onPlaybackToggle={togglePlayback}
+    {editorReady}
+    showExpandOption
+    onCustomExpandToggle={() => (surfaceMode.isExpanded ? surfaceMode.exit() : surfaceMode.enter())}
+    customExpanded={surfaceMode.isExpanded}
+    settingsSchema={data.settingsSchema}
+    settingsValues={data.settings ?? {}}
+    onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+    onSettingsRevertAll={() => settingsManager.revertAll()}
+    {displayExtraMenuItems}
+  >
+    {#snippet topHandle()}
+      {#each Array.from({ length: inletCount }) as _, index (index)}
+        <TypedHandle
+          port="inlet"
+          spec={{ handleId: index }}
+          title={`Inlet ${index}`}
+          total={inletCount}
+          {index}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
+    {/snippet}
+
+    {#snippet preview()}
+      <div class="relative" bind:this={measureElement}>
+        <div
+          bind:this={containerElement}
+          class={[
+            'rounded-md border bg-transparent',
+            'relative overflow-hidden',
+            enableDrag && enablePan && enableWheel
+              ? 'cursor-grab'
+              : [
+                  'cursor-default',
+                  !enableDrag && 'nodrag',
+                  !enablePan && 'nopan',
+                  !enableWheel && 'nowheel'
+                ],
+            getBorderChromeClass({
+              hasError: Boolean(errorMessage),
+              selected,
+              noBorder: data.noBorder,
+              hideBorder: resizeControlsVisible,
+              errorClass: 'border-red-500 [&>canvas]:rounded-[7px]',
+              selectedClass: 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]',
+              idleClass: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
+              borderlessClass: 'border-transparent shadow-none [&>canvas]:rounded-md'
+            })
+          ]}
+          style={preloadCanvasWidth && preloadCanvasHeight
+            ? `min-width: ${preloadCanvasWidth}px; min-height: ${preloadCanvasHeight}px;`
+            : ''}
+        ></div>
+      </div>
+    {/snippet}
+
+    {#snippet bottomHandle()}
+      {#if videoOutputEnabled}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleType: 'video', handleId: '0' }}
+          title="Video output"
+          total={outletCount + 1}
+          index={0}
+          class={handleClass}
+          {nodeId}
+        />
+      {/if}
+
+      {#each Array.from({ length: outletCount }) as _, index (index)}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleId: index }}
+          title={`Outlet ${index}`}
+          total={videoOutputEnabled ? outletCount + 1 : outletCount}
+          index={videoOutputEnabled ? index + 1 : index}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
+    {/snippet}
+
+    {#snippet codeEditor()}
+      <CodeEditor
+        value={code}
+        onchange={handleCodeChange}
+        language="javascript"
+        nodeType="p5"
+        placeholder="Write your p5.js code here..."
+        class="nodrag h-64 w-full resize-none"
+        onrun={updateSketch}
+        onready={() => (editorReady = true)}
+        {lineErrors}
         {nodeId}
       />
-    {/each}
-  {/snippet}
+    {/snippet}
 
-  {#snippet codeEditor()}
-    <CodeEditor
-      value={code}
-      onchange={handleCodeChange}
-      language="javascript"
-      nodeType="p5"
-      placeholder="Write your p5.js code here..."
-      class="nodrag h-64 w-full resize-none"
-      onrun={updateSketch}
-      onready={() => (editorReady = true)}
-      {lineErrors}
-      {nodeId}
-    />
-  {/snippet}
-
-  {#snippet console()}
-    <!-- Always render VirtualConsole so it receives events even when hidden -->
-    <div class="mt-3" class:hidden={!data.showConsole}>
-      <VirtualConsole bind:this={consoleRef} {nodeId} onrun={updateSketch} />
-    </div>
-  {/snippet}
-</ObjectPreviewLayout>
+    {#snippet console()}
+      <!-- Always render VirtualConsole so it receives events even when hidden -->
+      <div class="mt-3" class:hidden={!data.showConsole}>
+        <VirtualConsole bind:this={consoleRef} {nodeId} onrun={updateSketch} />
+      </div>
+    {/snippet}
+  </ObjectPreviewLayout>
+</div>

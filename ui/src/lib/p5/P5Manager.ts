@@ -10,6 +10,13 @@ import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwar
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { PrimaryButton } from '$lib/eventbus/events';
 
+type P5FluidCanvasOptions = {
+  showResizer?: boolean;
+  resize?: 'horizontal' | 'vertical' | 'both';
+  keepAspectRatio?: boolean;
+  initialSize?: { width: number; height: number };
+};
+
 interface P5SketchConfig {
   code: string;
   messageContext?: UserFnRunContext;
@@ -68,6 +75,7 @@ interface P5SketchConfig {
   setMouseForwarding?: (rules?: SurfaceMouseForwardingRules) => void;
   expandSurface?: () => void;
   collapseSurface?: () => void;
+  setFluidSize?: (options?: P5FluidCanvasOptions) => void;
   normalizeInlineMouseCoordinates?: boolean;
 }
 
@@ -220,6 +228,15 @@ export class P5Manager {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let userCode: any;
+
+        const notifyCanvasCreated = () => {
+          const canvas = (p as unknown as { canvas?: unknown }).canvas;
+
+          if (canvas instanceof HTMLCanvasElement) {
+            config.onCanvasCreated?.(canvas, { width: p.width, height: p.height });
+          }
+        };
+
         try {
           userCode = await this.executeUserCode(p, sketchConfig, P5);
         } catch (error) {
@@ -233,6 +250,7 @@ export class P5Manager {
         try {
           await userCode?.preload?.call(p);
           await userCode?.setup?.call(p);
+          notifyCanvasCreated();
 
           if (!userCode?.draw) {
             requestAnimationFrame(signalFrameReady);
@@ -250,11 +268,7 @@ export class P5Manager {
           try {
             userCode?.setup?.call(p);
 
-            const canvas = (p as unknown as { canvas?: unknown }).canvas;
-
-            if (canvas instanceof HTMLCanvasElement) {
-              config.onCanvasCreated?.(canvas, { width: p.width, height: p.height });
-            }
+            notifyCanvasCreated();
 
             if (!userCode?.draw) {
               requestAnimationFrame(signalFrameReady);
@@ -490,6 +504,7 @@ export class P5Manager {
         setMouseForwarding: config.setMouseForwarding,
         expandSurface: config.expandSurface,
         collapseSurface: config.collapseSurface,
+        setFluidSize: config.setFluidSize,
         setPrimaryButton: (primaryButton: PrimaryButton) => {
           PatchiesEventBus.getInstance().dispatch({
             type: 'nodePrimaryButtonUpdate',
