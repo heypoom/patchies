@@ -161,7 +161,9 @@ An API key is required. Configure the provider with `Ctrl/Cmd + K > AI Provider 
 
 ## Presentation
 
-Control how other objects appear in the patch. Use `Ctrl/Cmd + Shift + C` to copy an object ID. Use `Shift + Drag` to select multiple objects.
+Make interactive presentation slides with Patchies. Zoom in on specific objects, change backgrounds and pause/unpause objects to keep your presentations dynamic.
+
+Use `Ctrl/Cmd + Shift + C` to copy an object ID.
 
 ```javascript
 // Pan and zoom the canvas to focus on specific objects
