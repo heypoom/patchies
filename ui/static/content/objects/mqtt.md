@@ -9,7 +9,7 @@ home automation systems, or other MQTT-enabled services.
 
 1. Type `mqtt` in the object box to create the node
 2. Click the gear icon to configure
-3. Enter a WebSocket broker URL (e.g., `wss://test.mosquitto.org:8081/mqtt`)
+3. Enter a WebSocket broker URL (e.g., `wss://broker.hivemq.com:8884/mqtt`)
 4. Click Connect
 5. Add topics to subscribe to
 

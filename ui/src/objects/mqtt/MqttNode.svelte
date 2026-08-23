@@ -16,7 +16,7 @@
 
   type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
-  const TEST_BROKERS = ['wss://test.mosquitto.org:8081/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+  const TEST_BROKERS = ['wss://broker.hivemq.com:8884/mqtt'];
 
   let {
     id: nodeId,
