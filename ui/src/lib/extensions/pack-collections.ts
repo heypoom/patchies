@@ -54,7 +54,8 @@ export const BUILT_IN_PACK_COLLECTIONS: PackCollection[] = [
       'shaderpark-visuals',
       'three-demos',
       'gpu-geometry',
-      'ascii-art-demos'
+      'ascii-art-demos',
+      'audio-reactive-demos'
     ],
     optionalPresetPackIds: [],
     supportingObjectTypes: []
@@ -78,7 +79,7 @@ export const BUILT_IN_PACK_COLLECTIONS: PackCollection[] = [
   {
     id: 'sound-design',
     name: 'Sound Design',
-    description: 'Craft signals, effects, routing, and audio-reactive patches',
+    description: 'Craft signals, effects, and routing',
     icon: 'AudioLines',
     primaryObjectPackIds: [
       'audio-routing',
@@ -87,19 +88,9 @@ export const BUILT_IN_PACK_COLLECTIONS: PackCollection[] = [
       'signal-math',
       'signal-processors'
     ],
-    primaryPresetPackIds: ['scope-demos', 'fft-demos', 'audio-synthesis', 'dsp-presets'],
+    primaryPresetPackIds: ['scope-demos', 'audio-synthesis', 'dsp-presets'],
     optionalPresetPackIds: ['greggman-bytebeat'],
-    supportingObjectTypes: [
-      'mic~',
-      'soundfile~',
-      'gain~',
-      'out~',
-      'p5',
-      'canvas.dom',
-      'hydra',
-      'glsl',
-      'bytebeat~'
-    ]
+    supportingObjectTypes: ['mic~', 'soundfile~', 'gain~', 'out~', 'canvas.dom', 'bytebeat~']
   },
   {
     id: 'code-and-data',

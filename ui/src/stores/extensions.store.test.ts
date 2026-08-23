@@ -62,15 +62,15 @@ describe('extensions store', () => {
     expect(get(enabledPackIds)).toEqual(
       expect.arrayContaining(['audio-routing', 'signal-processors'])
     );
-    expect(get(enabledPrimaryObjects).has('p5')).toBe(true);
     expect(get(enabledPrimaryObjects).has('mic~')).toBe(true);
     expect(get(enabledPrimaryObjects).has('soundfile~')).toBe(true);
     expect(get(enabledPrimaryObjects).has('gain~')).toBe(true);
     expect(get(enabledPrimaryObjects).has('out~')).toBe(true);
     expect(get(enabledPrimaryObjects).has('canvas.dom')).toBe(true);
-    expect(get(enabledPrimaryObjects).has('hydra')).toBe(true);
-    expect(get(enabledPrimaryObjects).has('glsl')).toBe(true);
-    expect(get(enabledPresetPackIds)).toContain('fft-demos');
+    expect(get(enabledPrimaryObjects).has('p5')).toBe(false);
+    expect(get(enabledPrimaryObjects).has('hydra')).toBe(false);
+    expect(get(enabledPrimaryObjects).has('glsl')).toBe(false);
+    expect(get(enabledPresetPackIds)).not.toContain('audio-reactive-demos');
     expect(get(enabledPresetPackIds)).not.toContain('greggman-bytebeat');
   });
 
@@ -80,6 +80,13 @@ describe('extensions store', () => {
 
     expect(get(enabledPackIds)).not.toContain('2d');
     expect(get(enabledPackIds)).toContain('video-synthesis');
+  });
+
+  it('does not enable audio analysis objects with Visuals', () => {
+    selectCollection('visuals');
+
+    expect(get(enabledPrimaryObjects).has('fft~')).toBe(false);
+    expect(get(enabledPresetPackIds)).toContain('audio-reactive-demos');
   });
 
   it('keeps optional preset packs disabled until enabled individually', () => {
@@ -124,9 +131,16 @@ describe('extensions store', () => {
 
     expect(get(enabledPackIds)).not.toContain('2d');
     expect(get(enabledPackIds)).not.toContain('video-synthesis');
-    expect(get(enabledPrimaryObjects).has('p5')).toBe(true);
+    expect(get(enabledPrimaryObjects).has('p5')).toBe(false);
     expect(get(enabledPrimaryObjects).has('canvas.dom')).toBe(true);
+    expect(get(enabledPrimaryObjects).has('hydra')).toBe(false);
+    expect(get(enabledPrimaryObjects).has('glsl')).toBe(false);
+
+    selectCollection('visuals');
+
+    expect(get(enabledPrimaryObjects).has('p5')).toBe(true);
     expect(get(enabledPrimaryObjects).has('hydra')).toBe(true);
     expect(get(enabledPrimaryObjects).has('glsl')).toBe(true);
+    expect(get(enabledPresetPackIds)).toContain('audio-reactive-demos');
   });
 });

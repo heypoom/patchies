@@ -266,9 +266,9 @@ Rewrite `ui/static/content/topics/manage-collections.md` around a focused librar
   and reaches the object browser with the expected effective catalog.
 - An existing user retains the same enabled object and preset packs after
   migration and does not see the chooser automatically.
-- Enabling Sound Design enables every direct requirement for its `FFT Demos`,
-  including explicitly displayed visual supporting objects without enabling
-  the Visuals packs that own them.
+- Enabling Visuals enables the `Audio Reactive Demos` pack and its visual
+  requirements. Users enable its `fft~` audio-analysis dependency through
+  Sound Design when they need it.
 - Enabling Sound Design does not enable `Greggman Bytebeat Archive`, and its
   disabled state does not make Sound Design partial.
 - Manually enabling or disabling any pack updates affected collection states

@@ -153,7 +153,7 @@ the next run reverts to a single outlet.
 
 ## Audio Reactivity
 
-Enable the **FFT Demos** preset pack for audio-reactive examples:
+Enable the **Audio Reactive Demos** preset pack for audio-reactive examples:
 
 - `FFT Frequency GL` - visualize frequency spectrum
 - `FFT Waveform GL` - visualize audio waveform

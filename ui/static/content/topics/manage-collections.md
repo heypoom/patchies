@@ -5,8 +5,7 @@ starting with every tool, choose a **collection** for the kind of patch you
 want to make.
 
 Collections combine the objects and ready-made presets that belong together.
-For example, **Visuals** includes graphics, video, shader, and interactive widget preset
-packs.
+For example, **Visuals** includes packs for shaders, graphics and interactive widgets.
 
 ## First-time setup
 

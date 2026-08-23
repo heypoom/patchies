@@ -219,9 +219,9 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: ['scope.canvas', 'scope-xy.canvas']
   },
   {
-    id: 'fft-demos',
-    name: 'FFT Demos',
-    description: 'Audio analysis demo in various objects',
+    id: 'audio-reactive-demos',
+    name: 'Audio Reactive Demos',
+    description: 'Visual demos driven by live audio analysis',
     icon: 'AudioWaveform',
     requiredObjects: ['fft~', 'js', 'p5', 'hydra', 'canvas.dom', 'glsl'],
     presets: [

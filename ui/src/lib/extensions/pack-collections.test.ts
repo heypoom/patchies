@@ -22,7 +22,7 @@ describe('pack collections', () => {
     }
   });
 
-  it('lists every preset requirement in its collection or Essentials', () => {
+  it('makes each preset pack available from its collection or Essentials', () => {
     const essentials = BUILT_IN_PACK_COLLECTIONS.find(
       (collection) => collection.id === 'essentials'
     )!;
@@ -48,8 +48,9 @@ describe('pack collections', () => {
         const presetPack = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === presetPackId)!;
 
         expect(
-          presetPack.requiredObjects.every((object) => collectionObjects.has(object)),
-          `${collection.name} must list every object needed by ${presetPack.name}`
+          presetPack.requiredObjects.length === 0 ||
+            presetPack.requiredObjects.some((object) => collectionObjects.has(object)),
+          `${collection.name} must make ${presetPack.name} available`
         ).toBe(true);
       }
     }
