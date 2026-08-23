@@ -2,7 +2,7 @@ import type { GLSLPreset } from './types';
 
 const code = `// @title Chroma Key
 // @primaryButton settings
-// @param keyColor color #00ff00 "Key Color"
+// @param keyColor color #000000 "Key Color"
 // @param tolerance 0.25 0.0 1.0 0.001 "Tolerance"
 // @param softness 0.08 0.0 0.5 0.001 "Softness"
 // @param spill 0.5 0.0 1.0 0.001 "Spill"
