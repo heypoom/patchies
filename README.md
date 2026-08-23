@@ -6,7 +6,7 @@
 
 Patchies is a _creative coding patcher_ where you write small programs using the tools and libraries that you already know, and patch them together to make something interesting.
 
-It's a playground where you can make interactive widgets, craft synthesizers, design audio-reactive visuals, compose visuals with shader graphs, and see how they all connect.
+It's a playground where you can make interactive widgets, craft synthesizers, design audio-reactive visuals, compose visuals with shader graphs, and connect all of them together.
 
 It's all running on the web, no installation needed. Want to try out Patchies? [Let's get started.](#get-started)
 
