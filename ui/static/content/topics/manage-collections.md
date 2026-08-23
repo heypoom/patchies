@@ -5,13 +5,8 @@ starting with every tool, choose a **collection** for the kind of patch you
 want to make.
 
 Collections combine the objects and ready-made presets that belong together.
-For example, **Visuals** includes graphics, video, shader, and visual preset
-packs. You do not need to know whether an item comes from an object pack or a
-preset pack before you start.
-
-**Music** is for composition, sequencing, performance, and instruments.
-**Sound Design** is for low-level signals, effects, routing, and audio-reactive
-patches.
+For example, **Visuals** includes graphics, video, shader, and interactive widget preset
+packs.
 
 ## First-time setup
 

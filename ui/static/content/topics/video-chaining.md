@@ -60,7 +60,7 @@ the output regardless of its proportions.
 
 ## Getting Started with Presets
 
-The preset library contains objects for video chaining. Enable them from [Preset Packs](/docs/manage-packs):
+The preset library contains objects for video chaining. Enable them from [Preset Packs](/docs/manage-collections):
 
 - **`hydra>`, `glsl>`, `regl>`, `swgl>`, `three>`** — Pass video through unchanged.
 - **`diff.hydra`, `add.hydra`, `sub.hydra`** — Blend two video inputs with Hydra.

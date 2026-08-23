@@ -22,7 +22,7 @@ The Object Browser lists objects and presets by pack.
 
 1. Press `Ctrl/Cmd + O` or click the add button at the bottom right.
 2. Search object and preset names and descriptions.
-3. Click the **packs** chip to enable or disable [packs](/docs/manage-packs).
+3. Press **Manage collections** to enable or disable [packs](/docs/manage-collections).
 4. Click an object or preset to add it to the canvas.
 5. If you search for a disabled object, the browser shows a suggestion to enable its pack.
 
@@ -35,4 +35,4 @@ Presets are ready-made objects. [Manage your presets](/docs/manage-presets) in t
 - [Modifying Objects](/docs/modifying-objects) — Select, move, and edit objects.
 - [Shortcuts](/docs/shortcuts) — Use Patchies keyboard shortcuts.
 - [Connecting Objects](/docs/connecting-objects) — Connect objects in a patch.
-- [Packs](/docs/manage-packs) — Enable and manage object packs.
+- [Packs](/docs/manage-collections) — Enable and manage object packs.

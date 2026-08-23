@@ -69,8 +69,9 @@
     type DisabledObjectInfo
   } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { objectSchemas } from '$lib/objects/schemas';
+  import { catalogHasNameMatch, getDisplayedCatalogKind, type CatalogKind } from './catalog-search';
 
-  type CatalogKind = 'objects' | 'presets';
+  type SearchItem = ObjectItem & { categoryId: string };
 
   let {
     open = $bindable(false),
@@ -179,13 +180,9 @@
     });
   });
 
-  const catalogCategories = $derived(
-    catalogKind === 'objects' || $objectBrowserMode === 'help' ? objectCategories : presetCategories
-  );
-
-  const fuse = $derived(
+  const objectFuse = $derived(
     new Fuse(
-      catalogCategories.flatMap((category) =>
+      objectCategories.flatMap((category) =>
         category.objects.map((object) => ({
           ...object,
           categoryId: category.id
@@ -199,8 +196,24 @@
     )
   );
 
-  const filteredCategories = $derived.by(() => {
-    if (!searchQuery.trim()) return catalogCategories;
+  const presetFuse = $derived(
+    new Fuse(
+      presetCategories.flatMap((category) =>
+        category.objects.map((object) => ({
+          ...object,
+          categoryId: category.id
+        }))
+      ),
+      {
+        keys: ['name', 'description', 'category'],
+        threshold: 0.3,
+        includeScore: true
+      }
+    )
+  );
+
+  function filterCategories(categories: CategoryGroup[], fuse: Fuse<SearchItem>): CategoryGroup[] {
+    if (!searchQuery.trim()) return categories;
 
     const results = sortFuseResultsWithPrefixPriority(
       fuse.search(searchQuery),
@@ -231,7 +244,7 @@
       });
     });
 
-    return catalogCategories
+    return categories
       .map((category) => ({
         ...category,
         objects: matchesByCategory.get(category.id) || []
@@ -242,7 +255,35 @@
           (categoryOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
           (categoryOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER)
       );
+  }
+
+  const filteredObjectCategories = $derived.by(() =>
+    filterCategories(objectCategories, objectFuse)
+  );
+
+  const filteredPresetCategories = $derived.by(() =>
+    filterCategories(presetCategories, presetFuse)
+  );
+
+  const displayedCatalogKind = $derived.by(() => {
+    if ($objectBrowserMode === 'help' || !searchQuery.trim()) return catalogKind;
+
+    return getDisplayedCatalogKind(
+      catalogKind,
+      {
+        categoryCount: filteredObjectCategories.length,
+        hasNameMatch: catalogHasNameMatch(filteredObjectCategories, searchQuery)
+      },
+      {
+        categoryCount: filteredPresetCategories.length,
+        hasNameMatch: catalogHasNameMatch(filteredPresetCategories, searchQuery)
+      }
+    );
   });
+
+  const filteredCategories = $derived(
+    displayedCatalogKind === 'objects' ? filteredObjectCategories : filteredPresetCategories
+  );
 
   const activeCategory = $derived(
     filteredCategories.find((category) => category.id === selectedCategoryId) ??
@@ -251,7 +292,12 @@
   );
 
   const suggestedDisabledObject = $derived.by((): DisabledObjectInfo | null => {
-    if (catalogKind !== 'objects' || $objectBrowserMode !== 'insert' || !searchQuery.trim()) {
+    if (
+      catalogKind !== 'objects' ||
+      displayedCatalogKind !== 'objects' ||
+      $objectBrowserMode !== 'insert' ||
+      !searchQuery.trim()
+    ) {
       return null;
     }
 
@@ -909,8 +955,8 @@
               <button
                 type="button"
                 onclick={() => selectCatalogKind('objects')}
-                aria-pressed={catalogKind === 'objects' || $objectBrowserMode === 'help'}
-                class:ob-workspace-active={catalogKind === 'objects' ||
+                aria-pressed={displayedCatalogKind === 'objects' || $objectBrowserMode === 'help'}
+                class:ob-workspace-active={displayedCatalogKind === 'objects' ||
                   $objectBrowserMode === 'help'}
                 disabled={$objectBrowserMode === 'help'}
               >
@@ -921,8 +967,8 @@
               <button
                 type="button"
                 onclick={() => selectCatalogKind('presets')}
-                aria-pressed={catalogKind === 'presets'}
-                class:ob-workspace-active={catalogKind === 'presets'}
+                aria-pressed={displayedCatalogKind === 'presets'}
+                class:ob-workspace-active={displayedCatalogKind === 'presets'}
                 disabled={$objectBrowserMode === 'help'}
               >
                 <Bookmark class="h-4 w-4" />
@@ -957,7 +1003,7 @@
                     id="object-browser-category-menu"
                     class="ob-mobile-category-menu"
                     role="menu"
-                    aria-label={catalogKind === 'objects'
+                    aria-label={displayedCatalogKind === 'objects'
                       ? 'Object categories'
                       : 'Preset categories'}
                   >
@@ -982,7 +1028,7 @@
               </div>
             {/if}
 
-            <div class="ob-category-list" aria-label={`${catalogKind} categories`}>
+            <div class="ob-category-list" aria-label={`${displayedCatalogKind} categories`}>
               {#each filteredCategories as category (category.id)}
                 {@const CategoryIcon = getIconComponent(category.icon)}
                 <button
@@ -1015,7 +1061,7 @@
                     </h3>
                     <p class="mt-0.5 text-[11px] text-zinc-500">
                       {activeCategory.description ??
-                        `${activeCategory.objects.length} ${catalogKind === 'objects' ? 'objects' : 'presets'} ready to add`}
+                        `${activeCategory.objects.length} ${displayedCatalogKind === 'objects' ? 'objects' : 'presets'} ready to add`}
                     </p>
                   </div>
                 </div>
@@ -1041,7 +1087,7 @@
               <div class="ob-scroll min-h-0 flex-1 overflow-y-auto p-3 sm:p-5">
                 <div class="grid grid-cols-2 gap-2 min-[720px]:grid-cols-3 min-[960px]:grid-cols-4">
                   {#each activeCategory.objects as object (object.name)}
-                    {@const isPreset = catalogKind === 'presets'}
+                    {@const isPreset = displayedCatalogKind === 'presets'}
                     {@const isLowPriority = object.priority === 'low'}
                     {@const objectHasHelp = hasHelp(object.name)}
                     {@const noHelpAvailable = $objectBrowserMode === 'help' && !objectHasHelp}
@@ -1122,7 +1168,7 @@
                 <SearchX class="h-10 w-10 text-zinc-700" />
                 <div>
                   <h3 class="text-sm font-medium text-zinc-200">
-                    No {catalogKind} found for “{searchQuery}”
+                    No {displayedCatalogKind} found for “{searchQuery}”
                   </h3>
                   <p class="mt-1 text-xs text-zinc-500">
                     Try another search or enable more content in your library.

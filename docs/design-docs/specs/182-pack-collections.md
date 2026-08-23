@@ -251,7 +251,7 @@ the one-click “Enable & Add” path.
 
 ## Documentation
 
-Rewrite `ui/static/content/topics/manage-packs.md` around a focused library:
+Rewrite `ui/static/content/topics/manage-collections.md` around a focused library:
 
 - Introduce Collections before individual packs.
 - Explain first-run selection and later management.

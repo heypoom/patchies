@@ -11,6 +11,9 @@
   built-in preset library.
 - Done: ObjectNode autocomplete indexing now uses a shared store/module and caps ObjectNode
   suggestions at 100 results by default.
+- Done: Object Browser temporarily presents a catalog when its result names match the query and
+  the selected catalog has only fuzzy or description matches, without changing the user's selected
+  catalog.
 - Next: adapt Object Browser search to reuse the shared object/preset search layer.
 
 ## Problem
@@ -351,6 +354,9 @@ Manual checks:
 6. Verify built-in presets still respect enabled preset packs.
 7. Verify user presets still appear and take precedence where duplicate names exist.
 8. Verify Object Browser search still finds objects by name, description, and category.
+9. From each Object Browser catalog, search for a name that only matches the other catalog and
+   verify the matching catalog appears temporarily; clear or change the query and verify the
+   originally selected catalog returns.
 
 Automated checks:
 

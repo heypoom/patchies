@@ -197,7 +197,7 @@ Topic pages support:
 | `audio-chaining`         | Chain audio processing          |
 | `javascript-runner`      | JSRunner API reference          |
 | `canvas-interaction`     | noDrag/noPan/noWheel/noInteract |
-| `manage-packs`           | Enable object/preset packs      |
+| `manage-collections`     | Enable object/preset packs      |
 | `manage-saves`           | Save and load patches           |
 | `manage-files`           | Virtual filesystem              |
 | `manage-presets`         | Create/organize presets         |

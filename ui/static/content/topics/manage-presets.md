@@ -29,9 +29,9 @@ Create a library to organize your presets:
 
 ## Built-in Preset Packs
 
-Patchies includes [preset packs](/docs/manage-packs) with objects for utilities, effects, and visualizations.
+Patchies includes [preset packs](/docs/manage-collections) with objects for utilities, effects, and visualizations.
 
 ## See Also
 
-- [Packs](/docs/manage-packs) — Install and manage preset packs.
+- [Packs](/docs/manage-collections) — Install and manage preset packs.
 - [Adding Objects](/docs/adding-objects) — Add objects to a patch.

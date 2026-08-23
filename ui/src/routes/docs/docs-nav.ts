@@ -12,14 +12,19 @@ export const categoryOrder = [
 
 // Topic order within each category
 export const topicOrder: Record<string, string[]> = {
-  'Getting Started': ['demos', 'adding-objects', 'modifying-objects', 'shortcuts'],
+  'Getting Started': [
+    'demos',
+    'manage-collections',
+    'adding-objects',
+    'modifying-objects',
+    'shortcuts'
+  ],
   Essentials: [
     'connecting-objects',
     'message-passing',
     'javascript-runner',
     'audio-chaining',
-    'video-chaining',
-    'manage-packs'
+    'video-chaining'
   ],
   Connections: ['data-types', 'hot-cold-inlets'],
   Scripting: [
