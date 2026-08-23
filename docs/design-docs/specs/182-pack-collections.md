@@ -190,6 +190,27 @@ collection chooser before the normal object browser:
 - Do not automatically show this chooser to a user with existing persisted
   pack choices.
 
+### Visual presentation
+
+The chooser is a single, expressive first-run composition rather than a set of
+generic settings cards. Each collection has a stable, purpose-led signal color
+and a small geometric signal path: Visuals is violet, Music is magenta, Sound
+Design is amber, Code & Data is cyan, and Connect is green. The color makes
+the different creative directions easier to scan; the checkbox and selected
+state remain the source of truth.
+
+Selecting a collection energizes only its path and contributes its color to a
+compact library signal beside the primary action. The effect gives a clear
+sense that the person is assembling their creative toolset, without delaying
+selection or changing the chooser's multi-select behavior. All nonessential
+motion respects reduced-motion preferences and the modal remains an opaque,
+readable Ink surface.
+
+When multiple collections are selected, the card surfaces recede toward the
+neutral Ink panel. Their colored checks, icons, borders, and signals remain so
+the user can still scan their choices without creating a wall of competing
+color fields.
+
 The chooser does not teach the distinction between object and preset packs.
 That distinction is deliberately absent from its primary copy.
 

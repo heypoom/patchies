@@ -73,6 +73,51 @@
 
   type SearchItem = ObjectItem & { categoryId: string };
 
+  const collectionVisuals: Record<
+    PackCollectionId,
+    {
+      accent: string;
+      tint: string;
+      ink: string;
+    }
+  > = {
+    essentials: {
+      accent: '#f4f4f5',
+      tint: 'rgba(244, 244, 245, 0.12)',
+      ink: '#18181b'
+    },
+    visuals: {
+      accent: '#a78bfa',
+      tint: 'rgba(167, 139, 250, 0.14)',
+      ink: '#2e1065'
+    },
+    music: {
+      accent: '#f472b6',
+      tint: 'rgba(244, 114, 182, 0.14)',
+      ink: '#500724'
+    },
+    'sound-design': {
+      accent: '#fb923c',
+      tint: 'rgba(251, 146, 60, 0.14)',
+      ink: '#431407'
+    },
+    'code-and-data': {
+      accent: '#22d3ee',
+      tint: 'rgba(34, 211, 238, 0.14)',
+      ink: '#083344'
+    },
+    connect: {
+      accent: '#4ade80',
+      tint: 'rgba(74, 222, 128, 0.14)',
+      ink: '#052e16'
+    },
+    ai: {
+      accent: '#c084fc',
+      tint: 'rgba(192, 132, 252, 0.14)',
+      ink: '#3b0764'
+    }
+  };
+
   let {
     open = $bindable(false),
     onSelectObject,
@@ -373,6 +418,12 @@
 
   const isCollectionOnboarding = $derived(
     $objectBrowserMode === 'insert' && !$packLibraryPreferences.hasCompletedCollectionOnboarding
+  );
+
+  const selectedOnboardingCollections = $derived(
+    BUILT_IN_PACK_COLLECTIONS.filter((collection) =>
+      onboardingCollectionIds.includes(collection.id)
+    )
   );
 
   const hasEnabledOptionalObjectPacks = $derived(
@@ -862,65 +913,77 @@
         </section>
       {:else if $objectBrowserMode === 'insert' && !$packLibraryPreferences.hasCompletedCollectionOnboarding}
         <section
-          class="ob-scroll flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-10 sm:py-10"
+          class="ob-scroll onboarding-chooser flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-10 sm:py-10"
           aria-label="Choose your collections"
         >
-          <div class="mx-auto my-auto w-full max-w-2xl">
-            <h3 class="text-xl font-medium tracking-[-0.02em] text-zinc-100">
-              Build a focused library
-            </h3>
-            <p class="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
+          <div class="onboarding-chooser__content mx-auto my-auto w-full max-w-3xl">
+            <h3 class="onboarding-chooser__title">Build a focused library</h3>
+            <p class="onboarding-chooser__intro">
               Patchies starts focused. Choose what you want to make and we’ll enable the objects and
               presets you need. You can change this anytime.
             </p>
-            <div class="mt-6 grid gap-2 sm:grid-cols-2">
+            <div class="onboarding-chooser__collection-list" role="group" aria-label="Collections">
               {#each BUILT_IN_PACK_COLLECTIONS.filter((collection) => collection.id !== 'essentials' && collection.id !== 'ai') as collection (collection.id)}
                 {@const selected = onboardingCollectionIds.includes(collection.id)}
                 {@const CollectionIcon = getIconComponent(collection.icon)}
+                {@const visual = collectionVisuals[collection.id]}
                 <button
                   type="button"
                   onclick={() => toggleOnboardingCollection(collection.id)}
                   aria-pressed={selected}
-                  class={[
-                    'flex min-h-24 cursor-pointer items-start gap-3 rounded-lg border p-4 text-left transition-colors outline-none focus-visible:ring-1 focus-visible:ring-orange-500/70',
-                    selected
-                      ? 'border-orange-500/45 bg-orange-500/[0.07] text-zinc-100'
-                      : 'border-white/8 bg-white/[0.02] text-zinc-400 hover:border-white/18 hover:bg-white/[0.045]'
-                  ]}
+                  class:collection-choice--selected={selected}
+                  class:collection-choice--in-set={selected &&
+                    selectedOnboardingCollections.length > 1}
+                  class="collection-choice"
+                  style={`--collection-accent: ${visual.accent}; --collection-tint: ${visual.tint}; --collection-ink: ${visual.ink};`}
                 >
-                  <span
-                    class={[
-                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-md border',
-                      selected
-                        ? 'border-orange-500/40 bg-orange-500/12 text-orange-400'
-                        : 'border-white/8 bg-white/[0.035] text-zinc-500'
-                    ]}
+                  <svg
+                    class="collection-choice__signal"
+                    viewBox="0 0 280 94"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
                   >
-                    <CollectionIcon class="h-4 w-4" />
+                    <path
+                      class="collection-choice__signal-base"
+                      pathLength="1"
+                      d="M -12 72 C 26 72 28 20 64 20 S 100 67 138 67 S 170 27 204 27 S 237 54 292 54"
+                    />
+                    <path
+                      class="collection-choice__signal-live"
+                      pathLength="1"
+                      d="M -12 72 C 26 72 28 20 64 20 S 100 67 138 67 S 170 27 204 27 S 237 54 292 54"
+                    />
+                  </svg>
+                  <span class="collection-choice__icon">
+                    <CollectionIcon class="h-5 w-5" />
                   </span>
-                  <span class="min-w-0 flex-1">
-                    <span class="block text-sm font-medium">{collection.name}</span>
-                    <span class="mt-1 block text-[11px] leading-relaxed text-zinc-500"
-                      >{collection.description}</span
-                    >
+                  <span class="collection-choice__copy">
+                    <span class="collection-choice__name">{collection.name}</span>
+                    <span class="collection-choice__description">{collection.description}</span>
                   </span>
-                  <span
-                    class={[
-                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border',
-                      selected
-                        ? 'border-orange-500/60 bg-orange-500/15 text-orange-400'
-                        : 'border-zinc-700 text-transparent'
-                    ]}
-                  >
-                    {#if selected}<Check class="h-2.5 w-2.5" />{/if}
+                  <span class="collection-choice__status" aria-hidden="true">
+                    <Check class="h-3 w-3" />
                   </span>
                 </button>
               {/each}
             </div>
-            <div
-              class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/7 pt-4"
-            >
-              <p class="text-[11px] text-zinc-600">Essentials are always included.</p>
+            <div class="onboarding-chooser__footer">
+              <div class="onboarding-library-signal" aria-live="polite">
+                <span class="onboarding-library-signal__label">Essentials are always included.</span
+                >
+                {#if selectedOnboardingCollections.length > 0}
+                  <span class="onboarding-library-signal__path" aria-hidden="true"></span>
+                  <span class="onboarding-library-signal__selected">
+                    {#each selectedOnboardingCollections as collection (collection.id)}
+                      <span
+                        class="onboarding-library-signal__dot"
+                        style={`--collection-accent: ${collectionVisuals[collection.id].accent};`}
+                      ></span>
+                    {/each}
+                    <span>{selectedOnboardingCollections.length} selected</span>
+                  </span>
+                {/if}
+              </div>
               <div class="flex items-center gap-2">
                 <button
                   type="button"
@@ -1227,6 +1290,257 @@
     }
   }
 
+  @keyframes collection-signal-traverse {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .onboarding-chooser {
+    position: relative;
+    isolation: isolate;
+    scroll-padding-block: 24px;
+    background: #101012;
+  }
+
+  .onboarding-chooser__content {
+    padding-block: 12px;
+  }
+
+  .onboarding-chooser__title {
+    color: #fafafa;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+
+  .onboarding-chooser__intro {
+    max-width: 44rem;
+    margin-top: 12px;
+    color: #a1a1aa;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+
+  .onboarding-chooser__collection-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 32px;
+  }
+
+  .collection-choice {
+    position: relative;
+    display: grid;
+    min-height: 112px;
+    cursor: pointer;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 14px;
+    overflow: hidden;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: #d4d4d8;
+    background: #17171a;
+    text-align: left;
+    outline: none;
+    transition:
+      border-color 180ms ease,
+      background-color 180ms ease,
+      color 180ms ease;
+  }
+
+  .collection-choice:hover {
+    border-color: color-mix(in srgb, var(--collection-accent) 48%, #ffffff);
+    color: #fafafa;
+    background: color-mix(in srgb, var(--collection-ink) 42%, #17171a);
+  }
+
+  .collection-choice:focus-visible {
+    border-color: var(--collection-accent);
+    box-shadow: 0 0 0 3px var(--collection-tint);
+  }
+
+  .collection-choice--selected {
+    border-color: var(--collection-accent);
+    color: #fafafa;
+    background: color-mix(in srgb, var(--collection-ink) 62%, #17171a);
+  }
+
+  .collection-choice--in-set {
+    border-color: color-mix(in srgb, var(--collection-accent) 52%, #3f3f46);
+    background: color-mix(in srgb, var(--collection-ink) 26%, #17171a);
+  }
+
+  .collection-choice__signal {
+    position: absolute;
+    right: -4px;
+    bottom: -5px;
+    width: 62%;
+    height: 76px;
+    opacity: 0.92;
+    pointer-events: none;
+  }
+
+  .collection-choice__signal-base,
+  .collection-choice__signal-live {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .collection-choice__signal-base {
+    stroke: color-mix(in srgb, var(--collection-accent) 26%, transparent);
+    stroke-width: 1;
+  }
+
+  .collection-choice__signal-live {
+    stroke: var(--collection-accent);
+    stroke-width: 1.75;
+    stroke-dasharray: 0.16 0.84;
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+
+  .collection-choice:hover .collection-choice__signal-live,
+  .collection-choice--selected .collection-choice__signal-live {
+    opacity: 1;
+  }
+
+  .collection-choice--selected .collection-choice__signal-live {
+    animation: collection-signal-traverse 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .collection-choice__icon,
+  .collection-choice__copy,
+  .collection-choice__status {
+    position: relative;
+    z-index: 1;
+  }
+
+  .collection-choice__icon {
+    display: flex;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--collection-accent) 35%, transparent);
+    border-radius: 10px;
+    color: var(--collection-accent);
+    background: var(--collection-tint);
+  }
+
+  .collection-choice__copy {
+    min-width: 0;
+    padding-top: 1px;
+  }
+
+  .collection-choice__name {
+    display: block;
+    color: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
+  .collection-choice__description {
+    display: block;
+    max-width: 29ch;
+    margin-top: 6px;
+    color: #a1a1aa;
+    font-size: 0.75rem;
+    line-height: 1.55;
+  }
+
+  .collection-choice--selected .collection-choice__description {
+    color: color-mix(in srgb, var(--collection-accent) 26%, #f4f4f5);
+  }
+
+  .collection-choice--in-set .collection-choice__description {
+    color: color-mix(in srgb, var(--collection-accent) 15%, #d4d4d8);
+  }
+
+  .collection-choice__status {
+    display: flex;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #52525b;
+    border-radius: 6px;
+    color: transparent;
+    background: rgba(0, 0, 0, 0.16);
+    transition:
+      border-color 160ms ease,
+      color 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .collection-choice--selected .collection-choice__status {
+    border-color: var(--collection-accent);
+    color: #101012;
+    background: var(--collection-accent);
+  }
+
+  .collection-choice--in-set .collection-choice__signal-live {
+    opacity: 0.62;
+  }
+
+  .onboarding-chooser__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+  }
+
+  .onboarding-library-signal {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    color: #71717a;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+  }
+
+  .onboarding-library-signal__label {
+    white-space: nowrap;
+  }
+
+  .onboarding-library-signal__path {
+    width: 24px;
+    height: 1px;
+    background: #3f3f46;
+  }
+
+  .onboarding-library-signal__selected {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #d4d4d8;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.625rem;
+    white-space: nowrap;
+  }
+
+  .onboarding-library-signal__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--collection-accent);
+  }
+
   #object-browser-search::-webkit-search-cancel-button,
   #object-browser-search::-webkit-search-decoration {
     appearance: none;
@@ -1418,6 +1732,37 @@
   }
 
   @media (max-width: 639px) {
+    .onboarding-chooser__content {
+      padding-block: 4px;
+    }
+
+    .onboarding-chooser__collection-list {
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .collection-choice {
+      min-height: 104px;
+      padding: 16px;
+    }
+
+    .collection-choice__signal {
+      width: 54%;
+      height: 64px;
+    }
+
+    .onboarding-chooser__footer {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .onboarding-library-signal {
+      flex-wrap: wrap;
+    }
+
     .ob-catalog {
       position: relative;
       display: flex;
@@ -1596,6 +1941,18 @@
 
     .ob-results :global(.grid) {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .collection-choice,
+    .collection-choice__status {
+      transition: none;
+    }
+
+    .collection-choice--selected .collection-choice__signal-live {
+      animation: none;
+      stroke-dashoffset: 0;
     }
   }
 </style>
