@@ -75,7 +75,6 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
 
     const resolvedOptions = resolveFluidCanvasOptions(fluidOptions);
     const data = options.getData();
-    const nodeSize = options.getNodeSize();
     const showResizer = data.fluidCanvasResizerVisible ?? resolvedOptions.showResizer;
 
     defaultResizerVisible = showResizer;
@@ -90,39 +89,19 @@ export function useFluidCanvas(options: UseFluidCanvasOptions) {
       return;
     }
 
-    if (
-      resolvedOptions.initialSize &&
-      nodeSize.width === undefined &&
-      nodeSize.height === undefined
-    ) {
-      const { width, height } = resolvedOptions.initialSize;
-
-      options.updateNode(options.getNodeId(), {
-        width: width / options.previewScaleFactor,
-        height: height / options.previewScaleFactor
-      });
-
-      options.setCanvasSize({ width, height });
-    } else {
-      const previewSize = options.getPreviewSize();
-
-      options.setCanvasSize({
-        width: Math.round((nodeSize.width ?? previewSize.width) * options.previewScaleFactor),
-        height: Math.round((nodeSize.height ?? previewSize.height) * options.previewScaleFactor)
-      });
-    }
+    initializeSize(resolvedOptions.initialSize);
 
     if (data.fluidCanvasResizerVisible === undefined) {
       options.updateNodeData(options.getNodeId(), { fluidCanvasResizerVisible: showResizer });
     }
   }
 
-  function initializeSize(initialSize: CanvasSize) {
+  function initializeSize(initialSize?: CanvasSize) {
     if (!isFluid) return;
 
     const nodeSize = options.getNodeSize();
 
-    if (nodeSize.width === undefined && nodeSize.height === undefined) {
+    if (initialSize && nodeSize.width === undefined && nodeSize.height === undefined) {
       options.updateNode(options.getNodeId(), {
         width: initialSize.width / options.previewScaleFactor,
         height: initialSize.height / options.previewScaleFactor
