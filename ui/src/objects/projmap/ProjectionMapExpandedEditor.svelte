@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { Plus, Trash2, Shrink, Pen, MousePointer2 } from '@lucide/svelte/icons';
   import type { ProjMapSurface } from '$lib/projmap/types';
@@ -78,7 +79,7 @@
 
   $effect(() => {
     function onKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onclose();
+      if (isDismissKey(e)) onclose();
       if (e.key === 'm') ontoggleeditmode();
     }
 

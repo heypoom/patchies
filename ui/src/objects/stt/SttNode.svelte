@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Mic, Settings, Circle, Square } from '@lucide/svelte/icons';
   import SttSettings from '$lib/components/settings/SttSettings.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
@@ -138,7 +139,7 @@
   };
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (isDismissKey(e)) {
       showSettings = false;
     }
   }

@@ -29,6 +29,7 @@
   } from '../../stores/detached-sheet.store';
   import { editorFontFamily } from '../../stores/editor.store';
   import { isSidebarOpen } from '../../stores/ui.store';
+  import { isDismissKey, isExpandedDismissKey } from '$lib/keyboard/dismiss';
 
   import { DEFAULT_SHEET_DATA } from './constants';
   import { SheetClear, SheetGoto, SheetLoad, SheetObjects, SheetRows, sheetSchema } from './schema';
@@ -618,7 +619,7 @@
       return;
     }
 
-    if (event.key === 'Escape') {
+    if (isDismissKey(event)) {
       event.preventDefault();
       event.stopPropagation();
 
@@ -632,7 +633,7 @@
   }
 
   function handleHeaderEditKeydown(event: KeyboardEvent, columnIndex: number) {
-    if (event.key !== 'Escape') return;
+    if (!isDismissKey(event)) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -1678,7 +1679,7 @@
     };
 
     const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !event.shiftKey) return;
+      if (!isExpandedDismissKey(event)) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -1884,7 +1885,7 @@
                 </button>
               </Tooltip.Trigger>
 
-              <Tooltip.Content>Close Expanded Sheet (Shift+Esc)</Tooltip.Content>
+              <Tooltip.Content>Close Expanded Sheet (Shift+Esc or Cmd/Ctrl+.)</Tooltip.Content>
             </Tooltip.Root>
           {/if}
         </div>

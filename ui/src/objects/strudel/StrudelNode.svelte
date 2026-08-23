@@ -26,6 +26,7 @@
   } from '../../stores/detached-strudel-editor.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
+  import { isExpandedDismissKey } from '$lib/keyboard/dismiss';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -298,7 +299,7 @@
     isFullscreenActive.set(true);
 
     const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !event.shiftKey) return;
+      if (!isExpandedDismissKey(event)) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -476,7 +477,7 @@
                     <X class="h-4 w-4" />
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Content>Close Expanded Editor (Shift+Esc)</Tooltip.Content>
+                <Tooltip.Content>Close Expanded Editor (Shift+Esc or Cmd/Ctrl+.)</Tooltip.Content>
               </Tooltip.Root>
             </div>
           {/if}

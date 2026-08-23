@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { getSearchParam, setSearchParam } from '$lib/utils/search-params';
 
   interface Props {
@@ -29,7 +30,7 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       handleConfirm();
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       e.preventDefault();
       onClose();
     }

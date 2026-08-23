@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { X, Youtube } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import type { StagedImage } from '$lib/ai/chat/types';
@@ -101,7 +102,7 @@
       onkeydown={(e) => {
         if (e.key === 'Enter') {
           stageYouTubeUrl();
-        } else if (e.key === 'Escape') {
+        } else if (isDismissKey(e)) {
           addingYouTubeUrl = false;
           youtubeUrlInput = '';
         }

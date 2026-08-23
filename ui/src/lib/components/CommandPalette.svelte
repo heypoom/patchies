@@ -40,6 +40,7 @@
     type OfflineDownloadProgress
   } from '$lib/offline/download-for-offline';
   import { PatchStorageService } from '$lib/storage/PatchStorageService';
+  import { isDismissKey } from '$lib/keyboard/dismiss';
 
   interface Props {
     position: { x: number; y: number };
@@ -360,19 +361,22 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    if (isDismissKey(event)) {
+      event.preventDefault();
+      if (stage !== 'commands') {
+        // Go back to commands stage
+        stage = 'commands';
+        searchQuery = '';
+        selectedIndex = 0;
+        searchInput?.focus();
+      } else {
+        onCancel();
+      }
+
+      return;
+    }
+
     match(event.key)
-      .with('Escape', () => {
-        event.preventDefault();
-        if (stage !== 'commands') {
-          // Go back to commands stage
-          stage = 'commands';
-          searchQuery = '';
-          selectedIndex = 0;
-          searchInput?.focus();
-        } else {
-          onCancel();
-        }
-      })
       .with('ArrowDown', () => {
         event.preventDefault();
         const maxIndex =

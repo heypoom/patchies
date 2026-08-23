@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     BotMessageSquare,
     ImagePlus,
@@ -303,7 +304,7 @@
         return;
       }
 
-      if (event.key === 'Escape') {
+      if (isDismissKey(event)) {
         inputText = '';
 
         return;

@@ -10,6 +10,7 @@
     DEFAULT_OPENROUTER_IMAGE_MODEL
   } from '../../../stores/ai-settings.store';
   import { toast } from 'svelte-sonner';
+  import { isDismissKey } from '$lib/keyboard/dismiss';
 
   let {
     open = $bindable(false),
@@ -51,7 +52,7 @@
   $effect(() => {
     if (!open) return;
     function handleKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') open = false;
+      if (isDismissKey(e)) open = false;
     }
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);

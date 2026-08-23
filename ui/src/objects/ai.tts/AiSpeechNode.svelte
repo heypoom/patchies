@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     Settings,
     X,
@@ -313,7 +314,7 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (isDismissKey(e)) {
       showSettings = false;
     }
   }

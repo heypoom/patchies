@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import AboutTab from './AboutTab.svelte';
   import AboutFooter from './AboutFooter.svelte';
   import ExamplesTab from './ExamplesTab.svelte';
@@ -92,7 +93,7 @@
       tabindex="-1"
       onclick={handleClose}
       onkeydown={(e) => {
-        if (e.key === 'Escape') handleClose();
+        if (isDismissKey(e)) handleClose();
       }}
       aria-label="Close modal"
     ></div>
@@ -109,7 +110,7 @@
       tabindex="-1"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => {
-        if (e.key === 'Escape') {
+        if (isDismissKey(e)) {
           e.stopPropagation();
           handleClose();
         }

@@ -21,6 +21,7 @@
   import VisualSettings from './categories/VisualSettings.svelte';
   import TransportSettings from './categories/TransportSettings.svelte';
   import NetworkSettings from './categories/NetworkSettings.svelte';
+  import { isDismissKey } from '$lib/keyboard/dismiss';
 
   let {
     open = $bindable(false),
@@ -81,7 +82,7 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
-    if (open && event.key === 'Escape') handleClose();
+    if (open && isDismissKey(event)) handleClose();
   }
 
   function trapFocus(event: KeyboardEvent) {

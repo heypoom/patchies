@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Settings, X, Rss } from '@lucide/svelte/icons';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { sseSchema } from '$objects/sse/schema';
@@ -126,7 +127,7 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' || e.key === 'Escape') {
+    if (e.key === 'Enter' || isDismissKey(e)) {
       showSettings = false;
     }
   }

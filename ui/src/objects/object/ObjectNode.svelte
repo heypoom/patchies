@@ -44,6 +44,7 @@
   import { getPatchRuntime, getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
   import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import type { ObjectNodeData } from './types';
 
   let {
@@ -492,7 +493,7 @@
   function handleKeydown(event: KeyboardEvent) {
     if (!isEditing) return;
 
-    if (event.key === 'Escape') {
+    if (isDismissKey(event)) {
       event.preventDefault();
       exitEditingMode(false);
       return;
@@ -534,7 +535,9 @@
           showAutocomplete = false;
         }
       })
-      .with('Escape', () => {
+      .otherwise(() => {
+        if (!isDismissKey(event)) return;
+
         event.preventDefault();
         exitEditingMode(false);
       });

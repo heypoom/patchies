@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     ChevronRight,
     ChevronDown,
@@ -691,7 +692,7 @@
       await vfs.registerUrl(urlInputValue.trim());
       showUrlInput = null;
       urlInputValue = '';
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       showUrlInput = null;
       urlInputValue = '';
     }
@@ -721,7 +722,7 @@
       }
       showFolderInput = null;
       folderInputValue = '';
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       showFolderInput = null;
       folderInputValue = '';
     }
@@ -778,7 +779,7 @@
 
       renamingPath = null;
       renameInputValue = '';
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       renamingPath = null;
       renameInputValue = '';
     }

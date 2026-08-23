@@ -3,6 +3,7 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import { outputSize as outputSizeStore } from '../../stores/renderer.store';
 import { isSidebarOpen } from '../../stores/ui.store';
+import { isExpandedDismissKey } from '$lib/keyboard/dismiss';
 
 /**
  * DOM-renderer node types that get auto-frozen when surface goes fullscreen.
@@ -68,7 +69,7 @@ export class SurfaceOverlay {
     outputSizeStore.subscribe(() => this._resize());
 
     this._onEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && e.shiftKey && this._activeNodeId) {
+      if (isExpandedDismissKey(e) && this._activeNodeId) {
         this.deactivate(this._activeNodeId);
       }
     };
@@ -111,7 +112,7 @@ export class SurfaceOverlay {
    * Activate fullscreen mode for a surface node.
    * @param nodeId - The surface node's ID
    * @param nodes - All current patch nodes (to find DOM-renderer nodes to freeze)
-   * @param onExit - Callback invoked when user exits via Escape or badge
+   * @param onExit - Callback invoked when user exits via a dismiss shortcut or badge
    */
   activate(
     nodeId: string,
@@ -233,7 +234,7 @@ export class SurfaceOverlay {
       user-select: none;
     `;
 
-    badge.textContent = 'Exit surface (Shift+Esc)';
+    badge.textContent = 'Exit surface (Shift+Esc or Cmd/Ctrl+.)';
 
     badge.addEventListener('mouseenter', () => {
       badge.style.color = 'rgba(255,255,255,0.9)';

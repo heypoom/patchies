@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     Check,
     SquarePen,
@@ -117,7 +118,7 @@
     if (event.key === 'Enter') {
       event.preventDefault();
       handleUrlSubmit();
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       showUrlInput = false;
       tempUrl = '';
     }

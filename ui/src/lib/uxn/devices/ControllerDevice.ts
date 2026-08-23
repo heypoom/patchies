@@ -2,6 +2,7 @@
 // Ported from uxn5/src/devices/controller.js
 
 import { peek16 } from '../utils';
+import { isDismissKey } from '$lib/keyboard/dismiss';
 
 import type { UxnEmulator } from '../UxnEmulator';
 
@@ -20,13 +21,15 @@ export class ControllerDevice {
     const key = event.key;
 
     // Check modifiers and specific keys
-    if (event.ctrlKey || key === 'Control' || key === 'z' || key === 'Z' || key === '1') {
+    if (isDismissKey(event)) {
+      mask = 0x08;
+    } else if (event.ctrlKey || key === 'Control' || key === 'z' || key === 'Z' || key === '1') {
       mask = 0x01;
     } else if (event.altKey || key === 'Alt' || key === 'x' || key === 'X' || key === '2') {
       mask = 0x02;
     } else if (event.shiftKey || key === 'Shift' || key === 'c' || key === 'C' || key === '3') {
       mask = 0x04;
-    } else if (key === 'Escape' || key === 'v' || key === 'V' || key === '4') {
+    } else if (key === 'v' || key === 'V' || key === '4') {
       mask = 0x08;
     } else if (key === 'ArrowUp') {
       mask = 0x10;
@@ -57,7 +60,9 @@ export class ControllerDevice {
     const key = event.key;
 
     // Also catch cmd (metaKey)
-    if (event.metaKey) {
+    if (isDismissKey(event)) {
+      mask = 0x08;
+    } else if (event.metaKey) {
       mask = 0x01;
     } else if (event.ctrlKey || key === 'Control') {
       mask = 0x01;
@@ -81,7 +86,7 @@ export class ControllerDevice {
 
     if (event.type == 'keydown') {
       this.state |= mask;
-      if (key === 'Escape') {
+      if (isDismissKey(event)) {
         charCode = 0x1b;
       } else if (key.length == 1) {
         charCode = key.charCodeAt(0);

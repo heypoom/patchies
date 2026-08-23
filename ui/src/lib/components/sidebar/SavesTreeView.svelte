@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     FileJson,
     Trash2,
@@ -245,7 +246,7 @@
     if (event.key === 'Enter') {
       event.preventDefault();
       finishRename();
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       renamingPath = null;
     }
   }
@@ -347,7 +348,7 @@
     if (event.key === 'Enter') {
       event.preventDefault();
       finishNewFolder();
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       creatingFolderIn = null;
     }
   }
@@ -622,7 +623,7 @@
       confirmDelete(selectedPath, selectedIsFolder);
     }
 
-    if (event.key === 'Escape') {
+    if (isDismissKey(event)) {
       selectedPath = null;
     }
 

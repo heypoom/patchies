@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
@@ -175,7 +176,7 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       exitEditingMode(true);
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       e.preventDefault();
       exitEditingMode(false);
     }

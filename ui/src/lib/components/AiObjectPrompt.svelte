@@ -9,6 +9,7 @@
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { getNodeErrors } from '$lib/utils/logger';
+  import { isDismissKey } from '$lib/keyboard/dismiss';
 
   let {
     open = $bindable(false),
@@ -270,7 +271,7 @@
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleSubmit();
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       event.preventDefault();
       if (ctrl.isLoading) {
         handleMinimize();

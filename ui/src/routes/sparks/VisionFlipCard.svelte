@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { LayoutGrid, MessageSquare, Copy } from '@lucide/svelte';
   import type { Vision } from './types';
@@ -46,7 +47,7 @@
 <div
   class="flip-backdrop"
   onclick={onClose}
-  onkeydown={(e: KeyboardEvent) => (e.key === 'Escape' || e.key === 'Esc') && onClose()}
+  onkeydown={(e: KeyboardEvent) => isDismissKey(e) && onClose()}
   role="dialog"
   aria-modal="true"
   tabindex="-1"

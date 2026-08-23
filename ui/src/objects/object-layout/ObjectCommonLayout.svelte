@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import type { Snippet } from 'svelte';
 
   let {
@@ -48,7 +49,7 @@
     if (event.key === 'Enter') {
       event.preventDefault();
       exitEditingMode(true);
-    } else if (event.key === 'Escape') {
+    } else if (isDismissKey(event)) {
       event.preventDefault();
       exitEditingMode(false);
     }

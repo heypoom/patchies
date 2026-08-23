@@ -13,6 +13,7 @@
   import { isSidebarOpen } from '../../stores/ui.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { hasVisibleSettingsFields } from '$lib/settings';
+  import { isExpandedDismissKey } from '$lib/keyboard/dismiss';
 
   let {
     onClose,
@@ -59,7 +60,7 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key !== 'Escape' || !event.shiftKey) return;
+    if (!isExpandedDismissKey(event)) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -176,7 +177,7 @@
         </button>
       </Tooltip.Trigger>
 
-      <Tooltip.Content>Close Expanded Editor (Shift+Esc)</Tooltip.Content>
+      <Tooltip.Content>Close Expanded Editor (Shift+Esc or Cmd/Ctrl+.)</Tooltip.Content>
     </Tooltip.Root>
   </div>
 

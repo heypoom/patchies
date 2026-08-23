@@ -40,6 +40,7 @@
     getOrcaFullscreenOverlayBackground
   } from '$lib/orca/layout';
   import type { OrcaForegroundMode } from '$lib/orca/layout';
+  import { isExpandedDismissKey } from '$lib/keyboard/dismiss';
 
   let {
     id: nodeId,
@@ -666,7 +667,7 @@
     });
 
     const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !event.shiftKey) return;
+      if (!isExpandedDismissKey(event)) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -897,7 +898,7 @@
                     <X class="h-4 w-4" />
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Content>Close Expanded Orca (Shift+Esc)</Tooltip.Content>
+                <Tooltip.Content>Close Expanded Orca (Shift+Esc or Cmd/Ctrl+.)</Tooltip.Content>
               </Tooltip.Root>
             </div>
           {/if}

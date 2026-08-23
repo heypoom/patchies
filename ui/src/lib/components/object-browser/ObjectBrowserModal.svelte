@@ -70,6 +70,7 @@
   } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { objectSchemas } from '$lib/objects/schemas';
   import { catalogHasNameMatch, getDisplayedCatalogKind, type CatalogKind } from './catalog-search';
+  import { isDismissKey } from '$lib/keyboard/dismiss';
 
   type SearchItem = ObjectItem & { categoryId: string };
 
@@ -559,7 +560,7 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
-    if (open && event.key === 'Escape') handleClose();
+    if (open && isDismissKey(event)) handleClose();
   }
 </script>
 

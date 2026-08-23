@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDismissKey } from '$lib/keyboard/dismiss';
   import { Settings, X, Video, Info, Dice5, ExternalLink } from '@lucide/svelte/icons';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -470,7 +471,7 @@
       } else {
         showSettings = false;
       }
-    } else if (e.key === 'Escape') {
+    } else if (isDismissKey(e)) {
       showSettings = false;
     }
   }
