@@ -14,7 +14,7 @@ Prefer to watch a video? [Check out this walkthrough on YouTube.](https://www.yo
 
 ## What can I make?
 
-Patchies lets you use the audio, visual and computational tools and libraries that you know and love, together in one place. For example:
+Patchies lets you use audio, visual and computational tools and libraries that you know and love, together in one place. For example:
 
 - Make interactive graphics and widgets with [P5.js](/docs/objects/p5), [HTML5 Canvas](/docs/objects/canvas.dom), [Three.js](/docs/objects/three) and [Textmode.js](/docs/objects/textmode)
 - Synthesize videos with [Hydra](/docs/objects/hydra), [GLSL shaders](/docs/objects/glsl), and [Shader Park](/docs/objects/shaderpark)

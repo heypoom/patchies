@@ -14,7 +14,7 @@ It's all running on the web, no installation needed. Want to try out Patchies? [
 
 > Prefer to watch a video? [Check out this walkthrough on YouTube](https://www.youtube.com/watch?v=jxFXNnmcOAs)
 
-Patchies lets you use the audio, visual and computational tools and libraries that you know and love, together in one place. For example:
+Patchies lets you use audio, visual and computational tools and libraries that you know and love, together in one place. For example:
 
 - Make interactive graphics and widgets with [P5.js](https://patchies.app/docs/objects/p5), [HTML5 Canvas](https://patchies.app/docs/objects/canvas.dom), [Three.js](https://patchies.app/docs/objects/three) and [Textmode.js](https://patchies.app/docs/objects/textmode)
 - Synthesize videos with [Hydra](https://patchies.app/docs/objects/hydra), [GLSL shaders](https://patchies.app/docs/objects/glsl), and [Shader Park](https://patchies.app/docs/objects/shaderpark)
