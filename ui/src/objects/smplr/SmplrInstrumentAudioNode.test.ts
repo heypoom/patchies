@@ -32,7 +32,8 @@ function createInstrument() {
 }
 
 function createDescriptor(
-  loadInstrument: SmplrInstrumentDescriptor['loadInstrument']
+  loadInstrument: SmplrInstrumentDescriptor['loadInstrument'],
+  supportsSustainPedal = false
 ): SmplrInstrumentDescriptor {
   return {
     type: 'soundfont~',
@@ -43,6 +44,7 @@ function createDescriptor(
     reloadsOnSettings: ['instrument'],
     defaultBangNote: '60',
     defaultVelocity: 100,
+    supportsSustainPedal,
     getDisplayName: (settings) => String(settings.instrument ?? 'piano'),
     loadInstrument
   };
@@ -110,6 +112,28 @@ describe('SmplrInstrumentAudioNode', () => {
 
     expect(load).toHaveBeenCalledTimes(2);
     expect(first.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('holds piano note-offs until a released sustain pedal', async () => {
+    const instrument = createInstrument();
+    const node = new SmplrInstrumentAudioNode(
+      'smplr-1',
+      createFakeAudioContext(),
+      createDescriptor(async () => instrument, true)
+    );
+
+    await node.create([{ instrument: 'piano', volume: 100, velocity: 100, defaultNote: '60' }]);
+    instrument.stop.mockClear();
+
+    node.send('message', { type: 'controlChange', control: 64, value: 1 });
+    node.send('message', { type: 'noteOff', note: 64 });
+
+    expect(instrument.stop).not.toHaveBeenCalled();
+    expect(instrument.setCC).toHaveBeenCalledWith(64, 127);
+
+    node.send('message', { type: 'controlChange', control: 64, value: 0 });
+
+    expect(instrument.stop).toHaveBeenCalledWith({ stopId: 64 });
   });
 
   it('ignores stale async loads when a newer load wins', async () => {

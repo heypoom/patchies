@@ -37,6 +37,18 @@ describe('smplr descriptors', () => {
     expect(descriptor.handleProgramChange?.(40, { kit: 'Custom' })).toBeNull();
   });
 
+  it('enables sustain-pedal handling for melodic instruments but not drums', () => {
+    expect(getSmplrDescriptor('piano~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('epiano~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('soundfont~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('soundfont2~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('mallet~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('mellotron~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('versilian~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('smolken~').supportsSustainPedal).toBe(true);
+    expect(getSmplrDescriptor('drums~').supportsSustainPedal).toBe(false);
+  });
+
   it('exposes FatBoy as a built-in MIDI.js soundfont kit', () => {
     const soundfontKitField = getSmplrDescriptor('soundfont~').settingsSchema.find(
       (field) => field.key === 'kit'

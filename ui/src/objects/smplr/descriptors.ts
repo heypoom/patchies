@@ -57,6 +57,7 @@ export type SmplrInstrumentDescriptor = {
   reloadsOnSettings: string[];
   defaultBangNote: number | string;
   defaultVelocity: number;
+  supportsSustainPedal?: boolean;
   getDisplayName(settings: Record<string, unknown>): string;
   loadInstrument(args: {
     module: SmplrModule;
@@ -165,6 +166,7 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
     title: 'soundfont~',
     description: 'General MIDI Soundfont instrument for MIDI note messages',
     defaultBangNote: '60',
+    supportsSustainPedal: true,
     defaultSettings: {
       instrument: 'acoustic_grand_piano',
       kit: 'MusyngKite',
@@ -237,6 +239,7 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
     title: 'soundfont2~',
     description: 'Load a SoundFont2 SF2 file and play its instruments from MIDI messages',
     defaultBangNote: '60',
+    supportsSustainPedal: true,
     defaultSettings: {
       url: '',
       instrument: '',
@@ -310,6 +313,7 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
       detune: 0,
       reverse: false
     },
+    supportsSustainPedal: true,
     settingsSchema: [
       { key: 'decayTime', label: 'Decay Time', type: 'number', min: 0, step: 0.05, default: 0.5 },
       ...commonSettings
@@ -332,7 +336,10 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
     'Electric piano sampled instrument',
     electricPianos,
     'CP80',
-    (module, context, options) => module.ElectricPiano(context, options)
+    (module, context, options) => module.ElectricPiano(context, options),
+    '60',
+    undefined,
+    true
   ),
   'drums~': selectableInstrumentDescriptor(
     'drums~',
@@ -389,13 +396,15 @@ function selectableInstrumentDescriptor(
     options: SelectableInstrumentOptions
   ) => SmplrInstrument,
   defaultBangNote: number | string = '60',
-  getInstrumentNames?: (module: SmplrModule) => Promise<string[]>
+  getInstrumentNames?: (module: SmplrModule) => Promise<string[]>,
+  supportsSustainPedal = type !== 'drums~'
 ): SmplrInstrumentDescriptor {
   return descriptor({
     type,
     title: type,
     description,
     defaultBangNote,
+    supportsSustainPedal,
     defaultSettings: {
       instrument: defaultInstrument,
       volume: 100,

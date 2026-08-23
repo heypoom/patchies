@@ -40,10 +40,14 @@ Built-in Soundfont kits include `MusyngKite`, `FluidR3_GM`, and `FatBoy`.
 { type: "programChange", program: 40, channel: 2 }
 { type: "noteOn", note: 64, velocity: 90, channel: 2, time: audioTime }
 { type: "noteOff", note: 64, channel: 2, time: audioTime }
-{ type: "controlChange", control: 64, value: 127, channel: 2 }
+{ type: "controlChange", control: 64, value: 1, channel: 2 }
 ```
 
 Channels are 1-based. If `channel` is omitted, `gm~` uses channel 1.
+
+CC 64 sustains notes independently on each melodic channel. Patchies sends `1`
+while the pedal is down and `0` when it is released. Channel 10 percussion
+does not use sustain-pedal handling.
 
 For built-in Soundfont mode, `programChange` uses the General MIDI program
 list on melodic channels. Program `0` selects `acoustic_grand_piano`, program
