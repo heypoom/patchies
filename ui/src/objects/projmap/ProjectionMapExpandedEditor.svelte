@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isDismissKey } from '$lib/keyboard/dismiss';
+  import { getDismissShortcutLabel, isDismissKey, isNativeFullscreen } from '$lib/keyboard/dismiss';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { Plus, Trash2, Shrink, Pen, MousePointer2 } from '@lucide/svelte/icons';
   import type { ProjMapSurface } from '$lib/projmap/types';
@@ -53,6 +53,7 @@
   } = $props();
 
   let svg = $state<SVGSVGElement | null>(null);
+  let dismissShortcutLabel = $derived(getDismissShortcutLabel($isNativeFullscreen));
 
   let activeSurface = $derived(surfaces.find((s) => s.id === activeSurfaceId) ?? null);
 
@@ -163,7 +164,7 @@
           <Shrink class="h-4 w-4" />
         </button>
       </Tooltip.Trigger>
-      <Tooltip.Content>Close (Escape)</Tooltip.Content>
+      <Tooltip.Content>Close ({dismissShortcutLabel})</Tooltip.Content>
     </Tooltip.Root>
   </div>
 

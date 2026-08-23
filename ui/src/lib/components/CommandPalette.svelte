@@ -40,7 +40,7 @@
     type OfflineDownloadProgress
   } from '$lib/offline/download-for-offline';
   import { PatchStorageService } from '$lib/storage/PatchStorageService';
-  import { isDismissKey } from '$lib/keyboard/dismiss';
+  import { getDismissShortcutLabel, isDismissKey, isNativeFullscreen } from '$lib/keyboard/dismiss';
 
   interface Props {
     position: { x: number; y: number };
@@ -85,6 +85,8 @@
     onRedo,
     onExportPatch
   }: Props = $props();
+
+  let dismissShortcutLabel = $derived(getDismissShortcutLabel($isNativeFullscreen));
 
   // Get the first selected node (for save as preset)
   const selectedNode = $derived(nodes.find((n) => n.selected));
@@ -1104,20 +1106,20 @@
   <!-- Footer -->
   <div class="border-t border-zinc-700 px-3 py-2 text-xs text-zinc-500">
     {#if stage === 'commands'}
-      ↑↓ Navigate • Enter Select • Esc Cancel
+      ↑↓ Navigate • Enter Select • {dismissShortcutLabel} Cancel
     {:else if stage === 'delete-list'}
-      ↑↓ Navigate • Enter Delete • Esc Back
+      ↑↓ Navigate • Enter Delete • {dismissShortcutLabel} Back
     {:else if stage === 'rename-list'}
-      ↑↓ Navigate • Enter Rename • Esc Back
+      ↑↓ Navigate • Enter Rename • {dismissShortcutLabel} Back
     {:else if stage === 'rename-name'}
-      Enter Rename • Esc Back
+      Enter Rename • {dismissShortcutLabel} Back
     {:else if stage === 'set-room'}
-      Enter Set Room • Esc Back
+      Enter Set Room • {dismissShortcutLabel} Back
     {:else if stage === 'set-output-size'}
-      Enter Apply • Esc Back
+      Enter Apply • {dismissShortcutLabel} Back
     {:else if stage === 'offline-download'}
       {#if offlineProgress.status === 'complete' || offlineProgress.status === 'error'}
-        Esc Close
+        {dismissShortcutLabel} Close
       {:else}
         Downloading...
       {/if}

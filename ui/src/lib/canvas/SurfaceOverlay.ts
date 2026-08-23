@@ -3,7 +3,7 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import { outputSize as outputSizeStore } from '../../stores/renderer.store';
 import { isSidebarOpen } from '../../stores/ui.store';
-import { isExpandedDismissKey } from '$lib/keyboard/dismiss';
+import { getExpandedDismissShortcutLabel, isExpandedDismissKey } from '$lib/keyboard/dismiss';
 
 /**
  * DOM-renderer node types that get auto-frozen when surface goes fullscreen.
@@ -38,6 +38,7 @@ export class SurfaceOverlay {
   private _contentMode: SurfaceOverlayContentMode = 'canvas';
 
   private _onEscape: (e: KeyboardEvent) => void;
+  private _onFullscreenChange: () => void;
   private _onExit: (() => void) | null = null;
 
   static getInstance(): SurfaceOverlay {
@@ -74,7 +75,10 @@ export class SurfaceOverlay {
       }
     };
 
+    this._onFullscreenChange = () => this._updateBadgeLabel();
+
     window.addEventListener('keydown', this._onEscape);
+    document.addEventListener('fullscreenchange', this._onFullscreenChange);
   }
 
   get canvas(): HTMLCanvasElement {
@@ -234,8 +238,6 @@ export class SurfaceOverlay {
       user-select: none;
     `;
 
-    badge.textContent = 'Exit surface (Shift+Esc or Cmd/Ctrl+.)';
-
     badge.addEventListener('mouseenter', () => {
       badge.style.color = 'rgba(255,255,255,0.9)';
       badge.style.background = 'rgba(0,0,0,0.75)';
@@ -253,6 +255,15 @@ export class SurfaceOverlay {
     document.body.appendChild(badge);
 
     this._badge = badge;
+    this._updateBadgeLabel();
+  }
+
+  private _updateBadgeLabel(): void {
+    if (!this._badge) return;
+
+    this._badge.textContent = `Exit surface (${getExpandedDismissShortcutLabel(
+      document.fullscreenElement !== null
+    )})`;
   }
 
   private _showSecondaryToggleButton(): void {

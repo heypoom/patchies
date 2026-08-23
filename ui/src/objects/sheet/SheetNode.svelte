@@ -29,7 +29,12 @@
   } from '../../stores/detached-sheet.store';
   import { editorFontFamily } from '../../stores/editor.store';
   import { isSidebarOpen } from '../../stores/ui.store';
-  import { isDismissKey, isExpandedDismissKey } from '$lib/keyboard/dismiss';
+  import {
+    getExpandedDismissShortcutLabel,
+    isDismissKey,
+    isExpandedDismissKey,
+    isNativeFullscreen
+  } from '$lib/keyboard/dismiss';
 
   import { DEFAULT_SHEET_DATA } from './constants';
   import { SheetClear, SheetGoto, SheetLoad, SheetObjects, SheetRows, sheetSchema } from './schema';
@@ -86,6 +91,7 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
 
   let messageContext: MessageContext;
   let columnsBeforeEdit: string[] | null = null;
@@ -1885,7 +1891,7 @@
                 </button>
               </Tooltip.Trigger>
 
-              <Tooltip.Content>Close Expanded Sheet (Shift+Esc or Cmd/Ctrl+.)</Tooltip.Content>
+              <Tooltip.Content>Close Expanded Sheet ({dismissShortcutLabel})</Tooltip.Content>
             </Tooltip.Root>
           {/if}
         </div>

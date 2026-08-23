@@ -26,7 +26,11 @@
   } from '../../stores/detached-strudel-editor.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
-  import { isExpandedDismissKey } from '$lib/keyboard/dismiss';
+  import {
+    getExpandedDismissShortcutLabel,
+    isExpandedDismissKey,
+    isNativeFullscreen
+  } from '$lib/keyboard/dismiss';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -64,6 +68,7 @@
   let menuOpen = $state(false);
 
   const code = $derived(data.code || '');
+  const dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
   const customConsole = createCustomConsole(initialNodeId());
 
   useCodeSidebarTarget(() => ({
@@ -477,7 +482,7 @@
                     <X class="h-4 w-4" />
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Content>Close Expanded Editor (Shift+Esc or Cmd/Ctrl+.)</Tooltip.Content>
+                <Tooltip.Content>Close Expanded Editor ({dismissShortcutLabel})</Tooltip.Content>
               </Tooltip.Root>
             </div>
           {/if}

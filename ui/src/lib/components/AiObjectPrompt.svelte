@@ -9,7 +9,7 @@
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { getNodeErrors } from '$lib/utils/logger';
-  import { isDismissKey } from '$lib/keyboard/dismiss';
+  import { getDismissShortcutLabel, isDismissKey, isNativeFullscreen } from '$lib/keyboard/dismiss';
 
   let {
     open = $bindable(false),
@@ -395,7 +395,7 @@
       <button
         onclick={handleMinimize}
         class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-        title="Minimize (Esc)"
+        title={`Minimize (${getDismissShortcutLabel($isNativeFullscreen)})`}
         aria-label="Minimize dialog"
       >
         <Minus class="h-4 w-4" />
@@ -504,7 +504,9 @@
             {/if}
           {/if}
           <span class="shrink-0"
-            >{availableModes.length > 1 ? 'Ctrl+I mode · Esc exit' : 'Esc exit'}</span
+            >{availableModes.length > 1
+              ? `Ctrl+I mode · ${getDismissShortcutLabel($isNativeFullscreen)} exit`
+              : `${getDismissShortcutLabel($isNativeFullscreen)} exit`}</span
           >
         {/if}
       </div>
