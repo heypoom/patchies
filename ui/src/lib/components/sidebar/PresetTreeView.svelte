@@ -46,7 +46,7 @@
   } from '$lib/presets/preset-utils';
   import { isMobile, isSidebarOpen, selectedNodeInfo } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import { importPresetLibraryFile } from '$lib/presets/import-preset-library';
+  import { importPresetLibraryFiles } from '$lib/presets/import-preset-library';
   import { SvelteSet } from 'svelte/reactivity';
 
   // Derived: can save as preset when exactly one node is selected
@@ -301,6 +301,15 @@
 
   // Handle keyboard events for the tree
   function handleTreeKeydown(event: KeyboardEvent) {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+
     // Delete or Backspace to delete selected preset
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
@@ -650,12 +659,16 @@
 
   async function handleImportChange(event: Event) {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+    const files = input.files;
+    if (!files || files.length === 0) return;
 
     try {
-      const libraryName = await importPresetLibraryFile(file);
-      toast.success(`Imported "${libraryName}"`);
+      const libraryNames = await importPresetLibraryFiles(files);
+      toast.success(
+        libraryNames.length === 1
+          ? `Imported "${libraryNames[0]}"`
+          : `Imported ${libraryNames.length} preset libraries`
+      );
     } catch (err) {
       toast.error('Failed to import preset library');
       console.error('Import error:', err);
@@ -1050,6 +1063,7 @@
   bind:this={importInputRef}
   type="file"
   accept=".json"
+  multiple
   class="hidden"
   onchange={handleImportChange}
 />
@@ -1208,7 +1222,7 @@
           </Popover.Trigger>
           <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
             <button
-              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
               onclick={() => {
                 if (selectedPresetPath) {
                   startRename(
@@ -1224,7 +1238,7 @@
               Rename
             </button>
             <button
-              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
               onclick={() => {
                 let deleted = false;
                 if (selectedPresetPath) {
@@ -1246,7 +1260,7 @@
       {/if}
 
       <button
-        class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+        class="ml-auto cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
         onclick={clearPresetSelection}
       >
         Cancel

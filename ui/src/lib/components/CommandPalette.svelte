@@ -41,7 +41,7 @@
   } from '$lib/offline/download-for-offline';
   import { PatchStorageService } from '$lib/storage/PatchStorageService';
   import { getDismissShortcutLabel, isDismissKey, isNativeFullscreen } from '$lib/keyboard/dismiss';
-  import { importPresetLibraryFile } from '$lib/presets/import-preset-library';
+  import { importPresetLibraryFiles } from '$lib/presets/import-preset-library';
 
   interface Props {
     position: { x: number; y: number };
@@ -695,14 +695,19 @@
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
+    input.multiple = true;
 
     input.onchange = async (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+      const files = (event.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
 
       try {
-        const libraryName = await importPresetLibraryFile(file);
-        toast.success(`Imported "${libraryName}"`);
+        const libraryNames = await importPresetLibraryFiles(files);
+        toast.success(
+          libraryNames.length === 1
+            ? `Imported "${libraryNames[0]}"`
+            : `Imported ${libraryNames.length} preset libraries`
+        );
       } catch (error) {
         toast.error('Failed to import preset library');
         console.error('Import error:', error);

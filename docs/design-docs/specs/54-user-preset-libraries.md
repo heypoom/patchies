@@ -199,7 +199,8 @@ function isPreset(entry: PresetFolderEntry): entry is Preset {
 **2.3 Library management UI**
 
 - "+" button to create new library
-- Command palette > Import Preset Library opens the same JSON import flow as the sidebar.
+- Command palette > Import Preset Library opens the same JSON import flow as the sidebar; both
+  support selecting multiple library files at once.
 - Right-click library > Rename, Delete, Export
 - Right-click folder > New Folder, Rename, Delete
 - Right-click preset > Rename, Delete, Duplicate to...
