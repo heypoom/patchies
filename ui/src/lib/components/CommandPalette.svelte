@@ -41,6 +41,7 @@
   } from '$lib/offline/download-for-offline';
   import { PatchStorageService } from '$lib/storage/PatchStorageService';
   import { getDismissShortcutLabel, isDismissKey, isNativeFullscreen } from '$lib/keyboard/dismiss';
+  import { importPresetLibraryFile } from '$lib/presets/import-preset-library';
 
   interface Props {
     position: { x: number; y: number };
@@ -163,6 +164,11 @@
     },
     { id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
     { id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
+    {
+      id: 'import-preset-library',
+      name: 'Import Preset Library',
+      description: 'Add a preset library from a JSON file'
+    },
     { id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
     { id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
     { id: 'rename-patch', name: 'Rename Patch', description: 'Rename saved patch' },
@@ -445,6 +451,7 @@
         onExportPatch?.();
       })
       .with('import-patch', () => loadFromFile())
+      .with('import-preset-library', () => importPresetLibraryFromFile())
       .with('save-patch', () => {
         onCancel();
         onSavePatch?.();
@@ -682,6 +689,28 @@
     };
 
     input.click();
+  }
+
+  function importPresetLibraryFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const libraryName = await importPresetLibraryFile(file);
+        toast.success(`Imported "${libraryName}"`);
+      } catch (error) {
+        toast.error('Failed to import preset library');
+        console.error('Import error:', error);
+      }
+    };
+
+    input.click();
+    onCancel();
   }
 
   function deleteFromLocalStorage(patchName: string) {

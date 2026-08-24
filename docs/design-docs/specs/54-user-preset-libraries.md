@@ -191,10 +191,15 @@ function isPreset(entry: PresetFolderEntry): entry is Preset {
 - Libraries are collapsible root nodes
 - Show preset name + type icon
 - Support folder creation/rename/delete (for non-readonly libraries)
+- Clicking a preset selects it. Shift-click selects the visible preset range from the last selected
+  preset; selected presets can be deleted together with Delete/Backspace or dragged together into
+  an editable library or folder. Read-only presets remain selectable for canvas insertion but are
+  excluded from destructive or move batches. Deleting one or more presets requires confirmation.
 
 **2.3 Library management UI**
 
 - "+" button to create new library
+- Command palette > Import Preset Library opens the same JSON import flow as the sidebar.
 - Right-click library > Rename, Delete, Export
 - Right-click folder > New Folder, Rename, Delete
 - Right-click preset > Rename, Delete, Duplicate to...

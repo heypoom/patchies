@@ -46,6 +46,8 @@
   } from '$lib/presets/preset-utils';
   import { isMobile, isSidebarOpen, selectedNodeInfo } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { importPresetLibraryFile } from '$lib/presets/import-preset-library';
+  import { SvelteSet } from 'svelte/reactivity';
 
   // Derived: can save as preset when exactly one node is selected
   const canSaveAsPreset = $derived($selectedNodeInfo !== null);
@@ -107,10 +109,21 @@
   let dropTargetPath = $state<string | null>(null);
   let dragSourcePath = $state<string | null>(null);
 
+  type SelectedPreset = { libraryId: string; path: PresetPath; preset: Preset };
+  type PresetMoveData =
+    | { type: 'preset'; libraryId: string; path: PresetPath; name: string }
+    | { type: 'presets'; entries: Array<{ libraryId: string; path: PresetPath; name: string }> }
+    | { type: 'folder'; libraryId: string; path: PresetPath; name: string };
+
+  let selectedPresetKeys = new SvelteSet<string>();
+  let lastSelectedPresetKey = $state<string | null>(null);
+
   // Mobile-specific state
-  let selectedPresetPath = $state<{ libraryId: string; path: PresetPath; preset: Preset } | null>(
-    null
-  );
+  const selectedPresetPath = $derived.by((): SelectedPreset | null => {
+    if (selectedPresetKeys.size !== 1) return null;
+
+    return getSelectedPresets()[0] ?? null;
+  });
   let showMoveDialog = $state(false);
   let mobileMoreOpen = $state(false);
 
@@ -170,7 +183,7 @@
         data: selectedPresetPath.preset.data
       }
     });
-    selectedPresetPath = null;
+    clearPresetSelection();
     $isSidebarOpen = false;
     toast.success('Added to canvas');
   }
@@ -194,33 +207,109 @@
     if (success) {
       toast.success(`Moved "${selectedPresetPath.preset.name}"`);
     }
-    selectedPresetPath = null;
+    clearPresetSelection();
   }
 
-  // Select preset (works on both mobile and desktop)
-  function selectPreset(libraryId: string, path: PresetPath, preset: Preset) {
-    selectedPresetPath = { libraryId, path, preset };
+  function getPresetKey(libraryId: string, path: PresetPath): string {
+    return JSON.stringify([libraryId, ...path]);
+  }
+
+  function getVisiblePresets(library: PresetLibrary): SelectedPreset[] {
+    const presets: SelectedPreset[] = [];
+
+    function traverse(folder: PresetFolder, parentPath: PresetPath) {
+      for (const [name, entry] of getSortedEntries(folder)) {
+        const path = [...parentPath, name];
+        if (isPreset(entry)) {
+          presets.push({ libraryId: library.id, path, preset: entry });
+          continue;
+        }
+
+        if (expandedPaths.has(pathToString([library.id, ...path]))) {
+          traverse(entry, path);
+        }
+      }
+    }
+
+    if (expandedPaths.has(library.id)) traverse(library.presets, []);
+    return presets;
+  }
+
+  function getSelectablePresets(): SelectedPreset[] {
+    if (searchQuery.trim()) {
+      return searchResults.map((result) => ({
+        libraryId: result.libraryId,
+        path: getRelativePresetPath(result),
+        preset: result.preset
+      }));
+    }
+
+    return $presetLibraryStore.flatMap(getVisiblePresets);
+  }
+
+  function getSelectedPresets(): SelectedPreset[] {
+    return [...selectedPresetKeys].flatMap((key) => {
+      const [libraryId, ...path] = JSON.parse(key) as string[];
+      const preset = presetLibraryStore.getPresetByPath([libraryId, ...path]);
+
+      return preset ? [{ libraryId, path, preset }] : [];
+    });
+  }
+
+  function clearPresetSelection() {
+    selectedPresetKeys.clear();
+    lastSelectedPresetKey = null;
+  }
+
+  function handlePresetClick(
+    libraryId: string,
+    path: PresetPath,
+    preset: Preset,
+    event: MouseEvent
+  ) {
+    const key = getPresetKey(libraryId, path);
+
+    if (event.shiftKey && lastSelectedPresetKey) {
+      const selectablePresets = getSelectablePresets();
+      const startIndex = selectablePresets.findIndex(
+        (item) => getPresetKey(item.libraryId, item.path) === lastSelectedPresetKey
+      );
+      const endIndex = selectablePresets.findIndex(
+        (item) => getPresetKey(item.libraryId, item.path) === key
+      );
+
+      if (startIndex !== -1 && endIndex !== -1) {
+        const [from, to] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+        selectedPresetKeys.clear();
+        for (const item of selectablePresets.slice(from, to + 1)) {
+          selectedPresetKeys.add(getPresetKey(item.libraryId, item.path));
+        }
+
+        return;
+      }
+    }
+
+    if (selectedPresetKeys.has(key)) {
+      clearPresetSelection();
+      return;
+    }
+
+    selectedPresetKeys.clear();
+    selectedPresetKeys.add(key);
+    lastSelectedPresetKey = key;
   }
 
   // Handle keyboard events for the tree
   function handleTreeKeydown(event: KeyboardEvent) {
-    if (!selectedPresetPath) return;
-
     // Delete or Backspace to delete selected preset
     if (event.key === 'Delete' || event.key === 'Backspace') {
-      // Only delete if from editable library
-      const library = $presetLibraryStore.find((l) => l.id === selectedPresetPath!.libraryId);
-
-      if (library && !library.readonly) {
-        event.preventDefault();
-        deleteEntry(selectedPresetPath.libraryId, selectedPresetPath.path, false);
-        selectedPresetPath = null;
-      }
+      event.preventDefault();
+      deleteSelectedPresets();
     }
 
     // Escape to deselect
     if (isDismissKey(event)) {
-      selectedPresetPath = null;
+      clearPresetSelection();
     }
   }
 
@@ -293,12 +382,21 @@
 
       // Only include move data for editable libraries
       if (isEditable) {
-        const moveData = JSON.stringify({
-          type: 'preset',
-          libraryId,
-          path,
-          name: preset.name
-        });
+        const selectedPresets = getSelectedEditablePresets();
+        const isDraggedPresetSelected = selectedPresetKeys.has(getPresetKey(libraryId, path));
+        const movablePresets = isDraggedPresetSelected ? selectedPresets : [];
+        const moveData = JSON.stringify(
+          movablePresets.length > 1
+            ? {
+                type: 'presets',
+                entries: movablePresets.map(({ libraryId, path, preset }) => ({
+                  libraryId,
+                  path,
+                  name: preset.name
+                }))
+              }
+            : { type: 'preset', libraryId, path, name: preset.name }
+        );
         event.dataTransfer?.setData('application/x-preset-move', moveData);
       }
 
@@ -311,6 +409,15 @@
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copyMove';
     }
+  }
+
+  function getSelectedEditablePresets(): SelectedPreset[] {
+    const librariesById = new Map($presetLibraryStore.map((library) => [library.id, library]));
+
+    return getSelectedPresets().filter((item) => {
+      const library = librariesById.get(item.libraryId);
+      return library && !library.readonly;
+    });
   }
 
   function handleDragEnd() {
@@ -367,22 +474,40 @@
     if (!moveDataStr) return;
 
     try {
-      const moveData = JSON.parse(moveDataStr) as {
-        type: 'preset' | 'folder';
-        libraryId: string;
-        path: PresetPath;
-        name: string;
-      };
+      const moveData = JSON.parse(moveDataStr) as PresetMoveData;
+      const entries = moveData.type === 'presets' ? moveData.entries : [moveData];
+      const movedEntries: Array<{ oldKey: string; newKey: string }> = [];
 
-      const success = presetLibraryStore.moveEntry(
-        moveData.libraryId,
-        moveData.path,
-        targetLibraryId,
-        targetFolderPath
-      );
+      for (const entry of entries) {
+        const success = presetLibraryStore.moveEntry(
+          entry.libraryId,
+          entry.path,
+          targetLibraryId,
+          targetFolderPath
+        );
 
-      if (success) {
-        toast.success(`Moved "${moveData.name}"`);
+        if (success) {
+          movedEntries.push({
+            oldKey: getPresetKey(entry.libraryId, entry.path),
+            newKey: getPresetKey(targetLibraryId, [...targetFolderPath, entry.path.at(-1)!])
+          });
+        }
+      }
+
+      if (movedEntries.length > 0) {
+        for (const { oldKey, newKey } of movedEntries) {
+          if (selectedPresetKeys.has(oldKey)) {
+            selectedPresetKeys.delete(oldKey);
+            selectedPresetKeys.add(newKey);
+            if (lastSelectedPresetKey === oldKey) lastSelectedPresetKey = newKey;
+          }
+        }
+
+        toast.success(
+          movedEntries.length === 1
+            ? `Moved "${entries[0].name}"`
+            : `Moved ${movedEntries.length} presets`
+        );
 
         // Expand the target folder
         if (currentDropTarget) {
@@ -463,7 +588,9 @@
   }
 
   // Delete handlers
-  function deleteEntry(libraryId: string, entryPath: PresetPath, isFolder: boolean) {
+  function deleteEntry(libraryId: string, entryPath: PresetPath, isFolder: boolean): boolean {
+    if (!isFolder && !confirmPresetDeletion(1)) return false;
+
     if (isFolder) {
       presetLibraryStore.removeFolder(libraryId, entryPath);
     } else {
@@ -471,6 +598,31 @@
     }
 
     toast.success(`Deleted ${isFolder ? 'folder' : 'preset'}`);
+    return true;
+  }
+
+  function deleteSelectedPresets() {
+    const selectedPresets = getSelectedEditablePresets();
+    if (selectedPresets.length === 0) return;
+    if (!confirmPresetDeletion(selectedPresets.length)) return;
+
+    for (const { libraryId, path } of selectedPresets) {
+      presetLibraryStore.removePreset(libraryId, path);
+    }
+
+    clearPresetSelection();
+    toast.success(
+      selectedPresets.length === 1 ? 'Deleted preset' : `Deleted ${selectedPresets.length} presets`
+    );
+  }
+
+  function confirmPresetDeletion(count: number): boolean {
+    const message =
+      count === 1
+        ? 'Delete this preset? This cannot be undone.'
+        : `Delete ${count} presets? This cannot be undone.`;
+
+    return confirm(message);
   }
 
   // Export library
@@ -502,16 +654,8 @@
     if (!file) return;
 
     try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-
-      // Basic validation
-      if (!data.name || !data.presets) {
-        throw new Error('Invalid preset library format');
-      }
-
-      presetLibraryStore.importLibrary(data);
-      toast.success(`Imported "${data.name}"`);
+      const libraryName = await importPresetLibraryFile(file);
+      toast.success(`Imported "${libraryName}"`);
     } catch (err) {
       toast.error('Failed to import preset library');
       console.error('Import error:', err);
@@ -568,10 +712,7 @@
   {@const isDraggable = isFolder ? canEdit : true}
   {@const isCurrentDropTarget = isDropTarget(fullPathStr)}
   {@const isSelectedPreset =
-    !isFolder &&
-    selectedPresetPath &&
-    selectedPresetPath.libraryId === libraryId &&
-    selectedPresetPath.path.join('/') === entryPath.join('/')}
+    !isFolder && selectedPresetKeys.has(getPresetKey(libraryId, entryPath))}
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
@@ -591,18 +732,13 @@
       ondragstart={(e) =>
         isDraggable && handleEntryDragStart(e, libraryId, entryPath, entry, isFolder, canEdit)}
       ondragend={handleDragEnd}
-      onclick={() => {
+      onclick={(event) => {
         if (isRenaming) return;
         if (isFolder) {
           toggleExpanded(fullPathStr);
         } else {
-          // Select preset (toggle if already selected)
           const preset = entry as Preset;
-          if (isSelectedPreset) {
-            selectedPresetPath = null;
-          } else {
-            selectPreset(libraryId, entryPath, preset);
-          }
+          handlePresetClick(libraryId, entryPath, preset, event);
         }
       }}
     >
@@ -939,10 +1075,7 @@
       {:else}
         {#each searchResults as result}
           {@const relativePath = getRelativePresetPath(result)}
-          {@const isSelected =
-            selectedPresetPath &&
-            selectedPresetPath.libraryId === result.libraryId &&
-            selectedPresetPath.path.join('/') === relativePath.join('/')}
+          {@const isSelected = selectedPresetKeys.has(getPresetKey(result.libraryId, relativePath))}
 
           {@const typeIcon = getPresetTypeIcon(result.preset.type)}
 
@@ -961,13 +1094,8 @@
                 !result.readonly
               )}
             ondragend={handleDragEnd}
-            onclick={() => {
-              if (isSelected) {
-                selectedPresetPath = null;
-              } else {
-                selectPreset(result.libraryId, relativePath, result.preset);
-              }
-            }}
+            onclick={(event) =>
+              handlePresetClick(result.libraryId, relativePath, result.preset, event)}
           >
             <Blocks class="h-3.5 w-3.5 shrink-0 {typeIcon.color}" />
             <span class="truncate font-mono text-zinc-300">{result.name}</span>
@@ -1089,7 +1217,7 @@
                   );
                 }
                 mobileMoreOpen = false;
-                selectedPresetPath = null;
+                clearPresetSelection();
               }}
             >
               <Pencil class="h-4 w-4 text-zinc-400" />
@@ -1098,11 +1226,16 @@
             <button
               class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
               onclick={() => {
+                let deleted = false;
                 if (selectedPresetPath) {
-                  deleteEntry(selectedPresetPath.libraryId, selectedPresetPath.path, false);
+                  deleted = deleteEntry(
+                    selectedPresetPath.libraryId,
+                    selectedPresetPath.path,
+                    false
+                  );
                 }
                 mobileMoreOpen = false;
-                selectedPresetPath = null;
+                if (deleted) clearPresetSelection();
               }}
             >
               <Trash2 class="h-4 w-4" />
@@ -1114,7 +1247,7 @@
 
       <button
         class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
-        onclick={() => (selectedPresetPath = null)}
+        onclick={clearPresetSelection}
       >
         Cancel
       </button>
