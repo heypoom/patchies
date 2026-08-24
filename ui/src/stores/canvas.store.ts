@@ -1,6 +1,10 @@
 import { writable } from 'svelte/store';
 
 export const isBackgroundOutputCanvasEnabled = writable(false);
+
+/** Whether any global output route is active, including a secondary output screen. */
+export const isGlobalOutputEnabled = writable(false);
+
 export const hasSomeAudioNode = writable(false);
 
 /** Where rendered output frames are routed: background canvas or secondary output screen. */

@@ -98,6 +98,32 @@ onCanvasResize(({ width, height }) => {
 the same behavior as [canvas.dom](/docs/objects/canvas.dom#resizable-widgets).
 While fluid mode is active, `setCanvasSize()` is ignored.
 
+## Video Output
+
+`pixi.dom` copies its canvas into the video pipeline only when it feeds another
+video node. The copy is slower than worker-side [pixi](/docs/objects/pixi), so
+the default program calls `noOutput()` and hides the video output port.
+
+Remove `noOutput()` when you want to chain the scene into another visual:
+
+```javascript
+const { Graphics } = PIXI
+
+const badge = new Graphics()
+  .circle(width / 2, height / 2, 100)
+  .fill(0x66ccff)
+
+stage.addChild(badge)
+```
+
+## Special Functions
+
+- `noOutput()` — hides the video output port
+- `setCanvasSize(width, height)` — sets a fixed canvas resolution
+- `setFluidSize(options?)` — makes the canvas follow the node size
+- `onCanvasResize(callback)` — runs a callback after the canvas is resized
+- `loadExtensions(...names)` — loads optional PixiJS extensions
+
 ## See Also
 
 - [pixi](/docs/objects/pixi) — worker-side PixiJS

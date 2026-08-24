@@ -215,6 +215,7 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('pixi.dom', 'setF')).toContain('setFluidSize');
 
     expect(getCompletionLabels('pixi.dom', 'onCanvasR')).toContain('onCanvasResize');
+    expect(getCompletionLabels('pixi.dom', 'noO')).toContain('noOutput');
     expect(getCompletionLabels('dom', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('vue', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('dom', 'onR')).toContain('onResize');

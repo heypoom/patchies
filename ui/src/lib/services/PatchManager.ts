@@ -13,7 +13,7 @@ import {
   helpModeObject,
   isCablesVisible
 } from '../../stores/ui.store';
-import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+import { isBackgroundOutputCanvasEnabled, isGlobalOutputEnabled } from '../../stores/canvas.store';
 import { transportStore } from '../../stores/transport.store';
 import { DEFAULT_BPM, DEFAULT_TIME_SIGNATURE } from '$lib/transport/constants';
 import { GLSystem } from '$lib/canvas/GLSystem';
@@ -386,6 +386,7 @@ export class PatchManager {
 
     // Reset stores
     isBackgroundOutputCanvasEnabled.set(false);
+    isGlobalOutputEnabled.set(false);
     currentPatchName.set(null);
 
     // Restore default settings

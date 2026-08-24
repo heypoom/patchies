@@ -20,7 +20,9 @@ function draw(t) {
   })
 }`;
 
-export const DEFAULT_PIXI_DOM_CODE = `const { Graphics } = PIXI
+export const DEFAULT_PIXI_DOM_CODE = `noOutput()
+
+const { Graphics } = PIXI
 
 const colors = [0xff5ea0, 0x66ccff, 0xa78bfa]
 

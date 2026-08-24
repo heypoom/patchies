@@ -43,6 +43,7 @@ export class ViewportCullingManager {
 
   private cachedVisibleFboNodes: Set<string> = new Set();
   private cachedVisibleDomNodes: Set<string> = new Set();
+  private cachedPersistentDomNodeIds: Set<string> = new Set();
 
   public onVisibleFboNodesChange?: (nodeIds: Set<string>) => void;
 
@@ -112,7 +113,8 @@ export class ViewportCullingManager {
     viewport: { x: number; y: number; zoom: number },
     nodes: Node[],
     screenWidth: number,
-    screenHeight: number
+    screenHeight: number,
+    persistentDomNodeIds: ReadonlySet<string> = new Set()
   ): Set<string> | null {
     const now = performance.now();
 
@@ -121,13 +123,22 @@ export class ViewportCullingManager {
       viewport.x !== this.lastViewport.x ||
       viewport.y !== this.lastViewport.y ||
       viewport.zoom !== this.lastViewport.zoom;
+    const persistentDomNodesChanged = !this.setsEqual(
+      persistentDomNodeIds,
+      this.cachedPersistentDomNodeIds
+    );
 
-    if (!viewportMoved && now - this.lastUpdateTime < this.config.throttleMs) {
+    if (
+      !viewportMoved &&
+      !persistentDomNodesChanged &&
+      now - this.lastUpdateTime < this.config.throttleMs
+    ) {
       return null;
     }
 
     this.lastUpdateTime = now;
     this.lastViewport = { x: viewport.x, y: viewport.y, zoom: viewport.zoom };
+    this.cachedPersistentDomNodeIds = new Set(persistentDomNodeIds);
 
     const fboBounds = this.calculateViewportBounds(
       viewport,
@@ -163,7 +174,7 @@ export class ViewportCullingManager {
       if (isDom) {
         liveDomIds.add(node.id);
 
-        if (this.isNodeVisible(node, domBounds)) {
+        if (persistentDomNodeIds.has(node.id) || this.isNodeVisible(node, domBounds)) {
           visibleDomNodes.add(node.id);
         }
       }
@@ -182,7 +193,7 @@ export class ViewportCullingManager {
     return visibleFboNodes;
   }
 
-  private setsEqual(a: Set<string>, b: Set<string>): boolean {
+  private setsEqual(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
     if (a.size !== b.size) return false;
 
     for (const item of a) {
@@ -197,11 +208,18 @@ export class ViewportCullingManager {
     viewport: { x: number; y: number; zoom: number },
     nodes: Node[],
     screenWidth: number,
-    screenHeight: number
+    screenHeight: number,
+    persistentDomNodeIds: ReadonlySet<string> = new Set()
   ): Set<string> | null {
     this.lastUpdateTime = -Infinity;
 
-    return this.updateVisibleNodes(viewport, nodes, screenWidth, screenHeight);
+    return this.updateVisibleNodes(
+      viewport,
+      nodes,
+      screenWidth,
+      screenHeight,
+      persistentDomNodeIds
+    );
   }
 
   getVisibleNodes(): Set<string> {
@@ -217,5 +235,6 @@ export class ViewportCullingManager {
     this.onVisibleDomNodesChange = undefined;
     this.cachedVisibleFboNodes.clear();
     this.cachedVisibleDomNodes.clear();
+    this.cachedPersistentDomNodeIds.clear();
   }
 }

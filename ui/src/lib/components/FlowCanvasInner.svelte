@@ -56,6 +56,7 @@
   import {
     hasSomeAudioNode,
     isBackgroundOutputCanvasEnabled,
+    isGlobalOutputEnabled,
     snapGridSize
   } from '../../stores/canvas.store';
 
@@ -70,6 +71,7 @@
     isValidConnectionBetweenHandles
   } from '$lib/utils/connection-validation';
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
+  import { getViewportPersistentDomNodeIds } from '$lib/canvas/viewport-culling-policy';
   import { CULLABLE_DOM_TYPES } from '$lib/rendering/types';
   import { useFocusNode, useNodeLabels } from '$lib/canvas/use-focus-node.svelte';
   import AIProviderSettingsDialog from './dialogs/AIProviderSettingsDialog.svelte';
@@ -107,7 +109,7 @@
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
-  import { allPreviewsDisabled } from '../../stores/renderer.store';
+  import { allPreviewsDisabled, overrideOutputNodeId } from '../../stores/renderer.store';
   import { cullObjects } from '../../stores/debug.store';
   import {
     activeCodeEditorTarget,
@@ -579,7 +581,20 @@
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
-    viewportCullingManager.updateVisibleNodes(currentViewport, nodes, screenWidth, screenHeight);
+    const persistentDomNodeIds = getViewportPersistentDomNodeIds(
+      nodes,
+      edges,
+      $isGlobalOutputEnabled || $overrideOutputNodeId !== null,
+      $overrideOutputNodeId
+    );
+
+    viewportCullingManager.updateVisibleNodes(
+      currentViewport,
+      nodes,
+      screenWidth,
+      screenHeight,
+      persistentDomNodeIds
+    );
   });
 
   // Keyboard shortcuts delegated to KeyboardShortcutManager (created in onMount)
