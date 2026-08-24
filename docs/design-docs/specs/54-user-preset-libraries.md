@@ -195,6 +195,11 @@ function isPreset(entry: PresetFolderEntry): entry is Preset {
   preset; selected presets can be deleted together with Delete/Backspace or dragged together into
   an editable library or folder. Read-only presets remain selectable for canvas insertion but are
   excluded from destructive or move batches. Deleting one or more presets requires confirmation.
+- The preset tree supports keyboard navigation: Up/Down move a standard tree cursor through visible
+  libraries, folders, and presets; Shift+Up/Down extends the preset range crossed by the cursor.
+  Left collapses a container or moves to its parent; Right expands a container or enters its first
+  visible child.
+- New-folder inputs render as an inline editable folder row, matching the existing folder hierarchy.
 
 **2.3 Library management UI**
 

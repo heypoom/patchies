@@ -110,6 +110,13 @@
   let dragSourcePath = $state<string | null>(null);
 
   type SelectedPreset = { libraryId: string; path: PresetPath; preset: Preset };
+  type TreeRow = {
+    id: string;
+    type: 'library' | 'folder' | 'preset';
+    libraryId: string;
+    path: PresetPath;
+    preset?: Preset;
+  };
   type PresetMoveData =
     | { type: 'preset'; libraryId: string; path: PresetPath; name: string }
     | { type: 'presets'; entries: Array<{ libraryId: string; path: PresetPath; name: string }> }
@@ -117,6 +124,8 @@
 
   let selectedPresetKeys = new SvelteSet<string>();
   let lastSelectedPresetKey = $state<string | null>(null);
+  let activeTreeRowId = $state<string | null>(null);
+  let rangeAnchorTreeRowId = $state<string | null>(null);
 
   // Mobile-specific state
   const selectedPresetPath = $derived.by((): SelectedPreset | null => {
@@ -214,37 +223,172 @@
     return JSON.stringify([libraryId, ...path]);
   }
 
-  function getVisiblePresets(library: PresetLibrary): SelectedPreset[] {
-    const presets: SelectedPreset[] = [];
+  function getTreeRowId(type: TreeRow['type'], libraryId: string, path: PresetPath = []): string {
+    return `${type}:${getPresetKey(libraryId, path)}`;
+  }
 
-    function traverse(folder: PresetFolder, parentPath: PresetPath) {
+  function getVisibleTreeRows(): TreeRow[] {
+    if (searchQuery.trim()) {
+      return searchResults.map((result) => {
+        const path = getRelativePresetPath(result);
+        return {
+          id: getTreeRowId('preset', result.libraryId, path),
+          type: 'preset',
+          libraryId: result.libraryId,
+          path,
+          preset: result.preset
+        };
+      });
+    }
+
+    const rows: TreeRow[] = [];
+
+    function traverse(library: PresetLibrary, folder: PresetFolder, parentPath: PresetPath) {
       for (const [name, entry] of getSortedEntries(folder)) {
         const path = [...parentPath, name];
+
         if (isPreset(entry)) {
-          presets.push({ libraryId: library.id, path, preset: entry });
+          rows.push({
+            id: getTreeRowId('preset', library.id, path),
+            type: 'preset',
+            libraryId: library.id,
+            path,
+            preset: entry
+          });
           continue;
         }
 
+        rows.push({
+          id: getTreeRowId('folder', library.id, path),
+          type: 'folder',
+          libraryId: library.id,
+          path
+        });
+
         if (expandedPaths.has(pathToString([library.id, ...path]))) {
-          traverse(entry, path);
+          traverse(library, entry, path);
         }
       }
     }
 
-    if (expandedPaths.has(library.id)) traverse(library.presets, []);
-    return presets;
-  }
+    for (const library of $presetLibraryStore) {
+      rows.push({
+        id: getTreeRowId('library', library.id),
+        type: 'library',
+        libraryId: library.id,
+        path: []
+      });
 
-  function getSelectablePresets(): SelectedPreset[] {
-    if (searchQuery.trim()) {
-      return searchResults.map((result) => ({
-        libraryId: result.libraryId,
-        path: getRelativePresetPath(result),
-        preset: result.preset
-      }));
+      if (expandedPaths.has(library.id)) traverse(library, library.presets, []);
     }
 
-    return $presetLibraryStore.flatMap(getVisiblePresets);
+    return rows;
+  }
+
+  function selectTreeRowRange(rows: TreeRow[], targetRowId: string) {
+    const anchorRowId = rangeAnchorTreeRowId ?? activeTreeRowId ?? targetRowId;
+    const anchorIndex = rows.findIndex((row) => row.id === anchorRowId);
+    const targetIndex = rows.findIndex((row) => row.id === targetRowId);
+    if (anchorIndex === -1 || targetIndex === -1) return;
+
+    const [from, to] =
+      anchorIndex < targetIndex ? [anchorIndex, targetIndex] : [targetIndex, anchorIndex];
+    selectedPresetKeys.clear();
+
+    for (const row of rows.slice(from, to + 1)) {
+      if (row.type === 'preset') {
+        selectedPresetKeys.add(getPresetKey(row.libraryId, row.path));
+      }
+    }
+
+    lastSelectedPresetKey = [...selectedPresetKeys][0] ?? null;
+  }
+
+  function setActiveTreeRow(row: TreeRow, extendSelection = false) {
+    activeTreeRowId = row.id;
+
+    if (extendSelection) {
+      selectTreeRowRange(getVisibleTreeRows(), row.id);
+      return;
+    }
+
+    rangeAnchorTreeRowId = row.id;
+
+    if (row.type === 'preset') {
+      selectedPresetKeys.clear();
+      selectedPresetKeys.add(getPresetKey(row.libraryId, row.path));
+      lastSelectedPresetKey = getPresetKey(row.libraryId, row.path);
+      return;
+    }
+
+    clearPresetSelection();
+  }
+
+  function getParentTreeRow(row: TreeRow): TreeRow | null {
+    if (row.type === 'library') return null;
+
+    const parentPath = row.path.slice(0, -1);
+    const type = parentPath.length === 0 ? 'library' : 'folder';
+
+    return {
+      id: getTreeRowId(type, row.libraryId, parentPath),
+      type,
+      libraryId: row.libraryId,
+      path: parentPath
+    };
+  }
+
+  function moveTreeCursor(direction: -1 | 1, extendSelection: boolean) {
+    const rows = getVisibleTreeRows();
+    if (rows.length === 0) return;
+
+    const currentIndex = rows.findIndex((row) => row.id === activeTreeRowId);
+    const targetIndex = Math.min(
+      Math.max(currentIndex === -1 ? 0 : currentIndex + direction, 0),
+      rows.length - 1
+    );
+    setActiveTreeRow(rows[targetIndex], extendSelection);
+  }
+
+  function handleLeftArrow() {
+    const rows = getVisibleTreeRows();
+    const row = rows.find((item) => item.id === activeTreeRowId);
+    if (!row) return;
+
+    const path =
+      row.type === 'library' ? row.libraryId : pathToString([row.libraryId, ...row.path]);
+    if (row.type !== 'preset' && expandedPaths.has(path)) {
+      toggleExpanded(path);
+      return;
+    }
+
+    const parent = getParentTreeRow(row);
+    if (parent) setActiveTreeRow(parent);
+  }
+
+  function handleRightArrow() {
+    const rows = getVisibleTreeRows();
+    const currentIndex = rows.findIndex((row) => row.id === activeTreeRowId);
+    const row = rows[currentIndex];
+    if (!row || row.type === 'preset') return;
+
+    const path =
+      row.type === 'library' ? row.libraryId : pathToString([row.libraryId, ...row.path]);
+    if (!expandedPaths.has(path)) {
+      toggleExpanded(path);
+      return;
+    }
+
+    const child = rows[currentIndex + 1];
+    const isChildOfLibrary = row.type === 'library' && child?.libraryId === row.libraryId;
+    const isChildOfFolder =
+      row.type === 'folder' &&
+      child?.libraryId === row.libraryId &&
+      child.path.length === row.path.length + 1 &&
+      child.path.slice(0, -1).join('/') === row.path.join('/');
+    if (child && (isChildOfLibrary || isChildOfFolder)) {
+      setActiveTreeRow(child);
+    }
   }
 
   function getSelectedPresets(): SelectedPreset[] {
@@ -268,25 +412,12 @@
     event: MouseEvent
   ) {
     const key = getPresetKey(libraryId, path);
+    const rowId = getTreeRowId('preset', libraryId, path);
+    activeTreeRowId = rowId;
 
-    if (event.shiftKey && lastSelectedPresetKey) {
-      const selectablePresets = getSelectablePresets();
-      const startIndex = selectablePresets.findIndex(
-        (item) => getPresetKey(item.libraryId, item.path) === lastSelectedPresetKey
-      );
-      const endIndex = selectablePresets.findIndex(
-        (item) => getPresetKey(item.libraryId, item.path) === key
-      );
-
-      if (startIndex !== -1 && endIndex !== -1) {
-        const [from, to] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
-        selectedPresetKeys.clear();
-        for (const item of selectablePresets.slice(from, to + 1)) {
-          selectedPresetKeys.add(getPresetKey(item.libraryId, item.path));
-        }
-
-        return;
-      }
+    if (event.shiftKey && rangeAnchorTreeRowId) {
+      selectTreeRowRange(getVisibleTreeRows(), rowId);
+      return;
     }
 
     if (selectedPresetKeys.has(key)) {
@@ -297,6 +428,7 @@
     selectedPresetKeys.clear();
     selectedPresetKeys.add(key);
     lastSelectedPresetKey = key;
+    rangeAnchorTreeRowId = rowId;
   }
 
   // Handle keyboard events for the tree
@@ -314,6 +446,24 @@
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
       deleteSelectedPresets();
+    }
+
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveTreeCursor(event.key === 'ArrowUp' ? -1 : 1, event.shiftKey);
+      return;
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      handleLeftArrow();
+      return;
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      handleRightArrow();
+      return;
     }
 
     // Escape to deselect
@@ -509,6 +659,11 @@
             selectedPresetKeys.delete(oldKey);
             selectedPresetKeys.add(newKey);
             if (lastSelectedPresetKey === oldKey) lastSelectedPresetKey = newKey;
+
+            const oldRowId = `preset:${oldKey}`;
+            const newRowId = `preset:${newKey}`;
+            if (activeTreeRowId === oldRowId) activeTreeRowId = newRowId;
+            if (rangeAnchorTreeRowId === oldRowId) rangeAnchorTreeRowId = newRowId;
           }
         }
 
@@ -726,6 +881,8 @@
   {@const isCurrentDropTarget = isDropTarget(fullPathStr)}
   {@const isSelectedPreset =
     !isFolder && selectedPresetKeys.has(getPresetKey(libraryId, entryPath))}
+  {@const rowId = getTreeRowId(isFolder ? 'folder' : 'preset', libraryId, entryPath)}
+  {@const isActiveTreeRow = activeTreeRowId === rowId}
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
@@ -733,7 +890,9 @@
       ? 'bg-blue-600/30'
       : isSelectedPreset
         ? 'bg-blue-900/40 hover:bg-blue-900/50'
-        : 'hover:bg-zinc-800'}"
+        : isActiveTreeRow
+          ? 'bg-zinc-800 ring-1 ring-blue-500/70 ring-inset'
+          : 'hover:bg-zinc-800'}"
     ondragover={(e) => isFolder && handleFolderDragOver(e, fullPathStr, canEdit)}
     ondragleave={handleFolderDragLeave}
     ondrop={(e) => isFolder && handleFolderDrop(e, libraryId, entryPath)}
@@ -748,6 +907,7 @@
       onclick={(event) => {
         if (isRenaming) return;
         if (isFolder) {
+          setActiveTreeRow({ id: rowId, type: 'folder', libraryId, path: entryPath });
           toggleExpanded(fullPathStr);
         } else {
           const preset = entry as Preset;
@@ -864,12 +1024,13 @@
   <!-- New folder input -->
   {#if isCreatingFolder && isFolder}
     <div class="flex items-center gap-1.5 py-1" style="padding-left: {paddingLeft + 12}px">
-      <FolderPlus class="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+      <ChevronRight class="invisible h-3 w-3 shrink-0" />
+      <Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
       <!-- svelte-ignore a11y_autofocus -->
       <input
         type="text"
-        class="flex-1 truncate rounded bg-transparent px-1 font-mono text-xs text-zinc-300 ring-1 ring-blue-500 outline-none"
-        placeholder="Folder name"
+        class="flex-1 truncate rounded bg-transparent px-1 font-mono text-zinc-300 ring-1 ring-blue-500 outline-none"
+        aria-label="Folder name"
         bind:value={newFolderName}
         onkeydown={(e) => handleNewFolderKeydown(e, libraryId, entryPath)}
         autofocus
@@ -908,6 +1069,8 @@
   {@const isCreatingFolder = creatingFolderIn === library.id}
   {@const canEdit = !library.readonly}
   {@const isCurrentDropTarget = isDropTarget(library.id)}
+  {@const rowId = getTreeRowId('library', library.id)}
+  {@const isActiveTreeRow = activeTreeRowId === rowId}
 
   <ContextMenu.Root>
     <ContextMenu.Trigger class="block w-full">
@@ -915,14 +1078,19 @@
       <div
         class="group flex w-full items-center text-left text-xs {isCurrentDropTarget
           ? 'bg-blue-600/30'
-          : 'hover:bg-zinc-800'}"
+          : isActiveTreeRow
+            ? 'bg-zinc-800 ring-1 ring-blue-500/70 ring-inset'
+            : 'hover:bg-zinc-800'}"
         ondragover={(e) => handleFolderDragOver(e, library.id, canEdit)}
         ondragleave={handleFolderDragLeave}
         ondrop={(e) => handleFolderDrop(e, library.id, [])}
       >
         <button
           class="flex flex-1 cursor-pointer items-center gap-1.5 py-1.5 pl-2"
-          onclick={() => toggleExpanded(library.id)}
+          onclick={() => {
+            setActiveTreeRow({ id: rowId, type: 'library', libraryId: library.id, path: [] });
+            toggleExpanded(library.id);
+          }}
         >
           {#if isExpanded}
             <ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
@@ -1031,13 +1199,14 @@
 
   <!-- New folder input at library root -->
   {#if isCreatingFolder}
-    <div class="flex items-center gap-1.5 py-1 pl-6">
-      <FolderPlus class="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+    <div class="flex items-center gap-1.5 py-1" style="padding-left: 20px">
+      <ChevronRight class="invisible h-3 w-3 shrink-0" />
+      <Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
       <!-- svelte-ignore a11y_autofocus -->
       <input
         type="text"
-        class="flex-1 truncate rounded bg-transparent px-1 font-mono text-xs text-zinc-300 ring-1 ring-blue-500 outline-none"
-        placeholder="Folder name"
+        class="flex-1 truncate rounded bg-transparent px-1 font-mono text-zinc-300 ring-1 ring-blue-500 outline-none"
+        aria-label="Folder name"
         bind:value={newFolderName}
         onkeydown={(e) => handleNewFolderKeydown(e, library.id, [])}
         autofocus

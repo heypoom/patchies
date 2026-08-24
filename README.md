@@ -31,7 +31,7 @@ Patchies lets you use audio, visual and computational tools and libraries that y
 
 Patchies lets you write small blocks of code and patch them together.
 
-Patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You then chain their [messages](https://patchies.app/docs/message-passing), [audio output](https://patchies.app/docs/audio-chaining) [video output](https://patchies.app/docs/video-chaining) together to build up a larger program.
+Patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You then chain their [messages](https://patchies.app/docs/message-passing), [audio output](https://patchies.app/docs/audio-chaining) or [video output](https://patchies.app/docs/video-chaining) together to build up a larger program.
 
 This is heavily inspired by the [actor model](https://en.wikipedia.org/wiki/Actor_model), as well as software like TouchDesigner, Pure Data and Max/MSP.
 
