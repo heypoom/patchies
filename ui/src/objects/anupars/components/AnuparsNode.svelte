@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Moon, CircleQuestionMark } from '@lucide/svelte/icons';
+  import { Moon, CircleQuestionMark, Expand, X } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -13,6 +13,9 @@
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { renderFpsCap } from '../../../stores/renderer.store';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
+  import { portal } from '$lib/dom/portal';
+  import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
+  import { isExpandedDismissKey } from '$lib/keyboard/dismiss';
   import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
 
   let {
@@ -34,6 +37,11 @@
 
   let terminalElement: HTMLDivElement | undefined = $state();
   let frozen = $state(false);
+  let isExpanded = $state(false);
+
+  const expandedPortalTarget = $derived(
+    isExpanded && typeof document !== 'undefined' ? document.body : null
+  );
 
   function toggleFrozen() {
     frozen = !frozen;
@@ -404,22 +412,50 @@
     selectedNodeInfo.set({ type: 'anupars', id: nodeId });
   }
 
+  function openExpandedEditor() {
+    isExpanded = true;
+  }
+
+  function closeExpandedEditor() {
+    isExpanded = false;
+  }
+
   function measureTerminalSize() {
     if (!term || !terminalElement) return;
 
     const cell = (term as any)._core?._renderService?.dimensions?.css?.cell;
     if (!cell) return;
 
-    terminalElement.style.width = `${Math.ceil(cell.width * cols)}px`;
-    terminalElement.style.height = `${Math.ceil(cell.height * rows)}px`;
+    terminalElement.style.width = `${Math.ceil(cell.width * term.cols)}px`;
+    terminalElement.style.height = `${Math.ceil(cell.height * term.rows)}px`;
+  }
+
+  function resizeExpandedTerminal() {
+    if (!term || !worker) return;
+
+    const cell = (term as any)._core?._renderService?.dimensions?.css?.cell;
+    if (!cell) return;
+
+    const expandedCols = Math.max(cols, Math.floor((window.innerWidth - 32) / cell.width));
+    const expandedRows = Math.max(rows, Math.floor((window.innerHeight - 32) / cell.height));
+
+    if (term.cols !== expandedCols || term.rows !== expandedRows) {
+      term.resize(expandedCols, expandedRows);
+      postWorker({ type: 'resize', cols: expandedCols, rows: expandedRows });
+    }
+
+    measureTerminalSize();
   }
 
   $effect(() => {
     const c = cols;
     const r = rows;
     const fs = fontSize;
+    const expanded = isExpanded;
 
     if (!term || !worker) return;
+
+    if (expanded) return;
 
     if (term.options.fontSize !== fs) {
       term.options.fontSize = fs;
@@ -432,6 +468,35 @@
     postWorker({ type: 'resize', cols: c, rows: r });
 
     measureTerminalSize();
+  });
+
+  $effect(() => {
+    if (!isExpanded) return;
+
+    isSidebarOpen.set(false);
+    isFullscreenActive.set(true);
+
+    queueMicrotask(() => {
+      resizeExpandedTerminal();
+      term?.focus();
+    });
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (!isExpandedDismissKey(event)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      closeExpandedEditor();
+    };
+
+    window.addEventListener('keydown', handleKeydown, { capture: true });
+    window.addEventListener('resize', resizeExpandedTerminal);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeydown, { capture: true });
+      window.removeEventListener('resize', resizeExpandedTerminal);
+      isFullscreenActive.set(false);
+    };
   });
 </script>
 
@@ -465,6 +530,15 @@
             </Tooltip.Trigger>
             <Tooltip.Content>Help</Tooltip.Content>
           </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button class="node-floating-button" onclick={openExpandedEditor} aria-label="Expand">
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Expand</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       </div>
 
@@ -477,19 +551,46 @@
           index={0}
           {nodeId}
         />
-        <div class="relative">
+        <div
+          use:portal={expandedPortalTarget}
+          class={[
+            'nodrag nopan',
+            isExpanded
+              ? 'fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-black/70 p-4'
+              : 'relative'
+          ].join(' ')}
+        >
+          {#if isExpanded}
+            <div class="detached-editor-actions absolute top-4 right-4 z-10 flex gap-1">
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+                    onclick={closeExpandedEditor}
+                    aria-label="Close expanded Anupars editor"
+                  >
+                    <X class="h-4 w-4" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Close Expanded Anupars (Esc)</Tooltip.Content>
+              </Tooltip.Root>
+            </div>
+          {/if}
+
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             bind:this={terminalElement}
             onkeydown={(e) => {
               e.stopPropagation();
             }}
-            class={[
-              'nodrag overflow-hidden rounded-md border',
-              selected
-                ? 'shadow-glow-md border-zinc-400'
-                : 'hover:shadow-glow-sm border-transparent'
-            ].join(' ')}
+            class={isExpanded
+              ? 'nodrag overflow-hidden rounded-none border-0 shadow-none'
+              : [
+                  'nodrag overflow-hidden rounded-md border',
+                  selected
+                    ? 'shadow-glow-md border-zinc-400'
+                    : 'hover:shadow-glow-sm border-transparent'
+                ].join(' ')}
           ></div>
         </div>
         <TypedHandle

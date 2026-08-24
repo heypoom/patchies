@@ -53,6 +53,7 @@ Similar to Orca node:
 - Message inlet for control (play/stop/bang/setText/setPattern)
 - Message outlet for MIDI output
 - Freeze button (pauses the worker step/render loop to free the CPU when idle)
+- Expand button that moves the live terminal into a fullscreen editor overlay
 - Settings panel for terminal dimensions and font size
 
 ## Key Controls (handled by WASM)

@@ -14,6 +14,14 @@ Anupars emits standard Patchies MIDI messages (`noteOn`, `noteOff`,
 - Connect to `midi.out` for hardware MIDI output
 - Try the `poly-synth-midi.tone` preset for a polyphonic synth
 
+## Fullscreen
+
+Use the **Expand** button to move the Anupars terminal into a fullscreen editor.
+The same live terminal is moved out of the canvas editor, so playback, the
+playhead, and your edits continue without interruption.
+
+Press **Esc** or the close button to return to the canvas.
+
 ## Controls
 
 All input is handled by the embedded terminal:
@@ -25,6 +33,7 @@ All input is handled by the embedded terminal:
 - **>/<**: increase/decrease BPM
 - **Number keys (0-7)**: grid splits
 - **=/-**: cycle root note up/down
+- **Expand button**: open the fullscreen editor
 
 ## Modes
 

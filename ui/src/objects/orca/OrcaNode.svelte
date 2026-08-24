@@ -806,15 +806,11 @@
 
           <Tooltip.Root>
             <Tooltip.Trigger>
-              <button
-                class="node-floating-button"
-                onclick={openExpandedEditor}
-                aria-label="Expand Orca"
-              >
+              <button class="node-floating-button" onclick={openExpandedEditor} aria-label="Expand">
                 <Expand class="h-4 w-4 text-zinc-300" />
               </button>
             </Tooltip.Trigger>
-            <Tooltip.Content>Expand Orca</Tooltip.Content>
+            <Tooltip.Content>Expand</Tooltip.Content>
           </Tooltip.Root>
 
           <Tooltip.Root>
