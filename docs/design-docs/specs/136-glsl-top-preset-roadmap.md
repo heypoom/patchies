@@ -212,7 +212,7 @@ Suggested controls:
 | `Softness`        | slider | Smooth mask edge around the threshold. `0` should be a hard step.      |
 | `Invert`          | bool   | Swap detected and ignored regions.                                     |
 | `Overlay`         | slider | Amount of highlight blended over the source visualization.             |
-| `Outline`         | slider | Edge width for the visualization output. `0` disables outline.         |
+| `Outline`         | slider | Pixel width of the hard detection contour in the visualization output. It remains visible when `Softness` is nonzero; `0` disables it. |
 | `Highlight Color` | color  | Color used for detected regions / outline in the visualization output. |
 
 Implementation shape:

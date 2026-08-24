@@ -31,12 +31,23 @@ float sampleChannel(vec4 color) {
   return color.a;
 }
 
-float maskAt(vec2 coord) {
+float valueAt(vec2 coord) {
   vec4 color = texture(source, clamp(coord, vec2(0.0), vec2(1.0)));
-  float value = sampleChannel(color);
+
+  return sampleChannel(color);
+}
+
+float maskAt(vec2 coord) {
+  float value = valueAt(coord);
   float mask = softness <= 0.0
     ? step(threshold, value)
     : smoothstep(threshold - softness, threshold + softness, value);
+
+  return invert ? 1.0 - mask : mask;
+}
+
+float hardMaskAt(vec2 coord) {
+  float mask = step(threshold, valueAt(coord));
 
   return invert ? 1.0 - mask : mask;
 }
@@ -48,11 +59,12 @@ void mainImage(in vec2 fragCoord) {
 
   float edge = 0.0;
   if (outline > 0.0) {
-    float left = maskAt(uv - vec2(px.x, 0.0));
-    float right = maskAt(uv + vec2(px.x, 0.0));
-    float down = maskAt(uv - vec2(0.0, px.y));
-    float up = maskAt(uv + vec2(0.0, px.y));
-    edge = clamp(max(max(abs(mask - left), abs(mask - right)), max(abs(mask - down), abs(mask - up))) * 4.0, 0.0, 1.0);
+    float hardMask = hardMaskAt(uv);
+    float left = hardMaskAt(uv - vec2(px.x, 0.0));
+    float right = hardMaskAt(uv + vec2(px.x, 0.0));
+    float down = hardMaskAt(uv - vec2(0.0, px.y));
+    float up = hardMaskAt(uv + vec2(0.0, px.y));
+    edge = max(max(abs(hardMask - left), abs(hardMask - right)), max(abs(hardMask - down), abs(hardMask - up)));
   }
 
   vec3 detected = mix(color.rgb, highlightColor, mask * overlay);
