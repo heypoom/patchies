@@ -32,6 +32,7 @@ import { p5Prompt } from '$objects/p5/prompt';
 import { patchbayPrompt } from '$objects/patchbay/prompt';
 import { pythonPrompt } from '$objects/python/prompt';
 import { peppermintPrompt } from '$objects/peppermint/prompt';
+import { pixiDomPrompt, pixiPrompt } from '$objects/pixi/prompt';
 import { recvPrompt } from '$objects/send-recv/recv.prompt';
 import { recvVdoPrompt } from '$objects/recv.vdo/prompt';
 import { rubyPrompt } from '$objects/ruby/prompt';
@@ -88,6 +89,8 @@ export const objectPrompts: Record<string, string> = {
   'tone~': tonePrompt,
   'dsp~': dspPrompt,
   p5: p5Prompt,
+  pixi: pixiPrompt,
+  'pixi.dom': pixiDomPrompt,
   hydra: hydraPrompt,
   glsl: glslPrompt,
   group: groupPrompt,

@@ -51,6 +51,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 ## Visual & Creative Coding Objects
 - vue: write custom user interface and component using Vue.js
 - p5: P5.js. readable code, great for shorter interactive sketches with mouse/keyboard via p5's API
+- pixi: Pixi.js v8 graphics in a web worker. use for high-performance 2D video chaining
+- pixi.dom: Pixi.js v8 graphics on the main thread. use for pointer and DOM interaction
 - canvas.dom: HTML5 Canvas on main thread. supports mouse/keyboard, lower overhead than p5, best for heavy visuals needing interactivity
 - surface: Fullscreen interactive canvas overlay. captures mouse/touch input across the entire screen. use for live performance drawing, painting, or touch interaction.
 - canvas: HTML5 Canvas on web worker. no mouse/keyboard, highest performance. can chain into the rendering pipeline at high speed (e.g. video texture for glsl/hydra)
@@ -159,6 +161,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
  */
 export const SPARKS_OBJECT_LIST = `## Visuals
 - p5: P5.js sketches — generative drawing, particle systems, interactive 2D graphics
+- pixi: Pixi.js v8 graphics (web worker) — high-performance 2D video chaining
+- pixi.dom: Pixi.js v8 graphics (main thread) — interactive pointer and DOM graphics
 - canvas: High-performance HTML5 canvas (web worker) — great for heavy visual pipelines
 - surface: Fullscreen interactive canvas — capture mouse/touch across entire screen for drawing/painting
 - hydra: Live video synthesis — feedback loops, texture blending, webcam warping
