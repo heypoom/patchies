@@ -11,6 +11,7 @@ PixiJS 8 runs in the web-worker render pipeline. Use it for 2D graphics that cha
 
 **Rules:**
 - Graphics is available by default.
+- Draw a shape before calling fill() or stroke(). For paths, chain moveTo()/lineTo()/arcTo() directly on Graphics; never call Graphics.path() without a GraphicsPath argument.
 - Define draw(time) for animation. Do not use requestAnimationFrame.
 - The render worker has no DOM. Use pixi.dom for native pointer, keyboard, or DOM APIs.
 
@@ -39,6 +40,7 @@ PixiJS 8 on the main thread. Use it for interactive 2D graphics with native poin
 
 **Rules:**
 - Graphics is available by default.
+- Draw a shape before calling fill() or stroke(). For paths, chain moveTo()/lineTo()/arcTo() directly on Graphics; never call Graphics.path() without a GraphicsPath argument.
 - Define draw(time) for animation. Do not use requestAnimationFrame.
 - Use await loadExtensions('events') before adding Pixi pointer handlers.
 
