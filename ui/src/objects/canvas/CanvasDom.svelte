@@ -122,6 +122,7 @@
     () => ({ width: outputWidth, height: outputHeight }),
     () => !fluidCanvas.isFluid
   );
+
   let previewWidth = $derived(previewSize.width);
   let previewHeight = $derived(previewSize.height);
 

@@ -8,8 +8,9 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas/common';
-  import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import { DEFAULT_OUTPUT_SIZE } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { useCappedPreviewSize } from '$lib/canvas/use-capped-preview-size.svelte';
   import { shouldShowHandles } from '../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -97,8 +98,14 @@
 
   let outputWidth = $state(defaultOutputWidth);
   let outputHeight = $state(defaultOutputHeight);
-  let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
-  let previewHeight = $derived(outputHeight / PREVIEW_SCALE_FACTOR);
+
+  const previewSize = useCappedPreviewSize(() => ({
+    width: outputWidth,
+    height: outputHeight
+  }));
+
+  let previewWidth = $derived(previewSize.width);
+  let previewHeight = $derived(previewSize.height);
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
