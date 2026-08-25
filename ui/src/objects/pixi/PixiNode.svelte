@@ -36,9 +36,15 @@
   let previewBitmapContext: ImageBitmapRenderingContext | null = null;
   let messageContext: MessageContext | null = null;
   let editorReady = $state(false);
+  let isPaused = $state(false);
 
   const run = (code = data.code) =>
     glSystem.upsertNode(nodeId, 'pixi', { code, _runRevision: Date.now() });
+
+  function togglePause() {
+    isPaused = !isPaused;
+    glSystem.toggleNodePause(nodeId);
+  }
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     match(message)
@@ -88,6 +94,9 @@
   onCodeChange={(code) => updateNodeData(nodeId, { code })}
   {nodeId}
   onrun={run}
+  onPlaybackToggle={togglePause}
+  paused={isPaused}
+  showPauseButton={true}
   bind:previewCanvas
   width={$outputWidth}
   height={$outputHeight}
