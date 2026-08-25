@@ -5,7 +5,12 @@ The `pixi` object creates 2D graphics with [PixiJS 8](https://pixijs.com/8.x). I
 `PIXI` is the PixiJS namespace, `stage` is the root container, and `renderer` is the Pixi WebGL renderer. Define `draw(time)` to update the scene each frame:
 
 ```javascript
-const circle = new PIXI.Graphics().circle(0, 0, 80).fill(0x66ccff);
+const { Graphics } = PIXI
+
+const circle = new Graphics()
+  .circle(0, 0, 80)
+  .fill(0x66ccff);
+
 circle.position.set(width / 2, height / 2);
 stage.addChild(circle);
 

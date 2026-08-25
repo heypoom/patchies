@@ -1,23 +1,41 @@
 import type regl from 'regl';
-import 'pixi.js/graphics';
-import * as PIXI from 'pixi.js';
-import { Container, DOMAdapter, RenderTexture, WebGLRenderer, WebWorkerAdapter } from 'pixi.js';
+import type { Container, RenderTexture, WebGLRenderer } from 'pixi.js';
+
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 import type { FBORenderer } from './fboRenderer';
 
 type PixiRendererConfig = BaseRendererConfig & { runRevision?: number };
+type PixiRuntime = typeof import('pixi.js');
 
 type PixiGpuRenderTarget = {
   framebuffer: WebGLFramebuffer | null;
   resolveTargetFramebuffer: WebGLFramebuffer | null;
 };
+
 type SizedFramebuffer = regl.Framebuffer2D & { width: number; height: number };
+
+let pixiRuntimePromise: Promise<PixiRuntime> | null = null;
+
+const loadPixiRuntime = () => {
+  pixiRuntimePromise ??= (async () => {
+    const PIXI = await import('pixi.js');
+
+    // Graphics is an extension side-effect import. Load it before constructing
+    // the renderer so user code can create PIXI.Graphics instances.
+    await import('pixi.js/graphics');
+
+    return PIXI;
+  })();
+
+  return pixiRuntimePromise;
+};
 
 export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
   private pixi: WebGLRenderer | null = null;
-  private stage = new Container();
+  private pixiRuntime: PixiRuntime | null = null;
+  private stage: Container | null = null;
   private target: RenderTexture | null = null;
   private draw: ((time: number) => void) | null = null;
   private codeRevision = 0;
@@ -36,14 +54,18 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
     renderer: FBORenderer
   ) {
     const instance = new PixiRenderer(config, framebuffer, renderer);
+    const PIXI = await loadPixiRuntime();
 
-    DOMAdapter.set(WebWorkerAdapter);
+    PIXI.DOMAdapter.set(PIXI.WebWorkerAdapter);
 
     const sizedFramebuffer = framebuffer as SizedFramebuffer;
     const [outputWidth, outputHeight] = renderer.outputSize;
     const canvas = renderer.offscreenCanvas;
 
-    instance.pixi = new WebGLRenderer();
+    instance.pixiRuntime = PIXI;
+    instance.stage = new PIXI.Container();
+    instance.pixi = new PIXI.WebGLRenderer();
+
     await instance.pixi.init({
       canvas,
       context: renderer.gl!,
@@ -51,22 +73,24 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
       height: outputHeight,
       antialias: true
     });
-    instance.target = RenderTexture.create({
+
+    instance.target = PIXI.RenderTexture.create({
       width: sizedFramebuffer.width,
       height: sizedFramebuffer.height
     });
+
     await instance.updateCode();
 
     return instance;
   }
 
   renderFrame(params: RenderParams) {
-    if (!this.pixi || !this.target || !this.framebuffer) return;
-
+    if (!this.pixi || !this.stage || !this.target || !this.framebuffer) return;
     if (this.renderer.transportTime && !this.renderer.transportTime.isPlaying) return;
 
     this.mouseX = params.mouseX;
     this.mouseY = params.mouseY;
+
     this.pixi.resetState();
 
     try {
@@ -82,23 +106,25 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
   }
 
   async updateCode() {
-    if (!this.pixi) return;
+    if (!this.pixi || !this.pixiRuntime) return;
 
     const revision = ++this.codeRevision;
-    const nextStage = new Container();
+    const nextStage = new this.pixiRuntime.Container();
 
     this.resetState();
 
     const code = `var draw;\n${this.config.code}\nreturn typeof draw === 'function' ? draw : null;`;
 
     try {
+      const framebuffer = this.framebuffer as SizedFramebuffer | null;
+
       const result = await this.executeUserCode(code, {
         ...this.buildBaseExtraContext(),
-        PIXI,
+        PIXI: this.pixiRuntime,
         renderer: this.pixi,
         stage: nextStage,
-        width: (this.framebuffer as SizedFramebuffer | null)?.width ?? 0,
-        height: (this.framebuffer as SizedFramebuffer | null)?.height ?? 0,
+        width: framebuffer?.width ?? 0,
+        height: framebuffer?.height ?? 0,
         mouse: { x: this.mouseX, y: this.mouseY }
       });
 
@@ -107,8 +133,9 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
         return;
       }
 
-      this.stage.destroy({ children: true });
+      this.stage?.destroy({ children: true });
       this.stage = nextStage;
+
       this.draw = typeof result === 'function' ? result : null;
     } catch (error) {
       this.handleCodeError(error, 4);
@@ -118,11 +145,14 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
   async updateConfig(config: PixiRendererConfig, framebuffer: regl.Framebuffer2D) {
     const rerun =
       this.config.code !== config.code || this.config.runRevision !== config.runRevision;
+
     const previousFramebuffer = this.framebuffer as SizedFramebuffer | null;
     const nextFramebuffer = framebuffer as SizedFramebuffer;
-    const resized =
+
+    const hasResized =
       previousFramebuffer?.width !== nextFramebuffer.width ||
       previousFramebuffer?.height !== nextFramebuffer.height;
+
     this.config = config;
     this.framebuffer = framebuffer;
 
@@ -130,21 +160,25 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
 
     this.pixi?.resize(outputWidth, outputHeight);
 
-    if (resized) {
+    if (hasResized) {
       this.target?.destroy(true);
-      this.target = RenderTexture.create({
-        width: nextFramebuffer.width,
-        height: nextFramebuffer.height
-      });
+
+      this.target =
+        this.pixiRuntime?.RenderTexture.create({
+          width: nextFramebuffer.width,
+          height: nextFramebuffer.height
+        }) ?? null;
     }
 
-    if (rerun) await this.updateCode();
+    if (rerun) {
+      await this.updateCode();
+    }
   }
 
   destroy() {
     this.codeRevision += 1;
     this.target?.destroy(true);
-    this.stage.destroy({ children: true });
+    this.stage?.destroy({ children: true });
 
     if (this.pixi) {
       // Pixi assumes it owns its WebGL context and loses it during destroy().
@@ -157,6 +191,8 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
 
     this.target = null;
     this.pixi = null;
+    this.pixiRuntime = null;
+    this.stage = null;
     this.draw = null;
   }
 
@@ -165,6 +201,7 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
 
     const source = this.getTargetFramebuffer();
     const destination = getFramebuffer(this.framebuffer);
+
     const gl = this.renderer.gl!;
     const { width, height } = this.framebuffer as SizedFramebuffer;
 

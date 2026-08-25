@@ -44,6 +44,13 @@ describe('PixiRenderer', () => {
     renderer.framebuffer = {};
     renderer.blitTarget = vi.fn();
 
+    renderer.renderer = {
+      transportTime: null,
+      regl: { _refresh: vi.fn() },
+      unregisterSettingsProxy: vi.fn(),
+      jsRunner: { destroy: vi.fn() }
+    };
+
     renderer.pixi = {
       context: { extensions: {} },
       destroy: vi.fn(),
@@ -56,13 +63,6 @@ describe('PixiRenderer', () => {
       mouseX: 10,
       mouseY: 20
     } as RenderParams);
-
-    renderer.renderer = {
-      transportTime: null,
-      regl: { _refresh: vi.fn() },
-      unregisterSettingsProxy: vi.fn(),
-      jsRunner: { destroy: vi.fn() }
-    };
 
     expect(renderer.blitTarget).toHaveBeenCalledTimes(1);
 

@@ -2,13 +2,21 @@ The `pixi.dom` object creates interactive [PixiJS 8](https://pixijs.com/8.x) gra
 
 ## Getting Started
 
-`PIXI`, `renderer`, and `stage` are available. Make a display object interactive with `eventMode = 'static'` or `eventMode = 'dynamic'`:
+`PIXI`, `renderer`, and `stage` are available.
+
+Make a display object interactive with `eventMode = 'static'` or `eventMode = 'dynamic'`:
 
 ```javascript
-const button = new PIXI.Graphics().roundRect(40, 40, 220, 80, 16).fill(0x66ccff);
+const { Graphics } = PIXI;
+
+const button = new Graphics()
+  .roundRect(40, 40, 220, 80, 16)
+  .fill(0x66ccff);
+
 button.eventMode = 'static';
 button.cursor = 'pointer';
 button.on('pointertap', () => button.tint = Math.random() * 0xffffff);
+
 stage.addChild(button);
 ```
 
