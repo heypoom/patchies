@@ -1,4 +1,4 @@
-The `pixi.dom` object creates interactive [PixiJS v8.x](https://pixijs.com/8.x/guides/getting-started/intro) graphics on a main-thread canvas. Use it when your scene needs native pointer events.
+The `pixi.dom` object creates interactive [Pixi.js v8.x](https://pixijs.com/8.x/guides/getting-started/intro) graphics on a main-thread canvas. Use it when your scene needs native pointer events.
 
 ## Getting Started
 
@@ -132,14 +132,14 @@ stage.addChild(badge)
 
 ## Special Functions
 
-- `setVideoOutput(true)` — enables the video output port, which is disabled by default
-- `setCanvasSize(width, height)` — sets a fixed canvas resolution
-- `setFluidSize(options?)` — makes the canvas follow the node size
-- `onCanvasResize(callback)` — runs a callback after the canvas is resized
-- `noBorder()` — hides Patchies' border and selected glow until the call is removed and the node runs again
-- `loadExtensions(...names)` — loads optional PixiJS extensions
+- `loadExtensions(...names)`: loads optional PixiJS extensions
+- `setVideoOutput(true)`: enables the video output port, which is disabled by default
+- `setCanvasSize(width, height)`: sets a fixed canvas resolution
+- `setFluidSize(options?)`: makes the canvas follow the node size
+- `onCanvasResize(callback)`: runs a callback after the canvas is resized
+- `noBorder()`: hides Patchies' border and selected glow until the call is removed and the node runs again
 
 ## See Also
 
-- [pixi](/docs/objects/pixi) — worker-side PixiJS
-- [canvas.dom](/docs/objects/canvas.dom) — interactive Canvas API graphics
+- [pixi](/docs/objects/pixi) — worker-side Pixi.js
+- [canvas.dom](/docs/objects/canvas.dom) — interactive HTML5 Canvas

@@ -69,9 +69,7 @@
     height?: number;
   } = $props();
 
-  function initialNodeId() {
-    return nodeId;
-  }
+  const initialNodeId = () => nodeId;
 
   let consoleRef: VirtualConsole | null = $state(null);
 

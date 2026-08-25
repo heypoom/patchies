@@ -2,6 +2,7 @@ import type regl from 'regl';
 import type { Container, RenderTexture, WebGLRenderer } from 'pixi.js';
 
 import type { RenderParams } from '$lib/rendering/types';
+import { PIXI_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import {
   loadPixiWorkerExtensions,
   getPixiWorkerExtensionVersion
@@ -88,7 +89,7 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
       this.pixi.render({ container: this.stage, target: this.target, clear: true });
       this.blitTarget();
     } catch (error) {
-      this.handleRuntimeError(error, 4);
+      this.handleRuntimeError(error, PIXI_WRAPPER_OFFSET);
     }
 
     this.pixi.resetState();
@@ -129,7 +130,7 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
 
       this.draw = typeof result === 'function' ? result : null;
     } catch (error) {
-      this.handleCodeError(error, 4);
+      this.handleCodeError(error, PIXI_WRAPPER_OFFSET);
     }
   }
 

@@ -18,10 +18,16 @@
   import { useCappedPreviewSize } from '$lib/canvas/use-capped-preview-size.svelte';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { useNodeDataTracker } from '$lib/history';
+  import { handleCodeError } from '$lib/js-runner/handleCodeError';
+  import { JSRunner } from '$lib/js-runner/JSRunner';
   import { CanvasDomExpandController } from '$lib/canvas/CanvasDomExpandController';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
+  import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+  import { PIXI_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import { createCustomConsole } from '$lib/utils/createCustomConsole';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
   import { pixiDomManager } from '$objects/pixi/PixiDomManager';
@@ -31,11 +37,10 @@
     outputWidth as globalOutputWidth
   } from '../../stores/renderer.store';
 
-  type AsyncUserCode = (...args: unknown[]) => Promise<unknown>;
-  type AsyncFunctionConstructor = new (...args: string[]) => AsyncUserCode;
-
-  const AsyncFunction = Object.getPrototypeOf(async () => {})
-    .constructor as AsyncFunctionConstructor;
+  type ActiveRuntime = {
+    code: string;
+    draw: ((time: number) => void) | null;
+  };
 
   let {
     id: nodeId,
@@ -51,6 +56,7 @@
       fluidCanvasResizerVisible?: boolean;
       noBorder?: boolean;
       paused?: boolean;
+      showConsole?: boolean;
     };
     selected?: boolean;
     width?: number;
@@ -62,6 +68,13 @@
 
   const glSystem = GLSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
+  const jsRunner = JSRunner.getInstance();
+
+  function initialNodeId() {
+    return nodeId;
+  }
+
+  const customConsole = createCustomConsole(initialNodeId());
 
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
   let fluidCanvas = $state.raw<ReturnType<typeof useFluidCanvas>>(undefined!);
@@ -71,8 +84,9 @@
   );
 
   let canvas = $state<HTMLCanvasElement>();
+  let consoleRef: VirtualConsole | null = $state(null);
   let entry = $state<Awaited<ReturnType<typeof pixiDomManager.register>>>();
-  let draw: ((time: number) => void) | null = null;
+  let activeRuntime: ActiveRuntime | null = null;
   let editorReady = $state(false);
   let videoOutputEnabled = $state(false);
   let isExpanded = $state(false);
@@ -80,6 +94,7 @@
   let destroyed = false;
   let outputWidth = $state($globalOutputWidth);
   let outputHeight = $state($globalOutputHeight);
+  let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   let previewWidth = $derived(previewSize.width);
   let previewHeight = $derived(previewSize.height);
@@ -106,7 +121,7 @@
     updateNode,
     updateNodeData,
     commitNodeData: (key, oldValue, newValue) => tracker.commit(key, oldValue, newValue),
-    warn: (message) => console.warn(`[pixi.dom] ${message}`),
+    warn: (message) => customConsole.warn(message),
     onResizeCallback(callback) {
       callback({ width: outputWidth, height: outputHeight });
     },
@@ -116,6 +131,21 @@
   const resizeControlsVisible = $derived(
     selected && fluidCanvas.isFluid && fluidCanvas.resizerVisible
   );
+
+  function handleConsoleOutput(event: ConsoleOutputEvent) {
+    if (event.nodeId !== nodeId) return;
+    if (event.messageType === 'error' && event.lineErrors) lineErrors = event.lineErrors;
+  }
+
+  function reportRuntimeError(error: unknown) {
+    handleCodeError(
+      error,
+      activeRuntime?.code ?? data.code,
+      nodeId,
+      customConsole,
+      PIXI_WRAPPER_OFFSET
+    );
+  }
 
   function setCanvasDimensions({ width, height }: { width: number; height: number }) {
     outputWidth = width;
@@ -163,9 +193,12 @@
     if (!canvas || !entry) return;
 
     const revision = ++runRevision;
+    const sourceCode = data.code;
     let runStage: Container | null = null;
 
-    draw = null;
+    consoleRef?.clearConsole();
+    lineErrors = undefined;
+
     setVideoOutputEnabled(false);
     fluidCanvas.reset();
     updateNodeData(nodeId, getBorderResetDataForRun(data));
@@ -178,68 +211,67 @@
     try {
       await pixiDomManager.getApplication();
 
-      const PIXI = await pixiDomManager.getPixiRuntime();
+      const processedCode = await jsRunner.preprocessCode(sourceCode, { nodeId });
+      if (processedCode === null || revision !== runRevision) return;
 
+      const PIXI = await pixiDomManager.getPixiRuntime();
       if (revision !== runRevision) return;
 
-      const dimensions = fluidCanvas.getExecutionDimensions(data.code);
+      const dimensions = fluidCanvas.getExecutionDimensions(processedCode);
+
       runStage = new PIXI.Container();
 
-      const execute = new AsyncFunction(
-        'PIXI',
-        'renderer',
-        'stage',
-        'canvas',
-        'width',
-        'height',
-        'setCanvasSize',
-        'setFluidSize',
-        'onCanvasResize',
-        'loadExtensions',
-        'setVideoOutput',
-        'noBorder',
-        `${data.code}\nreturn typeof draw === 'function' ? draw : null;`
-      );
+      const code = `var draw;\n${processedCode}\nreturn typeof draw === 'function' ? draw : null;`;
 
-      const candidate = await execute(
-        PIXI,
-        pixiDomManager.getRenderer(),
-        runStage,
-        canvas,
-        dimensions.width,
-        dimensions.height,
-        fluidCanvas.setFixedCanvasSize,
-        fluidCanvas.setFluidSize,
-        fluidCanvas.onCanvasResize,
-        pixiDomManager.loadExtensions.bind(pixiDomManager),
-        (enabled: boolean) => setVideoOutputEnabled(enabled),
-        () => updateNodeData(nodeId, { noBorder: true })
-      );
+      const candidate = await jsRunner.executeJavaScript(nodeId, code, {
+        customConsole,
+        setTitle: (title: string) => updateNodeData(nodeId, { title }),
+        extraContext: {
+          PIXI,
+          renderer: pixiDomManager.getRenderer(),
+          stage: runStage,
+          canvas,
+          width: dimensions.width,
+          height: dimensions.height,
+          setCanvasSize: fluidCanvas.setFixedCanvasSize,
+          setFluidSize: fluidCanvas.setFluidSize,
+          onCanvasResize: fluidCanvas.onCanvasResize,
+          loadExtensions: pixiDomManager.loadExtensions.bind(pixiDomManager),
+          setVideoOutput: (enabled: boolean) => setVideoOutputEnabled(enabled),
+          noBorder: () => updateNodeData(nodeId, { noBorder: true })
+        }
+      });
 
       if (revision !== runRevision) {
         runStage.destroy({ children: true });
+
         return;
       }
 
       if (!pixiDomManager.replaceStage(nodeId, runStage)) {
         runStage.destroy({ children: true });
+
         return;
       }
 
       runStage = null;
 
-      draw = typeof candidate === 'function' ? (candidate as (time: number) => void) : null;
+      activeRuntime = {
+        code: sourceCode,
+        draw: typeof candidate === 'function' ? (candidate as (time: number) => void) : null
+      };
     } catch (error) {
       runStage?.destroy({ children: true });
 
       if (revision !== runRevision) return;
 
-      console.error('[pixi.dom] code error', error);
+      handleCodeError(error, sourceCode, nodeId, customConsole, PIXI_WRAPPER_OFFSET);
     }
   }
 
   onMount(() => {
     glSystem.upsertNode(nodeId, 'img', {});
+    eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
     expandController = new CanvasDomExpandController({
       nodeId,
@@ -261,17 +293,23 @@
         activeCanvas,
         { width: outputWidth, height: outputHeight },
         (time) => {
+          const runtime = activeRuntime;
+          if (!runtime?.draw) return;
+
           try {
-            draw?.(time);
+            runtime.draw(time);
           } catch (error) {
-            draw = null;
-            console.error('[pixi.dom] draw error', error);
+            runtime.draw = null;
+            reportRuntimeError(error);
           }
         },
         () => {
           if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
 
           glSystem.setBitmapSource(nodeId, activeCanvas);
+        },
+        (error) => {
+          reportRuntimeError(error);
         }
       );
 
@@ -297,6 +335,8 @@
 
     pixiDomManager.unregister(nodeId);
     glSystem.removeNode(nodeId);
+    jsRunner.destroy(nodeId);
+    eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
   });
 
   function toggleExpandedCanvas() {
@@ -352,6 +392,7 @@
     previewPortalTarget={expandedPreviewPortalTarget}
     {selected}
     {editorReady}
+    hasError={lineErrors !== undefined}
     noBorder={data.noBorder}
     hideBorder={resizeControlsVisible}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
@@ -379,8 +420,20 @@
         onrun={run}
         onchange={(code) => updateNodeData(nodeId, { code })}
         onready={() => (editorReady = true)}
+        {lineErrors}
         {nodeId}
       />
+    {/snippet}
+
+    {#snippet console()}
+      <div class="mt-3 w-full" class:hidden={!data.showConsole}>
+        <VirtualConsole
+          bind:this={consoleRef}
+          {nodeId}
+          placeholder="PixiJS output will appear here."
+          maxHeight="200px"
+        />
+      </div>
     {/snippet}
   </CanvasPreviewLayout>
 </div>

@@ -24,8 +24,10 @@ type PixiHandlerFn = (nativeEvent: PointerEvent | WheelEvent) => void;
 interface PixiDomEntry {
   canvas: HTMLCanvasElement;
   draw: (time: number) => void;
+  hasRenderError: boolean;
   height: number;
   handlers?: PixiDomEventHandlers;
+  onError: (error: unknown) => void;
   onRendered: () => void;
   paused: boolean;
   stage: Container;
@@ -62,7 +64,8 @@ class PixiDomManager {
     canvas: HTMLCanvasElement,
     size: { width: number; height: number },
     draw: (time: number) => void,
-    onRendered: () => void
+    onRendered: () => void,
+    onError: (error: unknown) => void
   ) {
     const PIXI = await this.getPixiRuntime();
 
@@ -71,7 +74,9 @@ class PixiDomManager {
     const entry: PixiDomEntry = {
       canvas,
       draw,
+      hasRenderError: false,
       height: size.height,
+      onError,
       onRendered,
       paused: false,
       stage: new PIXI.Container(),
@@ -113,6 +118,7 @@ class PixiDomManager {
     const previousStage = entry.stage;
 
     entry.stage = nextStage;
+    entry.hasRenderError = false;
     previousStage.destroy({ children: true });
 
     return true;
@@ -339,6 +345,8 @@ class PixiDomManager {
 
     try {
       dispatch(event);
+    } catch (error) {
+      entry.onError(error);
     } finally {
       events.domElement = previousCanvas;
       events.renderer = previousRenderer;
@@ -351,7 +359,7 @@ class PixiDomManager {
     if (!app) return;
 
     this.entries.forEach((entry) => {
-      if (entry.paused) return;
+      if (entry.paused || entry.hasRenderError) return;
 
       try {
         entry.draw(time);
@@ -367,7 +375,8 @@ class PixiDomManager {
 
         entry.onRendered();
       } catch (error) {
-        console.error('[pixi.dom] render error', error);
+        entry.hasRenderError = true;
+        entry.onError(error);
       }
     });
   }

@@ -10,6 +10,9 @@ export const HYDRA_WRAPPER_OFFSET = 0;
 export const DOM_WRAPPER_OFFSET = 0;
 export const VUE_WRAPPER_OFFSET = 0;
 
+// pixi and pixi.dom prepend var draw before user code.
+export const PIXI_WRAPPER_OFFSET = 1;
+
 // three and three.dom has different wrapper structures
 export const THREE_WRAPPER_OFFSET = 4;
 export const THREE_DOM_WRAPPER_OFFSET = 3;

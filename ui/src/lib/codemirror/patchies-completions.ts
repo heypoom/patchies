@@ -725,7 +725,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three',
     'three.dom',
     'dom',
-    'vue'
+    'vue',
+    'pixi',
+    'pixi.dom'
   ],
   setTags: ['js', 'canvas.dom', 'three.dom', 'dom', 'vue'],
   onGraphChange: ['js'],

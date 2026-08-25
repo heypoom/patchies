@@ -36,6 +36,9 @@ canvas copy. `setVideoOutput(true)` enables it. Patchies message APIs,
 settings, keyboard helpers, and dynamic ports can be added once the core event
 and lifecycle path has settled.
 
+Both `pixi` and `pixi.dom` expose `setTitle(title)` so user code can name the
+node it configures.
+
 `pixi.dom` uses a shared Pixi application with Pixi's `multiView` renderer
 option. The application owns one off-DOM WebGL context; every `pixi.dom` node
 registers a separate stage and display canvas, and the manager renders those
@@ -55,6 +58,15 @@ stage or shared context.
 Running code again clears and destroys the previous children of that node's
 stage, then evaluates the new code in the same shared application. It must not
 recreate a WebGL context as part of a code rerun.
+
+Both Pixi objects report code and runtime errors through the node's virtual
+console. Parsed errors include CodeMirror line annotations. `pixi.dom` also
+routes errors from its shared renderer and Pixi pointer-event dispatch through
+this path instead of logging them to the browser DevTools console.
+
+Both objects execute user code through `JSRunner`. `pixi.dom` passes its Pixi
+runtime, sizing helpers, and managed renderer through JSRunner's extra context;
+it no longer evaluates raw functions itself.
 
 The initial worker object has one video output and no video-texture input.
 Resource cleanup must destroy the Pixi renderer, stage, and RenderTexture.
