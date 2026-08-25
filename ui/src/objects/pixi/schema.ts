@@ -4,7 +4,7 @@ import { Run, SetCode } from '$lib/objects/schemas/common';
 export const pixiSchema: ObjectSchema = {
   type: 'pixi',
   category: 'video',
-  description: 'Creates PixiJS 8 graphics in the worker render pipeline',
+  description: 'Creates Pixi.js graphics in the rendering pipeline',
   inlets: [
     {
       id: 'message',
@@ -22,6 +22,6 @@ export const pixiSchema: ObjectSchema = {
 export const pixiDomSchema: ObjectSchema = {
   ...pixiSchema,
   type: 'pixi.dom',
-  description: 'Creates interactive PixiJS 8 graphics on the main thread',
+  description: 'Creates interactive Pixi.js graphics on the main thread',
   inlets: []
 };

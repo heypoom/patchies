@@ -1,1 +1,1 @@
-declare module 'pixi.js/graphics';
+declare module 'pixi.js/*';

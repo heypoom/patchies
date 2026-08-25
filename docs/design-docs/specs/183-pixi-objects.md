@@ -47,3 +47,26 @@ recreate a WebGL context as part of a code rerun.
 
 The initial worker object has one video output and no video-texture input.
 Resource cleanup must destroy the Pixi renderer, stage, and RenderTexture.
+
+## Runtime extension loading
+
+The worker `pixi` object exposes `await loadExtensions(...extensions)` to load
+Pixi extension entrypoints on demand. It accepts every worker-safe Pixi 8
+extension name and the `'all'` shorthand. When newly loaded extensions change
+the renderer configuration, Patchies recreates the node's Pixi renderer on the
+same shared WebGL context and replaces its RenderTexture. The user-visible
+`renderer` object remains a stable proxy to the current Pixi renderer.
+
+`accessibility`, `dom`, `events`, and `text-html` are browser-only and must fail
+with a clear error in the worker object rather than attempting to construct DOM
+systems in the render worker. `pixi.dom` remains their interactive counterpart.
+
+`pixi.dom` exposes the same asynchronous helper and accepts every Pixi 8
+extension name, including `accessibility`, `dom`, and `events`. Its PixiJS
+runtime is dynamically imported when the first DOM object registers, rather
+than when Patchies loads the node component. When an extension changes renderer
+configuration, the manager recreates its one shared application while retaining
+every registered stage, canvas, and event binding. Its `renderer` user-code
+value is a stable proxy to the replacement renderer. Ordinary code reruns still
+reuse the application and do not recreate a WebGL context. Concurrent extension
+requests are serialized so each caller observes a fully initialized application.

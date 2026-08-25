@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
 
+  import type { Container } from 'pixi.js';
   import {
     NodeResizer,
     NodeResizeControl,
@@ -25,6 +26,12 @@
     outputHeight as globalOutputHeight,
     outputWidth as globalOutputWidth
   } from '../../stores/renderer.store';
+
+  type AsyncUserCode = (...args: unknown[]) => Promise<unknown>;
+  type AsyncFunctionConstructor = new (...args: string[]) => AsyncUserCode;
+
+  const AsyncFunction = Object.getPrototypeOf(async () => {})
+    .constructor as AsyncFunctionConstructor;
 
   let {
     id: nodeId,
@@ -97,9 +104,6 @@
     pixiDomManager.resize(nodeId, { width, height });
   }
 
-  const clearStage = () =>
-    entry?.stage.removeChildren().forEach((child) => child.destroy({ children: true }));
-
   function togglePlayback() {
     const wasPaused = !!data.paused;
     const paused = !wasPaused;
@@ -132,6 +136,7 @@
     if (!canvas || !entry) return;
 
     const revision = ++runRevision;
+    let runStage: Container | null = null;
 
     draw = null;
     fluidCanvas.reset();
@@ -142,16 +147,16 @@
     });
 
     try {
-      const app = await pixiDomManager.getApplication();
-      const PIXI = await import('pixi.js');
+      await pixiDomManager.getApplication();
+
+      const PIXI = await pixiDomManager.getPixiRuntime();
 
       if (revision !== runRevision) return;
 
-      clearStage();
-
       const dimensions = fluidCanvas.getExecutionDimensions(data.code);
+      runStage = new PIXI.Container();
 
-      const execute = new Function(
+      const execute = new AsyncFunction(
         'PIXI',
         'renderer',
         'stage',
@@ -161,25 +166,39 @@
         'setCanvasSize',
         'setFluidSize',
         'onCanvasResize',
+        'loadExtensions',
         `${data.code}\nreturn typeof draw === 'function' ? draw : null;`
       );
 
-      const candidate = execute(
+      const candidate = await execute(
         PIXI,
-        app.renderer,
-        entry.stage,
+        pixiDomManager.getRenderer(),
+        runStage,
         canvas,
         dimensions.width,
         dimensions.height,
         fluidCanvas.setFixedCanvasSize,
         fluidCanvas.setFluidSize,
-        fluidCanvas.onCanvasResize
+        fluidCanvas.onCanvasResize,
+        pixiDomManager.loadExtensions.bind(pixiDomManager)
       );
 
-      if (revision !== runRevision) return;
+      if (revision !== runRevision) {
+        runStage.destroy({ children: true });
+        return;
+      }
 
-      draw = typeof candidate === 'function' ? candidate : null;
+      if (!pixiDomManager.replaceStage(nodeId, runStage)) {
+        runStage.destroy({ children: true });
+        return;
+      }
+
+      runStage = null;
+
+      draw = typeof candidate === 'function' ? (candidate as (time: number) => void) : null;
     } catch (error) {
+      runStage?.destroy({ children: true });
+
       if (revision !== runRevision) return;
 
       console.error('[pixi.dom] code error', error);

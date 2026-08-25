@@ -1,4 +1,16 @@
-import { Application, Container, type WebGLRenderer } from 'pixi.js';
+import type { Application, Container, WebGLRenderer } from 'pixi.js';
+
+import { getPixiExtensionVersion, loadPixiDomExtensions } from '$objects/pixi/extensions';
+
+type PixiRuntime = typeof import('pixi.js');
+
+let pixiRuntimePromise: Promise<PixiRuntime> | null = null;
+
+const loadPixiRuntime = () => {
+  pixiRuntimePromise ??= import('pixi.js');
+
+  return pixiRuntimePromise;
+};
 
 type PixiHandler =
   | '_onPointerDown'
@@ -38,6 +50,11 @@ class PixiDomManager {
   private applicationInit: Promise<Application> | null = null;
   private entries = new Map<string, PixiDomEntry>();
   private activePointers = new Map<number, PixiDomEntry>();
+  private extensionLoadQueue = Promise.resolve();
+  private pixiRuntime: PixiRuntime | null = null;
+  private rendererProxy: WebGLRenderer | null = null;
+  private extensionVersion = 0;
+  private windowEventsBound = false;
   private destroyed = false;
 
   async register(
@@ -47,6 +64,8 @@ class PixiDomManager {
     draw: (time: number) => void,
     onRendered: () => void
   ) {
+    const PIXI = await this.getPixiRuntime();
+
     await this.getApplication();
 
     const entry: PixiDomEntry = {
@@ -55,7 +74,7 @@ class PixiDomManager {
       height: size.height,
       onRendered,
       paused: false,
-      stage: new Container(),
+      stage: new PIXI.Container(),
       width: size.width
     };
 
@@ -68,7 +87,6 @@ class PixiDomManager {
 
   unregister(nodeId: string) {
     const entry = this.entries.get(nodeId);
-
     if (!entry) return;
 
     this.unbindEvents(entry);
@@ -83,15 +101,25 @@ class PixiDomManager {
 
   resize(nodeId: string, size: { width: number; height: number }) {
     const entry = this.entries.get(nodeId);
-
     if (!entry) return;
 
     this.resizeEntry(entry, size);
   }
 
+  replaceStage(nodeId: string, nextStage: Container) {
+    const entry = this.entries.get(nodeId);
+    if (!entry) return false;
+
+    const previousStage = entry.stage;
+
+    entry.stage = nextStage;
+    previousStage.destroy({ children: true });
+
+    return true;
+  }
+
   setPaused(nodeId: string, paused: boolean) {
     const entry = this.entries.get(nodeId);
-
     if (!entry) return;
 
     entry.paused = paused;
@@ -101,52 +129,123 @@ class PixiDomManager {
     if (this.app) return this.app;
     if (this.applicationInit) return this.applicationInit;
 
-    const nextApp = new Application();
+    this.applicationInit = this.initializeApplication();
 
-    this.applicationInit = nextApp
-      .init({
+    return this.applicationInit;
+  }
+
+  async getPixiRuntime() {
+    this.pixiRuntime ??= await loadPixiRuntime();
+
+    return this.pixiRuntime;
+  }
+
+  loadExtensions(...extensions: string[]) {
+    const request = this.extensionLoadQueue.then(() =>
+      this.loadExtensionsAndRecreate(...extensions)
+    );
+
+    this.extensionLoadQueue = request.catch(() => {});
+
+    return request;
+  }
+
+  private async loadExtensionsAndRecreate(...extensions: string[]) {
+    await loadPixiDomExtensions(...extensions);
+    await this.getApplication();
+
+    if (this.extensionVersion === getPixiExtensionVersion()) return;
+
+    await this.recreateApplication();
+  }
+
+  getRenderer() {
+    this.rendererProxy ??= new Proxy({} as WebGLRenderer, {
+      get: (_target, property) => {
+        const renderer = this.app?.renderer as WebGLRenderer | undefined;
+        if (!renderer) return undefined;
+
+        const value = Reflect.get(renderer, property, renderer);
+
+        return typeof value === 'function' ? value.bind(renderer) : value;
+      },
+      set: (_target, property, value) => {
+        const renderer = this.app?.renderer as WebGLRenderer | undefined;
+        if (!renderer) return false;
+
+        return Reflect.set(renderer, property, value, renderer);
+      }
+    });
+
+    return this.rendererProxy;
+  }
+
+  private async initializeApplication() {
+    const PIXI = await this.getPixiRuntime();
+    const nextApp = new PIXI.Application();
+
+    try {
+      await nextApp.init({
         autoStart: false,
         backgroundAlpha: 0,
         multiView: true,
         antialias: true
-      })
-      .then(() => {
-        if (this.destroyed) {
-          nextApp.destroy({ removeView: false }, { children: true });
+      });
 
-          throw new Error('Pixi DOM manager was destroyed during initialization.');
-        }
+      if (this.destroyed) {
+        nextApp.destroy({ removeView: false }, { children: true });
 
-        nextApp.ticker.remove(nextApp.render, nextApp);
-        nextApp.ticker.add((ticker) => this.render(ticker.lastTime / 1000));
-        nextApp.ticker.start();
+        throw new Error('Pixi DOM manager was destroyed during initialization.');
+      }
 
-        const events = nextApp.renderer.events as PixiDomEvents;
-        events.setTargetElement(null as never);
+      nextApp.ticker.remove(nextApp.render, nextApp);
+      nextApp.ticker.add((ticker) => this.render(ticker.lastTime / 1000));
+      nextApp.ticker.start();
 
+      const events = nextApp.renderer.events as PixiDomEvents;
+      events.setTargetElement(null as never);
+
+      if (!this.windowEventsBound) {
         window.addEventListener('pointermove', this.handleWindowPointerMove);
         window.addEventListener('pointerup', this.handleWindowPointerUp);
 
-        this.app = nextApp;
+        this.windowEventsBound = true;
+      }
 
-        return nextApp;
-      })
-      .finally(() => {
-        this.applicationInit = null;
-      });
+      this.app = nextApp;
+      this.extensionVersion = getPixiExtensionVersion();
 
-    return this.applicationInit;
+      return nextApp;
+    } finally {
+      this.applicationInit = null;
+    }
+  }
+
+  private async recreateApplication() {
+    const app = this.app;
+    if (!app) return;
+
+    this.app = null;
+    app.destroy({ removeView: false }, { children: false });
+
+    await this.getApplication();
   }
 
   destroy() {
     this.destroyed = true;
     this.entries.forEach((_, nodeId) => this.unregister(nodeId));
 
-    window.removeEventListener('pointermove', this.handleWindowPointerMove);
-    window.removeEventListener('pointerup', this.handleWindowPointerUp);
+    if (this.windowEventsBound) {
+      window.removeEventListener('pointermove', this.handleWindowPointerMove);
+      window.removeEventListener('pointerup', this.handleWindowPointerUp);
+
+      this.windowEventsBound = false;
+    }
 
     this.app?.destroy({ removeView: false }, { children: true });
     this.app = null;
+    this.pixiRuntime = null;
+    this.rendererProxy = null;
   }
 
   private bindEvents(entry: PixiDomEntry) {
