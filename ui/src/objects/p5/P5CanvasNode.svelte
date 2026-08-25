@@ -414,6 +414,7 @@
                   customConsole.warn(
                     'setFluidSize() is ignored when createSurfaceCanvas() is active.'
                   );
+
                   warnedAboutFluidSurfaceMode = true;
                 }
 

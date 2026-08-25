@@ -101,6 +101,7 @@ import { floatTexSchema } from '$objects/float.tex/schema';
 import { swglSchema } from '$objects/swgl/schema';
 import { textmodeSchema, textmodeDomSchema } from '$objects/textmode/schema';
 import { threeSchema, threeDomSchema } from '$objects/three/schema';
+import { pixiDomSchema, pixiSchema } from '$objects/pixi/schema';
 import { reglSchema } from '$objects/regl/schema';
 import { imgSchema } from '$objects/img/schema';
 import { videoSchema } from '$objects/video/schema';
@@ -218,6 +219,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   textmode: textmodeSchema,
   'textmode.dom': textmodeDomSchema,
   three: threeSchema,
+  pixi: pixiSchema,
+  'pixi.dom': pixiDomSchema,
   'three.dom': threeDomSchema,
   regl: reglSchema,
   img: imgSchema,

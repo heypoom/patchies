@@ -27,6 +27,7 @@ import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
 import { TextmodeRenderer } from './textmodeRenderer';
 import { ThreeRenderer } from './threeRenderer';
+import { PixiRenderer } from './pixiRenderer';
 import { ReglRenderer } from './reglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
 import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
@@ -83,7 +84,8 @@ interface ViewportCookCache {
 export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   alpha: true,
   antialias: false,
-  premultipliedAlpha: false
+  premultipliedAlpha: false,
+  stencil: true
 };
 
 const isPassthroughNodeType = (nodeType: RenderNode['type']): boolean =>
@@ -141,6 +143,7 @@ export class FBORenderer {
   public canvasByNode = new Map<string, CanvasRenderer | null>();
   public textmodeByNode = new Map<string, TextmodeRenderer | null>();
   public threeByNode = new Map<string, ThreeRenderer | null>();
+  public pixiByNode = new Map<string, PixiRenderer | null>();
   public shaderParkThreeByNode = new Map<string, ShaderParkThreeRenderer | null>();
   public reglByNode = new Map<string, ReglRenderer | null>();
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
@@ -525,35 +528,13 @@ export class FBORenderer {
         colorAttachments = existingFbo.colorAttachments;
         framebuffer = existingFbo.framebuffer;
 
-        // For Hydra nodes: skip cleanup to avoid visual glitch.
-        // The old Hydra instance stays alive until replaced in createHydraRenderer,
-        // allowing us to read synth time directly. It then gets garbage collected.
-        // For other nodes: run cleanup normally.
-        const isHydra = this.hydraByNode.has(node.id);
-
-        const isShaderPark3D =
-          node.type === 'shaderpark' &&
-          node.data.renderMode === '3d' &&
-          this.shaderParkThreeByNode.has(node.id);
-        const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
-
-        if (!isHydra && !isShaderPark3D && !isReusableThree) {
+        if (!this.hasReusableRenderer(node)) {
           existingFbo.cleanup?.();
         }
       } else {
         // Destroy old FBO if it exists but size or mrtCount doesn't match
         if (existingFbo) {
-          // For Hydra: skip cleanup (will be GC'd after createHydraRenderer reads synth time)
-          const isHydra = this.hydraByNode.has(node.id);
-
-          const isShaderPark3D =
-            node.type === 'shaderpark' &&
-            node.data.renderMode === '3d' &&
-            this.shaderParkThreeByNode.has(node.id);
-
-          const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
-
-          this.destroyFboNode(existingFbo, !isHydra && !isShaderPark3D && !isReusableThree);
+          this.destroyFboNode(existingFbo, !this.hasReusableRenderer(node));
 
           this.fboNodes.delete(node.id);
         }
@@ -617,6 +598,7 @@ export class FBORenderer {
           .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
           .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
           .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
+          .with({ type: 'pixi' }, (node) => this.createPixiRenderer(node, framebuffer))
           .with({ type: 'shaderpark' }, (node) => this.createShaderParkRenderer(node, framebuffer))
           .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
           .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
@@ -729,6 +711,26 @@ export class FBORenderer {
   // Some nodes are externally managed, e.g. the texture will be uploaded on it.
   createEmptyRenderer() {
     return { render: () => {}, cleanup: () => {} };
+  }
+
+  /**
+   * Reused renderers retain resources from the prior FBO until their replacement
+   * has consumed or transferred that state.
+   */
+  private hasReusableRenderer(node: RenderNode): boolean {
+    if (this.hydraByNode.has(node.id)) return true;
+
+    if (
+      node.type === 'shaderpark' &&
+      node.data.renderMode === '3d' &&
+      this.shaderParkThreeByNode.has(node.id)
+    ) {
+      return true;
+    }
+
+    if (node.type === 'three' && this.threeByNode.has(node.id)) return true;
+
+    return node.type === 'pixi' && this.pixiByNode.has(node.id);
   }
 
   private destroyFboNode(fboNode: FBONode, cleanup = true): void {
@@ -1086,6 +1088,39 @@ export class FBORenderer {
       cleanup: () => {
         threeRenderer.destroy();
         this.threeByNode.delete(node.id);
+      }
+    };
+  }
+
+  async createPixiRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+    if (node.type !== 'pixi') return null;
+
+    const config = { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision };
+    const existingRenderer = this.pixiByNode.get(node.id);
+
+    if (existingRenderer) {
+      await existingRenderer.updateConfig(config, framebuffer);
+
+      return {
+        render: existingRenderer.renderFrame.bind(existingRenderer),
+        cleanup: () => {
+          existingRenderer.destroy();
+          this.pixiByNode.delete(node.id);
+        }
+      };
+    }
+
+    const pixiRenderer = await PixiRenderer.create(config, framebuffer, this);
+    this.pixiByNode.set(node.id, pixiRenderer);
+
+    return {
+      render: pixiRenderer.renderFrame.bind(pixiRenderer),
+      cleanup: () => {
+        pixiRenderer.destroy();
+        this.pixiByNode.delete(node.id);
       }
     };
   }
@@ -1774,6 +1809,7 @@ export class FBORenderer {
     if (
       node.type === 'hydra' ||
       node.type === 'three' ||
+      node.type === 'pixi' ||
       node.type === 'regl' ||
       node.type === 'swgl' ||
       node.type === 'projmap'
@@ -2347,6 +2383,7 @@ export class FBORenderer {
       .with('swgl', () => this.swglByNode.get(nodeId) ?? null)
       .with('textmode', () => this.textmodeByNode.get(nodeId) ?? null)
       .with('three', () => this.threeByNode.get(nodeId) ?? null)
+      .with('pixi', () => this.pixiByNode.get(nodeId) ?? null)
       .with('regl', () => this.reglByNode.get(nodeId) ?? null)
       .with(
         P.union(

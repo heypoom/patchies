@@ -16,7 +16,7 @@ It's all running on the web, no installation needed. Want to try out Patchies? [
 
 Patchies lets you use audio, visual and computational tools and libraries that you know and love, together in one place. For example:
 
-- Make interactive graphics and widgets with [P5.js](https://patchies.app/docs/objects/p5), [HTML5 Canvas](https://patchies.app/docs/objects/canvas.dom), [Three.js](https://patchies.app/docs/objects/three) and [Textmode.js](https://patchies.app/docs/objects/textmode)
+- Make interactive graphics and widgets with [P5.js](https://patchies.app/docs/objects/p5), [HTML5 Canvas](https://patchies.app/docs/objects/canvas.dom), [Pixi.js](https://patchies.app/docs/objects/pixi.dom), [Three.js](https://patchies.app/docs/objects/three.dom) and [Textmode.js](https://patchies.app/docs/objects/textmode.dom)
 - Synthesize videos with [Hydra](https://patchies.app/docs/objects/hydra), [GLSL shaders](https://patchies.app/docs/objects/glsl), and [Shader Park](https://patchies.app/docs/objects/shaderpark)
 - Make music from code with [Strudel](https://patchies.app/docs/objects/strudel), [Orca](https://patchies.app/docs/objects/orca), [Bytebeat](https://patchies.app/docs/objects/bytebeat~), [ChucK](https://patchies.app/docs/objects/chuck~), [SuperSonic](https://patchies.app/docs/objects/sonic~) and [Csound](https://patchies.app/docs/objects/csound~)
 - Design sounds with [Pure Data-style](https://patchies.app/docs/audio-chaining) objects, [Tone.js](https://patchies.app/docs/objects/tone~) and [Elementary Audio](https://patchies.app/docs/objects/elem~)

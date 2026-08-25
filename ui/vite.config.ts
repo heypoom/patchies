@@ -4,6 +4,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type ViteDevServer } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import wasm from 'vite-plugin-wasm';
 import type topLevelAwaitType from 'vite-plugin-top-level-await';
@@ -123,6 +124,33 @@ export default defineConfig(() => ({
               path: args.path,
               external: true
             }));
+          }
+        },
+        {
+          // Patchies uses Pixi's WebGL renderer. Avoid loading Pixi's WebGPU
+          // shader payloads while Vite prebundles its dependency graph.
+          name: 'pixi-wgsl-noop',
+          setup(build: import('esbuild').PluginBuild) {
+            build.onLoad({ filter: /node_modules\/pixi\.js\/.*\.wgsl\.mjs$/ }, () => ({
+              contents: 'export default "";',
+              loader: 'js'
+            }));
+          }
+        },
+        {
+          // Pixi's WGSL imports use `source` as the default binding. Current
+          // esbuild reads that as the module-source keyword while optimizing
+          // dependencies, so use an equivalent named-default import instead.
+          name: 'pixi-wgsl-source-import',
+          setup(build: import('esbuild').PluginBuild) {
+            build.onLoad({ filter: /node_modules\/pixi\.js\/.*\.mjs$/ }, (args) => {
+              const contents = readFileSync(args.path, 'utf8').replaceAll(
+                'import source from',
+                'import { default as source } from'
+              );
+
+              return { contents, loader: 'js' };
+            });
           }
         }
       ]

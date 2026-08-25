@@ -15,6 +15,10 @@
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import {
+    getCappedPreviewSize,
+    useCappedPreviewSize
+  } from '$lib/canvas/use-capped-preview-size.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { shouldShowHandles } from '../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -112,8 +116,9 @@
 
   let outputWidth = $state(defaultOutputWidth);
   let outputHeight = $state(defaultOutputHeight);
-  let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
-  let previewHeight = $derived(outputHeight / PREVIEW_SCALE_FACTOR);
+  const previewSize = useCappedPreviewSize(() => ({ width: outputWidth, height: outputHeight }));
+  let previewWidth = $derived(previewSize.width);
+  let previewHeight = $derived(previewSize.height);
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
@@ -374,16 +379,19 @@
       return;
     }
 
+    const [displayWidth, displayHeight] = getCappedPreviewSize({ width, height });
+
     Object.assign(canvas.style, {
-      width: `${width / PREVIEW_SCALE_FACTOR}px`,
-      height: `${height / PREVIEW_SCALE_FACTOR}px`,
+      width: `${displayWidth}px`,
+      height: `${displayHeight}px`,
       maxWidth: '',
       maxHeight: ''
     });
   }
 
   $effect(() => {
-    isExpanded;
+    void isExpanded;
+
     applyCanvasDisplaySize();
   });
 
@@ -452,6 +460,8 @@
 
     outputWidth = resetSize.width;
     outputHeight = resetSize.height;
+
+    applyCanvasDisplaySize(resetSize.width, resetSize.height);
 
     // Clear keyboard callbacks when code is re-run
     keyboardCallbacks = {};
