@@ -10,7 +10,8 @@
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
-  import { capPreviewSize, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import { useCappedPreviewSize } from '$lib/canvas/use-capped-preview-size.svelte';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useNodeDataTracker } from '$lib/history';
@@ -52,11 +53,9 @@
   let destroyed = false;
   let outputWidth = $state($globalOutputWidth);
   let outputHeight = $state($globalOutputHeight);
-  const previewSize = $derived.by(() =>
-    capPreviewSize(outputWidth / PREVIEW_SCALE_FACTOR, outputHeight / PREVIEW_SCALE_FACTOR)
-  );
-  let previewWidth = $derived(previewSize[0]);
-  let previewHeight = $derived(previewSize[1]);
+  const previewSize = useCappedPreviewSize(() => ({ width: outputWidth, height: outputHeight }));
+  let previewWidth = $derived(previewSize.width);
+  let previewHeight = $derived(previewSize.height);
 
   const fluidCanvas = useFluidCanvas({
     getNodeId: () => nodeId,

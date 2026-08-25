@@ -14,7 +14,11 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
-  import { capPreviewSize, DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import {
+    getCappedPreviewSize,
+    useCappedPreviewSize
+  } from '$lib/canvas/use-capped-preview-size.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { shouldShowHandles } from '../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -112,11 +116,9 @@
 
   let outputWidth = $state(defaultOutputWidth);
   let outputHeight = $state(defaultOutputHeight);
-  const previewSize = $derived.by(() =>
-    capPreviewSize(outputWidth / PREVIEW_SCALE_FACTOR, outputHeight / PREVIEW_SCALE_FACTOR)
-  );
-  let previewWidth = $derived(previewSize[0]);
-  let previewHeight = $derived(previewSize[1]);
+  const previewSize = useCappedPreviewSize(() => ({ width: outputWidth, height: outputHeight }));
+  let previewWidth = $derived(previewSize.width);
+  let previewHeight = $derived(previewSize.height);
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
@@ -377,10 +379,7 @@
       return;
     }
 
-    const [displayWidth, displayHeight] = capPreviewSize(
-      width / PREVIEW_SCALE_FACTOR,
-      height / PREVIEW_SCALE_FACTOR
-    );
+    const [displayWidth, displayHeight] = getCappedPreviewSize({ width, height });
 
     Object.assign(canvas.style, {
       width: `${displayWidth}px`,
