@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { get } from 'svelte/store';
 
 vi.mock('$workers/rendering/renderWorkerEntry?worker', () => ({
   default: class RenderWorkerMock {
@@ -21,6 +22,7 @@ vi.mock('./IpcSystem', () => ({
 
 import { GLSystem } from './GLSystem';
 import { VideoChannelRegistry } from './VideoChannelRegistry';
+import { previewVisibleMap } from '../../stores/renderer.store';
 
 describe('GLSystem', () => {
   it('sends connected video output node ids with render graph updates', () => {
@@ -89,5 +91,16 @@ describe('GLSystem', () => {
 
     unsubscribe();
     glSystem.removeNode(nodeId);
+  });
+
+  it('clears a deleted node preview preference', () => {
+    const glSystem = new GLSystem();
+    const nodeId = `glsl-${crypto.randomUUID()}`;
+
+    previewVisibleMap.set({ [nodeId]: false });
+    glSystem.upsertNode(nodeId, 'glsl', { code: '', glUniformDefs: [] });
+    glSystem.removeNode(nodeId);
+
+    expect(get(previewVisibleMap)).not.toHaveProperty(nodeId);
   });
 });

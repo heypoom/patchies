@@ -866,6 +866,14 @@ export class GLSystem {
   removeNode(nodeId: string) {
     revokeWorkerVfsObjectUrls(nodeId);
 
+    const visibleMap = get(previewVisibleMap);
+
+    if (nodeId in visibleMap) {
+      const { [nodeId]: _, ...remainingVisiblePreviews } = visibleMap;
+
+      previewVisibleMap.set(remainingVisiblePreviews);
+    }
+
     const node = this.nodes.find((n) => n.id === nodeId);
     if (!node) return;
 

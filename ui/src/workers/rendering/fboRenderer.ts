@@ -401,6 +401,8 @@ export class FBORenderer {
       this.connectedVideoOutputNodeIds = new Set(connectedVideoOutputNodeIds);
     }
 
+    const previousNodeIds = new Set(this.renderGraph?.nodes.map((node) => node.id));
+
     // Get the set of node IDs that will exist in the new graph
     const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
 
@@ -412,12 +414,17 @@ export class FBORenderer {
         this.destroyFboNode(fboNode);
 
         this.fboNodes.delete(nodeId);
-        this.previewRenderer.removeNode(nodeId);
         this.cookState.removeNode(nodeId);
         this.lastCookStatusSignatures.delete(nodeId);
 
         // Unsubscribe removed nodes from video channels
         this.videoChannelRegistry.unsubscribeAll(nodeId);
+      }
+    }
+
+    for (const nodeId of previousNodeIds) {
+      if (!newNodeIds.has(nodeId)) {
+        this.previewRenderer.removeNode(nodeId);
       }
     }
 
