@@ -1,4 +1,5 @@
 export const DEFAULT_PIXI_CODE = `const { Graphics } = PIXI
+
 const colors = [0xff5ea0, 0x66ccff, 0xa78bfa]
 
 const petals = Array.from({ length: 9 }, (_, index) => {
@@ -20,6 +21,7 @@ function draw(t) {
 }`;
 
 export const DEFAULT_PIXI_DOM_CODE = `const { Graphics } = PIXI
+
 const colors = [0xff5ea0, 0x66ccff, 0xa78bfa]
 
 const petals = Array.from({ length: 9 }, (_, index) => {

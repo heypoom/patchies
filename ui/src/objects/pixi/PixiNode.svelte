@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
+
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -10,6 +11,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { messages } from '$lib/objects/schemas/common';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+
   import {
     outputHeight,
     outputWidth,
@@ -29,14 +31,14 @@
 
   const { updateNodeData } = useSvelteFlow();
   const glSystem = GLSystem.getInstance();
+
   let previewCanvas = $state<HTMLCanvasElement>();
   let previewBitmapContext: ImageBitmapRenderingContext | null = null;
   let messageContext: MessageContext | null = null;
   let editorReady = $state(false);
 
-  function run(code = data.code) {
+  const run = (code = data.code) =>
     glSystem.upsertNode(nodeId, 'pixi', { code, _runRevision: Date.now() });
-  }
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     match(message)

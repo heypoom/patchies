@@ -387,26 +387,11 @@
       maxWidth: '',
       maxHeight: ''
     });
-
-    requestAnimationFrame(() => {
-      if (!canvas) return;
-
-      const bounds = canvas.getBoundingClientRect();
-
-      console.log('[DEBUG-preview-size-a4f2]', {
-        object: 'canvas.dom',
-        output: { width, height },
-        capped: { width: displayWidth, height: displayHeight },
-        style: { width: canvas.style.width, height: canvas.style.height },
-        client: { width: canvas.clientWidth, height: canvas.clientHeight },
-        bounds: { width: bounds.width, height: bounds.height },
-        fluid: fluidCanvas.isFluid
-      });
-    });
   }
 
   $effect(() => {
-    isExpanded;
+    void isExpanded;
+
     applyCanvasDisplaySize();
   });
 
@@ -475,6 +460,7 @@
 
     outputWidth = resetSize.width;
     outputHeight = resetSize.height;
+
     applyCanvasDisplaySize(resetSize.width, resetSize.height);
 
     // Clear keyboard callbacks when code is re-run

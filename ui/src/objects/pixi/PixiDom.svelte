@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+
   import {
     NodeResizer,
     NodeResizeControl,
     ResizeControlVariant,
     useSvelteFlow
   } from '@xyflow/svelte';
+
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -15,8 +17,10 @@
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useNodeDataTracker } from '$lib/history';
+
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
   import { pixiDomManager } from '$objects/pixi/PixiDomManager';
+
   import {
     outputHeight as globalOutputHeight,
     outputWidth as globalOutputWidth
@@ -42,9 +46,13 @@
   } = $props();
 
   const { updateNode, updateNodeData } = useSvelteFlow();
+
   const glSystem = GLSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
+
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
+  const previewSize = useCappedPreviewSize(() => ({ width: outputWidth, height: outputHeight }));
+
   let canvas = $state<HTMLCanvasElement>();
   let entry = $state<Awaited<ReturnType<typeof pixiDomManager.register>>>();
   let draw: ((time: number) => void) | null = null;
@@ -53,7 +61,7 @@
   let destroyed = false;
   let outputWidth = $state($globalOutputWidth);
   let outputHeight = $state($globalOutputHeight);
-  const previewSize = useCappedPreviewSize(() => ({ width: outputWidth, height: outputHeight }));
+
   let previewWidth = $derived(previewSize.width);
   let previewHeight = $derived(previewSize.height);
 
@@ -85,9 +93,8 @@
     pixiDomManager.resize(nodeId, { width, height });
   }
 
-  function clearStage() {
+  const clearStage = () =>
     entry?.stage.removeChildren().forEach((child) => child.destroy({ children: true }));
-  }
 
   function togglePlayback() {
     const wasPaused = !!data.paused;
@@ -95,6 +102,7 @@
 
     pixiDomManager.setPaused(nodeId, paused);
     updateNodeData(nodeId, { paused });
+
     eventBus.dispatch({
       type: 'nodeDataCommit',
       nodeId,
@@ -123,7 +131,11 @@
 
     draw = null;
     fluidCanvas.reset();
-    setCanvasDimensions({ width: $globalOutputWidth, height: $globalOutputHeight });
+
+    setCanvasDimensions({
+      width: $globalOutputWidth,
+      height: $globalOutputHeight
+    });
 
     try {
       const app = await pixiDomManager.getApplication();
@@ -134,6 +146,7 @@
       clearStage();
 
       const dimensions = fluidCanvas.getExecutionDimensions(data.code);
+
       const execute = new Function(
         'PIXI',
         'renderer',
@@ -146,6 +159,7 @@
         'onCanvasResize',
         `${data.code}\nreturn typeof draw === 'function' ? draw : null;`
       );
+
       const candidate = execute(
         PIXI,
         app.renderer,
@@ -175,6 +189,7 @@
       if (!canvas) return;
 
       const activeCanvas = canvas;
+
       const nextEntry = await pixiDomManager.register(
         nodeId,
         activeCanvas,
@@ -190,7 +205,7 @@
         () => {
           if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
 
-          void glSystem.setBitmapSource(nodeId, activeCanvas);
+          glSystem.setBitmapSource(nodeId, activeCanvas);
         }
       );
 
@@ -204,7 +219,7 @@
       if (runRevision === 0) void run();
     }
 
-    void initialize();
+    initialize();
   });
 
   onDestroy(() => {

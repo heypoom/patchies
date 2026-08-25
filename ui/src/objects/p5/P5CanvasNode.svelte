@@ -404,20 +404,6 @@
           },
           getSurfaceCanvasSize: surfaceMode.getCanvasSize,
           onCanvasCreated: (canvas, dimensions) => {
-            requestAnimationFrame(() => {
-              const bounds = canvas.getBoundingClientRect();
-
-              console.log('[DEBUG-preview-size-a4f2]', {
-                object: 'p5',
-                dimensions,
-                style: { width: canvas.style.width, height: canvas.style.height },
-                client: { width: canvas.clientWidth, height: canvas.clientHeight },
-                bounds: { width: bounds.width, height: bounds.height },
-                fluid: fluidCanvas.isFluid,
-                surface: surfaceMode.isExpanded
-              });
-            });
-
             if (!fluidCanvas.isFluid && (width !== undefined || height !== undefined)) {
               updateNode(nodeId, { width: undefined, height: undefined });
             }
@@ -428,6 +414,7 @@
                   customConsole.warn(
                     'setFluidSize() is ignored when createSurfaceCanvas() is active.'
                   );
+
                   warnedAboutFluidSurfaceMode = true;
                 }
 

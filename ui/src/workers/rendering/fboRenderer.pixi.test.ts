@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import type { RenderNode } from '$lib/rendering/types';
 
 vi.mock('./hydraRenderer', () => ({ HydraRenderer: class {} }));
@@ -23,21 +24,23 @@ describe('FBORenderer Pixi lifecycle', () => {
     });
 
     const { FBORenderer } = await import('./fboRenderer');
+
     const existingRenderer = {
       updateConfig: vi.fn().mockResolvedValue(undefined),
       renderFrame: vi.fn(),
       destroy: vi.fn()
     };
+
     const renderer = Object.create(FBORenderer.prototype) as InstanceType<typeof FBORenderer>;
+    renderer.pixiByNode = new Map([['pixi-node', existingRenderer as never]]);
+
     const node = {
       id: 'pixi-node',
       type: 'pixi',
       data: { code: 'stage.addChild(sprite)' }
     } as RenderNode;
+
     const framebuffer = {} as Parameters<typeof renderer.createPixiRenderer>[1];
-
-    renderer.pixiByNode = new Map([['pixi-node', existingRenderer as never]]);
-
     const result = await renderer.createPixiRenderer(node, framebuffer);
 
     expect(existingRenderer.updateConfig).toHaveBeenCalledWith(

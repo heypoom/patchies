@@ -31,7 +31,11 @@ Choose a fixed Pixi canvas resolution with `setCanvasSize()`:
 setCanvasSize(800, 600);
 
 const { Graphics } = PIXI;
-const badge = new Graphics().circle(width / 2, height / 2, 100).fill(0x66ccff);
+
+const badge = new Graphics()
+  .circle(width / 2, height / 2, 100)
+  .fill(0x66ccff);
+
 stage.addChild(badge);
 ```
 
@@ -43,7 +47,11 @@ resize handles update the renderer, canvas bitmap, and the live `width` and
 setFluidSize({ initialSize: { width: 800, height: 600 } });
 
 const { Graphics } = PIXI;
-const badge = new Graphics().circle(width / 2, height / 2, 100).fill(0x66ccff);
+
+const badge = new Graphics()
+  .circle(width / 2, height / 2, 100)
+  .fill(0x66ccff);
+
 stage.addChild(badge);
 
 onCanvasResize(({ width, height }) => {
