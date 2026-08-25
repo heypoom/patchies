@@ -1,4 +1,4 @@
-The `pixi.dom` object creates interactive [PixiJS 8](https://pixijs.com/8.x) graphics on a main-thread canvas. Use it when your scene needs native pointer events.
+The `pixi.dom` object creates interactive [PixiJS v8.x](https://pixijs.com/8.x/guides/getting-started/intro) graphics on a main-thread canvas. Use it when your scene needs native pointer events.
 
 ## Getting Started
 
@@ -19,6 +19,33 @@ button.on('pointertap', () => button.tint = Math.random() * 0xffffff);
 
 stage.addChild(button);
 ```
+
+## Extensions
+
+`pixi.dom` lazily loads PixiJS when the first object is added. You can then
+load any PixiJS 8 extension, including browser-only extensions, before using
+its APIs:
+
+```javascript
+await loadExtensions('events', 'accessibility')
+
+const { Graphics } = PIXI
+
+const button = new Graphics()
+  .circle(width / 2, height / 2, 80)
+  .fill(0x66ccff)
+
+button.eventMode = 'static'
+button.on('pointertap', () => button.tint = Math.random() * 0xffffff)
+stage.addChild(button)
+```
+
+Use `await loadExtensions('all')` to load every PixiJS extension. The first call
+for a new extension recreates the shared Pixi renderer while keeping every
+`pixi.dom` stage and canvas in place. Group extension names in one call to do
+that once.
+
+See [pixi](/docs/objects/pixi#extensions) for the extension-name list.
 
 ## Comparison with pixi
 

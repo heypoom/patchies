@@ -69,6 +69,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'getTexture(0)'
   },
   {
+    label: 'loadExtensions',
+    type: 'function',
+    detail: '(...extensions: string[]) => Promise<void>',
+    info: "Load Pixi extensions. Await loadExtensions('filters', 'text') or loadExtensions('all').",
+    apply: "await loadExtensions('filters')"
+  },
+  {
     label: 'OrbitControls',
     type: 'class',
     detail: 'new OrbitControls(camera)',
@@ -556,6 +563,7 @@ const topLevelOnlyFunctions = new Set([
   'redraw',
   'setAudioPortCount',
   'setCanvasSize',
+  'loadExtensions',
   'setFluidSize',
   'onCanvasResize',
   'setDrawMode',
@@ -642,6 +650,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'tone~'
   ],
   opencv: ['js', 'worker', 'canvas', 'canvas.dom'],
+  loadExtensions: ['pixi', 'pixi.dom'],
   noDrag: MOUSE_INTERACTION_JS_NODES,
   noPan: MOUSE_INTERACTION_JS_NODES,
   noWheel: MOUSE_INTERACTION_JS_NODES,

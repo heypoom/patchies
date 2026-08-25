@@ -2,6 +2,10 @@ import type regl from 'regl';
 import type { Container, RenderTexture, WebGLRenderer } from 'pixi.js';
 
 import type { RenderParams } from '$lib/rendering/types';
+import {
+  loadPixiWorkerExtensions,
+  getPixiWorkerExtensionVersion
+} from '$objects/pixi/worker-extensions';
 import { getFramebuffer } from './utils';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 import type { FBORenderer } from './fboRenderer';
@@ -37,8 +41,10 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
   private pixiRuntime: PixiRuntime | null = null;
   private stage: Container | null = null;
   private target: RenderTexture | null = null;
+  private rendererProxy: WebGLRenderer | null = null;
   private draw: ((time: number) => void) | null = null;
   private codeRevision = 0;
+  private extensionVersion = 0;
 
   private constructor(
     config: PixiRendererConfig,
@@ -57,27 +63,11 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
     const PIXI = await loadPixiRuntime();
 
     PIXI.DOMAdapter.set(PIXI.WebWorkerAdapter);
-
-    const sizedFramebuffer = framebuffer as SizedFramebuffer;
-    const [outputWidth, outputHeight] = renderer.outputSize;
-    const canvas = renderer.offscreenCanvas;
+    await loadPixiWorkerExtensions('graphics');
 
     instance.pixiRuntime = PIXI;
     instance.stage = new PIXI.Container();
-    instance.pixi = new PIXI.WebGLRenderer();
-
-    await instance.pixi.init({
-      canvas,
-      context: renderer.gl!,
-      width: outputWidth,
-      height: outputHeight,
-      antialias: true
-    });
-
-    instance.target = PIXI.RenderTexture.create({
-      width: sizedFramebuffer.width,
-      height: sizedFramebuffer.height
-    });
+    await instance.initializePixiRenderer();
 
     await instance.updateCode();
 
@@ -121,8 +111,9 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
       const result = await this.executeUserCode(code, {
         ...this.buildBaseExtraContext(),
         PIXI: this.pixiRuntime,
-        renderer: this.pixi,
+        renderer: this.getRendererProxy(),
         stage: nextStage,
+        loadExtensions: this.loadExtensions.bind(this),
         width: framebuffer?.width ?? 0,
         height: framebuffer?.height ?? 0,
         mouse: { x: this.mouseX, y: this.mouseY }
@@ -177,8 +168,55 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
 
   destroy() {
     this.codeRevision += 1;
-    this.target?.destroy(true);
     this.stage?.destroy({ children: true });
+    this.destroyPixiRenderer();
+
+    super.destroy();
+
+    this.target = null;
+    this.pixi = null;
+    this.pixiRuntime = null;
+    this.rendererProxy = null;
+    this.stage = null;
+    this.draw = null;
+  }
+
+  private async loadExtensions(...extensions: string[]) {
+    await loadPixiWorkerExtensions(...extensions);
+
+    if (this.extensionVersion !== getPixiWorkerExtensionVersion()) {
+      await this.recreatePixiRenderer();
+    }
+  }
+
+  private async initializePixiRenderer() {
+    if (!this.pixiRuntime || !this.framebuffer) return;
+
+    const [outputWidth, outputHeight] = this.renderer.outputSize;
+    const { width, height } = this.framebuffer as SizedFramebuffer;
+
+    this.pixiRuntime.DOMAdapter.set(this.pixiRuntime.WebWorkerAdapter);
+    this.pixi = new this.pixiRuntime.WebGLRenderer();
+
+    await this.pixi.init({
+      canvas: this.renderer.offscreenCanvas,
+      context: this.renderer.gl!,
+      width: outputWidth,
+      height: outputHeight,
+      antialias: true
+    });
+
+    this.target = this.pixiRuntime.RenderTexture.create({ width, height });
+    this.extensionVersion = getPixiWorkerExtensionVersion();
+  }
+
+  private async recreatePixiRenderer() {
+    this.destroyPixiRenderer();
+    await this.initializePixiRenderer();
+  }
+
+  private destroyPixiRenderer() {
+    this.target?.destroy(true);
 
     if (this.pixi) {
       // Pixi assumes it owns its WebGL context and loses it during destroy().
@@ -187,13 +225,28 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
       this.pixi.destroy();
     }
 
-    super.destroy();
-
     this.target = null;
     this.pixi = null;
-    this.pixiRuntime = null;
-    this.stage = null;
-    this.draw = null;
+  }
+
+  private getRendererProxy() {
+    this.rendererProxy ??= new Proxy({} as WebGLRenderer, {
+      get: (_target, property) => {
+        const renderer = this.pixi;
+        if (!renderer) return undefined;
+
+        const value = Reflect.get(renderer, property, renderer);
+
+        return typeof value === 'function' ? value.bind(renderer) : value;
+      },
+      set: (_target, property, value) => {
+        if (!this.pixi) return false;
+
+        return Reflect.set(this.pixi, property, value, this.pixi);
+      }
+    });
+
+    return this.rendererProxy;
   }
 
   private blitTarget() {
