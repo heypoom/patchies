@@ -197,7 +197,7 @@ Keep manual schemas object-owned where possible and import them through the cent
 
 ## JS API Completions
 
-When adding a JS API function such as `flash()`, `llm()`, or `fft()`:
+Every user-facing JavaScript API needs CodeMirror completion coverage. When adding a JS API function such as `flash()`, `llm()`, or `fft()`:
 
 - Add the function to `patchiesAPICompletions`.
 - Add it to `topLevelOnlyFunctions` if it should not appear inside callbacks.

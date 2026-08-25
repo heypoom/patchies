@@ -7,6 +7,8 @@ import TextmodeDom from '$objects/textmode/TextmodeDom.svelte';
 import CanvasDom from '$objects/canvas/CanvasDom.svelte';
 import ThreeNode from '$objects/three/ThreeNode.svelte';
 import ThreeDom from '$objects/three/ThreeDom.svelte';
+import PixiNode from '$objects/pixi/PixiNode.svelte';
+import PixiDom from '$objects/pixi/PixiDom.svelte';
 import GLSLCanvasNode from '$objects/glsl/GLSLCanvasNode.svelte';
 import SwissGLNode from '$objects/swgl/SwissGLNode.svelte';
 import ReglNode from '$objects/regl/ReglNode.svelte';
@@ -139,6 +141,8 @@ export const nodeTypes: Record<string, any> = {
   'textmode.dom': TextmodeDom,
   'canvas.dom': CanvasDom,
   three: ThreeNode,
+  pixi: PixiNode,
+  'pixi.dom': PixiDom,
   'three.dom': ThreeDom,
   dom: DomNode,
   vue: VueNode,

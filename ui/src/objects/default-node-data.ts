@@ -44,6 +44,7 @@ import {
   DEFAULT_DMX_DATA
 } from '$objects/serial/constants';
 import { DEFAULT_SHEET_DATA } from '$objects/sheet/constants';
+import { DEFAULT_PIXI_CODE, DEFAULT_PIXI_DOM_CODE } from '$objects/pixi/constants';
 import { GM_DEFAULT_SETTINGS, GM_SETTINGS_SCHEMA } from '$objects/smplr/gm-settings';
 import { smplrDescriptors, type SmplrObjectType } from '$objects/smplr/descriptors';
 
@@ -110,6 +111,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       videoInletCount: 1,
       videoOutletCount: 1
     }))
+    .with('pixi', () => ({ code: DEFAULT_PIXI_CODE }))
+    .with('pixi.dom', () => ({ code: DEFAULT_PIXI_DOM_CODE }))
     .with('regl', () => ({
       code: DEFAULT_REGL_CODE,
       messageInletCount: 1,

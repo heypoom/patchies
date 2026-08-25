@@ -9,6 +9,7 @@ import type { GlslRenderNode } from '$objects/glsl/render-types';
 import type { HydraRenderNode } from '$objects/hydra/render-types';
 import type { ImageRenderNode } from '$objects/img/render-types';
 import type { ProjMapRenderNode } from '$objects/projmap/render-types';
+import type { PixiRenderNode } from '$objects/pixi/render-types';
 import type { RecvVideoRenderNode } from '$objects/recv.vdo/render-types';
 import type { ReglRenderNode } from '$objects/regl/render-types';
 import type { SendVideoRenderNode } from '$objects/send.vdo/render-types';
@@ -47,6 +48,7 @@ export type RenderNode = {
   | ShaderParkRenderNode
   | ReglRenderNode
   | ProjMapRenderNode
+  | PixiRenderNode
   | ImageRenderNode
   | FloatTextureRenderNode
   | BackgroundOutputRenderNode
@@ -371,6 +373,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'canvas',
   'textmode',
   'three',
+  'pixi',
   'shaderpark',
   'regl',
   'projmap',
@@ -385,4 +388,10 @@ export const isFBOCompatible = (nodeType?: string): nodeType is RenderNode['type
   FBO_COMPATIBLE_TYPES.includes(nodeType as RenderNode['type']);
 
 // DOM-backed main-thread renderers that should be auto-paused when offscreen.
-export const CULLABLE_DOM_TYPES: string[] = ['p5', 'canvas.dom', 'textmode.dom', 'three.dom'];
+export const CULLABLE_DOM_TYPES: string[] = [
+  'p5',
+  'canvas.dom',
+  'textmode.dom',
+  'three.dom',
+  'pixi.dom'
+];

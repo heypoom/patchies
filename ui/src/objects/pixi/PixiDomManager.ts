@@ -1,0 +1,243 @@
+import { Application, Container, type WebGLRenderer } from 'pixi.js';
+
+type PixiDomEntry = {
+  canvas: HTMLCanvasElement;
+  draw: (time: number) => void;
+  height: number;
+  handlers?: PixiDomEventHandlers;
+  onRendered: () => void;
+  paused: boolean;
+  stage: Container;
+  width: number;
+};
+
+type PixiDomEventHandlers = {
+  onPointerDown: (event: PointerEvent) => void;
+  onPointerMove: (event: PointerEvent) => void;
+  onPointerOverOut: (event: PointerEvent) => void;
+  onPointerUp: (event: PointerEvent) => void;
+  onWheel: (event: WheelEvent) => void;
+};
+
+type PixiDomRenderer = Omit<WebGLRenderer, '_lastObjectRendered'> & {
+  _lastObjectRendered?: Container;
+};
+
+type PixiDomEvents = WebGLRenderer['events'] & {
+  domElement: HTMLCanvasElement | null;
+};
+
+class PixiDomManager {
+  private app: Application | null = null;
+  private applicationInit: Promise<Application> | null = null;
+  private entries = new Map<string, PixiDomEntry>();
+  private activePointers = new Map<number, PixiDomEntry>();
+  private destroyed = false;
+
+  async register(
+    nodeId: string,
+    canvas: HTMLCanvasElement,
+    size: { width: number; height: number },
+    draw: (time: number) => void,
+    onRendered: () => void
+  ) {
+    const app = await this.getApplication();
+    const entry: PixiDomEntry = {
+      canvas,
+      draw,
+      height: size.height,
+      onRendered,
+      paused: false,
+      stage: new Container(),
+      width: size.width
+    };
+
+    this.entries.set(nodeId, entry);
+    this.resizeEntry(entry, size);
+    this.bindEvents(entry);
+
+    return entry;
+  }
+
+  unregister(nodeId: string) {
+    const entry = this.entries.get(nodeId);
+
+    if (!entry) return;
+
+    this.unbindEvents(entry);
+    entry.stage.destroy({ children: true });
+    this.entries.delete(nodeId);
+  }
+
+  resize(nodeId: string, size: { width: number; height: number }) {
+    const entry = this.entries.get(nodeId);
+
+    if (!entry) return;
+
+    this.resizeEntry(entry, size);
+  }
+
+  setPaused(nodeId: string, paused: boolean) {
+    const entry = this.entries.get(nodeId);
+
+    if (!entry) return;
+
+    entry.paused = paused;
+  }
+
+  async getApplication() {
+    if (this.app) return this.app;
+    if (this.applicationInit) return this.applicationInit;
+
+    const nextApp = new Application();
+
+    this.applicationInit = nextApp
+      .init({
+        autoStart: false,
+        backgroundAlpha: 0,
+        multiView: true,
+        antialias: true
+      })
+      .then(() => {
+        if (this.destroyed) {
+          nextApp.destroy({ removeView: false }, { children: true });
+          throw new Error('Pixi DOM manager was destroyed during initialization.');
+        }
+
+        nextApp.ticker.remove(nextApp.render, nextApp);
+        nextApp.ticker.add((ticker) => this.render(ticker.lastTime / 1000));
+        nextApp.ticker.start();
+        (nextApp.renderer.events as PixiDomEvents).setTargetElement(null as never);
+        window.addEventListener('pointermove', this.handleWindowPointerMove);
+        window.addEventListener('pointerup', this.handleWindowPointerUp);
+        this.app = nextApp;
+
+        return nextApp;
+      })
+      .finally(() => {
+        this.applicationInit = null;
+      });
+
+    return this.applicationInit;
+  }
+
+  destroy() {
+    this.destroyed = true;
+    this.entries.forEach((_, nodeId) => this.unregister(nodeId));
+    window.removeEventListener('pointermove', this.handleWindowPointerMove);
+    window.removeEventListener('pointerup', this.handleWindowPointerUp);
+    this.app?.destroy({ removeView: false }, { children: true });
+    this.app = null;
+  }
+
+  private bindEvents(entry: PixiDomEntry) {
+    const onPointerDown = (event: PointerEvent) => {
+      this.activePointers.set(event.pointerId, entry);
+      this.dispatchEvent(entry, '_onPointerDown', event);
+    };
+    const onPointerMove = (event: PointerEvent) =>
+      this.dispatchEvent(entry, '_onPointerMove', event);
+    const onPointerUp = (event: PointerEvent) => {
+      this.dispatchEvent(entry, '_onPointerUp', event);
+      this.activePointers.delete(event.pointerId);
+    };
+    const onPointerOverOut = (event: PointerEvent) =>
+      this.dispatchEvent(entry, '_onPointerOverOut', event);
+    const onWheel = (event: WheelEvent) => this.dispatchEvent(entry, 'onWheel', event);
+
+    entry.canvas.addEventListener('pointerdown', onPointerDown);
+    entry.canvas.addEventListener('pointermove', onPointerMove);
+    entry.canvas.addEventListener('pointerup', onPointerUp);
+    entry.canvas.addEventListener('pointercancel', onPointerUp);
+    entry.canvas.addEventListener('pointerleave', onPointerOverOut);
+    entry.canvas.addEventListener('pointerover', onPointerOverOut);
+    entry.canvas.addEventListener('wheel', onWheel, { passive: true });
+
+    entry.handlers = { onPointerDown, onPointerMove, onPointerOverOut, onPointerUp, onWheel };
+  }
+
+  private unbindEvents(entry: PixiDomEntry) {
+    const handlers = entry.handlers;
+
+    if (!handlers) return;
+
+    entry.canvas.removeEventListener('pointerdown', handlers.onPointerDown);
+    entry.canvas.removeEventListener('pointermove', handlers.onPointerMove);
+    entry.canvas.removeEventListener('pointerup', handlers.onPointerUp);
+    entry.canvas.removeEventListener('pointercancel', handlers.onPointerUp);
+    entry.canvas.removeEventListener('pointerleave', handlers.onPointerOverOut);
+    entry.canvas.removeEventListener('pointerover', handlers.onPointerOverOut);
+    entry.canvas.removeEventListener('wheel', handlers.onWheel);
+    entry.handlers = undefined;
+  }
+
+  private handleWindowPointerMove = (event: PointerEvent) => {
+    const entry = this.activePointers.get(event.pointerId);
+
+    if (!entry || event.target === entry.canvas) return;
+
+    this.dispatchEvent(entry, '_onPointerMove', event);
+  };
+
+  private handleWindowPointerUp = (event: PointerEvent) => {
+    const entry = this.activePointers.get(event.pointerId);
+
+    if (!entry || event.target === entry.canvas) return;
+
+    this.dispatchEvent(entry, '_onPointerUp', event);
+    this.activePointers.delete(event.pointerId);
+  };
+
+  private dispatchEvent(
+    entry: PixiDomEntry,
+    handler: '_onPointerDown' | '_onPointerMove' | '_onPointerUp' | '_onPointerOverOut' | 'onWheel',
+    event: PointerEvent | WheelEvent
+  ) {
+    const app = this.app;
+
+    if (!app) return;
+
+    const renderer = app.renderer as unknown as PixiDomRenderer;
+    const events = renderer.events as PixiDomEvents;
+    const previousRoot = renderer._lastObjectRendered;
+    const previousCanvas = events.domElement;
+
+    renderer._lastObjectRendered = entry.stage;
+    events.domElement = entry.canvas;
+
+    const dispatch = events[handler] as (nativeEvent: PointerEvent | WheelEvent) => void;
+
+    dispatch(event);
+
+    events.domElement = previousCanvas;
+    renderer._lastObjectRendered = previousRoot;
+  }
+
+  private render(time: number) {
+    const app = this.app;
+
+    if (!app) return;
+
+    this.entries.forEach((entry) => {
+      if (entry.paused) return;
+
+      try {
+        entry.draw(time);
+        entry.canvas.getContext('2d')?.clearRect(0, 0, entry.width, entry.height);
+        app.renderer.render({ container: entry.stage, target: entry.canvas, clear: true });
+        entry.onRendered();
+      } catch (error) {
+        console.error('[pixi.dom] render error', error);
+      }
+    });
+  }
+
+  private resizeEntry(entry: PixiDomEntry, size: { width: number; height: number }) {
+    entry.width = size.width;
+    entry.height = size.height;
+    entry.canvas.width = size.width;
+    entry.canvas.height = size.height;
+  }
+}
+
+export const pixiDomManager = new PixiDomManager();

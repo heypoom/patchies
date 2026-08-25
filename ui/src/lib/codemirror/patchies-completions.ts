@@ -671,9 +671,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   noBorder: ['dom', 'vue', 'p5', 'canvas.dom', 'three.dom'],
   setAudioPortCount: ['dsp~'],
   showAudioInput: ['tone~', 'sonic~', 'elem~'],
-  setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
-  setFluidSize: ['canvas.dom', 'dom', 'vue', 'p5'],
-  onCanvasResize: ['canvas.dom'],
+  setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom'],
+  setFluidSize: ['canvas.dom', 'dom', 'vue', 'p5', 'pixi.dom'],
+  onCanvasResize: ['canvas.dom', 'pixi.dom'],
   onResize: ['dom', 'vue'],
   setSize: ['dom', 'vue'],
   setHidePorts: [

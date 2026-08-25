@@ -210,6 +210,9 @@ describe('patchies completions', () => {
   it('shows fluid-size completions for their supported node types', () => {
     expect(getCompletionLabels('canvas.dom', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('canvas.dom', 'onCanvasR')).toContain('onCanvasResize');
+    expect(getCompletionLabels('pixi.dom', 'setCanvasS')).toContain('setCanvasSize');
+    expect(getCompletionLabels('pixi.dom', 'setF')).toContain('setFluidSize');
+    expect(getCompletionLabels('pixi.dom', 'onCanvasR')).toContain('onCanvasResize');
     expect(getCompletionLabels('dom', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('vue', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('dom', 'onR')).toContain('onResize');

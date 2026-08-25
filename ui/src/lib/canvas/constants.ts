@@ -44,17 +44,24 @@ export const DEFAULT_AI_IMAGE_PROMPT = `little rainicorn, high quality, 16:9 asp
 
 export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
 
-export const DEFAULT_JS_CANVAS_CODE = `function draw() {
+export const DEFAULT_JS_CANVAS_CODE = `const colors = ['#ff5ea0', '#66ccff', '#a78bfa']
+
+function draw() {
   ctx.clearRect(0, 0, width, height)
 
-  const time = clock.time * 2
-  const x = width/2 + Math.cos(time) * 60
-  const y = height/2 + Math.sin(time) * 50
+  const time = clock.time
 
-  ctx.fillStyle = 'white'
-  ctx.beginPath()
-  ctx.arc(x, y, 80, 0, Math.PI * 2)
-  ctx.fill()
+  Array.from({ length: 9 }, (_, index) => {
+    ctx.save()
+    ctx.translate(width / 2, height / 2)
+    ctx.rotate(time + index * Math.PI * 2 / 9)
+    ctx.scale(0.65 + Math.sin(time * 3 + index) * 0.35, 1)
+    ctx.fillStyle = colors[index % colors.length]
+    ctx.beginPath()
+    ctx.roundRect(0, -14, 190, 28, 14)
+    ctx.fill()
+    ctx.restore()
+  })
 
   requestAnimationFrame(draw)
 }
