@@ -15,6 +15,7 @@
   import { getBorderChromeClass } from './border-chrome';
   import { portal } from '$lib/dom/portal';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { isFBOCompatible } from '$lib/rendering/types';
 
   const COOK_DEBUG_OBJECT_TYPES = new Set<string>(COOK_DEBUG_RENDER_NODE_TYPES);
 
@@ -122,6 +123,8 @@
     showCookDebugOption ?? Boolean(objectType && COOK_DEBUG_OBJECT_TYPES.has(objectType))
   );
 
+  const canTogglePreview = $derived(isFBOCompatible(objectType));
+
   const cookStatus = useCookStatus(
     () => nodeId,
     () => cookDebugSupported && $showCookStats
@@ -167,6 +170,8 @@
 
     return classes.join(' ');
   });
+
+  const hasPreviewToggle = $derived.by(() => canTogglePreview && (onPreviewToggle || nodeId));
 </script>
 
 <ObjectPreviewLayout
@@ -175,7 +180,7 @@
   {objectType}
   {onrun}
   {onPlaybackToggle}
-  onPreviewToggle={onPreviewToggle || nodeId ? togglePreviewVisibility : undefined}
+  onPreviewToggle={hasPreviewToggle ? togglePreviewVisibility : undefined}
   {paused}
   previewVisible={resolvedPreviewVisible}
   {showPauseButton}
