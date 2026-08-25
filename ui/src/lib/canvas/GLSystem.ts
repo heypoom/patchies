@@ -326,6 +326,11 @@ export class GLSystem {
     if (!data) return;
 
     if (data.type === 'previewFrame') {
+      if (get(previewVisibleMap)[data.nodeId] === false) {
+        data.bitmap?.close();
+        return;
+      }
+
       const context = this.previewCanvasContexts[data.nodeId];
       if (!context || !data.bitmap) return;
 
@@ -718,16 +723,23 @@ export class GLSystem {
   }
 
   setPreviewEnabled(nodeId: string, enabled: boolean) {
-    this.send('setPreviewEnabled', { nodeId, enabled });
+    const userPreviewVisible = get(previewVisibleMap)[nodeId];
+    const previewEnabled = enabled && userPreviewVisible !== false;
+
+    if (!previewEnabled) {
+      this.previewCanvasContexts[nodeId]?.transferFromImageBitmap(null);
+    }
+
+    this.send('setPreviewEnabled', { nodeId, enabled: previewEnabled });
   }
 
   togglePreview(nodeId: string) {
     const visibleMap = get(previewVisibleMap);
+    const previewVisible = visibleMap[nodeId] ?? true;
 
-    visibleMap[nodeId] = !visibleMap[nodeId];
-    previewVisibleMap.set(visibleMap);
+    previewVisibleMap.set({ ...visibleMap, [nodeId]: !previewVisible });
 
-    this.setPreviewEnabled(nodeId, visibleMap[nodeId]);
+    this.setPreviewEnabled(nodeId, !previewVisible);
   }
 
   /** Toggle pause state for a node */

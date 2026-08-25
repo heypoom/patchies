@@ -202,7 +202,7 @@ The first implementation should be conservative:
 | `glsl`                           | `on-demand` when no dynamic dependencies are detected | First supported node type                                                                               |
 | `shaderpark`                     | `on-demand` when no dynamic dependencies are detected | Time, mouse, 3D orbit, input, uniform, and feedback dependencies cook as needed                         |
 | `hydra`                          | `on-demand` for static/input-only code                | Animated generators, custom functions, callbacks, mouse, and datamosh stay dynamic                      |
-| `three`                          | `always` initially                                    | Scene graph mutation can be dynamic without explicit time, mouse, or FFT reads                         |
+| `three`                          | `always` initially                                    | Scene graph mutation can be dynamic without explicit time, mouse, or FFT reads                          |
 | `regl`                           | `on-demand` when no dynamic dependencies are detected | `render(time)`, mouse, FFT, input, message, and feedback dependencies cook as needed                    |
 | `swgl`                           | `on-demand` when no dynamic dependencies are detected | `t`, `fft()`, input, message, and feedback dependencies cook as needed                                  |
 | `canvas`                         | `on-demand` when no dynamic dependencies are detected | Time, mouse, FFT, input, message, and feedback dependencies cook as needed; timers and RAF stay dynamic |
@@ -370,6 +370,23 @@ The FBO pipeline runs at full resolution regardless — only the preview readbac
 ### 4b. Global Preview Toggle ✓
 
 A keyboard shortcut (e.g. `Shift+P`) or toolbar button to disable ALL node previews. During live performance, the audience sees the output — node previews are for the coder's reference. Turning them off saves all readback overhead.
+
+### 4d. Per-Node Preview Toggle ✓
+
+Visual nodes expose **Hide preview** / **Show preview** in both their context and overflow menus.
+Hiding a preview clears its canvas to black and disables that node's preview readback; the
+render worker must not transfer a new preview bitmap for it. This is separate from
+**Freeze frame**: freezing keeps the previous preview while pausing a node's rendering,
+whereas hiding affects only preview delivery and leaves its FBO available to downstream
+nodes and output rendering.
+
+The disabled state survives render-graph rebuilds. Viewport culling remains a second,
+independent filter over enabled previews, so making a node visible again must not re-enable
+a preview the user explicitly hid.
+
+When the global preview toggle is disabled, node menus replace the per-node toggle with the
+disabled status item **Previews disabled globally (Shift+P)**. This preserves each node's
+preference without implying that its preview can currently be changed or displayed.
 
 ### 4c. Preview Frame Rate Reduction Preview Frame Rate Reduction
 

@@ -23,7 +23,11 @@
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
-  import { overrideOutputNodeId, previewBackgroundColor } from '../../stores/renderer.store';
+  import {
+    allPreviewsDisabled,
+    overrideOutputNodeId,
+    previewBackgroundColor
+  } from '../../stores/renderer.store';
   import {
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
@@ -499,6 +503,7 @@
                 {canPin}
                 onPreviewToggle={onPreviewToggle ? handlePreviewToggle : undefined}
                 {previewVisible}
+                previewsDisabledGlobally={$allPreviewsDisabled}
                 onSettingsToggle={settingsSidebarTarget.toggle}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : handleCodeOpen}
                 onExpandToggle={expandToggle}
@@ -587,6 +592,7 @@
       {paused}
       onPreviewToggle={onPreviewToggle ? handlePreviewToggle : undefined}
       {previewVisible}
+      previewsDisabledGlobally={$allPreviewsDisabled}
       {settingsSchema}
       {showSettings}
       onSettingsToggle={settingsSidebarTarget.toggle}

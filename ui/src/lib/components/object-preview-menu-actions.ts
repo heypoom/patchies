@@ -36,6 +36,7 @@ export interface ObjectPreviewMenuProps {
   canPin?: boolean;
   onPreviewToggle?: () => void;
   previewVisible?: boolean;
+  previewsDisabledGlobally?: boolean;
   onSettingsToggle?: (event?: MouseEvent) => void;
   onCodeToggle?: (event: MouseEvent) => void;
   onExpandToggle?: () => void;
@@ -80,6 +81,7 @@ export function getObjectPreviewMenuGroups({
   canPin = false,
   onPreviewToggle,
   previewVisible = true,
+  previewsDisabledGlobally = false,
   onSettingsToggle,
   onCodeToggle,
   onExpandToggle,
@@ -168,9 +170,14 @@ export function getObjectPreviewMenuGroups({
   if (onPreviewToggle) {
     displayActions.push({
       id: 'preview',
-      label: previewVisible ? 'Hide preview' : 'Show preview',
-      icon: previewVisible ? EyeOff : Eye,
-      onclick: () => onPreviewToggle()
+      label: previewsDisabledGlobally
+        ? 'Previews disabled globally (Shift+P)'
+        : previewVisible
+          ? 'Hide preview'
+          : 'Show preview',
+      icon: previewsDisabledGlobally || previewVisible ? EyeOff : Eye,
+      onclick: () => onPreviewToggle(),
+      disabled: previewsDisabledGlobally
     });
   }
 

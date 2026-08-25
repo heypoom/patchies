@@ -412,6 +412,7 @@ export class FBORenderer {
         this.destroyFboNode(fboNode);
 
         this.fboNodes.delete(nodeId);
+        this.previewRenderer.removeNode(nodeId);
         this.cookState.removeNode(nodeId);
         this.lastCookStatusSignatures.delete(nodeId);
 
@@ -663,7 +664,9 @@ export class FBORenderer {
       // as the texture is managed by the node on the frontend.
       const defaultPreviewEnabled = !isExternalTextureNode(node.type);
 
-      this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
+      if (!this.previewRenderer.hasPreviewState(node.id)) {
+        this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
+      }
     }
 
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();

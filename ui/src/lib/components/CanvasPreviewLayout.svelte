@@ -4,12 +4,17 @@
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './object-preview-menu-actions';
-  import { previewBackgroundColor, showCookStats } from '../../stores/renderer.store';
+  import {
+    previewBackgroundColor,
+    previewVisibleMap,
+    showCookStats
+  } from '../../stores/renderer.store';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
   import { COOK_DEBUG_RENDER_NODE_TYPES } from '../../workers/rendering/cooking/policies';
   import { getBorderChromeClass } from './border-chrome';
   import { portal } from '$lib/dom/portal';
+  import { GLSystem } from '$lib/canvas/GLSystem';
 
   const COOK_DEBUG_OBJECT_TYPES = new Set<string>(COOK_DEBUG_RENDER_NODE_TYPES);
 
@@ -23,7 +28,7 @@
     onPlaybackToggle,
     onPreviewToggle,
     paused = false,
-    previewVisible = true,
+    previewVisible = undefined,
     showPauseButton = false,
     previewCanvas = $bindable<HTMLCanvasElement>(),
     nodrag = false,
@@ -122,6 +127,21 @@
     () => cookDebugSupported && $showCookStats
   );
 
+  const resolvedPreviewVisible = $derived(
+    previewVisible ?? (nodeId ? $previewVisibleMap[nodeId] !== false : true)
+  );
+
+  function togglePreviewVisibility() {
+    if (onPreviewToggle) {
+      onPreviewToggle();
+      return;
+    }
+
+    if (nodeId) {
+      GLSystem.getInstance().togglePreview(nodeId);
+    }
+  }
+
   const chromeClass = $derived(
     getBorderChromeClass({
       hasError,
@@ -155,9 +175,9 @@
   {objectType}
   {onrun}
   {onPlaybackToggle}
-  {onPreviewToggle}
+  onPreviewToggle={onPreviewToggle || nodeId ? togglePreviewVisibility : undefined}
   {paused}
-  {previewVisible}
+  previewVisible={resolvedPreviewVisible}
   {showPauseButton}
   {showBgOutputOption}
   {showExpandOption}
@@ -201,8 +221,8 @@
         style:border-radius={customExpanded ? '0' : undefined}
         style:box-shadow={customExpanded ? 'none' : undefined}
         style={typeof width === 'number' && typeof height === 'number'
-          ? `width:${width}px;height:${height}px;background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
-          : `background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
+          ? `width:${width}px;height:${height}px;background-color:${resolvedPreviewVisible ? $previewBackgroundColor : 'black'};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
+          : `background-color:${resolvedPreviewVisible ? $previewBackgroundColor : 'black'};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
       ></canvas>
 
       <CookDebugOverlay

@@ -46,6 +46,24 @@ describe('PreviewRenderer', () => {
     expect(gl.readPixels).toHaveBeenCalledTimes(1);
   });
 
+  it('stops a hidden preview before it can send an in-flight or fresh frame', () => {
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+
+    const { service, gl } = createPreviewService();
+    const renderer = new PreviewRenderer(service);
+    const fboNodes = new Map<string, FBONode>([['node', createFboNode('node')]]);
+
+    renderer.setPreviewFpsCap(1000);
+    renderer.setPreviewEnabled('node', true);
+    renderer.renderPreviewBitmaps(fboNodes, false, new Set());
+
+    renderer.setPreviewEnabled('node', false);
+    renderer.renderPreviewBitmaps(fboNodes, false, new Set(['node']));
+
+    expect(service.returnPbo).toHaveBeenCalledTimes(1);
+    expect(gl.readPixels).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps a cooked node eligible until its preview read starts', () => {
     const now = vi.spyOn(performance, 'now');
     now.mockReturnValue(1000);

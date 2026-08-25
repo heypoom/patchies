@@ -69,6 +69,7 @@ export class PreviewRenderer {
       this.dirtyPreviewNodeIds.add(nodeId);
     } else if (!enabled) {
       this.dirtyPreviewNodeIds.delete(nodeId);
+      this.clearPendingReadsForNode(nodeId);
     }
   }
 
@@ -78,6 +79,10 @@ export class PreviewRenderer {
 
   isPreviewEnabled(nodeId: string): boolean {
     return this.previewState[nodeId] ?? false;
+  }
+
+  hasPreviewState(nodeId: string): boolean {
+    return nodeId in this.previewState;
   }
 
   getEnabledPreviews(): string[] {
@@ -376,6 +381,19 @@ export class PreviewRenderer {
 
     this.pendingReads = [];
     this.pendingNodeIds.clear();
+  }
+
+  private clearPendingReadsForNode(nodeId: string): void {
+    this.pendingReads = this.pendingReads.filter((pending) => {
+      if (pending.nodeId !== nodeId) return true;
+
+      this.gl.deleteSync(pending.sync);
+      this.service.returnPbo(pending.pbo);
+
+      return false;
+    });
+
+    this.pendingNodeIds.delete(nodeId);
   }
 
   destroy(): void {
