@@ -21,6 +21,7 @@
   import { useNodeDataTracker } from '$lib/history';
   import { CanvasDomExpandController } from '$lib/canvas/CanvasDomExpandController';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
+  import { getBorderResetDataForRun } from '$lib/components/border-chrome';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
   import { pixiDomManager } from '$objects/pixi/PixiDomManager';
@@ -48,6 +49,7 @@
       title?: string;
       code: string;
       fluidCanvasResizerVisible?: boolean;
+      noBorder?: boolean;
       paused?: boolean;
     };
     selected?: boolean;
@@ -166,6 +168,7 @@
     draw = null;
     setVideoOutputEnabled(false);
     fluidCanvas.reset();
+    updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     setCanvasDimensions({
       width: $globalOutputWidth,
@@ -194,6 +197,7 @@
         'onCanvasResize',
         'loadExtensions',
         'setVideoOutput',
+        'noBorder',
         `${data.code}\nreturn typeof draw === 'function' ? draw : null;`
       );
 
@@ -208,7 +212,8 @@
         fluidCanvas.setFluidSize,
         fluidCanvas.onCanvasResize,
         pixiDomManager.loadExtensions.bind(pixiDomManager),
-        (enabled: boolean) => setVideoOutputEnabled(enabled)
+        (enabled: boolean) => setVideoOutputEnabled(enabled),
+        () => updateNodeData(nodeId, { noBorder: true })
       );
 
       if (revision !== runRevision) {
@@ -347,6 +352,7 @@
     previewPortalTarget={expandedPreviewPortalTarget}
     {selected}
     {editorReady}
+    noBorder={data.noBorder}
     hideBorder={resizeControlsVisible}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
   >

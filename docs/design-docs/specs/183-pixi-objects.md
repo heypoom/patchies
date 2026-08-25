@@ -23,6 +23,11 @@ It exposes `setCanvasSize()`, `setFluidSize()`, and `onCanvasResize()` with the
 same sizing semantics as `canvas.dom`; a resize updates Pixi's renderer and
 the copied video-output bitmap. Its preview uses the shared capped preview
 dimensions so main-thread and render-worker nodes have the same default size.
+The `draw(time)` callback runs on every Pixi ticker frame and receives live
+`width` and `height` values through its closure, so animated scenes can update
+their layout during a resize. `onCanvasResize()` updates static scenes after a
+resize, coalesced to one callback per animation frame. Fluid resizing never
+re-runs the user's code, preserving the stage and its interaction state.
 
 The first DOM version exposes Pixi's normal canvas, stage, renderer, optional
 `draw(time)` callback, sizing APIs, and `setVideoOutput(enabled)`. It supports

@@ -6,7 +6,7 @@ Let JS-authored UI nodes opt out of Patchies preview border/chrome when the node
 
 ## API
 
-Expose `noBorder()` in `dom`, `vue`, `p5`, `canvas.dom`, and `three.dom` JavaScript contexts.
+Expose `noBorder()` in `dom`, `vue`, `p5`, `canvas.dom`, `three.dom`, and `pixi.dom` JavaScript contexts.
 
 Calling it persists `noBorder: true` on the node data. The node remains selected, movable, deletable, and editable through existing canvas behavior, but Patchies stops drawing preview border/chrome for that node in both idle and selected states.
 
@@ -27,4 +27,4 @@ running the node restores the default border/chrome.
 - Add a small shared presentation helper for border chrome class decisions.
 - Thread the persisted flag through `DomRuntimeNode`, `P5CanvasNode`, and `CanvasPreviewLayout`.
 - Add `noBorder()` to the relevant runtime contexts and CodeMirror completions.
-- Document the helper in the four object docs.
+- Document the helper in the object docs.

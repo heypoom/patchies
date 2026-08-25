@@ -89,14 +89,20 @@ const badge = new Graphics()
 
 stage.addChild(badge);
 
-onCanvasResize(({ width, height }) => {
+function draw() {
   badge.position.set(width / 2, height / 2);
-});
+}
 ```
 
 `setFluidSize()` supports `showResizer`, `resize`, and `keepAspectRatio`, with
 the same behavior as [canvas.dom](/docs/objects/canvas.dom#resizable-widgets).
 While fluid mode is active, `setCanvasSize()` is ignored.
+
+Use `draw()` for scenes that need to react continuously. It reads the live
+`width` and `height` values on every Pixi frame, so you can update a scene
+during a resize. Use `onCanvasResize()` to update static scenes. It runs at
+most once per animation frame while resizing. Patchies does not re-run your
+Pixi code after a fluid resize, preserving the stage and interaction state.
 
 ## Focused Interactive View
 
@@ -130,6 +136,7 @@ stage.addChild(badge)
 - `setCanvasSize(width, height)` — sets a fixed canvas resolution
 - `setFluidSize(options?)` — makes the canvas follow the node size
 - `onCanvasResize(callback)` — runs a callback after the canvas is resized
+- `noBorder()` — hides Patchies' border and selected glow until the call is removed and the node runs again
 - `loadExtensions(...names)` — loads optional PixiJS extensions
 
 ## See Also

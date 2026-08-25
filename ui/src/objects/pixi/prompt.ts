@@ -36,8 +36,9 @@ PixiJS 8 on the main thread. Use it for interactive 2D graphics with native poin
 - width, height: canvas dimensions
 - renderer: managed Pixi renderer; do not call renderer.render()
 - loadExtensions(...names): await before using optional Pixi APIs, for example await loadExtensions('events', 'accessibility'). Use loadExtensions('all') for every extension.
-- setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs
+- setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs. In fluid mode, draw(time) can read live width and height values while resizing. Use onCanvasResize to update static scenes; resizing does not re-run your code.
 - setVideoOutput(enabled): enable or disable the video output port. It is disabled by default; call setVideoOutput(true) when the scene feeds another video node.
+- noBorder(): hide Patchies' preview border and selected glow until the call is removed and the node runs again.
 
 **Rules:**
 - Graphics is available by default.
