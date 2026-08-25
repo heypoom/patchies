@@ -73,6 +73,57 @@ describe('PixiRenderer', () => {
     });
   });
 
+  it('flips the pixi render target while blitting it into the regl framebuffer', () => {
+    const blitFramebuffer = vi.fn();
+    const bindFramebuffer = vi.fn();
+    const finishRenderPass = vi.fn();
+
+    const sourceFramebuffer = {} as WebGLFramebuffer;
+    const destinationFramebuffer = {} as WebGLFramebuffer;
+
+    const renderer = createRenderer();
+    renderer.target = {} as never;
+
+    renderer.framebuffer = {
+      _framebuffer: { framebuffer: destinationFramebuffer },
+      width: 320,
+      height: 180
+    };
+
+    renderer.pixi = {
+      context: { extensions: {} },
+      destroy: vi.fn(),
+      render: vi.fn(),
+      resetState: vi.fn(),
+      renderTarget: {
+        finishRenderPass,
+        getGpuRenderTarget: vi.fn(() => ({ framebuffer: sourceFramebuffer })),
+        getRenderTarget: vi.fn()
+      }
+    } as never;
+
+    renderer.renderer = {
+      transportTime: null,
+      regl: { _refresh: vi.fn() },
+      unregisterSettingsProxy: vi.fn(),
+      jsRunner: { destroy: vi.fn() },
+      gl: {
+        COLOR_BUFFER_BIT: 0x4000,
+        DRAW_FRAMEBUFFER: 0x8ca9,
+        FRAMEBUFFER: 0x8d40,
+        NEAREST: 0x2600,
+        READ_FRAMEBUFFER: 0x8ca8,
+        bindFramebuffer,
+        blitFramebuffer
+      }
+    } as never;
+
+    renderer.blitTarget();
+
+    expect(finishRenderPass).toHaveBeenCalledOnce();
+    expect(blitFramebuffer).toHaveBeenCalledWith(0, 180, 320, 0, 0, 0, 320, 180, 0x4000, 0x2600);
+  });
+
   it('destroys Pixi resources without losing the shared WebGL context', () => {
     const renderer = createRenderer();
 

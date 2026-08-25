@@ -261,7 +261,7 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destination);
 
-    gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+    gl.blitFramebuffer(0, height, width, 0, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
