@@ -17,6 +17,7 @@
   import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import {
     getCappedPreviewSize,
+    getUncappedPreviewSize,
     useCappedPreviewSize
   } from '$lib/canvas/use-capped-preview-size.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
@@ -116,7 +117,11 @@
 
   let outputWidth = $state(defaultOutputWidth);
   let outputHeight = $state(defaultOutputHeight);
-  const previewSize = useCappedPreviewSize(() => ({ width: outputWidth, height: outputHeight }));
+  let fluidCanvas = $state.raw<ReturnType<typeof useFluidCanvas>>(undefined!);
+  const previewSize = useCappedPreviewSize(
+    () => ({ width: outputWidth, height: outputHeight }),
+    () => !fluidCanvas.isFluid
+  );
   let previewWidth = $derived(previewSize.width);
   let previewHeight = $derived(previewSize.height);
 
@@ -146,7 +151,7 @@
     }
   });
 
-  const fluidCanvas = useFluidCanvas({
+  fluidCanvas = useFluidCanvas({
     getNodeId: () => nodeId,
     getData: () => data,
     getNodeSize: () => ({ width, height }),
@@ -379,7 +384,8 @@
       return;
     }
 
-    const [displayWidth, displayHeight] = getCappedPreviewSize({ width, height });
+    const getDisplaySize = fluidCanvas.isFluid ? getUncappedPreviewSize : getCappedPreviewSize;
+    const [displayWidth, displayHeight] = getDisplaySize({ width, height });
 
     Object.assign(canvas.style, {
       width: `${displayWidth}px`,

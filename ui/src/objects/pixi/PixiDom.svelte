@@ -51,7 +51,11 @@
   const eventBus = PatchiesEventBus.getInstance();
 
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
-  const previewSize = useCappedPreviewSize(() => ({ width: outputWidth, height: outputHeight }));
+  let fluidCanvas = $state.raw<ReturnType<typeof useFluidCanvas>>(undefined!);
+  const previewSize = useCappedPreviewSize(
+    () => ({ width: outputWidth, height: outputHeight }),
+    () => !fluidCanvas.isFluid
+  );
 
   let canvas = $state<HTMLCanvasElement>();
   let entry = $state<Awaited<ReturnType<typeof pixiDomManager.register>>>();
@@ -65,7 +69,7 @@
   let previewWidth = $derived(previewSize.width);
   let previewHeight = $derived(previewSize.height);
 
-  const fluidCanvas = useFluidCanvas({
+  fluidCanvas = useFluidCanvas({
     getNodeId: () => nodeId,
     getData: () => data,
     getNodeSize: () => ({ width: nodeWidth, height: nodeHeight }),

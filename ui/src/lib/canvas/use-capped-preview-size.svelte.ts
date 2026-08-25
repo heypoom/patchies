@@ -8,11 +8,21 @@ interface CanvasSize {
 export const getCappedPreviewSize = ({ width, height }: CanvasSize) =>
   capPreviewSize(width / PREVIEW_SCALE_FACTOR, height / PREVIEW_SCALE_FACTOR);
 
+export const getUncappedPreviewSize = ({ width, height }: CanvasSize): [number, number] => [
+  width / PREVIEW_SCALE_FACTOR,
+  height / PREVIEW_SCALE_FACTOR
+];
+
 /**
- * Derive the capped editor-preview dimensions for an output-resolution canvas.
+ * Derive editor-preview dimensions for an output-resolution canvas. Fixed
+ * previews are capped, while fluid previews match their node dimensions.
  */
-export function useCappedPreviewSize(getCanvasSize: () => CanvasSize) {
-  const previewSize = $derived.by(() => getCappedPreviewSize(getCanvasSize()));
+export function useCappedPreviewSize(getCanvasSize: () => CanvasSize, shouldCap = () => true) {
+  const previewSize = $derived.by(() => {
+    const canvasSize = getCanvasSize();
+
+    return shouldCap() ? getCappedPreviewSize(canvasSize) : getUncappedPreviewSize(canvasSize);
+  });
 
   return {
     get width() {
