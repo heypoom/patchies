@@ -30,6 +30,13 @@ export type PatchSaveFormat = {
   settings?: PatchSettings;
 };
 
+/**
+ * Runtime typed arrays can contain large, reproducible data such as audio curves.
+ * They are not valid patch-state values and serialize as enormous numeric-keyed objects.
+ */
+export const stringifyPatch = (patch: PatchSaveFormat): string =>
+  JSON.stringify(patch, (_key, value) => (ArrayBuffer.isView(value) ? undefined : value));
+
 export function serializePatch({
   name,
   nodes,
@@ -67,5 +74,5 @@ export function serializePatch({
       : {})
   };
 
-  return JSON.stringify(patch);
+  return stringifyPatch(patch);
 }
