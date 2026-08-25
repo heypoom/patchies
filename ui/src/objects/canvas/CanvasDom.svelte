@@ -614,6 +614,7 @@
 
   onDestroy(() => {
     expandController?.exit();
+
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
     }

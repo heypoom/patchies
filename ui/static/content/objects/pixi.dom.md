@@ -98,6 +98,12 @@ onCanvasResize(({ width, height }) => {
 the same behavior as [canvas.dom](/docs/objects/canvas.dom#resizable-widgets).
 While fluid mode is active, `setCanvasSize()` is ignored.
 
+## Focused Interactive View
+
+Open the node overflow menu and choose **Expand** to focus the live Pixi canvas.
+Your scene keeps receiving Pixi pointer events while Patchies hides the rest of
+the editor. Use **Exit surface** or `Shift+Esc` to return to the patch.
+
 ## Video Output
 
 `pixi.dom` keeps its video output disabled by default. Copying its canvas into

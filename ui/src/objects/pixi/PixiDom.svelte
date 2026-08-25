@@ -19,6 +19,8 @@
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useNodeDataTracker } from '$lib/history';
+  import { CanvasDomExpandController } from '$lib/canvas/CanvasDomExpandController';
+  import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
   import { pixiDomManager } from '$objects/pixi/PixiDomManager';
@@ -53,7 +55,7 @@
     height?: number;
   } = $props();
 
-  const { updateNode, updateNodeData } = useSvelteFlow();
+  const { updateNode, updateNodeData, getNodes } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   const glSystem = GLSystem.getInstance();
@@ -71,6 +73,7 @@
   let draw: ((time: number) => void) | null = null;
   let editorReady = $state(false);
   let videoOutputEnabled = $state(false);
+  let isExpanded = $state(false);
   let runRevision = 0;
   let destroyed = false;
   let outputWidth = $state($globalOutputWidth);
@@ -78,6 +81,18 @@
 
   let previewWidth = $derived(previewSize.width);
   let previewHeight = $derived(previewSize.height);
+
+  let expandController: CanvasDomExpandController | null = null;
+
+  const expandedPreviewPortalTarget = $derived(
+    isExpanded && typeof document !== 'undefined' ? SurfaceOverlay.getInstance().customHost : null
+  );
+
+  const canvasDisplayStyle = $derived(
+    isExpanded
+      ? 'width:auto;height:auto;max-width:100vw;max-height:100vh;'
+      : `width: ${previewWidth}px; height: ${previewHeight}px;`
+  );
 
   fluidCanvas = useFluidCanvas({
     getNodeId: () => nodeId,
@@ -221,6 +236,16 @@
   onMount(() => {
     glSystem.upsertNode(nodeId, 'img', {});
 
+    expandController = new CanvasDomExpandController({
+      nodeId,
+      getNodes,
+      overlay: SurfaceOverlay.getInstance(),
+      onActiveChange: (active) => {
+        isExpanded = active;
+      },
+      focusPreview: () => canvas?.focus()
+    });
+
     async function initialize() {
       if (!canvas) return;
 
@@ -261,11 +286,23 @@
   onDestroy(() => {
     destroyed = true;
     runRevision += 1;
+
+    expandController?.exit();
     fluidCanvas.reset();
 
     pixiDomManager.unregister(nodeId);
     glSystem.removeNode(nodeId);
   });
+
+  function toggleExpandedCanvas() {
+    if (!expandController) return;
+
+    if (expandController.isActive) {
+      expandController.exit();
+    } else {
+      expandController.enter();
+    }
+  }
 </script>
 
 <div class="relative">
@@ -303,7 +340,11 @@
     paused={data.paused}
     showPauseButton={true}
     bind:previewCanvas={canvas}
-    style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+    tabindex={0}
+    style={canvasDisplayStyle}
+    onCustomExpandToggle={toggleExpandedCanvas}
+    customExpanded={isExpanded}
+    previewPortalTarget={expandedPreviewPortalTarget}
     {selected}
     {editorReady}
     hideBorder={resizeControlsVisible}
