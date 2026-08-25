@@ -21,7 +21,6 @@ fullscreen. Press **Shift+Esc** or send `{ type: 'collapse' }` to exit.
 ## Getting Started
 
 ```javascript
-noOutput();
 setDrawMode('interact');
 
 function draw() {
@@ -142,7 +141,6 @@ canvas updates:
 
 ```javascript
 setDrawMode('manual');
-noOutput();
 
 let dot = { x: 0.5, y: 0.5 };
 let dragging = false
@@ -200,7 +198,7 @@ plus:
 - `setMouseForwarding({ enabled, only, except })` — enable/disable or filter forwarded mouse events by node ID
 - `expandSurface()` / `collapseSurface()` — enter/exit fullscreen
 - `hideExitButton()` — hide the "Exit surface (Shift+Esc)" badge
-- `noOutput()` — hide video output port
+- `setVideoOutput(true)` — enables the video output port, which is disabled by default
 
 ## See Also
 

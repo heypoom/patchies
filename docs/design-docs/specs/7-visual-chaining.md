@@ -25,6 +25,14 @@ To clarify, these video inlets and outlets are only applicable to the video obje
 
 The video outlet should not take regular messages. It is purely used as a marker that the object will be used as a video source, and to construct a graph of video sources.
 
+### Explicit video output control
+
+JavaScript visual objects expose `setVideoOutput(enabled)` to control whether their video outlet is available. Main-thread renderers (`p5`, `canvas.dom`, `textmode.dom`, `three.dom`, `pixi.dom`, and `surface`) default to disabled video output because copying their canvases into the render pipeline has a CPU-to-GPU cost. Their code must call `setVideoOutput(true)` to opt in to video chaining.
+
+Worker renderers (`canvas`, `regl`, `textmode`, and `three`) keep video output enabled by default. They can call `setVideoOutput(false)` when they do not need a video outlet.
+
+The previous output-disabling helper is removed without a compatibility alias or saved-patch migration.
+
 Let's add a `fromCanvas` method to each of the objects. It should conform to the format of the object. For example, `fromCanvas(s0)` in Hydra, and `fromCanvas() -> p5.MediaElement` in P5.js.
 
 From a user's perspective, here is how to consume the inlet video source in Hydra.js

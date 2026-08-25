@@ -290,11 +290,11 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'noInteract()'
   },
   {
-    label: 'noOutput',
+    label: 'setVideoOutput',
     type: 'function',
-    detail: '() => void',
-    info: 'Hide the video output port in canvas nodes',
-    apply: 'noOutput()'
+    detail: '(enabled: boolean) => void',
+    info: 'Enable or disable the video output port. Main-thread visual nodes default to disabled.',
+    apply: 'setVideoOutput(true)'
   },
   {
     label: 'createSurfaceCanvas',
@@ -542,7 +542,7 @@ const topLevelOnlyFunctions = new Set([
   'noDrag',
   'showAudioInput',
   'noInteract',
-  'noOutput',
+  'setVideoOutput',
   'noPan',
   'noWheel',
   'noBorder',
@@ -657,7 +657,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   noInteract: MOUSE_INTERACTION_JS_NODES,
   createSurfaceCanvas: ['p5'],
   setMouseForwarding: ['surface', 'p5'],
-  noOutput: [
+  setVideoOutput: [
     'p5',
     'canvas',
     'canvas.dom',

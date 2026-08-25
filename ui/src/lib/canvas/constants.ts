@@ -229,7 +229,6 @@ endin
 schedule("Main", 0, 0, 0)`;
 
 export const DEFAULT_SURFACE_CODE = `setPortCount(1, 1)
-noOutput()
 setDrawMode('interact')
 
 // x, y are normalized 0–1 coords; width/height are window dimensions

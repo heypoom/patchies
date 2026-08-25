@@ -99,7 +99,7 @@
   let dragEnabled = $state(true);
   let panEnabled = $state(true);
   let wheelEnabled = $state(true);
-  let videoOutputEnabled = $state(true);
+  let videoOutputEnabled = $state(false);
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
   let pausedCallback: FrameRequestCallback | null = null;
@@ -403,6 +403,7 @@
 
   async function sendBitmap() {
     if (!canvas) return;
+    if (!videoOutputEnabled) return;
     if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
 
     await glSystem.setBitmapSource(nodeId, canvas);
@@ -457,7 +458,7 @@
     dragEnabled = true;
     panEnabled = true;
     wheelEnabled = true;
-    videoOutputEnabled = true;
+    videoOutputEnabled = false;
     fluidCanvas.reset();
 
     updateNodeData(nodeId, getBorderResetDataForRun(data));
@@ -522,8 +523,8 @@
           noBorder: () => {
             updateNodeData(nodeId, { noBorder: true });
           },
-          noOutput: () => {
-            videoOutputEnabled = false;
+          setVideoOutput: (enabled: boolean) => {
+            videoOutputEnabled = enabled;
             updateNodeInternals(nodeId);
           },
           setCanvasSize: fluidCanvas.setFixedCanvasSize,

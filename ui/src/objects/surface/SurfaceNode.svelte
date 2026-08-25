@@ -87,7 +87,7 @@
   let dragEnabled = $state(false);
   let panEnabled = $state(true);
   let wheelEnabled = $state(true);
-  let videoOutputEnabled = $derived(data.videoOutput ?? true);
+  let videoOutputEnabled = $derived(data.videoOutput ?? false);
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
   let pausedCallback: FrameRequestCallback | null = null;
@@ -514,7 +514,7 @@
     panEnabled = true;
     wheelEnabled = true;
 
-    updateNodeData(nodeId, { videoOutput: true });
+    updateNodeData(nodeId, { videoOutput: false });
 
     drawMode = 'always';
     pointerCallback = null;
@@ -607,8 +607,8 @@
             panEnabled = false;
             wheelEnabled = false;
           },
-          noOutput: () => {
-            updateNodeData(nodeId, { videoOutput: false });
+          setVideoOutput: (enabled: boolean) => {
+            updateNodeData(nodeId, { videoOutput: enabled });
             updateNodeInternals(nodeId);
           }
         }

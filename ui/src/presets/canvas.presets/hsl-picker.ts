@@ -1,7 +1,6 @@
 export const HSL_PICKER_JS = `const [width, height] = [700, 800]
 
 noDrag();
-noOutput();
 setCanvasSize(width, height);
 setPortCount(1, 1);
 setTitle('HSL Picker');

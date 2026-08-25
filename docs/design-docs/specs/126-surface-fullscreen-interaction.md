@@ -94,11 +94,11 @@ redraw(); // trigger one draw pass (useful in manual mode)
 ### Video Output
 
 ```js
-noOutput(); // disable CPU→GPU texture copy (default: enabled, same as canvas.dom)
+setVideoOutput(true); // opt in to CPU→GPU texture copying
 ```
 
-CPU→GPU copy is expensive. Call `noOutput()` if you don't need to composite the overlay
-into the FBO pipeline.
+CPU→GPU copy is expensive, so video output is disabled by default. Call
+`setVideoOutput(true)` only when you need to composite the overlay into the FBO pipeline.
 
 ### Surface Expansion
 
@@ -184,7 +184,7 @@ arguments to restore the default "all mouse-aware render nodes" behavior.
 | --------- | ------- | ---------------------------------------------------------------------------- |
 | `pointer` | message | `{ x, y, pressure, buttons, type }` on every pointer event                   |
 | `touch`   | message | `[{ x, y, pressure, id }, ...]` on every touch event                         |
-| `video`   | video   | Overlay canvas as FBO texture (only present when `noOutput()` is NOT called) |
+| `video`   | video   | Overlay canvas as FBO texture (only present after `setVideoOutput(true)`) |
 
 ### Other APIs (inherited from canvas.dom)
 
@@ -225,7 +225,6 @@ onPointer((e) => {
 // Flower blooms performance: send pointer position as messages,
 // receive bloom regions back from a JS node
 setDrawMode("interact");
-noOutput();
 
 onPointer((e) => {
   if (e.type === "down") send(0, { x: e.x, y: e.y });
@@ -269,7 +268,7 @@ Based on `CanvasDom.svelte` with these differences:
 - `onPointer()` / `onTouch()` added to `extraContext`
 - CodeMirror Patchies API completions should expose the documented surface JavaScript API:
   `onPointer`, `onTouch`, `setDrawMode`, `redraw`, `expandSurface`, `collapseSurface`,
-  `hideExitButton`, `onKeyDown`, `onKeyUp`, `setMouseForwarding`, and `noOutput`.
+  `hideExitButton`, `onKeyDown`, `onKeyUp`, `setMouseForwarding`, and `setVideoOutput`.
 - `pointer` and `touch` message outlets added
 - On mount: calls `SurfaceOverlay.activate(nodeId)`
 - On destroy: calls `SurfaceOverlay.deactivate(nodeId)`

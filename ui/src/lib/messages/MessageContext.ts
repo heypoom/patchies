@@ -62,8 +62,8 @@ export interface UserFnRunContext {
   /** Hides Patchies border, selected glow, and floating preview controls for this node. */
   noBorder?: () => void;
 
-  /** Hides the video output port in canvas/p5 nodes. */
-  noOutput?: () => void;
+  /** Enables or disables the video output port in visual JavaScript nodes. */
+  setVideoOutput?: (enabled: boolean) => void;
 
   /** Get audio analysis data */
   fft?: (options: AudioAnalysisProps) => FFTAnalysis;

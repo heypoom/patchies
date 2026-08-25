@@ -70,7 +70,7 @@
   let entry = $state<Awaited<ReturnType<typeof pixiDomManager.register>>>();
   let draw: ((time: number) => void) | null = null;
   let editorReady = $state(false);
-  let videoOutputEnabled = $state(true);
+  let videoOutputEnabled = $state(false);
   let runRevision = 0;
   let destroyed = false;
   let outputWidth = $state($globalOutputWidth);
@@ -149,7 +149,7 @@
     let runStage: Container | null = null;
 
     draw = null;
-    setVideoOutputEnabled(true);
+    setVideoOutputEnabled(false);
     fluidCanvas.reset();
 
     setCanvasDimensions({
@@ -178,7 +178,7 @@
         'setFluidSize',
         'onCanvasResize',
         'loadExtensions',
-        'noOutput',
+        'setVideoOutput',
         `${data.code}\nreturn typeof draw === 'function' ? draw : null;`
       );
 
@@ -193,7 +193,7 @@
         fluidCanvas.setFluidSize,
         fluidCanvas.onCanvasResize,
         pixiDomManager.loadExtensions.bind(pixiDomManager),
-        () => setVideoOutputEnabled(false)
+        (enabled: boolean) => setVideoOutputEnabled(enabled)
       );
 
       if (revision !== runRevision) {
@@ -239,6 +239,7 @@
           }
         },
         () => {
+          if (!videoOutputEnabled) return;
           if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
 
           glSystem.setBitmapSource(nodeId, activeCanvas);

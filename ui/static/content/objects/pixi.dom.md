@@ -100,13 +100,15 @@ While fluid mode is active, `setCanvasSize()` is ignored.
 
 ## Video Output
 
-`pixi.dom` copies its canvas into the video pipeline only when it feeds another
-video node. The copy is slower than worker-side [pixi](/docs/objects/pixi), so
-the default program calls `noOutput()` and hides the video output port.
+`pixi.dom` keeps its video output disabled by default. Copying its canvas into
+the video pipeline is slower than worker-side [pixi](/docs/objects/pixi), so
+enable the output only when the scene feeds another video node.
 
-Remove `noOutput()` when you want to chain the scene into another visual:
+Call `setVideoOutput(true)` when you want to chain the scene into another visual:
 
 ```javascript
+setVideoOutput(true)
+
 const { Graphics } = PIXI
 
 const badge = new Graphics()
@@ -118,7 +120,7 @@ stage.addChild(badge)
 
 ## Special Functions
 
-- `noOutput()` — hides the video output port
+- `setVideoOutput(true)` — enables the video output port, which is disabled by default
 - `setCanvasSize(width, height)` — sets a fixed canvas resolution
 - `setFluidSize(options?)` — makes the canvas follow the node size
 - `onCanvasResize(callback)` — runs a callback after the canvas is resized

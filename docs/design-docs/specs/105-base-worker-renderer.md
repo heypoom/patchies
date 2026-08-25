@@ -181,7 +181,7 @@ export abstract class BaseWorkerRenderer<
       noPan: () => this.setInteraction('pan', false),
       noWheel: () => this.setInteraction('wheel', false),
       noInteract: () => this.setInteraction('interact', false),
-      noOutput: () => this.setVideoOutputEnabled(false),
+      setVideoOutput: (enabled) => this.setVideoOutputEnabled(enabled),
       clock: this.renderer.createWorkerClock(),
       settings: this.settingsProxy!.settings,
     }

@@ -77,7 +77,7 @@
   let dragEnabled = $state(true);
   let panEnabled = $state(true);
   let wheelEnabled = $state(true);
-  let videoOutputEnabled = $state(true);
+  let videoOutputEnabled = $state(false);
   let editorReady = $state(false);
 
   // Lazy-loaded Three.js
@@ -354,7 +354,7 @@
     dragEnabled = true;
     panEnabled = true;
     wheelEnabled = true;
-    videoOutputEnabled = true;
+    videoOutputEnabled = false;
 
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
@@ -406,8 +406,8 @@
           width: outputWidth,
           height: outputHeight,
           mouse,
-          noOutput: () => {
-            videoOutputEnabled = false;
+          setVideoOutput: (enabled: boolean) => {
+            videoOutputEnabled = enabled;
             updateNodeInternals(nodeId);
           },
           setCanvasSize,

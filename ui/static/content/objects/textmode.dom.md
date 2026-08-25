@@ -59,7 +59,7 @@ See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available 
 
 Textmode-specific:
 
-- `noOutput()` - hides video output port
+- `setVideoOutput(true)` - enables the video output port, which is disabled by default
 - `setHidePorts(true | false)` - hide/show all ports
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see [Canvas Interaction](/docs/canvas-interaction)
 - `fft()` - audio analysis with low latency

@@ -116,6 +116,26 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'setVideoF')).not.toContain('setVideoFrame');
   });
 
+  it.each([
+    'p5',
+    'canvas',
+    'canvas.dom',
+    'regl',
+    'textmode',
+    'textmode.dom',
+    'three',
+    'three.dom',
+    'pixi.dom',
+    'surface'
+  ])('exposes setVideoOutput instead of the removed output helper in %s', (nodeType) => {
+    expect(getCompletionLabels(nodeType, 'setVideoO')).toContain('setVideoOutput');
+    expect(getCompletionLabels(nodeType, 'noO')).not.toContain('noOutput');
+  });
+
+  it('completes setVideoOutput with explicit opt-in', () => {
+    expect(getCompletion('p5', 'setVideoO', 'setVideoOutput')?.apply).toBe('setVideoOutput(true)');
+  });
+
   it('shows FFTAnalysis member completions after fft()', () => {
     expect(getCompletionLabels('hydra', 'fft().')).toEqual(
       expect.arrayContaining(['a', 'f', 'sum', 'avg', 'centroid', 'rms', 'getEnergy'])
@@ -161,7 +181,7 @@ describe('patchies completions', () => {
         'expandSurface',
         'collapseSurface',
         'hideExitButton',
-        'noOutput'
+        'setVideoOutput'
       ])
     );
 
@@ -215,7 +235,7 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('pixi.dom', 'setF')).toContain('setFluidSize');
 
     expect(getCompletionLabels('pixi.dom', 'onCanvasR')).toContain('onCanvasResize');
-    expect(getCompletionLabels('pixi.dom', 'noO')).toContain('noOutput');
+    expect(getCompletionLabels('pixi.dom', 'setVideoO')).toContain('setVideoOutput');
     expect(getCompletionLabels('dom', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('vue', 'setF')).toContain('setFluidSize');
     expect(getCompletionLabels('dom', 'onR')).toContain('onResize');

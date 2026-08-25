@@ -126,7 +126,7 @@ onWheel(({ deltaY }) => {
 See the [Patchies JavaScript Runner](/docs/javascript-runner) for all
 available functions.
 
-- `noOutput()` - hides video output port
+- `setVideoOutput(false)` - disables the video output port, which is enabled by default
 - `setHidePorts(true | false)` - hide/show all ports
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see [Canvas Interaction](/docs/canvas-interaction)
 - `fft()` - audio analysis

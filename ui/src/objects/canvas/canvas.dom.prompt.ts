@@ -9,7 +9,7 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - width, height, mouse: {x, y, down, buttons}
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noBorder() - Hide Patchies border and selected glow
-- noOutput() - Hide video output (call this when the sketch does not feed video to other nodes)
+- setVideoOutput(enabled) - Enable or disable video output. It is disabled by default; call setVideoOutput(true) when the sketch feeds another video node.
 - setCanvasSize(width, height) - Use a fixed logical canvas size
 - setFluidSize({ showResizer?, resize?, keepAspectRatio?, initialSize? }) - Use a resizable canvas. resize is 'horizontal', 'vertical', or 'both' (default); keepAspectRatio preserves the initial ratio; initialSize sets the initial logical canvas size, e.g. { width: 800, height: 600 }. Users can enable or disable resizing from the overflow menu.
 - onCanvasResize(({ width, height }) => {}) - Redraw a non-animated fluid widget after a resize; it runs at most once per animation frame
@@ -18,7 +18,7 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
 
 **Default behaviors to apply unless there's a reason not to:**
-- Call noOutput() by default unless the sketch is explicitly meant to output video to another node.
+- Call setVideoOutput(true) only when the sketch is explicitly meant to output video to another node.
 - Call noDrag() if the sketch uses mouse.down, mouse.x/y, or any click/drag interaction.
 - Call noWheel() if the sketch uses scroll or wheel interaction.
 - Call setPortCount(1, 0) if the sketch only needs to receive messages (inlet) and does not send any output messages.
@@ -41,7 +41,7 @@ Example - XY pad:
 {
   "type": "canvas.dom",
   "data": {
-    "code": "noDrag(); noOutput(); function draw() { ctx.fillStyle = '#080809'; ctx.fillRect(0,0,width,height); ctx.fillStyle = mouse.down ? '#4ade80' : '#71717a'; ctx.arc(mouse.x, mouse.y, 12, 0, Math.PI*2); ctx.fill(); if (mouse.down) send([mouse.x/width, mouse.y/height]); requestAnimationFrame(draw); } draw();"
+    "code": "noDrag(); function draw() { ctx.fillStyle = '#080809'; ctx.fillRect(0,0,width,height); ctx.fillStyle = mouse.down ? '#4ade80' : '#71717a'; ctx.arc(mouse.x, mouse.y, 12, 0, Math.PI*2); ctx.fill(); if (mouse.down) send([mouse.x/width, mouse.y/height]); requestAnimationFrame(draw); } draw();"
   }
 }
 \`\`\`

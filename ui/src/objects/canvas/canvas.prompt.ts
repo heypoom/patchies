@@ -10,7 +10,7 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 - ctx: 2D canvas context (ctx.fillRect, ctx.arc, etc.)
 - width, height: canvas dimensions
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
-- noOutput() - Hide video output
+- setVideoOutput(enabled) - Enable or disable video output (enabled by default)
 - setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
 
 **Default behaviors to apply unless there's a reason not to:**
