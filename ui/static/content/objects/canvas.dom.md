@@ -125,7 +125,7 @@ In fluid mode, `setCanvasSize()` is ignored and reports a one-time console warni
 
 All [Patchies JavaScript Runner](/docs/javascript-runner) functions are available, plus:
 
-- `noOutput()` - hide video output port
+- `setVideoOutput(true)` - enables the video output port, which is disabled by default
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see [Canvas Interaction](/docs/canvas-interaction)
 - `noBorder()` - hides Patchies' border and selected glow until the call is removed and the node runs again
 - `fft()` - audio analysis with low latency

@@ -15,14 +15,14 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 - redraw() — trigger a draw in manual mode
 - setMouseForwarding({ enabled?: boolean, only?: string[], except?: string[] }) — enable/disable or restrict forwarded mouse events by node ID
 - expandSurface() / collapseSurface() — enter/exit fullscreen from code
-- noOutput() — hide video output port
+- setVideoOutput(enabled) — enable or disable video output. It is disabled by default; call setVideoOutput(true) when the surface feeds another video node.
 
 **Coordinate system:**
 - All pointer/touch coords are normalized 0–1
 - Multiply by width/height to get pixel coordinates: x * width, y * height
 
 **Default behaviors to apply unless there's a reason not to:**
-- Call noOutput() unless the sketch explicitly outputs video to another node.
+- Call setVideoOutput(true) only when the sketch explicitly outputs video to another node.
 - Use setDrawMode('interact') for sketches that only update on input (saves CPU).
 - Use setMouseForwarding() when only some mouse-aware render nodes should receive forwarded pointer/wheel events.
 - Use setMouseForwarding({ enabled: false }) or setMouseForwarding({ only: [] }) to disable mouse forwarding entirely.
@@ -43,7 +43,7 @@ Example - pointer drawing:
 {
   "type": "surface",
   "data": {
-    "code": "noOutput(); setDrawMode('interact'); function draw() { ctx.clearRect(0, 0, width, height); if (!mouse.down) return; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.arc(mouse.x * width, mouse.y * height, 24, 0, Math.PI * 2); ctx.fill(); }"
+    "code": "setDrawMode('interact'); function draw() { ctx.clearRect(0, 0, width, height); if (!mouse.down) return; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.arc(mouse.x * width, mouse.y * height, 24, 0, Math.PI * 2); ctx.fill(); }"
   }
 }
 \`\`\`
@@ -53,7 +53,7 @@ Example - manual redraw from touch:
 {
   "type": "surface",
   "data": {
-    "code": "noOutput(); setDrawMode('manual'); let touches = []; onTouch((next) => { touches = next; redraw(); }); function draw() { ctx.clearRect(0, 0, width, height); for (const t of touches) { ctx.fillStyle = '#22d3ee'; ctx.beginPath(); ctx.arc(t.x * width, t.y * height, 30 * (t.pressure || 0.5), 0, Math.PI * 2); ctx.fill(); } }"
+    "code": "setDrawMode('manual'); let touches = []; onTouch((next) => { touches = next; redraw(); }); function draw() { ctx.clearRect(0, 0, width, height); for (const t of touches) { ctx.fillStyle = '#22d3ee'; ctx.beginPath(); ctx.arc(t.x * width, t.y * height, 30 * (t.pressure || 0.5), 0, Math.PI * 2); ctx.fill(); } }"
   }
 }
 \`\`\``;

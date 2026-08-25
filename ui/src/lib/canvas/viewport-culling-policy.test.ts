@@ -46,7 +46,7 @@ describe('getViewportPersistentDomNodeIds', () => {
   });
 
   it('uses the video edge rather than inspecting p5 code', () => {
-    const node = { ...p5Node(), data: { code: 'noOutput()' } };
+    const node = { ...p5Node(), data: { code: 'setVideoOutput(false)' } };
 
     expect(getViewportPersistentDomNodeIds([node], [videoEdge], true)).toEqual(new Set(['p5-1']));
   });

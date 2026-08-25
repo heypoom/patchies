@@ -107,7 +107,8 @@ Following the pattern established by canvas and three nodes:
 | `mouse`                                                          | `{ x, y }`                              | Mouse position (normalized 0-1)          |
 | `clock`                                                          | `ClockState`                            | Transport timing info                    |
 | `settings`                                                       | Settings proxy                          | Node settings                            |
-| `noDrag()`, `noPan()`, `noWheel()`, `noInteract()`, `noOutput()` | Interaction control                     |
+| `noDrag()`, `noPan()`, `noWheel()`, `noInteract()`              | Interaction control                     |
+| `setVideoOutput(enabled)`                                       | Toggle the video output port             |
 
 ### Framebuffer Binding
 

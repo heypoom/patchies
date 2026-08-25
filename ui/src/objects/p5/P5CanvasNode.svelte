@@ -86,7 +86,7 @@
   let enableDrag = $state(true);
   let enablePan = $state(true);
   let enableWheel = $state(true);
-  let videoOutputEnabled = $state(true);
+  let videoOutputEnabled = $state(false);
   let errorMessage = $state<string | null>(null);
   let editorReady = $state(false);
 
@@ -271,6 +271,10 @@
   };
 
   function setVideoOutputEnabled(enabled: boolean) {
+    if (p5Manager) {
+      p5Manager.shouldSendBitmap = enabled && !surfaceMode.isExpanded;
+    }
+
     if (videoOutputEnabled === enabled) return;
 
     videoOutputEnabled = enabled;
@@ -326,7 +330,7 @@
 
     fluidCanvas.reset();
 
-    let nextVideoOutputEnabled = true;
+    let nextVideoOutputEnabled = false;
     let nextSurfaceModeEnabled = false;
 
     warnedAboutFluidSurfaceMode = false;
@@ -345,7 +349,7 @@
     if (p5Manager && messageContext) {
       try {
         settingsManager.clearCallbacks();
-        p5Manager.shouldSendBitmap = true;
+        p5Manager.shouldSendBitmap = false;
         surfaceMode.setMouseForwarding();
 
         updateNodeData(nodeId, getBorderResetDataForRun(data));
@@ -368,9 +372,9 @@
               enablePan = false;
               enableWheel = false;
             },
-            noOutput: () => {
-              nextVideoOutputEnabled = false;
-              setVideoOutputEnabled(false);
+            setVideoOutput: (enabled: boolean) => {
+              nextVideoOutputEnabled = enabled;
+              setVideoOutputEnabled(enabled);
             },
             setPortCount,
             setTitle: (title: string) => {
@@ -449,7 +453,7 @@
           collapseSurface: surfaceMode.exit
         });
 
-        p5Manager.shouldSendBitmap = !nextSurfaceModeEnabled;
+        p5Manager.shouldSendBitmap = nextVideoOutputEnabled && !nextSurfaceModeEnabled;
 
         if (data.surfaceMode !== nextSurfaceModeEnabled) {
           updateNodeData(nodeId, { surfaceMode: nextSurfaceModeEnabled });

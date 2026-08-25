@@ -277,7 +277,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       noPan: () => this.setInteraction('pan', false),
       noWheel: () => this.setInteraction('wheel', false),
       noInteract: () => this.setInteraction('interact', false),
-      noOutput: () => this.setVideoOutputEnabled(false),
+      setVideoOutput: (enabled: boolean) => this.setVideoOutputEnabled(enabled),
       setPrimaryButton: this.setPrimaryButton.bind(this),
       clock: this.renderer.createWorkerClock(),
       settings: this.settingsProxy!.settings

@@ -34,7 +34,7 @@ See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available 
 
 Canvas-specific functions:
 
-- `noOutput()` - hides the video output port
+- `setVideoOutput(false)` - disables the video output port, which is enabled by default
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see [Canvas Interaction](/docs/canvas-interaction)
 - `fft()` - audio analysis (note: high latency in offscreen mode)
 

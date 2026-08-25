@@ -25,9 +25,9 @@ the copied video-output bitmap. Its preview uses the shared capped preview
 dimensions so main-thread and render-worker nodes have the same default size.
 
 The first DOM version exposes Pixi's normal canvas, stage, renderer, optional
-`draw(time)` callback, sizing APIs, and `noOutput()`. It supports one copied
-video output. `noOutput()` hides that output, and the default program calls it
-to avoid an unnecessary CPU-to-GPU canvas copy. Patchies message APIs,
+`draw(time)` callback, sizing APIs, and `setVideoOutput(enabled)`. It supports
+one copied video output, disabled by default to avoid an unnecessary CPU-to-GPU
+canvas copy. `setVideoOutput(true)` enables it. Patchies message APIs,
 settings, keyboard helpers, and dynamic ports can be added once the core event
 and lifecycle path has settled.
 

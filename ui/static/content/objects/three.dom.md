@@ -61,7 +61,7 @@ keyboard events or DOM APIs.
 
 See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available functions.
 
-- `noOutput()` - hides video output port
+- `setVideoOutput(true)` - enables the video output port, which is disabled by default
 - `setHidePorts(true | false)` - hide/show all ports
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see [Canvas Interaction](/docs/canvas-interaction)
 - `noBorder()` - hides Patchies' border and selected glow until the call is removed and the node runs again

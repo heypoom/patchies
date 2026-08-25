@@ -1,5 +1,4 @@
-export const DRAWING_SURFACE_JS = `noOutput();
-setDrawMode('interact');
+export const DRAWING_SURFACE_JS = `setDrawMode('interact');
 setMouseForwarding({ enabled: false });
 
 let lastX = 0;

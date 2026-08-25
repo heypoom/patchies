@@ -4,7 +4,6 @@ export const VIRTUAL_MIDI_KEYBOARD_JS = `// Piano Keyboard with Note-Specific Co
 // C/V: Transpose
 
 noDrag();
-noOutput();
 noBorder()
 
 setTitle('MIDI Keyboard');

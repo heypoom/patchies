@@ -5,9 +5,7 @@ const [defaultWidth, defaultHeight] = capPreviewSize(
   Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
 );
 
-export const DEFAULT_P5_CODE = `noOutput()
-
-const colors = ['#ff5ea0', '#66ccff', '#a78bfa']
+export const DEFAULT_P5_CODE = `const colors = ['#ff5ea0', '#66ccff', '#a78bfa']
 
 function setup() {
   createCanvas(${defaultWidth}, ${defaultHeight})
