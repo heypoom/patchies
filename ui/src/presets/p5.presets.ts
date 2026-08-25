@@ -4,7 +4,9 @@ const defaultWidth = Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR);
 
 const defaultHeight = Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR);
 
-const TRAFFIC_LIGHT_P5 = `const OFF = '#95a5a6'
+const TRAFFIC_LIGHT_P5 = `noBorder()
+
+const OFF = '#95a5a6'
 const W = 80
 const states = ['red', 'yellow', 'green']
 
@@ -186,7 +188,9 @@ function draw() {
   rect(10, 152-(rms*150), 181, (rms*150))
 }`;
 
-const TEXT_BANNER_P5 = `const txt = "hello, world!"
+const TEXT_BANNER_P5 = `noBorder()
+
+const txt = "hello, world!"
 
 function setup() {
   setFluidSize({ showResizer: false })

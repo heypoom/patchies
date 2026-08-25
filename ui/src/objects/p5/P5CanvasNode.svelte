@@ -574,7 +574,7 @@
               hideBorder: resizeControlsVisible,
               errorClass: 'border-red-500 [&>canvas]:rounded-[7px]',
               selectedClass: 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]',
-              idleClass: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
+              idleClass: 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',
               borderlessClass: 'border-transparent shadow-none [&>canvas]:rounded-md'
             })
           ]}
