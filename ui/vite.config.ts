@@ -127,10 +127,20 @@ export default defineConfig(() => ({
           }
         },
         {
-          // Pixi's WGSL modules use `source` as a default import binding.
-          // Current esbuild reads that as the module-source keyword while
-          // optimizing dependencies. The equivalent named-default form avoids
-          // that parser ambiguity without changing Pixi's runtime modules.
+          // Patchies uses Pixi's WebGL renderer. Avoid loading Pixi's WebGPU
+          // shader payloads while Vite prebundles its dependency graph.
+          name: 'pixi-wgsl-noop',
+          setup(build: import('esbuild').PluginBuild) {
+            build.onLoad({ filter: /node_modules\/pixi\.js\/.*\.wgsl\.mjs$/ }, () => ({
+              contents: 'export default "";',
+              loader: 'js'
+            }));
+          }
+        },
+        {
+          // Pixi's WGSL imports use `source` as the default binding. Current
+          // esbuild reads that as the module-source keyword while optimizing
+          // dependencies, so use an equivalent named-default import instead.
           name: 'pixi-wgsl-source-import',
           setup(build: import('esbuild').PluginBuild) {
             build.onLoad({ filter: /node_modules\/pixi\.js\/.*\.mjs$/ }, (args) => {
