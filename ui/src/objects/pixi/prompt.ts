@@ -37,19 +37,21 @@ PixiJS 8 on the main thread. Use it for interactive 2D graphics with native poin
 - renderer: managed Pixi renderer; do not call renderer.render()
 - loadExtensions(...names): await before using optional Pixi APIs, for example await loadExtensions('events', 'accessibility'). Use loadExtensions('all') for every extension.
 - setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs
+- noOutput(): hide the video output port when the scene does not feed another video node
 
 **Rules:**
 - Graphics is available by default.
 - Draw a shape before calling fill() or stroke(). For paths, chain moveTo()/lineTo()/arcTo() directly on Graphics; never call Graphics.path() without a GraphicsPath argument.
 - Define draw(time) for animation. Do not use requestAnimationFrame.
 - Use await loadExtensions('events') before adding Pixi pointer handlers.
+- Call noOutput() by default unless the scene explicitly outputs video to another node.
 
 Example:
 \`\`\`json
 {
   "type": "pixi.dom",
   "data": {
-    "code": "await loadExtensions('events')\n\nconst { Graphics } = PIXI\n\nconst button = new Graphics().circle(width / 2, height / 2, 72).fill(0x66ccff)\nbutton.eventMode = 'static'\nbutton.cursor = 'pointer'\nbutton.on('pointertap', () => button.tint = Math.random() * 0xffffff)\nstage.addChild(button)"
+    "code": "noOutput()\nawait loadExtensions('events')\n\nconst { Graphics } = PIXI\n\nconst button = new Graphics().circle(width / 2, height / 2, 72).fill(0x66ccff)\nbutton.eventMode = 'static'\nbutton.cursor = 'pointer'\nbutton.on('pointertap', () => button.tint = Math.random() * 0xffffff)\nstage.addChild(button)"
   }
 }
 \`\`\``;

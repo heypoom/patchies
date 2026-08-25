@@ -666,6 +666,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'pixi.dom',
     'surface'
   ],
   onKeyDown: ['canvas.dom', 'three.dom', 'surface'],

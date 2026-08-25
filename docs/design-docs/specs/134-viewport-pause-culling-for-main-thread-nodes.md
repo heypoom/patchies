@@ -45,6 +45,27 @@ The manager computes separate FBO and DOM viewport bounds, builds both visible s
 - a `pausedByViewport` set so nodes paused by the viewport are resumed on re-entry, while user-paused nodes stay paused;
 - `nodeDataCommit` and `nodeDataBatchCommit` handling so manual pause/unpause changes keep the viewport ownership ledger consistent.
 
+### Active DOM Video Output Exception
+
+Offscreen `p5`, `canvas.dom`, `pixi.dom`, `three.dom`, and `textmode.dom` nodes
+remain live when all of the following are true:
+
+- their `video-out-*` handle is connected;
+- global output is enabled, either through a `bg.out` connection or a background-output override. This remains true when output is routed to the secondary screen rather than the background canvas.
+
+A supported DOM renderer that is directly selected as the output override also
+remains live without an outgoing video edge.
+
+`getViewportPersistentDomNodeIds()` supplies those IDs to
+`ViewportCullingManager`; persistent IDs are treated as DOM-viewport-visible so
+the existing pause-ownership rules resume them when output becomes active and
+pause them again when it becomes inactive. Changes to the persistent ID set
+bypass the normal viewport-update throttle so an output activation takes effect
+immediately. The active override store also counts immediately, before the
+renderer has finished synchronizing its output state. The policy builds its set
+of video-edge sources once, then checks p5 membership against that set; it does
+not parse p5 code.
+
 ## DOM Renderer Contract
 
 DOM-backed renderers that opt into viewport pause culling must:
@@ -109,6 +130,7 @@ Before enabling that optimization broadly:
 ## Success Criteria
 
 - Offscreen `p5`, `canvas.dom`, `textmode.dom`, and `three.dom` nodes stop their main-thread render loops.
+- A DOM renderer with a connected video output remains running while global output is enabled.
 - Returning those nodes to the viewport resumes only nodes that the viewport paused.
 - User-paused nodes stay paused when moved offscreen and back onscreen.
 - Manual pause/unpause while offscreen does not leave expensive render loops running invisibly.

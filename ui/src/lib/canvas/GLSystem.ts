@@ -26,7 +26,11 @@ import {
   feedbackEdgeIds
 } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
-import { isBackgroundOutputCanvasEnabled, outputTarget } from '../../stores/canvas.store';
+import {
+  isBackgroundOutputCanvasEnabled,
+  isGlobalOutputEnabled,
+  outputTarget
+} from '../../stores/canvas.store';
 import { currentPatchId } from '../../stores/ui.store';
 import { renderFpsCap, showCookStats } from '../../stores/renderer.store';
 import { IpcSystem } from './IpcSystem';
@@ -769,6 +773,7 @@ export class GLSystem {
     const useBackground =
       this._outputTarget === 'background' || this.ipcSystem.outputWindow === null;
 
+    isGlobalOutputEnabled.set(outputEnabled);
     isBackgroundOutputCanvasEnabled.set(useBackground && outputEnabled);
 
     this.setOutputEnabled(outputEnabled);

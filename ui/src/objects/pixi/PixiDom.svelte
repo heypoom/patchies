@@ -6,7 +6,8 @@
     NodeResizer,
     NodeResizeControl,
     ResizeControlVariant,
-    useSvelteFlow
+    useSvelteFlow,
+    useUpdateNodeInternals
   } from '@xyflow/svelte';
 
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
@@ -53,6 +54,7 @@
   } = $props();
 
   const { updateNode, updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const glSystem = GLSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
@@ -68,6 +70,7 @@
   let entry = $state<Awaited<ReturnType<typeof pixiDomManager.register>>>();
   let draw: ((time: number) => void) | null = null;
   let editorReady = $state(false);
+  let videoOutputEnabled = $state(true);
   let runRevision = 0;
   let destroyed = false;
   let outputWidth = $state($globalOutputWidth);
@@ -102,6 +105,13 @@
     outputHeight = height;
 
     pixiDomManager.resize(nodeId, { width, height });
+  }
+
+  function setVideoOutputEnabled(enabled: boolean) {
+    if (videoOutputEnabled === enabled) return;
+
+    videoOutputEnabled = enabled;
+    updateNodeInternals(nodeId);
   }
 
   function togglePlayback() {
@@ -139,6 +149,7 @@
     let runStage: Container | null = null;
 
     draw = null;
+    setVideoOutputEnabled(true);
     fluidCanvas.reset();
 
     setCanvasDimensions({
@@ -167,6 +178,7 @@
         'setFluidSize',
         'onCanvasResize',
         'loadExtensions',
+        'noOutput',
         `${data.code}\nreturn typeof draw === 'function' ? draw : null;`
       );
 
@@ -180,7 +192,8 @@
         fluidCanvas.setFixedCanvasSize,
         fluidCanvas.setFluidSize,
         fluidCanvas.onCanvasResize,
-        pixiDomManager.loadExtensions.bind(pixiDomManager)
+        pixiDomManager.loadExtensions.bind(pixiDomManager),
+        () => setVideoOutputEnabled(false)
       );
 
       if (revision !== runRevision) {
@@ -297,14 +310,16 @@
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
   >
     {#snippet bottomHandle()}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleType: 'video', handleId: '0' }}
-        title="Video output"
-        total={1}
-        index={0}
-        {nodeId}
-      />
+      {#if videoOutputEnabled}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleType: 'video', handleId: '0' }}
+          title="Video output"
+          total={1}
+          index={0}
+          {nodeId}
+        />
+      {/if}
     {/snippet}
 
     {#snippet codeEditor()}
