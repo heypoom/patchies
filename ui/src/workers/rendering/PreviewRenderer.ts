@@ -69,6 +69,7 @@ export class PreviewRenderer {
       this.dirtyPreviewNodeIds.add(nodeId);
     } else if (!enabled) {
       this.dirtyPreviewNodeIds.delete(nodeId);
+
       this.clearPendingReadsForNode(nodeId);
     }
   }
@@ -81,9 +82,8 @@ export class PreviewRenderer {
     return this.previewState[nodeId] ?? false;
   }
 
-  hasPreviewState(nodeId: string): boolean {
-    return nodeId in this.previewState;
-  }
+  hasPreviewState = (nodeId: string): boolean =>
+    Object.prototype.hasOwnProperty.call(this.previewState, nodeId);
 
   getEnabledPreviews(): string[] {
     return Object.keys(this.previewState).filter((nodeId) => this.previewState[nodeId]);

@@ -64,6 +64,15 @@ describe('PreviewRenderer', () => {
     expect(gl.readPixels).toHaveBeenCalledTimes(1);
   });
 
+  it('does not treat inherited property names as preview state', () => {
+    const { service } = createPreviewService();
+    const renderer = new PreviewRenderer(service);
+
+    for (const nodeId of ['toString', 'constructor', '__proto__']) {
+      expect(renderer.hasPreviewState(nodeId)).toBe(false);
+    }
+  });
+
   it('keeps a cooked node eligible until its preview read starts', () => {
     const now = vi.spyOn(performance, 'now');
     now.mockReturnValue(1000);
