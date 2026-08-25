@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import type { RenderParams } from '$lib/rendering/types';
+
 import { PixiRenderer } from './pixiRenderer';
 
-type TestPixiRenderer = {
+interface TestPixiRenderer {
   renderFrame: PixiRenderer['renderFrame'];
   destroy: PixiRenderer['destroy'];
   pixi: {
@@ -27,14 +29,20 @@ type TestPixiRenderer = {
   blitTarget: ReturnType<typeof vi.fn>;
   mouseX: number;
   mouseY: number;
-};
+}
 
 const createRenderer = () => Object.create(PixiRenderer.prototype) as TestPixiRenderer;
 
 describe('PixiRenderer', () => {
   it('renders a static stage when user code does not define draw()', () => {
-    const renderer = createRenderer();
     const render = vi.fn();
+
+    const renderer = createRenderer();
+    renderer.stage = { destroy: vi.fn() };
+    renderer.target = { destroy: vi.fn() };
+    renderer.draw = null;
+    renderer.framebuffer = {};
+    renderer.blitTarget = vi.fn();
 
     renderer.pixi = {
       context: { extensions: {} },
@@ -42,38 +50,41 @@ describe('PixiRenderer', () => {
       render,
       resetState: vi.fn()
     };
-    renderer.stage = { destroy: vi.fn() };
-    renderer.target = { destroy: vi.fn() };
-    renderer.draw = null;
-    renderer.framebuffer = {};
+
+    renderer.renderFrame({
+      transportTime: 2,
+      mouseX: 10,
+      mouseY: 20
+    } as RenderParams);
+
     renderer.renderer = {
       transportTime: null,
       regl: { _refresh: vi.fn() },
       unregisterSettingsProxy: vi.fn(),
       jsRunner: { destroy: vi.fn() }
     };
-    renderer.blitTarget = vi.fn();
 
-    renderer.renderFrame({ transportTime: 2, mouseX: 10, mouseY: 20 } as RenderParams);
+    expect(renderer.blitTarget).toHaveBeenCalledTimes(1);
 
     expect(render).toHaveBeenCalledWith({
       container: renderer.stage,
       target: renderer.target,
       clear: true
     });
-    expect(renderer.blitTarget).toHaveBeenCalledTimes(1);
   });
 
   it('destroys Pixi resources without losing the shared WebGL context', () => {
     const renderer = createRenderer();
+
     const loseContext = vi.fn();
+    const settingsProxy = {};
+
     const pixi = {
       context: { extensions: { loseContext: { loseContext } } },
       render: vi.fn(),
       resetState: vi.fn(),
       destroy: vi.fn(() => pixi.context.extensions.loseContext?.loseContext())
     };
-    const settingsProxy = {};
 
     renderer.pixi = pixi;
     renderer.stage = { destroy: vi.fn() };
@@ -83,23 +94,25 @@ describe('PixiRenderer', () => {
     renderer.config = { code: '', nodeId: 'pixi-node' };
     renderer.framebuffer = {};
     renderer.settingsProxy = settingsProxy;
+    renderer.blitTarget = vi.fn();
+
     renderer.renderer = {
       transportTime: null,
       regl: { _refresh: vi.fn() },
       unregisterSettingsProxy: vi.fn(),
       jsRunner: { destroy: vi.fn() }
     };
-    renderer.blitTarget = vi.fn();
 
     renderer.destroy();
 
     expect(pixi.destroy).toHaveBeenCalledTimes(1);
     expect(loseContext).not.toHaveBeenCalled();
+    expect(renderer.renderer.jsRunner.destroy).toHaveBeenCalledWith('pixi-node');
+    expect(renderer.codeRevision).toBe(2);
+
     expect(renderer.renderer.unregisterSettingsProxy).toHaveBeenCalledWith(
       'pixi-node',
       settingsProxy
     );
-    expect(renderer.renderer.jsRunner.destroy).toHaveBeenCalledWith('pixi-node');
-    expect(renderer.codeRevision).toBe(2);
   });
 });

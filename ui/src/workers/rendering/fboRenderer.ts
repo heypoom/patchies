@@ -528,40 +528,13 @@ export class FBORenderer {
         colorAttachments = existingFbo.colorAttachments;
         framebuffer = existingFbo.framebuffer;
 
-        // For Hydra nodes: skip cleanup to avoid visual glitch.
-        // The old Hydra instance stays alive until replaced in createHydraRenderer,
-        // allowing us to read synth time directly. It then gets garbage collected.
-        // For other nodes: run cleanup normally.
-        const isHydra = this.hydraByNode.has(node.id);
-
-        const isShaderPark3D =
-          node.type === 'shaderpark' &&
-          node.data.renderMode === '3d' &&
-          this.shaderParkThreeByNode.has(node.id);
-        const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
-        const isReusablePixi = node.type === 'pixi' && this.pixiByNode.has(node.id);
-
-        if (!isHydra && !isShaderPark3D && !isReusableThree && !isReusablePixi) {
+        if (!this.hasReusableRenderer(node)) {
           existingFbo.cleanup?.();
         }
       } else {
         // Destroy old FBO if it exists but size or mrtCount doesn't match
         if (existingFbo) {
-          // For Hydra: skip cleanup (will be GC'd after createHydraRenderer reads synth time)
-          const isHydra = this.hydraByNode.has(node.id);
-
-          const isShaderPark3D =
-            node.type === 'shaderpark' &&
-            node.data.renderMode === '3d' &&
-            this.shaderParkThreeByNode.has(node.id);
-
-          const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
-          const isReusablePixi = node.type === 'pixi' && this.pixiByNode.has(node.id);
-
-          this.destroyFboNode(
-            existingFbo,
-            !isHydra && !isShaderPark3D && !isReusableThree && !isReusablePixi
-          );
+          this.destroyFboNode(existingFbo, !this.hasReusableRenderer(node));
 
           this.fboNodes.delete(node.id);
         }
@@ -738,6 +711,26 @@ export class FBORenderer {
   // Some nodes are externally managed, e.g. the texture will be uploaded on it.
   createEmptyRenderer() {
     return { render: () => {}, cleanup: () => {} };
+  }
+
+  /**
+   * Reused renderers retain resources from the prior FBO until their replacement
+   * has consumed or transferred that state.
+   */
+  private hasReusableRenderer(node: RenderNode): boolean {
+    if (this.hydraByNode.has(node.id)) return true;
+
+    if (
+      node.type === 'shaderpark' &&
+      node.data.renderMode === '3d' &&
+      this.shaderParkThreeByNode.has(node.id)
+    ) {
+      return true;
+    }
+
+    if (node.type === 'three' && this.threeByNode.has(node.id)) return true;
+
+    return node.type === 'pixi' && this.pixiByNode.has(node.id);
   }
 
   private destroyFboNode(fboNode: FBONode, cleanup = true): void {
