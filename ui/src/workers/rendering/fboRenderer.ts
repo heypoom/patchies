@@ -401,6 +401,8 @@ export class FBORenderer {
       this.connectedVideoOutputNodeIds = new Set(connectedVideoOutputNodeIds);
     }
 
+    const previousNodeIds = new Set(this.renderGraph?.nodes.map((node) => node.id));
+
     // Get the set of node IDs that will exist in the new graph
     const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
 
@@ -417,6 +419,12 @@ export class FBORenderer {
 
         // Unsubscribe removed nodes from video channels
         this.videoChannelRegistry.unsubscribeAll(nodeId);
+      }
+    }
+
+    for (const nodeId of previousNodeIds) {
+      if (!newNodeIds.has(nodeId)) {
+        this.previewRenderer.removeNode(nodeId);
       }
     }
 
@@ -663,7 +671,9 @@ export class FBORenderer {
       // as the texture is managed by the node on the frontend.
       const defaultPreviewEnabled = !isExternalTextureNode(node.type);
 
-      this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
+      if (!this.previewRenderer.hasPreviewState(node.id)) {
+        this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
+      }
     }
 
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();

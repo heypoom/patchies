@@ -13,6 +13,10 @@ texture into its Patchies FBO, calls `resetState()` before Pixi work, and
 refreshes regl state afterward. The Patchies render loop calls `draw(time)`;
 Pixi's ticker is not used.
 
+`pixi` supports **Freeze frame** through the standard visual-node menu. Freezing skips the
+node's worker render pass while retaining its most recently rendered FBO, so downstream
+nodes and the node preview continue to display that frame until it is unfrozen.
+
 `pixi.dom` owns an HTML canvas and uses Pixi's native event system. It is kept
 separate from the worker context so Pixi can receive browser pointer events.
 It exposes `setCanvasSize()`, `setFluidSize()`, and `onCanvasResize()` with the

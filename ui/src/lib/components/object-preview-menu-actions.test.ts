@@ -69,4 +69,23 @@ describe('object preview menu actions', () => {
     expect(saveAsPreset).toHaveBeenCalledTimes(1);
     expect(openHelp).not.toHaveBeenCalled();
   });
+
+  it('shows the global preview state instead of a per-node toggle', () => {
+    const togglePreview = vi.fn();
+
+    const groups = getObjectPreviewMenuGroups({
+      onOpenHelp: vi.fn(),
+      onPreviewToggle: togglePreview,
+      previewsDisabledGlobally: true
+    });
+
+    const previewAction = groups
+      .find((group) => group.id === 'display')
+      ?.actions.find((action) => action.id === 'preview');
+
+    expect(previewAction).toMatchObject({
+      label: 'Previews disabled globally (Shift+P)',
+      disabled: true
+    });
+  });
 });
