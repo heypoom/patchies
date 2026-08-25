@@ -74,6 +74,15 @@ describe('GLSystem', () => {
     );
   });
 
+  it('treats an output override as an active video consumer', () => {
+    const glSystem = new GLSystem();
+
+    glSystem.upsertNode('canvas-dom-1', 'img', {});
+    glSystem.setOverrideOutputNode('canvas-dom-1');
+
+    expect(glSystem.hasOutgoingVideoConnections('canvas-dom-1')).toBe(true);
+  });
+
   it('does not resubscribe unchanged video channel nodes', () => {
     const glSystem = new GLSystem();
     const registry = VideoChannelRegistry.getInstance();

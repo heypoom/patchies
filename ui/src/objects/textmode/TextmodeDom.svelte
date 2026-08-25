@@ -175,7 +175,6 @@
 
   async function sendBitmap() {
     if (!canvas) return;
-    if (!videoOutputEnabled) return;
     if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
 
     await glSystem.setBitmapSource(nodeId, canvas);

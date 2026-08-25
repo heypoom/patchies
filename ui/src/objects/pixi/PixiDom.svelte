@@ -239,7 +239,6 @@
           }
         },
         () => {
-          if (!videoOutputEnabled) return;
           if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
 
           glSystem.setBitmapSource(nodeId, activeCanvas);
