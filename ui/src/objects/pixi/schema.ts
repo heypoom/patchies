@@ -16,20 +16,12 @@ export const pixiSchema: ObjectSchema = {
     }
   ],
   outlets: [],
-  tags: ['2d', 'webgl', 'graphics', 'animation'],
-  hasDynamicOutlets: true,
-  handlePatterns: {
-    inlet: {
-      template: 'message-in-{index}',
-      handleType: 'message',
-      description: 'Control messages'
-    },
-    outlet: { template: 'video-out-{index}', handleType: 'video', description: 'Video output' }
-  }
+  tags: ['2d', 'webgl', 'graphics', 'animation']
 };
 
 export const pixiDomSchema: ObjectSchema = {
   ...pixiSchema,
   type: 'pixi.dom',
-  description: 'Creates interactive PixiJS 8 graphics on the main thread'
+  description: 'Creates interactive PixiJS 8 graphics on the main thread',
+  inlets: []
 };

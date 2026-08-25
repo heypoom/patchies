@@ -25,6 +25,11 @@ description: Use when working in Patchies on tests, specs, reflections, verifica
 - Use `git diff --check` for patch hygiene after edits.
 - Report noisy, blocked, or partial checks honestly.
 
+## Formatting
+
+- In multiline code, use blank lines to separate setup, configuration, side effects, and return values.
+- Format chained calls one method per line when that makes the setup easier to scan.
+
 ## Commits
 
 Never commit or push unless the user explicitly asks.

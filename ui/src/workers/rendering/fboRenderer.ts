@@ -1110,7 +1110,14 @@ export class FBORenderer {
 
     if (existingRenderer) {
       await existingRenderer.updateConfig(config, framebuffer);
-      return { render: existingRenderer.renderFrame.bind(existingRenderer), cleanup: () => {} };
+
+      return {
+        render: existingRenderer.renderFrame.bind(existingRenderer),
+        cleanup: () => {
+          existingRenderer.destroy();
+          this.pixiByNode.delete(node.id);
+        }
+      };
     }
 
     const pixiRenderer = await PixiRenderer.create(config, framebuffer, this);

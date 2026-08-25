@@ -19,12 +19,9 @@ type PixiDomEventHandlers = {
   onWheel: (event: WheelEvent) => void;
 };
 
-type PixiDomRenderer = Omit<WebGLRenderer, '_lastObjectRendered'> & {
-  _lastObjectRendered?: Container;
-};
-
 type PixiDomEvents = WebGLRenderer['events'] & {
   domElement: HTMLCanvasElement | null;
+  renderer: WebGLRenderer;
 };
 
 class PixiDomManager {
@@ -65,6 +62,11 @@ class PixiDomManager {
     if (!entry) return;
 
     this.unbindEvents(entry);
+
+    this.activePointers.forEach((activeEntry, pointerId) => {
+      if (activeEntry === entry) this.activePointers.delete(pointerId);
+    });
+
     entry.stage.destroy({ children: true });
     this.entries.delete(nodeId);
   }
@@ -197,20 +199,27 @@ class PixiDomManager {
 
     if (!app) return;
 
-    const renderer = app.renderer as unknown as PixiDomRenderer;
+    const renderer = app.renderer;
     const events = renderer.events as PixiDomEvents;
-    const previousRoot = renderer._lastObjectRendered;
+    const previousRenderer = events.renderer;
+    const previousRoot = events.rootBoundary.rootTarget;
     const previousCanvas = events.domElement;
+    const eventRenderer = Object.create(renderer, {
+      lastObjectRendered: { get: () => entry.stage }
+    }) as WebGLRenderer;
 
-    renderer._lastObjectRendered = entry.stage;
+    events.renderer = eventRenderer;
     events.domElement = entry.canvas;
 
     const dispatch = events[handler] as (nativeEvent: PointerEvent | WheelEvent) => void;
 
-    dispatch(event);
-
-    events.domElement = previousCanvas;
-    renderer._lastObjectRendered = previousRoot;
+    try {
+      dispatch(event);
+    } finally {
+      events.domElement = previousCanvas;
+      events.renderer = previousRenderer;
+      events.rootBoundary.rootTarget = previousRoot;
+    }
   }
 
   private render(time: number) {

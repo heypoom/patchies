@@ -377,11 +377,32 @@
       return;
     }
 
+    const [displayWidth, displayHeight] = capPreviewSize(
+      width / PREVIEW_SCALE_FACTOR,
+      height / PREVIEW_SCALE_FACTOR
+    );
+
     Object.assign(canvas.style, {
-      width: `${width / PREVIEW_SCALE_FACTOR}px`,
-      height: `${height / PREVIEW_SCALE_FACTOR}px`,
+      width: `${displayWidth}px`,
+      height: `${displayHeight}px`,
       maxWidth: '',
       maxHeight: ''
+    });
+
+    requestAnimationFrame(() => {
+      if (!canvas) return;
+
+      const bounds = canvas.getBoundingClientRect();
+
+      console.log('[DEBUG-preview-size-a4f2]', {
+        object: 'canvas.dom',
+        output: { width, height },
+        capped: { width: displayWidth, height: displayHeight },
+        style: { width: canvas.style.width, height: canvas.style.height },
+        client: { width: canvas.clientWidth, height: canvas.clientHeight },
+        bounds: { width: bounds.width, height: bounds.height },
+        fluid: fluidCanvas.isFluid
+      });
     });
   }
 
@@ -455,6 +476,7 @@
 
     outputWidth = resetSize.width;
     outputHeight = resetSize.height;
+    applyCanvasDisplaySize(resetSize.width, resetSize.height);
 
     // Clear keyboard callbacks when code is re-run
     keyboardCallbacks = {};

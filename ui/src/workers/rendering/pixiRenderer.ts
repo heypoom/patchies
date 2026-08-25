@@ -40,14 +40,15 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
     DOMAdapter.set(WebWorkerAdapter);
 
     const sizedFramebuffer = framebuffer as SizedFramebuffer;
+    const [outputWidth, outputHeight] = renderer.outputSize;
     const canvas = renderer.offscreenCanvas;
 
     instance.pixi = new WebGLRenderer();
     await instance.pixi.init({
       canvas,
       context: renderer.gl!,
-      width: sizedFramebuffer.width,
-      height: sizedFramebuffer.height,
+      width: outputWidth,
+      height: outputHeight,
       antialias: true
     });
     instance.target = RenderTexture.create({
@@ -60,7 +61,7 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
   }
 
   renderFrame(params: RenderParams) {
-    if (!this.pixi || !this.target || !this.draw || !this.framebuffer) return;
+    if (!this.pixi || !this.target || !this.framebuffer) return;
 
     if (this.renderer.transportTime && !this.renderer.transportTime.isPlaying) return;
 
@@ -69,7 +70,7 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
     this.pixi.resetState();
 
     try {
-      this.draw(params.transportTime);
+      this.draw?.(params.transportTime);
       this.pixi.render({ container: this.stage, target: this.target, clear: true });
       this.blitTarget();
     } catch (error) {
@@ -125,8 +126,11 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
     this.config = config;
     this.framebuffer = framebuffer;
 
+    const [outputWidth, outputHeight] = this.renderer.outputSize;
+
+    this.pixi?.resize(outputWidth, outputHeight);
+
     if (resized) {
-      this.pixi?.resize(nextFramebuffer.width, nextFramebuffer.height);
       this.target?.destroy(true);
       this.target = RenderTexture.create({
         width: nextFramebuffer.width,
@@ -138,9 +142,19 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
   }
 
   destroy() {
+    this.codeRevision += 1;
     this.target?.destroy(true);
     this.stage.destroy({ children: true });
-    this.pixi?.destroy();
+
+    if (this.pixi) {
+      // Pixi assumes it owns its WebGL context and loses it during destroy().
+      // This renderer shares FBORenderer's context, so only destroy Pixi-owned resources.
+      this.pixi.context.extensions.loseContext = undefined;
+      this.pixi.destroy();
+    }
+
+    super.destroy();
+
     this.target = null;
     this.pixi = null;
     this.draw = null;

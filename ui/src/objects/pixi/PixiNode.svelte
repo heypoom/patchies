@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import { match } from 'ts-pattern';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { messages } from '$lib/objects/schemas/common';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import {
     outputHeight,
@@ -26,25 +30,53 @@
   const { updateNodeData } = useSvelteFlow();
   const glSystem = GLSystem.getInstance();
   let previewCanvas = $state<HTMLCanvasElement>();
+  let previewBitmapContext: ImageBitmapRenderingContext | null = null;
+  let messageContext: MessageContext | null = null;
   let editorReady = $state(false);
 
-  function run() {
-    glSystem.upsertNode(nodeId, 'pixi', { code: data.code, _runRevision: Date.now() });
+  function run(code = data.code) {
+    glSystem.upsertNode(nodeId, 'pixi', { code, _runRevision: Date.now() });
   }
 
+  const handleMessage: MessageCallbackFn = (message, meta) => {
+    match(message)
+      .with(messages.setCode, ({ value }) => {
+        updateNodeData(nodeId, { code: value });
+        run(value);
+      })
+      .with(messages.run, () => run())
+      .otherwise(() => glSystem.sendMessageToNode(nodeId, { ...meta, data: message }));
+  };
+
   onMount(() => {
-    const context = previewCanvas?.getContext('bitmaprenderer');
-    if (context) glSystem.previewCanvasContexts[nodeId] = context;
+    messageContext = new MessageContext(nodeId);
+    messageContext.queue.addCallback(handleMessage);
+
+    previewBitmapContext = previewCanvas?.getContext('bitmaprenderer') ?? null;
+
+    if (previewBitmapContext) {
+      glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+    }
 
     glSystem.upsertNode(nodeId, 'pixi', { code: data.code });
 
-    setTimeout(() => {
+    const runTimer = window.setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
       run();
     }, 50);
+
+    return () => window.clearTimeout(runTimer);
   });
 
-  onDestroy(() => glSystem.removeNode(nodeId));
+  onDestroy(() => {
+    messageContext?.destroy();
+
+    if (previewBitmapContext) {
+      glSystem.removePreviewContext(nodeId, previewBitmapContext);
+    }
+
+    glSystem.removeNode(nodeId);
+  });
 </script>
 
 <CanvasPreviewLayout

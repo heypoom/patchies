@@ -112,6 +112,8 @@
   );
 
   $effect(() => {
+    if (!entry) return;
+
     pixiDomManager.setPaused(nodeId, !!data.paused);
   });
 
@@ -257,17 +259,6 @@
     hideBorder={resizeControlsVisible}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
   >
-    {#snippet topHandle()}
-      <TypedHandle
-        port="inlet"
-        spec={{ handleType: 'message', handleId: '0' }}
-        title="Control messages"
-        total={1}
-        index={0}
-        {nodeId}
-      />
-    {/snippet}
-
     {#snippet bottomHandle()}
       <TypedHandle
         port="outlet"
