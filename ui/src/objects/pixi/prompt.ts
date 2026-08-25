@@ -1,9 +1,9 @@
 export const pixiPrompt = `## pixi Object Instructions
 
-PixiJS 8 runs in the web-worker render pipeline. Use it for 2D graphics that chain efficiently into other video objects.
+Pixi.js 8 runs in the web-worker render pipeline. Use it for 2D graphics that chain efficiently into other video objects.
 
 **Globals:**
-- PIXI: PixiJS namespace
+- PIXI: Pixi.js namespace
 - stage: root Container; add display objects here
 - width, height: output dimensions
 - renderer: managed Pixi renderer; do not call renderer.render()
@@ -27,17 +27,18 @@ Example:
 
 export const pixiDomPrompt = `## pixi.dom Object Instructions
 
-PixiJS 8 on the main thread. Use it for interactive 2D graphics with native pointer and DOM APIs.
+Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native pointer and DOM APIs.
 
 **Globals:**
-- PIXI: PixiJS namespace
+- PIXI: Pixi.js namespace
 - stage: root Container; add display objects here
 - canvas: HTML canvas element
 - width, height: canvas dimensions
 - renderer: managed Pixi renderer; do not call renderer.render()
 - loadExtensions(...names): await before using optional Pixi APIs, for example await loadExtensions('events', 'accessibility'). Use loadExtensions('all') for every extension.
-- setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs
+- setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs. In fluid mode, draw(time) can read live width and height values while resizing. Use onCanvasResize to update static scenes; resizing does not re-run your code.
 - setVideoOutput(enabled): enable or disable the video output port. It is disabled by default; call setVideoOutput(true) when the scene feeds another video node.
+- noBorder(): hide Patchies' preview border and selected glow until the call is removed and the node runs again.
 
 **Rules:**
 - Graphics is available by default.

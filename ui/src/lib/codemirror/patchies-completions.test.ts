@@ -260,8 +260,14 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('p5', 'noB')).toContain('noBorder');
     expect(getCompletionLabels('canvas.dom', 'noB')).toContain('noBorder');
     expect(getCompletionLabels('three.dom', 'noB')).toContain('noBorder');
+    expect(getCompletionLabels('pixi.dom', 'noB')).toContain('noBorder');
     expect(getCompletionLabels('js', 'noB')).not.toContain('noBorder');
     expect(getCompletionLabels('hydra', 'noB')).not.toContain('noBorder');
+  });
+
+  it('shows setTitle completions for Pixi nodes', () => {
+    expect(getCompletionLabels('pixi', 'setT')).toContain('setTitle');
+    expect(getCompletionLabels('pixi.dom', 'setT')).toContain('setTitle');
   });
 
   it('shows showAudioInput completions only for simple DSP audio nodes', () => {

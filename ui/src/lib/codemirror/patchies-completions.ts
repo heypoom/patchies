@@ -678,7 +678,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   expandSurface: ['surface', 'p5'],
   collapseSurface: ['surface', 'p5'],
   hideExitButton: ['surface', 'p5'],
-  noBorder: ['dom', 'vue', 'p5', 'canvas.dom', 'three.dom'],
+  noBorder: ['dom', 'vue', 'p5', 'canvas.dom', 'three.dom', 'pixi.dom'],
   setAudioPortCount: ['dsp~'],
   showAudioInput: ['tone~', 'sonic~', 'elem~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom'],
@@ -725,7 +725,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three',
     'three.dom',
     'dom',
-    'vue'
+    'vue',
+    'pixi',
+    'pixi.dom'
   ],
   setTags: ['js', 'canvas.dom', 'three.dom', 'dom', 'vue'],
   onGraphChange: ['js'],

@@ -11,6 +11,8 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { messages } from '$lib/objects/schemas/common';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type { ConsoleOutputEvent, NodeTitleUpdateEvent } from '$lib/eventbus/events';
 
   import {
     outputHeight,
@@ -31,15 +33,33 @@
 
   const { updateNodeData } = useSvelteFlow();
   const glSystem = GLSystem.getInstance();
+  const eventBus = PatchiesEventBus.getInstance();
 
   let previewCanvas = $state<HTMLCanvasElement>();
+  let consoleRef: VirtualConsole | null = $state(null);
   let previewBitmapContext: ImageBitmapRenderingContext | null = null;
   let messageContext: MessageContext | null = null;
   let editorReady = $state(false);
   let isPaused = $state(false);
+  let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
-  const run = (code = data.code) =>
+  function handleConsoleOutput(event: ConsoleOutputEvent) {
+    if (event.nodeId !== nodeId) return;
+    if (event.messageType === 'error' && event.lineErrors) lineErrors = event.lineErrors;
+  }
+
+  function handleNodeTitleUpdate(event: NodeTitleUpdateEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    updateNodeData(nodeId, { title: event.title });
+  }
+
+  function run(code = data.code) {
+    consoleRef?.clearConsole();
+    lineErrors = undefined;
+
     glSystem.upsertNode(nodeId, 'pixi', { code, _runRevision: Date.now() });
+  }
 
   function togglePause() {
     isPaused = !isPaused;
@@ -66,6 +86,9 @@
       glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
     }
 
+    eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.addEventListener('nodeTitleUpdate', handleNodeTitleUpdate);
+
     glSystem.upsertNode(nodeId, 'pixi', { code: data.code });
 
     const runTimer = window.setTimeout(() => {
@@ -78,6 +101,8 @@
 
   onDestroy(() => {
     messageContext?.destroy();
+    eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.removeEventListener('nodeTitleUpdate', handleNodeTitleUpdate);
 
     if (previewBitmapContext) {
       glSystem.removePreviewContext(nodeId, previewBitmapContext);
@@ -103,6 +128,7 @@
   style={`width: ${$previewWidth}px; height: ${$previewHeight}px;`}
   {selected}
   {editorReady}
+  hasError={lineErrors !== undefined}
 >
   {#snippet topHandle()}
     <TypedHandle
@@ -136,13 +162,19 @@
       onrun={run}
       onchange={(code) => updateNodeData(nodeId, { code })}
       onready={() => (editorReady = true)}
+      {lineErrors}
       {nodeId}
     />
   {/snippet}
 
   {#snippet console()}
     <div class="mt-3 w-full" class:hidden={!data.showConsole}>
-      <VirtualConsole {nodeId} placeholder="PixiJS output will appear here." maxHeight="200px" />
+      <VirtualConsole
+        bind:this={consoleRef}
+        {nodeId}
+        placeholder="PixiJS output will appear here."
+        maxHeight="200px"
+      />
     </div>
   {/snippet}
 </CanvasPreviewLayout>

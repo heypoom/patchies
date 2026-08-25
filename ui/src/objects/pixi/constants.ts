@@ -39,6 +39,15 @@ const petals = Array.from({ length: 9 }, (_, index) => {
   return petal
 })
 
+function layout() {
+  petals.forEach((petal) => {
+    petal.position.set(width / 2, height / 2)
+  })
+}
+
+onCanvasResize(layout)
+layout()
+
 function draw(time) {
   petals.forEach((petal, index) => {
     petal.rotation = time + index * Math.PI * 2 / petals.length
