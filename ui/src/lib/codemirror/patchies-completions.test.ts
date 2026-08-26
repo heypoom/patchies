@@ -152,6 +152,11 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'vfs.se')).toEqual(['search']);
   });
 
+  it('shows settings completions for Pixi nodes', () => {
+    expect(getCompletionLabels('pixi', 'settings.')).toContain('define');
+    expect(getCompletionLabels('pixi.dom', 'settings.')).toContain('define');
+  });
+
   it('applies the VFS completion as an object', () => {
     expect(getCompletion('vue', 'vf', 'vfs')?.apply).toBe('vfs');
   });

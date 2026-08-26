@@ -791,7 +791,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three',
     'three.dom',
     'dom',
-    'vue'
+    'vue',
+    'pixi',
+    'pixi.dom'
   ],
   clock: [
     'js',

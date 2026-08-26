@@ -104,12 +104,6 @@ during a resize. Use `onCanvasResize()` to update static scenes. It runs at
 most once per animation frame while resizing. Patchies does not re-run your
 Pixi code after a fluid resize, preserving the stage and interaction state.
 
-## Focused Interactive View
-
-Open the node overflow menu and choose **Expand** to focus the live Pixi canvas.
-Your scene keeps receiving Pixi pointer events while Patchies hides the rest of
-the editor. Use **Exit surface** or `Shift+Esc` to return to the patch.
-
 ## Video Output
 
 `pixi.dom` keeps its video output disabled by default. Copying its canvas into

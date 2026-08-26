@@ -32,9 +32,14 @@ re-runs the user's code, preserving the stage and its interaction state.
 The first DOM version exposes Pixi's normal canvas, stage, renderer, optional
 `draw(time)` callback, sizing APIs, and `setVideoOutput(enabled)`. It supports
 one copied video output, disabled by default to avoid an unnecessary CPU-to-GPU
-canvas copy. `setVideoOutput(true)` enables it. Patchies message APIs,
-settings, keyboard helpers, and dynamic ports can be added once the core event
-and lifecycle path has settled.
+canvas copy. `setVideoOutput(true)` enables it. Patchies message APIs, keyboard
+helpers, and dynamic ports can be added once the core event and lifecycle path
+has settled.
+
+Both `pixi` and `pixi.dom` expose the standard `settings` API. The worker
+object bridges its settings proxy through GLSystem; the DOM object uses a local
+SettingsManager through JSRunner. Both render the shared Settings panel and
+persist values using the normal node, KV, and memory persistence modes.
 
 Both `pixi` and `pixi.dom` expose `setTitle(title)` so user code can name the
 node it configures.

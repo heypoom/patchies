@@ -13,6 +13,9 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent, NodeTitleUpdateEvent } from '$lib/eventbus/events';
+  import { SettingsManager, createWorkerSettingsCallbacks } from '$lib/settings';
+  import type { SettingsSchema } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
 
   import {
     outputHeight,
@@ -27,13 +30,29 @@
     selected
   }: {
     id: string;
-    data: { title?: string; code: string; showConsole?: boolean };
+    data: {
+      title?: string;
+      code: string;
+      showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
+    };
     selected?: boolean;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
   const glSystem = GLSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
+
+  function initialNodeId() {
+    return nodeId;
+  }
+
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
+  );
 
   let previewCanvas = $state<HTMLCanvasElement>();
   let consoleRef: VirtualConsole | null = $state(null);
@@ -89,6 +108,13 @@
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
     eventBus.addEventListener('nodeTitleUpdate', handleNodeTitleUpdate);
 
+    glSystem.registerSettingsCallbacks(
+      nodeId,
+      createWorkerSettingsCallbacks(settingsManager, (requestId, values) =>
+        glSystem.sendSettingsValues(nodeId, requestId, values)
+      )
+    );
+
     glSystem.upsertNode(nodeId, 'pixi', { code: data.code });
 
     const runTimer = window.setTimeout(() => {
@@ -103,6 +129,7 @@
     messageContext?.destroy();
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
     eventBus.removeEventListener('nodeTitleUpdate', handleNodeTitleUpdate);
+    glSystem.unregisterSettingsCallbacks(nodeId);
 
     if (previewBitmapContext) {
       glSystem.removePreviewContext(nodeId, previewBitmapContext);
@@ -129,6 +156,19 @@
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => {
+    settingsManager.setValue(key, value);
+    glSystem.sendSettingsValueChanged(nodeId, key, value);
+  }}
+  onSettingsRevertAll={() => {
+    settingsManager.revertAll();
+
+    for (const [key, value] of Object.entries(settingsManager.getAll())) {
+      glSystem.sendSettingsValueChanged(nodeId, key, value);
+    }
+  }}
 >
   {#snippet topHandle()}
     <TypedHandle

@@ -19,7 +19,9 @@ export const JS_ENABLED_OBJECTS = new Set([
   'textmode',
   'textmode.dom',
   'regl',
-  'swgl'
+  'swgl',
+  'pixi',
+  'pixi.dom'
 ]);
 
 /**

@@ -27,6 +27,9 @@
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PIXI_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import { SettingsManager, createSettingsAPI } from '$lib/settings';
+  import type { SettingsSchema } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
@@ -57,6 +60,8 @@
       noBorder?: boolean;
       paused?: boolean;
       showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected?: boolean;
     width?: number;
@@ -70,6 +75,12 @@
   const eventBus = PatchiesEventBus.getInstance();
   const jsRunner = JSRunner.getInstance();
 
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(initialNodeId(), { settings, settingsSchema: schema }),
+    createKVStore(initialNodeId())
+  );
+
   function initialNodeId() {
     return nodeId;
   }
@@ -78,6 +89,7 @@
 
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
   let fluidCanvas = $state.raw<ReturnType<typeof useFluidCanvas>>(undefined!);
+
   const previewSize = useCappedPreviewSize(
     () => ({ width: outputWidth, height: outputHeight }),
     () => !fluidCanvas.isFluid
@@ -199,6 +211,7 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
+    settingsManager.clearCallbacks();
     setVideoOutputEnabled(false);
     fluidCanvas.reset();
     updateNodeData(nodeId, getBorderResetDataForRun(data));
@@ -227,6 +240,7 @@
         customConsole,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         extraContext: {
+          settings: createSettingsAPI(settingsManager),
           PIXI,
           renderer: pixiDomManager.getRenderer(),
           stage: runStage,
@@ -393,6 +407,10 @@
     {selected}
     {editorReady}
     hasError={lineErrors !== undefined}
+    settingsSchema={data.settingsSchema}
+    settingsValues={data.settings ?? {}}
+    onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+    onSettingsRevertAll={() => settingsManager.revertAll()}
     noBorder={data.noBorder}
     hideBorder={resizeControlsVisible}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
