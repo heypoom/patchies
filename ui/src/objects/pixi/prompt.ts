@@ -45,6 +45,7 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - Draw a shape before calling fill() or stroke(). For paths, chain moveTo()/lineTo()/arcTo() directly on Graphics; never call Graphics.path() without a GraphicsPath argument.
 - Define draw(time) for animation. Do not use requestAnimationFrame.
 - Call setVideoOutput(true) only when the scene explicitly outputs video to another node.
+- For fluid-sized resizable objects: DO NOT set outer padding unless explicitly asked.
 
 Example:
 \`\`\`json
