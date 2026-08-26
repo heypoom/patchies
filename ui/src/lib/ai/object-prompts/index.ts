@@ -65,6 +65,7 @@ import { wgpuPrompt } from '$objects/wgpu.compute/prompt';
 import { workerPrompt } from '$objects/worker/prompt';
 import { scopePrompt } from '$objects/scope~/prompt';
 import { tapTildePrompt } from '$objects/tap~/prompt';
+import { textmodeDomPrompt, textmodePrompt } from '$objects/textmode/prompt';
 import { sequencerPrompt } from '$objects/sequencer/prompt';
 import { stackPrompt } from '$objects/stack/prompt';
 import { queuePrompt } from '$objects/queue/prompt';
@@ -165,6 +166,8 @@ export const objectPrompts: Record<string, string> = {
   scale: scalePrompt,
   'scope~': scopePrompt,
   'tap~': tapTildePrompt,
+  textmode: textmodePrompt,
+  'textmode.dom': textmodeDomPrompt,
   serial: serialPrompt,
   'serial.term': serialTermPrompt,
   'serial.dmx': dmxPrompt,
