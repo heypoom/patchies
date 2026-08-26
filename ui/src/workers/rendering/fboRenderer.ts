@@ -70,6 +70,7 @@ import { createFinalOutputPresentationCommand } from './finalOutputPresentation'
 import { isPassthroughNodeType, mergeVideoGraphEdges } from './videoGraph';
 import { FboResources } from './FboResources';
 import { drawToFinalOutput } from './drawToFinalOutput';
+import { VideoSourceResolver } from './VideoSourceResolver';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -123,6 +124,7 @@ export class FBORenderer {
 
   /** Video texture manager for external bitmap sources */
   public videoTextures: VideoTextureManager;
+  private videoSources: VideoSourceResolver;
 
   /** Mapping of analyzer object's node id -> analysis type -> texture */
   public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
@@ -251,6 +253,11 @@ export class FBORenderer {
 
     // Create video texture manager
     this.videoTextures = new VideoTextureManager(this.regl, this.gl);
+    this.videoSources = new VideoSourceResolver(
+      () => this.renderGraph,
+      this.fboNodes,
+      this.videoTextures
+    );
 
     this.usesMobileSafariWebGLWorkaround = this.detectMobileSafari();
 
@@ -1575,7 +1582,7 @@ export class FBORenderer {
       return;
     }
 
-    const inputTextureMap = this.getInputTextureMap(node);
+    const inputTextureMap = this.videoSources.getInputTextureMap(node);
 
     let userUniformParams: unknown[] = [];
 
@@ -1725,7 +1732,7 @@ export class FBORenderer {
 
   private hasValidOutputOverride(): boolean {
     return Boolean(
-      this.overrideOutputNodeId && this.resolveVideoSource(this.overrideOutputNodeId, 0)
+      this.overrideOutputNodeId && this.videoSources.resolveTexture(this.overrideOutputNodeId, 0)
     );
   }
 
@@ -1845,7 +1852,7 @@ export class FBORenderer {
       return;
     }
 
-    const source = this.resolveVideoSource(nodeId, this.outputOutletIndex);
+    const source = this.videoSources.resolveTexture(nodeId, this.outputOutletIndex);
 
     if (!source) {
       console.warn('Could not find source framebuffer for final texture');
@@ -1898,76 +1905,6 @@ export class FBORenderer {
 
   stopRenderLoop() {
     this.isAnimating = false;
-  }
-
-  /**
-   * Get input texture mapping for a node based on the
-   * render graph, mapped by inlet index
-   **/
-  private getInputTextureMap(node: RenderNode): Map<number, regl.Texture2D> {
-    const textureMap = new Map<number, regl.Texture2D>();
-
-    // Use inletMap for proper slot-based assignment
-    for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
-      const texture = this.resolveVideoSource(
-        sourceNodeId,
-        outletIndex,
-        node.backEdgeInlets?.has(inletIndex) ?? false
-      )?.texture;
-
-      if (texture) {
-        textureMap.set(inletIndex, texture);
-      }
-    }
-
-    return textureMap;
-  }
-
-  /** Resolve a node outlet to its underlying texture without resampling routing nodes. */
-  private resolveVideoSource(
-    nodeId: string,
-    outletIndex = 0,
-    usePreviousFrame = false,
-    visited = new Set<string>()
-  ): { texture: regl.Texture2D; width: number; height: number } | null {
-    if (visited.has(nodeId)) return null;
-
-    visited.add(nodeId);
-
-    // External sources are the common direct-input case. Resolve them before
-    // looking up the graph so image/video sampling stays on the fast path.
-    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
-
-    if (externalTexture) {
-      return {
-        texture: externalTexture,
-        width: externalTexture.width,
-        height: externalTexture.height
-      };
-    }
-
-    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
-
-    if (node && isPassthroughNodeType(node.type)) {
-      // Routing nodes have no texture of their own; preserve the inlet's native texture.
-      const inlet = node.inletMap.get(0);
-
-      return inlet
-        ? this.resolveVideoSource(
-            inlet.sourceNodeId,
-            inlet.outletIndex,
-            usePreviousFrame || (node.backEdgeInlets?.has(0) ?? false),
-            visited
-          )
-        : null;
-    }
-
-    const fboNode = this.fboNodes.get(nodeId);
-    const textures = usePreviousFrame ? fboNode?.prevTextures : fboNode?.colorAttachments;
-    const texture = textures?.[outletIndex] ?? textures?.[0];
-    if (!texture) return null;
-
-    return { texture, width: texture.width, height: texture.height };
   }
 
   /**
@@ -2219,7 +2156,7 @@ export class FBORenderer {
    */
   capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
     const fboNode = this.fboNodes.get(nodeId);
-    const captureSource = this.resolveCaptureSource(nodeId);
+    const captureSource = this.videoSources.resolveCaptureSource(nodeId);
 
     const defaultPreview: [number, number] = [
       Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
@@ -2259,7 +2196,7 @@ export class FBORenderer {
         const node = this.renderGraph?.nodes.find((candidate) => candidate.id === sourceNodeId);
         if (!node || !isPassthroughNodeType(node.type)) continue;
 
-        const source = this.resolveCaptureSource(sourceNodeId);
+        const source = this.videoSources.resolveCaptureSource(sourceNodeId);
         if (source) resolvedSources.set(sourceNodeId, source);
       }
     }
@@ -2270,44 +2207,6 @@ export class FBORenderer {
       this.videoTextures.destinationTextures,
       resolvedSources
     );
-  }
-
-  private resolveCaptureSource(
-    nodeId: string,
-    visited = new Set<string>()
-  ): VideoFrameCaptureSource | null {
-    if (visited.has(nodeId)) return null;
-    visited.add(nodeId);
-
-    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
-
-    if (node && isPassthroughNodeType(node.type)) {
-      const inlet = node.inletMap.get(0);
-
-      return inlet ? this.resolveCaptureSource(inlet.sourceNodeId, visited) : null;
-    }
-
-    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
-    const externalFbo = this.videoTextures.getDestinationFBO(nodeId);
-
-    if (externalTexture && externalFbo) {
-      return {
-        framebuffer: externalFbo,
-        width: externalTexture.width,
-        height: externalTexture.height,
-        previewSize: [externalTexture.width, externalTexture.height]
-      };
-    }
-
-    const fboNode = this.fboNodes.get(nodeId);
-    if (!fboNode) return null;
-
-    return {
-      framebuffer: fboNode.framebuffer,
-      width: fboNode.texture.width,
-      height: fboNode.texture.height,
-      previewSize: fboNode.previewSize
-    };
   }
 
   /**
