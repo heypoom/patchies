@@ -71,6 +71,7 @@ import { FboResources } from './FboResources';
 import { drawToFinalOutput } from './drawToFinalOutput';
 import { VideoSourceResolver } from './VideoSourceResolver';
 import { NodeRendererRegistry } from './NodeRendererRegistry';
+import { WorkerSettingsRegistry } from './WorkerSettingsRegistry';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -153,7 +154,7 @@ export class FBORenderer {
   private nodeRenderers: NodeRendererRegistry;
 
   /** Dedicated settings proxy registry — populated in BaseWorkerRenderer.resetState() before any async code runs, fixing the race where renderers aren't in their type-specific maps yet. */
-  private settingsProxiesByNode = new Map<string, WorkerSettingsProxy>();
+  private settingsRegistry = new WorkerSettingsRegistry();
 
   /** During textmode loading, we need to refresh REGL. */
 
@@ -1783,7 +1784,7 @@ export class FBORenderer {
   }
 
   registerSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
-    this.settingsProxiesByNode.set(nodeId, proxy);
+    this.settingsRegistry.register(nodeId, proxy);
   }
 
   /**
@@ -1792,21 +1793,15 @@ export class FBORenderer {
    * proxy belonging to the new renderer instance for the same nodeId.
    */
   unregisterSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
-    if (this.settingsProxiesByNode.get(nodeId) === proxy) {
-      this.settingsProxiesByNode.delete(nodeId);
-    }
-  }
-
-  private getSettingsProxy(nodeId: string): WorkerSettingsProxy | null {
-    return this.settingsProxiesByNode.get(nodeId) ?? null;
+    this.settingsRegistry.unregister(nodeId, proxy);
   }
 
   receiveSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>) {
-    this.getSettingsProxy(nodeId)?._receiveValuesInit(requestId, values);
+    this.settingsRegistry.receiveValues(nodeId, requestId, values);
   }
 
   receiveSettingsValueChanged(nodeId: string, key: string, value: unknown) {
-    this.getSettingsProxy(nodeId)?._receiveValueChanged(key, value);
+    this.settingsRegistry.receiveValueChanged(nodeId, key, value);
   }
 
   getFboNodeById(nodeId: string): FBONode | undefined {
