@@ -16,7 +16,6 @@ Sits between the high-level glsl node (fragment shader only) and building a full
 - setVideoCount(inlets, outlets) - Configure video inlets/outlets (default 1, 1)
 - getTexture(index) - Get regl Texture2D from video inlet (0-based index, returns null if not connected)
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
-- setVideoOutput(enabled) - Enable or disable video output (enabled by default)
 
 **Multi-Render Target (MRT) — multiple video outlets:**
 - Call \`setVideoCount(inlets, N)\` for N outlets, then use \`layout(location = N) out vec4\` in frag

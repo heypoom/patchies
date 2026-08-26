@@ -161,6 +161,8 @@ function createTrackedRegl(
 }
 
 export class ReglRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
+  protected usesVideoCount = true;
+
   // User's render function
   private userRenderFunc: ((time: number) => void) | null = null;
 

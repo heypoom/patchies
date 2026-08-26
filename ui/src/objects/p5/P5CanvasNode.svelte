@@ -272,7 +272,7 @@
 
   function setVideoOutputEnabled(enabled: boolean) {
     if (p5Manager) {
-      p5Manager.shouldSendBitmap = enabled && !surfaceMode.isExpanded;
+      p5Manager.shouldSendBitmap = !surfaceMode.isExpanded;
     }
 
     if (videoOutputEnabled === enabled) return;
@@ -349,7 +349,7 @@
     if (p5Manager && messageContext) {
       try {
         settingsManager.clearCallbacks();
-        p5Manager.shouldSendBitmap = false;
+        p5Manager.shouldSendBitmap = !surfaceMode.isExpanded;
         surfaceMode.setMouseForwarding();
 
         updateNodeData(nodeId, getBorderResetDataForRun(data));
@@ -453,7 +453,7 @@
           collapseSurface: surfaceMode.exit
         });
 
-        p5Manager.shouldSendBitmap = nextVideoOutputEnabled && !nextSurfaceModeEnabled;
+        p5Manager.shouldSendBitmap = !nextSurfaceModeEnabled;
 
         if (data.surfaceMode !== nextSurfaceModeEnabled) {
           updateNodeData(nodeId, { surfaceMode: nextSurfaceModeEnabled });
@@ -533,6 +533,7 @@
     paused={data.paused}
     onPlaybackToggle={togglePlayback}
     {editorReady}
+    showBgOutputOption
     showExpandOption
     onCustomExpandToggle={() => (surfaceMode.isExpanded ? surfaceMode.exit() : surfaceMode.enter())}
     customExpanded={surfaceMode.isExpanded}

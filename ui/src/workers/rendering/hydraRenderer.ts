@@ -23,6 +23,8 @@ export interface HydraRendererConfig extends BaseRendererConfig {
 }
 
 export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
+  protected usesVideoCount = true;
+
   public precision: 'highp' | 'mediump' = 'highp';
   public hydra: Hydra | null = null;
 

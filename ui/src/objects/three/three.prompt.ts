@@ -22,7 +22,6 @@ const material = new THREE.ShaderMaterial({
 - onPointerDrag(callback) - Receive raw drag events with {x, y, dx, dy, buttons, down}
 - onWheel(callback) - Receive raw wheel events with {x, y, deltaX, deltaY, deltaMode}
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
-- setVideoOutput(enabled) - Enable or disable video output (enabled by default)
 - setHidePorts(bool) - Toggle port visibility
 
 **Three-specific gotchas:**

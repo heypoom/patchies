@@ -78,6 +78,8 @@ class StaleGenerationError extends Error {
 }
 
 export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
+  protected usesVideoCount = true;
+
   private glsl: ReturnType<typeof SwissGL>;
   private gl: WebGL2RenderingContext;
   private swglTarget: { bindTarget: (gl: WebGL2RenderingContext) => number[] };

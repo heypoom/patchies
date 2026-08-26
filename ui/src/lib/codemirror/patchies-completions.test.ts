@@ -120,10 +120,8 @@ describe('patchies completions', () => {
     'p5',
     'canvas',
     'canvas.dom',
-    'regl',
     'textmode',
     'textmode.dom',
-    'three',
     'three.dom',
     'pixi.dom',
     'surface'
@@ -135,6 +133,13 @@ describe('patchies completions', () => {
   it('completes setVideoOutput with explicit opt-in', () => {
     expect(getCompletion('p5', 'setVideoO', 'setVideoOutput')?.apply).toBe('setVideoOutput(true)');
   });
+
+  it.each(['hydra', 'regl', 'swgl', 'three'])(
+    'does not expose setVideoOutput when %s has setVideoCount',
+    (nodeType) => {
+      expect(getCompletionLabels(nodeType, 'setVideoO')).not.toContain('setVideoOutput');
+    }
+  );
 
   it('shows FFTAnalysis member completions after fft()', () => {
     expect(getCompletionLabels('hydra', 'fft().')).toEqual(

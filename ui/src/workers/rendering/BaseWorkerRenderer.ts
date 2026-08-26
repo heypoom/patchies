@@ -35,6 +35,8 @@ export interface BaseRendererConfig {
  * and error handling — eliminating ~120 lines of duplication per renderer.
  */
 export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = BaseRendererConfig> {
+  protected usesVideoCount = false;
+
   public config: TConfig;
   public renderer: FBORenderer;
   public framebuffer: regl.Framebuffer2D | null;
@@ -255,7 +257,10 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     this.renderer.registerSettingsProxy(this.config.nodeId, this.settingsProxy);
 
     this.setInteraction('interact', true);
-    this.setVideoOutputEnabled(true);
+
+    if (!this.usesVideoCount) {
+      this.setVideoOutputEnabled(true);
+    }
   }
 
   /** Builds the common extraContext entries shared by all renderers. */
@@ -277,7 +282,9 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       noPan: () => this.setInteraction('pan', false),
       noWheel: () => this.setInteraction('wheel', false),
       noInteract: () => this.setInteraction('interact', false),
-      setVideoOutput: (enabled: boolean) => this.setVideoOutputEnabled(enabled),
+      ...(this.usesVideoCount
+        ? {}
+        : { setVideoOutput: (enabled: boolean) => this.setVideoOutputEnabled(enabled) }),
       setPrimaryButton: this.setPrimaryButton.bind(this),
       clock: this.renderer.createWorkerClock(),
       settings: this.settingsProxy!.settings

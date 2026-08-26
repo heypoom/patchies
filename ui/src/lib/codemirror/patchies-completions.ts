@@ -661,10 +661,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'p5',
     'canvas',
     'canvas.dom',
-    'regl',
     'textmode',
     'textmode.dom',
-    'three',
     'three.dom',
     'pixi.dom',
     'surface'

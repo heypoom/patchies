@@ -278,7 +278,6 @@ nodes sample the texture with bilinear filtering — upscaling is automatic.
 See the [Patchies JavaScript Runner](/docs/javascript-runner) for
 all available functions.
 
-- `setVideoOutput(false)` — disables the video output port, which is enabled by default
 - `setHidePorts(true | false)` — hide/show all ports
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` — see [Canvas Interaction](/docs/canvas-interaction)
 - `fft()` — audio analysis

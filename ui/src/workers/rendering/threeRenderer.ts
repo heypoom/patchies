@@ -21,6 +21,8 @@ type SizedFramebuffer = regl.Framebuffer2D & {
 };
 
 export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
+  protected usesVideoCount = true;
+
   private animationId: number | null = null;
 
   // Three.js instances
