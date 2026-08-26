@@ -36,7 +36,7 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - width, height: canvas dimensions
 - renderer: managed Pixi renderer; do not call renderer.render()
 - loadExtensions(...names): await before using optional Pixi APIs, for example await loadExtensions('accessibility'). Use loadExtensions('all') for every optional extension. Native pointer events are available by default.
-- setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs. In fluid mode, draw(time) can read live width and height values while resizing. Use onCanvasResize to update static scenes; resizing does not re-run your code.
+- setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs. In fluid mode, draw(time) can read live width and height values while resizing. Resizing does not re-run your code, so fluid or resizable objects must use onCanvasResize to update their layout.
 - setVideoOutput(enabled): enable or disable the video output port. It is disabled by default; call setVideoOutput(true) when the scene feeds another video node.
 - noBorder(): hide Patchies' preview border and selected glow until the call is removed and the node runs again.
 
@@ -45,6 +45,7 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - Draw a shape before calling fill() or stroke(). For paths, chain moveTo()/lineTo()/arcTo() directly on Graphics; never call Graphics.path() without a GraphicsPath argument.
 - Define draw(time) for animation. Do not use requestAnimationFrame.
 - Call setVideoOutput(true) only when the scene explicitly outputs video to another node.
+- For fluid-sized or resizable objects, always use onCanvasResize to update layout. Do not rely on initial width and height values.
 - For fluid-sized resizable objects: DO NOT set outer padding unless explicitly asked.
 
 Example:
@@ -52,7 +53,7 @@ Example:
 {
   "type": "pixi.dom",
   "data": {
-    "code": "const { Graphics } = PIXI\n\nconst button = new Graphics().circle(width / 2, height / 2, 72).fill(0x66ccff)\nbutton.eventMode = 'static'\nbutton.cursor = 'pointer'\nbutton.on('pointertap', () => button.tint = Math.random() * 0xffffff)\nstage.addChild(button)"
+    "code": "const { Graphics } = PIXI\n\nconst button = new Graphics().circle(0, 0, 72).fill(0x66ccff)\nbutton.eventMode = 'static'\nbutton.cursor = 'pointer'\nbutton.on('pointertap', () => button.tint = Math.random() * 0xffffff)\nstage.addChild(button)\n\nfunction layout() {\n  button.position.set(width / 2, height / 2)\n}\n\nonCanvasResize(layout)\nlayout()"
   }
 }
 \`\`\``;
