@@ -32,7 +32,7 @@ import type { SwissGLRenderer } from './swglRenderer';
 import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
 import type { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
-import { getFramebuffer, getRawTexture } from './utils';
+import { getFramebuffer } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
 import type {
@@ -73,6 +73,7 @@ import { VideoSourceResolver } from './VideoSourceResolver';
 import { NodeRendererRegistry } from './NodeRendererRegistry';
 import { WorkerSettingsRegistry } from './WorkerSettingsRegistry';
 import { ShaderRendererFactory } from './ShaderRendererFactory';
+import { allocateFbo, getMrtCount, getNodeFormat, getNodeResolution } from './fboAllocation';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -431,22 +432,14 @@ export class FBORenderer {
 
       // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park
       // nodes can request multiple color attachments.
-      const mrtCount = match(node)
-        .with({ type: P.union('glsl', 'swgl') }, ({ data }) => data.mrtCount ?? 1)
-        .with(
-          { type: P.union('regl', 'hydra', 'shaderpark') },
-          ({ data }) => data.videoOutletCount ?? 1
-        )
-        .otherwise(() => 1);
+      const nodeData = node.data as Record<string, unknown>;
+      const mrtCount = getMrtCount({ type: node.type, data: nodeData });
 
       // FBO format: read from node data, default to rgba8
-      const fboFormat: FBOFormat =
-        ((node.data as Record<string, unknown>)?.fboFormat as FBOFormat) || 'rgba8';
+      const fboFormat = getNodeFormat(nodeData);
 
       // Per-node resolution override (spec 122)
-      const nodeResolution = (node.data as Record<string, unknown>)?.resolution as
-        | FBOResolution
-        | undefined;
+      const nodeResolution = getNodeResolution(nodeData);
 
       const [nodeWidth, nodeHeight] = this.resolveNodeSize(nodeResolution);
 
@@ -491,41 +484,15 @@ export class FBORenderer {
           this.fboNodes.delete(node.id);
         }
 
-        // Create color attachments — one for standard nodes, N for MRT GLSL nodes
-        colorAttachments = Array.from({ length: mrtCount }, () =>
-          this.createFboTexture(nodeWidth, nodeHeight, fboFormat)
-        );
-
-        if (mrtCount > 1) {
-          // regl's framebuffer({ colors: [...] }) requires WEBGL_draw_buffers which is
-          // a WebGL1 extension not exposed on WebGL2 contexts (it's core there).
-          // Instead: create a single-attachment regl framebuffer for attachment 0,
-          // then manually attach the remaining textures via raw WebGL2.
-          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
-
-          const gl = this.gl;
-          const rawFramebuffer = getFramebuffer(framebuffer);
-
-          gl.bindFramebuffer(gl.FRAMEBUFFER, rawFramebuffer);
-
-          for (let i = 1; i < mrtCount; i++) {
-            const rawTexture = getRawTexture(colorAttachments[i]);
-
-            gl.framebufferTexture2D(
-              gl.FRAMEBUFFER,
-              gl.COLOR_ATTACHMENT0 + i,
-              gl.TEXTURE_2D,
-              rawTexture,
-              0
-            );
-          }
-
-          gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
-
-          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        } else {
-          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
-        }
+        ({ colorAttachments, framebuffer } = allocateFbo({
+          regl: this.regl,
+          gl: this.gl,
+          width: nodeWidth,
+          height: nodeHeight,
+          mrtCount,
+          format: fboFormat,
+          createTexture: this.createFboTexture.bind(this)
+        }));
       }
 
       this.cookState.markDirty(node.id, existingFbo ? 'config' : 'first-frame');

@@ -10,6 +10,7 @@ vi.mock('./pixiRenderer', () => ({ PixiRenderer: class {} }));
 vi.mock('./reglRenderer', () => ({ ReglRenderer: class {} }));
 vi.mock('./swglRenderer', () => ({ SwissGLRenderer: class {} }));
 vi.mock('./shaderParkThreeRenderer', () => ({ ShaderParkThreeRenderer: class {} }));
+
 vi.mock('$lib/projmap/ProjectionMapRenderer', () => ({ ProjectionMapRenderer: class {} }));
 
 describe('NodeRendererRegistry Pixi lifecycle', () => {
@@ -32,6 +33,7 @@ describe('NodeRendererRegistry Pixi lifecycle', () => {
     };
 
     const pixiByNode = new Map([['pixi-node', existingRenderer as never]]);
+
     const registry = new NodeRendererRegistry({} as never, {
       hydraByNode: new Map(),
       canvasByNode: new Map(),
