@@ -15,7 +15,7 @@ describe('evaluateTextmodeCode', () => {
   it('replays the setup callback registered during a re-evaluation', async () => {
     const setup = vi.fn();
     const setupCallback = vi.fn();
-    const tm = { setup };
+    const tm = { setup, grid: { cols: 10, rows: 10 } };
 
     await evaluateTextmodeCode(
       tm as never,
@@ -32,7 +32,7 @@ describe('evaluateTextmodeCode', () => {
   it('leaves initial setup to the Textmodifier lifecycle', async () => {
     const setup = vi.fn();
     const setupCallback = vi.fn();
-    const tm = { setup };
+    const tm = { setup, grid: { cols: 10, rows: 10 } };
 
     await evaluateTextmodeCode(
       tm as never,
@@ -45,6 +45,32 @@ describe('evaluateTextmodeCode', () => {
     expect(setupCallback).not.toHaveBeenCalled();
   });
 
+  it('defers setup to the Textmodifier lifecycle until its grid is initialized', async () => {
+    const setup = vi.fn();
+
+    const setupCallback = vi.fn(() => {
+      const { cols, rows } = tm.grid!;
+
+      return Array(cols * rows).fill(0);
+    });
+
+    const tm: {
+      setup: typeof setup;
+      grid?: { cols: number; rows: number };
+    } = { setup };
+
+    await evaluateTextmodeCode(
+      tm as never,
+      async () => {
+        await tm.setup(setupCallback);
+      },
+      true
+    );
+
+    expect(setup).toHaveBeenCalledWith(setupCallback);
+    expect(setupCallback).not.toHaveBeenCalled();
+  });
+
   it('serializes overlapping evaluations for the same Textmodifier', async () => {
     const originalSetup = vi.fn();
     const firstSetupCallback = vi.fn();
@@ -53,7 +79,7 @@ describe('evaluateTextmodeCode', () => {
     const firstExecution = createDeferred();
     const firstStarted = createDeferred();
 
-    const tm = { setup: originalSetup };
+    const tm = { setup: originalSetup, grid: { cols: 10, rows: 10 } };
 
     const firstEvaluation = evaluateTextmodeCode(
       tm as never,

@@ -52,7 +52,10 @@ async function runTextmodeEvaluation(
     tm.setup = setup;
   }
 
-  if (replaySetup && setupCallback) {
+  // A Textmodifier starts its initialization asynchronously. Until its base
+  // layer has a grid, its normal lifecycle will invoke the callback once
+  // initialization completes. Running it here would make t.grid undefined.
+  if (replaySetup && setupCallback && tm.grid) {
     await setupCallback();
   }
 }
