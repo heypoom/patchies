@@ -1,11 +1,8 @@
 import regl from 'regl';
-import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
 import type {
   RenderGraph,
   RenderNode,
   FBONode,
-  RenderFunction,
-  RenderParams,
   UserParam,
   FBOFormat,
   FBOResolution
@@ -15,8 +12,7 @@ import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
   WEBGL_OPTIONAL_EXTENSIONS,
-  PREVIEW_SCALE_FACTOR,
-  capPreviewSize
+  PREVIEW_SCALE_FACTOR
 } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
@@ -29,11 +25,10 @@ import type { ThreeRenderer } from './threeRenderer';
 import type { PixiRenderer } from './pixiRenderer';
 import type { ReglRenderer } from './reglRenderer';
 import type { SwissGLRenderer } from './swglRenderer';
-import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
+import { SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
 import type { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
 import { getFramebuffer } from './utils';
-import { isExternalTextureNode } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
 import type {
   AudioAnalysisType,
@@ -47,33 +42,25 @@ import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { renderElementImageToBitmap } from './elementImageBitmap.js';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
-import { processIncludes } from '$lib/glsl-include/preprocessor';
-import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import { createWorkerClock, installWorkerTimeGlobal } from './workerClock';
 import type { RenderOp } from '$lib/profiler/types';
-import {
-  buildGlslUserParams,
-  defaultUniformValue,
-  isValidUniformData,
-  toGLValue
-} from './glUniformUtils';
+import { buildGlslUserParams, isValidUniformData } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager } from './CookStateManager';
-import { createGlslCookPolicy } from '$workers/rendering/cooking/object-policies/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
 import { createFinalOutputPresentationCommand } from './finalOutputPresentation';
-import { isPassthroughNodeType, mergeVideoGraphEdges } from './videoGraph';
+import { isPassthroughNodeType } from './videoGraph';
 import { FboResources } from './FboResources';
 import { drawToFinalOutput } from './drawToFinalOutput';
 import { VideoSourceResolver } from './VideoSourceResolver';
 import { NodeRendererRegistry } from './NodeRendererRegistry';
 import { WorkerSettingsRegistry } from './WorkerSettingsRegistry';
 import { ShaderRendererFactory } from './ShaderRendererFactory';
-import { allocateFbo, getMrtCount, getNodeFormat, getNodeResolution } from './fboAllocation';
+import { buildRenderGraph } from './buildRenderGraph';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -161,7 +148,7 @@ export class FBORenderer {
 
   /** During textmode loading, we need to refresh REGL. */
 
-  private fboNodes = new Map<string, FBONode>();
+  public fboNodes = new Map<string, FBONode>();
   public fallbackTexture: regl.Texture2D;
   private lastTime: number = 0;
   private prevTransportTime: number = 0;
@@ -170,10 +157,10 @@ export class FBORenderer {
   private renderErrorKeysByNode = new Map<string, Set<string>>();
 
   private visibleNodeIds: Set<string> | null = null;
-  private connectedVideoOutputNodeIds: Set<string> = new Set();
+  public connectedVideoOutputNodeIds: Set<string> = new Set();
 
   private cookStatsEnabled = false;
-  private lastCookStatusSignatures = new Map<string, string>();
+  public lastCookStatusSignatures = new Map<string, string>();
   private viewportCookRequiredCache: ViewportCookCache | null = null;
 
   /** Minimum interval between rendered frames (ms). 0 = unlimited. */
@@ -307,7 +294,7 @@ export class FBORenderer {
    * Compute a fingerprint of a render node's data for change detection.
    * Used to skip renderer recreation when only edges changed.
    */
-  private computeNodeFingerprint(node: RenderNode): string {
+  public computeNodeFingerprint(node: RenderNode): string {
     return JSON.stringify(node.data);
   }
 
@@ -336,304 +323,30 @@ export class FBORenderer {
    * which is invalid for float in WebGL2. So we create via regl (for tracking)
    * then fix the underlying GL texture with raw texImage2D.
    */
-  private createFboTexture(width: number, height: number, format: FBOFormat): regl.Texture2D {
+  public createFboTexture(width: number, height: number, format: FBOFormat): regl.Texture2D {
     return this.fboResources.createTexture(width, height, format);
   }
 
   /** Build FBOs for all nodes in the render graph */
   async buildFBOs(renderGraph: RenderGraph, connectedVideoOutputNodeIds?: Set<string>) {
-    if (connectedVideoOutputNodeIds) {
-      this.connectedVideoOutputNodeIds = new Set(connectedVideoOutputNodeIds);
-    }
+    return buildRenderGraph(this, renderGraph, connectedVideoOutputNodeIds);
+  }
 
-    const previousNodeIds = new Set(this.renderGraph?.nodes.map((node) => node.id));
-
-    // Get the set of node IDs that will exist in the new graph
-    const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
-
-    // Only destroy FBOs for nodes that no longer exist in the new graph.
-    // This prevents the black flash on Chrome when rebuilding the graph,
-    // since existing FBOs retain their content until overwritten.
-    for (const [nodeId, fboNode] of this.fboNodes) {
-      if (!newNodeIds.has(nodeId)) {
-        this.destroyFboNode(fboNode);
-
-        this.fboNodes.delete(nodeId);
-        this.cookState.removeNode(nodeId);
-        this.lastCookStatusSignatures.delete(nodeId);
-
-        // Unsubscribe removed nodes from video channels
-        this.videoChannelRegistry.unsubscribeAll(nodeId);
-      }
-    }
-
-    for (const nodeId of previousNodeIds) {
-      if (!newNodeIds.has(nodeId)) {
-        this.previewRenderer.removeNode(nodeId);
-      }
-    }
-
-    this.cleanupExpensiveTextmodeRenderers(newNodeIds);
-
-    // Register send.vdo/recv.vdo nodes with video channel registry
-    // Unsubscribe first to clean up stale subscriptions when channel names change
-    for (const node of renderGraph.nodes) {
-      match(node)
-        .with({ type: 'send.vdo' }, (n) => {
-          this.videoChannelRegistry.unsubscribeAll(n.id);
-          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'send');
-        })
-        .with({ type: 'recv.vdo' }, (n) => {
-          this.videoChannelRegistry.unsubscribeAll(n.id);
-          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'recv');
-        })
-        .otherwise(() => {});
-    }
-
-    // Merge virtual edges from video channels into the render graph
-    const virtualEdges = this.videoChannelRegistry.getVirtualEdges();
-
-    const mergedGraph = mergeVideoGraphEdges(renderGraph, virtualEdges);
-
-    this.renderGraph = mergedGraph;
-    this.outputNodeId = mergedGraph.outputNodeId;
-    this.outputOutletIndex = mergedGraph.outputOutletIndex;
-
-    // Update frame cooking policies and states
-    this.rebuildCookingPolicies(mergedGraph);
-
-    // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
-    type PendingNode = {
-      node: RenderNode;
-      colorAttachments: regl.Texture2D[];
-      framebuffer: regl.Framebuffer2D;
-      fingerprint: string;
-      fboFormat: FBOFormat;
-      resolution?: FBOResolution;
-    };
-
-    const pending: PendingNode[] = [];
-
-    for (const node of mergedGraph.nodes) {
-      const existingFbo = this.fboNodes.get(node.id);
-
-      // Routing nodes are texture aliases. They do not render into an FBO, and
-      // their preview would otherwise be a blank readback of that unused FBO.
-      if (isPassthroughNodeType(node.type)) {
-        if (existingFbo) {
-          this.destroyFboNode(existingFbo);
-          this.fboNodes.delete(node.id);
-        }
-
-        this.previewRenderer.setPreviewEnabled(node.id, false);
-
-        continue;
-      }
-
-      // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park
-      // nodes can request multiple color attachments.
-      const nodeData = node.data as Record<string, unknown>;
-      const mrtCount = getMrtCount({ type: node.type, data: nodeData });
-
-      // FBO format: read from node data, default to rgba8
-      const fboFormat = getNodeFormat(nodeData);
-
-      // Per-node resolution override (spec 122)
-      const nodeResolution = getNodeResolution(nodeData);
-
-      const [nodeWidth, nodeHeight] = this.resolveNodeSize(nodeResolution);
-
-      const canReuseFbo =
-        existingFbo &&
-        existingFbo.texture.width === nodeWidth &&
-        existingFbo.texture.height === nodeHeight &&
-        existingFbo.colorAttachments.length === mrtCount &&
-        (existingFbo.fboFormat ?? 'rgba8') === fboFormat;
-
-      // Diff: check if the node's data has changed since last build.
-      // If both FBO and data are unchanged, skip renderer recreation entirely.
-      // This preserves state in JS-based renderers (canvas, three, regl, etc.)
-      // that would otherwise lose their scene graphs, animation state, etc.
-      const fingerprint = this.computeNodeFingerprint(node);
-
-      if (
-        canReuseFbo &&
-        existingFbo.nodeType === node.type &&
-        existingFbo.dataFingerprint === fingerprint
-      ) {
-        // Node unchanged — skip renderer recreation entirely
-        continue;
-      }
-
-      let colorAttachments: regl.Texture2D[];
-      let framebuffer: regl.Framebuffer2D;
-
-      if (canReuseFbo) {
-        // Reuse existing FBO - preserves content, prevents flash
-        colorAttachments = existingFbo.colorAttachments;
-        framebuffer = existingFbo.framebuffer;
-
-        if (!this.hasReusableRenderer(node)) {
-          existingFbo.cleanup?.();
-        }
-      } else {
-        // Destroy old FBO if it exists but size or mrtCount doesn't match
-        if (existingFbo) {
-          this.destroyFboNode(existingFbo, !this.hasReusableRenderer(node));
-
-          this.fboNodes.delete(node.id);
-        }
-
-        ({ colorAttachments, framebuffer } = allocateFbo({
-          regl: this.regl,
-          gl: this.gl,
-          width: nodeWidth,
-          height: nodeHeight,
-          mrtCount,
-          format: fboFormat,
-          createTexture: this.createFboTexture.bind(this)
-        }));
-      }
-
-      this.cookState.markDirty(node.id, existingFbo ? 'config' : 'first-frame');
-
-      pending.push({
-        node,
-        colorAttachments,
-        framebuffer,
-        fingerprint,
-        fboFormat,
-        resolution: nodeResolution
-      });
-    }
-
-    // Phase 2 (parallel): create all renderers concurrently
-    const results = await Promise.all(
-      pending.map(async ({ node, framebuffer }) =>
-        match(node)
-          .with({ type: 'glsl' }, (node) => this.shaderRenderers.create(node, framebuffer))
-          .with(
-            {
-              type: P.union(
-                'hydra',
-                'swgl',
-                'canvas',
-                'textmode',
-                'three',
-                'pixi',
-                'regl',
-                'projmap'
-              )
-            },
-            (node) => this.nodeRenderers.create(node, framebuffer)
-          )
-          .with({ type: 'shaderpark' }, (node) => this.shaderRenderers.create(node, framebuffer))
-          .with({ type: 'img' }, () => this.createEmptyRenderer())
-          .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
-          .with({ type: 'worker' }, () => this.createEmptyRenderer())
-          .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
-          .with({ type: P.union('send.vdo', 'recv.vdo') }, () => this.createEmptyRenderer())
-          .exhaustive()
+  async createRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: FBONode['render']; cleanup: () => void } | null> {
+    return match(node)
+      .with({ type: P.union('glsl', 'shaderpark') }, (renderer) =>
+        this.shaderRenderers.create(renderer, framebuffer)
       )
-    );
-
-    // Phase 3: collect results into FBO map
-    for (let i = 0; i < pending.length; i++) {
-      const { node, colorAttachments, framebuffer, fingerprint, fboFormat, resolution } =
-        pending[i];
-      const renderer = results[i];
-
-      // If the renderer function is null, we skip defining this node.
-      if (renderer === null) {
-        console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
-
-        // Evict stale FBO entry so the old render function is not reused
-        this.fboNodes.delete(node.id);
-        this.cookState.removeNode(node.id);
-        this.lastCookStatusSignatures.delete(node.id);
-
-        // Always destroy GPU resources when evicting from the map, regardless of canReuseFbo
-        framebuffer.destroy();
-
-        for (const texture of colorAttachments) {
-          texture.destroy();
-        }
-
-        continue;
-      }
-
-      const nodeSize = this.resolveNodeSize(resolution);
-      // Canvas/textmode nodes use output/2 for sharper previews (vs output/4 for GL nodes)
-      const isCanvasNode = node.type === 'canvas' || node.type === 'textmode';
-      const previewScaleFactor = isCanvasNode ? PREVIEW_SCALE_FACTOR / 2 : PREVIEW_SCALE_FACTOR;
-      const fboNode: FBONode = {
-        id: node.id,
-        framebuffer,
-        colorAttachments,
-        texture: colorAttachments[0],
-        render: renderer.render,
-        cleanup: renderer.cleanup,
-        dataFingerprint: fingerprint,
-        nodeType: node.type,
-        fboFormat,
-        resolution,
-        previewSize: capPreviewSize(
-          Math.max(1, Math.floor(nodeSize[0] / previewScaleFactor)),
-          Math.max(1, Math.floor(nodeSize[1] / previewScaleFactor))
-        )
-      };
-
-      this.fboNodes.set(node.id, fboNode);
-
-      // Do not send previews back to external texture nodes,
-      // as the texture is managed by the node on the frontend.
-      const defaultPreviewEnabled = !isExternalTextureNode(node.type);
-
-      if (!this.previewRenderer.hasPreviewState(node.id)) {
-        this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
-      }
-    }
-
-    this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
-
-    // Phase 4 (sync): release previous-frame textures no longer needed, then
-    // allocate them for the feedback nodes in the current graph.
-    for (const [nodeId, fboNode] of this.fboNodes) {
-      if (!mergedGraph.feedbackNodes.has(nodeId)) {
-        this.destroyFeedbackResources(fboNode);
-      }
-    }
-
-    // Idempotent — skipped if the node already has prevTextures from a prior build.
-    // One prev texture + framebuffer is allocated per color attachment so MRT
-    // feedback nodes can provide previous-frame data for each outlet independently.
-    for (const nodeId of mergedGraph.feedbackNodes) {
-      const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode || fboNode.prevTextures) continue;
-
-      // Match the format of the node's color attachments for feedback textures.
-      // Read the format from the render graph node data.
-      const feedbackNode = mergedGraph.nodes.find((n) => n.id === nodeId);
-      const feedbackData = feedbackNode?.data as Record<string, unknown> | undefined;
-      const feedbackFormat: FBOFormat = (feedbackData?.fboFormat as FBOFormat) || 'rgba8';
-      const feedbackResolution = feedbackData?.resolution as FBOResolution | undefined;
-
-      const [feedbackTextureWidth, feedbackTextureHeight] =
-        this.resolveNodeSize(feedbackResolution);
-
-      fboNode.prevTextures = fboNode.colorAttachments.map(() =>
-        this.createFboTexture(feedbackTextureWidth, feedbackTextureHeight, feedbackFormat)
-      );
-
-      fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
-        this.regl.framebuffer({
-          color: prevTexture,
-          depthStencil: false
-        })
-      );
-    }
-
-    this.resumeViewportManagedRenderers();
+      .with(
+        {
+          type: P.union('hydra', 'swgl', 'canvas', 'textmode', 'three', 'pixi', 'regl', 'projmap')
+        },
+        (renderer) => this.nodeRenderers.create(renderer, framebuffer)
+      )
+      .otherwise(() => ({ render: () => {}, cleanup: () => {} }));
   }
 
   // Some nodes are externally managed, e.g. the texture will be uploaded on it.
@@ -645,7 +358,7 @@ export class FBORenderer {
    * Reused renderers retain resources from the prior FBO until their replacement
    * has consumed or transferred that state.
    */
-  private hasReusableRenderer(node: RenderNode): boolean {
+  public hasReusableRenderer(node: RenderNode): boolean {
     if (
       node.type === 'shaderpark' &&
       node.data.renderMode === '3d' &&
@@ -657,15 +370,15 @@ export class FBORenderer {
     return this.nodeRenderers.hasReusableRenderer(node);
   }
 
-  private destroyFboNode(fboNode: FBONode, cleanup = true): void {
+  public destroyFboNode(fboNode: FBONode, cleanup = true): void {
     this.fboResources.destroyNode(fboNode, cleanup);
   }
 
-  private destroyFeedbackResources(fboNode: FBONode): void {
+  public destroyFeedbackResources(fboNode: FBONode): void {
     this.fboResources.destroyFeedbackResources(fboNode);
   }
 
-  private rebuildCookingPolicies(mergedGraph: RenderGraph) {
+  public rebuildCookingPolicies(mergedGraph: RenderGraph) {
     const outputs = this.cookState.getCookOutputsByNode(mergedGraph.nodes, (node) =>
       isPassthroughNodeType(node.type)
     );
@@ -707,7 +420,7 @@ export class FBORenderer {
 
   // Textmode.js is super expensive to setup.
   // We wanted to only clean them up if the node is destroyed.
-  cleanupExpensiveTextmodeRenderers(newNodeIds?: Set<string>) {
+  public cleanupExpensiveTextmodeRenderers(newNodeIds?: Set<string>) {
     this.nodeRenderers.cleanupRemovedTextmodeRenderers(newNodeIds);
   }
 
@@ -1205,7 +918,7 @@ export class FBORenderer {
     return requiredNodeIds;
   }
 
-  private resumeViewportManagedRenderers() {
+  public resumeViewportManagedRenderers() {
     for (const renderer of this.canvasByNode.values()) {
       renderer?.resumeAnimation();
     }
