@@ -25,6 +25,31 @@ Patchies is a visual programming environment for audio-visual patches.
 - Separate assertion blocks that verify distinct behavior with blank lines.
 - If a function only returns a value without interim computation, use an arrow function with inline returns: `const foo = () => bar()`, don't use a block body with `return` or `function` keyword.
 
+One-line calls/assertions on the same category stays together, this is correct:
+
+```ts
+expect(getCompletionLabels(nodeType, "onKeyD")).toContain("onKeyDown");
+expect(getCompletionLabels(nodeType, "onKeyU")).toContain("onKeyUp");
+```
+
+If the calls/assertions are NOT one-line, they should be separated by blank lines, this is correct:
+
+```ts
+expect(
+  foo({
+    bar,
+    baz,
+  }),
+).toContain("baz");
+
+expect(
+  baz({
+    quuz,
+    baz,
+  }),
+).toContain("bar");
+```
+
 ## How to run
 
 Run project commands from `ui/`:

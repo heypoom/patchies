@@ -16,6 +16,7 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { useCappedPreviewSize } from '$lib/canvas/use-capped-preview-size.svelte';
+  import { useKeyboardCallbacks } from '$lib/canvas/use-keyboard-callbacks.svelte';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
@@ -43,6 +44,7 @@
   type ActiveRuntime = {
     code: string;
     draw: ((time: number) => void) | null;
+    setDimensions: (width: number, height: number) => void;
   };
 
   let {
@@ -99,6 +101,9 @@
   let consoleRef: VirtualConsole | null = $state(null);
   let entry = $state<Awaited<ReturnType<typeof pixiDomManager.register>>>();
   let activeRuntime: ActiveRuntime | null = null;
+
+  const keyboard = useKeyboardCallbacks({ onError: reportRuntimeError });
+
   let editorReady = $state(false);
   let videoOutputEnabled = $state(false);
   let isExpanded = $state(false);
@@ -162,6 +167,7 @@
   function setCanvasDimensions({ width, height }: { width: number; height: number }) {
     outputWidth = width;
     outputHeight = height;
+    activeRuntime?.setDimensions(width, height);
 
     pixiDomManager.resize(nodeId, { width, height });
   }
@@ -212,6 +218,7 @@
     lineErrors = undefined;
 
     settingsManager.clearCallbacks();
+    keyboard.reset();
     setVideoOutputEnabled(false);
     fluidCanvas.reset();
     updateNodeData(nodeId, getBorderResetDataForRun(data));
@@ -234,7 +241,15 @@
 
       runStage = new PIXI.Container();
 
-      const code = `var draw;\n${processedCode}\nreturn typeof draw === 'function' ? draw : null;`;
+      const code = `var draw;
+${processedCode}
+return {
+  draw: typeof draw === 'function' ? draw : null,
+  setDimensions: (nextWidth, nextHeight) => {
+    width = nextWidth;
+    height = nextHeight;
+  }
+};`;
 
       const candidate = await jsRunner.executeJavaScript(nodeId, code, {
         customConsole,
@@ -250,6 +265,8 @@
           setCanvasSize: fluidCanvas.setFixedCanvasSize,
           setFluidSize: fluidCanvas.setFluidSize,
           onCanvasResize: fluidCanvas.onCanvasResize,
+          onKeyDown: keyboard.onKeyDown,
+          onKeyUp: keyboard.onKeyUp,
           loadExtensions: pixiDomManager.loadExtensions.bind(pixiDomManager),
           setVideoOutput: (enabled: boolean) => setVideoOutputEnabled(enabled),
           noBorder: () => updateNodeData(nodeId, { noBorder: true })
@@ -272,7 +289,11 @@
 
       activeRuntime = {
         code: sourceCode,
-        draw: typeof candidate === 'function' ? (candidate as (time: number) => void) : null
+        draw:
+          typeof (candidate as ActiveRuntime).draw === 'function'
+            ? (candidate as ActiveRuntime).draw
+            : null,
+        setDimensions: (candidate as ActiveRuntime).setDimensions
       };
     } catch (error) {
       runStage?.destroy({ children: true });
@@ -337,7 +358,11 @@
       if (runRevision === 0) void run();
     }
 
+    const cleanupKeyboard = canvas ? keyboard.attach(canvas) : undefined;
+
     initialize();
+
+    return () => cleanupKeyboard?.();
   });
 
   onDestroy(() => {

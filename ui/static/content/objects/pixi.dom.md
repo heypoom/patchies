@@ -60,6 +60,21 @@ See [pixi](/docs/objects/pixi#extensions) for the extension-name list.
 
 Use `pixi` for render-graph performance. Use `pixi.dom` for full PixiJS interaction.
 
+## Keyboard Events
+
+Register callbacks for keys while the Pixi canvas is focused. Keyboard events
+do not leak to the Patchies editor:
+
+```javascript
+onKeyDown((event) => {
+  if (event.key === 'ArrowLeft') player.x -= 10;
+});
+
+onKeyUp((event) => {
+  console.log('Released:', event.key);
+});
+```
+
 ## Dynamic Canvas Size
 
 Choose a fixed Pixi canvas resolution with `setCanvasSize()`:
@@ -106,6 +121,17 @@ during a resize. Use `onCanvasResize()` to update static scenes. It runs at
 most once per animation frame while resizing. Patchies does not re-run your
 Pixi code after a fluid resize, preserving the stage and interaction state.
 
+```javascript
+const badge = new PIXI.Graphics().circle(0, 0, 100).fill(0x66ccff)
+
+onCanvasResize(({ width, height }) => {
+  // Keep a static scene centered without rebuilding the stage.
+  badge.position.set(width / 2, height / 2)
+})
+
+stage.addChild(badge)
+```
+
 ## Video Output
 
 `pixi.dom` keeps its video output disabled by default. Copying its canvas into
@@ -133,6 +159,7 @@ stage.addChild(badge)
 - `setCanvasSize(width, height)`: sets a fixed canvas resolution
 - `setFluidSize(options?)`: makes the canvas follow the node size
 - `onCanvasResize(callback)`: runs a callback after the canvas is resized
+- `onKeyDown(callback)`, `onKeyUp(callback)`: receive keyboard events while the canvas is focused
 - `noBorder()`: hides Patchies' border and selected glow until the call is removed and the node runs again
 
 ## See Also

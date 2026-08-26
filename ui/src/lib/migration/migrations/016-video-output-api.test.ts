@@ -23,9 +23,11 @@ function migratedCode(type: string, code: string) {
 
 describe('migration016', () => {
   test.each(['p5', 'canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'])(
-    'removes a standalone legacy output call from %s',
+    'preserves standalone legacy output behavior for %s',
     (type) => {
-      expect(migratedCode(type, 'noOutput();\n\ndraw()')).toBe('draw()');
+      expect(migratedCode(type, 'noOutput();\n\ndraw()')).toBe(
+        'setVideoOutput(true)\n\nsetVideoOutput(false);\n\ndraw()'
+      );
     }
   );
 
@@ -46,9 +48,17 @@ describe('migration016', () => {
     expect(migratedCode('p5', code)).toBe(code);
   });
 
-  test('leaves non-standalone legacy usage unchanged', () => {
+  test('replaces legacy output calls alongside an existing setter', () => {
+    const code = 'setVideoOutput(true)\nif (debug) noOutput()';
+
+    expect(migratedCode('p5', code)).toBe('setVideoOutput(true)\nif (debug) setVideoOutput(false)');
+  });
+
+  test('migrates conditional legacy output calls', () => {
     const code = 'if (debug) noOutput()';
 
-    expect(migratedCode('canvas.dom', code)).toBe(code);
+    expect(migratedCode('canvas.dom', code)).toBe(
+      'setVideoOutput(true)\n\nif (debug) setVideoOutput(false)'
+    );
   });
 });

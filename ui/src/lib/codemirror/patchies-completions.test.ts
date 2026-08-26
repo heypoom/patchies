@@ -199,6 +199,14 @@ describe('patchies completions', () => {
     expect(labels).not.toContain('deactivate');
   });
 
+  it.each(['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'])(
+    'shows keyboard callback completions for %s',
+    (nodeType) => {
+      expect(getCompletionLabels(nodeType, 'onKeyD')).toContain('onKeyDown');
+      expect(getCompletionLabels(nodeType, 'onKeyU')).toContain('onKeyUp');
+    }
+  );
+
   it('shows p5 surface mode helper completions with surface expansion helpers', () => {
     const labels = getCompletionLabels('p5', '');
 

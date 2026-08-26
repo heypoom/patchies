@@ -39,6 +39,7 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs. In fluid mode, draw(time) can read live width and height values while resizing. Resizing does not re-run your code, so fluid or resizable objects must use onCanvasResize to update their layout.
 - setVideoOutput(enabled): enable or disable the video output port. It is disabled by default; call setVideoOutput(true) when the scene feeds another video node.
 - noBorder(): hide Patchies' preview border and selected glow until the call is removed and the node runs again.
+- onKeyDown(event => {}) / onKeyUp(event => {}): receive keyboard events while the Pixi canvas is focused. Events do not leak to the Patchies editor.
 
 **Rules:**
 - Graphics is available by default.

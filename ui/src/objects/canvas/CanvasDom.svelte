@@ -20,6 +20,7 @@
     getUncappedPreviewSize,
     useCappedPreviewSize
   } from '$lib/canvas/use-capped-preview-size.svelte';
+  import { useKeyboardCallbacks } from '$lib/canvas/use-keyboard-callbacks.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { shouldShowHandles } from '../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -181,11 +182,10 @@
     buttons: 0
   });
 
-  // Keyboard state and user callbacks
-  let keyboardCallbacks = $state<{
-    onKeyDown?: (event: KeyboardEvent) => void;
-    onKeyUp?: (event: KeyboardEvent) => void;
-  }>({});
+  const keyboard = useKeyboardCallbacks({
+    onError: (error) =>
+      handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET)
+  });
 
   const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
     updateNodeData(nodeId, { inletCount: newInletCount, outletCount: newOutletCount });
@@ -303,44 +303,6 @@
       canvas?.removeEventListener('touchmove', onTouchMove);
       canvas?.removeEventListener('touchend', onTouchEnd);
       canvas?.removeEventListener('touchcancel', onTouchCancel);
-    };
-  }
-
-  function setupKeyboardListeners() {
-    if (!canvas) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (keyboardCallbacks.onKeyDown) {
-        // Stop propagation for all keyboard events to prevent leaking to xyflow
-        e.stopPropagation();
-
-        try {
-          keyboardCallbacks.onKeyDown(e);
-        } catch (error) {
-          handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
-        }
-      }
-    };
-
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (keyboardCallbacks.onKeyUp) {
-        // Stop propagation for all keyboard events to prevent leaking to xyflow
-        e.stopPropagation();
-
-        try {
-          keyboardCallbacks.onKeyUp(e);
-        } catch (error) {
-          handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
-        }
-      }
-    };
-
-    canvas.addEventListener('keydown', onKeyDown);
-    canvas.addEventListener('keyup', onKeyUp);
-
-    return () => {
-      canvas?.removeEventListener('keydown', onKeyDown);
-      canvas?.removeEventListener('keyup', onKeyUp);
     };
   }
 
@@ -468,8 +430,7 @@
 
     applyCanvasDisplaySize(resetSize.width, resetSize.height);
 
-    // Clear keyboard callbacks when code is re-run
-    keyboardCallbacks = {};
+    keyboard.reset();
     settingsManager.clearCallbacks();
 
     // Clear any previous animation frame
@@ -535,12 +496,8 @@
               primaryButton
             });
           },
-          onKeyDown: (callback: (event: KeyboardEvent) => void) => {
-            keyboardCallbacks.onKeyDown = callback;
-          },
-          onKeyUp: (callback: (event: KeyboardEvent) => void) => {
-            keyboardCallbacks.onKeyUp = callback;
-          },
+          onKeyDown: keyboard.onKeyDown,
+          onKeyUp: keyboard.onKeyUp,
           // Override JSRunner's requestAnimationFrame to also send bitmap
           requestAnimationFrame: (callback: FrameRequestCallback) => {
             // Store callback for restart after unpause
@@ -599,7 +556,7 @@
     });
 
     const cleanupMouse = setupMouseListeners();
-    const cleanupKeyboard = setupKeyboardListeners();
+    const cleanupKeyboard = canvas ? keyboard.attach(canvas) : undefined;
     setTimeout(() => {
       runCode();
     }, 50);
