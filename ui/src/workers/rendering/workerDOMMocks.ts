@@ -9,6 +9,49 @@ const createdCanvases: OffscreenCanvas[] = [];
 // Mock FontFace storage (Web Workers have FontFace but not document.fonts)
 const mockFonts = new Set<FontFace>();
 
+type MockImageCanvas = OffscreenCanvas & {
+  crossOrigin?: string;
+  naturalHeight: number;
+  naturalWidth: number;
+  onerror?: (error: unknown) => void;
+  onload?: (event: Event) => void;
+  src: string;
+};
+
+function createMockImage(): MockImageCanvas {
+  const canvas = new OffscreenCanvas(1, 1) as MockImageCanvas;
+
+  Object.defineProperties(canvas, {
+    naturalWidth: {
+      get: () => canvas.width
+    },
+    naturalHeight: {
+      get: () => canvas.height
+    },
+    src: {
+      set: (source: string) => {
+        void (async () => {
+          try {
+            const response = await fetch(source);
+            const bitmap = await createImageBitmap(await response.blob());
+            const context = canvas.getContext('2d');
+
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            context?.drawImage(bitmap, 0, 0);
+            bitmap.close();
+            canvas.onload?.(new Event('load'));
+          } catch (error) {
+            canvas.onerror?.(error);
+          }
+        })();
+      }
+    }
+  });
+
+  return canvas;
+}
+
 function createMockElement(tagName: string): unknown {
   const tag = tagName.toLowerCase();
 
@@ -131,6 +174,30 @@ export function setupWorkerDOMMocks(): void {
   // Also make HTMLElement available for instanceof checks
   // @ts-expect-error -- mock class for instanceof
   self.HTMLElement = class HTMLElement {};
+
+  // textmode.js checks these constructors before it uploads canvas-backed
+  // tilesets. Treat OffscreenCanvas as the worker equivalent of a canvas element.
+  // @ts-expect-error -- worker-compatible DOM constructors
+  self.HTMLCanvasElement = class HTMLCanvasElement {
+    static [Symbol.hasInstance](value: unknown) {
+      return value instanceof OffscreenCanvas;
+    }
+  };
+
+  // @ts-expect-error -- mock class for instanceof checks
+  self.HTMLImageElement = class HTMLImageElement {};
+
+  // @ts-expect-error -- mock class for instanceof checks
+  self.HTMLVideoElement = class HTMLVideoElement {};
+
+  // textmode.js v0.18 loads its built-in tileset through `new Image()`.
+  // OffscreenCanvas is a valid CanvasImageSource for the subsequent drawImage call.
+  // @ts-expect-error -- worker-compatible Image substitute
+  self.Image = class Image {
+    constructor() {
+      return createMockImage();
+    }
+  };
 
   isSetup = true;
 }
