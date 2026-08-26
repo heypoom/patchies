@@ -28,7 +28,6 @@ import type { SwissGLRenderer } from './swglRenderer';
 import { SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
 import type { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
-import { getFramebuffer } from './utils';
 import type { Message } from '$lib/messages/MessageSystem';
 import type {
   AudioAnalysisType,
@@ -43,7 +42,7 @@ import { VideoTextureManager } from './VideoTextureManager.js';
 import { renderElementImageToBitmap } from './elementImageBitmap.js';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
-import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
+import { PollingClockScheduler } from '../../lib/transport/ClockScheduler.js';
 import { createWorkerClock, installWorkerTimeGlobal } from './workerClock';
 import type { RenderOp } from '$lib/profiler/types';
 import { buildGlslUserParams, isValidUniformData } from './glUniformUtils';
@@ -61,6 +60,7 @@ import { NodeRendererRegistry } from './NodeRendererRegistry';
 import { WorkerSettingsRegistry } from './WorkerSettingsRegistry';
 import { ShaderRendererFactory } from './ShaderRendererFactory';
 import { buildRenderGraph } from './buildRenderGraph';
+import { renderFrame } from './renderFrame';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -150,10 +150,10 @@ export class FBORenderer {
 
   public fboNodes = new Map<string, FBONode>();
   public fallbackTexture: regl.Texture2D;
-  private lastTime: number = 0;
-  private prevTransportTime: number = 0;
-  private frameCount: number = 0;
-  private contextLossReported = false;
+  public lastTime: number = 0;
+  public prevTransportTime: number = 0;
+  public frameCount: number = 0;
+  public contextLossReported = false;
   private renderErrorKeysByNode = new Map<string, Set<string>>();
 
   private visibleNodeIds: Set<string> | null = null;
@@ -184,7 +184,7 @@ export class FBORenderer {
   /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
   private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
 
-  private startTime: number = Date.now();
+  public startTime: number = Date.now();
   private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
 
@@ -567,138 +567,6 @@ export class FBORenderer {
     return this.previewRenderer.getEnabledPreviews();
   }
 
-  /** Render a single frame using the render graph */
-  renderFrame(): void {
-    if (!this.renderGraph || this.fboNodes.size === 0) {
-      return;
-    }
-
-    if (this.gl.isContextLost()) {
-      if (!this.contextLossReported) {
-        this.contextLossReported = true;
-        this.reportWorkerError('WebGL context is lost in render worker');
-      }
-
-      return;
-    }
-
-    // Update time for animation
-    const currentTime = (Date.now() - this.startTime) / 1000; // Convert to seconds
-    this.lastTime = currentTime;
-    this.frameCount++;
-
-    // Tick the clock scheduler with current transport state
-    const clockState: ClockState = {
-      time: this.transportTime?.seconds ?? this.lastTime,
-      beat: this.transportTime?.beat ?? -1,
-      bpm: this.transportTime?.bpm ?? 120,
-      isPlaying: this.transportTime?.isPlaying ?? true,
-      playState: this.transportTime?.playState ?? 'playing'
-    };
-
-    this.clockScheduler.tick(clockState);
-
-    this.cookState.beginFrame({
-      transportTime: this.transportTime?.seconds ?? this.lastTime,
-      prevTransportTime: this.prevTransportTime,
-      isTransportPlaying: this.transportTime?.isPlaying ?? true
-    });
-
-    const isOverride = this.hasValidOutputOverride();
-    const effectiveOutputNodeId = this.getEffectiveOutputNodeId(isOverride);
-    const requiredNodeIds = this.getViewportCookRequiredNodeIds(effectiveOutputNodeId);
-
-    // Render each node in topological order
-    for (const nodeId of this.renderGraph.sortedNodes) {
-      if (!this.renderGraph) continue;
-
-      const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
-      const fboNode = this.fboNodes.get(nodeId);
-      if (!node || !fboNode) continue;
-
-      const shouldSkipCooking = shouldSkipCookForViewport({ node, requiredNodeIds });
-      if (shouldSkipCooking) continue;
-
-      const cookDecision = this.cookState.shouldCook(node.id);
-
-      if (!cookDecision.shouldCook) {
-        this.postCookStatusIfNeeded(node.id);
-        continue;
-      }
-
-      if (this.isNodePaused(node.id)) {
-        this.cookState.markPaused(node.id);
-        this.postCookStatusIfNeeded(node.id, true);
-        continue;
-      }
-
-      try {
-        const cookStart = performance.now();
-
-        this.renderFboNode(node, fboNode);
-        this.cookState.markCooked(node.id, cookDecision.reasons, performance.now() - cookStart);
-        this.postCookStatusIfNeeded(node.id, true);
-      } catch (error) {
-        this.reportNodeRenderError(node, error);
-        this.refreshReglState();
-      }
-    }
-
-    // Render the final result to the main canvas.
-    // Use override if set and the node exists; otherwise fall back to bg.out.
-    // Override always uses attachment 0; bg.out respects the connected outlet index.
-    const savedOutletIndex = this.outputOutletIndex;
-    if (isOverride) this.outputOutletIndex = 0;
-
-    if (effectiveOutputNodeId !== null) {
-      this.profiler.measureOp('blit', () => this.renderNodeToMainOutput(effectiveOutputNodeId));
-    }
-
-    this.outputOutletIndex = savedOutletIndex;
-
-    // Blit current frame into prevFramebuffer for all feedback nodes.
-    //
-    // We blit instead of swapping pointers because each renderer closes over
-    // its framebuffer at creation time — swapping fboNode.framebuffer would
-    // leave the render function pointing at the wrong buffer, causing every
-    // other frame to read stale content (flickering). Blitting keeps
-    // fboNode.framebuffer as the stable write target while prevTexture always
-    // holds the previous frame's output for back-edge consumers.
-    for (const nodeId of this.renderGraph.feedbackNodes) {
-      const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode?.prevFramebuffers?.length) continue;
-
-      const width = fboNode.texture.width;
-      const height = fboNode.texture.height;
-
-      const gl = this.gl;
-      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
-
-      for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
-        gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
-
-        gl.blitFramebuffer(
-          0,
-          0,
-          width,
-          height,
-          0,
-          0,
-          width,
-          height,
-          gl.COLOR_BUFFER_BIT,
-          gl.NEAREST
-        );
-      }
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-
-    // Track previous transport time for iTimeDelta computation
-    this.prevTransportTime = this.transportTime?.seconds ?? this.lastTime;
-  }
-
   renderFboNode(node: RenderNode, fboNode: FBONode): void {
     // Check if the node is paused, skip rendering if it is
     if (this.isNodePaused(node.id)) {
@@ -794,7 +662,7 @@ export class FBORenderer {
     });
   }
 
-  private reportNodeRenderError(node: RenderNode, error: unknown) {
+  public reportNodeRenderError(node: RenderNode, error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const errorKey = `${node.type}:${message}`;
 
@@ -812,11 +680,11 @@ export class FBORenderer {
     });
   }
 
-  private reportWorkerError(message: string) {
+  public reportWorkerError(message: string) {
     self.postMessage({ type: 'error', message });
   }
 
-  private postCookStatusIfNeeded(nodeId: string, force = false): void {
+  public postCookStatusIfNeeded(nodeId: string, force = false): void {
     if (!this.cookStatsEnabled) return;
 
     const status = this.cookState.getStatus(nodeId);
@@ -845,7 +713,7 @@ export class FBORenderer {
     this.lastCookStatusSignatures.clear();
   }
 
-  private refreshReglState() {
+  public refreshReglState() {
     const reglInstance = this.regl as regl.Regl & {
       _refresh?: () => void;
     };
@@ -853,13 +721,13 @@ export class FBORenderer {
     reglInstance._refresh?.();
   }
 
-  private hasValidOutputOverride(): boolean {
+  public hasValidOutputOverride(): boolean {
     return Boolean(
       this.overrideOutputNodeId && this.videoSources.resolveTexture(this.overrideOutputNodeId, 0)
     );
   }
 
-  private getEffectiveOutputNodeId(isOverride = this.hasValidOutputOverride()): string | null {
+  public getEffectiveOutputNodeId(isOverride = this.hasValidOutputOverride()): string | null {
     return isOverride ? this.overrideOutputNodeId : this.outputNodeId;
   }
 
@@ -885,7 +753,7 @@ export class FBORenderer {
     this.resumeViewportManagedRenderers();
   }
 
-  private getViewportCookRequiredNodeIds(effectiveOutputNodeId: string | null): Set<string> | null {
+  public getViewportCookRequiredNodeIds(effectiveOutputNodeId: string | null): Set<string> | null {
     const cached = this.viewportCookRequiredCache;
 
     if (
@@ -970,7 +838,7 @@ export class FBORenderer {
     return this.profiler.measureOp(op, fn);
   }
 
-  private renderNodeToMainOutput(nodeId: string): void {
+  public renderNodeToMainOutput(nodeId: string): void {
     if (!this.isOutputEnabled) {
       return;
     }
@@ -1018,10 +886,11 @@ export class FBORenderer {
       if (this.renderIntervalMs > 0) {
         const now = performance.now();
         if (now - this.lastRenderTime < this.renderIntervalMs) return;
+
         this.lastRenderTime = now;
       }
 
-      this.renderFrame();
+      renderFrame(this);
       onFrame?.();
     });
   }
@@ -1113,7 +982,7 @@ export class FBORenderer {
   /**
    * Removes a persistent bitmap image.
    *
-   * We should only call this from the frontend when the node is removed.
+   * Only call this from the frontend when the node is removed.
    * This is because we often reconstruct the render graph,
    * and we don't want to remove persistent textures when reconstructing.
    **/
@@ -1124,7 +993,7 @@ export class FBORenderer {
   /**
    * Removes persistent uniform data for a node.
    *
-   * We should only call this from the frontend when the node is removed.
+   * Only call this from the frontend when the node is removed.
    * This is because we often reconstruct the render graph,
    * and we don't want to remove persistent uniform data when reconstructing.
    **/
