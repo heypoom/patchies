@@ -89,6 +89,7 @@
   let panEnabled = $state(true);
   let wheelEnabled = $state(true);
   let videoOutputEnabled = $state(true);
+  let isPaused = $state(false);
   let editorReady = $state(false);
 
   const { updateNodeData } = useSvelteFlow();
@@ -252,6 +253,11 @@
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
 
+  function togglePause() {
+    isPaused = !isPaused;
+    glSystem.toggleNodePause(nodeId);
+  }
+
   function updateTextmode() {
     // Clear console and error highlighting on re-run
     consoleRef?.clearConsole();
@@ -275,6 +281,9 @@
   onCodeChange={(newCode) => updateNodeData(nodeId, { code: newCode })}
   {nodeId}
   onrun={updateTextmode}
+  onPlaybackToggle={togglePause}
+  paused={isPaused}
+  showPauseButton={true}
   bind:previewCanvas
   nodrag={!dragEnabled}
   nopan={!panEnabled}
