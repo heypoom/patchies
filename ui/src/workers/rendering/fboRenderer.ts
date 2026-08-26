@@ -10,7 +10,7 @@ import type {
   FBOFormat,
   FBOResolution
 } from '../../lib/rendering/types';
-import type { ClockCommandMessage, TransportState } from '$lib/transport/types';
+import type { TransportState } from '$lib/transport/types';
 import type { ProjMapSurface } from '$lib/projmap/types';
 import {
   DEFAULT_OUTPUT_SIZE,
@@ -52,6 +52,7 @@ import { processIncludes } from '$lib/glsl-include/preprocessor';
 import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
+import { createWorkerClock, installWorkerTimeGlobal } from './workerClock';
 import type { RenderOp } from '$lib/profiler/types';
 import {
   buildGlslUserParams,
@@ -66,7 +67,9 @@ import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
 import { createFinalOutputPresentationCommand } from './finalOutputPresentation';
-import { topologicalSort } from '$lib/rendering/graphUtils';
+import { isPassthroughNodeType, mergeVideoGraphEdges } from './videoGraph';
+import { FboResources } from './FboResources';
+import { drawToFinalOutput } from './drawToFinalOutput';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -87,9 +90,6 @@ export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   premultipliedAlpha: false,
   stencil: true
 };
-
-const isPassthroughNodeType = (nodeType: RenderNode['type']): boolean =>
-  nodeType === 'send.vdo' || nodeType === 'recv.vdo';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -213,12 +213,7 @@ export class FBORenderer {
   /** Video channel registry for send.vdo/recv.vdo wireless routing */
   public videoChannelRegistry = VideoChannelRegistry.getInstance();
 
-  /** Whether rendering to float FBOs is supported (EXT_color_buffer_float) */
-  private colorBufferFloatSupported = false;
-
-  /** Whether linear filtering is supported for half-float and float textures */
-  private halfFloatLinearSupported = false;
-  private floatLinearSupported = false;
+  private fboResources: FboResources;
 
   constructor() {
     const [width, height] = this.outputSize;
@@ -239,10 +234,7 @@ export class FBORenderer {
     // Fixes alpha not being rendered in final output
     this.drawFinalOutput = createFinalOutputPresentationCommand(this.regl);
 
-    // Detect float FBO support
-    this.colorBufferFloatSupported = !!this.gl.getExtension('EXT_color_buffer_float');
-    this.halfFloatLinearSupported = !!this.gl.getExtension('OES_texture_half_float_linear');
-    this.floatLinearSupported = !!this.gl.getExtension('OES_texture_float_linear');
+    this.fboResources = new FboResources(this.regl, this.gl);
 
     this.fallbackTexture = this.regl.texture({
       width: 1,
@@ -315,34 +307,7 @@ export class FBORenderer {
 
   /** Resolve per-node resolution override to [width, height]. */
   private resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
-    const [outputWidth, outputHeight] = this.outputSize;
-
-    if (resolution == null) {
-      return [outputWidth, outputHeight];
-    }
-
-    let width: number;
-    let height: number;
-
-    // Match 1/n fractional format (e.g. '1/2', '1/4', '1/8')
-    const fractionalMatch = typeof resolution === 'string' ? resolution.match(/^1\/(\d+)$/) : null;
-
-    if (fractionalMatch) {
-      const divisor = Number(fractionalMatch[1]);
-
-      width = Math.floor(outputWidth / divisor);
-      height = Math.floor(outputHeight / divisor);
-    } else if (typeof resolution === 'number') {
-      width = Math.floor(resolution);
-      height = Math.floor(resolution);
-    } else if (Array.isArray(resolution)) {
-      width = Math.floor(resolution[0]);
-      height = Math.floor(resolution[1]);
-    } else {
-      return [outputWidth, outputHeight];
-    }
-
-    return [Math.max(1, width), Math.max(1, height)];
+    return this.fboResources.resolveSize(resolution, this.outputSize);
   }
 
   /**
@@ -353,46 +318,7 @@ export class FBORenderer {
    * then fix the underlying GL texture with raw texImage2D.
    */
   private createFboTexture(width: number, height: number, format: FBOFormat): regl.Texture2D {
-    // Create as uint8 first so regl doesn't complain about float types.
-    // regl's initial texImage2D with GL_RGBA emits a harmless WebGL warning
-    // for float nodes — we immediately overwrite with the correct format below.
-    const texture = this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' });
-
-    if (format === 'rgba8') return texture;
-
-    // Fall back to rgba8 if float render targets aren't supported
-    if (!this.colorBufferFloatSupported) {
-      console.warn(
-        `[fbo] EXT_color_buffer_float not supported, falling back to rgba8 for ${format}`
-      );
-      return texture;
-    }
-
-    // Re-initialize the raw GL texture with the correct WebGL2-sized format
-    const gl = this.gl;
-    const rawTexture = getRawTexture(texture);
-    const { internalFormat, type, linearSupported } = match(format)
-      .with('rgba16f', () => ({
-        internalFormat: gl.RGBA16F,
-        type: gl.HALF_FLOAT,
-        linearSupported: this.halfFloatLinearSupported
-      }))
-      .with('rgba32f', () => ({
-        internalFormat: gl.RGBA32F,
-        type: gl.FLOAT,
-        linearSupported: this.floatLinearSupported
-      }))
-      .exhaustive();
-
-    const filter = linearSupported ? gl.LINEAR : gl.NEAREST;
-
-    gl.bindTexture(gl.TEXTURE_2D, rawTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA, type, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    return texture;
+    return this.fboResources.createTexture(width, height, format);
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -448,7 +374,7 @@ export class FBORenderer {
     // Merge virtual edges from video channels into the render graph
     const virtualEdges = this.videoChannelRegistry.getVirtualEdges();
 
-    const mergedGraph = this.mergeVirtualEdges(renderGraph, virtualEdges);
+    const mergedGraph = mergeVideoGraphEdges(renderGraph, virtualEdges);
 
     this.renderGraph = mergedGraph;
     this.outputNodeId = mergedGraph.outputNodeId;
@@ -744,30 +670,11 @@ export class FBORenderer {
   }
 
   private destroyFboNode(fboNode: FBONode, cleanup = true): void {
-    fboNode.framebuffer.destroy();
-
-    for (const texture of fboNode.colorAttachments) {
-      texture.destroy();
-    }
-
-    this.destroyFeedbackResources(fboNode);
-
-    if (cleanup) {
-      fboNode.cleanup?.();
-    }
+    this.fboResources.destroyNode(fboNode, cleanup);
   }
 
   private destroyFeedbackResources(fboNode: FBONode): void {
-    for (const framebuffer of fboNode.prevFramebuffers ?? []) {
-      framebuffer?.destroy();
-    }
-
-    for (const texture of fboNode.prevTextures ?? []) {
-      texture?.destroy();
-    }
-
-    fboNode.prevFramebuffers = undefined;
-    fboNode.prevTextures = undefined;
+    this.fboResources.destroyFeedbackResources(fboNode);
   }
 
   private rebuildCookingPolicies(mergedGraph: RenderGraph) {
@@ -786,115 +693,6 @@ export class FBORenderer {
     );
 
     this.cookState.setGraphSignatures(signatures);
-  }
-
-  /**
-   * Apply virtual edges to nodes by updating their inputs, outputs, and inletMap.
-   * This ensures virtual edges from send.vdo/recv.vdo are properly connected.
-   */
-  private applyVirtualEdgesToNodes(graph: RenderGraph): void {
-    const nodeMap = new Map(graph.nodes.map((n) => [n.id, n]));
-
-    for (const edge of graph.edges) {
-      // Skip if this edge was already processed (non-virtual edges are pre-processed)
-      if (!edge.id.startsWith('virtual-video-')) continue;
-
-      const sourceNode = nodeMap.get(edge.source);
-      const targetNode = nodeMap.get(edge.target);
-
-      if (sourceNode && targetNode) {
-        // Add to inputs/outputs if not already present
-        if (!sourceNode.outputs.includes(edge.target)) {
-          sourceNode.outputs.push(edge.target);
-        }
-
-        if (!targetNode.inputs.includes(edge.source)) {
-          targetNode.inputs.push(edge.source);
-        }
-
-        // Parse inlet index from target handle (e.g., "video-in-0" -> 0)
-        if (edge.targetHandle?.startsWith('video-in')) {
-          const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
-
-          if (inletMatch) {
-            const inletIndex = parseInt(inletMatch[1], 10);
-
-            // Virtual edges always come from outlet 0 of the source
-            targetNode.inletMap.set(inletIndex, { sourceNodeId: edge.source, outletIndex: 0 });
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Add wireless video-channel edges before graph analysis so a cycle routed
-   * through send.vdo/recv.vdo receives the same previous-frame semantics as a
-   * visible feedback cable.
-   */
-  private mergeVirtualEdges(
-    renderGraph: RenderGraph,
-    virtualEdges: RenderGraph['edges']
-  ): RenderGraph {
-    const edgesById = new Map<string, RenderGraph['edges'][number]>();
-
-    for (const edge of [...renderGraph.edges, ...virtualEdges]) {
-      edgesById.set(edge.id, edge);
-    }
-
-    const mergedGraph: RenderGraph = {
-      ...renderGraph,
-      edges: [...edgesById.values()]
-    };
-
-    this.applyVirtualEdgesToNodes(mergedGraph);
-
-    // The incoming graph may have been analyzed before virtual edges existed.
-    // Clear that result before recalculating it against the complete graph.
-    for (const node of mergedGraph.nodes) {
-      node.backEdgeInlets.clear();
-    }
-
-    const { sortedNodes, backEdgeIds, feedbackNodeIds } = topologicalSort(
-      mergedGraph.nodes,
-      mergedGraph.edges
-    );
-
-    // A routing node has no FBO of its own. If it is the source of a
-    // back-edge, preserve the previous frame on the underlying render node.
-    const feedbackStorageNodeIds = new Set<string>();
-
-    for (const nodeId of feedbackNodeIds) {
-      const sourceNodeId = this.resolveFeedbackStorageNodeId(nodeId, mergedGraph);
-
-      if (sourceNodeId) {
-        feedbackStorageNodeIds.add(sourceNodeId);
-      }
-    }
-
-    return {
-      ...mergedGraph,
-      sortedNodes,
-      backEdges: backEdgeIds,
-      feedbackNodes: feedbackStorageNodeIds
-    };
-  }
-
-  private resolveFeedbackStorageNodeId(
-    nodeId: string,
-    graph: RenderGraph,
-    visited = new Set<string>()
-  ): string | null {
-    if (visited.has(nodeId)) return null;
-    visited.add(nodeId);
-
-    const node = graph.nodes.find((candidate) => candidate.id === nodeId);
-    if (!node) return null;
-    if (!isPassthroughNodeType(node.type)) return nodeId;
-
-    const inlet = node.inletMap.get(0);
-
-    return inlet ? this.resolveFeedbackStorageNodeId(inlet.sourceNodeId, graph, visited) : null;
   }
 
   async createHydraRenderer(
@@ -2043,11 +1841,6 @@ export class FBORenderer {
   }
 
   private renderNodeToMainOutput(nodeId: string): void {
-    // outputSize controls the offscreen canvas dimensions (blit destination).
-    // backgroundSize is used only for the cover-mode aspect ratio crop.
-    const [outputWidth, outputHeight] = this.outputSize;
-    const [backgroundWidth, backgroundHeight] = this.backgroundSize;
-
     if (!this.isOutputEnabled) {
       return;
     }
@@ -2059,46 +1852,13 @@ export class FBORenderer {
       return;
     }
 
-    const gl = this.regl._gl as WebGL2RenderingContext;
-    const { texture, width: sourceWidth, height: sourceHeight } = source;
-
-    // Cover-mode blit: crop the source to match the background's aspect ratio,
-    // so the output fills the screen without stretching (spec 128).
-    const sourceAspect = sourceWidth / sourceHeight;
-    const backgroundAspect = backgroundWidth / backgroundHeight;
-
-    let sourceX0 = 0;
-    let sourceY0 = 0;
-    let sourceX1 = sourceWidth;
-    let sourceY1 = sourceHeight;
-
-    if (sourceAspect > backgroundAspect) {
-      // Source is wider — crop sides
-      const cropWidth = sourceHeight * backgroundAspect;
-      const offset = (sourceWidth - cropWidth) / 2;
-
-      sourceX0 = Math.floor(offset);
-      sourceX1 = Math.floor(offset + cropWidth);
-    } else if (sourceAspect < backgroundAspect) {
-      // Source is taller — crop top/bottom
-      const cropHeight = sourceWidth / backgroundAspect;
-      const offset = (sourceHeight - cropHeight) / 2;
-
-      sourceY0 = Math.floor(offset);
-      sourceY1 = Math.floor(offset + cropHeight);
-    }
-
-    gl.viewport(0, 0, outputWidth, outputHeight);
-
-    const sourceUvRect = [
-      sourceX0 / sourceWidth,
-      sourceY0 / sourceHeight,
-      sourceX1 / sourceWidth,
-      sourceY1 / sourceHeight
-    ];
-
-    this.drawFinalOutput({ texture, sourceUvRect });
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    drawToFinalOutput({
+      source,
+      regl: this.regl,
+      drawFinalOutput: this.drawFinalOutput,
+      outputSize: this.outputSize,
+      backgroundSize: this.backgroundSize
+    });
   }
 
   getOutputBitmap(): ImageBitmap | null {
@@ -2171,6 +1931,7 @@ export class FBORenderer {
     visited = new Set<string>()
   ): { texture: regl.Texture2D; width: number; height: number } | null {
     if (visited.has(nodeId)) return null;
+
     visited.add(nodeId);
 
     // External sources are the common direct-input case. Resolve them before
@@ -2583,15 +2344,7 @@ export class FBORenderer {
    * This allows `() => time` to work in Hydra code.
    */
   private defineWorkerGlobals() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const renderer: FBORenderer = this;
-
-    Object.defineProperty(globalThis, 'time', {
-      configurable: true,
-      get() {
-        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
-      }
-    });
+    installWorkerTimeGlobal(() => this.transportTime?.seconds ?? this.lastTime);
   }
 
   /**
@@ -2606,78 +2359,9 @@ export class FBORenderer {
    * commands back to the main thread.
    */
   createWorkerClock() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const renderer: FBORenderer = this;
-    const scheduler = this.clockScheduler;
-
-    // Helper to send clock commands to main thread
-    const send = (command: ClockCommandMessage['command']) =>
-      self.postMessage({ type: 'clockCommand', command });
-
-    return {
-      // Read properties
-      get time() {
-        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
-      },
-      get ticks() {
-        return renderer.transportTime?.ticks ?? 0;
-      },
-      get beat() {
-        return renderer.transportTime?.beat ?? 0;
-      },
-      get phase() {
-        return renderer.transportTime?.phase ?? 0;
-      },
-      get bpm() {
-        return renderer.transportTime?.bpm ?? 120;
-      },
-      get isPlaying() {
-        return renderer.transportTime?.isPlaying ?? true;
-      },
-      get bar() {
-        return renderer.transportTime?.bar ?? 0;
-      },
-      get beatsPerBar() {
-        return renderer.transportTime?.beatsPerBar ?? 4;
-      },
-      get denominator() {
-        return renderer.transportTime?.denominator ?? 4;
-      },
-
-      // Subdivision helpers. Computed locally from ticks + ppq.
-      subdiv(n: number) {
-        const ticks = renderer.transportTime?.ticks ?? 0;
-        const ppq = renderer.transportTime?.ppq ?? 192;
-        const ticksPerSubdiv = ppq / n;
-
-        return Math.floor((ticks % ppq) / ticksPerSubdiv);
-      },
-      subdivPhase(n: number) {
-        const ticks = renderer.transportTime?.ticks ?? 0;
-        const ppq = renderer.transportTime?.ppq ?? 192;
-        const ticksPerSubdiv = ppq / n;
-
-        return ((ticks % ppq) % ticksPerSubdiv) / ticksPerSubdiv;
-      },
-
-      // Control methods (send to main thread)
-      play: () => send({ action: 'play' }),
-      pause: () => send({ action: 'pause' }),
-      stop: () => send({ action: 'stop' }),
-      seek: (time: number) => send({ action: 'seek', value: time }),
-
-      // Set BPM and time signature
-      setBpm: (bpm: number) => send({ action: 'setBpm', value: bpm }),
-      setTimeSignature: (numerator: number, denominator = 4) =>
-        send({ action: 'setTimeSignature', numerator, denominator }),
-
-      // Scheduling methods
-      onBeat: scheduler.onBeat.bind(scheduler),
-      schedule: scheduler.schedule.bind(scheduler),
-      every: scheduler.every.bind(scheduler),
-      onPlayStateChange: scheduler.onPlayStateChange.bind(scheduler),
-      cancel: scheduler.cancel.bind(scheduler),
-      cancelAll: scheduler.cancelAll.bind(scheduler)
-    };
+    return createWorkerClock(this.clockScheduler, {
+      getTransportTime: () => this.transportTime,
+      getLastTime: () => this.lastTime
+    });
   }
 }
