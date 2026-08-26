@@ -6,5 +6,6 @@ export type TextmodeRenderNode = {
     code: string;
     fboFormat?: FBOFormat;
     resolution?: FBOResolution;
+    _runRevision?: number;
   };
 };

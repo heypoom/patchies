@@ -1036,10 +1036,18 @@ export class FBORenderer {
         // Update framebuffer reference (new one is created each buildFBOs call)
         textmodeRenderer.framebuffer = framebuffer;
 
-        // If textmode user code has changed, we update the underlying code
-        if (renderer.config.code !== node.data.code) {
+        const runRevision = node.data._runRevision;
+
+        const shouldUpdateCode =
+          renderer.config.code !== node.data.code || renderer.config.runRevision !== runRevision;
+
+        // A Run action may retain the same source code, but it must still
+        // re-evaluate it so its registered t.setup() callback can run again.
+        if (shouldUpdateCode) {
           textmodeRenderer.config.code = node.data.code;
-          textmodeRenderer.updateCode();
+          textmodeRenderer.config.runRevision = runRevision;
+
+          await textmodeRenderer.updateCode();
         }
       }
     }
@@ -1047,7 +1055,7 @@ export class FBORenderer {
     // 2. if there are no renderer to re-use, we create a new one!
     if (!textmodeRenderer) {
       textmodeRenderer = await TextmodeRenderer.create(
-        { code: node.data.code, nodeId: node.id },
+        { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision },
         framebuffer,
         this
       );
