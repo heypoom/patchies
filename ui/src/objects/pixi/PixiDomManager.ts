@@ -387,6 +387,12 @@ class PixiDomManager {
 
     entry.canvas.width = size.width;
     entry.canvas.height = size.height;
+
+    // Pixi caches a CanvasSource for each multi-view canvas. Updating the canvas
+    // attributes alone leaves that source (and its render target) at the old size.
+    this.app?.renderer.renderTarget
+      .getRenderTarget(entry.canvas)
+      .colorTexture.source.resize(size.width, size.height);
   }
 }
 

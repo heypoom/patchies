@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 
 const pixiMocks = vi.hoisted(() => ({
   applications: [] as Array<{ destroy: ReturnType<typeof vi.fn> }>,
   extensionVersion: 0,
   initWaiters: [] as Promise<void>[],
+  resizeRenderTarget: vi.fn(),
   loadExtensions: vi.fn(async () => {
     pixiMocks.extensionVersion += 1;
   })
@@ -21,13 +22,20 @@ vi.mock('pixi.js', () => ({
       events: {
         rootBoundary: { rootTarget: null },
         setTargetElement: vi.fn()
+      },
+      renderTarget: {
+        getRenderTarget: vi.fn(() => ({
+          colorTexture: { source: { resize: pixiMocks.resizeRenderTarget } }
+        }))
       }
     };
+
     ticker = {
       add: vi.fn(),
       remove: vi.fn(),
       start: vi.fn()
     };
+
     destroy = vi.fn();
 
     constructor() {
@@ -40,7 +48,9 @@ vi.mock('pixi.js', () => ({
       await pixiMocks.initWaiters.shift();
     }
   },
-  Container: class {}
+  Container: class {
+    destroy = vi.fn();
+  }
 }));
 
 import { pixiDomManager } from './PixiDomManager';
@@ -56,7 +66,7 @@ const deferred = () => {
 };
 
 describe('PixiDomManager', () => {
-  afterEach(() => {
+  afterAll(() => {
     pixiDomManager.destroy();
     vi.unstubAllGlobals();
   });
@@ -86,5 +96,36 @@ describe('PixiDomManager', () => {
     expect(
       (pixiDomManager.getRenderer() as unknown as { extensionVersion: number }).extensionVersion
     ).toBe(2);
+  });
+
+  it('resizes the cached render target when a node canvas grows', async () => {
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    });
+
+    const canvas = {
+      addEventListener: vi.fn(),
+      getContext: vi.fn(),
+      height: 180,
+      removeEventListener: vi.fn(),
+      width: 320
+    } as unknown as HTMLCanvasElement;
+
+    await pixiDomManager.register(
+      'node-1',
+      canvas,
+      { width: 320, height: 180 },
+      vi.fn(),
+      vi.fn(),
+      vi.fn()
+    );
+
+    pixiMocks.resizeRenderTarget.mockClear();
+    pixiDomManager.resize('node-1', { width: 640, height: 360 });
+
+    expect(canvas.width).toBe(640);
+    expect(canvas.height).toBe(360);
+    expect(pixiMocks.resizeRenderTarget).toHaveBeenCalledWith(640, 360);
   });
 });
