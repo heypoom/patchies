@@ -43,7 +43,7 @@ These methods are character-for-character the same across all renderers:
 - **regl**: tracked Proxy wrapper, fallback texture, `getTexture()` → regl.Texture2D
 - **three**: Three.js renderer/renderTarget, blit-to-regl, texture wrapping, `getTexture()` → three.Texture
 - **canvas**: OffscreenCanvas 2D, `drawCanvasToTexture()`, RAF loop, pause/resume
-- **textmode**: OffscreenCanvas 2D + textmode.js, shares `drawCanvasToTexture`/`ensureDrawCommand` with canvas
+- **textmode**: OffscreenCanvas 2D + textmode.js. Code re-evaluations retain the existing `Textmodifier` and replay the newly registered `t.setup()` callback.
 - **hydra**: Hydra synth instance, source/param mapping, code transform, `.out(o0)` injection
 
 ## Design

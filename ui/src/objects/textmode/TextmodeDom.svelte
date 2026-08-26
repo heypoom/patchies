@@ -21,6 +21,7 @@
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import type { Textmodifier } from 'textmode.js';
+  import { evaluateTextmodeCode } from '$objects/textmode/re-evaluate-setup';
   import { profiler } from '$lib/profiler';
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
@@ -239,6 +240,7 @@
     if (!canvas) return;
 
     let hadErrors = !!lineErrors;
+    const shouldReplaySetup = tm !== null;
 
     // Clear console and error highlighting on re-run
     consoleRef?.clearConsole();
@@ -293,6 +295,11 @@
         };
       }
 
+      if (!tm || !textmode) return;
+
+      const textmodifier = tm;
+      const textmodeModule = textmode;
+
       const {
         cellColor,
         char,
@@ -323,65 +330,70 @@
         return;
       }
 
-      await jsRunner.executeJavaScript(nodeId, processedCode, {
-        customConsole,
-        setPortCount,
-        setTitle: (title: string) => updateNodeData(nodeId, { title }),
-        setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
-        extraContext: {
-          settings: createSettingsAPI(settingsManager),
-          onKeyDown: keyboard.onKeyDown,
-          onKeyUp: keyboard.onKeyUp,
-          canvas,
-          t: tm,
-          tm,
-          textmode: textmode.textmode,
-          cellColor,
-          char,
-          charColor,
-          gradient,
-          noise,
-          plasma,
-          moire,
-          osc,
-          paint,
-          shape,
-          solid,
-          src,
-          voronoi,
-          width: outputWidth,
-          height: outputHeight,
-          noDrag: () => {
-            dragEnabled = false;
-          },
-          noPan: () => {
-            panEnabled = false;
-          },
-          noWheel: () => {
-            wheelEnabled = false;
-          },
-          noInteract: () => {
-            dragEnabled = false;
-            panEnabled = false;
-            wheelEnabled = false;
-          },
-          setVideoOutput: (enabled: boolean) => {
-            videoOutputEnabled = enabled;
-            updateNodeInternals(nodeId);
-          },
-          setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
-          // Override JSRunner's requestAnimationFrame to also send bitmap
-          requestAnimationFrame: (callback: FrameRequestCallback) => {
-            return requestAnimationFrame((time) => {
-              callback(time);
-              sendBitmap();
-            });
-          },
-          cancelAnimationFrame: (id: number) => {
-            cancelAnimationFrame(id);
-          }
-        }
-      });
+      await evaluateTextmodeCode(
+        textmodifier,
+        () =>
+          jsRunner.executeJavaScript(nodeId, processedCode, {
+            customConsole,
+            setPortCount,
+            setTitle: (title: string) => updateNodeData(nodeId, { title }),
+            setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+            extraContext: {
+              settings: createSettingsAPI(settingsManager),
+              onKeyDown: keyboard.onKeyDown,
+              onKeyUp: keyboard.onKeyUp,
+              canvas,
+              t: textmodifier,
+              tm: textmodifier,
+              textmode: textmodeModule.textmode,
+              cellColor,
+              char,
+              charColor,
+              gradient,
+              noise,
+              plasma,
+              moire,
+              osc,
+              paint,
+              shape,
+              solid,
+              src,
+              voronoi,
+              width: outputWidth,
+              height: outputHeight,
+              noDrag: () => {
+                dragEnabled = false;
+              },
+              noPan: () => {
+                panEnabled = false;
+              },
+              noWheel: () => {
+                wheelEnabled = false;
+              },
+              noInteract: () => {
+                dragEnabled = false;
+                panEnabled = false;
+                wheelEnabled = false;
+              },
+              setVideoOutput: (enabled: boolean) => {
+                videoOutputEnabled = enabled;
+                updateNodeInternals(nodeId);
+              },
+              setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
+              // Override JSRunner's requestAnimationFrame to also send bitmap
+              requestAnimationFrame: (callback: FrameRequestCallback) => {
+                return requestAnimationFrame((time) => {
+                  callback(time);
+                  sendBitmap();
+                });
+              },
+              cancelAnimationFrame: (id: number) => {
+                cancelAnimationFrame(id);
+              }
+            }
+          }),
+        shouldReplaySetup
+      );
 
       // No longer errored!
       if (hadErrors && !tm.isLooping() && !data.paused) {

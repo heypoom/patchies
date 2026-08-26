@@ -1,12 +1,17 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { evaluateTextmodeCode } from '$objects/textmode/re-evaluate-setup';
 import { setupWorkerDOMMocks } from './workerDOMMocks';
 import type { TextmodePlugin, Textmodifier } from 'textmode.js';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 import { getFramebuffer } from './utils';
 
-export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
+export interface TextmodeRendererConfig extends BaseRendererConfig {
+  runRevision?: number;
+}
+
+export class TextmodeRenderer extends BaseWorkerRenderer<TextmodeRendererConfig> {
   // textmode.js text modifier
   public tm: Textmodifier | null = null;
   public textmode: typeof import('textmode.js') | null = null;
@@ -14,7 +19,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   private lastRedrawAt: number | undefined;
 
   private constructor(
-    config: BaseRendererConfig,
+    config: TextmodeRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ) {
@@ -22,7 +27,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   static async create(
-    config: BaseRendererConfig,
+    config: TextmodeRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ): Promise<TextmodeRenderer> {
@@ -61,6 +66,8 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   public async updateCode() {
+    const shouldReplaySetup = this.tm !== null;
+
     this.resetState();
     this.lastRedrawAt = undefined;
 
@@ -175,7 +182,11 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         voronoi
       };
 
-      await this.executeUserCode(this.config.code, extraContext);
+      await evaluateTextmodeCode(
+        this.tm,
+        () => this.executeUserCode(this.config.code, extraContext),
+        shouldReplaySetup
+      );
     } catch (error) {
       this.handleCodeError(error, CANVAS_WRAPPER_OFFSET);
     } finally {
