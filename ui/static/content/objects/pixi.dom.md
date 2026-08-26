@@ -27,7 +27,7 @@ load any PixiJS 8 extension, including browser-only extensions, before using
 its APIs:
 
 ```javascript
-await loadExtensions('events', 'accessibility')
+await loadExtensions('accessibility')
 
 const { Graphics } = PIXI
 
@@ -40,7 +40,8 @@ button.on('pointertap', () => button.tint = Math.random() * 0xffffff)
 stage.addChild(button)
 ```
 
-Use `await loadExtensions('all')` to load every PixiJS extension. The first call
+Native Pixi pointer events are ready by default. Use `await loadExtensions('all')`
+to load every optional PixiJS extension. The first call
 for a new extension recreates the shared Pixi renderer while keeping every
 `pixi.dom` stage and canvas in place. Group extension names in one call to do
 that once.

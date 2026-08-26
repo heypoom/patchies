@@ -98,3 +98,5 @@ every registered stage, canvas, and event binding. Its `renderer` user-code
 value is a stable proxy to the replacement renderer. Ordinary code reruns still
 reuse the application and do not recreate a WebGL context. Concurrent extension
 requests are serialized so each caller observes a fully initialized application.
+The base Pixi runtime already installs `events`, so requesting it succeeds as a
+no-op and does not recreate the shared application.

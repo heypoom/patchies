@@ -24,6 +24,7 @@ const PIXI_EXTENSION_NAMES = [
 ] as const;
 
 const PIXI_DOM_ONLY_EXTENSION_NAMES = ['accessibility', 'dom', 'events', 'text-html'];
+const PIXI_BASE_DOM_EXTENSION_NAMES = new Set<PixiExtensionName>(['events']);
 
 const PIXI_WORKER_EXTENSION_NAMES = PIXI_EXTENSION_NAMES.filter(
   (extension) => !PIXI_DOM_ONLY_EXTENSION_NAMES.includes(extension)
@@ -95,6 +96,10 @@ async function loadPixiExtensions(environment: PixiEnvironment, ...extensions: s
   }
 
   for (const extension of requestedExtensions as PixiExtensionName[]) {
+    if (environment === 'dom' && PIXI_BASE_DOM_EXTENSION_NAMES.has(extension)) {
+      continue;
+    }
+
     if (enabledExtensions.has(extension)) {
       continue;
     }

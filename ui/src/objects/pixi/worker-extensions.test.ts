@@ -7,6 +7,15 @@ import {
 } from './extensions';
 
 describe('loadPixiWorkerExtensions', () => {
+  it('does not reload the base Pixi events extension', async () => {
+    await import('pixi.js');
+
+    const extensionVersion = getPixiExtensionVersion();
+
+    await expect(loadPixiDomExtensions('events')).resolves.toBeUndefined();
+    expect(getPixiExtensionVersion()).toBe(extensionVersion);
+  });
+
   it('loads every worker-safe Pixi extension with the all shorthand', async () => {
     await expect(loadPixiWorkerExtensions('all')).resolves.toBeUndefined();
 
@@ -16,7 +25,7 @@ describe('loadPixiWorkerExtensions', () => {
   it('loads browser-only extensions for pixi.dom', async () => {
     await expect(loadPixiDomExtensions('all')).resolves.toBeUndefined();
 
-    expect(getPixiExtensionVersion()).toBe(22);
+    expect(getPixiExtensionVersion()).toBe(21);
   });
 
   it('rejects browser-only Pixi extensions before loading them', async () => {
