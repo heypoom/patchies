@@ -11,42 +11,25 @@ import type { TransportState } from '$lib/transport/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
-  WEBGL_OPTIONAL_EXTENSIONS,
-  PREVIEW_SCALE_FACTOR
+  WEBGL_OPTIONAL_EXTENSIONS
 } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
-import { CaptureRenderer, type VideoFrameCaptureSource } from './CaptureRenderer';
+import { CaptureRenderer } from './CaptureRenderer';
 import { match, P } from 'ts-pattern';
-import type { HydraRenderer } from './hydraRenderer';
-import type { CanvasRenderer } from './canvasRenderer';
-import type { TextmodeRenderer } from './textmodeRenderer';
-import type { ThreeRenderer } from './threeRenderer';
-import type { PixiRenderer } from './pixiRenderer';
-import type { ReglRenderer } from './reglRenderer';
-import type { SwissGLRenderer } from './swglRenderer';
 import { SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
-import type { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
 import type { Message } from '$lib/messages/MessageSystem';
-import type {
-  AudioAnalysisType,
-  AudioAnalysisPayloadWithType,
-  GlslFFTInletMeta
-} from '$lib/audio/AudioAnalysisSystem.js';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
-import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { renderElementImageToBitmap } from './elementImageBitmap.js';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler } from '../../lib/transport/ClockScheduler.js';
-import { createWorkerClock, installWorkerTimeGlobal } from './workerClock';
-import type { RenderOp } from '$lib/profiler/types';
+import { installWorkerTimeGlobal } from './workerClock';
 import { buildGlslUserParams, isValidUniformData } from './glUniformUtils';
-import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager } from './CookStateManager';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
@@ -60,12 +43,8 @@ import { NodeRendererRegistry } from './NodeRendererRegistry';
 import { WorkerSettingsRegistry } from './WorkerSettingsRegistry';
 import { ShaderRendererFactory } from './ShaderRendererFactory';
 import { buildRenderGraph } from './buildRenderGraph';
+import { FFTTextureStore } from './FFTTextureStore';
 import { renderFrame } from './renderFrame';
-
-interface MessageCapableRenderer {
-  handleMessage(message: Message): void;
-  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string): void;
-}
 
 interface ViewportCookCache {
   renderGraph: RenderGraph;
@@ -114,13 +93,10 @@ export class FBORenderer {
 
   /** Video texture manager for external bitmap sources */
   public videoTextures: VideoTextureManager;
-  private videoSources: VideoSourceResolver;
+  public videoSources: VideoSourceResolver;
 
   /** Mapping of analyzer object's node id -> analysis type -> texture */
-  public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
-
-  /** Mapping of glsl node id -> fft inlet metadata */
-  public fftInletsByGlslNode: Map<string, GlslFFTInletMeta> = new Map();
+  public fftTextures: FFTTextureStore;
 
   /** Mapping of nodeID to pause state */
   public nodePausedMap: Map<string, boolean> = new Map();
@@ -131,22 +107,12 @@ export class FBORenderer {
   /** Enable the WebGL workaround for iOS Safari */
   public usesMobileSafariWebGLWorkaround = false;
 
-  public hydraByNode = new Map<string, HydraRenderer | null>();
-  public canvasByNode = new Map<string, CanvasRenderer | null>();
-  public textmodeByNode = new Map<string, TextmodeRenderer | null>();
-  public threeByNode = new Map<string, ThreeRenderer | null>();
-  public pixiByNode = new Map<string, PixiRenderer | null>();
   public shaderParkThreeByNode = new Map<string, ShaderParkThreeRenderer | null>();
-  public reglByNode = new Map<string, ReglRenderer | null>();
-  public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
-  public swglByNode = new Map<string, SwissGLRenderer | null>();
-  private nodeRenderers: NodeRendererRegistry;
+  public nodeRenderers: NodeRendererRegistry;
   private shaderRenderers: ShaderRendererFactory;
 
   /** Dedicated settings proxy registry — populated in BaseWorkerRenderer.resetState() before any async code runs, fixing the race where renderers aren't in their type-specific maps yet. */
-  private settingsRegistry = new WorkerSettingsRegistry();
-
-  /** During textmode loading, we need to refresh REGL. */
+  public settingsRegistry = new WorkerSettingsRegistry();
 
   public fboNodes = new Map<string, FBONode>();
   public fallbackTexture: regl.Texture2D;
@@ -154,19 +120,7 @@ export class FBORenderer {
   public prevTransportTime: number = 0;
   public frameCount: number = 0;
   public contextLossReported = false;
-  private renderErrorKeysByNode = new Map<string, Set<string>>();
-
-  private visibleNodeIds: Set<string> | null = null;
-  public connectedVideoOutputNodeIds: Set<string> = new Set();
-
-  private cookStatsEnabled = false;
-  public lastCookStatusSignatures = new Map<string, string>();
-  private viewportCookRequiredCache: ViewportCookCache | null = null;
-
-  /** Minimum interval between rendered frames (ms). 0 = unlimited. */
-  private renderIntervalMs: number = 0;
   public renderFpsCap: number = 0;
-  private lastRenderTime: number = 0;
 
   /** Transport time from main thread for synchronized timing */
   public transportTime: TransportState | null = null;
@@ -180,13 +134,10 @@ export class FBORenderer {
   });
 
   public cookState = new CookStateManager();
-
-  /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
-  private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
-
   public startTime: number = Date.now();
-  private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
+  public lastCookStatusSignatures = new Map<string, string>();
+  public connectedVideoOutputNodeIds: Set<string> = new Set();
 
   /** Clock scheduler for worker-based scheduling (frame-based precision) */
   public clockScheduler = new PollingClockScheduler();
@@ -203,7 +154,20 @@ export class FBORenderer {
   /** Video channel registry for send.vdo/recv.vdo wireless routing */
   public videoChannelRegistry = VideoChannelRegistry.getInstance();
 
+  private cookStatsEnabled = false;
+  private renderErrorKeysByNode = new Map<string, Set<string>>();
+  private visibleNodeIds: Set<string> | null = null;
+  private viewportCookRequiredCache: ViewportCookCache | null = null;
+
+  private frameCancellable: regl.Cancellable | null = null;
   private fboResources: FboResources;
+
+  /** Minimum interval between rendered frames (ms). 0 = unlimited. */
+  private renderIntervalMs: number = 0;
+  private lastRenderTime: number = 0;
+
+  /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
+  private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     const [width, height] = this.outputSize;
@@ -241,27 +205,26 @@ export class FBORenderer {
 
     // Create video texture manager
     this.videoTextures = new VideoTextureManager(this.regl, this.gl);
+    this.fftTextures = new FFTTextureStore(this.regl);
+
     this.videoSources = new VideoSourceResolver(
       () => this.renderGraph,
       this.fboNodes,
       this.videoTextures
     );
-    this.nodeRenderers = new NodeRendererRegistry(this, {
-      hydraByNode: this.hydraByNode,
-      canvasByNode: this.canvasByNode,
-      textmodeByNode: this.textmodeByNode,
-      threeByNode: this.threeByNode,
-      pixiByNode: this.pixiByNode,
-      reglByNode: this.reglByNode,
-      projmapByNode: this.projmapByNode,
-      swglByNode: this.swglByNode
-    });
+
+    this.nodeRenderers = new NodeRendererRegistry(this);
     this.shaderRenderers = new ShaderRendererFactory(this);
 
     this.usesMobileSafariWebGLWorkaround = this.detectMobileSafari();
 
     this.registerContextLossDiagnostics();
-    this.defineWorkerGlobals();
+
+    /**
+     * Define global `time` getter for Hydra compatibility.
+     * This allows `() => time` to work in Hydra code.
+     */
+    installWorkerTimeGlobal(() => this.transportTime?.seconds ?? this.lastTime);
   }
 
   private detectMobileSafari(): boolean {
@@ -347,11 +310,6 @@ export class FBORenderer {
         (renderer) => this.nodeRenderers.create(renderer, framebuffer)
       )
       .otherwise(() => ({ render: () => {}, cleanup: () => {} }));
-  }
-
-  // Some nodes are externally managed, e.g. the texture will be uploaded on it.
-  createEmptyRenderer() {
-    return { render: () => {}, cleanup: () => {} };
   }
 
   /**
@@ -500,11 +458,11 @@ export class FBORenderer {
   private resumeNodeAnimation(nodeId: string) {
     // Check all renderer maps for the node
     const renderers = [
-      this.canvasByNode.get(nodeId),
-      this.hydraByNode.get(nodeId),
-      this.textmodeByNode.get(nodeId),
-      this.threeByNode.get(nodeId),
-      this.swglByNode.get(nodeId)
+      this.nodeRenderers.canvasByNode.get(nodeId),
+      this.nodeRenderers.hydraByNode.get(nodeId),
+      this.nodeRenderers.textmodeByNode.get(nodeId),
+      this.nodeRenderers.threeByNode.get(nodeId),
+      this.nodeRenderers.swglByNode.get(nodeId)
     ];
 
     for (const renderer of renderers) {
@@ -550,21 +508,16 @@ export class FBORenderer {
     nodeId: string,
     event: { x?: number; y?: number; deltaX?: number; deltaY: number; deltaMode?: number }
   ) {
-    this.threeByNode.get(nodeId)?.handleWheelData(event);
+    this.nodeRenderers.threeByNode.get(nodeId)?.handleWheelData(event);
   }
 
   resetThreeOrbitControls(nodeId: string) {
-    this.threeByNode.get(nodeId)?.resetOrbitControls();
+    this.nodeRenderers.threeByNode.get(nodeId)?.resetOrbitControls();
   }
 
   zoomShaderParkOrbit(nodeId: string, deltaY: number) {
     this.shaderParkThreeByNode.get(nodeId)?.zoom(deltaY);
     this.cookState.markDirty(nodeId, 'mouse');
-  }
-
-  /** Get list of nodes with preview enabled */
-  getEnabledPreviews(): string[] {
-    return this.previewRenderer.getEnabledPreviews();
   }
 
   renderFboNode(node: RenderNode, fboNode: FBONode): void {
@@ -583,23 +536,12 @@ export class FBORenderer {
       const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
 
       // If this is a GLSL node with FFT inlet, use the FFT texture
-      const fftInlet = this.fftInletsByGlslNode.get(node.id);
-
       userUniformParams = buildGlslUserParams({
         uniformDefs,
         uniformData,
         inputTextureMap,
         fallbackTexture: this.fallbackTexture,
-        resolveSamplerTexture: (def) => {
-          // If FFT analysis is enabled.
-          if (fftInlet?.uniformName === def.name) {
-            return this.fftTexturesByAnalyzer
-              .get(fftInlet.analyzerNodeId)
-              ?.get(fftInlet.analysisType);
-          }
-
-          return undefined;
-        }
+        resolveSamplerTexture: (def) => this.fftTextures.getTextureForUniform(node.id, def.name)
       });
     }
 
@@ -787,19 +729,9 @@ export class FBORenderer {
   }
 
   public resumeViewportManagedRenderers() {
-    for (const renderer of this.canvasByNode.values()) {
+    for (const renderer of this.nodeRenderers.canvasByNode.values()) {
       renderer?.resumeAnimation();
     }
-  }
-
-  /** Globally enable/disable all previews */
-  setAllPreviewsDisabled(disabled: boolean) {
-    this.previewRenderer.setAllPreviewsDisabled(disabled);
-  }
-
-  /** Update preview LOD multiplier. Called only when LOD tier changes. */
-  setPreviewScaleMultiplier(multiplier: number) {
-    this.previewRenderer.setPreviewScaleMultiplier(multiplier);
   }
 
   /** Enable/disable all profiling (per-node draw timing + frame stats). */
@@ -811,6 +743,7 @@ export class FBORenderer {
       if (this.frameStatsInterval === null) {
         this.frameStatsInterval = setInterval(() => {
           const stats = this.profiler.flushStats();
+
           if (stats) {
             self.postMessage({ type: 'renderFrameStats', stats });
           }
@@ -819,6 +752,7 @@ export class FBORenderer {
     } else {
       if (this.frameStatsInterval !== null) {
         clearInterval(this.frameStatsInterval);
+
         this.frameStatsInterval = null;
       }
     }
@@ -826,16 +760,6 @@ export class FBORenderer {
 
   public get isProfilingEnabled(): boolean {
     return this.profiler.isEnabled;
-  }
-
-  /** Record frame time (call this at end of each frame) */
-  public recordFrameTime() {
-    this.profiler.recordFrameTime();
-  }
-
-  /** Measure a function's execution time under the given render op. */
-  public measureOp<T>(op: RenderOp, fn: () => T): T {
-    return this.profiler.measureOp(op, fn);
   }
 
   public renderNodeToMainOutput(nodeId: string): void {
@@ -857,10 +781,6 @@ export class FBORenderer {
       outputSize: this.outputSize,
       backgroundSize: this.backgroundSize
     });
-  }
-
-  getOutputBitmap(): ImageBitmap | null {
-    return this.offscreenCanvas.transferToImageBitmap();
   }
 
   /** Set the render FPS cap. 0 = unlimited (render every frame). */
@@ -911,7 +831,7 @@ export class FBORenderer {
     this.offscreenCanvas.height = height;
 
     // Update all hydra renderers to match the new output size
-    for (const hydra of this.hydraByNode.values()) {
+    for (const hydra of this.nodeRenderers.hydraByNode.values()) {
       hydra?.hydra?.setResolution(width, height);
     }
 
@@ -979,93 +899,11 @@ export class FBORenderer {
     this.cookState.markDirty(nodeId, 'bitmap');
   }
 
-  /**
-   * Removes a persistent bitmap image.
-   *
-   * Only call this from the frontend when the node is removed.
-   * This is because we often reconstruct the render graph,
-   * and we don't want to remove persistent textures when reconstructing.
-   **/
-  removeBitmap(nodeId: string) {
-    this.videoTextures.removeBitmap(nodeId);
-  }
-
-  /**
-   * Removes persistent uniform data for a node.
-   *
-   * Only call this from the frontend when the node is removed.
-   * This is because we often reconstruct the render graph,
-   * and we don't want to remove persistent uniform data when reconstructing.
-   **/
-  removeUniformData(nodeId: string) {
-    this.uniformDataByNode.delete(nodeId);
-  }
-
-  setFFTAsGlslUniforms(payload: AudioAnalysisPayloadWithType) {
-    // TODO: support multiple inlets.
-    // TODO: only send a single inlet in the payload, not all of them!
-    const inlet = payload.inlets?.[0];
-    if (!inlet) return;
-
-    const { analyzerNodeId } = inlet;
-
-    // Store the FFT inlet associated with a GLSL node.
-    // TODO: support multiple inlets.
-    // TODO: only do this once instead of on every single frame!!!
-    this.fftInletsByGlslNode.set(payload.nodeId, inlet);
-
-    if (!this.fftTexturesByAnalyzer.has(analyzerNodeId)) {
-      this.fftTexturesByAnalyzer.set(analyzerNodeId, new Map());
-    }
-
-    const textureByAnalyzer = this.fftTexturesByAnalyzer.get(analyzerNodeId)!;
-    const texture = textureByAnalyzer.get(payload.analysisType);
-
-    const width = payload.array.length;
-    const height = 1;
-
-    const shouldCreateNewTexture = !texture || texture.height !== 1;
-
-    // The existing texture is unsuitable for FFT. We must delete it.
-    if (texture && shouldCreateNewTexture) {
-      texture.destroy();
-    }
-
-    const texType = payload.format === 'int' ? 'uint8' : 'float';
-    const texFormat = 'luminance';
-
-    if (shouldCreateNewTexture) {
-      const nextTexture = this.regl.texture({
-        width,
-        height,
-        data: payload.array,
-        format: texFormat,
-        type: texType,
-        wrapS: 'clamp',
-        wrapT: 'clamp',
-        min: 'nearest',
-        mag: 'nearest'
-      });
-
-      textureByAnalyzer.set(payload.analysisType, nextTexture);
-      this.cookState.markDirty(payload.nodeId, 'fft');
-
-      return;
-    }
-
-    texture({
-      width,
-      height,
-      data: payload.array,
-      format: texFormat,
-      type: texType
-    });
-    this.cookState.markDirty(payload.nodeId, 'fft');
-  }
-
   /** Send message to nodes */
   sendMessageToNode(nodeId: string, message: Message) {
-    const renderer = this.getMessageCapableRenderer(nodeId);
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+    const renderer = node ? this.nodeRenderers.getMessageCapableRenderer(node) : null;
+
     if (!renderer) return;
 
     this.cookState.markDirty(nodeId, 'message');
@@ -1074,145 +912,13 @@ export class FBORenderer {
 
   /** Route a channel message to the renderer for a given node. */
   sendChannelMessageToNode(nodeId: string, channel: string, data: unknown, sourceNodeId: string) {
-    const renderer = this.getMessageCapableRenderer(nodeId);
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+    const renderer = node ? this.nodeRenderers.getMessageCapableRenderer(node) : null;
+
     if (!renderer) return;
 
     this.cookState.markDirty(nodeId, 'message');
     renderer.handleChannelMessage(channel, data, sourceNodeId);
-  }
-
-  private getMessageCapableRenderer(nodeId: string): MessageCapableRenderer | null {
-    const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
-    if (!node) return null;
-
-    return match(node.type)
-      .with('hydra', () => this.hydraByNode.get(nodeId) ?? null)
-      .with('canvas', () => this.canvasByNode.get(nodeId) ?? null)
-      .with('swgl', () => this.swglByNode.get(nodeId) ?? null)
-      .with('textmode', () => this.textmodeByNode.get(nodeId) ?? null)
-      .with('three', () => this.threeByNode.get(nodeId) ?? null)
-      .with('pixi', () => this.pixiByNode.get(nodeId) ?? null)
-      .with('regl', () => this.reglByNode.get(nodeId) ?? null)
-      .with(
-        P.union(
-          'glsl',
-          'shaderpark',
-          'img',
-          'float.tex',
-          'worker',
-          'bg.out',
-          'send.vdo',
-          'recv.vdo',
-          'projmap'
-        ),
-        () => null
-      )
-      .exhaustive();
-  }
-
-  registerSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
-    this.settingsRegistry.register(nodeId, proxy);
-  }
-
-  /**
-   * Only removes the registry entry if it still points to the given proxy.
-   * Prevents the deferred Hydra cleanup from clobbering a freshly-registered
-   * proxy belonging to the new renderer instance for the same nodeId.
-   */
-  unregisterSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
-    this.settingsRegistry.unregister(nodeId, proxy);
-  }
-
-  receiveSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>) {
-    this.settingsRegistry.receiveValues(nodeId, requestId, values);
-  }
-
-  receiveSettingsValueChanged(nodeId: string, key: string, value: unknown) {
-    this.settingsRegistry.receiveValueChanged(nodeId, key, value);
-  }
-
-  getFboNodeById(nodeId: string): FBONode | undefined {
-    return this.fboNodes.get(nodeId);
-  }
-
-  /**
-   * Captures a preview frame as an ImageBitmap (ready for zero-copy transfer).
-   * Handles both FBO nodes and external texture nodes.
-   * This is a synchronous capture for on-demand use (export, Gemini, etc.)
-   */
-  capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
-    const fboNode = this.fboNodes.get(nodeId);
-    const captureSource = this.videoSources.resolveCaptureSource(nodeId);
-
-    const defaultPreview: [number, number] = [
-      Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
-      Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
-    ];
-
-    const fallbackSize = customSize ?? fboNode?.previewSize ?? defaultPreview;
-    if (!captureSource) return null;
-
-    return this.captureRenderer.capturePreviewBitmapSync(
-      captureSource.framebuffer,
-      captureSource.width,
-      captureSource.height,
-      fallbackSize
-    );
-  }
-
-  /**
-   * Initiate async PBO reads for video frame capture.
-   * Call harvestVideoFrames() in subsequent frames to get completed results.
-   */
-  initiateVideoFrameCaptureAsync(
-    requests: Array<{
-      targetNodeId: string;
-      requestId?: string;
-      sourceNodeIds: (string | null)[];
-      resolution?: [number, number];
-      format?: 'raw' | 'bitmap';
-    }>
-  ): void {
-    const resolvedSources = new Map<string, VideoFrameCaptureSource>();
-
-    for (const request of requests) {
-      for (const sourceNodeId of request.sourceNodeIds) {
-        if (!sourceNodeId || resolvedSources.has(sourceNodeId)) continue;
-
-        const node = this.renderGraph?.nodes.find((candidate) => candidate.id === sourceNodeId);
-        if (!node || !isPassthroughNodeType(node.type)) continue;
-
-        const source = this.videoSources.resolveCaptureSource(sourceNodeId);
-        if (source) resolvedSources.set(sourceNodeId, source);
-      }
-    }
-
-    this.captureRenderer.initiateVideoFrameBatchAsync(
-      requests,
-      this.fboNodes,
-      this.videoTextures.destinationTextures,
-      resolvedSources
-    );
-  }
-
-  /**
-   * Harvest completed async video frame captures.
-   * Returns completed batches ready for transfer.
-   */
-  harvestVideoFrames(): Array<{
-    targetNodeId: string;
-    requestId?: string;
-    frames: CapturedVideoFrame[];
-    timestamp: number;
-  }> {
-    return this.captureRenderer.harvestVideoFrameBatches();
-  }
-
-  /**
-   * Check if there are pending async video frame captures.
-   */
-  hasPendingVideoFrames(): boolean {
-    return this.captureRenderer.hasPendingVideoFrames();
   }
 
   /** Update JS module in the worker's JSRunner instance */
@@ -1222,31 +928,5 @@ export class FBORenderer {
     } else {
       this.jsRunner.modules.set(moduleName, code);
     }
-  }
-
-  /**
-   * Define global `time` getter for Hydra compatibility.
-   * This allows `() => time` to work in Hydra code.
-   */
-  private defineWorkerGlobals() {
-    installWorkerTimeGlobal(() => this.transportTime?.seconds ?? this.lastTime);
-  }
-
-  /**
-   * Create a worker-compatible clock object that reads from transportTime.
-   * Use this in extraContext to override JSRunner's broken main-thread Transport-based clock.
-   * Applies to: Hydra, Three.js, Canvas, Textmode renderers.
-   *
-   * Includes scheduling methods (onBeat, schedule, every, cancel, cancelAll) that
-   * use frame-based polling precision (~16ms at 60fps).
-   *
-   * Also includes control methods (play, pause, stop, setBpm, etc.) that send
-   * commands back to the main thread.
-   */
-  createWorkerClock() {
-    return createWorkerClock(this.clockScheduler, {
-      getTransportTime: () => this.transportTime,
-      getLastTime: () => this.lastTime
-    });
   }
 }

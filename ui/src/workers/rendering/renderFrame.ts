@@ -59,12 +59,14 @@ export const renderFrame = (host: FBORenderer): void => {
 
     if (!cookDecision.shouldCook) {
       host.postCookStatusIfNeeded(node.id);
+
       continue;
     }
 
     if (host.isNodePaused(node.id)) {
       host.cookState.markPaused(node.id);
       host.postCookStatusIfNeeded(node.id, true);
+
       continue;
     }
 
@@ -84,7 +86,10 @@ export const renderFrame = (host: FBORenderer): void => {
   // Use override if set and the node exists; otherwise fall back to bg.out.
   // Override always uses attachment 0; bg.out respects the connected outlet index.
   const savedOutletIndex = host.outputOutletIndex;
-  if (isOverride) host.outputOutletIndex = 0;
+
+  if (isOverride) {
+    host.outputOutletIndex = 0;
+  }
 
   if (effectiveOutputNodeId !== null) {
     host.profiler.measureOp('blit', () => host.renderNodeToMainOutput(effectiveOutputNodeId));

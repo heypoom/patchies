@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type regl from 'regl';
+
 import { BaseWorkerRenderer } from './BaseWorkerRenderer';
 import type { FBORenderer } from './fboRenderer';
+
+import { PollingClockScheduler } from '../../lib/transport/ClockScheduler';
 
 class TestRenderer extends BaseWorkerRenderer {
   constructor(usesVideoCount: boolean) {
     super(
       { code: '', nodeId: 'test-node' },
       {} as regl.Framebuffer2D,
-      { outputSize: [1920, 1080], createWorkerClock: () => ({}) } as FBORenderer
+      {
+        outputSize: [1920, 1080],
+        clockScheduler: new PollingClockScheduler(),
+        transportTime: null,
+        lastTime: 0
+      } as FBORenderer
     );
 
     this.usesVideoCount = usesVideoCount;

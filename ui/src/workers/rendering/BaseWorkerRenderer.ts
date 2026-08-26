@@ -13,6 +13,7 @@ import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { createGlslTag } from '$lib/glsl-include/tagged-template';
 import { processIncludes } from '$lib/glsl-include/preprocessor';
 import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
+import { createWorkerClock } from './workerClock';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -252,9 +253,9 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       this.settingsProxy._reset();
     }
 
-    // Register with fboRenderer so settingsValuesInit can be routed even while
+    // Register with WorkerSettingsRegistry so settingsValuesInit can be routed even while
     // this renderer hasn't been stored in its type-specific map yet (create() is still awaiting).
-    this.renderer.registerSettingsProxy(this.config.nodeId, this.settingsProxy);
+    this.renderer.settingsRegistry.register(this.config.nodeId, this.settingsProxy);
 
     this.setInteraction('interact', true);
 
@@ -268,6 +269,11 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     const [width, height] = this.renderer.outputSize;
     const resolver = createWorkerResolver(this.config.nodeId);
 
+    const clock = createWorkerClock(this.renderer.clockScheduler, {
+      getTransportTime: () => this.renderer.transportTime,
+      getLastTime: () => this.renderer.lastTime
+    });
+
     return {
       width,
       height,
@@ -278,16 +284,19 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       processIncludes: (source: string) => processIncludes(source, resolver),
       onMessage: this.msgContext.createOnMessageFunction(),
       send: this.sendMessage.bind(this),
+
       noDrag: () => this.setInteraction('drag', false),
       noPan: () => this.setInteraction('pan', false),
       noWheel: () => this.setInteraction('wheel', false),
       noInteract: () => this.setInteraction('interact', false),
+
+      clock,
+      settings: this.settingsProxy!.settings,
+      setPrimaryButton: this.setPrimaryButton.bind(this),
+
       ...(this.usesVideoCount
         ? {}
-        : { setVideoOutput: (enabled: boolean) => this.setVideoOutputEnabled(enabled) }),
-      setPrimaryButton: this.setPrimaryButton.bind(this),
-      clock: this.renderer.createWorkerClock(),
-      settings: this.settingsProxy!.settings
+        : { setVideoOutput: (enabled: boolean) => this.setVideoOutputEnabled(enabled) })
     };
   }
 
@@ -374,7 +383,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
   /** Clean up JSRunner context. Subclasses should call super.destroy(). */
   destroy() {
     if (this.settingsProxy) {
-      this.renderer.unregisterSettingsProxy(this.config.nodeId, this.settingsProxy);
+      this.renderer.settingsRegistry.unregister(this.config.nodeId, this.settingsProxy);
     }
 
     this.renderer.jsRunner.destroy(this.config.nodeId);

@@ -1,8 +1,10 @@
 import type regl from 'regl';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import type { ProjMapSurface } from '$lib/projmap/types';
 import type { RenderFunction, RenderNode } from '$lib/rendering/types';
+import type { Message } from '$lib/messages/MessageSystem';
+import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 
 import { CanvasRenderer } from './canvasRenderer';
 import { HydraRenderer } from './hydraRenderer';
@@ -17,15 +19,9 @@ import type { FBORenderer } from './fboRenderer';
 
 export type NodeRendererResult = { render: RenderFunction; cleanup: () => void };
 
-interface RendererMaps {
-  hydraByNode: Map<string, HydraRenderer | null>;
-  canvasByNode: Map<string, CanvasRenderer | null>;
-  textmodeByNode: Map<string, TextmodeRenderer | null>;
-  threeByNode: Map<string, ThreeRenderer | null>;
-  pixiByNode: Map<string, PixiRenderer | null>;
-  reglByNode: Map<string, ReglRenderer | null>;
-  projmapByNode: Map<string, ProjectionMapRenderer | null>;
-  swglByNode: Map<string, SwissGLRenderer | null>;
+interface MessageCapableRenderer {
+  handleMessage(message: Message): void;
+  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string): void;
 }
 
 /** Owns lifecycle and reuse policy for non-shader node renderers. */
@@ -33,10 +29,16 @@ export class NodeRendererRegistry {
   private pendingHydraCleanup: HydraRenderer[] = [];
   private hydraCleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(
-    private owner: FBORenderer,
-    private maps: RendererMaps
-  ) {}
+  public hydraByNode = new Map<string, HydraRenderer | null>();
+  public canvasByNode = new Map<string, CanvasRenderer | null>();
+  public textmodeByNode = new Map<string, TextmodeRenderer | null>();
+  public threeByNode = new Map<string, ThreeRenderer | null>();
+  public pixiByNode = new Map<string, PixiRenderer | null>();
+  public reglByNode = new Map<string, ReglRenderer | null>();
+  public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
+  public swglByNode = new Map<string, SwissGLRenderer | null>();
+
+  constructor(private host: FBORenderer) {}
 
   async create(
     node: RenderNode,
@@ -55,29 +57,69 @@ export class NodeRendererRegistry {
   }
 
   hasReusableRenderer(node: RenderNode): boolean {
-    if (this.maps.hydraByNode.has(node.id)) return true;
-    if (node.type === 'three' && this.maps.threeByNode.has(node.id)) return true;
+    if (this.hydraByNode.has(node.id)) return true;
+    if (node.type === 'three' && this.threeByNode.has(node.id)) return true;
 
-    return node.type === 'pixi' && this.maps.pixiByNode.has(node.id);
+    return node.type === 'pixi' && this.pixiByNode.has(node.id);
   }
 
   updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]): void {
-    this.maps.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
+    this.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
+  }
+
+  getMessageCapableRenderer(node: RenderNode): MessageCapableRenderer | null {
+    return match(node.type)
+      .with('hydra', () => this.hydraByNode.get(node.id) ?? null)
+      .with('canvas', () => this.canvasByNode.get(node.id) ?? null)
+      .with('swgl', () => this.swglByNode.get(node.id) ?? null)
+      .with('textmode', () => this.textmodeByNode.get(node.id) ?? null)
+      .with('three', () => this.threeByNode.get(node.id) ?? null)
+      .with('pixi', () => this.pixiByNode.get(node.id) ?? null)
+      .with('regl', () => this.reglByNode.get(node.id) ?? null)
+      .with(
+        P.union(
+          'glsl',
+          'shaderpark',
+          'img',
+          'float.tex',
+          'worker',
+          'bg.out',
+          'send.vdo',
+          'recv.vdo',
+          'projmap'
+        ),
+        () => null
+      )
+      .exhaustive();
+  }
+
+  setFFTData(payload: Exclude<AudioAnalysisPayloadWithType, { nodeType: 'glsl' }>): void {
+    const renderer = match(payload.nodeType)
+      .with('hydra', () => this.hydraByNode.get(payload.nodeId))
+      .with('canvas', () => this.canvasByNode.get(payload.nodeId))
+      .with('textmode', () => this.textmodeByNode.get(payload.nodeId))
+      .with('three', () => this.threeByNode.get(payload.nodeId))
+      .with('regl', () => this.reglByNode.get(payload.nodeId))
+      .with('swgl', () => this.swglByNode.get(payload.nodeId))
+      .with('glsl', () => null)
+      .exhaustive();
+
+    renderer?.setFFTData(payload);
   }
 
   destroyTextmodeRenderer(nodeId: string): void {
-    const renderer = this.maps.textmodeByNode.get(nodeId);
+    const renderer = this.textmodeByNode.get(nodeId);
 
     if (renderer) {
       renderer.destroy();
-      this.maps.textmodeByNode.delete(nodeId);
+      this.textmodeByNode.delete(nodeId);
     }
   }
 
   cleanupRemovedTextmodeRenderers(nodeIds: Set<string> | undefined): void {
     if (!nodeIds) return;
 
-    for (const nodeId of this.maps.textmodeByNode.keys()) {
+    for (const nodeId of this.textmodeByNode.keys()) {
       if (!nodeIds.has(nodeId)) {
         this.destroyTextmodeRenderer(nodeId);
       }
@@ -88,7 +130,7 @@ export class NodeRendererRegistry {
     node: Extract<RenderNode, { type: 'hydra' }>,
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
-    const existingRenderer = this.maps.hydraByNode.get(node.id);
+    const existingRenderer = this.hydraByNode.get(node.id);
 
     const canReuse =
       existingRenderer?.hydra &&
@@ -109,7 +151,7 @@ export class NodeRendererRegistry {
         await existingRenderer.updateCode();
       }
 
-      return this.withCleanup(node.id, existingRenderer, this.maps.hydraByNode);
+      return this.withCleanup(node.id, existingRenderer, this.hydraByNode);
     }
 
     const previousSynthTime = existingRenderer?.hydra?.synth.time;
@@ -128,35 +170,35 @@ export class NodeRendererRegistry {
         runRevision: node.data._runRevision
       },
       framebuffer,
-      this.owner
+      this.host
     );
 
     if (previousSynthTime !== undefined && renderer.hydra) {
       renderer.hydra.synth.time = previousSynthTime;
     }
 
-    this.maps.hydraByNode.set(node.id, renderer);
+    this.hydraByNode.set(node.id, renderer);
 
-    return this.withCleanup(node.id, renderer, this.maps.hydraByNode);
+    return this.withCleanup(node.id, renderer, this.hydraByNode);
   }
 
   private async createCanvas(
     node: Extract<RenderNode, { type: 'canvas' }>,
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
-    this.maps.canvasByNode.get(node.id)?.destroy();
+    this.canvasByNode.get(node.id)?.destroy();
 
     const renderer = await CanvasRenderer.create(
       { code: node.data.code, nodeId: node.id },
       framebuffer,
-      this.owner
+      this.host
     );
 
-    this.maps.canvasByNode.set(node.id, renderer);
+    this.canvasByNode.set(node.id, renderer);
 
     return {
       render: () => {},
-      cleanup: () => this.destroy(node.id, renderer, this.maps.canvasByNode)
+      cleanup: () => this.destroy(node.id, renderer, this.canvasByNode)
     };
   }
 
@@ -164,7 +206,7 @@ export class NodeRendererRegistry {
     node: Extract<RenderNode, { type: 'textmode' }>,
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
-    let renderer = this.maps.textmodeByNode.get(node.id) ?? null;
+    let renderer = this.textmodeByNode.get(node.id) ?? null;
 
     if (renderer?.tm && renderer.textmode && !renderer.tm.isDisposed) {
       renderer.framebuffer = framebuffer;
@@ -183,10 +225,10 @@ export class NodeRendererRegistry {
       renderer = await TextmodeRenderer.create(
         { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision },
         framebuffer,
-        this.owner
+        this.host
       );
 
-      this.maps.textmodeByNode.set(node.id, renderer);
+      this.textmodeByNode.set(node.id, renderer);
     }
 
     return { render: renderer.renderFrame.bind(renderer), cleanup: () => {} };
@@ -197,18 +239,18 @@ export class NodeRendererRegistry {
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
     const config = { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision };
-    const existing = this.maps.threeByNode.get(node.id);
+    const existing = this.threeByNode.get(node.id);
 
     if (existing) {
       await existing.updateConfig(config, framebuffer);
 
-      return this.withCleanup(node.id, existing, this.maps.threeByNode);
+      return this.withCleanup(node.id, existing, this.threeByNode);
     }
 
-    const renderer = await ThreeRenderer.create(config, framebuffer, this.owner);
-    this.maps.threeByNode.set(node.id, renderer);
+    const renderer = await ThreeRenderer.create(config, framebuffer, this.host);
+    this.threeByNode.set(node.id, renderer);
 
-    return this.withCleanup(node.id, renderer, this.maps.threeByNode);
+    return this.withCleanup(node.id, renderer, this.threeByNode);
   }
 
   private async createPixi(
@@ -216,69 +258,69 @@ export class NodeRendererRegistry {
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
     const config = { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision };
-    const existing = this.maps.pixiByNode.get(node.id);
+    const existing = this.pixiByNode.get(node.id);
 
     if (existing) {
       await existing.updateConfig(config, framebuffer);
 
-      return this.withCleanup(node.id, existing, this.maps.pixiByNode);
+      return this.withCleanup(node.id, existing, this.pixiByNode);
     }
 
-    const renderer = await PixiRenderer.create(config, framebuffer, this.owner);
-    this.maps.pixiByNode.set(node.id, renderer);
+    const renderer = await PixiRenderer.create(config, framebuffer, this.host);
+    this.pixiByNode.set(node.id, renderer);
 
-    return this.withCleanup(node.id, renderer, this.maps.pixiByNode);
+    return this.withCleanup(node.id, renderer, this.pixiByNode);
   }
 
   private async createRegl(
     node: Extract<RenderNode, { type: 'regl' }>,
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
-    this.maps.reglByNode.get(node.id)?.destroy();
+    this.reglByNode.get(node.id)?.destroy();
 
     const renderer = await ReglRenderer.create(
       { code: node.data.code, nodeId: node.id },
       framebuffer,
-      this.owner
+      this.host
     );
 
-    this.maps.reglByNode.set(node.id, renderer);
+    this.reglByNode.set(node.id, renderer);
 
-    return this.withCleanup(node.id, renderer, this.maps.reglByNode);
+    return this.withCleanup(node.id, renderer, this.reglByNode);
   }
 
   private async createProjmap(
     node: Extract<RenderNode, { type: 'projmap' }>,
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
-    this.maps.projmapByNode.get(node.id)?.destroy();
+    this.projmapByNode.get(node.id)?.destroy();
 
     const renderer = await ProjectionMapRenderer.create(
       { nodeId: node.id, surfaces: node.data.surfaces ?? [] },
       framebuffer,
-      this.owner
+      this.host
     );
 
-    this.maps.projmapByNode.set(node.id, renderer);
+    this.projmapByNode.set(node.id, renderer);
 
-    return this.withCleanup(node.id, renderer, this.maps.projmapByNode);
+    return this.withCleanup(node.id, renderer, this.projmapByNode);
   }
 
   private async createSwgl(
     node: Extract<RenderNode, { type: 'swgl' }>,
     framebuffer: regl.Framebuffer2D
   ): Promise<NodeRendererResult> {
-    this.maps.swglByNode.get(node.id)?.destroy();
+    this.swglByNode.get(node.id)?.destroy();
 
     const renderer = await SwissGLRenderer.create(
       { code: node.data.code, nodeId: node.id },
       framebuffer,
-      this.owner
+      this.host
     );
 
-    this.maps.swglByNode.set(node.id, renderer);
+    this.swglByNode.set(node.id, renderer);
 
-    return this.withCleanup(node.id, renderer, this.maps.swglByNode);
+    return this.withCleanup(node.id, renderer, this.swglByNode);
   }
 
   private withCleanup<T extends { renderFrame: (params: never) => void; destroy: () => void }>(

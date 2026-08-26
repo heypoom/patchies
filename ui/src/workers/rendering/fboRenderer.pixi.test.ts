@@ -34,16 +34,8 @@ describe('NodeRendererRegistry Pixi lifecycle', () => {
 
     const pixiByNode = new Map([['pixi-node', existingRenderer as never]]);
 
-    const registry = new NodeRendererRegistry({} as never, {
-      hydraByNode: new Map(),
-      canvasByNode: new Map(),
-      textmodeByNode: new Map(),
-      threeByNode: new Map(),
-      pixiByNode,
-      reglByNode: new Map(),
-      projmapByNode: new Map(),
-      swglByNode: new Map()
-    });
+    const registry = new NodeRendererRegistry({} as never);
+    registry.pixiByNode = pixiByNode;
 
     const node = {
       id: 'pixi-node',

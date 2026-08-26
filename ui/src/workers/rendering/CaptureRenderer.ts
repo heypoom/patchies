@@ -1,5 +1,6 @@
 import type regl from 'regl';
 import type { FBONode } from '../../lib/rendering/types';
+import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { getFramebuffer } from './utils';
 import type { PixelReadbackService } from './PixelReadbackService';
 import type { CapturedVideoFrame, VideoFrameFormat } from '$lib/js-runner/js-worker-types';
@@ -27,6 +28,8 @@ export interface VideoFrameCaptureSource {
   height: number;
   previewSize: [number, number];
 }
+
+export type CaptureSourceResolver = (nodeId: string) => VideoFrameCaptureSource | null;
 
 /**
  * CaptureRenderer handles on-demand frame capture for video frames and LLM previews.
@@ -102,6 +105,27 @@ export class CaptureRenderer {
     ctx.putImageData(imageData, 0, 0);
 
     return canvas.transferToImageBitmap();
+  }
+
+  capturePreviewBitmap(
+    nodeId: string,
+    resolveSource: CaptureSourceResolver,
+    customSize?: [number, number]
+  ): ImageBitmap | null {
+    const source = resolveSource(nodeId);
+    if (!source) return null;
+
+    const defaultPreview: [number, number] = [
+      Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
+      Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
+    ];
+
+    return this.capturePreviewBitmapSync(
+      source.framebuffer,
+      source.width,
+      source.height,
+      customSize ?? source.previewSize ?? defaultPreview
+    );
   }
 
   // ===== Video Frame Async Capture =====
@@ -233,6 +257,26 @@ export class CaptureRenderer {
     for (const fbo of tempFbos) {
       fbo.destroy();
     }
+  }
+
+  initiateVideoFrameCaptureAsync(
+    requests: Parameters<CaptureRenderer['initiateVideoFrameBatchAsync']>[0],
+    resolveSource: CaptureSourceResolver,
+    fboNodes: Map<string, FBONode>,
+    externalTextures: Map<string, regl.Texture2D>
+  ): void {
+    const resolvedSources = new Map<string, VideoFrameCaptureSource>();
+
+    for (const request of requests) {
+      for (const nodeId of request.sourceNodeIds) {
+        if (!nodeId || resolvedSources.has(nodeId)) continue;
+
+        const source = resolveSource(nodeId);
+        if (source) resolvedSources.set(nodeId, source);
+      }
+    }
+
+    this.initiateVideoFrameBatchAsync(requests, fboNodes, externalTextures, resolvedSources);
   }
 
   /**
@@ -410,12 +454,14 @@ export class CaptureRenderer {
         }
 
         const read = batch.reads.find((r) => r.sourceNodeId === sourceId);
+
         if (!read) {
           frames.push(null);
           continue;
         }
 
         const pixelData = completedPixelData.get(read);
+
         if (!pixelData) {
           frames.push(null);
           continue;
@@ -427,7 +473,9 @@ export class CaptureRenderer {
             width: pixelData.width,
             height: pixelData.height
           });
+
           sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
+
           continue;
         }
 
@@ -436,35 +484,43 @@ export class CaptureRenderer {
         if (refCount === 1) {
           // Only 1 target needs this source - create bitmap directly (no clone needed)
           const { canvas, ctx } = this.service.getCanvas(pixelData.width, pixelData.height);
+
           const imageData = new ImageData(
             new Uint8ClampedArray(pixelData.pixels),
             pixelData.width,
             pixelData.height
           );
+
           ctx.putImageData(imageData, 0, 0);
           frames.push(canvas.transferToImageBitmap());
         } else {
           // Multiple targets need this source - each gets their own bitmap
           const existing = reusableBitmaps.get(sourceId);
+
           if (existing) {
             // Create a new bitmap from pixels for this target
             const { canvas, ctx } = this.service.getCanvas(pixelData.width, pixelData.height);
+
             const imageData = new ImageData(
               new Uint8ClampedArray(pixelData.pixels),
               pixelData.width,
               pixelData.height
             );
+
             ctx.putImageData(imageData, 0, 0);
             frames.push(canvas.transferToImageBitmap());
           } else {
             // First target - create and mark as created
             const { canvas, ctx } = this.service.getCanvas(pixelData.width, pixelData.height);
+
             const imageData = new ImageData(
               new Uint8ClampedArray(pixelData.pixels),
               pixelData.width,
               pixelData.height
             );
+
             ctx.putImageData(imageData, 0, 0);
+
             const bitmap = canvas.transferToImageBitmap();
             reusableBitmaps.set(sourceId, bitmap);
             frames.push(bitmap);
