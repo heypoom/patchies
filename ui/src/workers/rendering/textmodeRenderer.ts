@@ -12,6 +12,8 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   public tm: Textmodifier | null = null;
   public textmode: typeof import('textmode.js') | null = null;
 
+  private lastRedrawAt: number | undefined;
+
   private constructor(
     config: BaseRendererConfig,
     framebuffer: regl.Framebuffer2D,
@@ -38,12 +40,30 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   renderFrame() {
     if (!this.tm) return;
 
+    const now = performance.now();
+    const targetFrameRate = this.tm.targetFrameRate();
+
+    const frameInterval =
+      typeof targetFrameRate === 'number' && targetFrameRate > 0
+        ? 1000 / targetFrameRate
+        : undefined;
+
+    if (
+      frameInterval !== undefined &&
+      this.lastRedrawAt !== undefined &&
+      now - this.lastRedrawAt < frameInterval
+    ) {
+      return;
+    }
+
+    this.lastRedrawAt = now;
     this.tm.redraw();
     this.renderer.regl._refresh();
   }
 
   public async updateCode() {
     this.resetState();
+    this.lastRedrawAt = undefined;
 
     try {
       const [width, height] = this.renderer.outputSize;
