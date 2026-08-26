@@ -701,7 +701,7 @@ export class GLSystem {
     if (this.transportSyncInterval) return;
 
     this.transportSyncInterval = setInterval(() => {
-      this.syncTransportTime(Transport.getState());
+      this.syncTransportState(Transport.getState());
     }, 1000 / 60);
   }
 
@@ -718,8 +718,8 @@ export class GLSystem {
   /**
    * Send transport state to render worker for GLSL/Hydra time sync.
    */
-  syncTransportTime(state: TransportState): void {
-    this.send('syncTransportTime', state);
+  syncTransportState(state: TransportState): void {
+    this.send('syncTransportState', state);
   }
 
   setOutputEnabled(enabled: boolean) {

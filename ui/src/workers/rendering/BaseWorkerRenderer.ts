@@ -270,7 +270,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     const resolver = createWorkerResolver(this.config.nodeId);
 
     const clock = createWorkerClock(this.renderer.clockScheduler, {
-      getTransportTime: () => this.renderer.transportTime,
+      getTransportTime: () => this.renderer.transportState,
       getLastTime: () => this.renderer.lastTime
     });
 

@@ -1,6 +1,7 @@
 import type { FBORenderer } from './fboRenderer';
 import type { ClockState } from '$lib/transport/ClockScheduler';
 import { shouldSkipCookForViewport } from './renderEligibility';
+import { renderFboNode } from './renderFboNode';
 import { getFramebuffer } from './utils';
 
 /** Renders a frame using the renderer's current graph state. */
@@ -25,19 +26,19 @@ export const renderFrame = (host: FBORenderer): void => {
 
   // Tick the clock scheduler with current transport state
   const clockState: ClockState = {
-    time: host.transportTime?.seconds ?? host.lastTime,
-    beat: host.transportTime?.beat ?? -1,
-    bpm: host.transportTime?.bpm ?? 120,
-    isPlaying: host.transportTime?.isPlaying ?? true,
-    playState: host.transportTime?.playState ?? 'playing'
+    time: host.transportState?.seconds ?? host.lastTime,
+    beat: host.transportState?.beat ?? -1,
+    bpm: host.transportState?.bpm ?? 120,
+    isPlaying: host.transportState?.isPlaying ?? true,
+    playState: host.transportState?.playState ?? 'playing'
   };
 
   host.clockScheduler.tick(clockState);
 
   host.cookState.beginFrame({
-    transportTime: host.transportTime?.seconds ?? host.lastTime,
+    transportTime: host.transportState?.seconds ?? host.lastTime,
     prevTransportTime: host.prevTransportTime,
-    isTransportPlaying: host.transportTime?.isPlaying ?? true
+    isTransportPlaying: host.transportState?.isPlaying ?? true
   });
 
   const isOverride = host.hasValidOutputOverride();
@@ -72,8 +73,8 @@ export const renderFrame = (host: FBORenderer): void => {
 
     try {
       const cookStart = performance.now();
+      renderFboNode(host, node, fboNode);
 
-      host.renderFboNode(node, fboNode);
       host.cookState.markCooked(node.id, cookDecision.reasons, performance.now() - cookStart);
       host.postCookStatusIfNeeded(node.id, true);
     } catch (error) {
@@ -126,5 +127,5 @@ export const renderFrame = (host: FBORenderer): void => {
   }
 
   // Track previous transport time for iTimeDelta computation
-  host.prevTransportTime = host.transportTime?.seconds ?? host.lastTime;
+  host.prevTransportTime = host.transportState?.seconds ?? host.lastTime;
 };

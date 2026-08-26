@@ -189,8 +189,8 @@ export function installRenderWorkerRuntime() {
       .with('unregisterWorkerRenderPort', () => {
         handleUnregisterWorkerRenderPort(data.nodeId);
       })
-      .with('syncTransportTime', () => {
-        fboRenderer.setTransportTime(data);
+      .with('syncTransportState', () => {
+        fboRenderer.setTransportState(data);
       })
       .with('setOverrideOutputNode', () => {
         fboRenderer.setOverrideOutputNode(data.nodeId ?? null);

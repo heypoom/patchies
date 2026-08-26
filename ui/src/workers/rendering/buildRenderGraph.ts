@@ -211,7 +211,7 @@ export const buildRenderGraph = async (
         height: nodeHeight,
         mrtCount,
         format: fboFormat,
-        createTexture: host.createFboTexture.bind(this)
+        createTexture: host.createFboTexture.bind(host)
       });
 
       colorAttachments = fbo.colorAttachments;

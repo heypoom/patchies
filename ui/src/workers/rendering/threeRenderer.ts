@@ -90,7 +90,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
     if (!this.threeWebGLRenderer || !this.renderTarget || !this.userRenderFunc) return;
 
     // Skip rendering when transport is paused — FBO retains last frame
-    if (this.renderer.transportTime && !this.renderer.transportTime.isPlaying) return;
+    if (this.renderer.transportState && !this.renderer.transportState.isPlaying) return;
 
     const gl = this.renderer.gl;
     if (!gl) return;

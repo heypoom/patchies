@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { RenderGraph, RenderNode } from '$lib/rendering/types';
+import type { FBONode, RenderGraph, RenderNode } from '$lib/rendering/types';
 import type { FBORenderer } from './fboRenderer';
 import { CookStateManager } from './CookStateManager';
+import { FboResources } from './FboResources';
+import { VideoSourceResolver } from './VideoSourceResolver';
+import { mergeVideoGraphEdges } from './videoGraph';
 
 vi.mock('./hydraRenderer', () => ({ HydraRenderer: class {} }));
 vi.mock('./canvasRenderer', () => ({ CanvasRenderer: class {} }));
@@ -13,7 +16,7 @@ vi.mock('./shaderParkThreeRenderer', () => ({ ShaderParkThreeRenderer: class {} 
 vi.mock('$lib/projmap/ProjectionMapRenderer', () => ({ ProjectionMapRenderer: class {} }));
 
 describe('send.vdo and recv.vdo routing', () => {
-  it('binds the original external texture after wireless routing', async () => {
+  it('binds the original external texture after wireless routing', () => {
     vi.stubGlobal('self', {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -23,26 +26,13 @@ describe('send.vdo and recv.vdo routing', () => {
       clearInterval
     });
 
-    const { FBORenderer } = await import('./fboRenderer');
-
     const sourceTexture = { width: 1080, height: 1920 };
     const sourceFramebuffer = {};
-    const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
 
-    const state = renderer as unknown as {
-      fboNodes: Map<string, unknown>;
-      renderGraph: { nodes: RenderNode[] };
-      videoTextures: {
-        getDestinationTexture: (nodeId: string) => typeof sourceTexture | undefined;
-        getDestinationFBO: (nodeId: string) => typeof sourceFramebuffer | undefined;
-      };
-    };
-
-    state.fboNodes = new Map();
-
-    state.videoTextures = {
-      getDestinationTexture: (nodeId) => (nodeId === 'webcam' ? sourceTexture : undefined),
-      getDestinationFBO: (nodeId) => (nodeId === 'webcam' ? sourceFramebuffer : undefined)
+    const fboNodes = new Map<string, FBONode>();
+    const videoTextures = {
+      getDestinationTexture: (nodeId: string) => (nodeId === 'webcam' ? sourceTexture : undefined),
+      getDestinationFBO: (nodeId: string) => (nodeId === 'webcam' ? sourceFramebuffer : undefined)
     };
 
     const send = {
@@ -63,30 +53,21 @@ describe('send.vdo and recv.vdo routing', () => {
       inletMap: new Map([[0, { sourceNodeId: 'receive', outletIndex: 0 }]])
     } as RenderNode;
 
-    state.renderGraph = { nodes: [send, receive, consumer] };
+    const renderGraph = { nodes: [send, receive, consumer] } as RenderGraph;
 
-    const source = (
-      renderer as never as {
-        resolveVideoSource: (
-          nodeId: string
-        ) => { texture: unknown; width: number; height: number } | null;
-      }
-    ).resolveVideoSource('receive');
+    const videoSources = new VideoSourceResolver(
+      () => renderGraph,
+      fboNodes,
+      videoTextures as never
+    );
 
-    const textureMap = (
-      renderer as never as { getInputTextureMap: (node: RenderNode) => Map<number, unknown> }
-    ).getInputTextureMap(consumer);
+    const source = videoSources.resolveTexture('receive');
+    const textureMap = videoSources.getInputTextureMap(consumer);
 
     expect(source).toEqual({ texture: sourceTexture, width: 1080, height: 1920 });
     expect(textureMap.get(0)).toBe(sourceTexture);
 
-    const captureSource = (
-      renderer as never as {
-        resolveCaptureSource: (
-          nodeId: string
-        ) => { framebuffer: unknown; width: number; height: number } | null;
-      }
-    ).resolveCaptureSource('receive');
+    const captureSource = videoSources.resolveCaptureSource('receive');
 
     expect(captureSource).toMatchObject({
       framebuffer: sourceFramebuffer,
@@ -95,7 +76,7 @@ describe('send.vdo and recv.vdo routing', () => {
     });
   });
 
-  it('uses the previous frame when wireless routing closes a feedback loop', async () => {
+  it('uses the previous frame when wireless routing closes a feedback loop', () => {
     vi.stubGlobal('self', {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -105,10 +86,8 @@ describe('send.vdo and recv.vdo routing', () => {
       clearInterval
     });
 
-    const { FBORenderer } = await import('./fboRenderer');
     const currentTexture = { width: 1280, height: 720 };
     const previousTexture = { width: 1280, height: 720 };
-    const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
 
     const feedback = {
       id: 'feedback',
@@ -161,54 +140,37 @@ describe('send.vdo and recv.vdo routing', () => {
       feedbackNodes: new Set<string>()
     } as RenderGraph;
 
-    const mergedGraph = (
-      renderer as never as {
-        mergeVirtualEdges: (graph: RenderGraph, edges: RenderGraph['edges']) => RenderGraph;
-      }
-    ).mergeVirtualEdges(baseGraph, [virtualEdge]);
+    const mergedGraph = mergeVideoGraphEdges(baseGraph, [virtualEdge]);
 
-    const state = renderer as unknown as {
-      fboNodes: Map<string, unknown>;
-      renderGraph: RenderGraph;
-      videoTextures: { getDestinationTexture: () => undefined };
-    };
+    const fboNodes = new Map<string, FBONode>();
+    fboNodes.set('feedback', {
+      colorAttachments: [currentTexture],
+      prevTextures: [previousTexture],
+      texture: currentTexture
+    } as unknown as FBONode);
 
-    state.fboNodes = new Map([
-      [
-        'feedback',
-        {
-          colorAttachments: [currentTexture],
-          prevTextures: [previousTexture],
-          texture: currentTexture
-        }
-      ]
-    ]);
-
-    state.renderGraph = mergedGraph;
-    state.videoTextures = { getDestinationTexture: () => undefined };
+    const videoTextures = { getDestinationTexture: () => undefined };
 
     expect(mergedGraph.feedbackNodes).toEqual(new Set(['feedback']));
     expect(mergedGraph.edges).toHaveLength(1);
 
-    const textureMap = (
-      renderer as never as { getInputTextureMap: (node: RenderNode) => Map<number, unknown> }
-    ).getInputTextureMap(feedback);
+    const videoSources = new VideoSourceResolver(
+      () => mergedGraph,
+      fboNodes,
+      videoTextures as never
+    );
+
+    const textureMap = videoSources.getInputTextureMap(feedback);
 
     expect(textureMap.get(1)).toBe(previousTexture);
   });
 
-  it('releases obsolete feedback resources', async () => {
-    const { FBORenderer } = await import('./fboRenderer');
-    const renderer = Object.create(FBORenderer.prototype) as FBORenderer;
+  it('releases obsolete feedback resources', () => {
     const framebuffer = { destroy: vi.fn() };
     const texture = { destroy: vi.fn() };
     const fboNode = { prevFramebuffers: [framebuffer], prevTextures: [texture] };
 
-    (
-      renderer as never as {
-        destroyFeedbackResources: (node: typeof fboNode) => void;
-      }
-    ).destroyFeedbackResources(fboNode);
+    FboResources.prototype.destroyFeedbackResources(fboNode as unknown as FBONode);
 
     expect(framebuffer.destroy).toHaveBeenCalledOnce();
     expect(texture.destroy).toHaveBeenCalledOnce();

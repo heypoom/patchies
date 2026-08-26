@@ -3,7 +3,6 @@ import type {
   RenderGraph,
   RenderNode,
   FBONode,
-  UserParam,
   FBOFormat,
   FBOResolution
 } from '../../lib/rendering/types';
@@ -17,7 +16,6 @@ import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
 import { CaptureRenderer } from './CaptureRenderer';
 import { match, P } from 'ts-pattern';
-import { SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
 import type { Message } from '$lib/messages/MessageSystem';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
@@ -29,7 +27,7 @@ import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-out
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler } from '../../lib/transport/ClockScheduler.js';
 import { installWorkerTimeGlobal } from './workerClock';
-import { buildGlslUserParams, isValidUniformData } from './glUniformUtils';
+import { isValidUniformData } from './glUniformUtils';
 import { CookStateManager } from './CookStateManager';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
@@ -123,7 +121,7 @@ export class FBORenderer {
   public renderFpsCap: number = 0;
 
   /** Transport time from main thread for synchronized timing */
-  public transportTime: TransportState | null = null;
+  public transportState: TransportState | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
@@ -224,7 +222,7 @@ export class FBORenderer {
      * Define global `time` getter for Hydra compatibility.
      * This allows `() => time` to work in Hydra code.
      */
-    installWorkerTimeGlobal(() => this.transportTime?.seconds ?? this.lastTime);
+    installWorkerTimeGlobal(() => this.transportState?.seconds ?? this.lastTime);
   }
 
   private detectMobileSafari(): boolean {
@@ -423,11 +421,12 @@ export class FBORenderer {
   }
 
   /**
-   * Set transport time from main thread for synchronized timing.
-   * Called at 60fps to keep GLSL/Hydra in sync with global transport.
+   * Sync transport state with main thread for synchronized timing.
+   *
+   * Called at 60fps to keep render nodes in sync with global transport.
    */
-  setTransportTime(state: TransportState) {
-    this.transportTime = state;
+  setTransportState(state: TransportState) {
+    this.transportState = state;
   }
 
   setPreviewEnabled(nodeId: string, enabled: boolean) {
@@ -462,7 +461,8 @@ export class FBORenderer {
       this.nodeRenderers.hydraByNode.get(nodeId),
       this.nodeRenderers.textmodeByNode.get(nodeId),
       this.nodeRenderers.threeByNode.get(nodeId),
-      this.nodeRenderers.swglByNode.get(nodeId)
+      this.nodeRenderers.swglByNode.get(nodeId),
+      this.nodeRenderers.pixiByNode.get(nodeId)
     ];
 
     for (const renderer of renderers) {
@@ -518,90 +518,6 @@ export class FBORenderer {
   zoomShaderParkOrbit(nodeId: string, deltaY: number) {
     this.shaderParkThreeByNode.get(nodeId)?.zoom(deltaY);
     this.cookState.markDirty(nodeId, 'mouse');
-  }
-
-  renderFboNode(node: RenderNode, fboNode: FBONode): void {
-    // Check if the node is paused, skip rendering if it is
-    if (this.isNodePaused(node.id)) {
-      return;
-    }
-
-    const inputTextureMap = this.videoSources.getInputTextureMap(node);
-
-    let userUniformParams: unknown[] = [];
-
-    // GLSL supports custom uniforms
-    if (node.type === 'glsl') {
-      const uniformDefs = node.data.glUniformDefs ?? [];
-      const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
-
-      // If this is a GLSL node with FFT inlet, use the FFT texture
-      userUniformParams = buildGlslUserParams({
-        uniformDefs,
-        uniformData,
-        inputTextureMap,
-        fallbackTexture: this.fallbackTexture,
-        resolveSamplerTexture: (def) => this.fftTextures.getTextureForUniform(node.id, def.name)
-      });
-    }
-
-    if (node.type === 'shaderpark') {
-      const textureArray: (regl.Texture2D | undefined)[] = [];
-
-      // Shader Park has fixed sampler slots (iChannel0..3). The UI can hide
-      // unused handles, but uniform overrides must stay after those slots.
-      for (let i = 0; i < SHADERPARK_VIDEO_UNIFORM_COUNT; i++) {
-        textureArray[i] = inputTextureMap.get(i);
-      }
-
-      userUniformParams = [
-        ...textureArray,
-        Object.fromEntries(this.uniformDataByNode.get(node.id)?.entries() ?? [])
-      ];
-    }
-
-    // Convert texture map to array.
-    // Preserves gaps for unused video inlets.
-    if (
-      node.type === 'hydra' ||
-      node.type === 'three' ||
-      node.type === 'pixi' ||
-      node.type === 'regl' ||
-      node.type === 'swgl' ||
-      node.type === 'projmap'
-    ) {
-      const maxInletIndex = Math.max(-1, ...inputTextureMap.keys());
-      const textureArray: (regl.Texture2D | undefined)[] = [];
-
-      for (let i = 0; i <= maxInletIndex; i++) {
-        textureArray[i] = inputTextureMap.get(i);
-      }
-
-      userUniformParams = textureArray;
-    }
-
-    // Get mouse data for this node (defaults to [0, 0, 0, 0])
-    const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
-
-    // Render to FBO
-    // Use transport time if available, otherwise fall back to local time
-    const transportTime = this.transportTime?.seconds ?? this.lastTime;
-
-    fboNode.framebuffer.use(() => {
-      this.drawProfiler.measure(node.id, 'draw', () => {
-        fboNode.render({
-          prevTransportTime: this.prevTransportTime,
-          iFrame: this.frameCount,
-          mouseX: mouseData[0],
-          mouseY: mouseData[1],
-          mouseZ: mouseData[2],
-          mouseW: mouseData[3],
-          mouseButtons: mouseData[4],
-          userParams: userUniformParams as UserParam[],
-          transportTime
-        });
-      });
-    });
   }
 
   public reportNodeRenderError(node: RenderNode, error: unknown) {

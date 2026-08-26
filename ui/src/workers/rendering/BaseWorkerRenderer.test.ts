@@ -14,7 +14,7 @@ class TestRenderer extends BaseWorkerRenderer {
       {
         outputSize: [1920, 1080],
         clockScheduler: new PollingClockScheduler(),
-        transportTime: null,
+        transportState: null,
         lastTime: 0
       } as FBORenderer
     );
