@@ -533,7 +533,6 @@
     paused={data.paused}
     onPlaybackToggle={togglePlayback}
     {editorReady}
-    showBgOutputOption
     showExpandOption
     onCustomExpandToggle={() => (surfaceMode.isExpanded ? surfaceMode.exit() : surfaceMode.enter())}
     customExpanded={surfaceMode.isExpanded}
