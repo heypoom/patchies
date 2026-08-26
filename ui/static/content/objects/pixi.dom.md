@@ -22,9 +22,10 @@ stage.addChild(button);
 
 ## Extensions
 
-`pixi.dom` lazily loads PixiJS when the first object is added. You can then
-load any PixiJS 8 extension, including browser-only extensions, before using
-its APIs:
+`pixi.dom` lazily loads PixiJS when the first object is added.
+
+You can then load any PixiJS 8 extension, including browser-only extensions,
+before using its APIs, with `await loadExtensions(...extensions)`:
 
 ```javascript
 await loadExtensions('accessibility')
@@ -41,10 +42,10 @@ stage.addChild(button)
 ```
 
 Native Pixi pointer events are ready by default. Use `await loadExtensions('all')`
-to load every optional PixiJS extension. The first call
-for a new extension recreates the shared Pixi renderer while keeping every
-`pixi.dom` stage and canvas in place. Group extension names in one call to do
-that once.
+to load every optional PixiJS extension.
+
+The first call for a new extension recreates the shared Pixi renderer
+while keeping every `pixi.dom` stage and canvas in place.
 
 See [pixi](/docs/objects/pixi#extensions) for the extension-name list.
 

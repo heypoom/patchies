@@ -1,4 +1,4 @@
-The `pixi` object creates 2D graphics with [PixiJS v8.x](https://pixijs.com/8.x/guides/getting-started/intro). It runs in Patchies' web-worker render pipeline, so its output chains efficiently to other visual objects.
+The `pixi` object creates 2D graphics with [Pixi.js v8.x](https://pixijs.com/8.x/guides/getting-started/intro). It runs in Patchies' web-worker render pipeline, so its output chains efficiently to other visual objects.
 
 ## Getting Started
 
@@ -23,7 +23,9 @@ The Patchies renderer schedules frames. Do not create a second animation loop or
 
 ## Extensions
 
-`pixi` includes graphics support. Call and await `loadExtensions()` before using an optional extension's APIs:
+`pixi` includes the `Graphics` extension by default.
+
+Call `await loadExtensions(...extensions)` before using an optional extension's APIs:
 
 ```javascript
 await loadExtensions('filters')
@@ -45,13 +47,13 @@ await loadExtensions('advanced-blend-modes', 'text-bitmap', 'prepare')
 // await loadExtensions('all')
 ```
 
-Available names are `advanced-blend-modes`, `app`, `basis`, `dds`, `filters`,
+Available extension names are `advanced-blend-modes`, `app`, `basis`, `dds`, `filters`,
 `gif`, `graphics`, `ktx`, `ktx2`, `math-extras`, `mesh`,
 `particle-container`, `prepare`, `sprite-nine-slice`, `sprite-tiling`, `text`,
 `text-bitmap`, and `unsafe-eval`.
 
-`accessibility`, `dom`, `events`, and `text-html` require browser DOM APIs and
-cannot run in the render worker. Use [pixi.dom](/docs/objects/pixi.dom) for
+Note that `accessibility`, `dom`, `events`, and `text-html` require browser DOM APIs
+and cannot run in the render worker. Use [pixi.dom](/docs/objects/pixi.dom) for
 native pointer, keyboard, HTML text, and DOM behavior.
 
 ## How It Works
