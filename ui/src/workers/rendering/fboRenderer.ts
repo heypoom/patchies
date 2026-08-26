@@ -72,6 +72,7 @@ import { drawToFinalOutput } from './drawToFinalOutput';
 import { VideoSourceResolver } from './VideoSourceResolver';
 import { NodeRendererRegistry } from './NodeRendererRegistry';
 import { WorkerSettingsRegistry } from './WorkerSettingsRegistry';
+import { ShaderRendererFactory } from './ShaderRendererFactory';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -152,6 +153,7 @@ export class FBORenderer {
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLRenderer | null>();
   private nodeRenderers: NodeRendererRegistry;
+  private shaderRenderers: ShaderRendererFactory;
 
   /** Dedicated settings proxy registry — populated in BaseWorkerRenderer.resetState() before any async code runs, fixing the race where renderers aren't in their type-specific maps yet. */
   private settingsRegistry = new WorkerSettingsRegistry();
@@ -159,7 +161,7 @@ export class FBORenderer {
   /** During textmode loading, we need to refresh REGL. */
 
   private fboNodes = new Map<string, FBONode>();
-  private fallbackTexture: regl.Texture2D;
+  public fallbackTexture: regl.Texture2D;
   private lastTime: number = 0;
   private prevTransportTime: number = 0;
   private frameCount: number = 0;
@@ -266,6 +268,7 @@ export class FBORenderer {
       projmapByNode: this.projmapByNode,
       swglByNode: this.swglByNode
     });
+    this.shaderRenderers = new ShaderRendererFactory(this);
 
     this.usesMobileSafariWebGLWorkaround = this.detectMobileSafari();
 
@@ -321,7 +324,7 @@ export class FBORenderer {
   }
 
   /** Resolve per-node resolution override to [width, height]. */
-  private resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
+  public resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
     return this.fboResources.resolveSize(resolution, this.outputSize);
   }
 
@@ -541,7 +544,7 @@ export class FBORenderer {
     const results = await Promise.all(
       pending.map(async ({ node, framebuffer }) =>
         match(node)
-          .with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
+          .with({ type: 'glsl' }, (node) => this.shaderRenderers.create(node, framebuffer))
           .with(
             {
               type: P.union(
@@ -557,7 +560,7 @@ export class FBORenderer {
             },
             (node) => this.nodeRenderers.create(node, framebuffer)
           )
-          .with({ type: 'shaderpark' }, (node) => this.createShaderParkRenderer(node, framebuffer))
+          .with({ type: 'shaderpark' }, (node) => this.shaderRenderers.create(node, framebuffer))
           .with({ type: 'img' }, () => this.createEmptyRenderer())
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
           .with({ type: 'worker' }, () => this.createEmptyRenderer())
@@ -724,231 +727,6 @@ export class FBORenderer {
    */
   destroyTextmodeRenderer(nodeId: string) {
     this.nodeRenderers.destroyTextmodeRenderer(nodeId);
-  }
-
-  async createGlslRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'glsl') return null;
-
-    const nodeResolution = node.data.resolution;
-    const [width, height] = this.resolveNodeSize(nodeResolution);
-
-    // Prepare uniform defaults to prevent crashes.
-    // Use saved uniformValues from node data when available, so that persisted
-    // settings are applied immediately without waiting for setUniformData messages.
-    if (node.data.glUniformDefs) {
-      const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
-      const savedValues = node.data.uniformValues as Record<string, unknown> | undefined;
-
-      for (const def of node.data.glUniformDefs) {
-        const uniformFieldValue = uniformData.get(def.name);
-
-        if (!isValidUniformData(def, uniformFieldValue)) {
-          const savedValue = savedValues?.[def.name];
-
-          if (savedValue !== undefined) {
-            uniformData.set(def.name, toGLValue(def, savedValue));
-          } else {
-            uniformData.set(def.name, defaultUniformValue(def));
-          }
-        }
-      }
-
-      this.uniformDataByNode.set(node.id, uniformData);
-    }
-
-    // Resolve #include directives before shader compilation
-    let code = node.data.code;
-
-    if (code && code.includes('#include')) {
-      try {
-        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: true });
-
-        const resolver = createWorkerResolver(node.id);
-
-        code = await processIncludes(code, resolver);
-      } catch (error) {
-        self.postMessage({
-          type: 'shaderError',
-          nodeId: node.id,
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-
-        return null;
-      } finally {
-        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: false });
-      }
-    }
-
-    this.cookState.registerNode(node.id, {
-      ...createGlslCookPolicy(code),
-      ...(this.renderGraph?.feedbackNodes.has(node.id) || (node.backEdgeInlets?.size ?? 0) > 0
-        ? { feedbackDependent: true }
-        : {})
-    });
-
-    const renderCommand = createShaderToyDrawCommand({
-      width,
-      height,
-      framebuffer,
-      regl: this.regl,
-      gl: this.gl!,
-      code,
-      mrtCount: node.data.mrtCount ?? 1,
-      uniformDefs: node.data.glUniformDefs ?? [],
-      onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
-        // Send error message back to main thread
-        self.postMessage({
-          type: 'shaderError',
-          nodeId: node.id,
-          error: error.message,
-          stack: error.stack,
-          lineErrors: error.lineErrors
-        });
-      }
-    });
-
-    return {
-      render: (params) => renderCommand?.(params),
-      cleanup: () => {}
-    };
-  }
-
-  async createShaderParkRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'shaderpark') return null;
-
-    if (node.data.shaderParkUniformDefs) {
-      const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
-      const savedValues = node.data.uniformValues;
-
-      for (const def of node.data.shaderParkUniformDefs) {
-        const uniformFieldValue = uniformData.get(def.name);
-
-        if (!isValidUniformData(def, uniformFieldValue)) {
-          const savedValue = savedValues?.[def.name];
-
-          if (savedValue !== undefined) {
-            uniformData.set(def.name, toGLValue(def, savedValue));
-          } else {
-            uniformData.set(
-              def.name,
-              (def as { default?: unknown }).default ?? defaultUniformValue(def)
-            );
-          }
-        }
-      }
-
-      this.uniformDataByNode.set(node.id, uniformData);
-    }
-
-    if (node.data.renderMode === '3d') {
-      return this.createShaderParkThreeRenderer(node, framebuffer);
-    }
-
-    const nodeResolution = node.data.resolution;
-    const [width, height] = this.resolveNodeSize(nodeResolution);
-
-    const renderCommand = await createShaderParkDrawCommand({
-      width,
-      height,
-      framebuffer,
-      regl: this.regl,
-      gl: this.gl!,
-      code: node.data.code,
-      fallbackTexture: this.fallbackTexture,
-      onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
-        self.postMessage({
-          type: 'shaderError',
-          nodeId: node.id,
-          error: error.message,
-          stack: error.stack,
-          lineErrors: error.lineErrors
-        });
-      }
-    });
-
-    if (!renderCommand) return null;
-
-    return {
-      render: (params: RenderParams) => {
-        this.regl.clear({ color: [0, 0, 0, 0] });
-        renderCommand(params);
-      },
-      cleanup: () => {
-        (renderCommand as regl.DrawCommand & { destroy?: () => void }).destroy?.();
-      }
-    };
-  }
-
-  async createShaderParkThreeRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'shaderpark') return null;
-
-    const nodeSize = this.resolveNodeSize(node.data.resolution);
-    const config = {
-      code: node.data.code,
-      nodeId: node.id,
-      uniformDefs: node.data.shaderParkUniformDefs,
-      size: nodeSize
-    };
-    const existingRenderer = this.shaderParkThreeByNode.get(node.id);
-
-    if (existingRenderer) {
-      try {
-        await existingRenderer.updateConfig(config, framebuffer);
-      } catch (error) {
-        console.error('failed to update Shader Park 3D renderer', {
-          nodeId: node.id,
-          error
-        });
-
-        existingRenderer.destroy();
-        this.shaderParkThreeByNode.delete(node.id);
-
-        return null;
-      }
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.shaderParkThreeByNode.delete(node.id);
-        }
-      };
-    }
-
-    let shaderParkThreeRenderer: ShaderParkThreeRenderer;
-
-    try {
-      shaderParkThreeRenderer = await ShaderParkThreeRenderer.create(config, framebuffer, this);
-    } catch (error) {
-      console.error('failed to create Shader Park 3D renderer', {
-        nodeId: node.id,
-        error
-      });
-
-      this.shaderParkThreeByNode.delete(node.id);
-
-      return null;
-    }
-
-    this.shaderParkThreeByNode.set(node.id, shaderParkThreeRenderer);
-
-    return {
-      render: shaderParkThreeRenderer.renderFrame.bind(shaderParkThreeRenderer),
-      cleanup: () => {
-        shaderParkThreeRenderer.destroy();
-        this.shaderParkThreeByNode.delete(node.id);
-      }
-    };
   }
 
   destroyNodes(newNodeIds?: Set<string>) {
