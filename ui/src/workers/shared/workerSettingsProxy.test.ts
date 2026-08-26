@@ -28,4 +28,27 @@ describe('worker settings proxy', () => {
     expect(messages[1]).toMatchObject({ type: 'settingsSet', key: 'grid', value: [[true, false]] });
     expect(proxy.settings.get('grid')).toEqual([[true, false]]);
   });
+
+  it('notifies callbacks when settings are set from worker code', async () => {
+    const messages: Array<Record<string, unknown>> = [];
+    const changes: Array<[string, unknown, Record<string, unknown>]> = [];
+
+    const proxy = createWorkerSettingsProxy('node-1', (message) =>
+      messages.push(message as Record<string, unknown>)
+    );
+
+    const definition = proxy.settings.define([
+      { key: 'gain', label: 'Gain', type: 'number', default: 0 },
+      { key: 'enabled', label: 'Enabled', type: 'boolean', default: false }
+    ]);
+
+    proxy._receiveValuesInit(messages[0].requestId as string, { gain: 0, enabled: false });
+
+    await definition;
+
+    proxy.settings.onChange((key, value, allValues) => changes.push([key, value, allValues]));
+    proxy.settings.set('gain', 0.75);
+
+    expect(changes).toEqual([['gain', 0.75, { gain: 0.75, enabled: false }]]);
+  });
 });

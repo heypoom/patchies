@@ -45,6 +45,22 @@ export function createWorkerSettingsProxy(
   let requestIdCounter = 0;
   let onChangeCallbacks: ChangeCallback[] = [];
 
+  const notifyValueChanged = (key: string, value: unknown) => {
+    const field = schema.find((candidate) => candidate.key === key);
+    cachedValues[key] = field ? cloneSettingsFieldValue(field, value) : value;
+
+    const callbackValue = settings.get(key);
+    const allValues = settings.getAll();
+
+    for (const callback of onChangeCallbacks) {
+      try {
+        callback(key, callbackValue, allValues);
+      } catch {
+        // ignore callback errors
+      }
+    }
+  };
+
   const settings = {
     async define(nextSchema: SettingsSchema): Promise<void> {
       const requestId = `settings-${nodeId}-${++requestIdCounter}`;
@@ -74,8 +90,7 @@ export function createWorkerSettingsProxy(
       const field = schema.find((candidate) => candidate.key === key);
       const storedValue = field ? cloneSettingsFieldValue(field, value) : value;
 
-      cachedValues[key] = storedValue;
-
+      notifyValueChanged(key, storedValue);
       postMessage({ type: 'settingsSet', nodeId, key, value: storedValue });
     },
 
@@ -98,9 +113,11 @@ export function createWorkerSettingsProxy(
 
     _reset() {
       onChangeCallbacks = [];
+
       for (const resolve of pendingDefines.values()) {
         resolve(cachedValues);
       }
+
       pendingDefines.clear();
       cachedValues = {};
       schema = [];
@@ -117,25 +134,14 @@ export function createWorkerSettingsProxy(
             return [key, field ? cloneSettingsFieldValue(field, value) : value];
           })
         );
+
         pendingDefines.delete(requestId);
         resolve(values);
       }
     },
 
     _receiveValueChanged(key: string, value: unknown) {
-      const field = schema.find((candidate) => candidate.key === key);
-      cachedValues[key] = field ? cloneSettingsFieldValue(field, value) : value;
-
-      const callbackValue = settings.get(key);
-      const allValues = settings.getAll();
-
-      for (const callback of onChangeCallbacks) {
-        try {
-          callback(key, callbackValue, allValues);
-        } catch {
-          // ignore callback errors
-        }
-      }
+      notifyValueChanged(key, value);
     }
   };
 }
