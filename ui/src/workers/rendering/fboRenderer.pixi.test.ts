@@ -12,7 +12,7 @@ vi.mock('./swglRenderer', () => ({ SwissGLRenderer: class {} }));
 vi.mock('./shaderParkThreeRenderer', () => ({ ShaderParkThreeRenderer: class {} }));
 vi.mock('$lib/projmap/ProjectionMapRenderer', () => ({ ProjectionMapRenderer: class {} }));
 
-describe('FBORenderer Pixi lifecycle', () => {
+describe('NodeRendererRegistry Pixi lifecycle', () => {
   it('keeps cleanup attached after reusing a Pixi renderer', async () => {
     vi.stubGlobal('self', {
       addEventListener: vi.fn(),
@@ -23,7 +23,7 @@ describe('FBORenderer Pixi lifecycle', () => {
       clearInterval
     });
 
-    const { FBORenderer } = await import('./fboRenderer');
+    const { NodeRendererRegistry } = await import('./NodeRendererRegistry');
 
     const existingRenderer = {
       updateConfig: vi.fn().mockResolvedValue(undefined),
@@ -31,8 +31,17 @@ describe('FBORenderer Pixi lifecycle', () => {
       destroy: vi.fn()
     };
 
-    const renderer = Object.create(FBORenderer.prototype) as InstanceType<typeof FBORenderer>;
-    renderer.pixiByNode = new Map([['pixi-node', existingRenderer as never]]);
+    const pixiByNode = new Map([['pixi-node', existingRenderer as never]]);
+    const registry = new NodeRendererRegistry({} as never, {
+      hydraByNode: new Map(),
+      canvasByNode: new Map(),
+      textmodeByNode: new Map(),
+      threeByNode: new Map(),
+      pixiByNode,
+      reglByNode: new Map(),
+      projmapByNode: new Map(),
+      swglByNode: new Map()
+    });
 
     const node = {
       id: 'pixi-node',
@@ -40,8 +49,8 @@ describe('FBORenderer Pixi lifecycle', () => {
       data: { code: 'stage.addChild(sprite)' }
     } as RenderNode;
 
-    const framebuffer = {} as Parameters<typeof renderer.createPixiRenderer>[1];
-    const result = await renderer.createPixiRenderer(node, framebuffer);
+    const framebuffer = {} as never;
+    const result = await registry.create(node, framebuffer);
 
     expect(existingRenderer.updateConfig).toHaveBeenCalledWith(
       { code: 'stage.addChild(sprite)', nodeId: 'pixi-node', runRevision: undefined },
@@ -51,6 +60,6 @@ describe('FBORenderer Pixi lifecycle', () => {
     result?.cleanup();
 
     expect(existingRenderer.destroy).toHaveBeenCalledTimes(1);
-    expect(renderer.pixiByNode.has('pixi-node')).toBe(false);
+    expect(pixiByNode.has('pixi-node')).toBe(false);
   });
 });

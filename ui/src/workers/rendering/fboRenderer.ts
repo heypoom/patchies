@@ -11,7 +11,6 @@ import type {
   FBOResolution
 } from '../../lib/rendering/types';
 import type { TransportState } from '$lib/transport/types';
-import type { ProjMapSurface } from '$lib/projmap/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
@@ -23,16 +22,16 @@ import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
 import { CaptureRenderer, type VideoFrameCaptureSource } from './CaptureRenderer';
 import { match, P } from 'ts-pattern';
-import { HydraRenderer } from './hydraRenderer';
-import { CanvasRenderer } from './canvasRenderer';
-import { TextmodeRenderer } from './textmodeRenderer';
-import { ThreeRenderer } from './threeRenderer';
-import { PixiRenderer } from './pixiRenderer';
-import { ReglRenderer } from './reglRenderer';
-import { SwissGLRenderer } from './swglRenderer';
+import type { HydraRenderer } from './hydraRenderer';
+import type { CanvasRenderer } from './canvasRenderer';
+import type { TextmodeRenderer } from './textmodeRenderer';
+import type { ThreeRenderer } from './threeRenderer';
+import type { PixiRenderer } from './pixiRenderer';
+import type { ReglRenderer } from './reglRenderer';
+import type { SwissGLRenderer } from './swglRenderer';
 import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
-import { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
+import type { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
 import { getFramebuffer, getRawTexture } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
@@ -71,6 +70,7 @@ import { isPassthroughNodeType, mergeVideoGraphEdges } from './videoGraph';
 import { FboResources } from './FboResources';
 import { drawToFinalOutput } from './drawToFinalOutput';
 import { VideoSourceResolver } from './VideoSourceResolver';
+import { NodeRendererRegistry } from './NodeRendererRegistry';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -150,15 +150,12 @@ export class FBORenderer {
   public reglByNode = new Map<string, ReglRenderer | null>();
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLRenderer | null>();
+  private nodeRenderers: NodeRendererRegistry;
 
   /** Dedicated settings proxy registry — populated in BaseWorkerRenderer.resetState() before any async code runs, fixing the race where renderers aren't in their type-specific maps yet. */
   private settingsProxiesByNode = new Map<string, WorkerSettingsProxy>();
 
   /** During textmode loading, we need to refresh REGL. */
-
-  /** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
-  private pendingHydraCleanup: HydraRenderer[] = [];
-  private hydraCleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   private fboNodes = new Map<string, FBONode>();
   private fallbackTexture: regl.Texture2D;
@@ -258,6 +255,16 @@ export class FBORenderer {
       this.fboNodes,
       this.videoTextures
     );
+    this.nodeRenderers = new NodeRendererRegistry(this, {
+      hydraByNode: this.hydraByNode,
+      canvasByNode: this.canvasByNode,
+      textmodeByNode: this.textmodeByNode,
+      threeByNode: this.threeByNode,
+      pixiByNode: this.pixiByNode,
+      reglByNode: this.reglByNode,
+      projmapByNode: this.projmapByNode,
+      swglByNode: this.swglByNode
+    });
 
     this.usesMobileSafariWebGLWorkaround = this.detectMobileSafari();
 
@@ -534,15 +541,22 @@ export class FBORenderer {
       pending.map(async ({ node, framebuffer }) =>
         match(node)
           .with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
-          .with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
-          .with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
-          .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
-          .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
-          .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
-          .with({ type: 'pixi' }, (node) => this.createPixiRenderer(node, framebuffer))
+          .with(
+            {
+              type: P.union(
+                'hydra',
+                'swgl',
+                'canvas',
+                'textmode',
+                'three',
+                'pixi',
+                'regl',
+                'projmap'
+              )
+            },
+            (node) => this.nodeRenderers.create(node, framebuffer)
+          )
           .with({ type: 'shaderpark' }, (node) => this.createShaderParkRenderer(node, framebuffer))
-          .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
-          .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
           .with({ type: 'img' }, () => this.createEmptyRenderer())
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
           .with({ type: 'worker' }, () => this.createEmptyRenderer())
@@ -661,8 +675,6 @@ export class FBORenderer {
    * has consumed or transferred that state.
    */
   private hasReusableRenderer(node: RenderNode): boolean {
-    if (this.hydraByNode.has(node.id)) return true;
-
     if (
       node.type === 'shaderpark' &&
       node.data.renderMode === '3d' &&
@@ -671,9 +683,7 @@ export class FBORenderer {
       return true;
     }
 
-    if (node.type === 'three' && this.threeByNode.has(node.id)) return true;
-
-    return node.type === 'pixi' && this.pixiByNode.has(node.id);
+    return this.nodeRenderers.hasReusableRenderer(node);
   }
 
   private destroyFboNode(fboNode: FBONode, cleanup = true): void {
@@ -702,311 +712,8 @@ export class FBORenderer {
     this.cookState.setGraphSignatures(signatures);
   }
 
-  async createHydraRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'hydra') return null;
-
-    const existingRenderer = this.hydraByNode.get(node.id);
-
-    // Reuse existing renderer when the Hydra source/output counts are unchanged.
-    // Same-code Run still needs to execute user code, so also watch the run revision.
-    const canReuse =
-      existingRenderer?.hydra &&
-      existingRenderer.config.videoInletCount === (node.data.videoInletCount ?? 1) &&
-      existingRenderer.config.videoOutletCount === (node.data.videoOutletCount ?? 1);
-
-    if (canReuse) {
-      existingRenderer.framebuffer = framebuffer;
-
-      const runRevision = node.data._runRevision;
-      const shouldUpdateCode =
-        existingRenderer.config.code !== node.data.code ||
-        existingRenderer.config.runRevision !== runRevision;
-
-      if (shouldUpdateCode) {
-        existingRenderer.config.code = node.data.code;
-        existingRenderer.config.runRevision = runRevision;
-
-        await existingRenderer.updateCode();
-      }
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.hydraByNode.delete(node.id);
-        }
-      };
-    }
-
-    // Full recreation needed (first run or video port count changed)
-    const previousSynthTime = existingRenderer?.hydra?.synth.time;
-
-    // Queue old renderer for deferred cleanup
-    if (existingRenderer) {
-      this.pendingHydraCleanup.push(existingRenderer);
-      this.scheduleHydraCleanup();
-    }
-
-    const hydraRenderer = await HydraRenderer.create(
-      {
-        code: node.data.code,
-        nodeId: node.id,
-        videoInletCount: node.data.videoInletCount ?? 1,
-        videoOutletCount: node.data.videoOutletCount ?? 1,
-        runRevision: node.data._runRevision
-      },
-      framebuffer,
-      this
-    );
-
-    // Restore synth time if we had a previous value
-    if (previousSynthTime !== undefined && hydraRenderer.hydra) {
-      hydraRenderer.hydra.synth.time = previousSynthTime;
-    }
-
-    this.hydraByNode.set(node.id, hydraRenderer);
-
-    return {
-      render: hydraRenderer.renderFrame.bind(hydraRenderer),
-      cleanup: () => {
-        hydraRenderer.destroy();
-        this.hydraByNode.delete(node.id);
-      }
-    };
-  }
-
-  /** Schedule deferred cleanup of old Hydra renderers (runs once after delay) */
-  private scheduleHydraCleanup() {
-    // Don't schedule if already scheduled
-    if (this.hydraCleanupTimer !== null) return;
-
-    // Wait 500ms then clean up all pending renderers
-    this.hydraCleanupTimer = setTimeout(() => {
-      for (const renderer of this.pendingHydraCleanup) {
-        renderer.destroy();
-      }
-
-      this.pendingHydraCleanup = [];
-      this.hydraCleanupTimer = null;
-    }, 500);
-  }
-
-  async createCanvasRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'canvas') return null;
-
-    // Delete existing canvas renderer if it exists.
-    if (this.canvasByNode.has(node.id)) {
-      this.canvasByNode.get(node.id)?.destroy();
-    }
-
-    const canvasRenderer = await CanvasRenderer.create(
-      { code: node.data.code, nodeId: node.id },
-      framebuffer,
-      this
-    );
-
-    this.canvasByNode.set(node.id, canvasRenderer);
-
-    return {
-      render: () => {},
-      cleanup: () => {
-        canvasRenderer.destroy();
-        this.canvasByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createTextmodeRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'textmode') return null;
-
-    let textmodeRenderer: TextmodeRenderer | null = null;
-
-    // 1. re-use existing textmode renderer if available
-    if (this.textmodeByNode.has(node.id)) {
-      const renderer = this.textmodeByNode.get(node.id)!;
-
-      // Only reuse if there is a valid non-disposed renderer
-      if (renderer.tm && renderer.textmode && !renderer.tm.isDisposed) {
-        textmodeRenderer = renderer;
-
-        // Update framebuffer reference (new one is created each buildFBOs call)
-        textmodeRenderer.framebuffer = framebuffer;
-
-        const runRevision = node.data._runRevision;
-
-        const shouldUpdateCode =
-          renderer.config.code !== node.data.code || renderer.config.runRevision !== runRevision;
-
-        // A Run action may retain the same source code, but it must still
-        // re-evaluate it so its registered t.setup() callback can run again.
-        if (shouldUpdateCode) {
-          textmodeRenderer.config.code = node.data.code;
-          textmodeRenderer.config.runRevision = runRevision;
-
-          await textmodeRenderer.updateCode();
-        }
-      }
-    }
-
-    // 2. if there are no renderer to re-use, we create a new one!
-    if (!textmodeRenderer) {
-      textmodeRenderer = await TextmodeRenderer.create(
-        { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision },
-        framebuffer,
-        this
-      );
-
-      this.textmodeByNode.set(node.id, textmodeRenderer);
-    }
-
-    if (!textmodeRenderer) return null;
-
-    return {
-      render: textmodeRenderer.renderFrame.bind(textmodeRenderer),
-
-      // No-op cleanup - textmode renderers are expensive to create,
-      // so we keep them alive and reuse them across graph rebuilds.
-      // They are only destroyed when explicitly removed via destroyTextmodeRenderer().
-      cleanup: () => {}
-    };
-  }
-
-  async createThreeRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'three') return null;
-
-    const existingRenderer = this.threeByNode.get(node.id);
-    const runRevision = node.data._runRevision;
-    const config = { code: node.data.code, nodeId: node.id, runRevision };
-
-    if (existingRenderer) {
-      await existingRenderer.updateConfig(config, framebuffer);
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.threeByNode.delete(node.id);
-        }
-      };
-    }
-
-    const threeRenderer = await ThreeRenderer.create(config, framebuffer, this);
-
-    this.threeByNode.set(node.id, threeRenderer);
-
-    return {
-      render: threeRenderer.renderFrame.bind(threeRenderer),
-      cleanup: () => {
-        threeRenderer.destroy();
-        this.threeByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createPixiRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'pixi') return null;
-
-    const config = { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision };
-    const existingRenderer = this.pixiByNode.get(node.id);
-
-    if (existingRenderer) {
-      await existingRenderer.updateConfig(config, framebuffer);
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.pixiByNode.delete(node.id);
-        }
-      };
-    }
-
-    const pixiRenderer = await PixiRenderer.create(config, framebuffer, this);
-    this.pixiByNode.set(node.id, pixiRenderer);
-
-    return {
-      render: pixiRenderer.renderFrame.bind(pixiRenderer),
-      cleanup: () => {
-        pixiRenderer.destroy();
-        this.pixiByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createReglRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'regl') return null;
-
-    // Delete existing regl renderer if it exists.
-    if (this.reglByNode.has(node.id)) {
-      this.reglByNode.get(node.id)?.destroy();
-    }
-
-    const reglRenderer = await ReglRenderer.create(
-      { code: node.data.code, nodeId: node.id },
-      framebuffer,
-      this
-    );
-
-    this.reglByNode.set(node.id, reglRenderer);
-
-    return {
-      render: reglRenderer.renderFrame.bind(reglRenderer),
-      cleanup: () => {
-        reglRenderer.destroy();
-
-        this.reglByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createProjMapRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'projmap') return null;
-
-    if (this.projmapByNode.has(node.id)) {
-      this.projmapByNode.get(node.id)?.destroy();
-    }
-
-    const projmapRenderer = await ProjectionMapRenderer.create(
-      { nodeId: node.id, surfaces: node.data.surfaces ?? [] },
-      framebuffer,
-      this
-    );
-
-    this.projmapByNode.set(node.id, projmapRenderer);
-
-    return {
-      render: projmapRenderer.renderFrame.bind(projmapRenderer),
-      cleanup: () => {
-        projmapRenderer.destroy();
-
-        this.projmapByNode.delete(node.id);
-      }
-    };
-  }
-
-  updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]) {
-    this.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
+  updateProjectionMap(nodeId: string, surfaces: import('$lib/projmap/types').ProjMapSurface[]) {
+    this.nodeRenderers.updateProjectionMap(nodeId, surfaces);
     this.cookState.markDirty(nodeId, 'config');
   }
 
@@ -1015,12 +722,7 @@ export class FBORenderer {
    * Called from destroyNodes() for nodes that no longer exist.
    */
   destroyTextmodeRenderer(nodeId: string) {
-    const renderer = this.textmodeByNode.get(nodeId);
-
-    if (renderer) {
-      renderer.destroy();
-      this.textmodeByNode.delete(nodeId);
-    }
+    this.nodeRenderers.destroyTextmodeRenderer(nodeId);
   }
 
   async createGlslRenderer(
@@ -1248,34 +950,6 @@ export class FBORenderer {
     };
   }
 
-  async createSwglRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'swgl') return null;
-
-    // Delete existing SwissGL renderer if it exists
-    if (this.swglByNode.has(node.id)) {
-      this.swglByNode.get(node.id)?.destroy();
-    }
-
-    const swglRenderer = await SwissGLRenderer.create(
-      { code: node.data.code, nodeId: node.id },
-      framebuffer,
-      this
-    );
-
-    this.swglByNode.set(node.id, swglRenderer);
-
-    return {
-      render: swglRenderer.renderFrame.bind(swglRenderer),
-      cleanup: () => {
-        swglRenderer.destroy();
-        this.swglByNode.delete(node.id);
-      }
-    };
-  }
-
   destroyNodes(newNodeIds?: Set<string>) {
     for (const fboNode of this.fboNodes.values()) {
       this.destroyFboNode(fboNode);
@@ -1288,17 +962,7 @@ export class FBORenderer {
   // Textmode.js is super expensive to setup.
   // We wanted to only clean them up if the node is destroyed.
   cleanupExpensiveTextmodeRenderers(newNodeIds?: Set<string>) {
-    // Clean up textmode renderers for nodes that no longer exist in the new graph
-    if (newNodeIds) {
-      const existingTextmodeIds = Array.from(this.textmodeByNode.keys());
-
-      // Collect IDs to delete first to avoid modifying map while iterating
-      const nodeIdsToDelete = existingTextmodeIds.filter((id) => !newNodeIds.has(id));
-
-      for (const nodeId of nodeIdsToDelete) {
-        this.destroyTextmodeRenderer(nodeId);
-      }
-    }
+    this.nodeRenderers.cleanupRemovedTextmodeRenderers(newNodeIds);
   }
 
   setUniformData(
