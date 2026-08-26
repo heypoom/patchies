@@ -1037,6 +1037,7 @@ export class FBORenderer {
         textmodeRenderer.framebuffer = framebuffer;
 
         const runRevision = node.data._runRevision;
+
         const shouldUpdateCode =
           renderer.config.code !== node.data.code || renderer.config.runRevision !== runRevision;
 
@@ -1045,6 +1046,7 @@ export class FBORenderer {
         if (shouldUpdateCode) {
           textmodeRenderer.config.code = node.data.code;
           textmodeRenderer.config.runRevision = runRevision;
+
           await textmodeRenderer.updateCode();
         }
       }
