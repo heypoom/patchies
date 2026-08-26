@@ -1,49 +1,26 @@
 import type { Node } from '@xyflow/svelte';
+import { BrowserEventStream, type BrowserEvent } from './browser-event-stream';
 import { createConnectionString } from './connection-string';
+import { RepresentationChangeTracker } from './representation-change-tracker';
+import { RemoteControlRelayClient } from './relay-client';
+import {
+  RemoteControlRequestError,
+  type CanonicalCommit,
+  type OperationRequest,
+  type PersistedSession,
+  type SessionCredentials
+} from './remote-control-types';
 import {
   applyRepresentationFileWrite,
   buildObjectRepresentations,
   buildPatchRepresentation,
-  type FileWriteResult,
-  type RepresentationObject
+  type FileWriteResult
 } from './representation';
 
 const protocolVersion = 'patchies.remote-control.v2';
 const patchSyncDelay = 150;
 const reconnectDelay = 500;
 const maxCommitAttempts = 3;
-
-interface SessionCredentials {
-  sessionId: string;
-  secret: string;
-}
-
-interface PersistedSession extends SessionCredentials {
-  patchRevision: number;
-}
-
-interface OperationRequest {
-  operationId: string;
-  browserGeneration: string;
-  baseRevision: number;
-  path: string;
-  content: string;
-}
-
-interface ObjectChange {
-  objectId: string;
-  object: RepresentationObject | null;
-}
-
-interface CanonicalCommit {
-  commitId: string;
-  operationId?: string;
-  browserGeneration: string;
-  baseRevision: number;
-  patchRevision: number;
-  applied: boolean;
-  changes: ObjectChange[];
-}
 
 interface SyncCoordinatorOptions {
   patchId: () => string;
@@ -53,31 +30,27 @@ interface SyncCoordinatorOptions {
   instanceURL?: string;
 }
 
-class RemoteControlRequestError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code?: string
-  ) {
-    super(
-      code
-        ? `Remote control request failed: ${status} (${code})`
-        : `Remote control request failed: ${status}`
-    );
-  }
-}
-
 export class RemoteControlSyncCoordinator {
-  private abortController: AbortController | null = null;
   private browserGeneration = '';
+  private readonly changeTracker = new RepresentationChangeTracker();
   private credentials: SessionCredentials | null = null;
-  private eventCursor = 0;
-  private objectSignatures = new Map<string, string>();
+  private readonly eventStream: BrowserEventStream;
   private patchRevision = 0;
   private pendingNodes: Node[] | null = null;
+  private readonly relay: RemoteControlRelayClient;
   private syncTimer: ReturnType<typeof setTimeout> | null = null;
   private work = Promise.resolve();
 
-  constructor(private readonly options: SyncCoordinatorOptions) {}
+  constructor(private readonly options: SyncCoordinatorOptions) {
+    this.relay = new RemoteControlRelayClient(this.instanceURL, () => this.credentials);
+
+    this.eventStream = new BrowserEventStream({
+      open: (afterEventID, signal) =>
+        this.relay.openBrowserEvents(this.requireCredentials().sessionId, afterEventID, signal),
+      onEvent: (event) => this.handleBrowserEvent(event),
+      onSessionNotFound: () => this.clearLocalSession()
+    });
+  }
 
   get isEnabled(): boolean {
     return this.credentials !== null;
@@ -105,6 +78,7 @@ export class RemoteControlSyncCoordinator {
     }
 
     this.browserGeneration = crypto.randomUUID();
+
     this.credentials = await this.request<SessionCredentials>('/api/remote-control/sessions', {
       method: 'POST',
       body: {
@@ -115,9 +89,10 @@ export class RemoteControlSyncCoordinator {
     });
 
     await this.publishSnapshot();
-    this.resetObjectBaseline();
+
+    this.changeTracker.reset(this.options.nodes());
     this.persistSession();
-    this.startEventStream();
+    this.eventStream.start();
     this.options.onEnabledChange?.(true);
   }
 
@@ -134,8 +109,9 @@ export class RemoteControlSyncCoordinator {
 
   disable(): void {
     const credentials = this.credentials;
+
     if (credentials) {
-      void this.request(`/api/remote-control/sessions/${credentials.sessionId}`, {
+      this.request(`/api/remote-control/sessions/${credentials.sessionId}`, {
         method: 'DELETE'
       }).catch((error: unknown) => console.error('Failed to revoke Remote Control session', error));
     }
@@ -144,21 +120,28 @@ export class RemoteControlSyncCoordinator {
   }
 
   dispose(): void {
-    this.abortController?.abort();
-    this.abortController = null;
+    this.eventStream.stop();
     this.pendingNodes = null;
-    if (this.syncTimer) clearTimeout(this.syncTimer);
+
+    if (this.syncTimer) {
+      clearTimeout(this.syncTimer);
+    }
+
     this.syncTimer = null;
   }
 
   notifyPatchChanged(nodes = this.options.nodes()): void {
     if (!this.credentials) return;
+
     this.pendingNodes = nodes;
-    if (this.syncTimer) clearTimeout(this.syncTimer);
+
+    if (this.syncTimer) {
+      clearTimeout(this.syncTimer);
+    }
 
     this.syncTimer = setTimeout(() => {
       this.syncTimer = null;
-      void this.enqueue(() => this.publishPatchChanges());
+      this.enqueue(() => this.publishPatchChanges());
     }, patchSyncDelay);
   }
 
@@ -168,6 +151,7 @@ export class RemoteControlSyncCoordinator {
 
   private enqueue(task: () => Promise<void>): Promise<void> {
     const result = this.work.then(task);
+
     this.work = result.catch((error: unknown) =>
       console.error('Remote Control synchronization failed', error)
     );
@@ -178,10 +162,13 @@ export class RemoteControlSyncCoordinator {
   private clearLocalSession(): void {
     this.dispose();
     this.credentials = null;
-    this.eventCursor = 0;
     this.patchRevision = 0;
-    this.objectSignatures.clear();
-    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(this.storageKey);
+    this.changeTracker.clear();
+
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(this.storageKey);
+    }
+
     this.options.onEnabledChange?.(false);
   }
 
@@ -199,76 +186,17 @@ export class RemoteControlSyncCoordinator {
     );
   }
 
-  private startEventStream(): void {
-    this.abortController?.abort();
-    const controller = new AbortController();
-    this.abortController = controller;
-
-    void this.runEventStream(controller.signal);
-  }
-
-  private async runEventStream(signal: AbortSignal): Promise<void> {
-    while (!signal.aborted && this.credentials) {
-      try {
-        await this.consumeEventStream(signal);
-      } catch (error) {
-        if (signal.aborted) return;
-        if (error instanceof RemoteControlRequestError) {
-          if (error.code === 'session_not_found') {
-            this.clearLocalSession();
-            return;
-          }
-          if (error.code === 'replay_unavailable') {
-            this.eventCursor = 0;
-          }
-        }
-
-        console.error('Remote control browser stream stopped; reconnecting', error);
-      }
-
-      await wait(reconnectDelay, signal);
-    }
-  }
-
-  private async consumeEventStream(signal: AbortSignal): Promise<void> {
-    const headers = new Headers(this.headers());
-    if (this.eventCursor > 0) headers.set('Last-Event-ID', String(this.eventCursor));
-
-    const response = await fetch(
-      `${this.instanceURL}/api/remote-control/sessions/${this.requireCredentials().sessionId}/browser/events`,
-      { headers, signal }
-    );
-    if (!response.ok || !response.body) throw await this.responseError(response);
-
-    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-    let pending = '';
-    for (let attempt = 0; attempt < maxCommitAttempts; attempt++) {
-      const { done, value } = await reader.read();
-      if (done) return;
-
-      pending += value;
-      const events = pending.split('\n\n');
-      pending = events.pop() ?? '';
-      for (const event of events) await this.handleSSEEvent(event);
-    }
-  }
-
-  private async handleSSEEvent(event: string): Promise<void> {
-    const id = Number(event.match(/^id: (.+)$/m)?.[1] ?? 0);
-    const type = event.match(/^event: (.+)$/m)?.[1];
-    const data = event.match(/^data: (.+)$/m)?.[1];
-
-    if (type === 'client.attached') {
+  private async handleBrowserEvent(event: BrowserEvent): Promise<void> {
+    if (event.type === 'client.attached') {
       await this.enqueue(async () => {
         await this.publishSnapshot();
-        this.resetObjectBaseline();
+
+        this.changeTracker.reset(this.options.nodes());
       });
-    } else if (type === 'operation.submitted' && data) {
-      const operation = JSON.parse(data) as OperationRequest;
+    } else if (event.type === 'operation.submitted' && event.data) {
+      const operation = JSON.parse(event.data) as OperationRequest;
       await this.enqueue(() => this.resolveOperation(operation));
     }
-
-    if (Number.isSafeInteger(id) && id > this.eventCursor) this.eventCursor = id;
   }
 
   private async resolveOperation(operation: OperationRequest): Promise<void> {
@@ -279,7 +207,10 @@ export class RemoteControlSyncCoordinator {
       operation.path,
       operation.content
     );
-    if (write.status === 'applied') this.options.applyFileWrite(write);
+
+    if (write.status === 'applied') {
+      this.options.applyFileWrite(write);
+    }
 
     const object =
       write.status === 'applied'
@@ -287,6 +218,7 @@ export class RemoteControlSyncCoordinator {
             (candidate) => candidate.id === write.nodeId
           )
         : undefined;
+
     if (write.status === 'applied' && !object) {
       throw new Error(`Remote Control could not represent updated object ${write.nodeId}`);
     }
@@ -306,26 +238,10 @@ export class RemoteControlSyncCoordinator {
 
     const nodes = this.pendingNodes ?? this.options.nodes();
     this.pendingNodes = null;
-    const nextObjects = new Map(
-      buildObjectRepresentations(nodes).map((object) => [object.id, JSON.stringify(object)])
-    );
-    const changedIDs = new Set<string>();
-    for (const [objectID, signature] of nextObjects) {
-      if (this.objectSignatures.get(objectID) !== signature) changedIDs.add(objectID);
-    }
-    for (const objectID of this.objectSignatures.keys()) {
-      if (!nextObjects.has(objectID)) changedIDs.add(objectID);
-    }
-    if (changedIDs.size === 0) return;
 
-    const changes = [...changedIDs].sort().map((objectId) => {
-      const signature = nextObjects.get(objectId);
+    const changes = this.changeTracker.changes(nodes);
+    if (changes.length === 0) return;
 
-      return {
-        objectId,
-        object: signature ? (JSON.parse(signature) as RepresentationObject) : null
-      };
-    });
     await this.publishCommit({
       commitId: crypto.randomUUID(),
       browserGeneration: this.browserGeneration,
@@ -347,11 +263,7 @@ export class RemoteControlSyncCoordinator {
         );
 
         this.patchRevision = commit.patchRevision;
-        for (const change of commit.changes) {
-          if (change.object)
-            this.objectSignatures.set(change.objectId, JSON.stringify(change.object));
-          else this.objectSignatures.delete(change.objectId);
-        }
+        this.changeTracker.accept(commit.changes);
         this.persistSession();
 
         return commit;
@@ -363,11 +275,7 @@ export class RemoteControlSyncCoordinator {
           throw error;
         }
 
-        const signal = this.abortController?.signal;
-        if (signal?.aborted) throw error;
-
-        await wait(reconnectDelay, signal);
-        if (signal?.aborted) throw error;
+        await wait(reconnectDelay);
       }
     }
 
@@ -378,34 +286,15 @@ export class RemoteControlSyncCoordinator {
     path: string,
     init: { method: string; body?: unknown }
   ): Promise<T> {
-    const response = await fetch(`${this.instanceURL}${path}`, {
-      method: init.method,
-      headers: { ...this.headers(), 'Content-Type': 'application/json' },
-      body: init.body === undefined ? undefined : JSON.stringify(init.body)
-    });
-    if (!response.ok) {
-      const error = await this.responseError(response);
-      if (error.code === 'session_not_found' && this.credentials) this.clearLocalSession();
+    try {
+      return await this.relay.request<T>(path, init);
+    } catch (error) {
+      if (error instanceof RemoteControlRequestError && error.code === 'session_not_found') {
+        this.clearLocalSession();
+      }
 
       throw error;
     }
-    if (response.status === 204) return undefined as T;
-
-    return (await response.json()) as T;
-  }
-
-  private async responseError(response: Response): Promise<RemoteControlRequestError> {
-    try {
-      const body = (await response.json()) as { code?: string };
-
-      return new RemoteControlRequestError(response.status, body.code);
-    } catch {
-      return new RemoteControlRequestError(response.status);
-    }
-  }
-
-  private headers(): HeadersInit {
-    return this.credentials ? { Authorization: `Bearer ${this.credentials.secret}` } : {};
   }
 
   private requireCredentials(): SessionCredentials {
@@ -422,7 +311,6 @@ export class RemoteControlSyncCoordinator {
     this.credentials = { sessionId: persisted.sessionId, secret: persisted.secret };
     this.patchRevision = persisted.patchRevision;
     this.browserGeneration = crypto.randomUUID();
-    this.eventCursor = 0;
 
     try {
       const snapshot = await this.request<{ patchRevision: number }>(
@@ -436,12 +324,14 @@ export class RemoteControlSyncCoordinator {
           }
         }
       );
+
       this.patchRevision = snapshot.patchRevision;
 
       await this.publishSnapshot();
-      this.resetObjectBaseline();
+
+      this.changeTracker.reset(this.options.nodes());
       this.persistSession();
-      this.startEventStream();
+      this.eventStream.start();
       this.options.onEnabledChange?.(true);
     } catch (error) {
       this.clearLocalSession();
@@ -457,6 +347,7 @@ export class RemoteControlSyncCoordinator {
 
     try {
       const parsed = JSON.parse(value) as PersistedSession;
+
       if (!parsed.sessionId || !parsed.secret || !Number.isInteger(parsed.patchRevision)) {
         return null;
       }
@@ -473,6 +364,7 @@ export class RemoteControlSyncCoordinator {
     if (typeof sessionStorage === 'undefined') return;
 
     const credentials = this.requireCredentials();
+
     sessionStorage.setItem(
       this.storageKey,
       JSON.stringify({
@@ -481,29 +373,7 @@ export class RemoteControlSyncCoordinator {
       } satisfies PersistedSession)
     );
   }
-
-  private resetObjectBaseline(): void {
-    this.objectSignatures = new Map(
-      buildObjectRepresentations(this.options.nodes()).map((object) => [
-        object.id,
-        JSON.stringify(object)
-      ])
-    );
-  }
 }
 
-const wait = (milliseconds: number, signal?: AbortSignal): Promise<void> =>
-  new Promise((resolve) => {
-    if (signal?.aborted) {
-      resolve();
-      return;
-    }
-
-    const finish = () => {
-      clearTimeout(timeout);
-      signal?.removeEventListener('abort', finish);
-      resolve();
-    };
-    const timeout = setTimeout(finish, milliseconds);
-    signal?.addEventListener('abort', finish, { once: true });
-  });
+const wait = (milliseconds: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));

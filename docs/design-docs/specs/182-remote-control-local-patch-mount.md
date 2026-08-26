@@ -155,13 +155,18 @@ uses `code.asm`; and Csound uses `score.csd`.
 
 ## Synchronization and History
 
-Two deep modules own synchronization state:
+The browser synchronization surface remains a small coordinator facade, backed
+by focused deep modules:
 
-- The browser `RemoteControlSyncCoordinator` serializes all patch-change
-  notifications, Remote File Operations, snapshots, commits, revision changes,
-  and stream reconnection behind `enable`, `restore`, `disable`, `dispose`, and
-  `notifyPatchChanged`. Component teardown only disposes the local connection;
-  it never revokes the persistent session.
+- `RemoteControlSyncCoordinator` owns session lifecycle, browser generation,
+  Patch Revision, and the serialized mutation queue behind `enable`, `restore`,
+  `disable`, `dispose`, and `notifyPatchChanged`.
+- The relay client owns authenticated HTTP requests and opening the browser SSE
+  response. The browser event stream owns cursors, reconnecting, and ordered
+  delivery until disposal. The representation change tracker owns the committed
+  representation baseline and creates object-level commit changes.
+- Component teardown only disposes the local connection; it never revokes the
+  persistent session.
 - The CLI `MountSession` owns attachment, event replay, Patch Revision, the
   latest-per-file operation queue, watcher suppression, filesystem projection,
   and reconnect behavior behind one blocking `Run` operation.
