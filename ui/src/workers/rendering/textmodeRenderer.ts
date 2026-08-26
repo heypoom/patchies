@@ -2,9 +2,8 @@ import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { setupWorkerDOMMocks } from './workerDOMMocks';
-import type { Textmodifier } from 'textmode.js';
+import type { TextmodePlugin, Textmodifier } from 'textmode.js';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
-import type { TextmodePlugin } from 'textmode.js/plugins';
 import { getFramebuffer } from './utils';
 
 export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
@@ -90,7 +89,6 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         const { SynthPlugin } = await import('textmode.synth.js');
 
         const originalBindFramebuffer = gl.bindFramebuffer.bind(gl);
-
         // During textmode's draw cycle, redirect null (default FB) → our regl FBO.
         // This makes textmode render directly into the FBO, avoiding a blit step
         // and the OffscreenCanvas transferToImageBitmap() workaround.
@@ -108,17 +106,17 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         const PatchiesPlugin: TextmodePlugin = {
           name: 'patchies',
           install(_tm, api) {
-            api.registerPreDrawHook(() => {
+            api.on('preDraw', () => {
               gl.bindFramebuffer = redirectedBindFramebuffer;
             });
 
-            api.registerPostDrawHook(() => {
+            api.on('postDraw', () => {
               gl.bindFramebuffer = originalBindFramebuffer;
             });
           }
         };
 
-        this.tm = this.textmode.create({
+        this.tm = this.textmode.textmode.create({
           width,
           height,
           fontSize: 18,
@@ -129,8 +127,6 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
           gl: this.renderer.gl,
 
           loadingScreen: {
-            message: 'Loading textmode...',
-            tone: 'dark',
             transition: 'none',
             transitionDuration: 0
           }
@@ -163,7 +159,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         ...this.buildBaseExtraContext(),
         t: this.tm,
         tm: this.tm,
-        textmode: this.textmode,
+        textmode: this.textmode.textmode,
         cellColor,
         char,
         charColor,

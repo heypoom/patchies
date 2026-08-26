@@ -267,7 +267,7 @@
         const { FiltersPlugin } = await import('textmode.filters.js');
         const { SynthPlugin } = await import('textmode.synth.js');
 
-        tm = textmode.create({
+        tm = textmode.textmode.create({
           width: outputWidth,
           height: outputHeight,
           fontSize: data.fontSize ?? 18,
@@ -335,7 +335,7 @@
           canvas,
           t: tm,
           tm,
-          textmode,
+          textmode: textmode.textmode,
           cellColor,
           char,
           charColor,
