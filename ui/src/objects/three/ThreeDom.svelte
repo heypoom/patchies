@@ -9,6 +9,7 @@
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { useCappedPreviewSize } from '$lib/canvas/use-capped-preview-size.svelte';
+  import { useKeyboardCallbacks } from '$lib/canvas/use-keyboard-callbacks.svelte';
   import { outputSize } from '../../stores/renderer.store';
   import { shouldShowHandles } from '../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -137,11 +138,10 @@
     buttons: 0
   });
 
-  // Keyboard state and user callbacks
-  let keyboardCallbacks = $state<{
-    onKeyDown?: (event: KeyboardEvent) => void;
-    onKeyUp?: (event: KeyboardEvent) => void;
-  }>({});
+  const keyboard = useKeyboardCallbacks({
+    onError: (error) =>
+      handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET)
+  });
 
   const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
     updateNodeData(nodeId, { inletCount: newInletCount, outletCount: newOutletCount });
@@ -259,44 +259,6 @@
     };
   }
 
-  function setupKeyboardListeners() {
-    if (!canvas) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (keyboardCallbacks.onKeyDown) {
-        // Stop propagation for all keyboard events to prevent leaking to xyflow
-        e.stopPropagation();
-
-        try {
-          keyboardCallbacks.onKeyDown(e);
-        } catch (error) {
-          handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
-        }
-      }
-    };
-
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (keyboardCallbacks.onKeyUp) {
-        // Stop propagation for all keyboard events to prevent leaking to xyflow
-        e.stopPropagation();
-
-        try {
-          keyboardCallbacks.onKeyUp(e);
-        } catch (error) {
-          handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
-        }
-      }
-    };
-
-    canvas.addEventListener('keydown', onKeyDown);
-    canvas.addEventListener('keyup', onKeyUp);
-
-    return () => {
-      canvas?.removeEventListener('keydown', onKeyDown);
-      canvas?.removeEventListener('keyup', onKeyUp);
-    };
-  }
-
   function setCanvasSize(width: number, height: number) {
     if (!canvas) return;
 
@@ -362,8 +324,7 @@
 
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
-    // Clear keyboard callbacks when code is re-run
-    keyboardCallbacks = {};
+    keyboard.reset();
 
     try {
       // Stop any previous animation loop
@@ -415,12 +376,8 @@
             updateNodeInternals(nodeId);
           },
           setCanvasSize,
-          onKeyDown: (callback: (event: KeyboardEvent) => void) => {
-            keyboardCallbacks.onKeyDown = callback;
-          },
-          onKeyUp: (callback: (event: KeyboardEvent) => void) => {
-            keyboardCallbacks.onKeyUp = callback;
-          },
+          onKeyDown: keyboard.onKeyDown,
+          onKeyUp: keyboard.onKeyUp,
           noDrag: () => {
             dragEnabled = false;
           },
@@ -476,7 +433,7 @@
     glSystem.upsertNode(nodeId, 'img', {});
 
     const cleanupMouse = setupMouseListeners();
-    const cleanupKeyboard = setupKeyboardListeners();
+    const cleanupKeyboard = canvas ? keyboard.attach(canvas) : undefined;
 
     setTimeout(() => {
       runCode();

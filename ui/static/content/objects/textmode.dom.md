@@ -49,6 +49,19 @@ Full support for:
 - [Touch events](https://code.textmode.art/docs/events.html#touch-events)
 - [Keyboard events](https://code.textmode.art/docs/events.html#keyboard-events)
 
+Use `onKeyDown()` and `onKeyUp()` callbacks for focused
+widget keyboard input. Their events do not leak to the editor:
+
+```javascript
+onKeyDown((event) => {
+  if (event.key === ' ') t.noLoop();
+});
+
+onKeyUp((event) => {
+  console.log('Released:', event.key);
+});
+```
+
 ## Media Loading
 
 Load [images and videos](https://code.textmode.art/docs/loadables.html) as textures.
@@ -62,6 +75,7 @@ Textmode-specific:
 - `setVideoOutput(true)` - enables the video output port, which is disabled by default
 - `setHidePorts(true | false)` - hide/show all ports
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see [Canvas Interaction](/docs/canvas-interaction)
+- `onKeyDown(callback)`, `onKeyUp(callback)` - receive keyboard events while the canvas is focused
 - `fft()` - audio analysis with low latency
 
 ## Plugins

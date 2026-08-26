@@ -667,8 +667,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'pixi.dom',
     'surface'
   ],
-  onKeyDown: ['canvas.dom', 'three.dom', 'surface'],
-  onKeyUp: ['canvas.dom', 'three.dom', 'surface'],
+  onKeyDown: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'],
+  onKeyUp: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'],
   onPointer: ['surface'],
   onTouch: ['surface'],
   setDrawMode: ['surface'],

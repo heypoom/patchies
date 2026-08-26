@@ -10,22 +10,28 @@ const MAIN_THREAD_VIDEO_OBJECTS = new Set([
 ]);
 
 const WORKER_VIDEO_OBJECTS = new Set(['canvas', 'regl', 'textmode', 'three']);
-const LEGACY_OUTPUT_CALL_LINE = /^[ \t]*noOutput\(\);?[ \t]*(?:\r?\n|$)/gm;
-const LEGACY_OUTPUT_IDENTIFIER = /\bnoOutput\b/;
+const LEGACY_OUTPUT_CALL = /\bnoOutput\s*\(\s*\)/g;
 const VIDEO_OUTPUT_SETTER_CALL = /\bsetVideoOutput\s*\(/;
 
 function migrateMainThreadCode(code: string) {
-  const withoutLegacyCalls = code.replace(LEGACY_OUTPUT_CALL_LINE, '');
+  const hasLegacyOutputCall = LEGACY_OUTPUT_CALL.test(code);
+  LEGACY_OUTPUT_CALL.lastIndex = 0;
 
-  if (withoutLegacyCalls !== code) return withoutLegacyCalls.replace(/^\r?\n/, '');
-  if (LEGACY_OUTPUT_IDENTIFIER.test(code)) return code;
+  if (hasLegacyOutputCall) {
+    const migratedCode = code.replace(LEGACY_OUTPUT_CALL, 'setVideoOutput(false)');
+
+    return VIDEO_OUTPUT_SETTER_CALL.test(code)
+      ? migratedCode
+      : `setVideoOutput(true)\n\n${migratedCode}`;
+  }
+
   if (VIDEO_OUTPUT_SETTER_CALL.test(code)) return code;
 
   return `setVideoOutput(true)\n\n${code}`;
 }
 
 function migrateWorkerCode(code: string) {
-  return code.replace(LEGACY_OUTPUT_CALL_LINE, 'setVideoOutput(false)\n');
+  return code.replace(LEGACY_OUTPUT_CALL, 'setVideoOutput(false)');
 }
 
 export const migration016: Migration = {

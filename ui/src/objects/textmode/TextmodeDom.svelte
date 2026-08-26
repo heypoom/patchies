@@ -11,6 +11,7 @@
   import { DEFAULT_OUTPUT_SIZE } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { useCappedPreviewSize } from '$lib/canvas/use-capped-preview-size.svelte';
+  import { useKeyboardCallbacks } from '$lib/canvas/use-keyboard-callbacks.svelte';
   import { shouldShowHandles } from '../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -80,6 +81,11 @@
   let videoOutputEnabled = $state(false);
   let editorReady = $state(false);
   let bitmapLoopId: number | null = null;
+
+  const keyboard = useKeyboardCallbacks({
+    onError: (error) =>
+      handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET)
+  });
 
   // textmode.js instances
   let textmode: typeof import('textmode.js') | null = null;
@@ -237,6 +243,7 @@
     // Clear console and error highlighting on re-run
     consoleRef?.clearConsole();
     lineErrors = undefined;
+    keyboard.reset();
 
     settingsManager.clearCallbacks();
 
@@ -323,6 +330,8 @@
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         extraContext: {
           settings: createSettingsAPI(settingsManager),
+          onKeyDown: keyboard.onKeyDown,
+          onKeyUp: keyboard.onKeyUp,
           canvas,
           t: tm,
           tm,
@@ -407,9 +416,13 @@
 
     setupCanvas();
 
+    const cleanupKeyboard = canvas ? keyboard.attach(canvas) : undefined;
+
     setTimeout(() => {
       runCode();
     }, 50);
+
+    return () => cleanupKeyboard?.();
   });
 
   onDestroy(() => {

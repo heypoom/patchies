@@ -17,6 +17,7 @@
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { outputSize as outputSizeStore } from '../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { useKeyboardCallbacks } from '$lib/canvas/use-keyboard-callbacks.svelte';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import {
     SurfaceListeners,
@@ -122,15 +123,7 @@
     | ((touches: { x: number; y: number; pressure: number; id: number }[]) => void)
     | null = null;
 
-  let keyboardCallbacks: {
-    onKeyDown?: (event: KeyboardEvent) => void;
-    onKeyUp?: (event: KeyboardEvent) => void;
-  } = {};
-
-  let keyboardListenerHandlers: {
-    keydown: (e: KeyboardEvent) => void;
-    keyup: (e: KeyboardEvent) => void;
-  } | null = null;
+  let removeKeyboardListeners: (() => void) | null = null;
 
   let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -148,7 +141,13 @@
 
   const { updateNodeData, getNodes } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
   const mouseForwarder = new SurfaceMouseForwarder(() => getNodes());
+
+  const keyboard = useKeyboardCallbacks({
+    onError: (error) =>
+      handleCodeError(error, data.code, nodeId, customConsole, SURFACE_WRAPPER_OFFSET)
+  });
 
   function clearCanvas() {
     if (activeCanvas && activeCtx) {
@@ -411,13 +410,7 @@
 
     // Attach keyboard listeners only when this window is the presentation surface.
     if (presentation === 'main') {
-      const handleKeyDown = (e: KeyboardEvent) => keyboardCallbacks.onKeyDown?.(e);
-      const handleKeyUp = (e: KeyboardEvent) => keyboardCallbacks.onKeyUp?.(e);
-
-      keyboardListenerHandlers = { keydown: handleKeyDown, keyup: handleKeyUp };
-
-      document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('keyup', handleKeyUp);
+      removeKeyboardListeners = keyboard.attach(document);
     }
 
     // Re-run code with overlay canvas
@@ -439,12 +432,8 @@
     outputHeight = window.innerHeight;
 
     // Remove keyboard listeners
-    if (keyboardListenerHandlers) {
-      document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
-      document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
-
-      keyboardListenerHandlers = null;
-    }
+    removeKeyboardListeners?.();
+    removeKeyboardListeners = null;
 
     // Switch active canvas back to preview
     if (previewCanvas) {
@@ -519,7 +508,7 @@
     drawMode = 'always';
     pointerCallback = null;
     touchCallback = null;
-    keyboardCallbacks = {};
+    keyboard.reset();
     setMouseForwarding();
 
     if (animationFrameId !== null) {
@@ -585,12 +574,8 @@
           onTouch: (cb: typeof touchCallback) => {
             touchCallback = cb;
           },
-          onKeyDown: (callback: (event: KeyboardEvent) => void) => {
-            keyboardCallbacks.onKeyDown = callback;
-          },
-          onKeyUp: (callback: (event: KeyboardEvent) => void) => {
-            keyboardCallbacks.onKeyUp = callback;
-          },
+          onKeyDown: keyboard.onKeyDown,
+          onKeyUp: keyboard.onKeyUp,
 
           // Interaction flags (for the node itself)
           noDrag: () => {
@@ -692,12 +677,8 @@
       clearTimeout(resizeDebounceTimer);
     }
 
-    if (keyboardListenerHandlers) {
-      document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
-      document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
-
-      keyboardListenerHandlers = null;
-    }
+    removeKeyboardListeners?.();
+    removeKeyboardListeners = null;
 
     // Deactivate overlay if this node was active
     if (isFullscreen) {
