@@ -128,20 +128,20 @@ describe('createRenderNodeCookPolicy', () => {
     ).toEqual(ALWAYS);
   });
 
-  it('uses Textmode dependency policies', () => {
+  it('always cooks Textmode draw callbacks', () => {
     expect(
       createRenderNodeCookPolicy(
         renderNode('textmode', { code: 't.draw(() => t.text("hi", 0, 0));' }),
         baseGraph
       )
-    ).toEqual(ON_DEMAND);
+    ).toEqual(ALWAYS);
 
     expect(
       createRenderNodeCookPolicy(
         renderNode('textmode', { code: 't.draw(() => t.text(fft().a[0], 0, 0));' }),
         baseGraph
       )
-    ).toEqual(FFT_DEPENDENT);
+    ).toEqual(ALWAYS);
   });
 
   it('preserves feedback dependency for on-demand passthrough nodes', () => {
