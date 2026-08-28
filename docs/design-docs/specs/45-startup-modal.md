@@ -86,6 +86,7 @@ The startup modal is implemented as a modular component system in `/ui/src/lib/c
 4. ✅ **Examples Tab**:
    - Loads from `/static/example-patches.json`
    - Grouped by categories
+   - Provides a Fuse-powered fuzzy search across demo name, description, category, and author while retaining matching category groups
    - Card grid layout with hover effects
    - Support for thumbnail images
    - Clicking a card navigates to `/?patch={id}`
