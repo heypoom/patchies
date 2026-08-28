@@ -44,6 +44,13 @@ function buildObjectToPackMap(): Map<string, ExtensionPack> {
 
 const objectToPackMap = buildObjectToPackMap();
 
+const objectOrderByPackId = new Map(
+  BUILT_IN_PACKS.map((pack) => [
+    pack.id,
+    new Map(pack.objects.map((objectName, index) => [objectName, index]))
+  ])
+);
+
 /**
  * Get the description for an object, using schemas as the primary source
  */
@@ -138,14 +145,15 @@ export function getCategorizedObjects(
     });
   }
 
-  // Sort objects within each pack: normal priority first, then alphabetically
-  for (const objects of packObjects.values()) {
+  // Sort objects within each pack by their declaration order in BUILT_IN_PACKS.
+  for (const [packId, objects] of packObjects) {
+    const objectOrder = objectOrderByPackId.get(packId)!;
+
     objects.sort((a, b) => {
-      // Low priority items come last
-      if (a.priority !== b.priority) {
-        return a.priority === 'normal' ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
+      return (
+        (objectOrder.get(a.name) ?? Number.MAX_SAFE_INTEGER) -
+        (objectOrder.get(b.name) ?? Number.MAX_SAFE_INTEGER)
+      );
     });
   }
 

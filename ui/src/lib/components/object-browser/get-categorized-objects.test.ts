@@ -5,7 +5,7 @@ import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
 import { getCategorizedObjects } from './get-categorized-objects';
 
 vi.mock('$lib/nodes/node-types', () => ({
-  nodeNames: ['trigger', 'expr', 'filter', 'map', 'scan', 'tap', 'uniq']
+  nodeNames: ['trigger', 'expr', 'filter', 'map', 'scan', 'tap', 'uniq', 'bchrn']
 }));
 
 function getObjectNamesForCategory(categoryTitle: string): string[] {
@@ -28,51 +28,53 @@ describe('getCategorizedObjects', () => {
     expect(new Set(categories.map((category) => category.id)).size).toBe(categories.length);
   });
 
-  it('includes enabled V2 text objects before object nodes mount', () => {
+  it('uses the declared object-pack order before object nodes mount', () => {
     expect(getObjectNamesForCategory('Control')).toEqual([
-      'debounce',
-      'delay',
-      'float',
-      'int',
-      'kv',
       'loadbang',
       'metro',
-      'patchbay',
-      'queue',
-      'recv',
-      'send',
+      'trigger',
       'spigot',
-      'stack',
+      'delay',
       'throttle',
-      'trigger'
+      'debounce',
+      'float',
+      'int',
+      'stack',
+      'queue',
+      'kv',
+      'patchbay',
+      'send',
+      'recv'
     ]);
 
     expect(getObjectNamesForCategory('Transforms')).toEqual([
+      'filter',
+      'map',
+      'tap',
+      'scan',
+      'select',
+      'uniq',
+      'uniqby',
+      'pack',
+      'unpack',
+      'expr',
+      '+',
       '-',
-      '!',
-      '!=',
       '*',
       '/',
       '&&',
-      '+',
+      '||',
+      '!',
+      '==',
+      '!=',
       '<',
       '<=',
-      '==',
       '>',
       '>=',
-      '||',
-      'clip',
-      'expr',
-      'filter',
-      'map',
-      'pack',
       'scale',
-      'scan',
-      'select',
-      'tap',
-      'uniq',
-      'uniqby',
-      'unpack'
+      'clip'
     ]);
+
+    expect(getObjectNamesForCategory('2D Graphics').at(-1)).toBe('bchrn');
   });
 });
