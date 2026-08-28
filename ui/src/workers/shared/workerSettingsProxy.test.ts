@@ -51,4 +51,29 @@ describe('worker settings proxy', () => {
 
     expect(changes).toEqual([['gain', 0.75, { gain: 0.75, enabled: false }]]);
   });
+
+  it('keeps the last resolved value available while code reruns', async () => {
+    const messages: Array<Record<string, unknown>> = [];
+
+    const proxy = createWorkerSettingsProxy('node-1', (message) =>
+      messages.push(message as Record<string, unknown>)
+    );
+
+    const definitionTask = proxy.settings.define([
+      { key: 'color', label: 'Color', type: 'color', default: '#aaccff' }
+    ]);
+
+    proxy._receiveValuesInit(messages[0].requestId as string, { color: '#aaccff' });
+    await definitionTask;
+
+    const rerunDefinitionTask = proxy.settings.define([
+      { key: 'color', label: 'Color', type: 'color', default: '#aaccff' }
+    ]);
+
+    proxy._reset();
+    await rerunDefinitionTask;
+
+    const color = proxy.settings.get('color') as string;
+    expect(() => color.replace('#', '0x')).not.toThrow();
+  });
 });

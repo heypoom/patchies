@@ -17,8 +17,8 @@ export interface WorkerSettingsProxy {
   _clearCallbacks(): void;
 
   /**
-   * Reset state for a re-run: clears callbacks, pendingDefines, and cachedValues,
-   * but preserves requestIdCounter to prevent request ID collisions across re-runs.
+   * Reset callbacks and pending definitions for a re-run while keeping the last
+   * resolved values available until the next definition completes.
    */
   _reset(): void;
 
@@ -119,8 +119,6 @@ export function createWorkerSettingsProxy(
       }
 
       pendingDefines.clear();
-      cachedValues = {};
-      schema = [];
     },
 
     _receiveValuesInit(requestId: string, values: Record<string, unknown>) {
