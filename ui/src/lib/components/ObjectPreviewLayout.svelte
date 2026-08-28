@@ -9,6 +9,7 @@
     X
   } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
+  import { get } from 'svelte/store';
   import * as Tooltip from './ui/tooltip';
   import * as ContextMenu from './ui/context-menu';
   import ObjectPreviewOverflowMenu from './ObjectPreviewOverflowMenu.svelte';
@@ -21,7 +22,7 @@
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { outputTarget } from '../../stores/canvas.store';
   import { transportStore } from '../../stores/transport.store';
-  import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
+  import { isSidebarOpen, selectedNodeInfo, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
   import {
     allPreviewsDisabled,
@@ -183,7 +184,7 @@
 
   function handleOpenHelp() {
     const helpObject = objectType ?? title;
-    helpViewStore.setLastViewed({ type: 'object', object: helpObject });
+    helpViewStore.openObject(helpObject, get(selectedNodeInfo)?.id ?? null);
     sidebarView.set('help');
     isSidebarOpen.set(true);
   }

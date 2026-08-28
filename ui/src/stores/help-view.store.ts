@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { selectedNodeInfo } from './ui.store';
 
 const STORAGE_KEY = 'patchies:help-view-state';
 
@@ -13,6 +14,40 @@ export interface HelpViewState {
   objectsExpanded: boolean;
   isLocked: boolean;
 }
+
+export interface RequestedHelpObject {
+  object: string;
+  selectedNodeId: string | null;
+}
+
+interface ResolveHelpViewTargetOptions {
+  requestedObject: string | null;
+  browseMode: boolean;
+  manualTarget: LastViewed;
+  isLocked: boolean;
+  lastViewed: LastViewed;
+  selectedObject: string | null;
+}
+
+export function resolveHelpViewTarget({
+  requestedObject,
+  browseMode,
+  manualTarget,
+  isLocked,
+  lastViewed,
+  selectedObject
+}: ResolveHelpViewTargetOptions): LastViewed {
+  if (requestedObject) return { type: 'object', object: requestedObject };
+  if (browseMode) return null;
+  if (manualTarget) return manualTarget;
+  if (isLocked && lastViewed) return lastViewed;
+  if (selectedObject) return { type: 'object', object: selectedObject };
+
+  return lastViewed;
+}
+
+/** Explicit Help actions temporarily take priority over pins and canvas selection. */
+export const requestedHelpObject = writable<RequestedHelpObject | null>(null);
 
 const defaultState: HelpViewState = {
   lastViewed: null,
@@ -77,8 +112,28 @@ function createHelpViewStore() {
 
     setLocked(locked: boolean) {
       update((s) => ({ ...s, isLocked: locked }));
+    },
+
+    openObject(object: string, selectedNodeId: string | null) {
+      update((s) => ({
+        ...s,
+        lastViewed: { type: 'object', object },
+        isLocked: false
+      }));
+
+      requestedHelpObject.set({ object, selectedNodeId });
     }
   };
 }
 
 export const helpViewStore = createHelpViewStore();
+
+selectedNodeInfo.subscribe((selectedNode) => {
+  if (!selectedNode) return;
+
+  requestedHelpObject.update((request) => {
+    if (!request || selectedNode.id === request.selectedNodeId) return request;
+
+    return null;
+  });
+});

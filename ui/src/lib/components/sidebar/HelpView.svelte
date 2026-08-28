@@ -22,7 +22,12 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { enabledObjects } from '../../../stores/extensions.store';
   import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
-  import { helpViewStore } from '../../../stores/help-view.store';
+  import {
+    helpViewStore,
+    requestedHelpObject,
+    resolveHelpViewTarget,
+    type LastViewed
+  } from '../../../stores/help-view.store';
   import { objectTypeToSlug } from '$lib/docs/object-slug';
 
   // Build object order map from packs for sorting
@@ -56,44 +61,26 @@
     }
   });
 
-  // Auto-show help for selected node, or use manual selection
-  const viewingObject = $derived.by((): string | null => {
-    if (browseModeOverride) return null;
-    if (manualViewingTopic) return null; // Topic takes precedence
-    if (manualViewingObject) return manualViewingObject;
-
-    // When locked, stay on the persisted item
-    if (isLocked) {
-      if (lastViewed?.type === 'topic') return null;
-      if (lastViewed?.type === 'object') return lastViewed.object;
-    }
-
-    // Selected node takes precedence over persisted state
-    if ($selectedNodeInfo?.type) return $selectedNodeInfo.type;
-
-    // Fallback to persisted state when nothing is selected
-    if (lastViewed?.type === 'object') return lastViewed.object;
+  const manualTarget = $derived.by((): LastViewed => {
+    if (manualViewingTopic) return { type: 'topic', topic: manualViewingTopic };
+    if (manualViewingObject) return { type: 'object', object: manualViewingObject };
 
     return null;
   });
 
-  // Track which topic is being viewed
-  const viewingTopic = $derived.by((): string | null => {
-    if (browseModeOverride) return null;
-    if (manualViewingObject) return null; // Object takes precedence
-    if (manualViewingTopic) return manualViewingTopic;
+  const viewingTarget = $derived(
+    resolveHelpViewTarget({
+      requestedObject: $requestedHelpObject?.object ?? null,
+      browseMode: browseModeOverride,
+      manualTarget,
+      isLocked,
+      lastViewed,
+      selectedObject: $selectedNodeInfo?.type ?? null
+    })
+  );
 
-    // When locked on a topic, stay on it
-    if (isLocked && lastViewed?.type === 'topic') return lastViewed.topic;
-
-    // Selected node takes precedence - don't show topic
-    if ($selectedNodeInfo?.type) return null;
-
-    // Fallback to persisted topic when nothing is selected
-    if (lastViewed?.type === 'topic') return lastViewed.topic;
-
-    return null;
-  });
+  const viewingObject = $derived(viewingTarget?.type === 'object' ? viewingTarget.object : null);
+  const viewingTopic = $derived(viewingTarget?.type === 'topic' ? viewingTarget.topic : null);
 
   // Track last viewed for persistence
   $effect(() => {
