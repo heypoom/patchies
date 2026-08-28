@@ -99,9 +99,7 @@
               What do you want to make people feel?
             {/if}
           </h1>
-          <p>
-            Combine a feeling with a medium. Patchies will turn the collision into explorations.
-          </p>
+          <p>No idea what to build? We'll suggest an open-ended exploration.</p>
         </div>
       </header>
 
