@@ -82,6 +82,12 @@
       : ['about', 'demos', 'shortcuts', 'thanks']
     ).filter((tab) => !isTouchFirst || tab !== 'shortcuts') as Tab[]
   );
+
+  $effect(() => {
+    if (!tabs.includes(activeTab)) {
+      selectTab('about');
+    }
+  });
 </script>
 
 {#if open}
