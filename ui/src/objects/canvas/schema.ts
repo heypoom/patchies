@@ -37,7 +37,7 @@ export const canvasSchema: ObjectSchema = {
 export const canvasDomSchema: ObjectSchema = {
   type: 'canvas.dom',
   category: 'video',
-  description: 'Creates a JavaScript canvas on main thread with DOM access',
+  description: 'Creates an interactive JavaScript canvas with DOM access',
   inlets: [
     {
       id: 'message',

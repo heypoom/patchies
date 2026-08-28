@@ -14,20 +14,29 @@
     onOpenObjectBrowser: () => void;
   } = $props();
 
-  const techNodes = ['hydra', 'strudel', 'p5', 'glsl', 'three', 'orca', 'chuck~', 'asm', 'js'];
+  // Objects to show in the showcase
+  const showcasedObjects = [
+    'hydra',
+    'glsl',
+    'canvas.dom',
+    'p5',
+    'strudel',
+    'three',
+    'orca',
+    'chuck~',
+    'asm',
+    'js'
+  ];
 </script>
 
 <div class="about-content">
   <section class="hero-stage">
     <div class="hero-copy">
       <h1 class="hero-title">
-        <span>Patch the world</span>
-        <span class="text-orange-500">together.</span>
+        <span>Write & patch <span class="text-orange-500">small</span> programs.</span>
       </h1>
 
-      <p class="hero-description">
-        Connect code, sound, and visuals into systems you can see, hear, and play.
-      </p>
+      <p class="hero-description">Build systems you can see, hear and play.</p>
 
       <div class="hero-actions">
         <button class="hero-action hero-action--primary" onclick={() => setTab('demos')}>
@@ -118,7 +127,7 @@
     </div>
 
     <div class="tech-rail">
-      {#each techNodes as node (node)}
+      {#each showcasedObjects as node (node)}
         <a href="/docs/objects/{node}" target="_blank" class="tech-link">{node}</a>
       {/each}
     </div>

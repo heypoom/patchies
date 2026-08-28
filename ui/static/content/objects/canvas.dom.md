@@ -148,5 +148,6 @@ All [Patchies JavaScript Runner](/docs/javascript-runner) functions are availabl
 ## See Also
 
 - [canvas](/docs/objects/canvas) - offscreen canvas (faster for video chaining)
+- [pixi.dom](/docs/objects/pixi) - offscreen Pixi.js v8 canvas
 - [p5](/docs/objects/p5) - P5.js for easier creative coding
 - [glsl](/docs/objects/glsl) - GPU shaders
