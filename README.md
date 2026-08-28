@@ -4,11 +4,11 @@
 
 > Try out [the above demo](https://patchies.app/?demo=random-walk-world) which uses P5.js with Hydra to create a random walk shader.
 
-Patchies is a _creative coding patcher_ where you write small programs using the tools and libraries that you may already know, and patch them together.
+Patchies is a _creative coding patcher_ where you write small programs using the tools and libraries that you know and love, and patch them together.
 
-It's a playground where you can make interactive widgets, craft synthesizers, visualize algorithms with audio reactivity, simulate biology and physics, compose shader graphs, and connect all of them together.
+It is a playground where you can make interactive widgets, craft synthesizers, visualize algorithms with audio reactivity, simulate biology and physics, compose shader graphs, and connect all of them together.
 
-It's all running on the web, no installation needed. Want to try out Patchies? [Let's get started.](#get-started)
+It runs on the web, no installation needed. Want to try out Patchies? [Let's get started.](#get-started)
 
 ## What can I make?
 
@@ -27,15 +27,19 @@ Patchies lets you use audio, visual and computational tools and libraries that y
 - Craft widgets with [Vue.js](https://patchies.app/docs/objects/vue), [DOM API](https://patchies.app/docs/objects/dom), [Tailwind](https://tailwindcss.com) or any library you like.
 - Use any [third party JavaScript library](https://patchies.app/docs/javascript-runner) via [esm.sh](https://esm.sh).
 
+Once you write a small program, you then patch them together.
+
 ## What is patching?
 
-Patchies lets you write small blocks of code and patch them together.
+Patching is a _visual_ way to program by connecting objects together.
 
-Patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You then chain their [messages](https://patchies.app/docs/message-passing), [audio output](https://patchies.app/docs/audio-chaining) or [video output](https://patchies.app/docs/video-chaining) together to build up a larger program.
+Each object does something e.g. generate sound, generate visual, compute some values. You then chain their [messages](https://patchies.app/docs/message-passing), [audio output](https://patchies.app/docs/audio-chaining) or [video output](https://patchies.app/docs/video-chaining) together to build up a larger program.
 
 This is heavily inspired by the [actor model](https://en.wikipedia.org/wiki/Actor_model), as well as software like TouchDesigner, Pure Data and Max/MSP.
 
-> "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
+In Patchies, you 1) write small blocks of code using tools and libraries that you may already know, and 2) visually patch them together into a larger program.
+
+You can mix different ways of doing and visualizing computation together, and see how they can interact with each other.
 
 ## Get started
 
@@ -90,3 +94,5 @@ Patchies is open source, [AGPL-licensed](https://github.com/heypoom/patchies/blo
 Patchies is only possible because of the generosity of open source library developers who made it possible! If you enjoyed using Patchies, it would make my day if you can go and support them 🧡
 
 Please check out the [thanks tab](https://patchies.app/?startup=thanks) which contains the direct links to support all the amazing people who helped play a part in bringing Patchies to life through their code and support.
+
+> "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
