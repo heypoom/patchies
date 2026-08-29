@@ -7,13 +7,11 @@ export const getMrtCount = (
   node: Pick<RenderNode, 'type'> & { data: Record<string, unknown> }
 ): number =>
   match(node)
-    .with(
-      { type: P.union('glsl', 'swgl') },
-      ({ data }) => (data.mrtCount as number | undefined) ?? 1
+    .with({ type: P.union('glsl', 'swgl') }, ({ data }) =>
+      Math.max(1, (data.mrtCount as number | undefined) ?? 1)
     )
-    .with(
-      { type: P.union('regl', 'hydra', 'shaderpark') },
-      ({ data }) => (data.videoOutletCount as number | undefined) ?? 1
+    .with({ type: P.union('regl', 'hydra', 'shaderpark') }, ({ data }) =>
+      Math.max(1, (data.videoOutletCount as number | undefined) ?? 1)
     )
     .otherwise(() => 1);
 

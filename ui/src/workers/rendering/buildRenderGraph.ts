@@ -1,5 +1,6 @@
 import type regl from 'regl';
 import { match } from 'ts-pattern';
+
 import type {
   FBONode,
   FBOFormat,
@@ -7,58 +8,27 @@ import type {
   RenderGraph,
   RenderNode
 } from '$lib/rendering/types';
+
 import { PREVIEW_SCALE_FACTOR, capPreviewSize } from '$lib/canvas/constants';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
+
+import type { FBORenderer } from './fboRenderer';
 import { allocateFbo, getMrtCount, getNodeFormat, getNodeResolution } from './fboAllocation';
 import { isPassthroughNodeType, mergeVideoGraphEdges } from './videoGraph';
 
-export interface RenderGraphBuildHost {
-  regl: regl.Regl;
-  gl: WebGL2RenderingContext;
-
-  fboNodes: Map<string, FBONode>;
-  renderGraph: RenderGraph | null;
-  shouldProcessPreviews: boolean;
-
-  connectedVideoOutputNodeIds: Set<string>;
-
-  outputNodeId: string | null;
-  outputOutletIndex: number;
-
-  cookState: { markDirty(nodeId: string, reason: string): void; removeNode(nodeId: string): void };
-  lastCookStatusSignatures: Map<string, string>;
-
-  createRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: FBONode['render']; cleanup: () => void } | null>;
-
-  videoChannelRegistry: {
-    unsubscribeAll(nodeId: string): void;
-    subscribe(channel: string, nodeId: string, kind: 'send' | 'recv'): void;
-    getVirtualEdges(): RenderGraph['edges'];
-  };
-
-  previewRenderer: {
-    removeNode(nodeId: string): void;
-    setPreviewEnabled(nodeId: string, enabled: boolean): void;
-    hasPreviewState(nodeId: string): boolean;
-    hasEnabledPreviews(): boolean;
-  };
-
-  resolveNodeSize(resolution: FBOResolution | undefined): [number, number];
-  createFboTexture(width: number, height: number, format: FBOFormat): regl.Texture2D;
-  computeNodeFingerprint(node: RenderNode): string;
-  destroyFboNode(fboNode: FBONode, cleanup?: boolean): void;
-  destroyFeedbackResources(fboNode: FBONode): void;
-  hasReusableRenderer(node: RenderNode): boolean;
-  rebuildCookingPolicies(graph: RenderGraph): void;
-  cleanupExpensiveTextmodeRenderers(nodeIds?: Set<string>): void;
-  resumeViewportManagedRenderers(): void;
+interface PendingNode {
+  node: RenderNode;
+  colorAttachments: regl.Texture2D[];
+  framebuffer: regl.Framebuffer2D;
+  prevTextures?: regl.Texture2D[];
+  prevFramebuffers?: regl.Framebuffer2D[];
+  fingerprint: string;
+  fboFormat: FBOFormat;
+  resolution?: FBOResolution;
 }
 
 export const buildRenderGraph = async (
-  host: RenderGraphBuildHost,
+  host: FBORenderer,
   renderGraph: RenderGraph,
   connectedVideoOutputNodeIds?: Set<string>
 ) => {
@@ -123,15 +93,6 @@ export const buildRenderGraph = async (
   host.rebuildCookingPolicies(mergedGraph);
 
   // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
-  type PendingNode = {
-    node: RenderNode;
-    colorAttachments: regl.Texture2D[];
-    framebuffer: regl.Framebuffer2D;
-    fingerprint: string;
-    fboFormat: FBOFormat;
-    resolution?: FBOResolution;
-  };
-
   const pending: PendingNode[] = [];
 
   for (const node of mergedGraph.nodes) {
@@ -187,11 +148,15 @@ export const buildRenderGraph = async (
 
     let colorAttachments: regl.Texture2D[];
     let framebuffer: regl.Framebuffer2D;
+    let prevTextures: regl.Texture2D[] | undefined;
+    let prevFramebuffers: regl.Framebuffer2D[] | undefined;
 
     if (canReuseFbo) {
       // Reuse existing FBO - preserves content, prevents flash
       colorAttachments = existingFbo.colorAttachments;
       framebuffer = existingFbo.framebuffer;
+      prevTextures = existingFbo.prevTextures;
+      prevFramebuffers = existingFbo.prevFramebuffers;
 
       if (!host.hasReusableRenderer(node)) {
         existingFbo.cleanup?.();
@@ -200,7 +165,6 @@ export const buildRenderGraph = async (
       // Destroy old FBO if it exists but size or mrtCount doesn't match
       if (existingFbo) {
         host.destroyFboNode(existingFbo, !host.hasReusableRenderer(node));
-
         host.fboNodes.delete(node.id);
       }
 
@@ -224,6 +188,8 @@ export const buildRenderGraph = async (
       node,
       colorAttachments,
       framebuffer,
+      prevTextures,
+      prevFramebuffers,
       fingerprint,
       fboFormat,
       resolution: nodeResolution
@@ -237,7 +203,17 @@ export const buildRenderGraph = async (
 
   // Phase 3: collect results into FBO map
   for (let i = 0; i < pending.length; i++) {
-    const { node, colorAttachments, framebuffer, fingerprint, fboFormat, resolution } = pending[i];
+    const {
+      node,
+      colorAttachments,
+      framebuffer,
+      prevTextures,
+      prevFramebuffers,
+      fingerprint,
+      fboFormat,
+      resolution
+    } = pending[i];
+
     const renderer = results[i];
 
     // If the renderer function is null, we skip defining this node.
@@ -254,6 +230,14 @@ export const buildRenderGraph = async (
 
       for (const texture of colorAttachments) {
         texture.destroy();
+      }
+
+      for (const prevFramebuffer of prevFramebuffers ?? []) {
+        prevFramebuffer.destroy();
+      }
+
+      for (const prevTexture of prevTextures ?? []) {
+        prevTexture.destroy();
       }
 
       continue;
@@ -281,7 +265,9 @@ export const buildRenderGraph = async (
       nodeType: node.type,
       fboFormat,
       resolution,
-      previewSize
+      previewSize,
+      prevTextures,
+      prevFramebuffers
     };
 
     host.fboNodes.set(node.id, fboNode);
@@ -305,9 +291,9 @@ export const buildRenderGraph = async (
     }
   }
 
-  // Idempotent — skipped if the node already has prevTextures from a prior build.
-  // One prev texture + framebuffer is allocated per color attachment so MRT
-  // feedback nodes can provide previous-frame data for each outlet independently.
+  // Skip if the node already has prevTextures from a prior build.
+  // One previous texture + framebuffer is allocated per color attachment so MRT
+  // feedback nodes can provide previous frame data for each outlet independently.
   for (const nodeId of mergedGraph.feedbackNodes) {
     const fboNode = host.fboNodes.get(nodeId);
     if (!fboNode || fboNode.prevTextures) continue;
@@ -316,8 +302,8 @@ export const buildRenderGraph = async (
     // Read the format from the render graph node data.
     const feedbackNode = mergedGraph.nodes.find((n) => n.id === nodeId);
     const feedbackData = feedbackNode?.data as Record<string, unknown> | undefined;
-    const feedbackFormat: FBOFormat = (feedbackData?.fboFormat as FBOFormat) || 'rgba8';
-    const feedbackResolution = feedbackData?.resolution as FBOResolution | undefined;
+    const feedbackFormat = getNodeFormat(feedbackData ?? {});
+    const feedbackResolution = getNodeResolution(feedbackData ?? {});
 
     const [feedbackTextureWidth, feedbackTextureHeight] = host.resolveNodeSize(feedbackResolution);
 
@@ -326,10 +312,7 @@ export const buildRenderGraph = async (
     );
 
     fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
-      host.regl.framebuffer({
-        color: prevTexture,
-        depthStencil: false
-      })
+      host.regl.framebuffer({ color: prevTexture, depthStencil: false })
     );
   }
 

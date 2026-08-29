@@ -694,7 +694,7 @@ export class GLSystem {
   }
 
   /**
-   * Start syncing transport time to the render worker.
+   * Start syncing transport state to the render worker.
    * Sends at 60fps for smooth visual sync.
    */
   private startTransportSync(): void {
@@ -706,7 +706,7 @@ export class GLSystem {
   }
 
   /**
-   * Stop syncing transport time to the render worker.
+   * Stop syncing transport state to the render worker.
    */
   private stopTransportSync(): void {
     if (this.transportSyncInterval) {

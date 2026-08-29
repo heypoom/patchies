@@ -170,7 +170,8 @@ describe('send.vdo and recv.vdo routing', () => {
     const texture = { destroy: vi.fn() };
     const fboNode = { prevFramebuffers: [framebuffer], prevTextures: [texture] };
 
-    FboResources.prototype.destroyFeedbackResources(fboNode as unknown as FBONode);
+    const resources = new FboResources({} as never, { getExtension: vi.fn() } as never);
+    resources.destroyFeedbackResources(fboNode as unknown as FBONode);
 
     expect(framebuffer.destroy).toHaveBeenCalledOnce();
     expect(texture.destroy).toHaveBeenCalledOnce();
