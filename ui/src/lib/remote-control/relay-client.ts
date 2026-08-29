@@ -1,8 +1,11 @@
 import { RemoteControlRequestError, type SessionCredentials } from './remote-control-types';
 
+const requestTimeout = 30_000;
+
 interface RequestInit {
   method: string;
   body?: unknown;
+  signal?: AbortSignal;
 }
 
 export class RemoteControlRelayClient {
@@ -15,7 +18,8 @@ export class RemoteControlRelayClient {
     const response = await fetch(`${this.instanceURL}${path}`, {
       method: init.method,
       headers: { ...this.headers(), 'Content-Type': 'application/json' },
-      body: init.body === undefined ? undefined : JSON.stringify(init.body)
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      signal: init.signal ?? AbortSignal.timeout(requestTimeout)
     });
 
     if (!response.ok) throw await responseError(response);

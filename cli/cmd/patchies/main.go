@@ -107,7 +107,9 @@ func readTokenFileDescriptor(fd int) (string, error) {
 }
 
 func prompt(reader *bufio.Reader, output io.Writer, label string) (string, error) {
-	fmt.Fprintf(output, "%s: ", label)
+	if _, err := fmt.Fprintf(output, "%s: ", label); err != nil {
+		return "", fmt.Errorf("write %s prompt: %w", strings.ToLower(label), err)
+	}
 
 	value, err := reader.ReadString('\n')
 	if err != nil && err != io.EOF {

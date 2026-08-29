@@ -8,7 +8,9 @@ import (
 )
 
 func TestRelayAllowsOneStreamingMutatingClient(t *testing.T) {
+	now := time.Now()
 	relay, credentials := createTestSession(t)
+	relay.now = func() time.Time { return now }
 
 	first, err := relay.AttachClient(credentials.SessionID, credentials.Secret)
 	if err != nil {
@@ -19,6 +21,7 @@ func TestRelayAllowsOneStreamingMutatingClient(t *testing.T) {
 		t.Fatalf("subscribe first client: %v", err)
 	}
 	defer stop()
+	now = now.Add(clientAttachGrace)
 
 	if _, err := relay.AttachClient(credentials.SessionID, credentials.Secret); !errors.Is(err, ErrClientAttached) {
 		t.Fatalf("attach second client error = %v, want ErrClientAttached", err)
@@ -33,6 +36,26 @@ func TestRelayRejectsSecondClientBeforeTheFirstSubscribes(t *testing.T) {
 	}
 	if _, err := relay.AttachClient(credentials.SessionID, credentials.Secret); !errors.Is(err, ErrClientAttached) {
 		t.Fatalf("attach second client error = %v, want ErrClientAttached", err)
+	}
+}
+
+func TestRelayAllowsTakeoverWhenClientNeverSubscribes(t *testing.T) {
+	now := time.Now()
+	relay, credentials := createTestSession(t)
+	relay.now = func() time.Time { return now }
+
+	first, err := relay.AttachClient(credentials.SessionID, credentials.Secret)
+	if err != nil {
+		t.Fatalf("attach first client: %v", err)
+	}
+
+	now = now.Add(clientAttachGrace)
+	second, err := relay.AttachClient(credentials.SessionID, credentials.Secret)
+	if err != nil {
+		t.Fatalf("take over stale client: %v", err)
+	}
+	if second.ClientID == first.ClientID {
+		t.Fatalf("takeover client ID = %q, want a new ID", second.ClientID)
 	}
 }
 

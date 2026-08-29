@@ -111,6 +111,47 @@ func TestSessionRemainsBidirectionalAcrossAlternatingEdits(t *testing.T) {
 	}
 }
 
+func TestSessionRetriesWhileAStaleClientIsWithinAttachGrace(t *testing.T) {
+	remote := &attachSequenceClient{}
+	session := &Session{remote: remote}
+
+	snapshot, err := session.attach(t.Context())
+	if err != nil {
+		t.Fatalf("attach session: %v", err)
+	}
+	if remote.attempts != 2 {
+		t.Fatalf("attach attempts = %d, want 2", remote.attempts)
+	}
+	if snapshot.ClientID != "client-2" {
+		t.Fatalf("client ID = %q, want client-2", snapshot.ClientID)
+	}
+}
+
+type attachSequenceClient struct {
+	attempts int
+}
+
+func (remote *attachSequenceClient) Attach(context.Context) (client.SessionSnapshot, error) {
+	remote.attempts++
+
+	if remote.attempts == 1 {
+		return client.SessionSnapshot{}, &client.HTTPError{
+			Status: http.StatusConflict,
+			Code:   "client_attached",
+		}
+	}
+
+	return client.SessionSnapshot{ClientID: "client-2"}, nil
+}
+
+func (*attachSequenceClient) SubmitOperation(context.Context, string, client.OperationRequest) error {
+	return nil
+}
+
+func (*attachSequenceClient) StreamEvents(context.Context, string, int64, func(client.Event) error) error {
+	return nil
+}
+
 type testEvent struct {
 	id        int64
 	eventType string

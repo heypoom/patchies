@@ -16,6 +16,7 @@ const (
 	eventLogLimit      = 512
 	idempotencyWindow  = 512
 	maxLiveSessions    = 128
+	clientAttachGrace  = 5 * time.Second
 	sessionIdleTimeout = 10 * time.Minute
 )
 
@@ -109,6 +110,7 @@ type eventRecord struct {
 
 type Relay struct {
 	mu       sync.Mutex
+	now      func() time.Time
 	sessions map[string]*session
 }
 
@@ -119,6 +121,7 @@ type session struct {
 	browserGeneration string
 	patchRevision     int64
 	clientID          string
+	clientAttachedAt  time.Time
 	operations        map[string]OperationResult
 	operationOrder    []string
 	commits           map[string]CanonicalCommit
@@ -130,7 +133,9 @@ type session struct {
 	idleTimer         *time.Timer
 }
 
-func NewRelay() *Relay { return &Relay{sessions: make(map[string]*session)} }
+func NewRelay() *Relay {
+	return &Relay{now: time.Now, sessions: make(map[string]*session)}
+}
 
 func (r *Relay) CreateSession(patchID, browserGeneration string) (SessionCredentials, error) {
 	if patchID == "" || browserGeneration == "" {
@@ -177,7 +182,9 @@ func (r *Relay) AttachClient(sessionID, secret string) (SessionSnapshot, error) 
 	if err != nil {
 		return SessionSnapshot{}, err
 	}
-	if session.clientID != "" {
+	clientIsListening := len(session.clientListeners) > 0
+	clientIsWithinGrace := !session.clientAttachedAt.IsZero() && r.now().Sub(session.clientAttachedAt) < clientAttachGrace
+	if session.clientID != "" && (clientIsListening || clientIsWithinGrace) {
 		return SessionSnapshot{}, ErrClientAttached
 	}
 
@@ -186,6 +193,7 @@ func (r *Relay) AttachClient(sessionID, secret string) (SessionSnapshot, error) 
 		return SessionSnapshot{}, fmt.Errorf("generate client ID: %w", err)
 	}
 	session.clientID = clientID
+	session.clientAttachedAt = r.now()
 
 	return snapshot(session), nil
 }
@@ -201,6 +209,7 @@ func (r *Relay) DetachClient(sessionID, secret, clientID string) error {
 		return ErrClientNotAttached
 	}
 	session.clientID = ""
+	session.clientAttachedAt = time.Time{}
 	r.emit(session, audienceClient, "session.detached", map[string]string{"clientId": clientID})
 
 	return nil
@@ -211,6 +220,7 @@ func (r *Relay) DisconnectClient(sessionID, clientID string) {
 	defer r.mu.Unlock()
 	if session, ok := r.sessions[sessionID]; ok && session.clientID == clientID {
 		session.clientID = ""
+		session.clientAttachedAt = time.Time{}
 	}
 }
 
@@ -256,6 +266,7 @@ func (r *Relay) Reclaim(sessionID, secret, patchID, browserGeneration string, pa
 	session.browserGeneration = browserGeneration
 	session.patchRevision = patchRevision
 	session.clientID = ""
+	session.clientAttachedAt = time.Time{}
 	session.operations = make(map[string]OperationResult)
 	session.operationOrder = nil
 	session.commits = make(map[string]CanonicalCommit)

@@ -160,6 +160,156 @@ describe('RemoteControlSyncCoordinator', () => {
     ]);
     expect(commits.map((commit) => commit.baseRevision)).toEqual([0, 1, 2]);
   });
+
+  it('clears a partially enabled session when snapshot publication fails', async () => {
+    const coordinator = new RemoteControlSyncCoordinator({
+      patchId: () => 'patch-1',
+      nodes: () => [glslNode('first')],
+      applyFileWrite: () => {},
+      instanceURL: 'http://patchies.test'
+    });
+    coordinators.push(coordinator);
+
+    installRelayMock({ snapshotStatus: 500 });
+
+    await expect(coordinator.enable()).rejects.toThrow('Remote control request failed: 500');
+
+    expect(coordinator.isEnabled).toBe(false);
+    expect(coordinator.mountCommand).toBeNull();
+  });
+
+  it('consumes a malformed operation and continues on the same event stream', async () => {
+    let nodes = [glslNode('first')];
+    const relay = installRelayMock();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const coordinator = new RemoteControlSyncCoordinator({
+      patchId: () => 'patch-1',
+      nodes: () => nodes,
+      applyFileWrite: (write) => {
+        nodes = nodes.map((node) =>
+          node.id === write.nodeId
+            ? { ...node, data: { ...node.data, [write.dataKey]: write.newValue } }
+            : node
+        );
+      },
+      instanceURL: 'http://patchies.test'
+    });
+    coordinators.push(coordinator);
+
+    await coordinator.enable();
+    relay.emitRawEvent('operation.submitted', '{', 1);
+    relay.emitOperation(
+      {
+        operationId: 'operation-2',
+        baseRevision: 0,
+        path: 'glsl-24/shader.frag',
+        content: 'valid after malformed'
+      },
+      2
+    );
+    await eventually(() => nodes[0]?.data.code === 'valid after malformed');
+
+    expect(consoleError).toHaveBeenCalledWith(
+      'Remote Control received an invalid operation',
+      expect.anything()
+    );
+    expect(
+      relay.requests.filter((request) => request.path.endsWith('/browser/events'))
+    ).toHaveLength(1);
+  });
+
+  it('consumes a failed operation and continues on the same event stream', async () => {
+    let nodes = [glslNode('first')];
+    let failNextWrite = true;
+    const relay = installRelayMock();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const coordinator = new RemoteControlSyncCoordinator({
+      patchId: () => 'patch-1',
+      nodes: () => nodes,
+      applyFileWrite: (write) => {
+        if (failNextWrite) {
+          failNextWrite = false;
+          throw new Error('history rejected write');
+        }
+
+        nodes = nodes.map((node) =>
+          node.id === write.nodeId
+            ? { ...node, data: { ...node.data, [write.dataKey]: write.newValue } }
+            : node
+        );
+      },
+      instanceURL: 'http://patchies.test'
+    });
+    coordinators.push(coordinator);
+
+    await coordinator.enable();
+    relay.emitOperation(
+      {
+        operationId: 'operation-1',
+        baseRevision: 0,
+        path: 'glsl-24/shader.frag',
+        content: 'rejected'
+      },
+      1
+    );
+    relay.emitOperation(
+      {
+        operationId: 'operation-2',
+        baseRevision: 0,
+        path: 'glsl-24/shader.frag',
+        content: 'valid after failure'
+      },
+      2
+    );
+    await eventually(() => nodes[0]?.data.code === 'valid after failure');
+
+    expect(consoleError).toHaveBeenCalledWith(
+      'Remote Control could not resolve operation operation-1',
+      expect.anything()
+    );
+    expect(
+      relay.requests.filter((request) => request.path.endsWith('/browser/events'))
+    ).toHaveLength(1);
+  });
+
+  it('revokes the old session before enabling remote control for a new patch', async () => {
+    let patchId = 'patch-1';
+    const relay = installRelayMock();
+    const coordinator = new RemoteControlSyncCoordinator({
+      patchId: () => patchId,
+      nodes: () => [glslNode(patchId)],
+      applyFileWrite: () => {},
+      instanceURL: 'http://patchies.test'
+    });
+    coordinators.push(coordinator);
+
+    await coordinator.enable();
+    patchId = 'patch-2';
+    coordinator.notifyPatchChanged([glslNode('patch-2')], patchId);
+    await eventually(() =>
+      relay.requests.some(
+        (request) => request.path === '/api/remote-control/sessions/session-2/snapshot'
+      )
+    );
+
+    const oldRevoke = relay.requests.findIndex(
+      (request) => request.path === '/api/remote-control/sessions/session-1'
+    );
+    const newSession = relay.requests.findIndex(
+      (request, index) => index > oldRevoke && request.path === '/api/remote-control/sessions'
+    );
+    const snapshots = relay.requests.filter((request) => request.path.endsWith('/snapshot'));
+
+    expect(oldRevoke).toBeGreaterThan(-1);
+    expect(newSession).toBeGreaterThan(oldRevoke);
+    expect(snapshots.at(-1)?.path).toBe('/api/remote-control/sessions/session-2/snapshot');
+    expect(snapshots.at(-1)?.body).toEqual(
+      expect.objectContaining({
+        representation: expect.objectContaining({ patchId: 'patch-2' })
+      })
+    );
+    expect(coordinator.isEnabled).toBe(true);
+  });
 });
 
 interface RelayRequest {
@@ -169,6 +319,7 @@ interface RelayRequest {
 
 interface RelayMock {
   emitOperation: (operation: Omit<OperationRequest, 'browserGeneration'>, eventId: number) => void;
+  emitRawEvent: (type: string, data: string, eventId: number) => void;
   requests: RelayRequest[];
 }
 
@@ -180,8 +331,9 @@ interface OperationRequest {
   content: string;
 }
 
-const installRelayMock = (): RelayMock => {
+const installRelayMock = (options: { snapshotStatus?: number } = {}): RelayMock => {
   const requests: RelayRequest[] = [];
+  let sessionCount = 0;
   let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
   vi.stubGlobal(
     'fetch',
@@ -191,7 +343,14 @@ const installRelayMock = (): RelayMock => {
       requests.push({ path: url.pathname, body });
 
       if (url.pathname === '/api/remote-control/sessions') {
-        return Response.json({ sessionId: 'session-1', secret: 'secret-1' });
+        sessionCount++;
+        return Response.json({
+          sessionId: `session-${sessionCount}`,
+          secret: `secret-${sessionCount}`
+        });
+      }
+      if (url.pathname.endsWith('/snapshot') && options.snapshotStatus) {
+        return Response.json({ code: 'snapshot_failed' }, { status: options.snapshotStatus });
       }
       if (url.pathname.endsWith('/browser/events')) {
         return new Response(
@@ -215,8 +374,15 @@ const installRelayMock = (): RelayMock => {
 
   return {
     requests,
+    emitRawEvent(type, data, eventId) {
+      if (!streamController) throw new Error('browser event stream is not ready');
+
+      streamController.enqueue(
+        new TextEncoder().encode(`id: ${eventId}\nevent: ${type}\ndata: ${data}\n\n`)
+      );
+    },
     emitOperation(operation, eventId) {
-      const snapshot = requests.find((request) => request.path.endsWith('/snapshot'));
+      const snapshot = requests.filter((request) => request.path.endsWith('/snapshot')).at(-1);
       const browserGeneration = (snapshot?.body as { browserGeneration?: string } | undefined)
         ?.browserGeneration;
       if (!browserGeneration || !streamController)
@@ -251,4 +417,14 @@ const submitFilesystemOperation = async (
   );
 
   for (let attempt = 0; attempt < 10; attempt++) await Promise.resolve();
+};
+
+const eventually = async (predicate: () => boolean): Promise<void> => {
+  for (let attempt = 0; attempt < 30; attempt++) {
+    if (predicate()) return;
+
+    await Promise.resolve();
+  }
+
+  throw new Error('condition was not satisfied');
 };

@@ -246,7 +246,7 @@ func (s *Session) attach(ctx context.Context) (client.SessionSnapshot, error) {
 		}
 
 		var httpError *client.HTTPError
-		if errors.As(err, &httpError) {
+		if errors.As(err, &httpError) && httpError.Code != "client_attached" {
 			return client.SessionSnapshot{}, err
 		}
 		if err := wait(ctx, reconnectDelay); err != nil {

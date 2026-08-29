@@ -48,3 +48,24 @@ func TestObjectOperationsRejectTraversalIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestApplyObjectRejectsUnsafeAndReservedFileNames(t *testing.T) {
+	root := t.TempDir()
+
+	for _, fileName := range []string{".", "..", "nested/code.js", `nested\\code.js`, "patchies.object.json"} {
+		object := RepresentationObject{
+			ID: "code-1",
+			Metadata: ObjectMetadata{
+				Format:     RepresentationVersion,
+				ID:         "code-1",
+				ObjectType: "code",
+				Files:      []string{fileName},
+			},
+			Files: map[string]string{fileName: "content"},
+		}
+
+		if err := ApplyObject(root, object); err == nil {
+			t.Fatalf("ApplyObject file %q succeeded", fileName)
+		}
+	}
+}

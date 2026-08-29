@@ -145,7 +145,48 @@ func TestHTTPHandlerRevokesSession(t *testing.T) {
 	}
 }
 
+func TestHTTPHandlerThrottlesSessionCreationByRemoteAddress(t *testing.T) {
+	handler := NewHTTPHandler(NewRelay())
+	body := map[string]string{
+		"protocolVersion":   ProtocolVersion,
+		"patchId":           "patch-1",
+		"browserGeneration": "browser-1",
+	}
+
+	for attempt := 0; attempt < sessionCreationLimit; attempt++ {
+		created := serveJSON(t, handler, http.MethodPost, "/api/remote-control/sessions", "", body)
+		if created.Code != http.StatusCreated {
+			t.Fatalf("create attempt %d status = %d, want %d", attempt+1, created.Code, http.StatusCreated)
+		}
+	}
+
+	limited := serveJSON(t, handler, http.MethodPost, "/api/remote-control/sessions", "", body)
+	if limited.Code != http.StatusTooManyRequests {
+		t.Fatalf("limited status = %d, want %d", limited.Code, http.StatusTooManyRequests)
+	}
+	if limited.Header().Get("Retry-After") == "" {
+		t.Fatal("limited response has no Retry-After header")
+	}
+
+	otherAddress := serveJSONFrom(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/remote-control/sessions",
+		"",
+		body,
+		"198.51.100.2:4321",
+	)
+	if otherAddress.Code != http.StatusCreated {
+		t.Fatalf("other address status = %d, want %d", otherAddress.Code, http.StatusCreated)
+	}
+}
+
 func serveJSON(t *testing.T, handler http.Handler, method, path, secret string, body any) *httptest.ResponseRecorder {
+	return serveJSONFrom(t, handler, method, path, secret, body, "192.0.2.1:1234")
+}
+
+func serveJSONFrom(t *testing.T, handler http.Handler, method, path, secret string, body any, remoteAddress string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	var payload []byte
@@ -158,6 +199,7 @@ func serveJSON(t *testing.T, handler http.Handler, method, path, secret string, 
 	}
 
 	request := httptest.NewRequestWithContext(t.Context(), method, path, bytes.NewReader(payload))
+	request.RemoteAddr = remoteAddress
 	request.Header.Set("Content-Type", "application/json")
 	if secret != "" {
 		request.Header.Set("Authorization", "Bearer "+secret)

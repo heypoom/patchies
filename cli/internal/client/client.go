@@ -110,7 +110,7 @@ func (c *Client) StreamEvents(ctx context.Context, clientID string, afterEventID
 	if err != nil {
 		return fmt.Errorf("open event stream: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
 		return decodeHTTPError(response)
@@ -144,7 +144,7 @@ func (c *Client) requestJSON(ctx context.Context, method, path string, body, tar
 	if err != nil {
 		return fmt.Errorf("remote control request: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		return decodeHTTPError(response)

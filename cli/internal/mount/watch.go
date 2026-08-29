@@ -199,12 +199,20 @@ func (w *Watcher) capture(path string) {
 		return
 	}
 
+	next := string(content)
+
 	select {
-	case w.changes <- FileChange{Path: path, Content: string(content)}:
+	case w.changes <- FileChange{Path: path, Content: next}:
 		w.mu.Lock()
-		w.expected[path] = string(content)
+		if current, exists := w.expected[path]; exists && current == expected {
+			w.expected[path] = next
+		}
 		w.mu.Unlock()
 	default:
+		select {
+		case w.errors <- fmt.Errorf("local change queue is full; file remains unsynchronized: %s", path):
+		default:
+		}
 	}
 }
 

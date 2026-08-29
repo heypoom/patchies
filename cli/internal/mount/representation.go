@@ -95,7 +95,7 @@ func ApplyObject(root string, object RepresentationObject) error {
 
 	for _, fileName := range object.Metadata.Files {
 		content, ok := object.Files[fileName]
-		if !ok || filepath.Base(fileName) != fileName {
+		if !ok || !validObjectID(fileName) || fileName == "patchies.object.json" {
 			return fmt.Errorf("invalid object file %q", fileName)
 		}
 		if err := writeFile(objectRoot, fileName, []byte(content)); err != nil {

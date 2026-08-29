@@ -38,7 +38,9 @@ export class RemoteControlSyncCoordinator {
   private patchRevision = 0;
   private pendingNodes: Node[] | null = null;
   private readonly relay: RemoteControlRelayClient;
+  private sessionPatchId: string | null = null;
   private syncTimer: ReturnType<typeof setTimeout> | null = null;
+  private transitioningPatchId: string | null = null;
   private work = Promise.resolve();
 
   constructor(private readonly options: SyncCoordinatorOptions) {
@@ -77,23 +79,31 @@ export class RemoteControlSyncCoordinator {
       return;
     }
 
+    const patchId = this.options.patchId();
+
     this.browserGeneration = crypto.randomUUID();
 
     this.credentials = await this.request<SessionCredentials>('/api/remote-control/sessions', {
       method: 'POST',
       body: {
         protocolVersion,
-        patchId: this.options.patchId(),
+        patchId,
         browserGeneration: this.browserGeneration
       }
     });
+    this.sessionPatchId = patchId;
 
-    await this.publishSnapshot();
+    try {
+      await this.publishSnapshot();
 
-    this.changeTracker.reset(this.options.nodes());
-    this.persistSession();
-    this.eventStream.start();
-    this.options.onEnabledChange?.(true);
+      this.changeTracker.reset(this.options.nodes());
+      this.persistSession();
+      this.eventStream.start();
+      this.options.onEnabledChange?.(true);
+    } catch (error) {
+      this.clearLocalSession();
+      throw error;
+    }
   }
 
   async restore(): Promise<boolean> {
@@ -130,8 +140,13 @@ export class RemoteControlSyncCoordinator {
     this.syncTimer = null;
   }
 
-  notifyPatchChanged(nodes = this.options.nodes()): void {
+  notifyPatchChanged(nodes = this.options.nodes(), patchId = this.options.patchId()): void {
     if (!this.credentials) return;
+
+    if (patchId !== this.sessionPatchId) {
+      this.schedulePatchTransition(patchId, nodes);
+      return;
+    }
 
     this.pendingNodes = nodes;
 
@@ -160,13 +175,16 @@ export class RemoteControlSyncCoordinator {
   }
 
   private clearLocalSession(): void {
+    const sessionPatchId = this.sessionPatchId;
+
     this.dispose();
     this.credentials = null;
     this.patchRevision = 0;
+    this.sessionPatchId = null;
     this.changeTracker.clear();
 
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem(this.storageKey);
+    if (typeof sessionStorage !== 'undefined' && sessionPatchId) {
+      sessionStorage.removeItem(this.storageKey(sessionPatchId));
     }
 
     this.options.onEnabledChange?.(false);
@@ -180,7 +198,10 @@ export class RemoteControlSyncCoordinator {
         body: {
           browserGeneration: this.browserGeneration,
           patchRevision: this.patchRevision,
-          representation: buildPatchRepresentation(this.options.patchId(), this.options.nodes())
+          representation: buildPatchRepresentation(
+            this.requireSessionPatchId(),
+            this.options.nodes()
+          )
         }
       }
     );
@@ -194,8 +215,20 @@ export class RemoteControlSyncCoordinator {
         this.changeTracker.reset(this.options.nodes());
       });
     } else if (event.type === 'operation.submitted' && event.data) {
-      const operation = JSON.parse(event.data) as OperationRequest;
-      await this.enqueue(() => this.resolveOperation(operation));
+      let operation: OperationRequest;
+
+      try {
+        operation = JSON.parse(event.data) as OperationRequest;
+      } catch (error) {
+        console.error('Remote Control received an invalid operation', error);
+        return;
+      }
+
+      try {
+        await this.enqueue(() => this.resolveOperation(operation));
+      } catch (error) {
+        console.error(`Remote Control could not resolve operation ${operation.operationId}`, error);
+      }
     }
   }
 
@@ -303,14 +336,23 @@ export class RemoteControlSyncCoordinator {
     return this.credentials;
   }
 
-  private get storageKey(): string {
-    return `patchies.remote-control.${this.options.patchId()}`;
+  private requireSessionPatchId(): string {
+    if (!this.sessionPatchId) throw new Error('Remote control has no active patch');
+
+    return this.sessionPatchId;
+  }
+
+  private storageKey(patchId: string): string {
+    return `patchies.remote-control.${patchId}`;
   }
 
   private async reclaim(persisted: PersistedSession): Promise<void> {
+    const patchId = this.options.patchId();
+
     this.credentials = { sessionId: persisted.sessionId, secret: persisted.secret };
     this.patchRevision = persisted.patchRevision;
     this.browserGeneration = crypto.randomUUID();
+    this.sessionPatchId = patchId;
 
     try {
       const snapshot = await this.request<{ patchRevision: number }>(
@@ -318,7 +360,7 @@ export class RemoteControlSyncCoordinator {
         {
           method: 'POST',
           body: {
-            patchId: this.options.patchId(),
+            patchId,
             browserGeneration: this.browserGeneration,
             patchRevision: this.patchRevision
           }
@@ -342,7 +384,8 @@ export class RemoteControlSyncCoordinator {
   private readPersistedSession(): PersistedSession | null {
     if (typeof sessionStorage === 'undefined') return null;
 
-    const value = sessionStorage.getItem(this.storageKey);
+    const patchId = this.options.patchId();
+    const value = sessionStorage.getItem(this.storageKey(patchId));
     if (!value) return null;
 
     try {
@@ -354,7 +397,7 @@ export class RemoteControlSyncCoordinator {
 
       return parsed;
     } catch {
-      sessionStorage.removeItem(this.storageKey);
+      sessionStorage.removeItem(this.storageKey(patchId));
 
       return null;
     }
@@ -366,12 +409,53 @@ export class RemoteControlSyncCoordinator {
     const credentials = this.requireCredentials();
 
     sessionStorage.setItem(
-      this.storageKey,
+      this.storageKey(this.requireSessionPatchId()),
       JSON.stringify({
         ...credentials,
         patchRevision: this.patchRevision
       } satisfies PersistedSession)
     );
+  }
+
+  private schedulePatchTransition(patchId: string, nodes: Node[]): void {
+    this.pendingNodes = nodes;
+
+    if (this.syncTimer) {
+      clearTimeout(this.syncTimer);
+      this.syncTimer = null;
+    }
+    if (this.transitioningPatchId === patchId) return;
+
+    this.transitioningPatchId = patchId;
+    this.enqueue(async () => {
+      try {
+        if (this.sessionPatchId === patchId) return;
+
+        await this.transitionToCurrentPatch();
+      } finally {
+        if (this.transitioningPatchId === patchId) {
+          this.transitioningPatchId = null;
+        }
+      }
+    });
+  }
+
+  private async transitionToCurrentPatch(): Promise<void> {
+    const credentials = this.credentials;
+    if (!credentials) return;
+
+    this.eventStream.stop();
+
+    try {
+      await this.relay.request(`/api/remote-control/sessions/${credentials.sessionId}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.error('Failed to revoke Remote Control session for previous patch', error);
+    }
+
+    this.clearLocalSession();
+    await this.enable();
   }
 }
 

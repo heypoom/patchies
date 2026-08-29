@@ -201,7 +201,7 @@
   });
 
   $effect(() => {
-    remoteControl.notifyPatchChanged(nodes);
+    remoteControl.notifyPatchChanged(nodes, $currentPatchId);
   });
 
   // Clipboard manager for copy/paste operations
@@ -227,7 +227,7 @@
     );
   };
 
-  const handleCodeChange = () => remoteControl.notifyPatchChanged();
+  const handleCodeChange = () => remoteControl.notifyPatchChanged(nodes, $currentPatchId);
 
   const syncViewportPausedCommit = (nodeId: string, dataKey: string, newValue: unknown): void => {
     // Viewport-pause edge cases: keep pausedByViewport consistent when the user

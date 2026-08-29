@@ -18,8 +18,9 @@ const ProtocolVersion = "patchies.remote-control.v2"
 const maxProtocolPayload = 64 << 20
 
 type HTTPHandler struct {
-	app   *echo.Echo
-	relay *Relay
+	app                    *echo.Echo
+	relay                  *Relay
+	sessionCreationLimiter *sessionCreationLimiter
 }
 
 type createSessionRequest struct {
@@ -68,7 +69,7 @@ func (strictJSONBinder) Bind(c *echo.Context, target any) error {
 }
 
 func NewHTTPHandler(relay *Relay) *HTTPHandler {
-	handler := &HTTPHandler{relay: relay}
+	handler := &HTTPHandler{relay: relay, sessionCreationLimiter: newSessionCreationLimiter()}
 	app := echo.New()
 	app.Binder = strictJSONBinder{}
 	handler.app = app
@@ -79,7 +80,7 @@ func NewHTTPHandler(relay *Relay) *HTTPHandler {
 		if !handler.bindJSON(c, &body) {
 			return nil
 		}
-		handler.createSession(c.Response(), body)
+		handler.createSession(c.Response(), c.Request(), body)
 		return nil
 	})
 	sessions.DELETE("/:sessionId", func(c *echo.Context) error {
@@ -260,9 +261,14 @@ func (h *HTTPHandler) streamEvents(response http.ResponseWriter, request *http.R
 	}
 }
 
-func (h *HTTPHandler) createSession(response http.ResponseWriter, body createSessionRequest) {
+func (h *HTTPHandler) createSession(response http.ResponseWriter, request *http.Request, body createSessionRequest) {
 	if body.ProtocolVersion != ProtocolVersion {
 		h.writeError(response, http.StatusBadRequest, "protocol_mismatch", "unsupported remote control protocol")
+		return
+	}
+	if !h.sessionCreationLimiter.allow(remoteAddressKey(request)) {
+		response.Header().Set("Retry-After", strconv.Itoa(int(sessionCreationWindow.Seconds())))
+		h.writeError(response, http.StatusTooManyRequests, "session_rate_limited", "too many remote control sessions created")
 		return
 	}
 

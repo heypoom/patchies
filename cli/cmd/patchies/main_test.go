@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -35,7 +38,11 @@ func TestReadTokenFileDescriptor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create pipe: %v", err)
 	}
-	defer read.Close()
+	t.Cleanup(func() {
+		if err := read.Close(); err != nil {
+			t.Errorf("close token reader: %v", err)
+		}
+	})
 
 	if _, err := write.WriteString("patchies://v2/token\n"); err != nil {
 		t.Fatalf("write token: %v", err)
@@ -80,4 +87,32 @@ func TestReadMountOptionsRejectsEmptyPrompt(t *testing.T) {
 	if err == nil || err.Error() != "remote control token cannot be empty" {
 		t.Fatalf("error = %v", err)
 	}
+}
+
+func TestPromptReturnsOutputFailureBeforeReading(t *testing.T) {
+	input := &countingReader{}
+
+	_, err := prompt(bufio.NewReader(input), failingWriter{}, "Mount path")
+	if !errors.Is(err, io.ErrClosedPipe) {
+		t.Fatalf("prompt error = %v, want closed pipe", err)
+	}
+	if input.reads != 0 {
+		t.Fatalf("input reads = %d, want 0", input.reads)
+	}
+}
+
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) {
+	return 0, io.ErrClosedPipe
+}
+
+type countingReader struct {
+	reads int
+}
+
+func (reader *countingReader) Read([]byte) (int, error) {
+	reader.reads++
+
+	return 0, io.EOF
 }

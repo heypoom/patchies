@@ -44,7 +44,10 @@ with `Authorization: Bearer`; non-loopback instances require HTTPS.
 
 Enabling Remote control creates a session bound to the currently loaded patch.
 It lasts until the artist disables it or the server exits. A session allows one
-Mutating Client.
+Mutating Client. Session creation is throttled per remote address before the
+global live-session cap is checked. An attached client with an active event
+listener retains exclusive mutation authority; an attachment that never opens
+its event stream may be replaced after a short grace period.
 
 The session handshake advertises `patchies.remote-control.v2`. Mutating
 requests carry the generation and revision information needed to serialize
@@ -133,13 +136,14 @@ named node-data fields:
 
 ```ts
 type RepresentationAdapter = {
-  objectType: string;
-  version: 1;
-  files: Array<{ path: string; dataKey: string; language?: string }>;
+  objectType?: string;
+  fileName: string;
+  dataKey: string;
+  runDataKey?: string;
 };
 ```
 
-The first adapter maps `glsl/shader.frag` to `node.data.code`. Its write uses
+The first adapter maps `glsl-24/shader.frag` to `node.data.code`. Its write uses
 the normal GLSL code-commit path, preserving uniform/output derivation and run
 revision updates. Custom encoders, binary assets, and editable metadata are
 deferred. Deleting or renaming a represented file restores it; unknown files
@@ -178,6 +182,12 @@ committed baseline. Remote File Operations enter the same serialized work
 queue, apply through the normal history command, and publish their canonical
 result through the same commit endpoint.
 
+Non-streaming browser and CLI relay requests have bounded deadlines. SSE
+requests remain open until their caller cancels them. A malformed or otherwise
+unresolvable browser event is reported locally and considered consumed, so it
+cannot trap the stream in a replay loop. When an operation identity is valid,
+the browser resolves rejected writes with a non-applied Canonical Commit.
+
 The browser sends an Authoritative Snapshot on attach, reclaim, or replay-gap
 recovery. After that baseline, every applied mutation emits a Canonical Commit;
 ordinary code edits never send the full graph. A CLI-originated save therefore
@@ -198,6 +208,11 @@ that was created at an older revision remains valid within the same Browser
 Generation: the coordinator serializes it after any earlier canonical commits
 and applies the latest local content on top of current browser state.
 
+Watcher backpressure is explicit. A full local-change queue reports an error
+and leaves the expected canonical value unchanged, so the local edit is not
+silently marked as synchronized. A settled read only replaces its expected
+value when that value has not been superseded by a concurrent browser commit.
+
 Each accepted local save creates exactly one `Apply remote file` history
 command with the complete affected node-data snapshot. Undo and redo therefore
 restore source and derived fields together. Browser edits, undo, and redo emit
@@ -206,6 +221,10 @@ atomic filesystem updates that the CLI never loops back into history.
 For a failed write to an existing object, the CLI preserves the file and marks
 it unsynced. When the browser removes an object, the CLI immediately removes
 the directory and discards queued writes for it without recovery copies.
+
+Switching the active patch while Remote Control is enabled revokes the previous
+session before creating a session for the new patch. No snapshot or commit may
+be published under a session created for another patch.
 
 ## Diagnostics and Verification
 
