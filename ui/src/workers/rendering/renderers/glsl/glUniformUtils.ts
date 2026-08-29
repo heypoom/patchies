@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { GLUniformDef } from '../../types/uniform-config';
+import type { GLUniformDef } from '../../../../types/uniform-config';
 
 type BuildGlslUserParamsOptions = {
   uniformDefs: GLUniformDef[];

@@ -16,7 +16,7 @@ import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
 import { CaptureRenderer } from './CaptureRenderer';
 import { match, P } from 'ts-pattern';
-import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
+import { ShaderParkThreeRenderer } from './renderers/shaderpark/shaderParkThreeRenderer';
 import type { Message } from '$lib/messages/MessageSystem';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
@@ -27,7 +27,7 @@ import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-out
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler } from '../../lib/transport/ClockScheduler.js';
 import { installWorkerTimeGlobal } from './workerClock';
-import { isValidUniformData } from './glUniformUtils';
+import { isValidUniformData } from './renderers/glsl/glUniformUtils';
 import { CookStateManager } from './CookStateManager';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';

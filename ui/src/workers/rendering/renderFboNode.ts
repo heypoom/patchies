@@ -4,8 +4,8 @@ import { match, P } from 'ts-pattern';
 import type { FBONode, RenderNode, UserParam } from '$lib/rendering/types';
 
 import type { FBORenderer } from './fboRenderer';
-import { SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
-import { buildGlslUserParams } from './glUniformUtils';
+import { SHADERPARK_VIDEO_UNIFORM_COUNT } from './renderers/shaderpark/shaderParkRenderer';
+import { buildGlslUserParams } from './renderers/glsl/glUniformUtils';
 
 /** Builds node render parameters and render into the given FBO. */
 export function renderFboNode(host: FBORenderer, node: RenderNode, fboNode: FBONode): void {

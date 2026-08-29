@@ -1,11 +1,11 @@
 import type regl from 'regl';
-import type { FBORenderer } from './fboRenderer';
+import type { FBORenderer } from '../../fboRenderer';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { evaluateTextmodeCode } from '$objects/textmode/re-evaluate-setup';
-import { setupWorkerDOMMocks } from './workerDOMMocks';
+import { setupWorkerDOMMocks } from '../../workerDOMMocks';
 import type { TextmodePlugin, Textmodifier } from 'textmode.js';
-import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
-import { getFramebuffer } from './utils';
+import { BaseWorkerRenderer, type BaseRendererConfig } from '../../BaseWorkerRenderer';
+import { getFramebuffer } from '../../utils';
 
 export interface TextmodeRendererConfig extends BaseRendererConfig {
   runRevision?: number;

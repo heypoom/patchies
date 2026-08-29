@@ -1,9 +1,9 @@
 import type regl from 'regl';
 import { match } from 'ts-pattern';
-import type { FBORenderer } from './fboRenderer';
+import type { FBORenderer } from '../../fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
-import type { GLUniformDef } from '../../types/uniform-config';
-import { getFramebuffer } from './utils';
+import type { GLUniformDef } from '../../../../types/uniform-config';
+import { getFramebuffer } from '../../utils';
 import { SHADERPARK_VIDEO_UNIFORM_COUNT, SHADERPARK_VIDEO_UNIFORMS } from './shaderParkRenderer';
 import {
   createShaderParkOrbitState,

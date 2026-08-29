@@ -8,9 +8,13 @@ import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import type { GLUniformDef } from '../../types/uniform-config';
 
 import { createGlslCookPolicy } from './cooking/object-policies/glsl';
-import { defaultUniformValue, isValidUniformData, toGLValue } from './glUniformUtils';
-import { createShaderParkDrawCommand } from './shaderParkRenderer';
-import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
+import {
+  defaultUniformValue,
+  isValidUniformData,
+  toGLValue
+} from './renderers/glsl/glUniformUtils';
+import { createShaderParkDrawCommand } from './renderers/shaderpark/shaderParkRenderer';
+import { ShaderParkThreeRenderer } from './renderers/shaderpark/shaderParkThreeRenderer';
 import type { FBORenderer } from './fboRenderer';
 
 export type ShaderRendererResult = { render: RenderFunction; cleanup: () => void };

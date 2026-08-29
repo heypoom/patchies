@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildGlslUserParams, defaultUniformValue, isValidUniformData } from './glUniformUtils';
-import type { GLUniformDef } from '../../types/uniform-config';
+import type { GLUniformDef } from '../../../../types/uniform-config';
 
 describe('buildGlslUserParams', () => {
   it('binds sampler2D textures by full uniform index', () => {

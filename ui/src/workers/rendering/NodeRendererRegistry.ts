@@ -6,14 +6,15 @@ import type { RenderFunction, RenderNode } from '$lib/rendering/types';
 import type { Message } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 
-import { CanvasRenderer } from './canvasRenderer';
-import { HydraRenderer } from './hydraRenderer';
-import { PixiRenderer } from './pixiRenderer';
 import { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
-import { ReglRenderer } from './reglRenderer';
-import { SwissGLRenderer } from './swglRenderer';
-import { TextmodeRenderer } from './textmodeRenderer';
-import { ThreeRenderer } from './threeRenderer';
+
+import { CanvasRenderer } from './renderers/canvas/canvasRenderer';
+import { HydraRenderer } from './renderers/hydra/hydraRenderer';
+import { PixiRenderer } from './renderers/pixi/pixiRenderer';
+import { ReglRenderer } from './renderers/regl/reglRenderer';
+import { SwissGLRenderer } from './renderers/swgl/swglRenderer';
+import { TextmodeRenderer } from './renderers/textmode/textmodeRenderer';
+import { ThreeRenderer } from './renderers/three/threeRenderer';
 
 import type { FBORenderer } from './fboRenderer';
 

@@ -7,9 +7,9 @@ import {
   loadPixiWorkerExtensions,
   getPixiWorkerExtensionVersion
 } from '$objects/pixi/worker-extensions';
-import { getFramebuffer } from './utils';
-import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
-import type { FBORenderer } from './fboRenderer';
+import { getFramebuffer } from '../../utils';
+import { BaseWorkerRenderer, type BaseRendererConfig } from '../../BaseWorkerRenderer';
+import type { FBORenderer } from '../../fboRenderer';
 
 type PixiRendererConfig = BaseRendererConfig & { runRevision?: number };
 type PixiRuntime = typeof import('pixi.js');

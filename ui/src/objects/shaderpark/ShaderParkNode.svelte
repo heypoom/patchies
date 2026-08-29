@@ -40,7 +40,7 @@
     parseShaderParkTitle,
     usesShaderParkMouse
   } from '$lib/shaderpark/uniforms';
-  import { toGLValue } from '$workers/rendering/glUniformUtils';
+  import { toGLValue } from '$workers/rendering/renderers/glsl/glUniformUtils';
   import {
     uniformDefsToSettingsSchema,
     settingsSchemaToDefaultValues,

@@ -1,8 +1,8 @@
 import type regl from 'regl';
-import type { FBORenderer } from './fboRenderer';
+import type { FBORenderer } from '../../fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { REGL_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { BaseWorkerRenderer, type BaseRendererConfig } from '../../BaseWorkerRenderer';
 import { processIncludes } from '$lib/glsl-include/preprocessor';
 import type { IncludeResolver } from '$lib/glsl-include/preprocessor';
 import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';

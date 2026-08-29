@@ -1,9 +1,9 @@
 import type regl from 'regl';
-import type { FBORenderer } from './fboRenderer';
+import type { FBORenderer } from '../../fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
-import { getFramebuffer } from './utils';
+import { getFramebuffer } from '../../utils';
 import { THREE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { BaseWorkerRenderer, type BaseRendererConfig } from '../../BaseWorkerRenderer';
 import {
   WorkerThreeInteraction,
   createWorkerOrbitControlsClass,

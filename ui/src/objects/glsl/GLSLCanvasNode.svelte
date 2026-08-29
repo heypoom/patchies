@@ -9,7 +9,7 @@
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { outputSize, previewWidth, previewHeight } from '../../stores/renderer.store';
-  import { toGLValue } from '$workers/rendering/glUniformUtils';
+  import { toGLValue } from '$workers/rendering/renderers/glsl/glUniformUtils';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import {
     shaderCodeToUniformDefs,

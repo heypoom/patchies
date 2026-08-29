@@ -1,12 +1,13 @@
 import type regl from 'regl';
 
-import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
-import { TextureSampler, type SwissGL } from '$lib/rendering/swissgl';
-import { getFramebuffer } from './utils';
-import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 import { processIncludes } from '$lib/glsl-include/preprocessor';
 import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
+import { TextureSampler, type SwissGL } from '$lib/rendering/swissgl';
+
+import { getFramebuffer } from '../../utils';
+import type { FBORenderer } from '../../fboRenderer';
+import { BaseWorkerRenderer, type BaseRendererConfig } from '../../BaseWorkerRenderer';
 
 const SAMPLER_2D_TEMPLATE = `
   uniform sampler2D $name;

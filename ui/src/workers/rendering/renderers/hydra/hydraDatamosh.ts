@@ -1,7 +1,7 @@
 import { Source, type Hydra } from '$lib/hydra';
 import type regl from 'regl';
-import type { FBORenderer } from './fboRenderer';
-import { getFramebuffer } from './utils';
+import type { FBORenderer } from '../../fboRenderer';
+import { getFramebuffer } from '../../utils';
 
 export type DatamoshParams = {
   speed?: number;

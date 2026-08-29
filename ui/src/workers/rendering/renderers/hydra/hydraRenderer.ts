@@ -1,19 +1,25 @@
+import type regl from 'regl';
+
 import type { Hydra, HydraErrorContext } from '$lib/hydra';
+
 import {
   processGlsl,
   createGenerator,
   addTransformChainMethod
 } from '$lib/hydra/glsl/createGenerators';
+
 import type { TransformDefinition } from '$lib/hydra/glsl/transformDefinitions';
-import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
-import { processIncludes } from '$lib/glsl-include/preprocessor';
-import type regl from 'regl';
-import type { FBORenderer } from './fboRenderer';
-import type { RenderParams } from '$lib/rendering/types';
-import { getFramebuffer } from './utils';
-import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+
+import type { RenderParams } from '$lib/rendering/types';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
+import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+
+import type { FBORenderer } from '../../fboRenderer';
+import { getFramebuffer } from '../../utils';
+import { BaseWorkerRenderer, type BaseRendererConfig } from '../../BaseWorkerRenderer';
+
 import type { HydraDatamoshRuntime } from './hydraDatamosh';
 
 export interface HydraRendererConfig extends BaseRendererConfig {

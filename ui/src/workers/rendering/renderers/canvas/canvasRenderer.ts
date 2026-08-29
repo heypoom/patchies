@@ -1,7 +1,7 @@
 import type regl from 'regl';
-import type { FBORenderer } from './fboRenderer';
+import type { FBORenderer } from '../../fboRenderer';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { BaseWorkerRenderer, type BaseRendererConfig } from '../../BaseWorkerRenderer';
 
 export class CanvasRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   public offscreenCanvas: OffscreenCanvas | null = null;
