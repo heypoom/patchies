@@ -1,10 +1,12 @@
-# 146. Render Worker Orchestration
+# 184. Render Worker Orchestration
 
-`FBORenderer` coordinates the render-worker lifecycle, but it must not own independent infrastructure implementations. Keeping allocation, graph analysis, presentation, and transport compatibility in the class makes unrelated changes risky and obscures render-frame control flow.
+`FBORenderer` coordinates the render-worker lifecycle, but it must not own independent infrastructure implementations.
 
-## Decision
+Keeping allocation, graph analysis, presentation, and transport compatibility in the class makes unrelated changes risky and obscures render-frame control flow.
 
-Keep `FBORenderer` as the stateful coordinator for the render graph and frame loop. Extract independent responsibilities into focused worker helpers:
+## Solution
+
+We keep `FBORenderer` as the stateful coordinator for the render graph and frame loop. Extract independent responsibilities into focused worker helpers:
 
 - `FboResources` owns FBO texture capability detection, allocation, resolution calculation, and GPU resource destruction.
 - `fboAllocation` determines attachment counts and allocates FBO attachments.
@@ -21,7 +23,3 @@ Keep `FBORenderer` as the stateful coordinator for the render graph and frame lo
 - `renderFboNode` builds node-specific input and uniform parameters, then executes the FBO draw under the node draw profiler.
 
 Helpers receive only the state they need. They do not create a second render loop or own render-graph state. Public `FBORenderer` methods remain stable so renderer implementations and worker message handling continue to use the same integration surface.
-
-## Follow-up
-
-Continue extracting stateful coordination domains from `FBORenderer`, beginning with render-loop and viewport/output orchestration.
