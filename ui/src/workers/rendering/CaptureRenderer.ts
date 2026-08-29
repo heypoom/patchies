@@ -376,9 +376,8 @@ export class CaptureRenderer {
    * Harvest completed video frame batches.
    * Returns array of completed batches with raw RGBA or ImageBitmap frames.
    *
-   * Smart cloning: When multiple targets need the same source, each gets
-   * its own bitmap created from the cached pixel data. When only one target
-   * needs a source, no cloning overhead is incurred.
+   * When multiple targets need the same source, each gets its own bitmap
+   * created from the cached pixel data.
    */
   harvestVideoFrameBatches(): HarvestedVideoFrameResult[] {
     const gl = this.gl;
@@ -425,23 +424,6 @@ export class CaptureRenderer {
       }
     }
 
-    // Count how many targets need each source (for smart cloning decision)
-    const sourceRefCounts = new Map<string, number>();
-
-    for (const batch of this.pendingVideoFrameBatches) {
-      const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
-      if (!allReadsComplete) continue;
-
-      for (const sourceId of batch.sourceNodeIds) {
-        if (sourceId) {
-          sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 0) + 1);
-        }
-      }
-    }
-
-    // Track bitmaps that can be reused (when only 1 target needs them)
-    const reusableBitmaps = new Map<string, ImageBitmap>();
-
     // Second pass: build results for completed batches
     for (const batch of this.pendingVideoFrameBatches) {
       const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
@@ -485,42 +467,12 @@ export class CaptureRenderer {
             height: pixelData.height
           });
 
-          sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
-
           continue;
         }
 
-        const refCount = sourceRefCounts.get(sourceId) || 0;
-
-        if (refCount === 1) {
-          // Only 1 target needs this source - create bitmap directly (no clone needed)
-          frames.push(
-            this.createBitmapFromPixels(pixelData.pixels, pixelData.width, pixelData.height)
-          );
-        } else {
-          // Multiple targets need this source - each gets their own bitmap
-          const existing = reusableBitmaps.get(sourceId);
-
-          if (existing) {
-            // Create a new bitmap from pixels for this target
-            frames.push(
-              this.createBitmapFromPixels(pixelData.pixels, pixelData.width, pixelData.height)
-            );
-          } else {
-            // First target - create and mark as created
-            const bitmap = this.createBitmapFromPixels(
-              pixelData.pixels,
-              pixelData.width,
-              pixelData.height
-            );
-
-            reusableBitmaps.set(sourceId, bitmap);
-            frames.push(bitmap);
-          }
-        }
-
-        // Decrement ref count
-        sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
+        frames.push(
+          this.createBitmapFromPixels(pixelData.pixels, pixelData.width, pixelData.height)
+        );
       }
 
       results.push({

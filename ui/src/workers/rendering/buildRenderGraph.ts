@@ -114,7 +114,7 @@ export const buildRenderGraph = async (
     // MRT count. GLSL, REGL, SwissGL, Hydra and Shader Park
     // nodes can request multiple color attachments.
     const nodeData = node.data as Record<string, unknown>;
-    const mrtCount = getMrtCount({ type: node.type, data: nodeData });
+    const mrtCount = getMrtCount({ type: node.type, data: nodeData }, host.gl);
 
     // FBO format: read from node data, default to rgba8
     const fboFormat = getNodeFormat(nodeData);

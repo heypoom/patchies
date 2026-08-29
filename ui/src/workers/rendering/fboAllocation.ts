@@ -4,9 +4,10 @@ import type { FBOFormat, FBOResolution, RenderNode } from '$lib/rendering/types'
 import { getFramebuffer, getRawTexture } from './utils';
 
 export const getMrtCount = (
-  node: Pick<RenderNode, 'type'> & { data: Record<string, unknown> }
-): number =>
-  match(node)
+  node: Pick<RenderNode, 'type'> & { data: Record<string, unknown> },
+  gl: WebGL2RenderingContext
+): number => {
+  const requestedCount = match(node)
     .with({ type: P.union('glsl', 'swgl') }, ({ data }) =>
       Math.max(1, (data.mrtCount as number | undefined) ?? 1)
     )
@@ -14,6 +15,14 @@ export const getMrtCount = (
       Math.max(1, (data.videoOutletCount as number | undefined) ?? 1)
     )
     .otherwise(() => 1);
+
+  const maxCount = Math.min(
+    gl.getParameter(gl.MAX_DRAW_BUFFERS),
+    gl.getParameter(gl.MAX_COLOR_ATTACHMENTS)
+  );
+
+  return Math.max(1, Math.min(requestedCount, maxCount));
+};
 
 export const allocateFbo = ({
   regl,
