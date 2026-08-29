@@ -608,6 +608,16 @@ const MOUSE_INTERACTION_JS_NODES = [
   'surface'
 ];
 
+const KV_JS_NODES = ['js', 'worker', 'p5', 'canvas.dom', 'pixi.dom'];
+
+const KEYBOARD_JS_NODES = ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'];
+const SURFACE_JS_NODES = ['surface'];
+const P5_SURFACE_JS_NODES = ['surface', 'p5'];
+const DOM_RUNTIME_JS_NODES = ['dom', 'vue'];
+const TEXTURE_FORMAT_JS_NODES = ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'];
+const JS_ONLY_NODES = ['js'];
+const WORKER_JS_NODES = ['worker'];
+
 // Node-specific functions - only show in certain node types
 //
 // Note on JSRunner defaults (main-thread nodes):
@@ -629,6 +639,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'pixi.dom',
     'dom',
     'vue',
     'tone~',
@@ -648,6 +659,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'pixi.dom',
     'tone~'
   ],
   opencv: ['js', 'worker', 'canvas', 'canvas.dom'],
@@ -668,23 +680,23 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'pixi.dom',
     'surface'
   ],
-  onKeyDown: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'],
-  onKeyUp: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'],
-  onPointer: ['surface'],
-  onTouch: ['surface'],
-  setDrawMode: ['surface'],
-  redraw: ['surface'],
-  expandSurface: ['surface', 'p5'],
-  collapseSurface: ['surface', 'p5'],
-  hideExitButton: ['surface', 'p5'],
+  onKeyDown: KEYBOARD_JS_NODES,
+  onKeyUp: KEYBOARD_JS_NODES,
+  onPointer: SURFACE_JS_NODES,
+  onTouch: SURFACE_JS_NODES,
+  setDrawMode: SURFACE_JS_NODES,
+  redraw: SURFACE_JS_NODES,
+  expandSurface: P5_SURFACE_JS_NODES,
+  collapseSurface: P5_SURFACE_JS_NODES,
+  hideExitButton: P5_SURFACE_JS_NODES,
   noBorder: ['dom', 'vue', 'p5', 'canvas.dom', 'three.dom', 'pixi.dom'],
   setAudioPortCount: ['dsp~'],
   showAudioInput: ['tone~', 'sonic~', 'elem~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom'],
   setFluidSize: ['canvas.dom', 'dom', 'vue', 'p5', 'pixi.dom'],
   onCanvasResize: ['canvas.dom', 'pixi.dom'],
-  onResize: ['dom', 'vue'],
-  setSize: ['dom', 'vue'],
+  onResize: DOM_RUNTIME_JS_NODES,
+  setSize: DOM_RUNTIME_JS_NODES,
   setHidePorts: [
     'p5',
     'hydra',
@@ -695,18 +707,19 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
-    'three.dom'
+    'three.dom',
+    'pixi.dom'
   ],
   setKeepAlive: ['dsp~'],
   setMouseScope: ['hydra'],
   setRunOnMount: ['js', 'worker'],
-  kv: ['js', 'worker', 'p5'],
-  'kv.get': ['js', 'worker', 'p5'],
-  'kv.set': ['js', 'worker', 'p5'],
-  'kv.delete': ['js', 'worker', 'p5'],
-  'kv.keys': ['js', 'worker', 'p5'],
-  'kv.has': ['js', 'worker', 'p5'],
-  'kv.store': ['js', 'worker', 'p5'],
+  kv: KV_JS_NODES,
+  'kv.get': KV_JS_NODES,
+  'kv.set': KV_JS_NODES,
+  'kv.delete': KV_JS_NODES,
+  'kv.keys': KV_JS_NODES,
+  'kv.has': KV_JS_NODES,
+  'kv.store': KV_JS_NODES,
   setTitle: [
     'js',
     'worker',
@@ -728,13 +741,13 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'pixi',
     'pixi.dom'
   ],
-  setTags: ['js', 'canvas.dom', 'three.dom', 'dom', 'vue'],
-  onGraphChange: ['js'],
-  'htmlCanvas.videoOutput': ['dom', 'vue'],
-  'htmlCanvas.canvasLayer': ['dom', 'vue'],
-  'htmlCanvas.glslLayer': ['dom', 'vue'],
-  setTextureFormat: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
-  setResolution: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
+  setTags: ['js', 'canvas.dom', 'three.dom', 'pixi.dom', 'dom', 'vue'],
+  onGraphChange: JS_ONLY_NODES,
+  'htmlCanvas.videoOutput': DOM_RUNTIME_JS_NODES,
+  'htmlCanvas.canvasLayer': DOM_RUNTIME_JS_NODES,
+  'htmlCanvas.glslLayer': DOM_RUNTIME_JS_NODES,
+  setTextureFormat: TEXTURE_FORMAT_JS_NODES,
+  setResolution: TEXTURE_FORMAT_JS_NODES,
   setPrimaryButton: [
     'js',
     'worker',
@@ -745,16 +758,17 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'regl',
     'swgl',
     'textmode',
-    'three'
+    'three',
+    'pixi.dom'
   ],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
   OrbitControls: ['three'],
   onPointerDrag: ['three'],
   onWheel: ['three'],
-  onVideoFrame: ['worker'],
-  getVideoFrames: ['worker'],
-  setVideoFrame: ['worker'],
+  onVideoFrame: WORKER_JS_NODES,
+  getVideoFrames: WORKER_JS_NODES,
+  setVideoFrame: WORKER_JS_NODES,
   vfs: [
     'js',
     'worker',
@@ -767,6 +781,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'pixi.dom',
     'dom',
     'vue',
     'tone~',
@@ -774,10 +789,10 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'elem~'
   ],
   flash: ['js', 'worker'],
-  focusObjects: ['js'],
-  setBackgroundOutput: ['js'],
-  pauseObject: ['js'],
-  unpauseObject: ['js'],
+  focusObjects: JS_ONLY_NODES,
+  setBackgroundOutput: JS_ONLY_NODES,
+  pauseObject: JS_ONLY_NODES,
+  unpauseObject: JS_ONLY_NODES,
   settings: [
     'js',
     'worker',
@@ -805,6 +820,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'pixi.dom',
     'dom',
     'vue'
   ],

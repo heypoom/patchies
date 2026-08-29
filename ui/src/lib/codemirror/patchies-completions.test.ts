@@ -295,6 +295,24 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('pixi.dom', 'noI')).toContain('noInteract');
   });
 
+  it('shows shared runner completions for pixi.dom nodes', () => {
+    expect(getCompletionLabels('pixi.dom', 'fft')).toContain('fft');
+    expect(getCompletionLabels('pixi.dom', 'onC')).toContain('onCleanup');
+    expect(getCompletionLabels('pixi.dom', 'vf')).toContain('vfs');
+    expect(getCompletionLabels('pixi.dom', 'cl')).toContain('clock');
+    expect(getCompletionLabels('pixi.dom', 'kv.')).toContain('get');
+  });
+
+  it('shows configured visual-node completions for pixi.dom nodes', () => {
+    expect(getCompletionLabels('pixi.dom', 'setP')).toContain('setPrimaryButton');
+    expect(getCompletionLabels('pixi.dom', 'setH')).toContain('setHidePorts');
+    expect(getCompletionLabels('pixi.dom', 'setT')).toContain('setTags');
+  });
+
+  it('shows KV completions for canvas.dom nodes', () => {
+    expect(getCompletionLabels('canvas.dom', 'kv.')).toContain('get');
+  });
+
   it('shows showAudioInput completions only for simple DSP audio nodes', () => {
     expect(getCompletionLabels('tone~', 'show')).toContain('showAudioInput');
     expect(getCompletionLabels('sonic~', 'show')).toContain('showAudioInput');

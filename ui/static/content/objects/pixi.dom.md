@@ -160,6 +160,10 @@ stage.addChild(badge)
 - `setFluidSize(options?)`: makes the canvas follow the node size
 - `onCanvasResize(callback)`: runs a callback after the canvas is resized
 - `onKeyDown(callback)`, `onKeyUp(callback)`: receive keyboard events while the canvas is focused
+- `setPrimaryButton(button)`: chooses the primary node action button
+- `setHidePorts(hidden)`: hides or shows the video output handle
+- `setTags(tags)`: replaces the node's user-defined tags
+- `kv`: persistent key-value storage scoped to this node
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()`: see [Canvas Interaction](/docs/canvas-interaction)
 - `noBorder()`: hides Patchies' border and selected glow until the call is removed and the node runs again
 

@@ -38,6 +38,10 @@ output, disabled by default to avoid an unnecessary CPU-to-GPU canvas copy.
 `setVideoOutput(true)` enables it. Patchies message APIs and dynamic ports can
 be added once the core event and lifecycle path has settled.
 
+`pixi.dom` also supports `setPrimaryButton()`, `setHidePorts()`, and `setTags()`
+with the same behavior as other main-thread visual objects. `setHidePorts()`
+hides the optional video output handle until the node is selected or hovered.
+
 Both `pixi` and `pixi.dom` expose the standard `settings` API. The worker
 object bridges its settings proxy through GLSystem; the DOM object uses a local
 SettingsManager through JSRunner. Both render the shared Settings panel and

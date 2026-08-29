@@ -19,7 +19,7 @@
   import { useKeyboardCallbacks } from '$lib/canvas/use-keyboard-callbacks.svelte';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
   import { useNodeDataTracker } from '$lib/history';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -32,6 +32,8 @@
   import type { SettingsSchema } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
+  import { replaceUserTags } from '$lib/runtime/services/graph-tags';
+  import { shouldShowHandles } from '../../stores/ui.store';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
   import { pixiDomManager } from '$objects/pixi/PixiDomManager';
@@ -58,12 +60,14 @@
     data: {
       title?: string;
       code: string;
+      hidePorts?: boolean;
       fluidCanvasResizerVisible?: boolean;
       noBorder?: boolean;
       paused?: boolean;
       showConsole?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
+      tags?: string[];
     };
     selected?: boolean;
     width?: number;
@@ -263,6 +267,10 @@ return {
       const candidate = await jsRunner.executeJavaScript(nodeId, code, {
         customConsole,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
+        setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+        setTags(tags: string[]) {
+          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+        },
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           PIXI,
@@ -278,6 +286,13 @@ return {
           onKeyUp: keyboard.onKeyUp,
           loadExtensions: pixiDomManager.loadExtensions.bind(pixiDomManager),
           setVideoOutput: (enabled: boolean) => setVideoOutputEnabled(enabled),
+          setPrimaryButton: (primaryButton: PrimaryButton) => {
+            eventBus.dispatch({
+              type: 'nodePrimaryButtonUpdate',
+              nodeId,
+              primaryButton
+            });
+          },
           noDrag: () => {
             dragEnabled = false;
           },
@@ -410,6 +425,16 @@ return {
       expandController.enter();
     }
   }
+
+  const handleClass = $derived.by(() => {
+    if (!data.hidePorts) return '';
+
+    if (!selected && $shouldShowHandles) {
+      return 'z-1 transition-opacity';
+    }
+
+    return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
+  });
 </script>
 
 <div class="relative">
@@ -474,6 +499,7 @@ return {
           title="Video output"
           total={1}
           index={0}
+          class={handleClass}
           {nodeId}
         />
       {/if}
