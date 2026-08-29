@@ -160,6 +160,7 @@ stage.addChild(badge)
 - `setFluidSize(options?)`: makes the canvas follow the node size
 - `onCanvasResize(callback)`: runs a callback after the canvas is resized
 - `onKeyDown(callback)`, `onKeyUp(callback)`: receive keyboard events while the canvas is focused
+- `noDrag()`, `noPan()`, `noWheel()`, `noInteract()`: see [Canvas Interaction](/docs/canvas-interaction)
 - `noBorder()`: hides Patchies' border and selected glow until the call is removed and the node runs again
 
 ## See Also

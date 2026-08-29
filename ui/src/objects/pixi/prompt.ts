@@ -38,6 +38,7 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - loadExtensions(...names): await before using optional Pixi APIs, for example await loadExtensions('accessibility'). Use loadExtensions('all') for every optional extension. Native pointer events are available by default.
 - setCanvasSize(width, height), setFluidSize(), onCanvasResize(callback): canvas sizing APIs. In fluid mode, draw(time) can read live width and height values while resizing. Resizing does not re-run your code, so fluid or resizable objects must use onCanvasResize to update their layout.
 - setVideoOutput(enabled): enable or disable the video output port. It is disabled by default; call setVideoOutput(true) when the scene feeds another video node.
+- noDrag(), noPan(), noWheel(), noInteract(): disable node drag, canvas pan, wheel zoom, or all three when Pixi pointer interaction needs them.
 - noBorder(): hide Patchies' preview border and selected glow until the call is removed and the node runs again.
 - onKeyDown(event => {}) / onKeyUp(event => {}): receive keyboard events while the Pixi canvas is focused. Events do not leak to the Patchies editor.
 

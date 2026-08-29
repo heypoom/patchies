@@ -602,6 +602,7 @@ const MOUSE_INTERACTION_JS_NODES = [
   'textmode.dom',
   'three',
   'three.dom',
+  'pixi.dom',
   'vue',
   'dom',
   'surface'

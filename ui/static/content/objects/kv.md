@@ -1,5 +1,3 @@
-# kv
-
 Persistent key-value storage object. Data persists across sessions using IndexedDB.
 
 ## Creation

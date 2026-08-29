@@ -104,6 +104,10 @@
 
   const keyboard = useKeyboardCallbacks({ onError: reportRuntimeError });
 
+  let dragEnabled = $state(true);
+  let panEnabled = $state(true);
+  let wheelEnabled = $state(true);
+
   let editorReady = $state(false);
   let videoOutputEnabled = $state(false);
   let isExpanded = $state(false);
@@ -219,6 +223,11 @@
 
     settingsManager.clearCallbacks();
     keyboard.reset();
+
+    dragEnabled = true;
+    panEnabled = true;
+    wheelEnabled = true;
+
     setVideoOutputEnabled(false);
     fluidCanvas.reset();
     updateNodeData(nodeId, getBorderResetDataForRun(data));
@@ -269,6 +278,20 @@ return {
           onKeyUp: keyboard.onKeyUp,
           loadExtensions: pixiDomManager.loadExtensions.bind(pixiDomManager),
           setVideoOutput: (enabled: boolean) => setVideoOutputEnabled(enabled),
+          noDrag: () => {
+            dragEnabled = false;
+          },
+          noPan: () => {
+            panEnabled = false;
+          },
+          noWheel: () => {
+            wheelEnabled = false;
+          },
+          noInteract: () => {
+            dragEnabled = false;
+            panEnabled = false;
+            wheelEnabled = false;
+          },
           noBorder: () => updateNodeData(nodeId, { noBorder: true })
         }
       });
@@ -424,6 +447,9 @@ return {
     paused={data.paused}
     showPauseButton={true}
     bind:previewCanvas={canvas}
+    nodrag={!dragEnabled}
+    nopan={!panEnabled}
+    nowheel={!wheelEnabled}
     tabindex={0}
     style={canvasDisplayStyle}
     onCustomExpandToggle={toggleExpandedCanvas}

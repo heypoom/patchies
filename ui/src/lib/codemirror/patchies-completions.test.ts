@@ -288,6 +288,13 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('pixi.dom', 'setT')).toContain('setTitle');
   });
 
+  it('shows canvas interaction completions for pixi.dom nodes', () => {
+    expect(getCompletionLabels('pixi.dom', 'noD')).toContain('noDrag');
+    expect(getCompletionLabels('pixi.dom', 'noP')).toContain('noPan');
+    expect(getCompletionLabels('pixi.dom', 'noW')).toContain('noWheel');
+    expect(getCompletionLabels('pixi.dom', 'noI')).toContain('noInteract');
+  });
+
   it('shows showAudioInput completions only for simple DSP audio nodes', () => {
     expect(getCompletionLabels('tone~', 'show')).toContain('showAudioInput');
     expect(getCompletionLabels('sonic~', 'show')).toContain('showAudioInput');
