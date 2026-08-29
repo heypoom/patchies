@@ -202,7 +202,7 @@ export class ReglRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     if (!this.userRenderFunc) return;
 
     // Skip rendering when transport is paused — FBO retains last frame
-    if (this.renderer.transportTime && !this.renderer.transportTime.isPlaying) return;
+    if (this.renderer.transportState && !this.renderer.transportState.isPlaying) return;
 
     // Update mouse state from render params
     this.mouseX = params.mouseX;

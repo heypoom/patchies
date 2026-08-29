@@ -21,6 +21,10 @@ export function installRenderWorkerRuntime() {
 
   const lifecycle = new RenderWorkerLifecycle();
 
+  const resolveCaptureSource = fboRenderer.videoSources.resolveCaptureSource.bind(
+    fboRenderer.videoSources
+  );
+
   /** Map of source worker nodeId → MessagePort for direct messaging */
   const workerRenderPorts = new Map<string, MessagePort>();
 
@@ -122,8 +126,8 @@ export function installRenderWorkerRuntime() {
 
         fboRenderer.setVideoFrame(data.nodeId, frame.width, frame.height, frame.data);
       })
-      .with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
-      .with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
+      .with('removeBitmap', () => fboRenderer.videoTextures.removeBitmap(data.nodeId))
+      .with('removeUniformData', () => fboRenderer.uniformDataByNode.delete(data.nodeId))
       .with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
       .with('toggleNodePause', () => fboRenderer.toggleNodePause(data.nodeId))
       .with('capturePreview', () =>
@@ -150,10 +154,10 @@ export function installRenderWorkerRuntime() {
         fboRenderer.setVisibleNodes(new Set(data.nodeIds as string[]));
       })
       .with('setAllPreviewsDisabled', () => {
-        fboRenderer.setAllPreviewsDisabled(data.disabled as boolean);
+        fboRenderer.previewRenderer.setAllPreviewsDisabled(data.disabled as boolean);
       })
       .with('setPreviewScaleMultiplier', () => {
-        fboRenderer.setPreviewScaleMultiplier(data.multiplier as number);
+        fboRenderer.previewRenderer.setPreviewScaleMultiplier(data.multiplier as number);
       })
       .with('vfsUrlResolved', () => {
         handleVfsUrlResolved(data);
@@ -185,8 +189,8 @@ export function installRenderWorkerRuntime() {
       .with('unregisterWorkerRenderPort', () => {
         handleUnregisterWorkerRenderPort(data.nodeId);
       })
-      .with('syncTransportTime', () => {
-        fboRenderer.setTransportTime(data);
+      .with('syncTransportState', () => {
+        fboRenderer.setTransportState(data);
       })
       .with('setOverrideOutputNode', () => {
         fboRenderer.setOverrideOutputNode(data.nodeId ?? null);
@@ -200,10 +204,10 @@ export function installRenderWorkerRuntime() {
         );
       })
       .with('settingsValuesInit', () => {
-        fboRenderer.receiveSettingsValues(data.nodeId, data.requestId, data.values);
+        fboRenderer.settingsRegistry.receiveValues(data.nodeId, data.requestId, data.values);
       })
       .with('settingsValueChanged', () => {
-        fboRenderer.receiveSettingsValueChanged(data.nodeId, data.key, data.value);
+        fboRenderer.settingsRegistry.receiveValueChanged(data.nodeId, data.key, data.value);
       });
   };
 
@@ -275,10 +279,12 @@ export function installRenderWorkerRuntime() {
         // Profiler: forcibly forces gl sync to measure GL rendering time.
         // Never do this outside of profiling, as it slows down rendering!
         if (fboRenderer.isProfilingEnabled) {
-          fboRenderer.measureOp('finish', () => fboRenderer.gl.finish());
+          fboRenderer.profiler.measureOp('finish', () => fboRenderer.gl.finish());
         }
 
-        const outputBitmap = fboRenderer.measureOp('transfer', () => fboRenderer.getOutputBitmap());
+        const outputBitmap = fboRenderer.profiler.measureOp('transfer', () =>
+          fboRenderer.offscreenCanvas.transferToImageBitmap()
+        );
 
         if (outputBitmap) {
           self.postMessage({ type: 'animationFrame', outputBitmap }, { transfer: [outputBitmap] });
@@ -286,7 +292,7 @@ export function installRenderWorkerRuntime() {
       }
 
       if (fboRenderer.shouldProcessPreviews) {
-        const previewBitmaps = fboRenderer.measureOp('preview', () =>
+        const previewBitmaps = fboRenderer.profiler.measureOp('preview', () =>
           fboRenderer.renderPreviewBitmaps()
         );
 
@@ -296,9 +302,9 @@ export function installRenderWorkerRuntime() {
       }
 
       // Harvest any completed async video frame captures
-      if (fboRenderer.hasPendingVideoFrames()) {
-        const completedBatches = fboRenderer.measureOp('video', () =>
-          fboRenderer.harvestVideoFrames()
+      if (fboRenderer.captureRenderer.hasPendingVideoFrames()) {
+        const completedBatches = fboRenderer.profiler.measureOp('video', () =>
+          fboRenderer.captureRenderer.harvestVideoFrameBatches()
         );
 
         if (completedBatches.length > 0) {
@@ -328,7 +334,7 @@ export function installRenderWorkerRuntime() {
       }
 
       // Record frame timing for profiling
-      fboRenderer.recordFrameTime();
+      fboRenderer.profiler.recordFrameTime();
     });
   }
 
@@ -344,53 +350,24 @@ export function installRenderWorkerRuntime() {
   }
 
   function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
-    const { nodeType, nodeId } = payload;
+    // GLSL consumes FFT as textures
+    if (payload.nodeType === 'glsl') {
+      if (fboRenderer.fftTextures.update(payload)) {
+        fboRenderer.cookState.markDirty(payload.nodeId, 'fft');
+      }
 
-    match(nodeType)
-      .with('hydra', () => {
-        const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
-        if (!hydraRenderer) return;
+      return;
+    }
 
-        hydraRenderer.setFFTData(payload);
-      })
-      .with('canvas', () => {
-        const canvasRenderer = fboRenderer.canvasByNode.get(nodeId);
-        if (!canvasRenderer) return;
-
-        canvasRenderer.setFFTData(payload);
-      })
-      .with('textmode', () => {
-        const textmodeRenderer = fboRenderer.textmodeByNode.get(nodeId);
-        if (!textmodeRenderer) return;
-
-        textmodeRenderer.setFFTData(payload);
-      })
-      .with('three', () => {
-        const threeRenderer = fboRenderer.threeByNode.get(nodeId);
-        if (!threeRenderer) return;
-
-        threeRenderer.setFFTData(payload);
-      })
-      .with('regl', () => {
-        const reglRenderer = fboRenderer.reglByNode.get(nodeId);
-        if (!reglRenderer) return;
-
-        reglRenderer.setFFTData(payload);
-      })
-      .with('swgl', () => {
-        const swglRenderer = fboRenderer.swglByNode.get(nodeId);
-        if (!swglRenderer) return;
-
-        swglRenderer.setFFTData(payload);
-      })
-      .with('glsl', () => {
-        fboRenderer.setFFTAsGlslUniforms(payload);
-      })
-      .exhaustive();
+    fboRenderer.nodeRenderers.setFFTData(payload);
   }
 
   function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [number, number]) {
-    const bitmap = fboRenderer.capturePreviewBitmap(nodeId, customSize);
+    const bitmap = fboRenderer.captureRenderer.capturePreviewBitmap(
+      nodeId,
+      resolveCaptureSource,
+      customSize
+    );
 
     if (bitmap) {
       self.postMessage(
@@ -426,9 +403,13 @@ export function installRenderWorkerRuntime() {
     format: 'raw' | 'bitmap' = 'raw'
   ) {
     if (format === 'raw') {
-      fboRenderer.initiateVideoFrameCaptureAsync([
-        { targetNodeId, requestId, sourceNodeIds, resolution, format }
-      ]);
+      fboRenderer.captureRenderer.initiateVideoFrameCaptureAsync(
+        [{ targetNodeId, requestId, sourceNodeIds, resolution, format }],
+        resolveCaptureSource,
+        fboRenderer.fboNodes,
+        fboRenderer.videoTextures.destinationTextures
+      );
+
       return;
     }
 
@@ -441,7 +422,11 @@ export function installRenderWorkerRuntime() {
         continue;
       }
 
-      const bitmap = fboRenderer.capturePreviewBitmap(sourceNodeId, resolution);
+      const bitmap = fboRenderer.captureRenderer.capturePreviewBitmap(
+        sourceNodeId,
+        resolveCaptureSource,
+        resolution
+      );
       frames.push(bitmap);
 
       if (bitmap) {
@@ -480,7 +465,12 @@ export function installRenderWorkerRuntime() {
     }>
   ) {
     // Initiate async captures - results will be harvested in the render loop
-    fboRenderer.initiateVideoFrameCaptureAsync(requests);
+    fboRenderer.captureRenderer.initiateVideoFrameCaptureAsync(
+      requests,
+      resolveCaptureSource,
+      fboRenderer.fboNodes,
+      fboRenderer.videoTextures.destinationTextures
+    );
   }
 
   /**
@@ -511,7 +501,11 @@ export function installRenderWorkerRuntime() {
           continue;
         }
 
-        const bitmap = fboRenderer.capturePreviewBitmap(sourceNodeId, request.resolution);
+        const bitmap = fboRenderer.captureRenderer.capturePreviewBitmap(
+          sourceNodeId,
+          resolveCaptureSource,
+          request.resolution
+        );
         frames.push(bitmap);
 
         if (bitmap) {

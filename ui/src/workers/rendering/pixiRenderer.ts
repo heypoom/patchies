@@ -77,7 +77,7 @@ export class PixiRenderer extends BaseWorkerRenderer<PixiRendererConfig> {
 
   renderFrame(params: RenderParams) {
     if (!this.pixi || !this.stage || !this.target || !this.framebuffer) return;
-    if (this.renderer.transportTime && !this.renderer.transportTime.isPlaying) return;
+    if (this.renderer.transportState && !this.renderer.transportState.isPlaying) return;
 
     this.mouseX = params.mouseX;
     this.mouseY = params.mouseY;

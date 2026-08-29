@@ -1,77 +1,48 @@
 import regl from 'regl';
-import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
 import type {
   RenderGraph,
   RenderNode,
   FBONode,
-  RenderFunction,
-  RenderParams,
-  UserParam,
   FBOFormat,
   FBOResolution
 } from '../../lib/rendering/types';
-import type { ClockCommandMessage, TransportState } from '$lib/transport/types';
-import type { ProjMapSurface } from '$lib/projmap/types';
+import type { TransportState } from '$lib/transport/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
-  WEBGL_OPTIONAL_EXTENSIONS,
-  PREVIEW_SCALE_FACTOR,
-  capPreviewSize
+  WEBGL_OPTIONAL_EXTENSIONS
 } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
-import { CaptureRenderer, type VideoFrameCaptureSource } from './CaptureRenderer';
+import { CaptureRenderer } from './CaptureRenderer';
 import { match, P } from 'ts-pattern';
-import { HydraRenderer } from './hydraRenderer';
-import { CanvasRenderer } from './canvasRenderer';
-import { TextmodeRenderer } from './textmodeRenderer';
-import { ThreeRenderer } from './threeRenderer';
-import { PixiRenderer } from './pixiRenderer';
-import { ReglRenderer } from './reglRenderer';
-import { SwissGLRenderer } from './swglRenderer';
-import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
-import { ProjectionMapRenderer } from '$lib/projmap/ProjectionMapRenderer';
-import { getFramebuffer, getRawTexture } from './utils';
-import { isExternalTextureNode } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
-import type {
-  AudioAnalysisType,
-  AudioAnalysisPayloadWithType,
-  GlslFFTInletMeta
-} from '$lib/audio/AudioAnalysisSystem.js';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
-import type { CapturedVideoFrame } from '$lib/js-runner/js-worker-types';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { renderElementImageToBitmap } from './elementImageBitmap.js';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
-import { processIncludes } from '$lib/glsl-include/preprocessor';
-import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
-import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
-import type { RenderOp } from '$lib/profiler/types';
-import {
-  buildGlslUserParams,
-  defaultUniformValue,
-  isValidUniformData,
-  toGLValue
-} from './glUniformUtils';
-import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import { PollingClockScheduler } from '../../lib/transport/ClockScheduler.js';
+import { installWorkerTimeGlobal } from './workerClock';
+import { isValidUniformData } from './glUniformUtils';
 import { CookStateManager } from './CookStateManager';
-import { createGlslCookPolicy } from '$workers/rendering/cooking/object-policies/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
 import { createFinalOutputPresentationCommand } from './finalOutputPresentation';
-import { topologicalSort } from '$lib/rendering/graphUtils';
-
-interface MessageCapableRenderer {
-  handleMessage(message: Message): void;
-  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string): void;
-}
+import { isPassthroughNodeType } from './videoGraph';
+import { FboResources } from './FboResources';
+import { drawToFinalOutput } from './drawToFinalOutput';
+import { VideoSourceResolver } from './VideoSourceResolver';
+import { NodeRendererRegistry } from './NodeRendererRegistry';
+import { WorkerSettingsRegistry } from './WorkerSettingsRegistry';
+import { ShaderRendererFactory } from './ShaderRendererFactory';
+import { buildRenderGraph } from './buildRenderGraph';
+import { FFTTextureStore } from './FFTTextureStore';
+import { renderFrame } from './renderFrame';
 
 interface ViewportCookCache {
   renderGraph: RenderGraph;
@@ -87,9 +58,6 @@ export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   premultipliedAlpha: false,
   stencil: true
 };
-
-const isPassthroughNodeType = (nodeType: RenderNode['type']): boolean =>
-  nodeType === 'send.vdo' || nodeType === 'recv.vdo';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -123,12 +91,10 @@ export class FBORenderer {
 
   /** Video texture manager for external bitmap sources */
   public videoTextures: VideoTextureManager;
+  public videoSources: VideoSourceResolver;
 
   /** Mapping of analyzer object's node id -> analysis type -> texture */
-  public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
-
-  /** Mapping of glsl node id -> fft inlet metadata */
-  public fftInletsByGlslNode: Map<string, GlslFFTInletMeta> = new Map();
+  public fftTextures: FFTTextureStore;
 
   /** Mapping of nodeID to pause state */
   public nodePausedMap: Map<string, boolean> = new Map();
@@ -139,47 +105,23 @@ export class FBORenderer {
   /** Enable the WebGL workaround for iOS Safari */
   public usesMobileSafariWebGLWorkaround = false;
 
-  public hydraByNode = new Map<string, HydraRenderer | null>();
-  public canvasByNode = new Map<string, CanvasRenderer | null>();
-  public textmodeByNode = new Map<string, TextmodeRenderer | null>();
-  public threeByNode = new Map<string, ThreeRenderer | null>();
-  public pixiByNode = new Map<string, PixiRenderer | null>();
   public shaderParkThreeByNode = new Map<string, ShaderParkThreeRenderer | null>();
-  public reglByNode = new Map<string, ReglRenderer | null>();
-  public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
-  public swglByNode = new Map<string, SwissGLRenderer | null>();
+  public nodeRenderers: NodeRendererRegistry;
+  private shaderRenderers: ShaderRendererFactory;
 
   /** Dedicated settings proxy registry — populated in BaseWorkerRenderer.resetState() before any async code runs, fixing the race where renderers aren't in their type-specific maps yet. */
-  private settingsProxiesByNode = new Map<string, WorkerSettingsProxy>();
+  public settingsRegistry = new WorkerSettingsRegistry();
 
-  /** During textmode loading, we need to refresh REGL. */
-
-  /** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
-  private pendingHydraCleanup: HydraRenderer[] = [];
-  private hydraCleanupTimer: ReturnType<typeof setInterval> | null = null;
-
-  private fboNodes = new Map<string, FBONode>();
-  private fallbackTexture: regl.Texture2D;
-  private lastTime: number = 0;
-  private prevTransportTime: number = 0;
-  private frameCount: number = 0;
-  private contextLossReported = false;
-  private renderErrorKeysByNode = new Map<string, Set<string>>();
-
-  private visibleNodeIds: Set<string> | null = null;
-  private connectedVideoOutputNodeIds: Set<string> = new Set();
-
-  private cookStatsEnabled = false;
-  private lastCookStatusSignatures = new Map<string, string>();
-  private viewportCookRequiredCache: ViewportCookCache | null = null;
-
-  /** Minimum interval between rendered frames (ms). 0 = unlimited. */
-  private renderIntervalMs: number = 0;
+  public fboNodes = new Map<string, FBONode>();
+  public fallbackTexture: regl.Texture2D;
+  public lastTime: number = 0;
+  public prevTransportTime: number = 0;
+  public frameCount: number = 0;
+  public contextLossReported = false;
   public renderFpsCap: number = 0;
-  private lastRenderTime: number = 0;
 
   /** Transport time from main thread for synchronized timing */
-  public transportTime: TransportState | null = null;
+  public transportState: TransportState | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
@@ -190,13 +132,10 @@ export class FBORenderer {
   });
 
   public cookState = new CookStateManager();
-
-  /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
-  private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
-
-  private startTime: number = Date.now();
-  private frameCancellable: regl.Cancellable | null = null;
+  public startTime: number = Date.now();
   public jsRunner = JSRunner.getInstance();
+  public lastCookStatusSignatures = new Map<string, string>();
+  public connectedVideoOutputNodeIds: Set<string> = new Set();
 
   /** Clock scheduler for worker-based scheduling (frame-based precision) */
   public clockScheduler = new PollingClockScheduler();
@@ -213,12 +152,20 @@ export class FBORenderer {
   /** Video channel registry for send.vdo/recv.vdo wireless routing */
   public videoChannelRegistry = VideoChannelRegistry.getInstance();
 
-  /** Whether rendering to float FBOs is supported (EXT_color_buffer_float) */
-  private colorBufferFloatSupported = false;
+  private cookStatsEnabled = false;
+  private renderErrorKeysByNode = new Map<string, Set<string>>();
+  private visibleNodeIds: Set<string> | null = null;
+  private viewportCookRequiredCache: ViewportCookCache | null = null;
 
-  /** Whether linear filtering is supported for half-float and float textures */
-  private halfFloatLinearSupported = false;
-  private floatLinearSupported = false;
+  private frameCancellable: regl.Cancellable | null = null;
+  private fboResources: FboResources;
+
+  /** Minimum interval between rendered frames (ms). 0 = unlimited. */
+  private renderIntervalMs: number = 0;
+  private lastRenderTime: number = 0;
+
+  /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
+  private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     const [width, height] = this.outputSize;
@@ -239,10 +186,7 @@ export class FBORenderer {
     // Fixes alpha not being rendered in final output
     this.drawFinalOutput = createFinalOutputPresentationCommand(this.regl);
 
-    // Detect float FBO support
-    this.colorBufferFloatSupported = !!this.gl.getExtension('EXT_color_buffer_float');
-    this.halfFloatLinearSupported = !!this.gl.getExtension('OES_texture_half_float_linear');
-    this.floatLinearSupported = !!this.gl.getExtension('OES_texture_float_linear');
+    this.fboResources = new FboResources(this.regl, this.gl);
 
     this.fallbackTexture = this.regl.texture({
       width: 1,
@@ -259,11 +203,26 @@ export class FBORenderer {
 
     // Create video texture manager
     this.videoTextures = new VideoTextureManager(this.regl, this.gl);
+    this.fftTextures = new FFTTextureStore(this.regl);
+
+    this.videoSources = new VideoSourceResolver(
+      () => this.renderGraph,
+      this.fboNodes,
+      this.videoTextures
+    );
+
+    this.nodeRenderers = new NodeRendererRegistry(this);
+    this.shaderRenderers = new ShaderRendererFactory(this);
 
     this.usesMobileSafariWebGLWorkaround = this.detectMobileSafari();
 
     this.registerContextLossDiagnostics();
-    this.defineWorkerGlobals();
+
+    /**
+     * Define global `time` getter for Hydra compatibility.
+     * This allows `() => time` to work in Hydra code.
+     */
+    installWorkerTimeGlobal(() => this.transportState?.seconds ?? this.lastTime);
   }
 
   private detectMobileSafari(): boolean {
@@ -296,7 +255,7 @@ export class FBORenderer {
    * Compute a fingerprint of a render node's data for change detection.
    * Used to skip renderer recreation when only edges changed.
    */
-  private computeNodeFingerprint(node: RenderNode): string {
+  public computeNodeFingerprint(node: RenderNode): string {
     return JSON.stringify(node.data);
   }
 
@@ -314,35 +273,8 @@ export class FBORenderer {
   }
 
   /** Resolve per-node resolution override to [width, height]. */
-  private resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
-    const [outputWidth, outputHeight] = this.outputSize;
-
-    if (resolution == null) {
-      return [outputWidth, outputHeight];
-    }
-
-    let width: number;
-    let height: number;
-
-    // Match 1/n fractional format (e.g. '1/2', '1/4', '1/8')
-    const fractionalMatch = typeof resolution === 'string' ? resolution.match(/^1\/(\d+)$/) : null;
-
-    if (fractionalMatch) {
-      const divisor = Number(fractionalMatch[1]);
-
-      width = Math.floor(outputWidth / divisor);
-      height = Math.floor(outputHeight / divisor);
-    } else if (typeof resolution === 'number') {
-      width = Math.floor(resolution);
-      height = Math.floor(resolution);
-    } else if (Array.isArray(resolution)) {
-      width = Math.floor(resolution[0]);
-      height = Math.floor(resolution[1]);
-    } else {
-      return [outputWidth, outputHeight];
-    }
-
-    return [Math.max(1, width), Math.max(1, height)];
+  public resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
+    return this.fboResources.resolveSize(resolution, this.outputSize);
   }
 
   /**
@@ -352,384 +284,37 @@ export class FBORenderer {
    * which is invalid for float in WebGL2. So we create via regl (for tracking)
    * then fix the underlying GL texture with raw texImage2D.
    */
-  private createFboTexture(width: number, height: number, format: FBOFormat): regl.Texture2D {
-    // Create as uint8 first so regl doesn't complain about float types.
-    // regl's initial texImage2D with GL_RGBA emits a harmless WebGL warning
-    // for float nodes — we immediately overwrite with the correct format below.
-    const texture = this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' });
-
-    if (format === 'rgba8') return texture;
-
-    // Fall back to rgba8 if float render targets aren't supported
-    if (!this.colorBufferFloatSupported) {
-      console.warn(
-        `[fbo] EXT_color_buffer_float not supported, falling back to rgba8 for ${format}`
-      );
-      return texture;
-    }
-
-    // Re-initialize the raw GL texture with the correct WebGL2-sized format
-    const gl = this.gl;
-    const rawTexture = getRawTexture(texture);
-    const { internalFormat, type, linearSupported } = match(format)
-      .with('rgba16f', () => ({
-        internalFormat: gl.RGBA16F,
-        type: gl.HALF_FLOAT,
-        linearSupported: this.halfFloatLinearSupported
-      }))
-      .with('rgba32f', () => ({
-        internalFormat: gl.RGBA32F,
-        type: gl.FLOAT,
-        linearSupported: this.floatLinearSupported
-      }))
-      .exhaustive();
-
-    const filter = linearSupported ? gl.LINEAR : gl.NEAREST;
-
-    gl.bindTexture(gl.TEXTURE_2D, rawTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA, type, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    return texture;
+  public createFboTexture(width: number, height: number, format: FBOFormat): regl.Texture2D {
+    return this.fboResources.createTexture(width, height, format);
   }
 
   /** Build FBOs for all nodes in the render graph */
   async buildFBOs(renderGraph: RenderGraph, connectedVideoOutputNodeIds?: Set<string>) {
-    if (connectedVideoOutputNodeIds) {
-      this.connectedVideoOutputNodeIds = new Set(connectedVideoOutputNodeIds);
-    }
-
-    const previousNodeIds = new Set(this.renderGraph?.nodes.map((node) => node.id));
-
-    // Get the set of node IDs that will exist in the new graph
-    const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
-
-    // Only destroy FBOs for nodes that no longer exist in the new graph.
-    // This prevents the black flash on Chrome when rebuilding the graph,
-    // since existing FBOs retain their content until overwritten.
-    for (const [nodeId, fboNode] of this.fboNodes) {
-      if (!newNodeIds.has(nodeId)) {
-        this.destroyFboNode(fboNode);
-
-        this.fboNodes.delete(nodeId);
-        this.cookState.removeNode(nodeId);
-        this.lastCookStatusSignatures.delete(nodeId);
-
-        // Unsubscribe removed nodes from video channels
-        this.videoChannelRegistry.unsubscribeAll(nodeId);
-      }
-    }
-
-    for (const nodeId of previousNodeIds) {
-      if (!newNodeIds.has(nodeId)) {
-        this.previewRenderer.removeNode(nodeId);
-      }
-    }
-
-    this.cleanupExpensiveTextmodeRenderers(newNodeIds);
-
-    // Register send.vdo/recv.vdo nodes with video channel registry
-    // Unsubscribe first to clean up stale subscriptions when channel names change
-    for (const node of renderGraph.nodes) {
-      match(node)
-        .with({ type: 'send.vdo' }, (n) => {
-          this.videoChannelRegistry.unsubscribeAll(n.id);
-          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'send');
-        })
-        .with({ type: 'recv.vdo' }, (n) => {
-          this.videoChannelRegistry.unsubscribeAll(n.id);
-          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'recv');
-        })
-        .otherwise(() => {});
-    }
-
-    // Merge virtual edges from video channels into the render graph
-    const virtualEdges = this.videoChannelRegistry.getVirtualEdges();
-
-    const mergedGraph = this.mergeVirtualEdges(renderGraph, virtualEdges);
-
-    this.renderGraph = mergedGraph;
-    this.outputNodeId = mergedGraph.outputNodeId;
-    this.outputOutletIndex = mergedGraph.outputOutletIndex;
-
-    // Update frame cooking policies and states
-    this.rebuildCookingPolicies(mergedGraph);
-
-    // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
-    type PendingNode = {
-      node: RenderNode;
-      colorAttachments: regl.Texture2D[];
-      framebuffer: regl.Framebuffer2D;
-      fingerprint: string;
-      fboFormat: FBOFormat;
-      resolution?: FBOResolution;
-    };
-
-    const pending: PendingNode[] = [];
-
-    for (const node of mergedGraph.nodes) {
-      const existingFbo = this.fboNodes.get(node.id);
-
-      // Routing nodes are texture aliases. They do not render into an FBO, and
-      // their preview would otherwise be a blank readback of that unused FBO.
-      if (isPassthroughNodeType(node.type)) {
-        if (existingFbo) {
-          this.destroyFboNode(existingFbo);
-          this.fboNodes.delete(node.id);
-        }
-
-        this.previewRenderer.setPreviewEnabled(node.id, false);
-
-        continue;
-      }
-
-      // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park
-      // nodes can request multiple color attachments.
-      const mrtCount = match(node)
-        .with({ type: P.union('glsl', 'swgl') }, ({ data }) => data.mrtCount ?? 1)
-        .with(
-          { type: P.union('regl', 'hydra', 'shaderpark') },
-          ({ data }) => data.videoOutletCount ?? 1
-        )
-        .otherwise(() => 1);
-
-      // FBO format: read from node data, default to rgba8
-      const fboFormat: FBOFormat =
-        ((node.data as Record<string, unknown>)?.fboFormat as FBOFormat) || 'rgba8';
-
-      // Per-node resolution override (spec 122)
-      const nodeResolution = (node.data as Record<string, unknown>)?.resolution as
-        | FBOResolution
-        | undefined;
-
-      const [nodeWidth, nodeHeight] = this.resolveNodeSize(nodeResolution);
-
-      const canReuseFbo =
-        existingFbo &&
-        existingFbo.texture.width === nodeWidth &&
-        existingFbo.texture.height === nodeHeight &&
-        existingFbo.colorAttachments.length === mrtCount &&
-        (existingFbo.fboFormat ?? 'rgba8') === fboFormat;
-
-      // Diff: check if the node's data has changed since last build.
-      // If both FBO and data are unchanged, skip renderer recreation entirely.
-      // This preserves state in JS-based renderers (canvas, three, regl, etc.)
-      // that would otherwise lose their scene graphs, animation state, etc.
-      const fingerprint = this.computeNodeFingerprint(node);
-
-      if (
-        canReuseFbo &&
-        existingFbo.nodeType === node.type &&
-        existingFbo.dataFingerprint === fingerprint
-      ) {
-        // Node unchanged — skip renderer recreation entirely
-        continue;
-      }
-
-      let colorAttachments: regl.Texture2D[];
-      let framebuffer: regl.Framebuffer2D;
-
-      if (canReuseFbo) {
-        // Reuse existing FBO - preserves content, prevents flash
-        colorAttachments = existingFbo.colorAttachments;
-        framebuffer = existingFbo.framebuffer;
-
-        if (!this.hasReusableRenderer(node)) {
-          existingFbo.cleanup?.();
-        }
-      } else {
-        // Destroy old FBO if it exists but size or mrtCount doesn't match
-        if (existingFbo) {
-          this.destroyFboNode(existingFbo, !this.hasReusableRenderer(node));
-
-          this.fboNodes.delete(node.id);
-        }
-
-        // Create color attachments — one for standard nodes, N for MRT GLSL nodes
-        colorAttachments = Array.from({ length: mrtCount }, () =>
-          this.createFboTexture(nodeWidth, nodeHeight, fboFormat)
-        );
-
-        if (mrtCount > 1) {
-          // regl's framebuffer({ colors: [...] }) requires WEBGL_draw_buffers which is
-          // a WebGL1 extension not exposed on WebGL2 contexts (it's core there).
-          // Instead: create a single-attachment regl framebuffer for attachment 0,
-          // then manually attach the remaining textures via raw WebGL2.
-          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
-
-          const gl = this.gl;
-          const rawFramebuffer = getFramebuffer(framebuffer);
-
-          gl.bindFramebuffer(gl.FRAMEBUFFER, rawFramebuffer);
-
-          for (let i = 1; i < mrtCount; i++) {
-            const rawTexture = getRawTexture(colorAttachments[i]);
-
-            gl.framebufferTexture2D(
-              gl.FRAMEBUFFER,
-              gl.COLOR_ATTACHMENT0 + i,
-              gl.TEXTURE_2D,
-              rawTexture,
-              0
-            );
-          }
-
-          gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
-
-          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        } else {
-          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
-        }
-      }
-
-      this.cookState.markDirty(node.id, existingFbo ? 'config' : 'first-frame');
-
-      pending.push({
-        node,
-        colorAttachments,
-        framebuffer,
-        fingerprint,
-        fboFormat,
-        resolution: nodeResolution
-      });
-    }
-
-    // Phase 2 (parallel): create all renderers concurrently
-    const results = await Promise.all(
-      pending.map(async ({ node, framebuffer }) =>
-        match(node)
-          .with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
-          .with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
-          .with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
-          .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
-          .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
-          .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
-          .with({ type: 'pixi' }, (node) => this.createPixiRenderer(node, framebuffer))
-          .with({ type: 'shaderpark' }, (node) => this.createShaderParkRenderer(node, framebuffer))
-          .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
-          .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
-          .with({ type: 'img' }, () => this.createEmptyRenderer())
-          .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
-          .with({ type: 'worker' }, () => this.createEmptyRenderer())
-          .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
-          .with({ type: P.union('send.vdo', 'recv.vdo') }, () => this.createEmptyRenderer())
-          .exhaustive()
-      )
-    );
-
-    // Phase 3: collect results into FBO map
-    for (let i = 0; i < pending.length; i++) {
-      const { node, colorAttachments, framebuffer, fingerprint, fboFormat, resolution } =
-        pending[i];
-      const renderer = results[i];
-
-      // If the renderer function is null, we skip defining this node.
-      if (renderer === null) {
-        console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
-
-        // Evict stale FBO entry so the old render function is not reused
-        this.fboNodes.delete(node.id);
-        this.cookState.removeNode(node.id);
-        this.lastCookStatusSignatures.delete(node.id);
-
-        // Always destroy GPU resources when evicting from the map, regardless of canReuseFbo
-        framebuffer.destroy();
-
-        for (const texture of colorAttachments) {
-          texture.destroy();
-        }
-
-        continue;
-      }
-
-      const nodeSize = this.resolveNodeSize(resolution);
-      // Canvas/textmode nodes use output/2 for sharper previews (vs output/4 for GL nodes)
-      const isCanvasNode = node.type === 'canvas' || node.type === 'textmode';
-      const previewScaleFactor = isCanvasNode ? PREVIEW_SCALE_FACTOR / 2 : PREVIEW_SCALE_FACTOR;
-      const fboNode: FBONode = {
-        id: node.id,
-        framebuffer,
-        colorAttachments,
-        texture: colorAttachments[0],
-        render: renderer.render,
-        cleanup: renderer.cleanup,
-        dataFingerprint: fingerprint,
-        nodeType: node.type,
-        fboFormat,
-        resolution,
-        previewSize: capPreviewSize(
-          Math.max(1, Math.floor(nodeSize[0] / previewScaleFactor)),
-          Math.max(1, Math.floor(nodeSize[1] / previewScaleFactor))
-        )
-      };
-
-      this.fboNodes.set(node.id, fboNode);
-
-      // Do not send previews back to external texture nodes,
-      // as the texture is managed by the node on the frontend.
-      const defaultPreviewEnabled = !isExternalTextureNode(node.type);
-
-      if (!this.previewRenderer.hasPreviewState(node.id)) {
-        this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
-      }
-    }
-
-    this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
-
-    // Phase 4 (sync): release previous-frame textures no longer needed, then
-    // allocate them for the feedback nodes in the current graph.
-    for (const [nodeId, fboNode] of this.fboNodes) {
-      if (!mergedGraph.feedbackNodes.has(nodeId)) {
-        this.destroyFeedbackResources(fboNode);
-      }
-    }
-
-    // Idempotent — skipped if the node already has prevTextures from a prior build.
-    // One prev texture + framebuffer is allocated per color attachment so MRT
-    // feedback nodes can provide previous-frame data for each outlet independently.
-    for (const nodeId of mergedGraph.feedbackNodes) {
-      const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode || fboNode.prevTextures) continue;
-
-      // Match the format of the node's color attachments for feedback textures.
-      // Read the format from the render graph node data.
-      const feedbackNode = mergedGraph.nodes.find((n) => n.id === nodeId);
-      const feedbackData = feedbackNode?.data as Record<string, unknown> | undefined;
-      const feedbackFormat: FBOFormat = (feedbackData?.fboFormat as FBOFormat) || 'rgba8';
-      const feedbackResolution = feedbackData?.resolution as FBOResolution | undefined;
-
-      const [feedbackTextureWidth, feedbackTextureHeight] =
-        this.resolveNodeSize(feedbackResolution);
-
-      fboNode.prevTextures = fboNode.colorAttachments.map(() =>
-        this.createFboTexture(feedbackTextureWidth, feedbackTextureHeight, feedbackFormat)
-      );
-
-      fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
-        this.regl.framebuffer({
-          color: prevTexture,
-          depthStencil: false
-        })
-      );
-    }
-
-    this.resumeViewportManagedRenderers();
+    return buildRenderGraph(this, renderGraph, connectedVideoOutputNodeIds);
   }
 
-  // Some nodes are externally managed, e.g. the texture will be uploaded on it.
-  createEmptyRenderer() {
-    return { render: () => {}, cleanup: () => {} };
+  async createRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: FBONode['render']; cleanup: () => void } | null> {
+    return match(node)
+      .with({ type: P.union('glsl', 'shaderpark') }, (renderer) =>
+        this.shaderRenderers.create(renderer, framebuffer)
+      )
+      .with(
+        {
+          type: P.union('hydra', 'swgl', 'canvas', 'textmode', 'three', 'pixi', 'regl', 'projmap')
+        },
+        (renderer) => this.nodeRenderers.create(renderer, framebuffer)
+      )
+      .otherwise(() => ({ render: () => {}, cleanup: () => {} }));
   }
 
   /**
    * Reused renderers retain resources from the prior FBO until their replacement
    * has consumed or transferred that state.
    */
-  private hasReusableRenderer(node: RenderNode): boolean {
-    if (this.hydraByNode.has(node.id)) return true;
-
+  public hasReusableRenderer(node: RenderNode): boolean {
     if (
       node.type === 'shaderpark' &&
       node.data.renderMode === '3d' &&
@@ -738,39 +323,18 @@ export class FBORenderer {
       return true;
     }
 
-    if (node.type === 'three' && this.threeByNode.has(node.id)) return true;
-
-    return node.type === 'pixi' && this.pixiByNode.has(node.id);
+    return this.nodeRenderers.hasReusableRenderer(node);
   }
 
-  private destroyFboNode(fboNode: FBONode, cleanup = true): void {
-    fboNode.framebuffer.destroy();
-
-    for (const texture of fboNode.colorAttachments) {
-      texture.destroy();
-    }
-
-    this.destroyFeedbackResources(fboNode);
-
-    if (cleanup) {
-      fboNode.cleanup?.();
-    }
+  public destroyFboNode(fboNode: FBONode, cleanup = true): void {
+    this.fboResources.destroyNode(fboNode, cleanup);
   }
 
-  private destroyFeedbackResources(fboNode: FBONode): void {
-    for (const framebuffer of fboNode.prevFramebuffers ?? []) {
-      framebuffer?.destroy();
-    }
-
-    for (const texture of fboNode.prevTextures ?? []) {
-      texture?.destroy();
-    }
-
-    fboNode.prevFramebuffers = undefined;
-    fboNode.prevTextures = undefined;
+  public destroyFeedbackResources(fboNode: FBONode): void {
+    this.fboResources.destroyFeedbackResources(fboNode);
   }
 
-  private rebuildCookingPolicies(mergedGraph: RenderGraph) {
+  public rebuildCookingPolicies(mergedGraph: RenderGraph) {
     const outputs = this.cookState.getCookOutputsByNode(mergedGraph.nodes, (node) =>
       isPassthroughNodeType(node.type)
     );
@@ -788,420 +352,8 @@ export class FBORenderer {
     this.cookState.setGraphSignatures(signatures);
   }
 
-  /**
-   * Apply virtual edges to nodes by updating their inputs, outputs, and inletMap.
-   * This ensures virtual edges from send.vdo/recv.vdo are properly connected.
-   */
-  private applyVirtualEdgesToNodes(graph: RenderGraph): void {
-    const nodeMap = new Map(graph.nodes.map((n) => [n.id, n]));
-
-    for (const edge of graph.edges) {
-      // Skip if this edge was already processed (non-virtual edges are pre-processed)
-      if (!edge.id.startsWith('virtual-video-')) continue;
-
-      const sourceNode = nodeMap.get(edge.source);
-      const targetNode = nodeMap.get(edge.target);
-
-      if (sourceNode && targetNode) {
-        // Add to inputs/outputs if not already present
-        if (!sourceNode.outputs.includes(edge.target)) {
-          sourceNode.outputs.push(edge.target);
-        }
-
-        if (!targetNode.inputs.includes(edge.source)) {
-          targetNode.inputs.push(edge.source);
-        }
-
-        // Parse inlet index from target handle (e.g., "video-in-0" -> 0)
-        if (edge.targetHandle?.startsWith('video-in')) {
-          const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
-
-          if (inletMatch) {
-            const inletIndex = parseInt(inletMatch[1], 10);
-
-            // Virtual edges always come from outlet 0 of the source
-            targetNode.inletMap.set(inletIndex, { sourceNodeId: edge.source, outletIndex: 0 });
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Add wireless video-channel edges before graph analysis so a cycle routed
-   * through send.vdo/recv.vdo receives the same previous-frame semantics as a
-   * visible feedback cable.
-   */
-  private mergeVirtualEdges(
-    renderGraph: RenderGraph,
-    virtualEdges: RenderGraph['edges']
-  ): RenderGraph {
-    const edgesById = new Map<string, RenderGraph['edges'][number]>();
-
-    for (const edge of [...renderGraph.edges, ...virtualEdges]) {
-      edgesById.set(edge.id, edge);
-    }
-
-    const mergedGraph: RenderGraph = {
-      ...renderGraph,
-      edges: [...edgesById.values()]
-    };
-
-    this.applyVirtualEdgesToNodes(mergedGraph);
-
-    // The incoming graph may have been analyzed before virtual edges existed.
-    // Clear that result before recalculating it against the complete graph.
-    for (const node of mergedGraph.nodes) {
-      node.backEdgeInlets.clear();
-    }
-
-    const { sortedNodes, backEdgeIds, feedbackNodeIds } = topologicalSort(
-      mergedGraph.nodes,
-      mergedGraph.edges
-    );
-
-    // A routing node has no FBO of its own. If it is the source of a
-    // back-edge, preserve the previous frame on the underlying render node.
-    const feedbackStorageNodeIds = new Set<string>();
-
-    for (const nodeId of feedbackNodeIds) {
-      const sourceNodeId = this.resolveFeedbackStorageNodeId(nodeId, mergedGraph);
-
-      if (sourceNodeId) {
-        feedbackStorageNodeIds.add(sourceNodeId);
-      }
-    }
-
-    return {
-      ...mergedGraph,
-      sortedNodes,
-      backEdges: backEdgeIds,
-      feedbackNodes: feedbackStorageNodeIds
-    };
-  }
-
-  private resolveFeedbackStorageNodeId(
-    nodeId: string,
-    graph: RenderGraph,
-    visited = new Set<string>()
-  ): string | null {
-    if (visited.has(nodeId)) return null;
-    visited.add(nodeId);
-
-    const node = graph.nodes.find((candidate) => candidate.id === nodeId);
-    if (!node) return null;
-    if (!isPassthroughNodeType(node.type)) return nodeId;
-
-    const inlet = node.inletMap.get(0);
-
-    return inlet ? this.resolveFeedbackStorageNodeId(inlet.sourceNodeId, graph, visited) : null;
-  }
-
-  async createHydraRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'hydra') return null;
-
-    const existingRenderer = this.hydraByNode.get(node.id);
-
-    // Reuse existing renderer when the Hydra source/output counts are unchanged.
-    // Same-code Run still needs to execute user code, so also watch the run revision.
-    const canReuse =
-      existingRenderer?.hydra &&
-      existingRenderer.config.videoInletCount === (node.data.videoInletCount ?? 1) &&
-      existingRenderer.config.videoOutletCount === (node.data.videoOutletCount ?? 1);
-
-    if (canReuse) {
-      existingRenderer.framebuffer = framebuffer;
-
-      const runRevision = node.data._runRevision;
-      const shouldUpdateCode =
-        existingRenderer.config.code !== node.data.code ||
-        existingRenderer.config.runRevision !== runRevision;
-
-      if (shouldUpdateCode) {
-        existingRenderer.config.code = node.data.code;
-        existingRenderer.config.runRevision = runRevision;
-
-        await existingRenderer.updateCode();
-      }
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.hydraByNode.delete(node.id);
-        }
-      };
-    }
-
-    // Full recreation needed (first run or video port count changed)
-    const previousSynthTime = existingRenderer?.hydra?.synth.time;
-
-    // Queue old renderer for deferred cleanup
-    if (existingRenderer) {
-      this.pendingHydraCleanup.push(existingRenderer);
-      this.scheduleHydraCleanup();
-    }
-
-    const hydraRenderer = await HydraRenderer.create(
-      {
-        code: node.data.code,
-        nodeId: node.id,
-        videoInletCount: node.data.videoInletCount ?? 1,
-        videoOutletCount: node.data.videoOutletCount ?? 1,
-        runRevision: node.data._runRevision
-      },
-      framebuffer,
-      this
-    );
-
-    // Restore synth time if we had a previous value
-    if (previousSynthTime !== undefined && hydraRenderer.hydra) {
-      hydraRenderer.hydra.synth.time = previousSynthTime;
-    }
-
-    this.hydraByNode.set(node.id, hydraRenderer);
-
-    return {
-      render: hydraRenderer.renderFrame.bind(hydraRenderer),
-      cleanup: () => {
-        hydraRenderer.destroy();
-        this.hydraByNode.delete(node.id);
-      }
-    };
-  }
-
-  /** Schedule deferred cleanup of old Hydra renderers (runs once after delay) */
-  private scheduleHydraCleanup() {
-    // Don't schedule if already scheduled
-    if (this.hydraCleanupTimer !== null) return;
-
-    // Wait 500ms then clean up all pending renderers
-    this.hydraCleanupTimer = setTimeout(() => {
-      for (const renderer of this.pendingHydraCleanup) {
-        renderer.destroy();
-      }
-
-      this.pendingHydraCleanup = [];
-      this.hydraCleanupTimer = null;
-    }, 500);
-  }
-
-  async createCanvasRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'canvas') return null;
-
-    // Delete existing canvas renderer if it exists.
-    if (this.canvasByNode.has(node.id)) {
-      this.canvasByNode.get(node.id)?.destroy();
-    }
-
-    const canvasRenderer = await CanvasRenderer.create(
-      { code: node.data.code, nodeId: node.id },
-      framebuffer,
-      this
-    );
-
-    this.canvasByNode.set(node.id, canvasRenderer);
-
-    return {
-      render: () => {},
-      cleanup: () => {
-        canvasRenderer.destroy();
-        this.canvasByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createTextmodeRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'textmode') return null;
-
-    let textmodeRenderer: TextmodeRenderer | null = null;
-
-    // 1. re-use existing textmode renderer if available
-    if (this.textmodeByNode.has(node.id)) {
-      const renderer = this.textmodeByNode.get(node.id)!;
-
-      // Only reuse if there is a valid non-disposed renderer
-      if (renderer.tm && renderer.textmode && !renderer.tm.isDisposed) {
-        textmodeRenderer = renderer;
-
-        // Update framebuffer reference (new one is created each buildFBOs call)
-        textmodeRenderer.framebuffer = framebuffer;
-
-        const runRevision = node.data._runRevision;
-
-        const shouldUpdateCode =
-          renderer.config.code !== node.data.code || renderer.config.runRevision !== runRevision;
-
-        // A Run action may retain the same source code, but it must still
-        // re-evaluate it so its registered t.setup() callback can run again.
-        if (shouldUpdateCode) {
-          textmodeRenderer.config.code = node.data.code;
-          textmodeRenderer.config.runRevision = runRevision;
-
-          await textmodeRenderer.updateCode();
-        }
-      }
-    }
-
-    // 2. if there are no renderer to re-use, we create a new one!
-    if (!textmodeRenderer) {
-      textmodeRenderer = await TextmodeRenderer.create(
-        { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision },
-        framebuffer,
-        this
-      );
-
-      this.textmodeByNode.set(node.id, textmodeRenderer);
-    }
-
-    if (!textmodeRenderer) return null;
-
-    return {
-      render: textmodeRenderer.renderFrame.bind(textmodeRenderer),
-
-      // No-op cleanup - textmode renderers are expensive to create,
-      // so we keep them alive and reuse them across graph rebuilds.
-      // They are only destroyed when explicitly removed via destroyTextmodeRenderer().
-      cleanup: () => {}
-    };
-  }
-
-  async createThreeRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'three') return null;
-
-    const existingRenderer = this.threeByNode.get(node.id);
-    const runRevision = node.data._runRevision;
-    const config = { code: node.data.code, nodeId: node.id, runRevision };
-
-    if (existingRenderer) {
-      await existingRenderer.updateConfig(config, framebuffer);
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.threeByNode.delete(node.id);
-        }
-      };
-    }
-
-    const threeRenderer = await ThreeRenderer.create(config, framebuffer, this);
-
-    this.threeByNode.set(node.id, threeRenderer);
-
-    return {
-      render: threeRenderer.renderFrame.bind(threeRenderer),
-      cleanup: () => {
-        threeRenderer.destroy();
-        this.threeByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createPixiRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'pixi') return null;
-
-    const config = { code: node.data.code, nodeId: node.id, runRevision: node.data._runRevision };
-    const existingRenderer = this.pixiByNode.get(node.id);
-
-    if (existingRenderer) {
-      await existingRenderer.updateConfig(config, framebuffer);
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.pixiByNode.delete(node.id);
-        }
-      };
-    }
-
-    const pixiRenderer = await PixiRenderer.create(config, framebuffer, this);
-    this.pixiByNode.set(node.id, pixiRenderer);
-
-    return {
-      render: pixiRenderer.renderFrame.bind(pixiRenderer),
-      cleanup: () => {
-        pixiRenderer.destroy();
-        this.pixiByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createReglRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'regl') return null;
-
-    // Delete existing regl renderer if it exists.
-    if (this.reglByNode.has(node.id)) {
-      this.reglByNode.get(node.id)?.destroy();
-    }
-
-    const reglRenderer = await ReglRenderer.create(
-      { code: node.data.code, nodeId: node.id },
-      framebuffer,
-      this
-    );
-
-    this.reglByNode.set(node.id, reglRenderer);
-
-    return {
-      render: reglRenderer.renderFrame.bind(reglRenderer),
-      cleanup: () => {
-        reglRenderer.destroy();
-
-        this.reglByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createProjMapRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'projmap') return null;
-
-    if (this.projmapByNode.has(node.id)) {
-      this.projmapByNode.get(node.id)?.destroy();
-    }
-
-    const projmapRenderer = await ProjectionMapRenderer.create(
-      { nodeId: node.id, surfaces: node.data.surfaces ?? [] },
-      framebuffer,
-      this
-    );
-
-    this.projmapByNode.set(node.id, projmapRenderer);
-
-    return {
-      render: projmapRenderer.renderFrame.bind(projmapRenderer),
-      cleanup: () => {
-        projmapRenderer.destroy();
-
-        this.projmapByNode.delete(node.id);
-      }
-    };
-  }
-
-  updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]) {
-    this.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
+  updateProjectionMap(nodeId: string, surfaces: import('$lib/projmap/types').ProjMapSurface[]) {
+    this.nodeRenderers.updateProjectionMap(nodeId, surfaces);
     this.cookState.markDirty(nodeId, 'config');
   }
 
@@ -1210,265 +362,7 @@ export class FBORenderer {
    * Called from destroyNodes() for nodes that no longer exist.
    */
   destroyTextmodeRenderer(nodeId: string) {
-    const renderer = this.textmodeByNode.get(nodeId);
-
-    if (renderer) {
-      renderer.destroy();
-      this.textmodeByNode.delete(nodeId);
-    }
-  }
-
-  async createGlslRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'glsl') return null;
-
-    const nodeResolution = node.data.resolution;
-    const [width, height] = this.resolveNodeSize(nodeResolution);
-
-    // Prepare uniform defaults to prevent crashes.
-    // Use saved uniformValues from node data when available, so that persisted
-    // settings are applied immediately without waiting for setUniformData messages.
-    if (node.data.glUniformDefs) {
-      const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
-      const savedValues = node.data.uniformValues as Record<string, unknown> | undefined;
-
-      for (const def of node.data.glUniformDefs) {
-        const uniformFieldValue = uniformData.get(def.name);
-
-        if (!isValidUniformData(def, uniformFieldValue)) {
-          const savedValue = savedValues?.[def.name];
-
-          if (savedValue !== undefined) {
-            uniformData.set(def.name, toGLValue(def, savedValue));
-          } else {
-            uniformData.set(def.name, defaultUniformValue(def));
-          }
-        }
-      }
-
-      this.uniformDataByNode.set(node.id, uniformData);
-    }
-
-    // Resolve #include directives before shader compilation
-    let code = node.data.code;
-
-    if (code && code.includes('#include')) {
-      try {
-        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: true });
-
-        const resolver = createWorkerResolver(node.id);
-
-        code = await processIncludes(code, resolver);
-      } catch (error) {
-        self.postMessage({
-          type: 'shaderError',
-          nodeId: node.id,
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-
-        return null;
-      } finally {
-        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: false });
-      }
-    }
-
-    this.cookState.registerNode(node.id, {
-      ...createGlslCookPolicy(code),
-      ...(this.renderGraph?.feedbackNodes.has(node.id) || (node.backEdgeInlets?.size ?? 0) > 0
-        ? { feedbackDependent: true }
-        : {})
-    });
-
-    const renderCommand = createShaderToyDrawCommand({
-      width,
-      height,
-      framebuffer,
-      regl: this.regl,
-      gl: this.gl!,
-      code,
-      mrtCount: node.data.mrtCount ?? 1,
-      uniformDefs: node.data.glUniformDefs ?? [],
-      onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
-        // Send error message back to main thread
-        self.postMessage({
-          type: 'shaderError',
-          nodeId: node.id,
-          error: error.message,
-          stack: error.stack,
-          lineErrors: error.lineErrors
-        });
-      }
-    });
-
-    return {
-      render: (params) => renderCommand?.(params),
-      cleanup: () => {}
-    };
-  }
-
-  async createShaderParkRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'shaderpark') return null;
-
-    if (node.data.shaderParkUniformDefs) {
-      const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
-      const savedValues = node.data.uniformValues;
-
-      for (const def of node.data.shaderParkUniformDefs) {
-        const uniformFieldValue = uniformData.get(def.name);
-
-        if (!isValidUniformData(def, uniformFieldValue)) {
-          const savedValue = savedValues?.[def.name];
-
-          if (savedValue !== undefined) {
-            uniformData.set(def.name, toGLValue(def, savedValue));
-          } else {
-            uniformData.set(
-              def.name,
-              (def as { default?: unknown }).default ?? defaultUniformValue(def)
-            );
-          }
-        }
-      }
-
-      this.uniformDataByNode.set(node.id, uniformData);
-    }
-
-    if (node.data.renderMode === '3d') {
-      return this.createShaderParkThreeRenderer(node, framebuffer);
-    }
-
-    const nodeResolution = node.data.resolution;
-    const [width, height] = this.resolveNodeSize(nodeResolution);
-
-    const renderCommand = await createShaderParkDrawCommand({
-      width,
-      height,
-      framebuffer,
-      regl: this.regl,
-      gl: this.gl!,
-      code: node.data.code,
-      fallbackTexture: this.fallbackTexture,
-      onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
-        self.postMessage({
-          type: 'shaderError',
-          nodeId: node.id,
-          error: error.message,
-          stack: error.stack,
-          lineErrors: error.lineErrors
-        });
-      }
-    });
-
-    if (!renderCommand) return null;
-
-    return {
-      render: (params: RenderParams) => {
-        this.regl.clear({ color: [0, 0, 0, 0] });
-        renderCommand(params);
-      },
-      cleanup: () => {
-        (renderCommand as regl.DrawCommand & { destroy?: () => void }).destroy?.();
-      }
-    };
-  }
-
-  async createShaderParkThreeRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'shaderpark') return null;
-
-    const nodeSize = this.resolveNodeSize(node.data.resolution);
-    const config = {
-      code: node.data.code,
-      nodeId: node.id,
-      uniformDefs: node.data.shaderParkUniformDefs,
-      size: nodeSize
-    };
-    const existingRenderer = this.shaderParkThreeByNode.get(node.id);
-
-    if (existingRenderer) {
-      try {
-        await existingRenderer.updateConfig(config, framebuffer);
-      } catch (error) {
-        console.error('failed to update Shader Park 3D renderer', {
-          nodeId: node.id,
-          error
-        });
-
-        existingRenderer.destroy();
-        this.shaderParkThreeByNode.delete(node.id);
-
-        return null;
-      }
-
-      return {
-        render: existingRenderer.renderFrame.bind(existingRenderer),
-        cleanup: () => {
-          existingRenderer.destroy();
-          this.shaderParkThreeByNode.delete(node.id);
-        }
-      };
-    }
-
-    let shaderParkThreeRenderer: ShaderParkThreeRenderer;
-
-    try {
-      shaderParkThreeRenderer = await ShaderParkThreeRenderer.create(config, framebuffer, this);
-    } catch (error) {
-      console.error('failed to create Shader Park 3D renderer', {
-        nodeId: node.id,
-        error
-      });
-
-      this.shaderParkThreeByNode.delete(node.id);
-
-      return null;
-    }
-
-    this.shaderParkThreeByNode.set(node.id, shaderParkThreeRenderer);
-
-    return {
-      render: shaderParkThreeRenderer.renderFrame.bind(shaderParkThreeRenderer),
-      cleanup: () => {
-        shaderParkThreeRenderer.destroy();
-        this.shaderParkThreeByNode.delete(node.id);
-      }
-    };
-  }
-
-  async createSwglRenderer(
-    node: RenderNode,
-    framebuffer: regl.Framebuffer2D
-  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
-    if (node.type !== 'swgl') return null;
-
-    // Delete existing SwissGL renderer if it exists
-    if (this.swglByNode.has(node.id)) {
-      this.swglByNode.get(node.id)?.destroy();
-    }
-
-    const swglRenderer = await SwissGLRenderer.create(
-      { code: node.data.code, nodeId: node.id },
-      framebuffer,
-      this
-    );
-
-    this.swglByNode.set(node.id, swglRenderer);
-
-    return {
-      render: swglRenderer.renderFrame.bind(swglRenderer),
-      cleanup: () => {
-        swglRenderer.destroy();
-        this.swglByNode.delete(node.id);
-      }
-    };
+    this.nodeRenderers.destroyTextmodeRenderer(nodeId);
   }
 
   destroyNodes(newNodeIds?: Set<string>) {
@@ -1482,18 +376,8 @@ export class FBORenderer {
 
   // Textmode.js is super expensive to setup.
   // We wanted to only clean them up if the node is destroyed.
-  cleanupExpensiveTextmodeRenderers(newNodeIds?: Set<string>) {
-    // Clean up textmode renderers for nodes that no longer exist in the new graph
-    if (newNodeIds) {
-      const existingTextmodeIds = Array.from(this.textmodeByNode.keys());
-
-      // Collect IDs to delete first to avoid modifying map while iterating
-      const nodeIdsToDelete = existingTextmodeIds.filter((id) => !newNodeIds.has(id));
-
-      for (const nodeId of nodeIdsToDelete) {
-        this.destroyTextmodeRenderer(nodeId);
-      }
-    }
+  public cleanupExpensiveTextmodeRenderers(newNodeIds?: Set<string>) {
+    this.nodeRenderers.cleanupRemovedTextmodeRenderers(newNodeIds);
   }
 
   setUniformData(
@@ -1537,11 +421,12 @@ export class FBORenderer {
   }
 
   /**
-   * Set transport time from main thread for synchronized timing.
-   * Called at 60fps to keep GLSL/Hydra in sync with global transport.
+   * Sync transport state with main thread for synchronized timing.
+   *
+   * Called at 60fps to keep render nodes in sync with global transport.
    */
-  setTransportTime(state: TransportState) {
-    this.transportTime = state;
+  setTransportState(state: TransportState) {
+    this.transportState = state;
   }
 
   setPreviewEnabled(nodeId: string, enabled: boolean) {
@@ -1572,11 +457,12 @@ export class FBORenderer {
   private resumeNodeAnimation(nodeId: string) {
     // Check all renderer maps for the node
     const renderers = [
-      this.canvasByNode.get(nodeId),
-      this.hydraByNode.get(nodeId),
-      this.textmodeByNode.get(nodeId),
-      this.threeByNode.get(nodeId),
-      this.swglByNode.get(nodeId)
+      this.nodeRenderers.canvasByNode.get(nodeId),
+      this.nodeRenderers.hydraByNode.get(nodeId),
+      this.nodeRenderers.textmodeByNode.get(nodeId),
+      this.nodeRenderers.threeByNode.get(nodeId),
+      this.nodeRenderers.swglByNode.get(nodeId),
+      this.nodeRenderers.pixiByNode.get(nodeId)
     ];
 
     for (const renderer of renderers) {
@@ -1622,11 +508,11 @@ export class FBORenderer {
     nodeId: string,
     event: { x?: number; y?: number; deltaX?: number; deltaY: number; deltaMode?: number }
   ) {
-    this.threeByNode.get(nodeId)?.handleWheelData(event);
+    this.nodeRenderers.threeByNode.get(nodeId)?.handleWheelData(event);
   }
 
   resetThreeOrbitControls(nodeId: string) {
-    this.threeByNode.get(nodeId)?.resetOrbitControls();
+    this.nodeRenderers.threeByNode.get(nodeId)?.resetOrbitControls();
   }
 
   zoomShaderParkOrbit(nodeId: string, deltaY: number) {
@@ -1634,239 +520,7 @@ export class FBORenderer {
     this.cookState.markDirty(nodeId, 'mouse');
   }
 
-  /** Get list of nodes with preview enabled */
-  getEnabledPreviews(): string[] {
-    return this.previewRenderer.getEnabledPreviews();
-  }
-
-  /** Render a single frame using the render graph */
-  renderFrame(): void {
-    if (!this.renderGraph || this.fboNodes.size === 0) {
-      return;
-    }
-
-    if (this.gl.isContextLost()) {
-      if (!this.contextLossReported) {
-        this.contextLossReported = true;
-        this.reportWorkerError('WebGL context is lost in render worker');
-      }
-
-      return;
-    }
-
-    // Update time for animation
-    const currentTime = (Date.now() - this.startTime) / 1000; // Convert to seconds
-    this.lastTime = currentTime;
-    this.frameCount++;
-
-    // Tick the clock scheduler with current transport state
-    const clockState: ClockState = {
-      time: this.transportTime?.seconds ?? this.lastTime,
-      beat: this.transportTime?.beat ?? -1,
-      bpm: this.transportTime?.bpm ?? 120,
-      isPlaying: this.transportTime?.isPlaying ?? true,
-      playState: this.transportTime?.playState ?? 'playing'
-    };
-
-    this.clockScheduler.tick(clockState);
-
-    this.cookState.beginFrame({
-      transportTime: this.transportTime?.seconds ?? this.lastTime,
-      prevTransportTime: this.prevTransportTime,
-      isTransportPlaying: this.transportTime?.isPlaying ?? true
-    });
-
-    const isOverride = this.hasValidOutputOverride();
-    const effectiveOutputNodeId = this.getEffectiveOutputNodeId(isOverride);
-    const requiredNodeIds = this.getViewportCookRequiredNodeIds(effectiveOutputNodeId);
-
-    // Render each node in topological order
-    for (const nodeId of this.renderGraph.sortedNodes) {
-      if (!this.renderGraph) continue;
-
-      const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
-      const fboNode = this.fboNodes.get(nodeId);
-      if (!node || !fboNode) continue;
-
-      const shouldSkipCooking = shouldSkipCookForViewport({ node, requiredNodeIds });
-      if (shouldSkipCooking) continue;
-
-      const cookDecision = this.cookState.shouldCook(node.id);
-
-      if (!cookDecision.shouldCook) {
-        this.postCookStatusIfNeeded(node.id);
-        continue;
-      }
-
-      if (this.isNodePaused(node.id)) {
-        this.cookState.markPaused(node.id);
-        this.postCookStatusIfNeeded(node.id, true);
-        continue;
-      }
-
-      try {
-        const cookStart = performance.now();
-
-        this.renderFboNode(node, fboNode);
-        this.cookState.markCooked(node.id, cookDecision.reasons, performance.now() - cookStart);
-        this.postCookStatusIfNeeded(node.id, true);
-      } catch (error) {
-        this.reportNodeRenderError(node, error);
-        this.refreshReglState();
-      }
-    }
-
-    // Render the final result to the main canvas.
-    // Use override if set and the node exists; otherwise fall back to bg.out.
-    // Override always uses attachment 0; bg.out respects the connected outlet index.
-    const savedOutletIndex = this.outputOutletIndex;
-    if (isOverride) this.outputOutletIndex = 0;
-
-    if (effectiveOutputNodeId !== null) {
-      this.profiler.measureOp('blit', () => this.renderNodeToMainOutput(effectiveOutputNodeId));
-    }
-
-    this.outputOutletIndex = savedOutletIndex;
-
-    // Blit current frame into prevFramebuffer for all feedback nodes.
-    //
-    // We blit instead of swapping pointers because each renderer closes over
-    // its framebuffer at creation time — swapping fboNode.framebuffer would
-    // leave the render function pointing at the wrong buffer, causing every
-    // other frame to read stale content (flickering). Blitting keeps
-    // fboNode.framebuffer as the stable write target while prevTexture always
-    // holds the previous frame's output for back-edge consumers.
-    for (const nodeId of this.renderGraph.feedbackNodes) {
-      const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode?.prevFramebuffers?.length) continue;
-
-      const width = fboNode.texture.width;
-      const height = fboNode.texture.height;
-
-      const gl = this.gl;
-      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
-
-      for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
-        gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
-
-        gl.blitFramebuffer(
-          0,
-          0,
-          width,
-          height,
-          0,
-          0,
-          width,
-          height,
-          gl.COLOR_BUFFER_BIT,
-          gl.NEAREST
-        );
-      }
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-
-    // Track previous transport time for iTimeDelta computation
-    this.prevTransportTime = this.transportTime?.seconds ?? this.lastTime;
-  }
-
-  renderFboNode(node: RenderNode, fboNode: FBONode): void {
-    // Check if the node is paused, skip rendering if it is
-    if (this.isNodePaused(node.id)) {
-      return;
-    }
-
-    const inputTextureMap = this.getInputTextureMap(node);
-
-    let userUniformParams: unknown[] = [];
-
-    // GLSL supports custom uniforms
-    if (node.type === 'glsl') {
-      const uniformDefs = node.data.glUniformDefs ?? [];
-      const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
-
-      // If this is a GLSL node with FFT inlet, use the FFT texture
-      const fftInlet = this.fftInletsByGlslNode.get(node.id);
-
-      userUniformParams = buildGlslUserParams({
-        uniformDefs,
-        uniformData,
-        inputTextureMap,
-        fallbackTexture: this.fallbackTexture,
-        resolveSamplerTexture: (def) => {
-          // If FFT analysis is enabled.
-          if (fftInlet?.uniformName === def.name) {
-            return this.fftTexturesByAnalyzer
-              .get(fftInlet.analyzerNodeId)
-              ?.get(fftInlet.analysisType);
-          }
-
-          return undefined;
-        }
-      });
-    }
-
-    if (node.type === 'shaderpark') {
-      const textureArray: (regl.Texture2D | undefined)[] = [];
-
-      // Shader Park has fixed sampler slots (iChannel0..3). The UI can hide
-      // unused handles, but uniform overrides must stay after those slots.
-      for (let i = 0; i < SHADERPARK_VIDEO_UNIFORM_COUNT; i++) {
-        textureArray[i] = inputTextureMap.get(i);
-      }
-
-      userUniformParams = [
-        ...textureArray,
-        Object.fromEntries(this.uniformDataByNode.get(node.id)?.entries() ?? [])
-      ];
-    }
-
-    // Convert texture map to array.
-    // Preserves gaps for unused video inlets.
-    if (
-      node.type === 'hydra' ||
-      node.type === 'three' ||
-      node.type === 'pixi' ||
-      node.type === 'regl' ||
-      node.type === 'swgl' ||
-      node.type === 'projmap'
-    ) {
-      const maxInletIndex = Math.max(-1, ...inputTextureMap.keys());
-      const textureArray: (regl.Texture2D | undefined)[] = [];
-
-      for (let i = 0; i <= maxInletIndex; i++) {
-        textureArray[i] = inputTextureMap.get(i);
-      }
-
-      userUniformParams = textureArray;
-    }
-
-    // Get mouse data for this node (defaults to [0, 0, 0, 0])
-    const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
-
-    // Render to FBO
-    // Use transport time if available, otherwise fall back to local time
-    const transportTime = this.transportTime?.seconds ?? this.lastTime;
-
-    fboNode.framebuffer.use(() => {
-      this.drawProfiler.measure(node.id, 'draw', () => {
-        fboNode.render({
-          prevTransportTime: this.prevTransportTime,
-          iFrame: this.frameCount,
-          mouseX: mouseData[0],
-          mouseY: mouseData[1],
-          mouseZ: mouseData[2],
-          mouseW: mouseData[3],
-          mouseButtons: mouseData[4],
-          userParams: userUniformParams as UserParam[],
-          transportTime
-        });
-      });
-    });
-  }
-
-  private reportNodeRenderError(node: RenderNode, error: unknown) {
+  public reportNodeRenderError(node: RenderNode, error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const errorKey = `${node.type}:${message}`;
 
@@ -1884,11 +538,11 @@ export class FBORenderer {
     });
   }
 
-  private reportWorkerError(message: string) {
+  public reportWorkerError(message: string) {
     self.postMessage({ type: 'error', message });
   }
 
-  private postCookStatusIfNeeded(nodeId: string, force = false): void {
+  public postCookStatusIfNeeded(nodeId: string, force = false): void {
     if (!this.cookStatsEnabled) return;
 
     const status = this.cookState.getStatus(nodeId);
@@ -1917,7 +571,7 @@ export class FBORenderer {
     this.lastCookStatusSignatures.clear();
   }
 
-  private refreshReglState() {
+  public refreshReglState() {
     const reglInstance = this.regl as regl.Regl & {
       _refresh?: () => void;
     };
@@ -1925,13 +579,13 @@ export class FBORenderer {
     reglInstance._refresh?.();
   }
 
-  private hasValidOutputOverride(): boolean {
+  public hasValidOutputOverride(): boolean {
     return Boolean(
-      this.overrideOutputNodeId && this.resolveVideoSource(this.overrideOutputNodeId, 0)
+      this.overrideOutputNodeId && this.videoSources.resolveTexture(this.overrideOutputNodeId, 0)
     );
   }
 
-  private getEffectiveOutputNodeId(isOverride = this.hasValidOutputOverride()): string | null {
+  public getEffectiveOutputNodeId(isOverride = this.hasValidOutputOverride()): string | null {
     return isOverride ? this.overrideOutputNodeId : this.outputNodeId;
   }
 
@@ -1957,7 +611,7 @@ export class FBORenderer {
     this.resumeViewportManagedRenderers();
   }
 
-  private getViewportCookRequiredNodeIds(effectiveOutputNodeId: string | null): Set<string> | null {
+  public getViewportCookRequiredNodeIds(effectiveOutputNodeId: string | null): Set<string> | null {
     const cached = this.viewportCookRequiredCache;
 
     if (
@@ -1990,20 +644,10 @@ export class FBORenderer {
     return requiredNodeIds;
   }
 
-  private resumeViewportManagedRenderers() {
-    for (const renderer of this.canvasByNode.values()) {
+  public resumeViewportManagedRenderers() {
+    for (const renderer of this.nodeRenderers.canvasByNode.values()) {
       renderer?.resumeAnimation();
     }
-  }
-
-  /** Globally enable/disable all previews */
-  setAllPreviewsDisabled(disabled: boolean) {
-    this.previewRenderer.setAllPreviewsDisabled(disabled);
-  }
-
-  /** Update preview LOD multiplier. Called only when LOD tier changes. */
-  setPreviewScaleMultiplier(multiplier: number) {
-    this.previewRenderer.setPreviewScaleMultiplier(multiplier);
   }
 
   /** Enable/disable all profiling (per-node draw timing + frame stats). */
@@ -2015,6 +659,7 @@ export class FBORenderer {
       if (this.frameStatsInterval === null) {
         this.frameStatsInterval = setInterval(() => {
           const stats = this.profiler.flushStats();
+
           if (stats) {
             self.postMessage({ type: 'renderFrameStats', stats });
           }
@@ -2023,6 +668,7 @@ export class FBORenderer {
     } else {
       if (this.frameStatsInterval !== null) {
         clearInterval(this.frameStatsInterval);
+
         this.frameStatsInterval = null;
       }
     }
@@ -2032,77 +678,25 @@ export class FBORenderer {
     return this.profiler.isEnabled;
   }
 
-  /** Record frame time (call this at end of each frame) */
-  public recordFrameTime() {
-    this.profiler.recordFrameTime();
-  }
-
-  /** Measure a function's execution time under the given render op. */
-  public measureOp<T>(op: RenderOp, fn: () => T): T {
-    return this.profiler.measureOp(op, fn);
-  }
-
-  private renderNodeToMainOutput(nodeId: string): void {
-    // outputSize controls the offscreen canvas dimensions (blit destination).
-    // backgroundSize is used only for the cover-mode aspect ratio crop.
-    const [outputWidth, outputHeight] = this.outputSize;
-    const [backgroundWidth, backgroundHeight] = this.backgroundSize;
-
+  public renderNodeToMainOutput(nodeId: string): void {
     if (!this.isOutputEnabled) {
       return;
     }
 
-    const source = this.resolveVideoSource(nodeId, this.outputOutletIndex);
+    const source = this.videoSources.resolveTexture(nodeId, this.outputOutletIndex);
 
     if (!source) {
       console.warn('Could not find source framebuffer for final texture');
       return;
     }
 
-    const gl = this.regl._gl as WebGL2RenderingContext;
-    const { texture, width: sourceWidth, height: sourceHeight } = source;
-
-    // Cover-mode blit: crop the source to match the background's aspect ratio,
-    // so the output fills the screen without stretching (spec 128).
-    const sourceAspect = sourceWidth / sourceHeight;
-    const backgroundAspect = backgroundWidth / backgroundHeight;
-
-    let sourceX0 = 0;
-    let sourceY0 = 0;
-    let sourceX1 = sourceWidth;
-    let sourceY1 = sourceHeight;
-
-    if (sourceAspect > backgroundAspect) {
-      // Source is wider — crop sides
-      const cropWidth = sourceHeight * backgroundAspect;
-      const offset = (sourceWidth - cropWidth) / 2;
-
-      sourceX0 = Math.floor(offset);
-      sourceX1 = Math.floor(offset + cropWidth);
-    } else if (sourceAspect < backgroundAspect) {
-      // Source is taller — crop top/bottom
-      const cropHeight = sourceWidth / backgroundAspect;
-      const offset = (sourceHeight - cropHeight) / 2;
-
-      sourceY0 = Math.floor(offset);
-      sourceY1 = Math.floor(offset + cropHeight);
-    }
-
-    gl.viewport(0, 0, outputWidth, outputHeight);
-
-    const sourceUvRect = [
-      sourceX0 / sourceWidth,
-      sourceY0 / sourceHeight,
-      sourceX1 / sourceWidth,
-      sourceY1 / sourceHeight
-    ];
-
-    this.drawFinalOutput({ texture, sourceUvRect });
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  }
-
-  getOutputBitmap(): ImageBitmap | null {
-    return this.offscreenCanvas.transferToImageBitmap();
+    drawToFinalOutput({
+      source,
+      regl: this.regl,
+      drawFinalOutput: this.drawFinalOutput,
+      outputSize: this.outputSize,
+      backgroundSize: this.backgroundSize
+    });
   }
 
   /** Set the render FPS cap. 0 = unlimited (render every frame). */
@@ -2128,85 +722,17 @@ export class FBORenderer {
       if (this.renderIntervalMs > 0) {
         const now = performance.now();
         if (now - this.lastRenderTime < this.renderIntervalMs) return;
+
         this.lastRenderTime = now;
       }
 
-      this.renderFrame();
+      renderFrame(this);
       onFrame?.();
     });
   }
 
   stopRenderLoop() {
     this.isAnimating = false;
-  }
-
-  /**
-   * Get input texture mapping for a node based on the
-   * render graph, mapped by inlet index
-   **/
-  private getInputTextureMap(node: RenderNode): Map<number, regl.Texture2D> {
-    const textureMap = new Map<number, regl.Texture2D>();
-
-    // Use inletMap for proper slot-based assignment
-    for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
-      const texture = this.resolveVideoSource(
-        sourceNodeId,
-        outletIndex,
-        node.backEdgeInlets?.has(inletIndex) ?? false
-      )?.texture;
-
-      if (texture) {
-        textureMap.set(inletIndex, texture);
-      }
-    }
-
-    return textureMap;
-  }
-
-  /** Resolve a node outlet to its underlying texture without resampling routing nodes. */
-  private resolveVideoSource(
-    nodeId: string,
-    outletIndex = 0,
-    usePreviousFrame = false,
-    visited = new Set<string>()
-  ): { texture: regl.Texture2D; width: number; height: number } | null {
-    if (visited.has(nodeId)) return null;
-    visited.add(nodeId);
-
-    // External sources are the common direct-input case. Resolve them before
-    // looking up the graph so image/video sampling stays on the fast path.
-    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
-
-    if (externalTexture) {
-      return {
-        texture: externalTexture,
-        width: externalTexture.width,
-        height: externalTexture.height
-      };
-    }
-
-    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
-
-    if (node && isPassthroughNodeType(node.type)) {
-      // Routing nodes have no texture of their own; preserve the inlet's native texture.
-      const inlet = node.inletMap.get(0);
-
-      return inlet
-        ? this.resolveVideoSource(
-            inlet.sourceNodeId,
-            inlet.outletIndex,
-            usePreviousFrame || (node.backEdgeInlets?.has(0) ?? false),
-            visited
-          )
-        : null;
-    }
-
-    const fboNode = this.fboNodes.get(nodeId);
-    const textures = usePreviousFrame ? fboNode?.prevTextures : fboNode?.colorAttachments;
-    const texture = textures?.[outletIndex] ?? textures?.[0];
-    if (!texture) return null;
-
-    return { texture, width: texture.width, height: texture.height };
   }
 
   /**
@@ -2221,7 +747,7 @@ export class FBORenderer {
     this.offscreenCanvas.height = height;
 
     // Update all hydra renderers to match the new output size
-    for (const hydra of this.hydraByNode.values()) {
+    for (const hydra of this.nodeRenderers.hydraByNode.values()) {
       hydra?.hydra?.setResolution(width, height);
     }
 
@@ -2289,93 +815,11 @@ export class FBORenderer {
     this.cookState.markDirty(nodeId, 'bitmap');
   }
 
-  /**
-   * Removes a persistent bitmap image.
-   *
-   * We should only call this from the frontend when the node is removed.
-   * This is because we often reconstruct the render graph,
-   * and we don't want to remove persistent textures when reconstructing.
-   **/
-  removeBitmap(nodeId: string) {
-    this.videoTextures.removeBitmap(nodeId);
-  }
-
-  /**
-   * Removes persistent uniform data for a node.
-   *
-   * We should only call this from the frontend when the node is removed.
-   * This is because we often reconstruct the render graph,
-   * and we don't want to remove persistent uniform data when reconstructing.
-   **/
-  removeUniformData(nodeId: string) {
-    this.uniformDataByNode.delete(nodeId);
-  }
-
-  setFFTAsGlslUniforms(payload: AudioAnalysisPayloadWithType) {
-    // TODO: support multiple inlets.
-    // TODO: only send a single inlet in the payload, not all of them!
-    const inlet = payload.inlets?.[0];
-    if (!inlet) return;
-
-    const { analyzerNodeId } = inlet;
-
-    // Store the FFT inlet associated with a GLSL node.
-    // TODO: support multiple inlets.
-    // TODO: only do this once instead of on every single frame!!!
-    this.fftInletsByGlslNode.set(payload.nodeId, inlet);
-
-    if (!this.fftTexturesByAnalyzer.has(analyzerNodeId)) {
-      this.fftTexturesByAnalyzer.set(analyzerNodeId, new Map());
-    }
-
-    const textureByAnalyzer = this.fftTexturesByAnalyzer.get(analyzerNodeId)!;
-    const texture = textureByAnalyzer.get(payload.analysisType);
-
-    const width = payload.array.length;
-    const height = 1;
-
-    const shouldCreateNewTexture = !texture || texture.height !== 1;
-
-    // The existing texture is unsuitable for FFT. We must delete it.
-    if (texture && shouldCreateNewTexture) {
-      texture.destroy();
-    }
-
-    const texType = payload.format === 'int' ? 'uint8' : 'float';
-    const texFormat = 'luminance';
-
-    if (shouldCreateNewTexture) {
-      const nextTexture = this.regl.texture({
-        width,
-        height,
-        data: payload.array,
-        format: texFormat,
-        type: texType,
-        wrapS: 'clamp',
-        wrapT: 'clamp',
-        min: 'nearest',
-        mag: 'nearest'
-      });
-
-      textureByAnalyzer.set(payload.analysisType, nextTexture);
-      this.cookState.markDirty(payload.nodeId, 'fft');
-
-      return;
-    }
-
-    texture({
-      width,
-      height,
-      data: payload.array,
-      format: texFormat,
-      type: texType
-    });
-    this.cookState.markDirty(payload.nodeId, 'fft');
-  }
-
   /** Send message to nodes */
   sendMessageToNode(nodeId: string, message: Message) {
-    const renderer = this.getMessageCapableRenderer(nodeId);
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+    const renderer = node ? this.nodeRenderers.getMessageCapableRenderer(node) : null;
+
     if (!renderer) return;
 
     this.cookState.markDirty(nodeId, 'message');
@@ -2384,189 +828,13 @@ export class FBORenderer {
 
   /** Route a channel message to the renderer for a given node. */
   sendChannelMessageToNode(nodeId: string, channel: string, data: unknown, sourceNodeId: string) {
-    const renderer = this.getMessageCapableRenderer(nodeId);
+    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
+    const renderer = node ? this.nodeRenderers.getMessageCapableRenderer(node) : null;
+
     if (!renderer) return;
 
     this.cookState.markDirty(nodeId, 'message');
     renderer.handleChannelMessage(channel, data, sourceNodeId);
-  }
-
-  private getMessageCapableRenderer(nodeId: string): MessageCapableRenderer | null {
-    const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
-    if (!node) return null;
-
-    return match(node.type)
-      .with('hydra', () => this.hydraByNode.get(nodeId) ?? null)
-      .with('canvas', () => this.canvasByNode.get(nodeId) ?? null)
-      .with('swgl', () => this.swglByNode.get(nodeId) ?? null)
-      .with('textmode', () => this.textmodeByNode.get(nodeId) ?? null)
-      .with('three', () => this.threeByNode.get(nodeId) ?? null)
-      .with('pixi', () => this.pixiByNode.get(nodeId) ?? null)
-      .with('regl', () => this.reglByNode.get(nodeId) ?? null)
-      .with(
-        P.union(
-          'glsl',
-          'shaderpark',
-          'img',
-          'float.tex',
-          'worker',
-          'bg.out',
-          'send.vdo',
-          'recv.vdo',
-          'projmap'
-        ),
-        () => null
-      )
-      .exhaustive();
-  }
-
-  registerSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
-    this.settingsProxiesByNode.set(nodeId, proxy);
-  }
-
-  /**
-   * Only removes the registry entry if it still points to the given proxy.
-   * Prevents the deferred Hydra cleanup from clobbering a freshly-registered
-   * proxy belonging to the new renderer instance for the same nodeId.
-   */
-  unregisterSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
-    if (this.settingsProxiesByNode.get(nodeId) === proxy) {
-      this.settingsProxiesByNode.delete(nodeId);
-    }
-  }
-
-  private getSettingsProxy(nodeId: string): WorkerSettingsProxy | null {
-    return this.settingsProxiesByNode.get(nodeId) ?? null;
-  }
-
-  receiveSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>) {
-    this.getSettingsProxy(nodeId)?._receiveValuesInit(requestId, values);
-  }
-
-  receiveSettingsValueChanged(nodeId: string, key: string, value: unknown) {
-    this.getSettingsProxy(nodeId)?._receiveValueChanged(key, value);
-  }
-
-  getFboNodeById(nodeId: string): FBONode | undefined {
-    return this.fboNodes.get(nodeId);
-  }
-
-  /**
-   * Captures a preview frame as an ImageBitmap (ready for zero-copy transfer).
-   * Handles both FBO nodes and external texture nodes.
-   * This is a synchronous capture for on-demand use (export, Gemini, etc.)
-   */
-  capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
-    const fboNode = this.fboNodes.get(nodeId);
-    const captureSource = this.resolveCaptureSource(nodeId);
-
-    const defaultPreview: [number, number] = [
-      Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
-      Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
-    ];
-
-    const fallbackSize = customSize ?? fboNode?.previewSize ?? defaultPreview;
-    if (!captureSource) return null;
-
-    return this.captureRenderer.capturePreviewBitmapSync(
-      captureSource.framebuffer,
-      captureSource.width,
-      captureSource.height,
-      fallbackSize
-    );
-  }
-
-  /**
-   * Initiate async PBO reads for video frame capture.
-   * Call harvestVideoFrames() in subsequent frames to get completed results.
-   */
-  initiateVideoFrameCaptureAsync(
-    requests: Array<{
-      targetNodeId: string;
-      requestId?: string;
-      sourceNodeIds: (string | null)[];
-      resolution?: [number, number];
-      format?: 'raw' | 'bitmap';
-    }>
-  ): void {
-    const resolvedSources = new Map<string, VideoFrameCaptureSource>();
-
-    for (const request of requests) {
-      for (const sourceNodeId of request.sourceNodeIds) {
-        if (!sourceNodeId || resolvedSources.has(sourceNodeId)) continue;
-
-        const node = this.renderGraph?.nodes.find((candidate) => candidate.id === sourceNodeId);
-        if (!node || !isPassthroughNodeType(node.type)) continue;
-
-        const source = this.resolveCaptureSource(sourceNodeId);
-        if (source) resolvedSources.set(sourceNodeId, source);
-      }
-    }
-
-    this.captureRenderer.initiateVideoFrameBatchAsync(
-      requests,
-      this.fboNodes,
-      this.videoTextures.destinationTextures,
-      resolvedSources
-    );
-  }
-
-  private resolveCaptureSource(
-    nodeId: string,
-    visited = new Set<string>()
-  ): VideoFrameCaptureSource | null {
-    if (visited.has(nodeId)) return null;
-    visited.add(nodeId);
-
-    const node = this.renderGraph?.nodes.find((candidate) => candidate.id === nodeId);
-
-    if (node && isPassthroughNodeType(node.type)) {
-      const inlet = node.inletMap.get(0);
-
-      return inlet ? this.resolveCaptureSource(inlet.sourceNodeId, visited) : null;
-    }
-
-    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
-    const externalFbo = this.videoTextures.getDestinationFBO(nodeId);
-
-    if (externalTexture && externalFbo) {
-      return {
-        framebuffer: externalFbo,
-        width: externalTexture.width,
-        height: externalTexture.height,
-        previewSize: [externalTexture.width, externalTexture.height]
-      };
-    }
-
-    const fboNode = this.fboNodes.get(nodeId);
-    if (!fboNode) return null;
-
-    return {
-      framebuffer: fboNode.framebuffer,
-      width: fboNode.texture.width,
-      height: fboNode.texture.height,
-      previewSize: fboNode.previewSize
-    };
-  }
-
-  /**
-   * Harvest completed async video frame captures.
-   * Returns completed batches ready for transfer.
-   */
-  harvestVideoFrames(): Array<{
-    targetNodeId: string;
-    requestId?: string;
-    frames: CapturedVideoFrame[];
-    timestamp: number;
-  }> {
-    return this.captureRenderer.harvestVideoFrameBatches();
-  }
-
-  /**
-   * Check if there are pending async video frame captures.
-   */
-  hasPendingVideoFrames(): boolean {
-    return this.captureRenderer.hasPendingVideoFrames();
   }
 
   /** Update JS module in the worker's JSRunner instance */
@@ -2576,108 +844,5 @@ export class FBORenderer {
     } else {
       this.jsRunner.modules.set(moduleName, code);
     }
-  }
-
-  /**
-   * Define global `time` getter for Hydra compatibility.
-   * This allows `() => time` to work in Hydra code.
-   */
-  private defineWorkerGlobals() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const renderer: FBORenderer = this;
-
-    Object.defineProperty(globalThis, 'time', {
-      configurable: true,
-      get() {
-        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
-      }
-    });
-  }
-
-  /**
-   * Create a worker-compatible clock object that reads from transportTime.
-   * Use this in extraContext to override JSRunner's broken main-thread Transport-based clock.
-   * Applies to: Hydra, Three.js, Canvas, Textmode renderers.
-   *
-   * Includes scheduling methods (onBeat, schedule, every, cancel, cancelAll) that
-   * use frame-based polling precision (~16ms at 60fps).
-   *
-   * Also includes control methods (play, pause, stop, setBpm, etc.) that send
-   * commands back to the main thread.
-   */
-  createWorkerClock() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const renderer: FBORenderer = this;
-    const scheduler = this.clockScheduler;
-
-    // Helper to send clock commands to main thread
-    const send = (command: ClockCommandMessage['command']) =>
-      self.postMessage({ type: 'clockCommand', command });
-
-    return {
-      // Read properties
-      get time() {
-        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
-      },
-      get ticks() {
-        return renderer.transportTime?.ticks ?? 0;
-      },
-      get beat() {
-        return renderer.transportTime?.beat ?? 0;
-      },
-      get phase() {
-        return renderer.transportTime?.phase ?? 0;
-      },
-      get bpm() {
-        return renderer.transportTime?.bpm ?? 120;
-      },
-      get isPlaying() {
-        return renderer.transportTime?.isPlaying ?? true;
-      },
-      get bar() {
-        return renderer.transportTime?.bar ?? 0;
-      },
-      get beatsPerBar() {
-        return renderer.transportTime?.beatsPerBar ?? 4;
-      },
-      get denominator() {
-        return renderer.transportTime?.denominator ?? 4;
-      },
-
-      // Subdivision helpers. Computed locally from ticks + ppq.
-      subdiv(n: number) {
-        const ticks = renderer.transportTime?.ticks ?? 0;
-        const ppq = renderer.transportTime?.ppq ?? 192;
-        const ticksPerSubdiv = ppq / n;
-
-        return Math.floor((ticks % ppq) / ticksPerSubdiv);
-      },
-      subdivPhase(n: number) {
-        const ticks = renderer.transportTime?.ticks ?? 0;
-        const ppq = renderer.transportTime?.ppq ?? 192;
-        const ticksPerSubdiv = ppq / n;
-
-        return ((ticks % ppq) % ticksPerSubdiv) / ticksPerSubdiv;
-      },
-
-      // Control methods (send to main thread)
-      play: () => send({ action: 'play' }),
-      pause: () => send({ action: 'pause' }),
-      stop: () => send({ action: 'stop' }),
-      seek: (time: number) => send({ action: 'seek', value: time }),
-
-      // Set BPM and time signature
-      setBpm: (bpm: number) => send({ action: 'setBpm', value: bpm }),
-      setTimeSignature: (numerator: number, denominator = 4) =>
-        send({ action: 'setTimeSignature', numerator, denominator }),
-
-      // Scheduling methods
-      onBeat: scheduler.onBeat.bind(scheduler),
-      schedule: scheduler.schedule.bind(scheduler),
-      every: scheduler.every.bind(scheduler),
-      onPlayStateChange: scheduler.onPlayStateChange.bind(scheduler),
-      cancel: scheduler.cancel.bind(scheduler),
-      cancelAll: scheduler.cancelAll.bind(scheduler)
-    };
   }
 }

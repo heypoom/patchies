@@ -694,19 +694,19 @@ export class GLSystem {
   }
 
   /**
-   * Start syncing transport time to the render worker.
+   * Start syncing transport state to the render worker.
    * Sends at 60fps for smooth visual sync.
    */
   private startTransportSync(): void {
     if (this.transportSyncInterval) return;
 
     this.transportSyncInterval = setInterval(() => {
-      this.syncTransportTime(Transport.getState());
+      this.syncTransportState(Transport.getState());
     }, 1000 / 60);
   }
 
   /**
-   * Stop syncing transport time to the render worker.
+   * Stop syncing transport state to the render worker.
    */
   private stopTransportSync(): void {
     if (this.transportSyncInterval) {
@@ -718,8 +718,8 @@ export class GLSystem {
   /**
    * Send transport state to render worker for GLSL/Hydra time sync.
    */
-  syncTransportTime(state: TransportState): void {
-    this.send('syncTransportTime', state);
+  syncTransportState(state: TransportState): void {
+    this.send('syncTransportState', state);
   }
 
   setOutputEnabled(enabled: boolean) {

@@ -1,5 +1,6 @@
 import type regl from 'regl';
 import type { FBONode } from '../../lib/rendering/types';
+import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { getFramebuffer } from './utils';
 import type { PixelReadbackService } from './PixelReadbackService';
 import type { CapturedVideoFrame, VideoFrameFormat } from '$lib/js-runner/js-worker-types';
@@ -13,9 +14,10 @@ interface PendingVideoFrameRead {
 }
 
 interface PendingVideoFrameBatch {
-  targetNodeId: string;
   requestId?: string;
+  targetNodeId: string;
   sourceNodeIds: (string | null)[];
+
   reads: PendingVideoFrameRead[];
   initiatedAt: number;
   format: VideoFrameFormat;
@@ -26,6 +28,31 @@ export interface VideoFrameCaptureSource {
   width: number;
   height: number;
   previewSize: [number, number];
+}
+
+export type CaptureSourceResolver = (nodeId: string) => VideoFrameCaptureSource | null;
+
+interface PixelData {
+  pixels: Uint8Array;
+  width: number;
+  height: number;
+}
+
+interface VideoFrameBatchRequest {
+  requestId?: string;
+  targetNodeId: string;
+  sourceNodeIds: (string | null)[];
+
+  resolution?: [number, number];
+  format?: VideoFrameFormat;
+}
+
+interface HarvestedVideoFrameResult {
+  requestId?: string;
+  targetNodeId: string;
+
+  timestamp: number;
+  frames: CapturedVideoFrame[];
 }
 
 /**
@@ -104,6 +131,36 @@ export class CaptureRenderer {
     return canvas.transferToImageBitmap();
   }
 
+  capturePreviewBitmap(
+    nodeId: string,
+    resolveSource: CaptureSourceResolver,
+    customSize?: [number, number]
+  ): ImageBitmap | null {
+    const source = resolveSource(nodeId);
+    if (!source) return null;
+
+    const defaultPreview: [number, number] = [
+      Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
+      Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
+    ];
+
+    return this.capturePreviewBitmapSync(
+      source.framebuffer,
+      source.width,
+      source.height,
+      customSize ?? source.previewSize ?? defaultPreview
+    );
+  }
+
+  private createBitmapFromPixels(pixels: Uint8Array, width: number, height: number): ImageBitmap {
+    const { canvas, ctx } = this.service.getCanvas(width, height);
+    const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+
+    ctx.putImageData(imageData, 0, 0);
+
+    return canvas.transferToImageBitmap();
+  }
+
   // ===== Video Frame Async Capture =====
 
   /**
@@ -114,13 +171,7 @@ export class CaptureRenderer {
    * Supports both FBO nodes (p5, hydra, glsl) and external texture nodes (img, webcam).
    */
   initiateVideoFrameBatchAsync(
-    requests: Array<{
-      targetNodeId: string;
-      requestId?: string;
-      sourceNodeIds: (string | null)[];
-      resolution?: [number, number];
-      format?: VideoFrameFormat;
-    }>,
+    requests: VideoFrameBatchRequest[],
     fboNodes: Map<string, FBONode>,
     externalTextures?: Map<string, regl.Texture2D>,
     resolvedSources?: Map<string, VideoFrameCaptureSource>
@@ -235,6 +286,26 @@ export class CaptureRenderer {
     }
   }
 
+  initiateVideoFrameCaptureAsync(
+    requests: VideoFrameBatchRequest[],
+    resolveSource: CaptureSourceResolver,
+    fboNodes: Map<string, FBONode>,
+    externalTextures: Map<string, regl.Texture2D>
+  ): void {
+    const resolvedSources = new Map<string, VideoFrameCaptureSource>();
+
+    for (const request of requests) {
+      for (const nodeId of request.sourceNodeIds) {
+        if (!nodeId || resolvedSources.has(nodeId)) continue;
+
+        const source = resolveSource(nodeId);
+        if (source) resolvedSources.set(nodeId, source);
+      }
+    }
+
+    this.initiateVideoFrameBatchAsync(requests, fboNodes, externalTextures, resolvedSources);
+  }
+
   /**
    * Initiate a single async PBO read for video frame capture.
    * @param sourceNodeId - ID of the source node
@@ -305,32 +376,18 @@ export class CaptureRenderer {
    * Harvest completed video frame batches.
    * Returns array of completed batches with raw RGBA or ImageBitmap frames.
    *
-   * Smart cloning: When multiple targets need the same source, each gets
-   * its own bitmap created from the cached pixel data. When only one target
-   * needs a source, no cloning overhead is incurred.
+   * When multiple targets need the same source, each gets its own bitmap
+   * created from the cached pixel data.
    */
-  harvestVideoFrameBatches(): Array<{
-    targetNodeId: string;
-    requestId?: string;
-    frames: CapturedVideoFrame[];
-    timestamp: number;
-  }> {
+  harvestVideoFrameBatches(): HarvestedVideoFrameResult[] {
     const gl = this.gl;
-    const results: Array<{
-      targetNodeId: string;
-      requestId?: string;
-      frames: CapturedVideoFrame[];
-      timestamp: number;
-    }> = [];
 
+    const results: HarvestedVideoFrameResult[] = [];
     const stillPending: PendingVideoFrameBatch[] = [];
 
     // Store completed reads with their pixel data (not bitmap yet)
     // null indicates a failed read (WAIT_FAILED) - still marked complete to avoid re-processing
-    const completedPixelData = new Map<
-      PendingVideoFrameRead,
-      { pixels: Uint8Array; width: number; height: number } | null
-    >();
+    const completedPixelData = new Map<PendingVideoFrameRead, PixelData | null>();
 
     // First pass: check completion and extract pixel data
     for (const batch of this.pendingVideoFrameBatches) {
@@ -338,14 +395,10 @@ export class CaptureRenderer {
         if (completedPixelData.has(read)) continue;
 
         const status = gl.clientWaitSync(read.sync, 0, 0);
-
-        if (status === gl.TIMEOUT_EXPIRED) {
-          continue;
-        }
+        if (status === gl.TIMEOUT_EXPIRED) continue;
 
         if (status === gl.WAIT_FAILED) {
           gl.deleteSync(read.sync);
-
           this.service.returnPbo(read.pbo);
 
           // Mark as completed (failed) so it won't be re-queued
@@ -371,22 +424,6 @@ export class CaptureRenderer {
       }
     }
 
-    // Count how many targets need each source (for smart cloning decision)
-    const sourceRefCounts = new Map<string, number>();
-    for (const batch of this.pendingVideoFrameBatches) {
-      const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
-      if (!allReadsComplete) continue;
-
-      for (const sourceId of batch.sourceNodeIds) {
-        if (sourceId) {
-          sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 0) + 1);
-        }
-      }
-    }
-
-    // Track bitmaps that can be reused (when only 1 target needs them)
-    const reusableBitmaps = new Map<string, ImageBitmap>();
-
     // Second pass: build results for completed batches
     for (const batch of this.pendingVideoFrameBatches) {
       const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
@@ -410,12 +447,14 @@ export class CaptureRenderer {
         }
 
         const read = batch.reads.find((r) => r.sourceNodeId === sourceId);
+
         if (!read) {
           frames.push(null);
           continue;
         }
 
         const pixelData = completedPixelData.get(read);
+
         if (!pixelData) {
           frames.push(null);
           continue;
@@ -427,52 +466,13 @@ export class CaptureRenderer {
             width: pixelData.width,
             height: pixelData.height
           });
-          sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
+
           continue;
         }
 
-        const refCount = sourceRefCounts.get(sourceId) || 0;
-
-        if (refCount === 1) {
-          // Only 1 target needs this source - create bitmap directly (no clone needed)
-          const { canvas, ctx } = this.service.getCanvas(pixelData.width, pixelData.height);
-          const imageData = new ImageData(
-            new Uint8ClampedArray(pixelData.pixels),
-            pixelData.width,
-            pixelData.height
-          );
-          ctx.putImageData(imageData, 0, 0);
-          frames.push(canvas.transferToImageBitmap());
-        } else {
-          // Multiple targets need this source - each gets their own bitmap
-          const existing = reusableBitmaps.get(sourceId);
-          if (existing) {
-            // Create a new bitmap from pixels for this target
-            const { canvas, ctx } = this.service.getCanvas(pixelData.width, pixelData.height);
-            const imageData = new ImageData(
-              new Uint8ClampedArray(pixelData.pixels),
-              pixelData.width,
-              pixelData.height
-            );
-            ctx.putImageData(imageData, 0, 0);
-            frames.push(canvas.transferToImageBitmap());
-          } else {
-            // First target - create and mark as created
-            const { canvas, ctx } = this.service.getCanvas(pixelData.width, pixelData.height);
-            const imageData = new ImageData(
-              new Uint8ClampedArray(pixelData.pixels),
-              pixelData.width,
-              pixelData.height
-            );
-            ctx.putImageData(imageData, 0, 0);
-            const bitmap = canvas.transferToImageBitmap();
-            reusableBitmaps.set(sourceId, bitmap);
-            frames.push(bitmap);
-          }
-        }
-
-        // Decrement ref count
-        sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
+        frames.push(
+          this.createBitmapFromPixels(pixelData.pixels, pixelData.width, pixelData.height)
+        );
       }
 
       results.push({
@@ -484,6 +484,7 @@ export class CaptureRenderer {
     }
 
     this.pendingVideoFrameBatches = stillPending;
+
     return results;
   }
 
@@ -507,6 +508,7 @@ export class CaptureRenderer {
       for (const read of batch.reads) {
         if (!cleanedReads.has(read)) {
           cleanedReads.add(read);
+
           gl.deleteSync(read.sync);
           gl.deleteBuffer(read.pbo);
         }
