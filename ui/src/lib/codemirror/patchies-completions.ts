@@ -8,7 +8,7 @@ import { isJavaScriptStringCompletionContext } from '$lib/codemirror/glsl-in-js'
 /**
  * Patchies API function completions for JavaScript-based nodes
  */
-const patchiesAPICompletions: Completion[] = [
+const PATCHIES_API_COMPLETIONS: Completion[] = [
   // Message API
   {
     label: 'send',
@@ -528,7 +528,7 @@ const patchiesAPICompletions: Completion[] = [
   }
 ];
 
-const p5FluidSizeCompletion: Completion = {
+const P5_FLUID_SIZE_COMPLETION: Completion = {
   label: 'setFluidSize',
   type: 'function',
   detail:
@@ -538,7 +538,7 @@ const p5FluidSizeCompletion: Completion = {
 };
 
 // Setup functions that should only appear at top-level (not in function bodies)
-const topLevelOnlyFunctions = new Set([
+const TOP_LEVEL_ONLY_FUNCTIONS = new Set([
   'noDrag',
   'showAudioInput',
   'noInteract',
@@ -582,16 +582,18 @@ const topLevelOnlyFunctions = new Set([
   'setVideoCount'
 ]);
 
-const p5FunctionBodySurfaceHelpers = new Set([
+const P5_FUNCTION_BODY_SURFACE_FUNCTIONS = new Set([
   'hideExitButton',
   'setMouseForwarding',
   'setFluidSize'
 ]);
 
 function isAllowedInFunctionBody(completion: Completion, patchiesContext?: PatchiesContext) {
-  if (!topLevelOnlyFunctions.has(completion.label)) return true;
+  if (!TOP_LEVEL_ONLY_FUNCTIONS.has(completion.label)) return true;
 
-  return patchiesContext?.nodeType === 'p5' && p5FunctionBodySurfaceHelpers.has(completion.label);
+  return (
+    patchiesContext?.nodeType === 'p5' && P5_FUNCTION_BODY_SURFACE_FUNCTIONS.has(completion.label)
+  );
 }
 
 const MOUSE_INTERACTION_JS_NODES = [
@@ -627,7 +629,7 @@ const WORKER_JS_NODES = ['worker'];
 //
 // Worker nodes (hydra, canvas, textmode, three, swgl) must provide their own
 // implementations via extraContext since JSRunner defaults are for main thread.
-const nodeSpecificFunctions: Record<string, string[]> = {
+const NODE_SPECIFIC_FUNCTIONS: Record<string, string[]> = {
   onCleanup: [
     'js',
     'worker',
@@ -804,10 +806,10 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
-    'dom',
-    'vue',
     'pixi',
-    'pixi.dom'
+    'pixi.dom',
+    'dom',
+    'vue'
   ],
   clock: [
     'js',
@@ -820,6 +822,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode.dom',
     'three',
     'three.dom',
+    'pixi',
     'pixi.dom',
     'dom',
     'vue'
@@ -1195,7 +1198,7 @@ export function shouldShowPatchiesCompletions(context?: PatchiesContext): boolea
 function isCompletionAllowedForNode(completion: Completion, context?: PatchiesContext): boolean {
   if (!context?.nodeType) return true;
 
-  const allowedNodes = nodeSpecificFunctions[completion.label];
+  const allowedNodes = NODE_SPECIFIC_FUNCTIONS[completion.label];
 
   if (allowedNodes) {
     return allowedNodes.includes(context.nodeType);
@@ -1205,10 +1208,10 @@ function isCompletionAllowedForNode(completion: Completion, context?: PatchiesCo
 }
 
 function getCompletionOptions(context?: PatchiesContext): Completion[] {
-  if (context?.nodeType !== 'p5') return patchiesAPICompletions;
+  if (context?.nodeType !== 'p5') return PATCHIES_API_COMPLETIONS;
 
-  return patchiesAPICompletions.map((completion) =>
-    completion.label === 'setFluidSize' ? p5FluidSizeCompletion : completion
+  return PATCHIES_API_COMPLETIONS.map((completion) =>
+    completion.label === 'setFluidSize' ? P5_FLUID_SIZE_COMPLETION : completion
   );
 }
 
