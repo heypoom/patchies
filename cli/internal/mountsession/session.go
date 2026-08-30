@@ -42,6 +42,12 @@ type submitResult struct {
 	operationID string
 }
 
+type sessionRunState struct {
+	cursor   int64
+	inFlight *pendingOperation
+	pending  map[string]string
+}
+
 func New(connection protocol.Connection, path string) *Session {
 	return &Session{path: path, remote: client.New(connection)}
 }
@@ -63,9 +69,7 @@ func (s *Session) Run(ctx context.Context) error {
 
 	fmt.Fprintf(os.Stderr, "patchies: mounted %s; waiting for browser snapshot\n", s.path)
 
-	pending := make(map[string]string)
-	var cursor int64
-	var inFlight *pendingOperation
+	state := &sessionRunState{pending: make(map[string]string)}
 
 	for ctx.Err() == nil {
 		snapshot, err := s.attach(ctx)
@@ -73,159 +77,13 @@ func (s *Session) Run(ctx context.Context) error {
 			return err
 		}
 
-		generation := snapshot.BrowserGeneration
-		revision := snapshot.PatchRevision
-		active := false
-		events := make(chan client.Event, 32)
-		streamErrors := make(chan error, 1)
-		submitResults := make(chan submitResult, 1)
-		streamContext, cancelStream := context.WithCancel(ctx)
-
-		go func() {
-			streamErrors <- s.remote.StreamEvents(streamContext, snapshot.ClientID, cursor, func(event client.Event) error {
-				select {
-				case events <- event:
-					return nil
-				case <-streamContext.Done():
-					return streamContext.Err()
-				}
-			})
-		}()
-
-		submitNext := func() {
-			if !active || inFlight != nil || len(pending) == 0 {
-				return
-			}
-
-			paths := make([]string, 0, len(pending))
-			for path := range pending {
-				paths = append(paths, path)
-			}
-			sort.Strings(paths)
-
-			operationID, err := randomID()
-			if err != nil {
-				select {
-				case submitResults <- submitResult{err: fmt.Errorf("generate operation ID: %w", err)}:
-				default:
-				}
-				return
-			}
-
-			path := paths[0]
-			operation := &pendingOperation{content: pending[path], operationID: operationID, path: path}
-			delete(pending, path)
-			inFlight = operation
-
-			request := client.OperationRequest{
-				OperationID:       operationID,
-				BrowserGeneration: generation,
-				BaseRevision:      revision,
-				Path:              operation.path,
-				Content:           operation.content,
-			}
-			go func() {
-				err := s.remote.SubmitOperation(streamContext, snapshot.ClientID, request)
-				select {
-				case submitResults <- submitResult{operationID: operationID, err: err}:
-				case <-streamContext.Done():
-				}
-			}()
+		reconnect, err := s.runAttached(ctx, watcher, snapshot, state)
+		if err != nil {
+			return err
 		}
-
-		reconnect := false
-		for !reconnect {
-			select {
-			case <-ctx.Done():
-				cancelStream()
-				return nil
-			case change := <-watcher.Changes():
-				pending[change.Path] = change.Content
-				submitNext()
-			case watcherError := <-watcher.Errors():
-				fmt.Fprintln(os.Stderr, "patchies: filesystem watcher:", watcherError)
-			case result := <-submitResults:
-				if inFlight == nil || inFlight.operationID != result.operationID {
-					continue
-				}
-				if result.err == nil {
-					continue
-				}
-
-				pending[inFlight.path] = inFlight.content
-				inFlight = nil
-				fmt.Fprintln(os.Stderr, "patchies: submit local change:", result.err)
-				reconnect = true
-			case event := <-events:
-				if event.ID > cursor {
-					cursor = event.ID
-				}
-
-				if event.Type == "session.reclaimed" {
-					active = false
-					if inFlight != nil {
-						pending[inFlight.path] = inFlight.content
-						inFlight = nil
-					}
-					reconnect = true
-					continue
-				}
-
-				if representation, ok, err := representationFromEvent(event); err != nil {
-					cancelStream()
-					return err
-				} else if ok {
-					discardDeletedPendingWrites(pending, representation)
-					if err := watcher.ApplySnapshot(representation); err != nil {
-						cancelStream()
-						return err
-					}
-					generation, revision = eventState(event, generation, revision)
-					active = true
-					submitNext()
-					fmt.Fprintf(os.Stderr, "patchies: synchronized patch revision from %s\n", event.Type)
-					continue
-				}
-
-				commit, ok, err := commitFromEvent(event)
-				if err != nil {
-					cancelStream()
-					return err
-				}
-				if !ok || commit.BrowserGeneration != generation {
-					continue
-				}
-				if err := applyCommit(watcher, commit); err != nil {
-					cancelStream()
-					return err
-				}
-				revision = commit.PatchRevision
-				if inFlight != nil && commit.OperationID == inFlight.operationID {
-					inFlight = nil
-				}
-				submitNext()
-			case streamError := <-streamErrors:
-				if ctx.Err() != nil {
-					cancelStream()
-					return nil
-				}
-				var httpError *client.HTTPError
-				if errors.As(streamError, &httpError) && httpError.Code == "session_not_found" {
-					cancelStream()
-					return streamError
-				}
-				if errors.As(streamError, &httpError) && httpError.Code == "replay_unavailable" {
-					cursor = 0
-				}
-				if inFlight != nil {
-					pending[inFlight.path] = inFlight.content
-					inFlight = nil
-				}
-				reconnect = true
-			}
+		if !reconnect {
+			return nil
 		}
-
-		cancelStream()
 		if err := wait(ctx, reconnectDelay); err != nil {
 			return nil
 		}
@@ -233,6 +91,156 @@ func (s *Session) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snapshot client.SessionSnapshot, state *sessionRunState) (bool, error) {
+	generation := snapshot.BrowserGeneration
+	revision := snapshot.PatchRevision
+	active := false
+	events := make(chan client.Event, 32)
+	streamErrors := make(chan error, 1)
+	submitResults := make(chan submitResult, 1)
+	streamContext, cancelStream := context.WithCancel(ctx)
+	defer cancelStream()
+
+	go func() {
+		streamErrors <- s.remote.StreamEvents(streamContext, snapshot.ClientID, state.cursor, func(event client.Event) error {
+			select {
+			case events <- event:
+				return nil
+			case <-streamContext.Done():
+				return streamContext.Err()
+			}
+		})
+	}()
+
+	submitNext := func() {
+		if !active || state.inFlight != nil || len(state.pending) == 0 {
+			return
+		}
+
+		paths := make([]string, 0, len(state.pending))
+		for path := range state.pending {
+			paths = append(paths, path)
+		}
+		sort.Strings(paths)
+
+		operationID, err := randomID()
+		if err != nil {
+			select {
+			case submitResults <- submitResult{err: fmt.Errorf("generate operation ID: %w", err)}:
+			default:
+			}
+			return
+		}
+
+		path := paths[0]
+		operation := &pendingOperation{content: state.pending[path], operationID: operationID, path: path}
+		delete(state.pending, path)
+		state.inFlight = operation
+
+		request := client.OperationRequest{
+			OperationID:       operationID,
+			BrowserGeneration: generation,
+			BaseRevision:      revision,
+			Path:              operation.path,
+			Content:           operation.content,
+		}
+		go func() {
+			err := s.remote.SubmitOperation(streamContext, snapshot.ClientID, request)
+			select {
+			case submitResults <- submitResult{operationID: operationID, err: err}:
+			case <-streamContext.Done():
+			}
+		}()
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return false, nil
+		case change := <-watcher.Changes():
+			state.pending[change.Path] = change.Content
+			submitNext()
+		case watcherError := <-watcher.Errors():
+			fmt.Fprintln(os.Stderr, "patchies: filesystem watcher:", watcherError)
+		case result := <-submitResults:
+			if state.inFlight == nil || state.inFlight.operationID != result.operationID {
+				continue
+			}
+			if result.err == nil {
+				continue
+			}
+
+			state.pending[state.inFlight.path] = state.inFlight.content
+			state.inFlight = nil
+			fmt.Fprintln(os.Stderr, "patchies: submit local change:", result.err)
+
+			return true, nil
+		case event := <-events:
+			if event.ID > state.cursor {
+				state.cursor = event.ID
+			}
+
+			if event.Type == "session.reclaimed" {
+				if state.inFlight != nil {
+					state.pending[state.inFlight.path] = state.inFlight.content
+					state.inFlight = nil
+				}
+
+				return true, nil
+			}
+
+			if representation, ok, err := representationFromEvent(event); err != nil {
+				return false, err
+			} else if ok {
+				discardDeletedPendingWrites(state.pending, representation)
+				if err := watcher.ApplySnapshot(representation); err != nil {
+					return false, err
+				}
+				generation, revision = eventState(event, generation, revision)
+				active = true
+				submitNext()
+				fmt.Fprintf(os.Stderr, "patchies: synchronized patch revision from %s\n", event.Type)
+
+				continue
+			}
+
+			commit, ok, err := commitFromEvent(event)
+			if err != nil {
+				return false, err
+			}
+			if !ok || commit.BrowserGeneration != generation {
+				continue
+			}
+			if err := applyCommit(watcher, commit); err != nil {
+				return false, err
+			}
+			revision = commit.PatchRevision
+			if state.inFlight != nil && commit.OperationID == state.inFlight.operationID {
+				state.inFlight = nil
+			}
+			submitNext()
+		case streamError := <-streamErrors:
+			if ctx.Err() != nil {
+				return false, nil
+			}
+
+			var httpError *client.HTTPError
+			if errors.As(streamError, &httpError) && httpError.Code == "session_not_found" {
+				return false, streamError
+			}
+			if errors.As(streamError, &httpError) && httpError.Code == "replay_unavailable" {
+				state.cursor = 0
+			}
+			if state.inFlight != nil {
+				state.pending[state.inFlight.path] = state.inFlight.content
+				state.inFlight = nil
+			}
+
+			return true, nil
+		}
+	}
 }
 
 func (s *Session) attach(ctx context.Context) (client.SessionSnapshot, error) {

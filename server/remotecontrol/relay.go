@@ -612,10 +612,10 @@ func snapshot(session *session) SessionSnapshot {
 }
 
 func randomID() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
+	buffer := make([]byte, 32)
+	if _, err := rand.Read(buffer); err != nil {
 		return "", err
 	}
 
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
+	return base64.RawURLEncoding.EncodeToString(buffer), nil
 }

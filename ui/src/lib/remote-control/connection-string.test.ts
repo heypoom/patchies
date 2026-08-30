@@ -11,5 +11,14 @@ describe('remote control connection string', () => {
 
     expect(value).toMatch(/^patchies:\/\/v2\/[A-Za-z0-9_-]+$/);
     expect(value).not.toContain('secret-value');
+
+    const encodedPayload = value.slice('patchies://v2/'.length);
+    const payload = JSON.parse(atob(encodedPayload.replaceAll('-', '+').replaceAll('_', '/')));
+
+    expect(payload).toEqual({
+      instanceURL: 'https://patchies.example.com',
+      sessionID: 'session-id',
+      secret: 'secret-value'
+    });
   });
 });
