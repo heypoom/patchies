@@ -167,7 +167,7 @@ export async function generateImageWithOpenRouter(
   }
 
   throw new Error(
-    'No image returned. Make sure your OpenRouter model supports image generation (e.g. google/gemini-3-flash-preview).'
+    'No image returned. Make sure your OpenRouter model supports image generation (e.g. google/gemini-3.5-flash).'
   );
 }
 

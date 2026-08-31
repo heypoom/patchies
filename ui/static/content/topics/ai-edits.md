@@ -33,7 +33,7 @@ The prompt mode depends on your selection. Use the mode dropdown in the header o
 4. Select `Save & Continue`.
 5. To generate, press `Ctrl/Cmd + I` or select the sparkles button in the lower-right corner.
 
-AI Edits uses the `gemini-3-flash-preview` model to interpret the prompt and generate object configuration.
+AI Edits uses the `gemini-3.5-flash` model to interpret the prompt and generate object configuration.
 
 ## See Also
 

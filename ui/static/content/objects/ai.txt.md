@@ -3,7 +3,7 @@ Generate text using AI language models.
 Create dynamic content, lyrics, or procedural text. Integrates with the
 message system for interactive generation.
 
-Uses the `gemini-3-flash-preview` model.
+Uses the `gemini-3.5-flash` model.
 
 ## API Key
 
