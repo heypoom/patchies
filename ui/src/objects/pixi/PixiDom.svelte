@@ -60,6 +60,7 @@
     data: {
       title?: string;
       code: string;
+      executeCode?: number;
       hidePorts?: boolean;
       fluidCanvasResizerVisible?: boolean;
       noBorder?: boolean;
@@ -115,6 +116,7 @@
   let editorReady = $state(false);
   let videoOutputEnabled = $state(false);
   let isExpanded = $state(false);
+  let previousExecuteCode = $state<number | undefined>(undefined);
   let runRevision = 0;
   let destroyed = false;
   let outputWidth = $state($globalOutputWidth);
@@ -135,6 +137,14 @@
       ? 'width:auto;height:auto;max-width:100vw;max-height:100vh;'
       : `width: ${previewWidth}px; height: ${previewHeight}px;`
   );
+
+  // Watch for executeCode timestamp changes and re-run when it changes
+  $effect(() => {
+    if (data.executeCode && data.executeCode !== previousExecuteCode) {
+      previousExecuteCode = data.executeCode;
+      run();
+    }
+  });
 
   fluidCanvas = useFluidCanvas({
     getNodeId: () => nodeId,
