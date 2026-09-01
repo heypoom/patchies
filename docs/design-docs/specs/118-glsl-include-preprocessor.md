@@ -8,7 +8,7 @@ There's also no way to share shader logic across node types. A great SDF functio
 
 ## Solution
 
-A single `#include` directive for importing GLSL code from NPM packages (e.g. [lygia](https://github.com/patriciogonzalezvivo/lygia)), user VFS files, and URLs. Inspired by [GLSL.app](https://glsl.app) and the stack.gl ecosystem, but runtime-agnostic.
+A single `#include` directive for importing GLSL code from NPM packages (e.g. [lygia](https://github.com/patriciogonzalezvivo/lygia)), embedded patch files, linked user VFS files, and URLs. Inspired by [GLSL.app](https://glsl.app) and the stack.gl ecosystem, but runtime-agnostic.
 
 No built-in GLSL function library. Patchies leans on established community libraries (lygia, etc.) rather than maintaining its own. No new node types.
 
@@ -22,25 +22,39 @@ The preprocessor inlines the resolved source at the `#include` site, then hands 
 
 ### Import Sources
 
-| Syntax                                             | Source           | Resolution                                      |
-| -------------------------------------------------- | ---------------- | ----------------------------------------------- |
-| `#include <lygia/generative/snoise>`               | NPM package      | Local (installed via `bun add`) or CDN fallback |
-| `#include "user://my-shaders/foo.glsl"`            | User's VFS files | Local VFS read                                  |
-| `#include "https://raw.githubusercontent.com/..."` | Any URL          | Fetched + cached                                |
+| Syntax | Source | Resolution |
+| --- | --- | --- |
+| `#include <lygia/generative/snoise>` | NPM package | Local (installed via `bun add`) or CDN fallback |
+| `#include "./utility"` | Embedded patch file | Relative to the importer, or `patch://` for node code |
+| `#include "patch://shaders/utility.glsl"` | Embedded patch file | Exact Patch VFS read |
+| `#include "user://my-shaders/foo.glsl"` | External user VFS file | Exact User VFS read |
+| `#include "https://raw.githubusercontent.com/..."` | Any URL | Fetched + cached |
 
 **Angle brackets** (`< >`) resolve from NPM packages. Since lygia and similar packages can be installed locally via `bun add lygia`, resolution is file-system based at build time — works offline, no CDN dependency.
 
-**Double quotes** (`" "`) resolve as paths — VFS paths (`user://`) or absolute URLs.
+**Double quotes** (`" "`) resolve as paths — relative paths, VFS paths (`patch://` or `user://`), or absolute URLs.
 
-The `.glsl` extension is optional: `#include <lygia/generative/snoise>` and `#include <lygia/generative/snoise.glsl>` are equivalent.
+The `.glsl` extension is optional for NPM and relative Patch imports. For Patch imports, resolution checks an exact extensionless file first, then appends `.glsl`. Other supported shader extensions must be explicit.
 
 ### Resolution & Caching
 
 1. **NPM packages** (`<pkg/path>`): Resolved from `node_modules/` at build time (bundled as raw strings). Works offline after `bun add`. Fallback: fetch from CDN at runtime if not installed.
-2. **VFS paths** (`"user://..."`): Read from Patchies' virtual filesystem. Immediate, no network.
-3. **URLs** (`"https://..."`): Fetched via `fetch()`, cached in memory. Useful for sharing GLSL code across projects or importing from GitHub.
+2. **Relative paths** (`"./..."`, `"../..."`): Resolve relative to an importing VFS file. Shader code owned by a canvas node has no file path, so its base is `patch://`.
+3. **Patch VFS paths** (`"patch://..."`): Read embedded text serialized with the current patch.
+4. **User VFS paths** (`"user://..."`): Read an external linked, URL-backed, or browser-local file.
+5. **URLs** (`"https://..."`): Fetched via `fetch()`, cached in memory. Useful for sharing GLSL code across projects or importing from GitHub.
 
-All resolution is recursive — an included file can contain its own `#include` directives. Circular includes are detected and errored.
+All resolution is recursive — an included file can contain its own `#include` directives. Relative paths use standard semantics within their importer's namespace and directory. `../` cannot escape the namespace root. Circular includes are detected and errored.
+
+The existing `vfs.getUrl("./foo")` user-code API is unchanged and still defaults to `user://`. Patch-relative shorthand belongs specifically to code imports.
+
+### Patch File Editing and Invalidation
+
+Supported `patch://` GLSL files open from the Files panel in the same CodeMirror GLSL mode as the `glsl` object. This includes GLSL parsing, include and metadata directive highlighting, completions, hover hints, and inline value widgets. Include files are not compiled independently, so invalid source may still be saved.
+
+A successful Patch file save emits a path-specific content revision. The revision clears cached VFS text and recompiles direct and transitive shader consumers. Size is not an invalidation key because same-length edits must update consumers. Unsaved drafts do not invalidate anything.
+
+When new source fails, the consumer reports the error and retains its previous working visual output. Linked `user://` GLSL files remain read-only in the first editor release. Patchies rereads them when an importing node explicitly executes, but does not promise automatic filesystem change observation.
 
 ### Example
 
@@ -48,7 +62,7 @@ All resolution is recursive — an included file can contain its own `#include` 
 #include <lygia/generative/snoise>
 #include <lygia/lighting/pbr>
 #include <lygia/animation/easing/bounce>
-#include "user://my-shaders/crystal-material.glsl"
+#include "./crystal-material"
 #include "https://raw.githubusercontent.com/stegu/psrdnoise/main/src/psrdnoise2.glsl"
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {

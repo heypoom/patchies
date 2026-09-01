@@ -2,149 +2,163 @@
 
 ## Problem
 
-GLSL snippets and Hydra functions live in VFS and are portable via snippet presets (specs 112, 114). JavaScript utilities have no equivalent — they can only be shared via `// @lib` nodes on the canvas, which are patch-local and not portable.
+JavaScript utilities can only be shared through `// @lib` nodes on the canvas. Those libraries are useful for visible, patch-specific live coding, but they cannot serve as small source files that travel with a saved patch.
 
-A user who builds JS utilities (camera rigs, geometry builders, math helpers) can't reuse them across patches without copy-pasting code between `// @lib` nodes.
+The VFS also does not currently distinguish embedded patch content from external or browser-local files. File metadata is serialized with a patch, while local bytes and handles live in IndexedDB. That makes a path such as `user://utility.js` ambiguous: it may be a URL, filesystem link, or browser-local fallback rather than portable patch content.
+
+JavaScript modules need:
+
+- an explicit patch-owned namespace;
+- predictable shorthand and relative resolution;
+- editing from the Files panel;
+- synchronization to every JSRunner environment;
+- direct and transitive dependent reruns after a saved change.
 
 ## Solution
 
-Support importing JS modules from VFS files alongside existing `// @lib` nodes. Both resolve through JSRunner's module system.
+Store small embedded source files under `patch://` and import them through JSRunner alongside existing `// @lib` nodes.
 
-```javascript
-// From a @lib node on the canvas (existing, unchanged)
-import {rand} from 'utils'
+```js
+// Existing canvas library
+import { random } from "utils";
 
-// From a VFS file (new)
-import {orbitCamera} from 'user://lib/camera.js'
+// Patch-root shorthand
+import { random } from "./utility";
+
+// Explicit embedded path
+import { random } from "patch://lib/utility.js";
+
+// Explicit external VFS path
+import { random } from "user://shared/utility.js";
 ```
 
-## Why Keep Both
+`patch://` contents are UTF-8 text serialized under `files.patch`. `user://` continues to represent external or browser-local resources. Spec 52 defines namespace ownership, persistence limits, Files-panel behavior, and editing lifecycle.
 
-|                       | `// @lib` nodes                      | VFS JS modules                            |
-| --------------------- | ------------------------------------ | ----------------------------------------- |
-| **Visible on canvas** | Yes — spatial, glanceable            | No — lives in file browser                |
-| **Edit workflow**     | Click node, edit in place            | Open from VFS sidebar                     |
-| **Portability**       | Patch-local only                     | Portable via snippet presets (spec 120)   |
-| **Best for**          | Patch-specific utils, live iteration | Stable libraries, reusable across patches |
+## Why Keep Canvas and File Libraries
 
-Live coders benefit from `// @lib` — it's on the canvas, editable in the flow of performance. Stable utilities benefit from VFS — portable, invisible, out of the way.
+| | `// @lib` nodes | `patch://` modules |
+| --- | --- | --- |
+| Visible on canvas | Yes | No; lives in Files |
+| Persistence | Patch node data | Embedded Patch VFS text |
+| Best for | Patch-specific and live iteration | Stable utilities and nested module trees |
+| Bare-name priority | First | Fallback after `// @lib` |
 
-## Implementation
+Both module types use the same Rollup pipeline, dependency graph, worker synchronization, and importer rerun behavior.
 
-### JSRunner Module Resolution
+## Resolution Rules
 
-Extend the Rollup plugin's `resolveId` hook in `JSRunner.ts` to check VFS when a module isn't found in the `modules` Map:
+JSRunner uses one canonical resolver for Rollup `resolveId`, dependency readiness, worker module synchronization, and dependent lookup. These surfaces must not implement separate precedence rules.
 
-```typescript
-resolveId(source) {
-  // Existing: check @lib modules
-  if (this.modules.has(source)) return source;
+### Package and URL Imports
 
-  // New: check VFS paths
-  if (source.startsWith('user://')) return source;
+- `npm:<package>` keeps the existing npm resolution behavior.
+- `http://` and `https://` keep the existing URL behavior.
 
-  // Existing: check npm: prefix
-  if (source.startsWith('npm:')) return source;
+### Bare Imports
 
-  return null;
-}
+For a bare import such as `import "utils"`:
 
-load(id) {
-  // Existing: load from @lib modules
-  if (this.modules.has(id)) return this.modules.get(id);
+1. Resolve an exact `// @lib utils` module.
+2. If it does not exist, resolve the exact top-level Patch file `patch://utils.js`.
+3. Otherwise report an unresolved import.
 
-  // New: load from VFS (see VFS-Worker bridge below)
-  if (id.startsWith('user://')) {
-    const content = this.vfsModules.get(id);
-    if (content === undefined) return null;  // file not found — Rollup reports the error
-    return content;
-  }
+`import "utils.js"` checks an exact `// @lib utils.js` first, then `patch://utils.js`. Resolution is case-sensitive and root-only. It does not recursively search folders, perform fuzzy matching, or select a similarly named file.
 
-  return null;
-}
-```
+### Relative Imports
 
-VFS modules go through the same Rollup bundling pipeline as `// @lib` modules — tree-shaking, npm import resolution, etc.
+Relative imports use standard filesystem semantics:
 
-### VFS-Worker Bridge
+- Canvas-node code has no file path, so `./utility` resolves from the `patch://` root.
+- `patch://lib/camera.js` importing `./utility` resolves beside the importer as `patch://lib/utility.js`.
+- `user://lib/camera.js` importing `./utility` resolves beside the importer as `user://lib/utility.js`.
+- `../` is supported but cannot escape the current namespace root.
 
-VFS lives on the main thread, but JS modules need to be available in both the **JS worker** (Rollup bundling) and the **render worker** (Three.js/canvas execution). VFS modules use the same sync path as `@lib` modules — `setModuleAndSync` already pushes module content to all workers via `updateJSModule`.
+The resolver first checks an exact extensionless path, then appends `.js`. `.mjs` is supported only when written explicitly.
 
-When a VFS JS file is loaded or changes:
+### Explicit VFS Imports
 
-```typescript
-// Main thread — same path as @lib modules
-this.setModuleAndSync('user://lib/camera.js', content)
-```
+`patch://` and `user://` imports resolve exact VFS paths. When an explicit path has no extension, JSRunner first checks the exact path and then appends `.js`.
 
-This populates the local `modules` Map (for Rollup's synchronous `load` hook) and sends `updateJSModule` to the render worker via GLSystem. Both workers get the module through the same mechanism — no separate message type needed.
+Explicit `user://` modules remain importable but read-only in the first Files editor release. Patchies rereads a linked module whenever an importing node explicitly executes. Automatic reruns for changes made by an external filesystem editor are not part of this phase.
 
-**Resolution flow:**
+### User-Code VFS API
 
-1. **On startup / file change**: Main thread reads VFS JS files, calls `setModuleAndSync(path, content)` for each. This pushes to all workers.
-2. **Rollup `load` hook**: Reads from the `modules` Map synchronously — `user://` paths are just module names like any `@lib` name.
-3. **Fallback**: If `load` encounters a `user://` path not in `modules`, it returns `null` and Rollup reports a missing module error — prompting the user to check the VFS path.
-4. **Cache invalidation**: When a VFS JS file changes (via VFS watcher), the main thread calls `setModuleAndSync` with updated content and triggers re-execution of dependent nodes (same as `// @lib` re-execution).
+These import rules do not change the general user-code VFS API. `vfs.getUrl("./foo")`, `vfs.list(".")`, and other relative VFS helper paths continue to default to `user://`.
 
-This reuses the existing module sync infrastructure entirely — no new message types, no separate worker bridges. VFS modules work in `// @lib` importers, `worker` nodes, Three.js nodes, and any other JS-based node that goes through JSRunner.
+## Supported Patch Modules
 
-### Re-Execution on Change
+The first release recognizes `.js` and `.mjs` Patch files as JavaScript modules. Only `.js` is inferred. Embedded-file encoding and size limits come from spec 52:
 
-When a library is explicitly re-run, all canvas nodes that import it re-execute. This includes transitive library dependencies: if `render-utils` imports `math-utils`, re-running `math-utils` first refreshes `render-utils`, then every node importing either library re-executes. A `// @lib` node exposes this re-run button in its editor and supports Shift+Enter for the same action.
+- UTF-8 text only;
+- 256 KiB maximum per file;
+- 1 MiB maximum total `patch://` content.
 
-The headless `js` runtime owns this lifecycle. The Svelte node only requests execution; when a library registers, the runtime finds and re-runs its dependents without restoring execution state to the view.
+## Registration and Hydration
 
-When a VFS JS file changes, all nodes that import from it should use the same dependent re-execution flow. JSRunner needs to track VFS file → importer node dependencies.
+Patchies hydrates and registers all `patch://` files before node runtimes start. This prevents nodes from executing once with missing modules during patch load.
 
-### Snippet Preset Integration
+VFS JavaScript modules use canonical VFS paths as keys in JSRunner's module registry. Registration must populate:
 
-VFS JS modules are portable via snippet presets (spec 120). Same flow as GLSL/Hydra snippets:
+- the main-thread JSRunner;
+- the dedicated JS worker module snapshot;
+- the render-worker JSRunner through the existing module update bridge.
 
-1. Save `user://lib/camera.js` as a snippet preset
-2. Import the preset in another patch → file copied to VFS
-3. `import { orbitCamera } from 'user://lib/camera.js'` works
+The synchronization API must be explicit and replayable. A render worker initialized after Patch hydration still receives every registered Patch module before it executes importing code.
 
-Folder presets work too — save `user://lib/` as a pack, import all JS modules at once.
+## Saving and Dependent Reruns
 
-## Examples
+Unsaved CodeMirror drafts do not modify the module registry or rerun consumers. After a successful Save:
 
-```javascript
-// user://lib/camera.js
-export function orbitCamera(THREE, camera, t, radius = 5) {
-  camera.position.x = Math.cos(t * 0.1) * radius
-  camera.position.z = Math.sin(t * 0.1) * radius
-  camera.position.y = 2 + Math.sin(t * 0.05) * 1.5
-  camera.lookAt(0, 0, 0)
-}
+1. VFS commits the new embedded text and content revision.
+2. JSRunner replaces the canonical module source in every environment.
+3. The dependency graph finds importers using bare aliases, relative paths, or explicit canonical paths.
+4. Direct and transitive importers rerun in dependency order.
 
-export function pulseCamera(camera, energy, baseRadius = 5) {
-  const r = baseRadius - energy * 2
-  camera.position.setLength(r)
-}
-```
+The dependency graph is source-agnostic: a dependency may originate from a canvas `// @lib` node or a VFS path. Existing helpers that require a source node ID must be generalized rather than assigning fake node IDs to files.
 
-```javascript
-// user://lib/geo-utils.js
-export function scatterOnSurface(positions, normals, indices, count) {
-  // ... random point sampling on triangle mesh
-  return { positions: new Float32Array(...), normals: new Float32Array(...) };
-}
-```
+Global undo of a saved edit restores the previous module source and triggers the same synchronization and dependent-rerun flow. Rename and delete warn when dependents are known, but Patchies does not rewrite import source text automatically.
 
-Used in any JS-based node:
+## Failure Behavior
 
-```javascript
-// In a Three.js node
-import {orbitCamera, pulseCamera} from 'user://lib/camera.js'
+Resolution failures return a structured error instead of polling for five seconds or silently substituting an empty generated program. The error includes:
 
-function draw(t) {
-  orbitCamera(THREE, camera, t)
-  renderer.render(scene, camera)
-}
-```
+- the original specifier;
+- the importing node or VFS path;
+- canonical paths attempted;
+- which resolution categories were attempted (`// @lib`, relative Patch, explicit VFS, npm, or URL).
 
-## Dependencies
+Errors appear in the existing virtual console/runtime error surface. Inline file-editor diagnostics are deferred.
 
-- Extends JSRunner's existing module resolution (Rollup plugin)
-- VFS read access from JSRunner (may already exist or need a small bridge)
-- Portable via snippet presets (spec 120)
+When a saved module fails to resolve, bundle, or execute, dependent nodes report the new error and retain their previous working runtime or visual output where the owning runtime supports last-known-good state. Invalid source remains saveable because users may intentionally persist work in progress.
+
+## Files Editor
+
+Patch JavaScript files open in the Files panel using a module-specific CodeMirror configuration:
+
+- JavaScript parsing and import/export support;
+- mixed GLSL and HTML parsing;
+- Patchies API completions consistent with a `js` object;
+- no node-specific Run command or Shift+Enter execution;
+- no fake node ID or node-data history event.
+
+Spec 52 owns the editor header, explicit Save behavior, dirty navigation guard, global history integration, namespace drop behavior, creation, export, and size validation.
+
+## Compatibility
+
+Existing `user://` files are not converted into Patch modules. Existing `// @lib` behavior remains valid and wins bare-name conflicts.
+
+The saved-patch migration adds an empty `files.patch` tree when absent. Browser-local user file data and filesystem handles remain under `user://`; their IndexedDB keys become patch-ID-scoped as specified in spec 52.
+
+## Verification
+
+Test observable resolution and lifecycle behavior through public APIs and runtime outcomes:
+
+1. Exact `// @lib` wins over a same-named top-level Patch module.
+2. Bare, relative, explicit Patch, explicit User, npm, and URL imports resolve with the documented precedence.
+3. Relative imports use the importer directory and cannot escape the namespace root.
+4. Extension inference checks exact paths before `.js` and never infers `.mjs`.
+5. Hydration registers Patch modules before importer execution in main-thread, dedicated-worker, and render-worker environments.
+6. Saving and global undo synchronize source and rerun direct and transitive dependents once.
+7. Unsaved drafts do not update or rerun consumers.
+8. Missing imports fail promptly with structured diagnostics.
+9. Existing `// @lib` and `user://` imports remain compatible.

@@ -1,6 +1,6 @@
 # 52. Virtual Filesystem
 
-> Status: Implemented
+> Status: Implemented (original VFS); `patch://` extension planned
 
 I wanted the ability to persist, browse and resolve files in a virtual file system.
 
@@ -369,3 +369,108 @@ await vfs.search("foo", "./assets"); // recursively search entries under user://
 ```
 
 Relative paths default to `user://`; absolute external URLs passed to `getUrl` pass through unchanged. `list` is non-recursive and returns entries with full VFS paths, names, and file or directory kinds. `search` is case-insensitive, recursive, and returns matching entries in the same shape. Both methods traverse linked local folders after permission has been granted.
+
+## Patch-Local Text Files and Editing
+
+Patchies needs an explicit ownership boundary between files embedded in a patch and files resolved from outside it. Provider metadata alone is not enough: a `user://` entry may refer to a filesystem handle, URL, or browser-local IndexedDB fallback, while small source files should travel with the saved patch.
+
+### Namespaces and Ownership
+
+The VFS has three namespaces:
+
+| Namespace | Ownership | Persistence | Editing in the Files panel |
+| --- | --- | --- | --- |
+| `patch://` | Embedded in the current patch | Serialized under `files.patch` | Supported text files are editable |
+| `user://` | External or browser-local user resource | Handle, URL, or patch-scoped IndexedDB fallback | Read-only in the first editor release |
+| `obj://` | Object-owned resource | Existing object VFS behavior | Not editable independently |
+
+An embedded entry uses the `embedded` provider and stores UTF-8 text directly:
+
+```ts
+interface EmbeddedVFSEntry extends VFSEntry {
+  provider: "embedded";
+  content: string;
+}
+```
+
+`embedded` entries are valid only under `patch://`, and every entry under `patch://` must be embedded. Patch JSON stores the namespace alongside the existing trees:
+
+```ts
+interface VFSTree {
+  patch?: Record<string, VFSTreeNode>;
+  user?: Record<string, VFSTreeNode>;
+  objects?: Record<string, VFSTreeNode>;
+}
+```
+
+The serialized text is a normal JSON string, not base64. Limits use UTF-8 byte length:
+
+- 256 KiB maximum per embedded file
+- 1 MiB maximum total embedded content per patch
+- UTF-8 text only
+
+The initial editable formats are:
+
+- JavaScript: `.js`, `.mjs`
+- GLSL: `.gl`, `.glsl`, `.frag`, `.vert`, `.glslf`, `.glslv`
+
+Only `.js` and `.glsl` are inferred when an import omits its extension. Other supported extensions must be explicit.
+
+### Files Panel
+
+The Files tree shows namespace roots in this order:
+
+1. Patch (always visible)
+2. User (always visible)
+3. Objects (visible only when populated)
+
+The drop target declares ownership:
+
+- Drop into Patch: copy allowed text into `patch://` and serialize it with the patch.
+- Drop into User: retain the linked-file behavior under `user://`.
+- Drop User to Patch: copy and embed; retain the linked original.
+- Patch to User is not an internal move. Use **Save to Disk…** to export a copy without changing ownership.
+
+Patch folder drops are atomic. Patchies embeds the complete folder only when every file is allowed and the result fits within the patch budget. Otherwise it embeds nothing and reports the offending files. Name collisions show Replace, Keep Both, and Cancel; replacement is undoable, and Keep Both uses numbered suffixes.
+
+New File is available in Patch and its folders. It creates empty content, requires an explicit supported extension, and rejects case-sensitive duplicate paths.
+
+### Editor Behavior
+
+Double-clicking an editable Patch file, or choosing **Edit** from its context menu, transforms the Files panel into a CodeMirror editor. Search results provide the same actions. On mobile, Edit appears in the selection toolbar. A single click continues to select a row.
+
+The editor header contains:
+
+- Back
+- the full `patch://` path
+- a dirty indicator
+- Save with a `Cmd/Ctrl+S` shortcut
+- Rename, Copy Path, Save to Disk, and Delete in an overflow menu
+
+CodeMirror keeps a local draft. Save is explicit; unsaved drafts do not change consumers. Back, sidebar navigation, opening another file, loading another patch, and rename while dirty use one Save / Discard / Cancel guard. Browser reload and window close use the standard unsaved-changes warning.
+
+Invalid JavaScript or GLSL remains saveable because include files may not compile independently and users may save work in progress. Save validates only path, UTF-8 encoding, and size. Consumers retain their last working output when the saved source fails.
+
+CodeMirror undo and redo apply to the draft. Each successful Save is one global history operation. Create, delete, rename, replacement, and User-to-Patch copy also participate in global undo. Restoring clean open content updates the editor without remounting it; a dirty editor shows a conflict guard. Undoing creation of the open file returns to the tree, while undoing a rename updates the open path.
+
+### File Modification Contract
+
+Saving or restoring embedded content emits a path-specific modification with a monotonic content revision. File size alone is not a valid revision because same-length edits must invalidate consumers.
+
+The modification contract:
+
+- synchronizes saved JavaScript modules to every JSRunner environment;
+- reruns direct and transitive JavaScript dependents;
+- clears affected GLSL VFS caches;
+- recompiles direct and transitive shader consumers;
+- preserves the previous working output on failure and reports the new error.
+
+Hydration registers all `patch://` files before node runtimes start. A manually edited patch that exceeds the embedded budget still loads its graph for recovery, but Patchies refuses to open or execute offending files and offers their paths and sizes so users can delete or export them.
+
+### Compatibility
+
+Existing `user://` entries are not converted to `patch://`. A patch migration adds an empty `files.patch` tree when missing.
+
+IndexedDB remains a fallback for browsers without filesystem handles and a persistence store for handles, but new keys are scoped by patch ID plus VFS path. When a scoped record is missing, Patchies may read a matching legacy path-only record once and copy it to the scoped key. It does not delete the legacy record because another old patch may still reference it.
+
+The existing user-code VFS API keeps its current defaults: `vfs.getUrl("./foo")`, `vfs.list(".")`, and similar relative paths resolve under `user://`. The `patch://` shorthand applies only to JavaScript imports and GLSL includes.
