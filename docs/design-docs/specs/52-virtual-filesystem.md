@@ -532,6 +532,7 @@ Scope:
 - resolve relative, explicit Patch, and explicit User GLSL includes;
 - infer only the `.glsl` extension;
 - invalidate affected caches and direct and transitive shader consumers after saved revisions;
+- report missing includes in the consumer's virtual console and highlight the originating `#include` line;
 - retain the last working visual output when saved source fails.
 
 Verification:
@@ -541,6 +542,7 @@ Verification:
 3. Saved changes refresh direct and transitive consumers exactly once.
 4. Unsaved drafts do not invalidate consumers.
 5. Invalid saved source reports an error and preserves the previous visual output.
+6. A missing VFS include appears in the consumer's virtual console and highlights the originating `#include` line.
 
 Release criterion: GLSL Patch-file authoring works end to end without depending on JavaScript module support.
 

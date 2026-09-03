@@ -72,6 +72,24 @@ describe('processIncludes VFS resolution', () => {
     expect(resolver.resolveVfs).toHaveBeenCalledWith('patch://world.glsl');
   });
 
+  it('reports the source line for a missing Patch include', async () => {
+    const resolver = vfsResolver(new Map());
+
+    await expect(
+      processIncludes(
+        'float before = 1.0;\n#include "patch://non-existent-file"\nfloat after = 2.0;',
+        resolver
+      )
+    ).rejects.toMatchObject({
+      line: 2,
+      includePath: 'patch://non-existent-file',
+      message: 'Include error on line 2: Missing patch://non-existent-file.glsl',
+      lineErrors: {
+        2: ['Missing patch://non-existent-file.glsl']
+      }
+    });
+  });
+
   it('detects circular Patch imports by canonical path', async () => {
     const resolver = vfsResolver(
       new Map([

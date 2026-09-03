@@ -25,6 +25,8 @@ import { VideoChannelRegistry } from './VideoChannelRegistry';
 import { previewVisibleMap } from '../../stores/renderer.store';
 import { VirtualFilesystem } from '$lib/vfs';
 import { HistoryManager } from '$lib/history';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
 describe('GLSystem', () => {
   beforeEach(() => {
@@ -118,6 +120,40 @@ describe('GLSystem', () => {
     glSystem.removeNode(nodeId);
 
     expect(get(previewVisibleMap)).not.toHaveProperty(nodeId);
+  });
+
+  it('routes shader line errors to the node virtual console', async () => {
+    const nodeId = `glsl-${crypto.randomUUID()}`;
+    const eventBus = PatchiesEventBus.getInstance();
+    const consoleOutput = new Promise<ConsoleOutputEvent>((resolve) => {
+      const handleConsoleOutput = (event: ConsoleOutputEvent) => {
+        if (event.nodeId !== nodeId) return;
+
+        eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+        resolve(event);
+      };
+
+      eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+    });
+    const glSystem = new GLSystem();
+    const reason = 'VFS: Path not found: patch://missing.glsl';
+    const message = `Include error on line 2: ${reason}`;
+
+    glSystem.handleRenderWorkerMessage({
+      data: {
+        type: 'shaderError',
+        nodeId,
+        error: message,
+        lineErrors: { 2: [reason] }
+      }
+    } as MessageEvent);
+
+    await expect(consoleOutput).resolves.toMatchObject({
+      nodeId,
+      messageType: 'error',
+      args: ['Shader compilation failed:', message],
+      lineErrors: { 2: [reason] }
+    });
   });
 
   it('refreshes direct and transitive GLSL consumers exactly once for same-length saves', () => {

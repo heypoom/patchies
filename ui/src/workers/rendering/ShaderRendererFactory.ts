@@ -52,12 +52,9 @@ export class ShaderRendererFactory {
 
         code = await processIncludes(code, createWorkerResolver(node.id));
       } catch (error) {
-        self.postMessage({
-          type: 'shaderError',
-          nodeId: node.id,
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
+        const shaderError = error instanceof Error ? error : new Error(String(error));
+
+        this.postShaderError(node.id, shaderError);
 
         return null;
       } finally {

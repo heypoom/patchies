@@ -22,6 +22,25 @@ const INCLUDE_RE = /^[ \t]*#include\s+(?:<([^>]+)>|"([^"]+)")/gm;
 
 const MAX_DEPTH = 32;
 
+export class GlslIncludeError extends Error {
+  readonly lineErrors: Record<number, string[]>;
+
+  constructor(
+    readonly includePath: string,
+    readonly line: number,
+    reason: string
+  ) {
+    const message = `Include error on line ${line}: ${reason}`;
+
+    super(message);
+    this.name = 'GlslIncludeError';
+    this.lineErrors = { [line]: [reason] };
+  }
+}
+
+const getSourceLine = (source: string, index: number): number =>
+  source.slice(0, index).split('\n').length;
+
 function ensureGlslExtension(path: string): string {
   const lastSegment = path.split('/').pop() ?? '';
   if (lastSegment.includes('.')) return path;
@@ -105,31 +124,34 @@ export async function processIncludes(
 
   // Resolve all includes in parallel
   const resolutions = await Promise.all(
-    matches.map(async ({ npmPath, quotedPath }) => {
-      const { resolvedPath, content, nextNpmBasePath, nextVfsImporterPath } = await resolveInclude(
-        resolver,
-        npmPath,
-        quotedPath,
-        npmBasePath,
-        vfsImporterPath
-      );
+    matches.map(async ({ npmPath, quotedPath, index }) => {
+      const includePath = npmPath ?? quotedPath ?? '';
 
-      if (seen.has(resolvedPath)) {
-        throw new Error(`Circular #include detected: ${resolvedPath}`);
+      try {
+        const { resolvedPath, content, nextNpmBasePath, nextVfsImporterPath } =
+          await resolveInclude(resolver, npmPath, quotedPath, npmBasePath, vfsImporterPath);
+
+        if (seen.has(resolvedPath)) {
+          throw new Error(`Circular #include detected: ${resolvedPath}`);
+        }
+
+        const innerSeen = new Set(seen);
+        innerSeen.add(resolvedPath);
+
+        // Recursively resolve nested includes, passing the base path for relative resolution
+        return processIncludes(
+          content,
+          resolver,
+          innerSeen,
+          depth + 1,
+          nextNpmBasePath,
+          nextVfsImporterPath
+        );
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+
+        throw new GlslIncludeError(includePath, getSourceLine(source, index), reason);
       }
-
-      const innerSeen = new Set(seen);
-      innerSeen.add(resolvedPath);
-
-      // Recursively resolve nested includes, passing the base path for relative resolution
-      return processIncludes(
-        content,
-        resolver,
-        innerSeen,
-        depth + 1,
-        nextNpmBasePath,
-        nextVfsImporterPath
-      );
     })
   );
 
