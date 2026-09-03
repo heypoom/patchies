@@ -119,7 +119,19 @@ describe('glsl completions', () => {
 
   it('suggests include snippets from preprocessor context', () => {
     expect(getGlslCompletionLabels('#inc')).toContain('#include <lygia/...>');
-    expect(getGlslCompletionLabels('#inc')).toContain('#include "..."');
+    expect(getGlslCompletionLabels('#inc')).toContain('#include "patch://..."');
+    expect(getGlslCompletionLabels('#inc')).toContain('#include "user://..."');
+    expect(getGlslCompletionLabels('#inc')).not.toContain('#include "..."');
+
+    expect(getGlslCompletion('#inc', '#include "patch://..."')).toMatchObject({
+      detail: 'include embedded Patch GLSL',
+      info: 'Import a GLSL file that is embedded in the current patch.'
+    });
+
+    expect(getGlslCompletion('#inc', '#include "user://..."')).toMatchObject({
+      detail: 'include external User GLSL',
+      info: 'Import GLSL from an uploaded, browser-local, or linked User file.'
+    });
   });
 
   it('suggests documented GLSL directive variants', () => {
