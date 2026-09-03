@@ -53,7 +53,9 @@ export class MetroObject implements TextObjectV2 {
   readonly nodeId: string;
   readonly context: ObjectContext;
 
-  private intervalId: number | null = null;
+  private timeoutId: number | null = null;
+  private nextTickAt = 0;
+  private schedulerGeneration = 0;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
@@ -76,7 +78,7 @@ export class MetroObject implements TextObjectV2 {
       .with(['message', messages.start], () => this.start())
       .with(['message', messages.stop], () => this.stop())
       .with(['message', messages.bang], () => {
-        if (this.intervalId !== null) {
+        if (this.timeoutId !== null) {
           this.stop();
         } else {
           this.start();
@@ -86,7 +88,7 @@ export class MetroObject implements TextObjectV2 {
         this.context.setParam('interval', ms);
 
         // Restart with new interval
-        if (this.intervalId !== null) {
+        if (this.timeoutId !== null) {
           this.start();
         }
       });
@@ -96,16 +98,40 @@ export class MetroObject implements TextObjectV2 {
     this.stop();
 
     const intervalMs = this.context.getParam('interval') as number;
+    const generation = this.schedulerGeneration;
 
-    this.intervalId = window.setInterval(() => {
+    this.nextTickAt = performance.now() + intervalMs;
+    this.scheduleNext(intervalMs, generation);
+  }
+
+  private scheduleNext(intervalMs: number, generation: number): void {
+    const delayMs = Math.max(0, this.nextTickAt - performance.now());
+
+    this.timeoutId = window.setTimeout(() => {
       this.context.send({ type: 'bang' });
-    }, intervalMs);
+
+      if (generation !== this.schedulerGeneration) return;
+
+      const now = performance.now();
+
+      if (intervalMs > 0) {
+        const elapsedIntervals = Math.max(1, Math.floor((now - this.nextTickAt) / intervalMs) + 1);
+
+        this.nextTickAt += elapsedIntervals * intervalMs;
+      } else {
+        this.nextTickAt = now;
+      }
+
+      this.scheduleNext(intervalMs, generation);
+    }, delayMs);
   }
 
   private stop(): void {
-    if (this.intervalId !== null) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    this.schedulerGeneration++;
+
+    if (this.timeoutId !== null) {
+      window.clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
   }
 

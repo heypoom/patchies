@@ -62,3 +62,20 @@ We'll slowly work our way through the following list of nodes, implementing them
 - `sig~`: constant signal node. should contain `offset`, defaults to `1.0.`. outputs a constant value. uses `ConstantSourceNode`.
 - `loadurl~`: loads an audio file from a URL. should contain `url`. uses `MediaElementAudioSourceNode`.
 - `waveshaper~`: constructs a `WaveShaperNode`. should have a message port that takes in either an array of number or a `Float32Array`, which then gets converted into `Float32Array` and gets set it `WaveShaperNode.curve`.
+
+## Metro timing
+
+`metro` is an independent main-thread clock. It is not synchronized to the global
+transport.
+
+Each run is anchored to the monotonic clock at its start time. Timer callbacks use
+the next absolute deadline instead of measuring the next interval from the previous
+callback. This prevents a late callback from permanently shifting later ticks.
+
+When the main thread wakes after more than one interval has elapsed, `metro` emits
+one bang, skips the missed ticks, and schedules the next future deadline on the
+original phase. It must not burst all missed bangs into the message graph.
+
+Browser scheduling can still delay delivery, especially in a background tab.
+Sample-accurate timing belongs in an audio worklet rather than the main-thread
+`metro` object.
