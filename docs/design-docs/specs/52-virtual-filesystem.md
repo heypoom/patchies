@@ -526,7 +526,7 @@ Scope:
 
 - transform the Files panel into a CodeMirror editor for supported GLSL files;
 - support New File for GLSL files in Patch folders;
-- implement drafts, dirty state, explicit Save, and the shared navigation guard;
+- implement drafts, dirty state, equivalent button / shortcut / Vim `:w` saves, and the shared navigation guard;
 - provide the same GLSL assistance as the `glsl` object;
 - save inline value-widget edits and refresh shader consumers immediately;
 - add Edit actions to normal rows, search results, and the mobile toolbar;
@@ -538,7 +538,7 @@ Scope:
 
 Verification:
 
-1. Editor tests cover entry points, draft isolation, `Cmd/Ctrl+S`, Save / Discard / Cancel, and global history while open.
+1. Editor tests cover entry points, draft isolation, `Cmd/Ctrl+S`, `Shift+Enter`, Vim `:w`, Save / Discard / Cancel, and global history while open.
 2. Resolver tests cover relative, explicit, inferred-extension, circular, and namespace-escape cases.
 3. Saved changes refresh direct and transitive consumers exactly once.
 4. Unsaved drafts do not invalidate consumers.
