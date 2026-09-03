@@ -1,12 +1,19 @@
 // Virtual Filesystem - main exports
 
 export { VirtualFilesystem } from './VirtualFilesystem';
+export {
+  MAX_EMBEDDED_FILE_BYTES,
+  MAX_EMBEDDED_PATCH_BYTES,
+  PATCH_TEXT_FILE_ACCEPT,
+  getPatchImportError
+} from './VirtualFilesystem';
 
 // Composables
 export { useVfsMedia, type UseVfsMediaOptions, type UseVfsMediaReturn } from './useVfsMedia.svelte';
 
 export {
   type VFSEntry,
+  type EmbeddedVFSEntry,
   type VFSListEntry,
   type VFSListPage,
   type VFSSearchPage,
@@ -15,6 +22,7 @@ export {
   type VFSProvider,
   type VFSProviderType,
   isVFSEntry,
+  isEmbeddedVFSEntry,
   isVFSPath,
   isVFSFolder,
   isLocalFolder,
@@ -36,6 +44,7 @@ export {
 } from './path-utils';
 export { UrlProvider } from './providers/UrlProvider';
 export { LocalFilesystemProvider } from './providers/LocalFilesystemProvider';
+export { EmbeddedProvider } from './providers/EmbeddedProvider';
 export { createVfs, revokeObjectUrls } from './vfs-url-helper';
 export type { VfsApi } from './user-api';
 
@@ -59,6 +68,7 @@ export {
 import { VirtualFilesystem } from './VirtualFilesystem';
 import { UrlProvider } from './providers/UrlProvider';
 import { LocalFilesystemProvider } from './providers/LocalFilesystemProvider';
+import { EmbeddedProvider } from './providers/EmbeddedProvider';
 
 /**
  * Initialize the VFS with default providers.
@@ -70,6 +80,7 @@ export function initializeVFS(): VirtualFilesystem {
   // Register default providers
   vfs.registerProvider(new UrlProvider());
   vfs.registerProvider(new LocalFilesystemProvider());
+  vfs.registerProvider(new EmbeddedProvider());
 
   return vfs;
 }

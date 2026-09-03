@@ -21,6 +21,7 @@ export type PatchiesEvent =
   | NodeReplaceEvent
   | IframePostMessageEvent
   | FileRelinkedEvent
+  | VfsContentModifiedEvent
   | VfsPathRenamedEvent
   | InsertVfsFileToCanvasEvent
   | InsertPresetToCanvasEvent
@@ -200,6 +201,12 @@ export interface FileRelinkedEvent {
 
   /** The VFS path that was relinked */
   path: string;
+}
+
+export interface VfsContentModifiedEvent {
+  type: 'vfsContentModified';
+  path: string;
+  revision: number;
 }
 
 export interface VfsPathRenamedEvent {

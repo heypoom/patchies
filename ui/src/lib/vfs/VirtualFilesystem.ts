@@ -4,6 +4,7 @@ import { writable, derived, type Readable } from 'svelte/store';
 import { match } from 'ts-pattern';
 import {
   type VFSEntry,
+  type EmbeddedVFSEntry,
   type VFSTree,
   type VFSTreeNode,
   type VFSProvider,
@@ -11,14 +12,73 @@ import {
   type VFSListPage,
   type VFSSearchPage,
   isVFSFolder,
+  isEmbeddedVFSEntry,
   isVFSEntry,
   isVFSPath,
   parseVFSPath,
   VFS_PREFIXES
 } from './types';
-import { generateUserPath, getFilenameFromUrl, guessMimeType } from './path-utils';
+import {
+  generateUserPath,
+  getBasename,
+  getExtension,
+  getFilenameFromUrl,
+  guessMimeType
+} from './path-utils';
 import { clearFileData, clearHandles } from './persistence';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { HistoryManager, type Command } from '$lib/history';
+
+export const MAX_EMBEDDED_FILE_BYTES = 256 * 1024;
+export const MAX_EMBEDDED_PATCH_BYTES = 1024 * 1024;
+
+export const PATCH_TEXT_FILE_ACCEPT =
+  'text/*,.js,.mjs,.gl,.glsl,.frag,.vert,.glslf,.glslv,.json,.jsonc,.css,.html,.htm,.svg,.xml,.yaml,.yml,.md,.txt,.csv';
+
+const PATCH_TEXT_EXTENSIONS = new Set([
+  '.js',
+  '.mjs',
+  '.gl',
+  '.glsl',
+  '.frag',
+  '.vert',
+  '.glslf',
+  '.glslv',
+  '.json',
+  '.jsonc',
+  '.css',
+  '.html',
+  '.htm',
+  '.svg',
+  '.xml',
+  '.yaml',
+  '.yml',
+  '.md',
+  '.txt',
+  '.csv'
+]);
+
+export type VfsCollisionStrategy = 'replace' | 'keep-both' | 'cancel';
+
+export function getPatchImportError(file: File): string | null {
+  if (file.size > MAX_EMBEDDED_FILE_BYTES) {
+    return `${file.name} exceeds 256 KiB Patch-file limit`;
+  }
+
+  const extension = getExtension(file.name).toLowerCase();
+  const isTextMimeType =
+    file.type.startsWith('text/') ||
+    file.type === 'application/javascript' ||
+    file.type === 'application/json' ||
+    file.type === 'application/xml' ||
+    file.type === 'image/svg+xml';
+
+  if (!isTextMimeType && !PATCH_TEXT_EXTENSIONS.has(extension)) {
+    return `${file.name} is not a supported text file`;
+  }
+
+  return null;
+}
 
 declare global {
   interface Window {
@@ -70,6 +130,90 @@ export class VirtualFilesystem {
     this.versionStore.update((v) => v + 1);
   }
 
+  private cloneEntries(entries = this.entries): Map<string, VFSEntry> {
+    return new Map([...entries].map(([path, entry]) => [path, { ...entry }] as [string, VFSEntry]));
+  }
+
+  private restoreEntries(entries: Map<string, VFSEntry>): void {
+    const previous = this.entries;
+    this.entries = this.cloneEntries(entries);
+    this.pendingPermissions = new Set(
+      [...this.pendingPermissions].filter((path) => this.entries.has(path))
+    );
+    this.notifyChange();
+
+    for (const [path, entry] of this.entries) {
+      const prior = previous.get(path);
+      if (
+        isEmbeddedVFSEntry(entry) &&
+        (!prior ||
+          !isEmbeddedVFSEntry(prior) ||
+          prior.content !== entry.content ||
+          prior.revision !== entry.revision)
+      ) {
+        this.emitContentModified(path, entry.revision ?? 1);
+      }
+    }
+  }
+
+  private recordMutation(description: string, mutate: () => void): void {
+    const before = this.cloneEntries();
+
+    mutate();
+
+    const after = this.cloneEntries();
+    const command: Command = {
+      description,
+      execute: () => this.restoreEntries(after),
+      undo: () => this.restoreEntries(before)
+    };
+
+    HistoryManager.getInstance().record(command);
+  }
+
+  private assertValidEntry(path: string, entry: VFSEntry): void {
+    const parsed = parseVFSPath(path);
+    if (!parsed || parsed.segments.length === 0) {
+      throw new Error(`VFS: Invalid path: ${path}`);
+    }
+
+    if (parsed.namespace === 'patch') {
+      if (entry.provider !== 'embedded' && entry.provider !== 'folder') {
+        throw new Error(`VFS: patch:// entries must use the embedded provider: ${path}`);
+      }
+    } else if (entry.provider === 'embedded') {
+      throw new Error(`VFS: embedded entries are only valid under patch://: ${path}`);
+    }
+
+    if (isEmbeddedVFSEntry(entry)) {
+      this.assertEmbeddedContent(entry.content, path);
+    }
+  }
+
+  private assertEmbeddedContent(content: string, path: string): void {
+    const size = new TextEncoder().encode(content).byteLength;
+    if (size > MAX_EMBEDDED_FILE_BYTES) {
+      throw new Error(`VFS: Embedded file exceeds 256 KiB: ${path}`);
+    }
+
+    const total = this.getEmbeddedByteLength(path) + size;
+    if (total > MAX_EMBEDDED_PATCH_BYTES) {
+      throw new Error('VFS: Embedded patch files exceed 1 MiB');
+    }
+  }
+
+  private getEmbeddedByteLength(excludingPath?: string): number {
+    const encoder = new TextEncoder();
+    let total = 0;
+
+    for (const [path, entry] of this.entries) {
+      if (path === excludingPath || !isEmbeddedVFSEntry(entry)) continue;
+      total += encoder.encode(entry.content).byteLength;
+    }
+
+    return total;
+  }
+
   static getInstance(): VirtualFilesystem {
     if (!VirtualFilesystem.instance) {
       VirtualFilesystem.instance = new VirtualFilesystem();
@@ -109,8 +253,96 @@ export class VirtualFilesystem {
    * Register a file entry at a specific path.
    */
   registerEntry(path: string, entry: VFSEntry): void {
+    this.assertValidEntry(path, entry);
     this.entries.set(path, entry);
     this.notifyChange();
+  }
+
+  /** Create or replace a UTF-8 text file embedded in the current patch. */
+  createEmbeddedFile(
+    path: string,
+    content = '',
+    collision: VfsCollisionStrategy = 'cancel'
+  ): string | null {
+    const parsed = parseVFSPath(path);
+    if (parsed?.namespace !== 'patch') {
+      throw new Error(`VFS: Embedded files must use patch:// paths: ${path}`);
+    }
+
+    const destination = this.resolveCollision(path, collision);
+    if (!destination) return null;
+
+    const filename = destination.split('/').pop() ?? destination;
+    const entry: EmbeddedVFSEntry = {
+      provider: 'embedded',
+      filename,
+      mimeType: guessMimeType(filename) ?? 'text/plain;charset=utf-8',
+      content,
+      size: new TextEncoder().encode(content).byteLength,
+      revision: 1
+    };
+
+    this.assertValidEntry(destination, entry);
+    this.recordMutation(`Create ${filename}`, () => {
+      this.entries.set(destination, entry);
+      this.notifyChange();
+      this.emitContentModified(destination, entry.revision ?? 1);
+    });
+
+    return destination;
+  }
+
+  /** Save embedded content as one undoable VFS operation. */
+  writeEmbeddedFile(path: string, content: string): void {
+    const entry = this.entries.get(path);
+    if (!entry || !isEmbeddedVFSEntry(entry)) {
+      throw new Error(`VFS: Embedded file not found: ${path}`);
+    }
+
+    this.assertEmbeddedContent(content, path);
+    const updated: EmbeddedVFSEntry = {
+      ...entry,
+      content,
+      size: new TextEncoder().encode(content).byteLength,
+      revision: (entry.revision ?? 0) + 1
+    };
+
+    this.recordMutation(`Write ${entry.filename}`, () => {
+      this.entries.set(path, updated);
+      this.notifyChange();
+      this.emitContentModified(path, updated.revision ?? 1);
+    });
+  }
+
+  readEmbeddedFile(path: string): string {
+    const entry = this.entries.get(path);
+    if (!entry || !isEmbeddedVFSEntry(entry)) {
+      throw new Error(`VFS: Embedded file not found: ${path}`);
+    }
+
+    return entry.content;
+  }
+
+  private resolveCollision(path: string, collision: VfsCollisionStrategy): string | null {
+    if (!this.entries.has(path)) return path;
+    if (collision === 'replace') return path;
+    if (collision === 'cancel') return null;
+
+    const extension = getExtension(path);
+    const basename = getBasename(path);
+    let counter = 1;
+    let candidate = `${basename}-${counter}${extension}`;
+
+    while (this.entries.has(candidate)) {
+      counter += 1;
+      candidate = `${basename}-${counter}${extension}`;
+    }
+
+    return candidate;
+  }
+
+  private emitContentModified(path: string, revision: number): void {
+    PatchiesEventBus.getInstance().dispatch({ type: 'vfsContentModified', path, revision });
   }
 
   /**
@@ -147,8 +379,6 @@ export class VirtualFilesystem {
       size: file.size
     };
 
-    this.entries.set(path, entry);
-
     // Store via provider
     const provider = this.providers.get('local');
     if (provider && 'storeFile' in provider) {
@@ -168,7 +398,10 @@ export class VirtualFilesystem {
       }
     }
 
-    this.notifyChange();
+    this.recordMutation(`Add ${file.name}`, () => {
+      this.entries.set(path, entry);
+      this.notifyChange();
+    });
     return path;
   }
 
@@ -239,8 +472,10 @@ export class VirtualFilesystem {
       mimeType
     };
 
-    this.entries.set(path, entry);
-    this.notifyChange();
+    this.recordMutation(`Add ${filename}`, () => {
+      this.entries.set(path, entry);
+      this.notifyChange();
+    });
 
     return path;
   }
@@ -268,8 +503,10 @@ export class VirtualFilesystem {
       filename: folderName
     };
 
-    this.entries.set(folderPath, entry);
-    this.notifyChange();
+    this.recordMutation(`Create ${folderName}`, () => {
+      this.entries.set(folderPath, entry);
+      this.notifyChange();
+    });
 
     return folderPath;
   }
@@ -280,6 +517,174 @@ export class VirtualFilesystem {
   isFolder(path: string): boolean {
     const entry = this.entries.get(path);
     return entry?.provider === 'folder' || entry?.provider === 'local-folder';
+  }
+
+  /** Rename a file or folder tree without changing its ownership namespace. */
+  renamePath(oldPath: string, newPath: string): void {
+    const oldParsed = parseVFSPath(oldPath);
+    const newParsed = parseVFSPath(newPath);
+    if (!oldParsed || !newParsed || oldParsed.namespace !== newParsed.namespace) {
+      throw new Error('VFS: Files can only be renamed within their namespace');
+    }
+    if (!this.entries.has(oldPath)) throw new Error(`VFS: Path not found: ${oldPath}`);
+    if (this.entries.has(newPath)) throw new Error(`VFS: Path already exists: ${newPath}`);
+
+    const paths = this.list().filter((path) => path === oldPath || path.startsWith(`${oldPath}/`));
+    const renamed = paths.map((path) => {
+      const entry = this.entries.get(path)!;
+      const destination = path === oldPath ? newPath : `${newPath}${path.slice(oldPath.length)}`;
+      const filename = destination.split('/').pop() ?? entry.filename;
+
+      return [destination, { ...entry, filename }] as const;
+    });
+
+    this.recordMutation(`Rename ${oldPath.split('/').pop()}`, () => {
+      for (const path of paths) this.entries.delete(path);
+      for (const [path, entry] of renamed) this.entries.set(path, entry);
+      this.notifyChange();
+      for (const path of paths) {
+        const destination = path === oldPath ? newPath : `${newPath}${path.slice(oldPath.length)}`;
+        PatchiesEventBus.getInstance().dispatch({
+          type: 'vfsPathRenamed',
+          oldPath: path,
+          newPath: destination
+        });
+      }
+    });
+  }
+
+  /** Delete a file or a complete folder tree as one undoable operation. */
+  deletePath(path: string): void {
+    const paths = this.list().filter((item) => item === path || item.startsWith(`${path}/`));
+    if (paths.length === 0) throw new Error(`VFS: Path not found: ${path}`);
+
+    this.recordMutation(`Delete ${path.split('/').pop()}`, () => {
+      for (const item of paths) {
+        this.entries.delete(item);
+        this.pendingPermissions.delete(item);
+      }
+      this.notifyChange();
+    });
+  }
+
+  /** Copy a user-owned text file into patch ownership without moving the original. */
+  async copyToPatch(
+    sourcePath: string,
+    targetFolder: string = VFS_PREFIXES.PATCH,
+    collision: VfsCollisionStrategy = 'cancel'
+  ): Promise<string | null> {
+    const source = this.getEntryOrLinkedFile(sourcePath);
+    if (!source || isVFSFolder(source)) throw new Error(`VFS: File not found: ${sourcePath}`);
+    if (!targetFolder.startsWith(VFS_PREFIXES.PATCH)) {
+      throw new Error(`VFS: Patch destination required: ${targetFolder}`);
+    }
+
+    const blob = await this.resolve(sourcePath);
+    const content = await this.decodeUtf8(blob, sourcePath);
+    const destination = `${targetFolder.endsWith('/') ? targetFolder : `${targetFolder}/`}${source.filename}`;
+
+    return this.createEmbeddedFile(destination, content, collision);
+  }
+
+  /** Import text files atomically: an invalid file or budget violation imports nothing. */
+  async importToPatch(
+    files: Iterable<File>,
+    targetFolder: string = VFS_PREFIXES.PATCH,
+    collision: VfsCollisionStrategy = 'keep-both'
+  ): Promise<string[]> {
+    if (!targetFolder.startsWith(VFS_PREFIXES.PATCH)) {
+      throw new Error(`VFS: Patch destination required: ${targetFolder}`);
+    }
+
+    const staged: Array<{ path: string; entry: EmbeddedVFSEntry }> = [];
+    const occupied = new Set(this.entries.keys());
+    let totalBytes = this.getEmbeddedByteLength();
+
+    for (const file of files) {
+      const importError = getPatchImportError(file);
+      if (importError) throw new Error(`VFS: ${importError}`);
+
+      const relativePath = this.getImportRelativePath(file);
+      const rawPath = `${targetFolder.endsWith('/') ? targetFolder : `${targetFolder}/`}${relativePath}`;
+      const path = this.resolveStagedCollision(rawPath, collision, occupied);
+      if (!path) throw new Error(`VFS: Import cancelled because ${file.name} already exists`);
+
+      const content = await this.decodeUtf8(file, file.name);
+      const size = new TextEncoder().encode(content).byteLength;
+      if (size > MAX_EMBEDDED_FILE_BYTES) {
+        throw new Error(`VFS: Embedded file exceeds 256 KiB: ${file.name}`);
+      }
+      totalBytes += size;
+      if (totalBytes > MAX_EMBEDDED_PATCH_BYTES) {
+        throw new Error('VFS: Embedded patch files exceed 1 MiB');
+      }
+
+      occupied.add(path);
+      staged.push({
+        path,
+        entry: {
+          provider: 'embedded',
+          filename: file.name,
+          mimeType: file.type || guessMimeType(file.name) || 'text/plain;charset=utf-8',
+          content,
+          size,
+          revision: 1
+        }
+      });
+    }
+
+    this.recordMutation(
+      `Import ${staged.length} patch file${staged.length === 1 ? '' : 's'}`,
+      () => {
+        for (const { path, entry } of staged) {
+          this.entries.set(path, entry);
+          this.emitContentModified(path, entry.revision ?? 1);
+        }
+        this.notifyChange();
+      }
+    );
+
+    return staged.map(({ path }) => path);
+  }
+
+  private resolveStagedCollision(
+    path: string,
+    collision: VfsCollisionStrategy,
+    occupied: Set<string>
+  ): string | null {
+    if (!occupied.has(path)) return path;
+    if (collision === 'replace') return path;
+    if (collision === 'cancel') return null;
+
+    const extension = getExtension(path);
+    const basename = getBasename(path);
+    let counter = 1;
+    let candidate = `${basename}-${counter}${extension}`;
+    while (occupied.has(candidate)) {
+      counter += 1;
+      candidate = `${basename}-${counter}${extension}`;
+    }
+    return candidate;
+  }
+
+  private async decodeUtf8(blob: Blob, path: string): Promise<string> {
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(await blob.arrayBuffer());
+    } catch {
+      throw new Error(`VFS: Only UTF-8 text can be embedded: ${path}`);
+    }
+  }
+
+  private getImportRelativePath(file: File): string {
+    const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
+    const normalized = (relativePath || file.name).replaceAll('\\', '/');
+    const segments = normalized.split('/').filter(Boolean);
+
+    if (segments.length === 0 || segments.some((segment) => segment === '.' || segment === '..')) {
+      throw new Error(`VFS: Invalid import path: ${normalized}`);
+    }
+
+    return segments.join('/');
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -367,6 +772,11 @@ export class VirtualFilesystem {
   async resolve(path: string): Promise<File | Blob> {
     const entry = this.entries.get(path);
     if (entry) {
+      if (isEmbeddedVFSEntry(entry)) {
+        return new File([entry.content], entry.filename, {
+          type: entry.mimeType || 'text/plain;charset=utf-8'
+        });
+      }
       // Direct entry found
       const provider = this.providers.get(entry.provider);
       if (!provider) {
@@ -486,7 +896,10 @@ export class VirtualFilesystem {
     const prefix = directory.endsWith('://') ? directory : `${directory}/`;
     const linkedFolderPath = this.getLinkedFolderForPath(directory);
     const hasChildren = [...this.entries.keys()].some((path) => path.startsWith(prefix));
-    const isNamespaceRoot = directory === VFS_PREFIXES.USER || directory === VFS_PREFIXES.OBJECT;
+    const isNamespaceRoot =
+      directory === VFS_PREFIXES.PATCH ||
+      directory === VFS_PREFIXES.USER ||
+      directory === VFS_PREFIXES.OBJECT;
 
     if (entry && entry.provider !== 'folder' && entry.provider !== 'local-folder') {
       throw new TypeError(`VFS: Path is not a directory: ${directory}`);
@@ -743,9 +1156,13 @@ export class VirtualFilesystem {
       if (!parsed) continue;
 
       match(parsed.namespace)
+        .with('patch', () => {
+          if (!tree.patch) tree.patch = {};
+          this.setNestedEntry(tree.patch, parsed.segments, { ...entry });
+        })
         .with('user', () => {
           if (!tree.user) tree.user = {};
-          this.setNestedEntry(tree.user, parsed.segments, entry);
+          this.setNestedEntry(tree.user, parsed.segments, { ...entry });
         })
         .with('obj', () => {
           if (!tree.objects) tree.objects = {};
@@ -754,7 +1171,7 @@ export class VirtualFilesystem {
           if (!nodeId) return;
           if (!tree.objects[nodeId]) tree.objects[nodeId] = {};
           if (rest.length > 0) {
-            this.setNestedEntry(tree.objects[nodeId], rest, entry);
+            this.setNestedEntry(tree.objects[nodeId], rest, { ...entry });
           }
         })
         .exhaustive();
@@ -767,20 +1184,28 @@ export class VirtualFilesystem {
    * Hydrate the VFS from a saved tree structure.
    */
   async hydrate(tree: VFSTree): Promise<void> {
-    this.entries.clear();
-    this.pendingPermissions.clear();
-
-    // user namespace -- for user-uploaded files
-    if (tree.user) {
-      this.hydrateNamespace(tree.user, VFS_PREFIXES.USER);
-    }
-
-    // objects namespace -- for each objects
+    const hydrated = new Map<string, VFSEntry>();
+    this.collectHydratedNamespace(hydrated, tree.patch, VFS_PREFIXES.PATCH);
+    this.collectHydratedNamespace(hydrated, tree.user, VFS_PREFIXES.USER);
     if (tree.objects) {
       for (const [nodeId, nodeTree] of Object.entries(tree.objects)) {
-        this.hydrateNamespace(nodeTree, `${VFS_PREFIXES.OBJECT}${nodeId}/`);
+        this.collectHydratedNamespace(hydrated, nodeTree, `${VFS_PREFIXES.OBJECT}${nodeId}/`);
       }
     }
+
+    let totalEmbeddedBytes = 0;
+    for (const entry of hydrated.values()) {
+      if (isEmbeddedVFSEntry(entry)) {
+        totalEmbeddedBytes += new TextEncoder().encode(entry.content).byteLength;
+      }
+    }
+    if (totalEmbeddedBytes > MAX_EMBEDDED_PATCH_BYTES) {
+      throw new Error('VFS: Embedded patch files exceed 1 MiB');
+    }
+
+    this.entries.clear();
+    this.pendingPermissions.clear();
+    this.entries = hydrated;
 
     // Check which local files need permission
     for (const [path, entry] of this.entries) {
@@ -834,6 +1259,25 @@ export class VirtualFilesystem {
       } else {
         // It's a directory, recurse
         this.hydrateNamespace(value as { [key: string]: VFSTreeNode }, `${prefix}${key}/`);
+      }
+    }
+  }
+
+  private collectHydratedNamespace(
+    entries: Map<string, VFSEntry>,
+    node: { [key: string]: VFSTreeNode } | undefined,
+    prefix: string
+  ): void {
+    if (!node) return;
+
+    for (const [key, value] of Object.entries(node)) {
+      const path = `${prefix}${key}`;
+      if (isVFSEntry(value)) {
+        const entry = { ...value };
+        this.assertValidEntry(path, entry);
+        entries.set(path, entry);
+      } else {
+        this.collectHydratedNamespace(entries, value as { [key: string]: VFSTreeNode }, `${path}/`);
       }
     }
   }

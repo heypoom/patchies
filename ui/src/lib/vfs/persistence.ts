@@ -1,6 +1,8 @@
 // IndexedDB persistence for FileSystemHandles
 
 import { openDB, type IDBPDatabase } from 'idb';
+import { get } from 'svelte/store';
+import { currentPatchId } from '../../stores/ui.store';
 
 // Extend FileSystemFileHandle with permission methods (File System Access API)
 // These are available in Chrome/Edge but not in TypeScript's lib.dom.d.ts
@@ -47,6 +49,34 @@ interface VfsDB {
 /** Cached database connection */
 let dbInstance: IDBPDatabase<VfsDB> | null = null;
 
+const scopedKey = (path: string): string => `${get(currentPatchId)}:${path}`;
+
+async function getWithLegacyFallback<T>(store: keyof VfsDB, path: string): Promise<T | undefined> {
+  const db = await getDb();
+  const key = scopedKey(path);
+  const scoped = await db.get(store, key);
+  if (scoped !== undefined) return scoped as T;
+
+  const legacy = await db.get(store, path);
+  if (legacy !== undefined) {
+    await db.put(store, legacy, key);
+  }
+
+  return legacy as T | undefined;
+}
+
+async function clearScoped(store: keyof VfsDB): Promise<void> {
+  const db = await getDb();
+  const prefix = `${get(currentPatchId)}:`;
+  const keys = await db.getAllKeys(store);
+
+  await Promise.all(
+    keys
+      .filter((key) => typeof key === 'string' && key.startsWith(prefix))
+      .map((key) => db.delete(store, key))
+  );
+}
+
 /**
  * Get or create the database connection.
  */
@@ -87,7 +117,7 @@ async function getDb(): Promise<IDBPDatabase<VfsDB>> {
 export async function storeHandle(path: string, handle: FileSystemFileHandle): Promise<void> {
   const db = await getDb();
 
-  await db.put(HANDLES_STORE, handle, path);
+  await db.put(HANDLES_STORE, handle, scopedKey(path));
 }
 
 /**
@@ -96,7 +126,7 @@ export async function storeHandle(path: string, handle: FileSystemFileHandle): P
 export async function getHandle(path: string): Promise<FileSystemFileHandle | undefined> {
   const db = await getDb();
 
-  return db.get(HANDLES_STORE, path);
+  return getWithLegacyFallback<FileSystemFileHandle>(HANDLES_STORE, path);
 }
 
 /**
@@ -105,7 +135,7 @@ export async function getHandle(path: string): Promise<FileSystemFileHandle | un
 export async function removeHandle(path: string): Promise<void> {
   const db = await getDb();
 
-  await db.delete(HANDLES_STORE, path);
+  await db.delete(HANDLES_STORE, scopedKey(path));
 }
 
 /**
@@ -113,13 +143,16 @@ export async function removeHandle(path: string): Promise<void> {
  */
 export async function getAllHandles(): Promise<Map<string, FileSystemFileHandle>> {
   const db = await getDb();
-  const keys = await db.getAllKeys(HANDLES_STORE);
-  const values = await db.getAll(HANDLES_STORE);
+  const prefix = `${get(currentPatchId)}:`;
+  const keys = (await db.getAllKeys(HANDLES_STORE)).filter(
+    (key): key is string => typeof key === 'string' && key.startsWith(prefix)
+  );
 
   const handles = new Map<string, FileSystemFileHandle>();
 
-  for (let i = 0; i < keys.length; i++) {
-    handles.set(keys[i] as string, values[i]);
+  for (const key of keys) {
+    const value = await db.get(HANDLES_STORE, key);
+    if (value) handles.set(key.slice(prefix.length), value);
   }
 
   return handles;
@@ -131,7 +164,7 @@ export async function getAllHandles(): Promise<Map<string, FileSystemFileHandle>
 export async function clearHandles(): Promise<void> {
   const db = await getDb();
 
-  await db.clear(HANDLES_STORE);
+  await clearScoped(HANDLES_STORE);
 }
 
 /**
@@ -181,15 +214,14 @@ export async function storeFileData(path: string, file: File): Promise<void> {
     lastModified: file.lastModified
   };
 
-  await db.put(FILES_STORE, cachedData, path);
+  await db.put(FILES_STORE, cachedData, scopedKey(path));
 }
 
 /**
  * Get file data from IndexedDB.
  */
 export async function getFileData(path: string): Promise<File | undefined> {
-  const db = await getDb();
-  const cached = await db.get(FILES_STORE, path);
+  const cached = await getWithLegacyFallback<CachedFileData>(FILES_STORE, path);
 
   if (cached) {
     return new File([cached.data], cached.name, {
@@ -206,26 +238,21 @@ export async function getFileData(path: string): Promise<File | undefined> {
 export async function removeFileData(path: string): Promise<void> {
   const db = await getDb();
 
-  await db.delete(FILES_STORE, path);
+  await db.delete(FILES_STORE, scopedKey(path));
 }
 
 /**
  * Clear all stored file data.
  */
 export async function clearFileData(): Promise<void> {
-  const db = await getDb();
-
-  await db.clear(FILES_STORE);
+  await clearScoped(FILES_STORE);
 }
 
 /**
  * Check if file data exists for a path.
  */
 export async function hasFileData(path: string): Promise<boolean> {
-  const db = await getDb();
-  const count = await db.count(FILES_STORE, path);
-
-  return count > 0;
+  return (await getFileData(path)) !== undefined;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -241,7 +268,7 @@ export async function storeDirHandle(
 ): Promise<void> {
   const db = await getDb();
 
-  await db.put(DIR_HANDLES_STORE, handle, path);
+  await db.put(DIR_HANDLES_STORE, handle, scopedKey(path));
 }
 
 /**
@@ -250,7 +277,7 @@ export async function storeDirHandle(
 export async function getDirHandle(path: string): Promise<FileSystemDirectoryHandle | undefined> {
   const db = await getDb();
 
-  return db.get(DIR_HANDLES_STORE, path);
+  return getWithLegacyFallback<FileSystemDirectoryHandle>(DIR_HANDLES_STORE, path);
 }
 
 /**
@@ -259,7 +286,7 @@ export async function getDirHandle(path: string): Promise<FileSystemDirectoryHan
 export async function removeDirHandle(path: string): Promise<void> {
   const db = await getDb();
 
-  await db.delete(DIR_HANDLES_STORE, path);
+  await db.delete(DIR_HANDLES_STORE, scopedKey(path));
 }
 
 /**
@@ -267,13 +294,16 @@ export async function removeDirHandle(path: string): Promise<void> {
  */
 export async function getAllDirHandles(): Promise<Map<string, FileSystemDirectoryHandle>> {
   const db = await getDb();
-  const keys = await db.getAllKeys(DIR_HANDLES_STORE);
-  const values = await db.getAll(DIR_HANDLES_STORE);
+  const prefix = `${get(currentPatchId)}:`;
+  const keys = (await db.getAllKeys(DIR_HANDLES_STORE)).filter(
+    (key): key is string => typeof key === 'string' && key.startsWith(prefix)
+  );
 
   const handles = new Map<string, FileSystemDirectoryHandle>();
 
-  for (let i = 0; i < keys.length; i++) {
-    handles.set(keys[i] as string, values[i]);
+  for (const key of keys) {
+    const value = await db.get(DIR_HANDLES_STORE, key);
+    if (value) handles.set(key.slice(prefix.length), value);
   }
 
   return handles;

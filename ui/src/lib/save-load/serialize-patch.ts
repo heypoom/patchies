@@ -69,7 +69,9 @@ export function serializePatch({
     patchId,
     settings,
     // Only include files if there are any entries
-    ...(Object.keys(files.user || {}).length > 0 || Object.keys(files.objects || {}).length > 0
+    ...(Object.keys(files.patch || {}).length > 0 ||
+    Object.keys(files.user || {}).length > 0 ||
+    Object.keys(files.objects || {}).length > 0
       ? { files }
       : {})
   };

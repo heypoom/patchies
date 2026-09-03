@@ -13,6 +13,7 @@
     FolderSymlink,
     Image,
     Music,
+    Package,
     User,
     Box,
     Upload,
@@ -26,7 +27,12 @@
     Ellipsis
   } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
-  import { VirtualFilesystem, getLocalProvider, guessMimeType } from '$lib/vfs';
+  import {
+    PATCH_TEXT_FILE_ACCEPT,
+    VirtualFilesystem,
+    getLocalProvider,
+    guessMimeType
+  } from '$lib/vfs';
   import {
     parseVFSPath,
     isVFSFolder,
@@ -405,6 +411,7 @@
     };
 
     // Create namespace roots
+    const patchRoot: TreeNode = { name: 'Patch', path: 'patch://', children: new Map() };
     const userRoot: TreeNode = { name: 'User', path: 'user://', children: new Map() };
     const objRoot: TreeNode = { name: 'objects', path: 'obj://', children: new Map() };
 
@@ -412,7 +419,8 @@
       const parsed = parseVFSPath(path);
       if (!parsed) continue;
 
-      const targetRoot = parsed.namespace === 'user' ? userRoot : objRoot;
+      const targetRoot =
+        parsed.namespace === 'patch' ? patchRoot : parsed.namespace === 'user' ? userRoot : objRoot;
       let current = targetRoot;
 
       // Build nested structure
@@ -425,7 +433,13 @@
         }
 
         if (!current.children.has(segment)) {
-          const nodePath = `${parsed.namespace === 'user' ? 'user://' : 'obj://'}${parsed.segments.slice(0, i + 1).join('/')}`;
+          const prefix =
+            parsed.namespace === 'patch'
+              ? 'patch://'
+              : parsed.namespace === 'user'
+                ? 'user://'
+                : 'obj://';
+          const nodePath = `${prefix}${parsed.segments.slice(0, i + 1).join('/')}`;
           const isFolder = isLast && isVFSFolder(entry);
           current.children.set(segment, {
             name: segment,
@@ -444,7 +458,8 @@
       }
     }
 
-    // Always show user namespace (so users can upload/create folders)
+    // Patch and User are always visible; Objects only appears when populated.
+    root.children!.set('patch', patchRoot);
     root.children!.set('user', userRoot);
 
     // Only add objects namespace if it has children
@@ -517,8 +532,8 @@
   }
 
   function handleFolderDragOver(event: DragEvent, folderPath: string) {
-    // Only allow drops into user:// or obj:// namespace
-    if (!folderPath.startsWith('user://') && !folderPath.startsWith('obj://')) return;
+    // The drop root declares whether the bytes remain linked or are embedded.
+    if (!folderPath.startsWith('patch://') && !folderPath.startsWith('user://')) return;
 
     const hasFiles = event.dataTransfer?.types.includes('Files');
     const hasVfsPath = event.dataTransfer?.types.includes('application/x-vfs-path');
@@ -577,7 +592,12 @@
     const files = event.dataTransfer?.files;
     if (!files || files.length === 0) return;
 
-    // Store each dropped file in VFS with the target folder
+    if (targetFolder?.startsWith('patch://')) {
+      await vfs.importToPatch(Array.from(files), targetFolder);
+      return;
+    }
+
+    // Store each dropped file in User with linked-file behavior.
     for (const file of Array.from(files)) {
       await vfs.storeFile(file, undefined, targetFolder ?? undefined);
     }
@@ -586,6 +606,16 @@
   async function moveVfsFile(oldPath: string, targetFolder: string) {
     const parsed = parseVFSPath(oldPath);
     if (!parsed) return;
+
+    if (parsed.namespace === 'user' && targetFolder.startsWith('patch://')) {
+      await vfs.copyToPatch(oldPath, targetFolder, 'keep-both');
+      return;
+    }
+
+    if (parsed.namespace === 'patch' && targetFolder.startsWith('user://')) {
+      toast.error('Use Save to Disk to export a Patch file');
+      return;
+    }
 
     // Get the entry to access the real filename
     const rootEntry = vfs.getEntry(oldPath);
@@ -617,30 +647,12 @@
 
     const localProvider = getLocalProvider();
 
-    // Move each path
+    vfs.renamePath(oldPath, newBasePath);
+
     for (const pathToMove of pathsToMove) {
-      const entry = vfs.getEntry(pathToMove);
-      if (!entry) continue;
-
-      // Calculate new path by replacing the old base with the new base
-      const relativePath = pathToMove === oldPath ? '' : pathToMove.slice(oldPath.length);
-      const newPath = newBasePath + relativePath;
-
-      // Move in VFS - preserve the original filename from the entry
-      vfs.registerEntry(newPath, entry);
-      vfs.remove(pathToMove);
-
-      // Move in LocalProvider
-      if (localProvider) {
-        await localProvider.rename(pathToMove, newPath);
-      }
-
-      // Dispatch event to update vfsPath in nodes
-      eventBus.dispatch({
-        type: 'vfsPathRenamed',
-        oldPath: pathToMove,
-        newPath
-      });
+      const newPath =
+        newBasePath + (pathToMove === oldPath ? '' : pathToMove.slice(oldPath.length));
+      await localProvider?.rename(pathToMove, newPath);
     }
 
     // Update selection if moved item was selected
@@ -657,6 +669,13 @@
   function handleUploadClick(folderPath: string, event: MouseEvent) {
     event.stopPropagation();
     pendingUploadFolder = folderPath;
+
+    if (folderPath.startsWith('patch://')) {
+      fileInputRef?.setAttribute('accept', PATCH_TEXT_FILE_ACCEPT);
+    } else {
+      fileInputRef?.removeAttribute('accept');
+    }
+
     fileInputRef?.click();
   }
 
@@ -665,8 +684,16 @@
     const files = input.files;
     if (!files || files.length === 0) return;
 
-    for (const file of Array.from(files)) {
-      await vfs.storeFile(file, undefined, pendingUploadFolder ?? undefined);
+    try {
+      if (pendingUploadFolder?.startsWith('patch://')) {
+        await vfs.importToPatch(Array.from(files), pendingUploadFolder);
+      } else {
+        for (const file of Array.from(files)) {
+          await vfs.storeFile(file, undefined, pendingUploadFolder ?? undefined);
+        }
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Import failed');
     }
 
     // Reset input so same file can be selected again
@@ -752,22 +779,16 @@
             ? `${parsed.namespace}://${parentSegments.join('/')}/${newName}`
             : `${parsed.namespace}://${newName}`;
 
-        // Get entry, register at new path, remove old path
+        // Rename through the VFS so this mutation has global undo/redo support.
         const entry = vfs.getEntry(oldPath);
         if (entry) {
-          // Update the filename in the entry
-          const updatedEntry = { ...entry, filename: newName };
-          vfs.registerEntry(newPath, updatedEntry);
-          vfs.remove(oldPath);
+          vfs.renamePath(oldPath, newPath);
 
           // Also rename in LocalProvider to persist the change
           const localProvider = getLocalProvider();
           if (localProvider) {
             await localProvider.rename(oldPath, newPath);
           }
-
-          // Dispatch event to update vfsPath in nodes
-          eventBus.dispatch({ type: 'vfsPathRenamed', oldPath, newPath });
 
           // Update selection if renamed item was selected
           if (selectedPaths.has(oldPath)) {
@@ -790,21 +811,24 @@
     toast.success('Path copied to clipboard');
   }
 
+  async function handleSaveToDisk(path: string) {
+    const entry = vfs.getEntry(path);
+    if (!entry) return;
+
+    const url = URL.createObjectURL(await vfs.resolve(path));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = entry.filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handleDeleteFromContextMenu(path: string) {
     const localProvider = getLocalProvider();
 
-    // If it's a folder, also delete all children
-    const allPaths = vfs.list();
-    const pathsToDelete = allPaths.filter(
-      (p) => p === path || p.startsWith(path.endsWith('/') ? path : path + '/')
-    );
-
-    for (const pathToDelete of pathsToDelete) {
-      vfs.remove(pathToDelete);
-      if (localProvider) {
-        await localProvider.remove(pathToDelete);
-      }
-    }
+    const pathsToDelete = vfs.list().filter((p) => p === path || p.startsWith(`${path}/`));
+    vfs.deletePath(path);
+    for (const pathToDelete of pathsToDelete) await localProvider?.remove(pathToDelete);
 
     selectedPaths.clear();
     lastSelectedPath = null;
@@ -1106,6 +1130,7 @@
   bind:this={fileInputRef}
   type="file"
   multiple
+  accept={pendingUploadFolder?.startsWith('patch://') ? PATCH_TEXT_FILE_ACCEPT : undefined}
   class="hidden"
   onchange={handleFileInputChange}
 />
@@ -1125,13 +1150,18 @@
   {@const isExpanded = node.path ? expandedPaths.has(node.path) : true}
   {@const isSelected = node.path ? selectedPaths.has(node.path) : false}
   {@const paddingLeft = depth * 12 + 8}
+  {@const isPatchNamespace = node.path === 'patch://'}
   {@const isUserNamespace = node.path === 'user://'}
   {@const isObjectNamespace = node.path === 'obj://'}
   {@const isDropTarget = isInDropTarget(node.path)}
-  {@const isNamespace = isUserNamespace || isObjectNamespace}
+  {@const isNamespace = isPatchNamespace || isUserNamespace || isObjectNamespace}
   {@const isLinkedFolder = node.entry && isLocalFolder(node.entry)}
   {@const canHaveChildren =
-    isNamespace || (isFolder && node.path?.startsWith('user://') && !isLinkedFolder)}
+    isPatchNamespace ||
+    isUserNamespace ||
+    (isFolder &&
+      (node.path?.startsWith('patch://') || node.path?.startsWith('user://')) &&
+      !isLinkedFolder)}
   {@const needsReselectFlag = needsReselect(node.path)}
 
   {@const isRenaming = renamingPath === node.path}
@@ -1190,7 +1220,9 @@
               {:else}
                 <ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
               {/if}
-              {#if isUserNamespace}
+              {#if isPatchNamespace}
+                <Package class="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              {:else if isUserNamespace}
                 <User class="h-3.5 w-3.5 shrink-0 text-blue-400" />
               {:else if isObjectNamespace}
                 <Box class="h-3.5 w-3.5 shrink-0 text-blue-400" />
@@ -1263,31 +1295,35 @@
                 </Tooltip.Root>
               {/if}
 
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-                    onclick={(e) => handleUploadClick(node.path!, e)}
-                    title="Upload file"
-                  >
-                    <Upload class="h-3.5 w-3.5" />
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content side="bottom">Upload file</Tooltip.Content>
-              </Tooltip.Root>
+              {#if !isObjectNamespace}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                      onclick={(e) => handleUploadClick(node.path!, e)}
+                      title="Upload file"
+                    >
+                      <Upload class="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="bottom">Upload file</Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
 
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-                    onclick={(e) => handleAddUrlClick(node.path!, e)}
-                    title="Add from URL"
-                  >
-                    <Link class="h-3.5 w-3.5" />
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content side="bottom">Add from URL</Tooltip.Content>
-              </Tooltip.Root>
+              {#if isUserNamespace}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                      onclick={(e) => handleAddUrlClick(node.path!, e)}
+                      title="Add from URL"
+                    >
+                      <Link class="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="bottom">Add from URL</Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
             </div>
           {/if}
 
@@ -1358,6 +1394,12 @@
             <Copy class="mr-2 h-4 w-4" />
             Copy Path
           </ContextMenu.Item>
+          {#if node.path?.startsWith('patch://')}
+            <ContextMenu.Item onclick={() => handleSaveToDisk(node.path!)}>
+              <File class="mr-2 h-4 w-4" />
+              Save to Disk…
+            </ContextMenu.Item>
+          {/if}
           <ContextMenu.Separator />
           <ContextMenu.Item
             variant="destructive"

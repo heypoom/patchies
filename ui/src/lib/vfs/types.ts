@@ -1,6 +1,6 @@
 // Virtual Filesystem Types
 
-export type VFSProviderType = 'url' | 'local' | 'folder' | 'local-folder';
+export type VFSProviderType = 'url' | 'local' | 'folder' | 'local-folder' | 'embedded';
 
 /**
  * Entry metadata stored in the VFS tree.
@@ -20,6 +20,19 @@ export interface VFSEntry {
 
   /** File size in bytes. Used for duplicate detection. */
   size?: number;
+
+  /** Monotonic revision for content changes. */
+  revision?: number;
+}
+
+/** Text embedded directly in a patch file. Valid only below patch://. */
+export interface EmbeddedVFSEntry extends Omit<VFSEntry, 'provider'> {
+  provider: 'embedded';
+  content: string;
+}
+
+export function isEmbeddedVFSEntry(entry: VFSEntry): entry is EmbeddedVFSEntry {
+  return entry.provider === 'embedded' && 'content' in entry;
 }
 
 /** A file or directory returned from the user-facing VFS browsing API. */
@@ -85,6 +98,7 @@ export interface VFSProvider {
 export type VFSTreeNode = VFSEntry | { [key: string]: VFSTreeNode };
 
 export interface VFSTree {
+  patch?: { [key: string]: VFSTreeNode };
   user?: { [key: string]: VFSTreeNode };
   objects?: { [nodeId: string]: { [key: string]: VFSTreeNode } };
 }
@@ -100,6 +114,7 @@ export function isVFSEntry(node: VFSTreeNode): node is VFSEntry {
  * VFS path prefixes
  */
 export const VFS_PREFIXES = {
+  PATCH: 'patch://',
   USER: 'user://',
   OBJECT: 'obj://'
 } as const;
@@ -114,13 +129,19 @@ export const VFS_FOLDERS = {
 /**
  * Default set of VFS namespace roots expanded in the file tree on first load
  */
-export const VFS_DEFAULT_EXPANDED = [VFS_PREFIXES.USER, VFS_PREFIXES.OBJECT] as const;
+export const VFS_DEFAULT_EXPANDED = [
+  VFS_PREFIXES.PATCH,
+  VFS_PREFIXES.USER,
+  VFS_PREFIXES.OBJECT
+] as const;
 
 /**
  * Check if a path is a VFS path (has user:// or obj:// prefix)
  */
 export const isVFSPath = (path: string): boolean =>
-  path.startsWith(VFS_PREFIXES.USER) || path.startsWith(VFS_PREFIXES.OBJECT);
+  path.startsWith(VFS_PREFIXES.PATCH) ||
+  path.startsWith(VFS_PREFIXES.USER) ||
+  path.startsWith(VFS_PREFIXES.OBJECT);
 
 /**
  * Parse a VFS path into its components.
@@ -128,7 +149,13 @@ export const isVFSPath = (path: string): boolean =>
  */
 export function parseVFSPath(
   path: string
-): { namespace: 'user' | 'obj'; segments: string[] } | null {
+): { namespace: 'patch' | 'user' | 'obj'; segments: string[] } | null {
+  if (path.startsWith(VFS_PREFIXES.PATCH)) {
+    const rest = path.slice(VFS_PREFIXES.PATCH.length);
+
+    return { namespace: 'patch', segments: rest.split('/').filter(Boolean) };
+  }
+
   if (path.startsWith(VFS_PREFIXES.USER)) {
     const rest = path.slice(VFS_PREFIXES.USER.length);
 

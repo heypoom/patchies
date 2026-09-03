@@ -287,6 +287,13 @@ export class PatchManager {
     this.ctx.nodes = [];
     this.ctx.edges = [];
 
+    // Scope browser-local VFS resources before hydration looks them up.
+    if (migrated.patchId) {
+      currentPatchId.set(migrated.patchId);
+    } else {
+      generateNewPatchId();
+    }
+
     // Hydrate VFS from saved files
     const vfs = VirtualFilesystem.getInstance();
     vfs.clear();
@@ -308,13 +315,6 @@ export class PatchManager {
     // Update node counter based on loaded nodes
     if (migrated.nodes.length > 0) {
       this.ctx.setNodeIdCounterFromNodes(migrated.nodes);
-    }
-
-    // Restore or generate patchId for KV storage scoping
-    if (migrated.patchId) {
-      currentPatchId.set(migrated.patchId);
-    } else {
-      generateNewPatchId();
     }
 
     // Restore patch settings
