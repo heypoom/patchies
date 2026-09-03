@@ -64,9 +64,9 @@ export function createCachedResolver(base: IncludeResolver): CachedIncludeResolv
  * is added: on every file-modified event, call this with the shared resolver
  * and trigger updateCode() on any GLSL nodes that reference the changed path.
  */
-export function clearVfsCache(resolver: CachedIncludeResolver): void {
+export function clearVfsCache(resolver: CachedIncludeResolver, path?: string): void {
   for (const key of resolver._cache.keys()) {
-    if (key.startsWith('vfs:')) {
+    if (key.startsWith('vfs:') && (!path || key === `vfs:${path}`)) {
       resolver._cache.delete(key);
     }
   }

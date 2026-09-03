@@ -193,7 +193,12 @@ export class PatchFileOperations {
       `Import ${plan.importedPaths.length} patch file${plan.importedPaths.length === 1 ? '' : 's'}`,
       () => {
         for (const path of plan.removedExistingPaths) {
+          const entry = this.access.entries.get(path);
           this.access.entries.delete(path);
+
+          if (entry && isEmbeddedVFSEntry(entry)) {
+            this.access.emitContentModified(path, (entry.revision ?? 0) + 1);
+          }
         }
 
         for (const [path, entry] of plan.stagedEntries) {

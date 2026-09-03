@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { HistoryManager } from '$lib/history';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { VfsPathRenamedEvent } from '$lib/eventbus/events';
+import type { VfsContentModifiedEvent } from '$lib/eventbus/events';
 import { getPatchImportError, VirtualFilesystem } from './VirtualFilesystem';
 import type { EmbeddedVFSEntry } from './types';
 
@@ -307,6 +308,24 @@ describe('VirtualFilesystem patch files', () => {
     history.redo();
     expect(vfs.readEmbeddedFile('patch://utility.js')).toContain('2');
     expect(vfs.getEntry('patch://utility.js')).toMatchObject({ revision: 2 });
+  });
+
+  it('emits monotonic content revisions across Save, undo, and redo', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    const revisions: number[] = [];
+    const listener = (event: VfsContentModifiedEvent) => revisions.push(event.revision);
+
+    PatchiesEventBus.getInstance().addEventListener('vfsContentModified', listener);
+
+    vfs.createEmbeddedFile('patch://utility.glsl', 'float value = 1.0;');
+    vfs.writeEmbeddedFile('patch://utility.glsl', 'float value = 2.0;');
+    history.undo();
+    history.redo();
+
+    expect(revisions).toEqual([1, 2, 3, 4]);
+
+    PatchiesEventBus.getInstance().removeEventListener('vfsContentModified', listener);
   });
 
   it('restores local file bytes and metadata when replacement is undone and redone', async () => {

@@ -3,6 +3,7 @@ import { migratePatch } from '$lib/migration';
 import { cleanupPatch } from '$lib/save-load/cleanup-patch';
 import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 import { loadPatchFromUrl } from '$lib/save-load/load-patch-from-url';
+import { canNavigateAwayFromPatchFile } from '$lib/vfs/file-editor-navigation';
 import { getSharedPatchData } from '$lib/api/pb';
 import { VirtualFilesystem } from '$lib/vfs';
 import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
@@ -234,9 +235,7 @@ export class PatchManager {
         const parsed: PatchSaveFormat = JSON.parse(save);
 
         if (parsed) {
-          await this.restoreFromSave(parsed);
-
-          return true;
+          return this.restoreFromSave(parsed);
         }
       }
     } catch {
@@ -253,7 +252,9 @@ export class PatchManager {
       const result = await loadPatchFromUrl(url);
 
       if (result.success) {
-        await this.restoreFromSave(result.data);
+        const restored = await this.restoreFromSave(result.data);
+        if (!restored) return { success: false, error: 'Patch load cancelled' };
+
         return { success: true };
       }
 
@@ -274,7 +275,9 @@ export class PatchManager {
   async restoreFromSave(
     save: PatchSaveFormat,
     options?: { skipAutosave?: boolean }
-  ): Promise<void> {
+  ): Promise<boolean> {
+    if (!(await canNavigateAwayFromPatchFile())) return false;
+
     // Apply migrations to upgrade old patch formats
     const migrated = migratePatch(save) as PatchSaveFormat;
 
@@ -358,12 +361,16 @@ export class PatchManager {
     if (!options?.skipAutosave) {
       this.performAutosave(false);
     }
+
+    return true;
   }
 
   /**
    * Create a new empty patch.
    */
-  createNewPatch(): void {
+  async createNewPatch(): Promise<boolean> {
+    if (!(await canNavigateAwayFromPatchFile())) return false;
+
     // Exit shared patch session so autosave resumes
     this._isSharedPatchSession = false;
 
@@ -399,16 +406,21 @@ export class PatchManager {
     deleteSearchParam('id');
     deleteSearchParam('src');
     deleteSearchParam('demo');
+
+    return true;
   }
 
   /**
    * Load a shared patch (after user confirms).
    */
-  async loadSharedPatch(save: PatchSaveFormat): Promise<void> {
-    await this.restoreFromSave(save, { skipAutosave: true });
+  async loadSharedPatch(save: PatchSaveFormat): Promise<boolean> {
+    const restored = await this.restoreFromSave(save, { skipAutosave: true });
+    if (!restored) return false;
 
     // Clear current patch name to prevent accidentally overwriting user's saved patches
     currentPatchName.set(null);
+
+    return true;
   }
 
   /**
@@ -419,7 +431,9 @@ export class PatchManager {
       const result = await loadPatchFromUrl(url);
 
       if (result.success) {
-        await this.loadSharedPatch(result.data);
+        const restored = await this.loadSharedPatch(result.data);
+        if (!restored) return { success: false, error: 'Patch load cancelled' };
+
         return { success: true };
       }
 

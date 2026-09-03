@@ -53,6 +53,7 @@ export class VirtualFilesystem {
   private patchFiles: PatchFileOperations;
   private directoryReader: VfsDirectoryReader;
   private treeCodec = new VfsTreeCodec();
+  private contentRevisionClock = new Map<string, number>();
 
   readonly entries$: Readable<Map<string, VFSEntry>> = derived(this.versionStore, () =>
     this.getAllEntries()
@@ -327,6 +328,14 @@ export class VirtualFilesystem {
     const plan = this.entries.planDelete(requestedPaths);
     if (plan.paths.length === 0) return;
 
+    const deletedEmbeddedFiles = plan.paths.flatMap((path) => {
+      const entry = this.entries.get(path);
+
+      return entry && isEmbeddedVFSEntry(entry)
+        ? [{ path, revision: (entry.revision ?? 0) + 1 }]
+        : [];
+    });
+
     const linkedFolderPaths = plan.paths.filter(
       (path) => this.entries.get(path)?.provider === 'local-folder'
     );
@@ -355,6 +364,10 @@ export class VirtualFilesystem {
         this.permissions.deleteAll(plan.paths);
         setLinkedFoldersDeleted(true);
         this.notifyChange();
+
+        for (const file of deletedEmbeddedFiles) {
+          this.emitContentModified(file.path, file.revision);
+        }
       },
       {
         redo: () => setLinkedFoldersDeleted(true),
@@ -550,6 +563,7 @@ export class VirtualFilesystem {
   clear(): void {
     this.entries.clear();
     this.permissions.clear();
+    this.contentRevisionClock.clear();
     this.patchFiles.refreshValidation();
 
     const provider = this.getLocalProvider();
@@ -601,11 +615,13 @@ export class VirtualFilesystem {
           prior.revision !== entry.revision);
 
       if (hasVfsModified) {
-        PatchiesEventBus.getInstance().dispatch({
-          type: 'vfsContentModified',
-          path,
-          revision: entry.revision ?? 1
-        });
+        this.emitContentModified(path, entry.revision ?? 1);
+      }
+    }
+
+    for (const [path, entry] of previous) {
+      if (isEmbeddedVFSEntry(entry) && !this.entries.has(path)) {
+        this.emitContentModified(path, (entry.revision ?? 0) + 1);
       }
     }
   }
@@ -660,6 +676,13 @@ export class VirtualFilesystem {
   }
 
   private emitContentModified(path: string, revision: number): void {
-    PatchiesEventBus.getInstance().dispatch({ type: 'vfsContentModified', path, revision });
+    const monotonicRevision = Math.max(revision, (this.contentRevisionClock.get(path) ?? 0) + 1);
+    this.contentRevisionClock.set(path, monotonicRevision);
+
+    PatchiesEventBus.getInstance().dispatch({
+      type: 'vfsContentModified',
+      path,
+      revision: monotonicRevision
+    });
   }
 }

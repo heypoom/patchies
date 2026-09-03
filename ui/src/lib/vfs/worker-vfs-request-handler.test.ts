@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { VirtualFilesystem } from './VirtualFilesystem';
+import { EmbeddedProvider } from './providers/EmbeddedProvider';
 import {
   listVfsEntries,
   revokeWorkerVfsObjectUrls,
@@ -12,6 +13,7 @@ import {
 describe('worker VFS requests', () => {
   beforeEach(() => {
     VirtualFilesystem.resetInstance();
+    VirtualFilesystem.getInstance().registerProvider(new EmbeddedProvider());
   });
 
   afterEach(() => {
@@ -41,13 +43,24 @@ describe('worker VFS requests', () => {
     });
   });
 
-  it('keeps external URLs external and limits text requests to user paths', async () => {
+  it('keeps external URLs external and limits text requests to include namespaces', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile(
+      'patch://world.glsl',
+      'float circle(vec2 point, float radius) { return length(point) - radius; }'
+    );
+
     expect(await resolveVfsUrl('node-1', '//cdn.example.com/file.png')).toEqual({
       url: '//cdn.example.com/file.png'
     });
 
+    expect(await resolveVfsText('patch://world.glsl')).toEqual({
+      text: 'float circle(vec2 point, float radius) { return length(point) - radius; }'
+    });
+
     expect(await resolveVfsText('obj://node/file.txt')).toEqual({
-      error: 'Invalid VFS path: "obj://node/file.txt". Only user:// paths are supported.'
+      error:
+        'Invalid VFS path: "obj://node/file.txt". Only patch:// and user:// paths are supported.'
     });
   });
 

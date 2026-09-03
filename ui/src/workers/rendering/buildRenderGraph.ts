@@ -25,6 +25,8 @@ interface PendingNode {
   fingerprint: string;
   fboFormat: FBOFormat;
   resolution?: FBOResolution;
+  existingFbo?: FBONode;
+  reusesFbo: boolean;
 }
 
 export const buildRenderGraph = async (
@@ -192,7 +194,9 @@ export const buildRenderGraph = async (
       prevFramebuffers,
       fingerprint,
       fboFormat,
-      resolution: nodeResolution
+      resolution: nodeResolution,
+      existingFbo,
+      reusesFbo: Boolean(canReuseFbo)
     });
   }
 
@@ -211,7 +215,9 @@ export const buildRenderGraph = async (
       prevFramebuffers,
       fingerprint,
       fboFormat,
-      resolution
+      resolution,
+      existingFbo,
+      reusesFbo
     } = pending[i];
 
     const renderer = results[i];
@@ -219,6 +225,13 @@ export const buildRenderGraph = async (
     // If the renderer function is null, we skip defining this node.
     if (renderer === null) {
       console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
+
+      if (existingFbo && reusesFbo) {
+        host.fboNodes.set(node.id, existingFbo);
+        host.cookState.markDirty(node.id, 'config');
+
+        continue;
+      }
 
       // Evict stale FBO entry so the old render function is not reused
       host.fboNodes.delete(node.id);

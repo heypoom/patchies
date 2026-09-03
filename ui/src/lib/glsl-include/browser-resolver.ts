@@ -3,7 +3,7 @@
  */
 
 import { VirtualFilesystem } from '$lib/vfs';
-import { createCachedResolver, type CachedIncludeResolver } from './cache';
+import { clearVfsCache, createCachedResolver, type CachedIncludeResolver } from './cache';
 import type { IncludeResolver } from './preprocessor';
 import { resolveNpmPackage } from './npm-resolver';
 
@@ -33,4 +33,8 @@ export function createBrowserResolver(): IncludeResolver {
   });
 
   return sharedResolver;
+}
+
+export function clearBrowserVfsIncludeCache(path: string): void {
+  if (sharedResolver) clearVfsCache(sharedResolver, path);
 }

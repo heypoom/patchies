@@ -1243,8 +1243,9 @@
     showNewPatchDialog = true;
   }
 
-  function confirmNewPatch() {
-    patchManager.createNewPatch();
+  async function confirmNewPatch() {
+    if (!(await patchManager.createNewPatch())) return;
+
     showNewPatchDialog = false;
   }
 
@@ -1261,7 +1262,7 @@
         return;
       }
     } else if (pendingSharedPatch) {
-      await patchManager.loadSharedPatch(pendingSharedPatch);
+      if (!(await patchManager.loadSharedPatch(pendingSharedPatch))) return;
     }
 
     pendingSharedPatch = null;

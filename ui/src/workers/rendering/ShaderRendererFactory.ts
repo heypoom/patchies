@@ -93,7 +93,9 @@ export class ShaderRendererFactory {
       onError: (error) => this.postShaderError(node.id, error)
     });
 
-    return { render: (params: RenderParams) => command?.(params), cleanup: () => {} };
+    if (!command) return null;
+
+    return { render: (params: RenderParams) => command(params), cleanup: () => {} };
   }
 
   private async createShaderPark(

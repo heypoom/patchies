@@ -1,6 +1,6 @@
 # 52. Virtual Filesystem
 
-> Status: Implemented (original VFS); `patch://` extension planned
+> Status: Implemented through Stage 2; Patch JavaScript modules planned for Stage 3
 
 I wanted the ability to persist, browse and resolve files in a virtual file system.
 
@@ -517,6 +517,8 @@ Verification:
 Release criterion: Patch files are portable and manageable through the Files tree without requiring the editor or a runtime import consumer.
 
 ### Stage 2: Patch GLSL Editing and Imports
+
+Status: Implemented.
 
 Users can create, edit, and import GLSL utilities from `patch://`. JavaScript Patch files remain visible and portable but read-only until Stage 3.
 

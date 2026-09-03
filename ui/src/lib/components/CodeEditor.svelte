@@ -132,6 +132,7 @@
     placeholder = '',
     class: className = '',
     onrun = () => {},
+    onsave,
     onchange = () => {},
     oncommit,
     nodeId,
@@ -152,6 +153,7 @@
     placeholder?: string;
     class?: string;
     onrun?: (code?: string) => void;
+    onsave?: () => void;
     onchange?: (code: string) => void;
 
     /** Called on blur if value changed since focus. For undo/redo tracking. */
@@ -290,9 +292,24 @@
         Prec.highest(
           keymap.of([
             {
+              key: 'Mod-s',
+              run: () => {
+                if (!onsave) return false;
+
+                onsave();
+
+                return true;
+              }
+            },
+            {
               key: 'Shift-Enter',
               run: () => {
-                onrun(editorView?.state.doc.toString());
+                if (onsave) {
+                  onsave();
+                } else {
+                  onrun(editorView?.state.doc.toString());
+                }
+
                 return true;
               }
             },
@@ -537,7 +554,15 @@
 
       if ($useVimInEditor) {
         const { vim, Vim } = await import('@replit/codemirror-vim');
-        Vim.defineEx('write', 'w', () => onrun(editorView?.state.doc.toString()));
+
+        Vim.defineEx('write', 'w', () => {
+          if (onsave) {
+            onsave();
+          } else {
+            onrun(editorView?.state.doc.toString());
+          }
+        });
+
         extensions.push(drawSelection());
         extensions.push(vim({ status: false }));
       }
