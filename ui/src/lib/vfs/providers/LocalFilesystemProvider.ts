@@ -14,10 +14,17 @@ import {
   storeDirHandle,
   getDirHandle,
   removeDirHandle,
+  markDirHandleDeleted,
+  restoreDeletedDirHandle,
   getAllDirHandles,
   hasDirPermission,
   requestDirHandlePermission
 } from '../persistence';
+
+export interface LocalFileState {
+  file?: File;
+  handle?: FileSystemFileHandle;
+}
 
 /**
  * Provider that uses the File System Access API for persistent file access.
@@ -36,6 +43,9 @@ export class LocalFilesystemProvider implements VFSProvider {
 
   /** In-memory cache of file data for the current session */
   private fileCache: Map<string, File> = new Map();
+
+  /** Serialize persistence updates so rapid undo/redo cannot reorder stored state. */
+  private fileStateWriteQueues: Map<string, Promise<void>> = new Map();
 
   /** In-memory cache of directory handles for the current session */
   private dirHandleCache: Map<string, FileSystemDirectoryHandle> = new Map();
@@ -116,6 +126,45 @@ export class LocalFilesystemProvider implements VFSProvider {
 
     // Store both handle and file data for maximum compatibility
     await Promise.all([storeHandle(path, handle), storeFileData(path, file)]);
+  }
+
+  /** Capture the browser-local resources needed to restore a file operation. */
+  async captureFileState(path: string): Promise<LocalFileState> {
+    const file = this.fileCache.get(path) ?? (await getFileData(path));
+    const handle = this.handleCache.get(path) ?? (await getHandle(path));
+
+    return { file, handle };
+  }
+
+  /** Replace all browser-local resources for a path with a captured state. */
+  async restoreFileState(path: string, state: LocalFileState): Promise<void> {
+    this.fileCache.delete(path);
+    this.handleCache.delete(path);
+
+    if (state.file) this.fileCache.set(path, state.file);
+    if (state.handle) this.handleCache.set(path, state.handle);
+
+    const previousWrite = this.fileStateWriteQueues.get(path) ?? Promise.resolve();
+    const write = previousWrite
+      .catch(() => {})
+      .then(async () => {
+        await Promise.all([removeHandle(path), removeFileData(path)]);
+
+        const writes: Promise<void>[] = [];
+        if (state.file) writes.push(storeFileData(path, state.file));
+        if (state.handle) writes.push(storeHandle(path, state.handle));
+
+        await Promise.all(writes);
+      });
+    this.fileStateWriteQueues.set(path, write);
+
+    try {
+      await write;
+    } finally {
+      if (this.fileStateWriteQueues.get(path) === write) {
+        this.fileStateWriteQueues.delete(path);
+      }
+    }
   }
 
   /**
@@ -273,6 +322,26 @@ export class LocalFilesystemProvider implements VFSProvider {
   async removeDirHandle(path: string): Promise<void> {
     this.dirHandleCache.delete(path);
     await removeDirHandle(path);
+  }
+
+  async hideDirHandle(path: string): Promise<void> {
+    this.dirHandleCache.delete(path);
+    await markDirHandleDeleted(path);
+  }
+
+  async restoreDirHandle(path: string): Promise<void> {
+    await restoreDeletedDirHandle(path);
+  }
+
+  /** Move a linked directory handle when its VFS path changes. */
+  async renameDirHandle(oldPath: string, newPath: string): Promise<void> {
+    const handle = await this.getDirHandle(oldPath);
+    if (!handle) return;
+
+    this.dirHandleCache.set(newPath, handle);
+    this.dirHandleCache.delete(oldPath);
+    await this.storeDirHandle(newPath, handle);
+    await this.removeDirHandle(oldPath);
   }
 
   /**

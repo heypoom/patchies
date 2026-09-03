@@ -205,7 +205,7 @@
 
   const setPortCount = createPixiDomSetPortCount({
     getNodeId: () => nodeId,
-    updateNodeData: (id, updates) => updateNodeData(id, updates),
+    updateNodeData: (id, updates) => updateNodeData(id, updates as Record<string, unknown>),
     updateNodeInternals
   });
 

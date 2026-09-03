@@ -1,8 +1,10 @@
 import { VirtualFilesystem } from './VirtualFilesystem';
+import { createVfsFileReader, type VfsFileReader } from './file-reader';
 import type { VFSListEntry } from './types';
 import { isExternalUrl, normalizeUserVfsPath } from './user-api-paths';
 
 export interface VfsApi {
+  get(path: string): VfsFileReader;
   getUrl(path: string): Promise<string>;
   list(path?: string): Promise<VFSListEntry[]>;
   search(query: string, path?: string): Promise<VFSListEntry[]>;
@@ -10,7 +12,8 @@ export interface VfsApi {
 
 /** Create the VFS API exposed to code that runs on the main thread. */
 export function createVfsApi(trackObjectUrl: (url: string) => void): VfsApi {
-  return {
+  const api: VfsApi = {
+    get: (path) => createVfsFileReader(path, api.getUrl),
     async getUrl(path) {
       if (typeof window === 'undefined' || isExternalUrl(path)) return path;
 
@@ -33,4 +36,6 @@ export function createVfsApi(trackObjectUrl: (url: string) => void): VfsApi {
       return vfs.search(query, normalizeUserVfsPath(path));
     }
   };
+
+  return api;
 }

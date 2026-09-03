@@ -39,6 +39,7 @@ export const jsRunnerInstructions = `
 - delay(ms) - Promise that resolves after ms (rejects if node stops)
 - requestAnimationFrame(cb) - Animation frame with auto-cleanup
 - onCleanup(cb) - Register cleanup callback for unmount/re-execution
+- await vfs.get(path).json() / .text() / .blob() / .arrayBuffer() - Read a virtual filesystem file in the requested format (e.g. \`await vfs.get('./data.json').json()\`).
 - await vfs.getUrl(path) - Resolve a virtual filesystem file to a browser URL. Relative paths use the \`user://\` namespace (e.g. \`await vfs.getUrl('./photo.jpg')\`).
 - await vfs.list(path?) - List a folder's direct entries as {path, name, kind}. Relative paths use the \`user://\` namespace (e.g. \`await vfs.list('./samples')\`).
 - await vfs.search(query, path?) - Search matching entries as {path, name, kind}. Relative paths use the \`user://\` namespace (e.g. \`await vfs.search('kick', './samples')\`).

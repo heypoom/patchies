@@ -64,7 +64,7 @@ export const migration004: Migration = {
     if (!patch.nodes) return patch;
 
     // Ensure files structure exists
-    const files: VFSTree = patch.files ?? { user: {}, objects: {} };
+    const files: VFSTree = patch.files ?? { user: {} };
     if (!files.user) files.user = {};
 
     const migratedNodes = patch.nodes.map((node) => {

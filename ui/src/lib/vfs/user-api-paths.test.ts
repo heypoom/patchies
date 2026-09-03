@@ -99,6 +99,15 @@ describe('VFS user API paths', () => {
     });
   });
 
+  it('does not include paths that only share a directory prefix', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const entry = { provider: 'url' as const, filename: 'placeholder' };
+    vfs.registerEntry('user://samples/kick.wav', entry);
+    vfs.registerEntry('user://samples-old/snare.wav', entry);
+
+    expect(vfs.list('user://samples')).toEqual(['user://samples/kick.wav']);
+  });
+
   it('lists and searches the contents of linked local folders', async () => {
     const linkedFolder = {
       name: 'samples',

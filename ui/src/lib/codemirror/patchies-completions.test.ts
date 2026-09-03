@@ -151,10 +151,17 @@ describe('patchies completions', () => {
 
   it('shows VFS method completions after vfs.', () => {
     expect(getCompletionLabels('js', 'vfs.')).toEqual(
-      expect.arrayContaining(['getUrl', 'list', 'search'])
+      expect.arrayContaining(['get', 'getUrl', 'list', 'search'])
     );
-    expect(getCompletionLabels('js', 'vfs.ge')).toEqual(['getUrl']);
+    expect(getCompletionLabels('js', 'vfs.ge')).toEqual(['get', 'getUrl']);
     expect(getCompletionLabels('js', 'vfs.se')).toEqual(['search']);
+  });
+
+  it('shows file reader completions after vfs.get()', () => {
+    expect(getCompletionLabels('js', "vfs.get('./file.json').")).toEqual(
+      expect.arrayContaining(['arrayBuffer', 'blob', 'json', 'text'])
+    );
+    expect(getCompletionLabels('js', "vfs.get('./file.json').j")).toEqual(['json']);
   });
 
   it('shows settings completions for Pixi nodes', () => {

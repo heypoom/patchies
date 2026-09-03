@@ -26,8 +26,7 @@ async function setup() {
 }
 
 // In js or canvas.dom:
-const url = await vfs.getUrl("user://data.json");
-const data = await fetch(url).then(r => r.json());
+const data = await vfs.get("user://data.json").json();
 ```
 
 VFS paths use the `user://` prefix for uploaded files. Patchies clears object URLs when it destroys the object.
@@ -48,17 +47,20 @@ Both methods also browse linked local folders after you grant Patchies permissio
 
 ## Getting File Content
 
-Get the underlying Blob or raw data:
+Read a file in the format you need:
 
 ```javascript
+// Parse JSON
+const data = await vfs.get("user://data.json").json();
+
 // Get as Blob
-const blob = await fetch(await vfs.getUrl("user://image.png")).then(r => r.blob());
+const blob = await vfs.get("user://image.png").blob();
 
 // Get as ArrayBuffer (for binary data)
-const buffer = await fetch(await vfs.getUrl("user://audio.wav")).then(r => r.arrayBuffer());
+const buffer = await vfs.get("user://audio.wav").arrayBuffer();
 
 // Get as text
-const text = await fetch(await vfs.getUrl("user://data.csv")).then(r => r.text());
+const text = await vfs.get("user://data.csv").text();
 ```
 
 ## Supported Objects

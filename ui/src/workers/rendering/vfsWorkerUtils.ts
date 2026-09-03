@@ -5,9 +5,11 @@
  * The main thread resolves the path using VirtualFilesystem, creates an object URL,
  * and sends back the URL string. Workers can use it directly (same origin).
  */
+import { createVfsFileReader, type VfsFileReader } from '$lib/vfs/file-reader';
 import type { VFSListEntry } from '$lib/vfs/types';
 
 export interface WorkerVfs {
+  get(path: string): VfsFileReader;
   getUrl(path: string): Promise<string>;
   list(path?: string): Promise<VFSListEntry[]>;
   search(query: string, path?: string): Promise<VFSListEntry[]>;
@@ -97,9 +99,12 @@ export function createWorkerVfs(nodeId: string): WorkerVfs {
     });
   };
 
-  return {
+  const api: WorkerVfs = {
+    get: (path) => createVfsFileReader(path, api.getUrl),
     getUrl: (path) => request<string>('resolveVfsUrl', { path }),
     list: (path = '.') => request<VFSListEntry[]>('listVfs', { path }),
     search: (query, path = '.') => request<VFSListEntry[]>('searchVfs', { query, path })
   };
+
+  return api;
 }

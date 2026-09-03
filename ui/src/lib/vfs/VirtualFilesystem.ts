@@ -1,24 +1,39 @@
 // Virtual Filesystem Singleton
 
-import { writable, derived, type Readable } from 'svelte/store';
 import { match } from 'ts-pattern';
+import { derived, writable, type Readable } from 'svelte/store';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { PatchFileOperations } from './PatchFileOperations';
+import type { VfsCollisionStrategy } from './PatchImportPlanner';
+import { clearFileData, clearHandles } from './persistence';
+import { generateUserPath, getFilenameFromUrl, guessMimeType } from './path-utils';
+import type { LocalFileState, LocalFilesystemProvider } from './providers/LocalFilesystemProvider';
 import {
+  type PatchImportItem,
   type VFSEntry,
-  type VFSTree,
-  type VFSTreeNode,
-  type VFSProvider,
   type VFSListEntry,
   type VFSListPage,
+  type VFSProvider,
   type VFSSearchPage,
-  isVFSFolder,
-  isVFSEntry,
+  type VFSTree,
+  isEmbeddedVFSEntry,
   isVFSPath,
-  parseVFSPath,
   VFS_PREFIXES
 } from './types';
-import { generateUserPath, getFilenameFromUrl, guessMimeType } from './path-utils';
-import { clearFileData, clearHandles } from './persistence';
-import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { VfsDirectoryReader } from './VfsDirectoryReader';
+import { VfsEntryIndex, type VfsRenameMove } from './VfsEntryIndex';
+import { VfsMutationCoordinator, type VfsMutationSnapshot } from './VfsMutationCoordinator';
+import { VfsPermissionTracker } from './VfsPermissionTracker';
+import { VfsTreeCodec } from './VfsTreeCodec';
+
+export {
+  MAX_EMBEDDED_FILE_BYTES,
+  MAX_EMBEDDED_PATCH_BYTES,
+  PATCH_TEXT_FILE_ACCEPT,
+  getPatchImportError
+} from './PatchImportPlanner';
+
+export type { VfsCollisionStrategy } from './PatchImportPlanner';
 
 declare global {
   interface Window {
@@ -26,72 +41,61 @@ declare global {
   }
 }
 
-/**
- * Virtual Filesystem - singleton for managing file references.
- *
- * Files are referenced by VFS paths like:
- * - user://images/photo.jpg (user uploads)
- * - obj://csound~-24/sound.csd (node-specific files)
- *
- * The VFS stores metadata (VFSEntry) and delegates resolution to providers.
- */
+/** Stable public façade for virtual file operations and provider coordination. */
 export class VirtualFilesystem {
   private static instance: VirtualFilesystem | null = null;
 
-  /** Flat map of path -> entry for quick lookups */
-  private entries: Map<string, VFSEntry> = new Map();
-
-  /** Registered providers */
-  private providers: Map<string, VFSProvider> = new Map();
-
-  /** Paths that need permission re-grant (local files after reload) */
-  private pendingPermissions: Set<string> = new Set();
-
-  /** Version counter for reactivity - increments on any mutation */
+  private entries = new VfsEntryIndex();
+  private providers = new Map<string, VFSProvider>();
+  private permissions = new VfsPermissionTracker();
   private versionStore = writable(0);
+  private mutationCoordinator: VfsMutationCoordinator;
+  private patchFiles: PatchFileOperations;
+  private directoryReader: VfsDirectoryReader;
+  private treeCodec = new VfsTreeCodec();
 
-  /** Readable store of all entries - subscribe to this for reactive updates */
   readonly entries$: Readable<Map<string, VFSEntry>> = derived(this.versionStore, () =>
     this.getAllEntries()
   );
 
-  /** Readable store of paths needing permission re-grant */
   readonly pendingPermissions$: Readable<Set<string>> = derived(
     this.versionStore,
-    () => new Set(this.pendingPermissions)
+    () => new Set(this.permissions.getAll())
   );
 
   private constructor() {
-    // Private constructor for singleton
-  }
+    this.mutationCoordinator = new VfsMutationCoordinator({
+      snapshot: () => this.createMutationSnapshot(),
+      restore: (snapshot) => this.restoreEntries(snapshot),
+      afterMutation: () => this.patchFiles.refreshValidation()
+    });
 
-  /** Notify subscribers that the VFS has changed */
-  private notifyChange(): void {
-    this.versionStore.update((v) => v + 1);
+    this.patchFiles = new PatchFileOperations({
+      entries: this.entries,
+      recordMutation: (description, mutate, callbacks) =>
+        this.mutationCoordinator.record(description, mutate, callbacks),
+      notifyChange: () => this.notifyChange(),
+      emitContentModified: (path, revision) => this.emitContentModified(path, revision)
+    });
+
+    this.directoryReader = new VfsDirectoryReader(this.entries, () => this.getLocalProvider());
   }
 
   static getInstance(): VirtualFilesystem {
     if (!VirtualFilesystem.instance) {
       VirtualFilesystem.instance = new VirtualFilesystem();
 
-      // Expose for debugging
       if (typeof window !== 'undefined') {
         window.vfs = VirtualFilesystem.instance;
       }
     }
+
     return VirtualFilesystem.instance;
   }
 
-  /**
-   * Reset the singleton (useful for testing).
-   */
   static resetInstance(): void {
     VirtualFilesystem.instance = null;
   }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Provider Management
-  // ─────────────────────────────────────────────────────────────────
 
   registerProvider(provider: VFSProvider): void {
     this.providers.set(provider.type, provider);
@@ -101,39 +105,43 @@ export class VirtualFilesystem {
     return this.providers.get(type);
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // Registration
-  // ─────────────────────────────────────────────────────────────────
-
-  /**
-   * Register a file entry at a specific path.
-   */
   registerEntry(path: string, entry: VFSEntry): void {
+    this.patchFiles.validateEntry(path, entry);
     this.entries.set(path, entry);
     this.notifyChange();
   }
 
-  /**
-   * Register a local file and return its generated VFS path.
-   * The file will be stored via the LocalFilesystemProvider.
-   * @deprecated Use storeFile() instead for clarity
-   */
+  createEmbeddedFile(
+    path: string,
+    content = '',
+    collision: VfsCollisionStrategy = 'cancel'
+  ): string | null {
+    return this.patchFiles.create(path, content, collision);
+  }
+
+  writeEmbeddedFile(path: string, content: string): void {
+    this.patchFiles.write(path, content);
+  }
+
+  readEmbeddedFile(path: string): string {
+    return this.patchFiles.read(path);
+  }
+
+  exportEmbeddedFile(path: string): File {
+    return this.patchFiles.export(path);
+  }
+
+  /** @deprecated Use storeFile() instead for clarity. */
   async registerLocalFile(file: File): Promise<string> {
     return this.storeFile(file);
   }
 
-  /**
-   * Store a local file in the VFS and return its generated path.
-   * Optionally provide a FileSystemFileHandle for better persistence in Chrome/Edge.
-   * Optionally provide a targetFolder to place the file in a specific folder.
-   */
   async storeFile(
     file: File,
     handle?: FileSystemFileHandle,
     targetFolder?: string
   ): Promise<string> {
-    const existingPaths = new Set(this.entries.keys());
-    const path = generateUserPath(file.name, file.type, existingPaths, targetFolder);
+    const path = generateUserPath(file.name, file.type, new Set(this.entries.keys()), targetFolder);
 
     const entry: VFSEntry = {
       provider: 'local',
@@ -147,796 +155,407 @@ export class VirtualFilesystem {
       size: file.size
     };
 
-    this.entries.set(path, entry);
-
-    // Store via provider
     const provider = this.providers.get('local');
+
     if (provider && 'storeFile' in provider) {
       const localProvider = provider as VFSProvider & {
         storeFile: (path: string, file: File, handle?: FileSystemFileHandle) => Promise<void>;
-        storeFileWithHandle: (
+        storeFileWithHandle?: (
           path: string,
           file: File,
           handle: FileSystemFileHandle
         ) => Promise<void>;
       };
 
-      if (handle && 'storeFileWithHandle' in localProvider) {
+      if (handle && localProvider.storeFileWithHandle) {
         await localProvider.storeFileWithHandle(path, file, handle);
       } else {
         await localProvider.storeFile(path, file);
       }
     }
 
-    this.notifyChange();
+    this.recordMutation(`Add ${file.name}`, () => {
+      this.entries.set(path, entry);
+      this.notifyChange();
+    });
+
     return path;
   }
 
-  /**
-   * Replace a file at an existing path (for re-linking files that lost permission).
-   * This updates the file data and clears the pending permission status.
-   */
   async replaceFile(path: string, file: File, handle?: FileSystemFileHandle): Promise<void> {
     const entry = this.entries.get(path);
     if (!entry) {
       throw new Error(`VFS: Cannot replace file at non-existent path: ${path}`);
     }
 
-    // Update entry metadata
-    entry.filename = file.name;
-    entry.mimeType = file.type || guessMimeType(file.name);
+    const provider = this.getLocalProvider();
+    const previousProviderState = await provider?.captureFileState(path);
+    const replacementProviderState = { file, handle };
+    const wasPendingPermission = this.permissions.has(path);
 
-    // Store via provider
-    const provider = this.providers.get('local');
-    if (provider && 'storeFile' in provider) {
-      const localProvider = provider as VFSProvider & {
-        storeFile: (path: string, file: File, handle?: FileSystemFileHandle) => Promise<void>;
-        storeFileWithHandle: (
-          path: string,
-          file: File,
-          handle: FileSystemFileHandle
-        ) => Promise<void>;
-      };
+    const updatedEntry: VFSEntry = {
+      ...entry,
+      filename: file.name,
+      mimeType: file.type || guessMimeType(file.name),
+      size: file.size
+    };
 
-      if (handle && 'storeFileWithHandle' in localProvider) {
-        await localProvider.storeFileWithHandle(path, file, handle);
-      } else {
-        await localProvider.storeFile(path, file);
+    const dispatchRelinked = () =>
+      PatchiesEventBus.getInstance().dispatch({ type: 'fileRelinked', path });
+
+    const restoreProviderState = (
+      state: LocalFileState | undefined,
+      pendingPermission: boolean
+    ) => {
+      if (pendingPermission) this.permissions.add(path);
+      else this.permissions.delete(path);
+      this.notifyChange();
+
+      if (!provider || !state) {
+        dispatchRelinked();
+        return;
+      }
+
+      void provider
+        .restoreFileState(path, state)
+        .then(dispatchRelinked)
+        .catch((error) => console.error('VFS: Failed to restore replaced file state', error));
+    };
+
+    if (provider) {
+      try {
+        await provider.restoreFileState(path, replacementProviderState);
+      } catch (error) {
+        if (previousProviderState) await provider.restoreFileState(path, previousProviderState);
+        throw error;
       }
     }
 
-    // Clear pending permission status
-    this.pendingPermissions.delete(path);
-    this.notifyChange();
-
-    // Dispatch event so nodes know the file was relinked
-    PatchiesEventBus.getInstance().dispatch({
-      type: 'fileRelinked',
-      path
-    });
+    this.recordMutation(
+      `Replace ${entry.filename}`,
+      () => {
+        this.entries.set(path, updatedEntry);
+        this.permissions.delete(path);
+        this.notifyChange();
+        dispatchRelinked();
+      },
+      {
+        redo: () => restoreProviderState(replacementProviderState, false),
+        undo: () => restoreProviderState(previousProviderState, wasPendingPermission)
+      }
+    );
   }
 
-  /**
-   * Register a URL and return its generated VFS path.
-   * Optionally provide a targetFolder to place the file in a specific folder.
-   */
   async registerUrl(url: string, targetFolder?: string): Promise<string> {
     const filename = getFilenameFromUrl(url);
     const mimeType = guessMimeType(filename);
-    const existingPaths = new Set(this.entries.keys());
-    const path = generateUserPath(filename, mimeType, existingPaths, targetFolder);
+    const path = generateUserPath(filename, mimeType, new Set(this.entries.keys()), targetFolder);
 
-    // Ensure the target folder entry exists in VFS so it appears in the tree
     if (targetFolder && !this.entries.has(targetFolder)) {
-      const folderName = targetFolder.split('/').pop() ?? targetFolder;
-      this.entries.set(targetFolder, { provider: 'folder', filename: folderName });
+      this.entries.set(targetFolder, {
+        provider: 'folder',
+        filename: targetFolder.split('/').pop() ?? targetFolder
+      });
     }
 
-    const entry: VFSEntry = {
-      provider: 'url',
-      url,
-      filename,
-      mimeType
-    };
-
-    this.entries.set(path, entry);
-    this.notifyChange();
+    this.recordMutation(`Add ${filename}`, () => {
+      this.entries.set(path, { provider: 'url', url, filename, mimeType });
+      this.notifyChange();
+    });
 
     return path;
   }
 
-  /**
-   * Create a folder at the specified path.
-   * @param parentPath - Parent folder path (e.g., 'user://' or 'user://images')
-   * @param folderName - Name of the new folder
-   * @returns The full path of the created folder
-   */
   createFolder(parentPath: string, folderName: string): string {
-    // Normalize parent path (remove trailing slash if present, except for namespace roots)
     const normalizedParent =
       parentPath.endsWith('/') && !parentPath.endsWith('://')
         ? parentPath.slice(0, -1)
         : parentPath;
 
-    // Build the full folder path
     const folderPath = normalizedParent.endsWith('://')
       ? `${normalizedParent}${folderName}`
       : `${normalizedParent}/${folderName}`;
 
-    const entry: VFSEntry = {
-      provider: 'folder',
-      filename: folderName
-    };
-
-    this.entries.set(folderPath, entry);
-    this.notifyChange();
+    this.recordMutation(`Create ${folderName}`, () => {
+      this.entries.set(folderPath, { provider: 'folder', filename: folderName });
+      this.notifyChange();
+    });
 
     return folderPath;
   }
 
-  /**
-   * Check if a path is a folder.
-   */
   isFolder(path: string): boolean {
-    const entry = this.entries.get(path);
-    return entry?.provider === 'folder' || entry?.provider === 'local-folder';
+    const provider = this.entries.get(path)?.provider;
+
+    return provider === 'folder' || provider === 'local-folder';
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // Local Folder Linking (delegates to LocalFilesystemProvider)
-  // ─────────────────────────────────────────────────────────────────
+  renamePath(oldPath: string, newPath: string): void {
+    const plan = this.entries.planRename(oldPath, newPath);
 
-  /**
-   * Link a local folder using a FileSystemDirectoryHandle.
-   * The VFS only stores the folder entry; contents are resolved on-demand by the provider.
-   */
-  async linkLocalFolder(handle: FileSystemDirectoryHandle): Promise<string> {
-    const folderName = handle.name;
-    const existingPaths = new Set(this.entries.keys());
+    const persist = (direction: 'forward' | 'backward') =>
+      this.queuePersistedRename(plan.moves, direction);
 
-    // Generate a unique path under user://
-    let path = `user://${folderName}`;
-    let counter = 1;
-    while (existingPaths.has(path)) {
-      path = `user://${folderName}-${counter}`;
-      counter++;
-    }
+    const emit = (direction: 'forward' | 'backward') => this.emitPathRenames(plan.moves, direction);
 
-    const entry: VFSEntry = {
-      provider: 'local-folder',
-      filename: folderName
+    this.recordMutation(
+      `Rename ${oldPath.split('/').pop()}`,
+      () => {
+        this.entries.applyRename(plan);
+        persist('forward');
+        this.notifyChange();
+        emit('forward');
+      },
+      {
+        redo: () => {
+          persist('forward');
+          emit('forward');
+        },
+        undo: () => {
+          persist('backward');
+          emit('backward');
+        }
+      }
+    );
+  }
+
+  deletePath(path: string): void {
+    this.deletePaths([path]);
+  }
+
+  deletePaths(requestedPaths: Iterable<string>): void {
+    const plan = this.entries.planDelete(requestedPaths);
+    if (plan.paths.length === 0) return;
+
+    const linkedFolderPaths = plan.paths.filter(
+      (path) => this.entries.get(path)?.provider === 'local-folder'
+    );
+
+    const setLinkedFoldersDeleted = (deleted: boolean) => {
+      const provider = this.getLocalProvider();
+      if (!provider) return;
+
+      this.mutationCoordinator.queueEffect('update deleted folder state', async () => {
+        for (const path of linkedFolderPaths) {
+          if (deleted) {
+            await provider.hideDirHandle(path);
+          } else {
+            await provider.restoreDirHandle(path);
+          }
+        }
+      });
     };
 
-    this.entries.set(path, entry);
+    this.recordMutation(
+      plan.roots.length === 1
+        ? `Delete ${plan.roots[0].split('/').pop()}`
+        : `Delete ${plan.roots.length} paths`,
+      () => {
+        this.entries.removePaths(plan.paths);
+        this.permissions.deleteAll(plan.paths);
+        setLinkedFoldersDeleted(true);
+        this.notifyChange();
+      },
+      {
+        redo: () => setLinkedFoldersDeleted(true),
+        undo: () => setLinkedFoldersDeleted(false)
+      }
+    );
+  }
 
-    // Delegate storage to provider
-    const provider = this.getLocalProvider();
-    if (provider) {
-      await provider.storeDirHandle(path, handle);
+  async copyToPatch(
+    sourcePath: string,
+    targetFolder: string = VFS_PREFIXES.PATCH,
+    collision: VfsCollisionStrategy = 'cancel'
+  ): Promise<string | null> {
+    const items = await this.preparePatchCopy(sourcePath);
+    const imported = await this.importToPatch(items, targetFolder, collision);
+
+    return imported[0] ?? null;
+  }
+
+  async preparePatchCopy(sourcePath: string): Promise<PatchImportItem[]> {
+    return this.patchFiles.prepareCopy(sourcePath, {
+      getEntry: (path) => this.getEntryOrLinkedFile(path),
+      listChildren: (path) => this.listChildren(path),
+      resolve: (path) => this.resolve(path)
+    });
+  }
+
+  getPatchImportCollisions(
+    files: Iterable<File | PatchImportItem>,
+    targetFolder: string = VFS_PREFIXES.PATCH
+  ): string[] {
+    return this.patchFiles.getImportCollisions(files, targetFolder);
+  }
+
+  async importToPatch(
+    files: Iterable<File | PatchImportItem>,
+    targetFolder: string = VFS_PREFIXES.PATCH,
+    collision: VfsCollisionStrategy = 'keep-both'
+  ): Promise<string[]> {
+    return this.patchFiles.import(files, targetFolder, collision);
+  }
+
+  async linkLocalFolder(handle: FileSystemDirectoryHandle): Promise<string> {
+    const folderName = handle.name;
+    let path = `user://${folderName}`;
+    let counter = 1;
+
+    while (this.entries.has(path)) {
+      path = `user://${folderName}-${counter}`;
+      counter += 1;
     }
 
+    this.entries.set(path, { provider: 'local-folder', filename: folderName });
+    await this.getLocalProvider()?.storeDirHandle(path, handle);
     this.notifyChange();
+
     return path;
   }
 
-  /**
-   * Re-link a local folder that lost its handle (e.g., after sharing a patch).
-   * Updates the existing entry with a new directory handle.
-   */
   async relinkLocalFolder(path: string, handle: FileSystemDirectoryHandle): Promise<void> {
     const entry = this.entries.get(path);
-    if (!entry || entry.provider !== 'local-folder') {
+    if (entry?.provider !== 'local-folder') {
       throw new Error(`VFS: Cannot relink - path is not a linked folder: ${path}`);
     }
 
-    // Update the entry filename in case the new folder has a different name
     entry.filename = handle.name;
-
-    // Store the new handle
-    const provider = this.getLocalProvider();
-    if (provider) {
-      await provider.storeDirHandle(path, handle);
-    }
-
-    // Clear pending permission status
-    this.pendingPermissions.delete(path);
+    await this.getLocalProvider()?.storeDirHandle(path, handle);
+    this.permissions.delete(path);
     this.notifyChange();
   }
 
-  /**
-   * Get the local provider instance (for directory operations).
-   */
-  private getLocalProvider():
-    | import('./providers/LocalFilesystemProvider').LocalFilesystemProvider
-    | undefined {
-    const provider = this.providers.get('local');
-    if (provider && 'storeDirHandle' in provider) {
-      return provider as import('./providers/LocalFilesystemProvider').LocalFilesystemProvider;
-    }
-    return undefined;
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Resolution
-  // ─────────────────────────────────────────────────────────────────
-
-  /**
-   * Resolve a VFS path to actual file content.
-   * Supports paths within linked folders (e.g., user://my-folder/subdir/file.jpg)
-   */
   async resolve(path: string): Promise<File | Blob> {
     const entry = this.entries.get(path);
     if (entry) {
-      // Direct entry found
+      if (isEmbeddedVFSEntry(entry)) this.patchFiles.assertReadable(path);
+
       const provider = this.providers.get(entry.provider);
+
       if (!provider) {
         throw new Error(`VFS: No provider registered for type: ${entry.provider}`);
       }
+
       return provider.resolve(entry, path);
     }
 
-    // Entry not found - check if it's a path within a linked folder
-    const linkedFolderPath = this.findLinkedFolderForPath(path);
-    if (linkedFolderPath) {
-      const localProvider = this.getLocalProvider();
-      if (!localProvider) {
-        throw new Error(`VFS: Local provider not available for linked folder resolution`);
-      }
-
-      // Extract relative path within the linked folder
-      const relativePath = path.slice(linkedFolderPath.length + 1).split('/');
-      return localProvider.resolveFileInDir(linkedFolderPath, relativePath);
-    }
+    const linkedFile = await this.directoryReader.resolveLinkedFile(path);
+    if (linkedFile) return linkedFile;
 
     throw new Error(`VFS: Path not found: ${path}`);
   }
 
-  /**
-   * Find the linked folder path that contains a given path.
-   * E.g., for "user://my-folder/sub/file.jpg" returns "user://my-folder" if it's a linked folder.
-   */
-  private findLinkedFolderForPath(path: string): string | null {
-    // Check each potential parent path to find a linked folder
-    const segments = path.split('/');
-
-    // Start from the namespace (e.g., "user://my-folder")
-    for (let i = 3; i < segments.length; i++) {
-      const potentialFolderPath = segments.slice(0, i).join('/');
-      const entry = this.entries.get(potentialFolderPath);
-      if (entry?.provider === 'local-folder') {
-        return potentialFolderPath;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Check if a path is within a linked folder.
-   */
   isPathInLinkedFolder(path: string): boolean {
-    return this.findLinkedFolderForPath(path) !== null;
+    const linkedFolder = this.directoryReader.findLinkedFolder(path);
+
+    return linkedFolder !== null && linkedFolder !== path;
   }
 
-  /**
-   * Get metadata for a path, including paths within linked folders.
-   * For linked folder files, returns a synthetic entry.
-   */
   getEntryOrLinkedFile(path: string): VFSEntry | undefined {
-    const entry = this.entries.get(path);
-
-    if (entry) {
-      // Fall back to guessing MIME type if not stored (for files added before MIME support)
-      if (!entry.mimeType) {
-        return { ...entry, mimeType: guessMimeType(entry.filename) };
-      }
-
-      return entry;
-    }
-
-    // Check if it's within a linked folder
-    const linkedFolderPath = this.findLinkedFolderForPath(path);
-    if (linkedFolderPath) {
-      const filename = path.split('/').pop() || '';
-      return {
-        provider: 'local',
-        filename,
-        mimeType: guessMimeType(filename)
-      };
-    }
-    return undefined;
+    return this.directoryReader.getEntry(path);
   }
 
-  /**
-   * Get the entry metadata for a path.
-   */
   getEntry(path: string): VFSEntry | undefined {
     return this.entries.get(path);
   }
 
-  /**
-   * Check if a path exists in the VFS.
-   */
   has(path: string): boolean {
     return this.entries.has(path);
   }
 
-  /**
-   * Check if a string is a VFS path.
-   */
   isVFSPath(path: string): boolean {
     return isVFSPath(path);
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // Listing
-  // ─────────────────────────────────────────────────────────────────
-
-  /**
-   * List all paths, optionally filtered by prefix.
-   */
   list(prefix?: string): string[] {
-    const paths = Array.from(this.entries.keys());
-    if (!prefix) return paths;
-    return paths.filter((p) => p.startsWith(prefix));
+    return this.entries.paths(prefix);
   }
 
-  /** List the immediate children of a VFS directory, including linked local folders. */
   async listChildren(directory: string): Promise<VFSListEntry[]> {
-    const entry = this.entries.get(directory);
-    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
-    const linkedFolderPath = this.getLinkedFolderForPath(directory);
-    const hasChildren = [...this.entries.keys()].some((path) => path.startsWith(prefix));
-    const isNamespaceRoot = directory === VFS_PREFIXES.USER || directory === VFS_PREFIXES.OBJECT;
-
-    if (entry && entry.provider !== 'folder' && entry.provider !== 'local-folder') {
-      throw new TypeError(`VFS: Path is not a directory: ${directory}`);
-    }
-
-    if (!entry && !linkedFolderPath && !hasChildren && !isNamespaceRoot) {
-      throw new Error(`VFS: Directory not found: ${directory}`);
-    }
-
-    const children = new Map<string, VFSListEntry>();
-
-    for (const path of this.entries.keys()) {
-      if (!path.startsWith(prefix)) continue;
-
-      const child = path.slice(prefix.length).split('/')[0];
-      if (!child) continue;
-
-      const childPath = `${prefix}${child}`;
-      children.set(childPath, this.createListEntry(childPath));
-    }
-
-    if (linkedFolderPath) {
-      const linkedChildren = await this.listLinkedFolderChildren(directory, linkedFolderPath);
-
-      for (const child of linkedChildren) {
-        children.set(child.path, this.createListEntry(child.path, child.kind));
-      }
-    }
-
-    return [...children.values()].sort((a, b) => a.path.localeCompare(b.path));
+    return this.directoryReader.listChildren(directory);
   }
 
-  /** List one bounded page of immediate VFS directory entries. */
   async listChildrenPage(
     directory: string,
     options: { offset?: number; limit?: number } = {}
   ): Promise<VFSListPage> {
-    const offset = Math.max(0, Math.floor(options.offset ?? 0));
-    const limit = Math.max(1, Math.floor(options.limit ?? 50));
-
-    const linkedFolderPath = this.getLinkedFolderForPath(directory);
-
-    if (linkedFolderPath) {
-      const children = await this.listLinkedFolderChildren(directory, linkedFolderPath, {
-        offset,
-        limit: limit + 1
-      });
-
-      const truncated = children.length > limit;
-
-      const entries = children
-        .slice(0, limit)
-        .map((child) => this.createListEntry(child.path, child.kind));
-
-      return {
-        entries,
-        offset,
-        limit,
-        truncated,
-        ...(truncated ? { nextOffset: offset + entries.length } : {})
-      };
-    }
-
-    const children = await this.listChildren(directory);
-
-    const entries = children.slice(offset, offset + limit);
-    const truncated = offset + entries.length < children.length;
-
-    return {
-      entries,
-      offset,
-      limit,
-      truncated,
-      ...(truncated ? { nextOffset: offset + entries.length } : {})
-    };
+    return this.directoryReader.listChildrenPage(directory, options);
   }
 
-  /** Recursively find VFS paths whose path includes the query, case-insensitively. */
   async search(query: string, directory: string): Promise<VFSListEntry[]> {
-    const prefix = directory.endsWith('://') ? directory : `${directory}/`;
-    const normalizedQuery = query.toLowerCase();
-    const matches = new Map<string, VFSListEntry>();
-
-    for (const path of this.list(prefix)) {
-      if (path.toLowerCase().includes(normalizedQuery)) {
-        matches.set(path, this.createListEntry(path));
-      }
-    }
-
-    const containingLinkedFolder = this.getLinkedFolderForPath(directory);
-
-    const linkedFolderPaths = containingLinkedFolder
-      ? [containingLinkedFolder]
-      : [...this.entries]
-          .filter(([path, entry]) => entry.provider === 'local-folder' && path.startsWith(prefix))
-          .map(([path]) => path);
-
-    for (const linkedFolderPath of linkedFolderPaths) {
-      const searchRoot = containingLinkedFolder ? directory : linkedFolderPath;
-
-      for (const entry of await this.searchLinkedFolder(searchRoot, linkedFolderPath)) {
-        if (entry.path.toLowerCase().includes(normalizedQuery)) {
-          matches.set(entry.path, entry);
-        }
-      }
-    }
-
-    return [...matches.values()].sort((a, b) => a.path.localeCompare(b.path));
+    return this.directoryReader.search(query, directory);
   }
 
-  /**
-   * Recursively search VFS paths without materializing more than one result page.
-   * Entries are visited in deterministic directory traversal order.
-   */
   async searchPage(
     query: string,
     directory: string,
     options: { offset?: number; limit?: number } = {}
   ): Promise<VFSSearchPage> {
-    const offset = Math.max(0, Math.floor(options.offset ?? 0));
-    const limit = Math.max(1, Math.floor(options.limit ?? 50));
-
-    const normalizedQuery = query.toLowerCase();
-    const entries: VFSListEntry[] = [];
-
-    let skipped = 0;
-
-    const visit = async (currentDirectory: string): Promise<boolean> => {
-      const children = await this.listChildren(currentDirectory);
-
-      for (const child of children) {
-        if (child.path.toLowerCase().includes(normalizedQuery)) {
-          if (skipped < offset) {
-            skipped++;
-          } else if (entries.length < limit) {
-            entries.push(child);
-          } else {
-            return true;
-          }
-        }
-
-        if (child.kind === 'directory' && (await visit(child.path))) {
-          return true;
-        }
-      }
-
-      return false;
-    };
-
-    const truncated = await visit(directory);
-
-    return {
-      entries,
-      offset,
-      limit,
-      truncated,
-      ...(truncated ? { nextOffset: offset + entries.length } : {})
-    };
+    return this.directoryReader.searchPage(query, directory, options);
   }
 
-  private createListEntry(path: string, kind?: VFSListEntry['kind']): VFSListEntry {
-    const name = path.split('/').filter(Boolean).pop() ?? path;
-
-    return { path, name, kind: kind ?? this.getPathKind(path) };
-  }
-
-  private getPathKind(path: string): VFSListEntry['kind'] {
-    const entry = this.entries.get(path);
-    if (entry && isVFSFolder(entry)) return 'directory';
-
-    return [...this.entries.keys()].some((entryPath) => entryPath.startsWith(`${path}/`))
-      ? 'directory'
-      : 'file';
-  }
-
-  private getLinkedFolderForPath(path: string): string | null {
-    return this.entries.get(path)?.provider === 'local-folder'
-      ? path
-      : this.findLinkedFolderForPath(path);
-  }
-
-  private async listLinkedFolderChildren(
-    directory: string,
-    linkedFolderPath: string,
-    options?: { offset?: number; limit?: number }
-  ): Promise<Array<{ path: string; kind: 'file' | 'directory' }>> {
-    const localProvider = this.getLocalProvider();
-
-    if (!localProvider) {
-      throw new Error('VFS: Local provider not available for linked folder listing');
-    }
-
-    let handle = await localProvider.getDirHandle(linkedFolderPath);
-
-    if (!handle) {
-      throw new Error(`VFS: No directory handle for linked folder: ${linkedFolderPath}`);
-    }
-
-    const hasDirectoryPermission = await localProvider.hasDirPermission(linkedFolderPath);
-
-    if (!hasDirectoryPermission) {
-      throw new Error(`VFS: Permission denied for linked folder: ${linkedFolderPath}`);
-    }
-
-    const relativeSegments =
-      directory === linkedFolderPath ? [] : directory.slice(linkedFolderPath.length + 1).split('/');
-
-    for (const segment of relativeSegments) {
-      handle = await handle.getDirectoryHandle(segment);
-    }
-
-    const entries = await localProvider.listHandleContents(handle, options);
-    const pathPrefix = directory.endsWith('/') ? directory : `${directory}/`;
-
-    return entries.map((entry) => ({ path: `${pathPrefix}${entry.name}`, kind: entry.kind }));
-  }
-
-  private async searchLinkedFolder(
-    directory: string,
-    linkedFolderPath: string
-  ): Promise<VFSListEntry[]> {
-    const matches: VFSListEntry[] = [];
-
-    for (const child of await this.listLinkedFolderChildren(directory, linkedFolderPath)) {
-      matches.push(this.createListEntry(child.path, child.kind));
-
-      if (child.kind === 'directory') {
-        matches.push(...(await this.searchLinkedFolder(child.path, linkedFolderPath)));
-      }
-    }
-
-    return matches;
-  }
-
-  /**
-   * Get all entries as a map.
-   */
   getAllEntries(): Map<string, VFSEntry> {
-    return new Map(this.entries);
+    return this.entries.toMap();
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // Persistence (Serialize/Hydrate)
-  // ─────────────────────────────────────────────────────────────────
-
-  /**
-   * Serialize the VFS to a tree structure for patch saving.
-   */
   serialize(): VFSTree {
-    const tree: VFSTree = {};
-
-    for (const [path, entry] of this.entries) {
-      const parsed = parseVFSPath(path);
-      if (!parsed) continue;
-
-      match(parsed.namespace)
-        .with('user', () => {
-          if (!tree.user) tree.user = {};
-          this.setNestedEntry(tree.user, parsed.segments, entry);
-        })
-        .with('obj', () => {
-          if (!tree.objects) tree.objects = {};
-          // First segment is the node ID
-          const [nodeId, ...rest] = parsed.segments;
-          if (!nodeId) return;
-          if (!tree.objects[nodeId]) tree.objects[nodeId] = {};
-          if (rest.length > 0) {
-            this.setNestedEntry(tree.objects[nodeId], rest, entry);
-          }
-        })
-        .exhaustive();
-    }
-
-    return tree;
+    return this.treeCodec.serialize(this.entries);
   }
 
-  /**
-   * Hydrate the VFS from a saved tree structure.
-   */
   async hydrate(tree: VFSTree): Promise<void> {
-    this.entries.clear();
-    this.pendingPermissions.clear();
+    const hydrated = this.treeCodec.deserialize(tree, (path, entry) =>
+      this.patchFiles.validateEntry(path, entry, false)
+    );
 
-    // user namespace -- for user-uploaded files
-    if (tree.user) {
-      this.hydrateNamespace(tree.user, VFS_PREFIXES.USER);
-    }
+    this.entries.replace(hydrated);
+    this.patchFiles.refreshValidation();
 
-    // objects namespace -- for each objects
-    if (tree.objects) {
-      for (const [nodeId, nodeTree] of Object.entries(tree.objects)) {
-        this.hydrateNamespace(nodeTree, `${VFS_PREFIXES.OBJECT}${nodeId}/`);
-      }
-    }
-
-    // Check which local files need permission
-    for (const [path, entry] of this.entries) {
-      if (entry.provider === 'local') {
-        const provider = this.providers.get('local');
-
-        if (provider && 'needsPermission' in provider) {
-          const needs = await (
-            provider as VFSProvider & { needsPermission: (path: string) => Promise<boolean> }
-          ).needsPermission(path);
-
-          if (needs) {
-            this.pendingPermissions.add(path);
-          }
-        }
-
-        continue;
-      }
-
-      if (entry.provider === 'local-folder') {
-        // Check if linked folder has its handle available
-        const localProvider = this.getLocalProvider();
-
-        if (localProvider) {
-          const handle = await localProvider.getDirHandle(path);
-
-          if (!handle) {
-            // Handle is missing - needs re-link
-            this.pendingPermissions.add(path);
-          } else {
-            // Handle exists, check permission
-            const hasPermission = await localProvider.hasDirPermission(path);
-
-            if (!hasPermission) {
-              this.pendingPermissions.add(path);
-            }
-          }
-        }
-
-        continue;
-      }
-    }
+    await this.permissions.scan(this.entries, this.providers.get('local'), this.getLocalProvider());
 
     this.notifyChange();
   }
 
-  private hydrateNamespace(node: { [key: string]: VFSTreeNode }, prefix: string): void {
-    for (const [key, value] of Object.entries(node)) {
-      if (isVFSEntry(value)) {
-        this.entries.set(`${prefix}${key}`, value);
-      } else {
-        // It's a directory, recurse
-        this.hydrateNamespace(value as { [key: string]: VFSTreeNode }, `${prefix}${key}/`);
-      }
-    }
-  }
-
-  private setNestedEntry(
-    obj: { [key: string]: VFSTreeNode },
-    segments: string[],
-    entry: VFSEntry
-  ): void {
-    if (segments.length === 0) return;
-
-    if (segments.length === 1) {
-      obj[segments[0]] = entry;
-      return;
-    }
-
-    const [first, ...rest] = segments;
-    if (!obj[first] || isVFSEntry(obj[first])) {
-      obj[first] = {};
-    }
-    this.setNestedEntry(obj[first] as { [key: string]: VFSTreeNode }, rest, entry);
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Permission Management
-  // ─────────────────────────────────────────────────────────────────
-
-  /**
-   * Get paths that need permission re-grant.
-   */
   getPendingPermissions(): string[] {
-    return Array.from(this.pendingPermissions);
+    return this.permissions.getAll();
   }
 
-  /**
-   * Request permission for a single path.
-   */
   async requestPermission(path: string): Promise<boolean> {
-    const entry = this.entries.get(path);
-    if (!entry || entry.provider !== 'local') return false;
-
-    const provider = this.providers.get('local');
-    if (!provider || !('requestPermission' in provider)) return false;
-
-    const granted = await (
-      provider as VFSProvider & { requestPermission: (path: string) => Promise<boolean> }
-    ).requestPermission(path);
-    if (granted) {
-      this.pendingPermissions.delete(path);
-    }
-    return granted;
+    return this.permissions.request(path, this.entries.get(path), this.providers.get('local'));
   }
 
-  /**
-   * Request permission for all pending paths.
-   */
   async requestAllPermissions(): Promise<Map<string, boolean>> {
-    const results = new Map<string, boolean>();
-
-    for (const path of this.pendingPermissions) {
-      const granted = await this.requestPermission(path);
-      results.set(path, granted);
-    }
-
-    return results;
+    return this.permissions.requestAll(
+      (path) => this.entries.get(path),
+      this.providers.get('local')
+    );
   }
 
-  /**
-   * Mark a path as having permission granted.
-   */
   markPermissionGranted(path: string): void {
-    this.pendingPermissions.delete(path);
+    this.permissions.delete(path);
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // Cleanup
-  // ─────────────────────────────────────────────────────────────────
-
-  /**
-   * Remove a single entry.
-   */
   remove(path: string): void {
     const entry = this.entries.get(path);
-
     this.entries.delete(path);
-    this.pendingPermissions.delete(path);
+    this.permissions.delete(path);
 
-    // Clean up directory handle if it's a local folder
     if (entry?.provider === 'local-folder') {
-      const provider = this.getLocalProvider();
-      provider?.removeDirHandle(path);
+      this.getLocalProvider()?.removeDirHandle(path);
     }
 
     this.notifyChange();
   }
 
-  /**
-   * Clear all entries.
-   */
   clear(): void {
     this.entries.clear();
-    this.pendingPermissions.clear();
-    this.getLocalProvider()?.clearDirHandles();
+    this.permissions.clear();
+    this.patchFiles.refreshValidation();
+
+    const provider = this.getLocalProvider();
+    provider?.clear();
+    provider?.clearDirHandles();
+
     this.notifyChange();
   }
 
@@ -945,31 +564,102 @@ export class VirtualFilesystem {
     clearFileData();
   }
 
-  /**
-   * Load directory handles from storage and create entries for them.
-   * Call this during app initialization.
-   */
   async loadDirHandlesFromStorage(): Promise<void> {
     const provider = this.getLocalProvider();
     if (!provider) return;
 
-    const handles = await provider.loadDirHandlesFromStorage();
-    for (const [path, handle] of handles) {
-      // Create entry if it doesn't exist
-      if (!this.entries.has(path)) {
-        this.entries.set(path, {
-          provider: 'local-folder',
-          filename: handle.name
+    await this.permissions.loadStoredDirectories(this.entries, provider);
+    this.notifyChange();
+  }
+
+  private notifyChange(): void {
+    this.versionStore.update((version) => version + 1);
+  }
+
+  private createMutationSnapshot(): VfsMutationSnapshot {
+    return {
+      entries: this.entries.snapshot(),
+      pendingPermissions: this.permissions.snapshot()
+    };
+  }
+
+  private restoreEntries({ entries, pendingPermissions }: VfsMutationSnapshot): void {
+    const previous = this.entries.snapshot();
+    this.entries.replace(entries);
+    this.permissions.restore(pendingPermissions, this.entries);
+    this.patchFiles.refreshValidation();
+    this.notifyChange();
+
+    for (const [path, entry] of this.entries) {
+      const prior = previous.get(path);
+
+      const hasVfsModified =
+        isEmbeddedVFSEntry(entry) &&
+        (!prior ||
+          !isEmbeddedVFSEntry(prior) ||
+          prior.content !== entry.content ||
+          prior.revision !== entry.revision);
+
+      if (hasVfsModified) {
+        PatchiesEventBus.getInstance().dispatch({
+          type: 'vfsContentModified',
+          path,
+          revision: entry.revision ?? 1
         });
       }
+    }
+  }
 
-      // Check permission status
-      const hasPermission = await provider.hasDirPermission(path);
-      if (!hasPermission) {
-        this.pendingPermissions.add(path);
-      }
+  private recordMutation(
+    description: string,
+    mutate: () => void,
+    callbacks?: { redo?: () => void; undo?: () => void }
+  ): void {
+    this.mutationCoordinator.record(description, mutate, callbacks);
+  }
+
+  private getLocalProvider(): LocalFilesystemProvider | undefined {
+    const provider = this.providers.get('local');
+
+    if (provider && 'storeDirHandle' in provider) {
+      return provider as LocalFilesystemProvider;
     }
 
-    this.notifyChange();
+    return undefined;
+  }
+
+  private queuePersistedRename(moves: VfsRenameMove[], direction: 'forward' | 'backward'): void {
+    const provider = this.getLocalProvider();
+    if (!provider) return;
+
+    this.mutationCoordinator.queueEffect('persist renamed paths', async () => {
+      for (const move of moves) {
+        const from = direction === 'forward' ? move.oldPath : move.newPath;
+        const to = direction === 'forward' ? move.newPath : move.oldPath;
+
+        await match(move.entry.provider)
+          .with('local', async () => {
+            await provider.rename(from, to);
+          })
+          .with('local-folder', async () => {
+            await provider.renameDirHandle(from, to);
+          })
+          .otherwise(() => {});
+      }
+    });
+  }
+
+  private emitPathRenames(moves: VfsRenameMove[], direction: 'forward' | 'backward'): void {
+    for (const move of moves) {
+      PatchiesEventBus.getInstance().dispatch({
+        type: 'vfsPathRenamed',
+        oldPath: direction === 'forward' ? move.oldPath : move.newPath,
+        newPath: direction === 'forward' ? move.newPath : move.oldPath
+      });
+    }
+  }
+
+  private emitContentModified(path: string, revision: number): void {
+    PatchiesEventBus.getInstance().dispatch({ type: 'vfsContentModified', path, revision });
   }
 }

@@ -15,6 +15,7 @@ import { migration013 } from './migrations/013-expr-multi-outlet-handles';
 import { migration014 } from './migrations/014-tap-to-ui-node';
 import { migration015 } from './migrations/015-toggle-legacy-value';
 import { migration016 } from './migrations/016-video-output-api';
+import { migration017 } from './migrations/017-add-patch-vfs-namespace';
 
 /**
  * All migrations in order. Each migration upgrades from version N-1 to N.
@@ -36,7 +37,8 @@ const migrations: Migration[] = [
   migration013,
   migration014,
   migration015,
-  migration016
+  migration016,
+  migration017
 ];
 
 /**
