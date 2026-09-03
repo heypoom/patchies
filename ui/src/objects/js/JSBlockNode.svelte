@@ -3,6 +3,7 @@
 
   import CodeBlockBase from '$objects/code/CodeBlockBase.svelte';
   import { useNodeViewMessageContext } from '$lib/messages';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import type { SettingsSchema } from '$lib/settings';
 
   let {
@@ -31,7 +32,7 @@
     selected: boolean;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNode } = useSvelteFlow();
 
   const viewMessageContext = useNodeViewMessageContext(
     () => nodeId,
@@ -42,7 +43,9 @@
   const handleRuntimeExecute = async () => {};
 
   const executeCode = async () =>
-    updateNodeData(nodeId, { executeCode: (data.executeCode ?? 0) + 1 });
+    updateNodeDataFromCurrent<typeof data>(updateNode, nodeId, (currentData) => ({
+      executeCode: (currentData.executeCode ?? 0) + 1
+    }));
 
   const cleanupRunningTasks = async () => viewMessageContext.send({ type: 'stop' });
 

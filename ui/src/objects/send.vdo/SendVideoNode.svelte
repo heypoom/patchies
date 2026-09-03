@@ -7,6 +7,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
 
   let node: {
     id: string;
@@ -24,12 +25,12 @@
   const handleMessage: MessageCallbackFn = (m, { inlet }) => {
     // Channel inlet (inlet 1) - accepts string to change channel
     if (inlet === 1 && typeof m === 'string' && m.trim()) {
-      updateNode(node.id, { data: { ...node.data, channel: m.trim() } });
+      updateNodeDataFromCurrent(updateNode, node.id, () => ({ channel: m.trim() }));
     }
   };
 
   function handleChannelChange(newChannel: string) {
-    updateNode(node.id, { data: { ...node.data, channel: newChannel } });
+    updateNodeDataFromCurrent(updateNode, node.id, () => ({ channel: newChannel }));
   }
 
   onMount(() => {

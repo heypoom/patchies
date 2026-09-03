@@ -12,6 +12,7 @@
   } from '@lucide/svelte/icons';
   import CodeBlockOverflowMenu from '$objects/code/CodeBlockOverflowMenu.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -124,7 +125,7 @@
     onSettingsRevertAll?: () => void;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
 
   let isLongRunningTaskActive = $derived(isMessageCallbackActive || isTimerCallbackActive);
   let inletCount = $derived(data.inletCount ?? 1);
@@ -412,7 +413,9 @@
   }
 
   function handleConsoleToggle() {
-    updateNodeData(nodeId, { showConsole: !data.showConsole });
+    updateNodeDataFromCurrent<{ showConsole?: boolean }>(updateNode, nodeId, (currentData) => ({
+      showConsole: !currentData.showConsole
+    }));
     setTimeout(() => updateContentWidth(), 10);
   }
 

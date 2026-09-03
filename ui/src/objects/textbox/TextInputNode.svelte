@@ -122,7 +122,7 @@
             <button
               onclick={() => {
                 const oldLocked = node.data.locked ?? false;
-                updateNodeData(node.id, { ...node.data, locked: !oldLocked });
+                updateNodeData(node.id, { locked: !oldLocked });
                 tracker.commit('locked', oldLocked, !oldLocked);
               }}
               class={[

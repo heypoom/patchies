@@ -49,7 +49,7 @@
     nodeId: getInitialNodeId(),
     acceptMimePrefix: 'audio/',
     onFileLoaded: handleFileLoaded,
-    updateNodeData: (data) => updateNodeData(node.id, { ...node.data, ...data }),
+    updateNodeData: (data) => updateNodeData(node.id, data),
     getVfsPath: () => node.data.vfsPath,
     filePickerAccept: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
     filePickerDescription: 'Audio Files'
@@ -71,7 +71,7 @@
    */
   async function handleFileLoaded(file: File, sourceUrl?: string) {
     // Update filename in node data
-    updateNodeData(node.id, { ...node.data, fileName: file.name });
+    updateNodeData(node.id, { fileName: file.name });
 
     if (sourceUrl) {
       // For URL sources (streaming), send URL directly to audio node

@@ -33,6 +33,7 @@
   import { createKVStore } from '$lib/storage';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { replaceUserTags } from '$lib/runtime/services/graph-tags';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import { shouldShowHandles } from '../../stores/ui.store';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
@@ -290,7 +291,9 @@ return {
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags(tags: string[]) {
-          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+          updateNodeDataFromCurrent<{ tags?: string[] }>(updateNode, nodeId, (currentData) => ({
+            tags: replaceUserTags(currentData.tags, tags)
+          }));
         },
         extraContext: {
           settings: createSettingsAPI(settingsManager),

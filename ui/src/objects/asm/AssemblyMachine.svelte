@@ -2,6 +2,7 @@
   import { Binary, Pause, Play, RotateCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import { onMount, onDestroy, tick } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -61,7 +62,7 @@
   let highlightLineCallback: ((lineNo: number) => void) | null = null;
   let hasShownReadonlyToast = false;
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   useCodeSidebarTarget(() => ({
@@ -127,7 +128,13 @@
   };
 
   const toggleMemoryViewer = () =>
-    updateNodeData(nodeId, { showMemoryViewer: !data.showMemoryViewer });
+    updateNodeDataFromCurrent<{ showMemoryViewer?: boolean }>(
+      updateNode,
+      nodeId,
+      (currentData) => ({
+        showMemoryViewer: !currentData.showMemoryViewer
+      })
+    );
 
   const handleMessage: MessageCallbackFn = async (message, meta) => {
     const sendDataAndStep = async (m: number | number[]) => {

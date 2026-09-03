@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import { onMount, onDestroy } from 'svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import SimpleDspLayout from '$objects/audio-code/SimpleDspLayout.svelte';
@@ -30,7 +31,7 @@
   } = $props();
 
   // Get flow utilities to update node data
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   let audioService = AudioService.getInstance();
@@ -81,7 +82,9 @@
   }
 
   function handleToggleConsole() {
-    updateNodeData(nodeId, { showConsole: !data.showConsole });
+    updateNodeDataFromCurrent<{ showConsole?: boolean }>(updateNode, nodeId, (currentData) => ({
+      showConsole: !currentData.showConsole
+    }));
   }
 
   onMount(() => {

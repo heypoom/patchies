@@ -21,6 +21,7 @@
   import type { IframePostMessageEvent } from '$lib/eventbus/events';
   import { IframePostMessageListener } from '$lib/iframe/IframePostMessageListener';
   import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
 
   // Feature-detect credentialless iframe support
   // When COEP is enabled but credentialless iframes aren't supported,
@@ -98,12 +99,7 @@
   };
 
   function loadUrl(url: string) {
-    updateNode(node.id, {
-      data: {
-        ...node.data,
-        url
-      }
-    });
+    updateNodeDataFromCurrent(updateNode, node.id, () => ({ url }));
     showUrlInput = false;
   }
 

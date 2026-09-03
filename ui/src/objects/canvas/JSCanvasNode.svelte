@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -92,7 +93,7 @@
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   let inletCount = $derived(data.inletCount ?? 1);
@@ -255,7 +256,9 @@
   });
 
   function togglePlayback() {
-    updateNodeData(nodeId, { paused: !data.paused });
+    updateNodeDataFromCurrent<{ paused?: boolean }>(updateNode, nodeId, (currentData) => ({
+      paused: !currentData.paused
+    }));
     glSystem.toggleNodePause(nodeId);
   }
 

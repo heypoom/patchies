@@ -90,7 +90,7 @@
     }
 
     bridge.writeBuffer(bufferName, samples);
-    updateNodeData(nodeId, { ...data, size: length });
+    updateNodeData(nodeId, { size: length });
     vfsMedia.markLoaded();
   }
 
@@ -98,7 +98,7 @@
     nodeId: (() => nodeId)(),
     acceptMimePrefix: 'audio/',
     onFileLoaded: handleFileLoaded,
-    updateNodeData: (d) => updateNodeData(nodeId, { ...data, ...d }),
+    updateNodeData: (d) => updateNodeData(nodeId, d),
     getVfsPath: () => data.vfsPath,
     filePickerAccept: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
     filePickerDescription: 'Audio Files'
@@ -157,7 +157,6 @@
 
     // Only unlink VFS source if the size changed (contents were altered)
     updateNodeData(nodeId, {
-      ...data,
       bufferName: newName,
       size: validSize,
       vfsPath: sizeChanged ? undefined : data.vfsPath
@@ -191,7 +190,7 @@
 
   function clearBuffer() {
     bridge.clearBuffer(bufferName);
-    if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
+    if (data.vfsPath) updateNodeData(nodeId, { vfsPath: undefined });
   }
 
   function normalizeBuffer() {
@@ -207,7 +206,7 @@
         const normalized = new Float32Array(buffer.length);
         for (let i = 0; i < buffer.length; i++) normalized[i] = buffer[i] * scale;
         bridge.writeBuffer(bufferName, normalized);
-        if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
+        if (data.vfsPath) updateNodeData(nodeId, { vfsPath: undefined });
       }
     });
   }
@@ -229,7 +228,6 @@
 
       // Programmatic write — detach from VFS source
       updateNodeData(nodeId, {
-        ...data,
         size: message.length,
         vfsPath: undefined
       });
@@ -242,7 +240,6 @@
       bridge.writeBuffer(bufferName, buffer);
 
       updateNodeData(nodeId, {
-        ...data,
         size: buffer.length,
         vfsPath: undefined
       });
@@ -276,7 +273,7 @@
         if (length > 0) {
           const rounded = Math.round(length);
           bridge.resizeBuffer(bufferName, rounded);
-          updateNodeData(nodeId, { ...data, size: rounded, vfsPath: undefined });
+          updateNodeData(nodeId, { size: rounded, vfsPath: undefined });
         }
       })
       .with(tableMessages.clear, () => clearBuffer())
@@ -412,7 +409,7 @@
                 <Tooltip.Root>
                   <Tooltip.Trigger
                     class="ml-auto cursor-pointer"
-                    onclick={() => updateNodeData(nodeId, { ...data, vfsPath: undefined })}
+                    onclick={() => updateNodeData(nodeId, { vfsPath: undefined })}
                   >
                     <Unlink class="h-2.5 w-2.5 text-zinc-500 hover:text-red-400" />
                   </Tooltip.Trigger>
@@ -513,7 +510,7 @@
     <ContextMenu.Item
       class="cursor-pointer"
       onclick={() => {
-        updateNodeData(nodeId, { ...data, showVisual: !showVisual });
+        updateNodeData(nodeId, { showVisual: !showVisual });
 
         tracker.commit('showVisual', showVisual, !showVisual);
       }}
@@ -543,7 +540,7 @@
       <ContextMenu.Separator />
       <ContextMenu.Item
         class="cursor-pointer"
-        onclick={() => updateNodeData(nodeId, { ...data, vfsPath: undefined })}
+        onclick={() => updateNodeData(nodeId, { vfsPath: undefined })}
       >
         <Unlink class="mr-2 h-4 w-4" />
         Unlink Virtual File

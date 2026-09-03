@@ -24,6 +24,7 @@
     type NoteOffMode
   } from './constants';
   import { SvelteMap } from 'svelte/reactivity';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
 
   let node: NodeProps & { data: PadsNodeData } = $props();
 
@@ -81,16 +82,24 @@
   }
 
   async function assignSample(padIndex: number, vfsPath: string) {
-    const newPads = [...pads];
-    newPads[padIndex] = { ...newPads[padIndex], vfsPath };
-    updateNodeData(node.id, { ...node.data, pads: newPads });
+    updateNodeDataFromCurrent<PadsNodeData>(updateNode, node.id, (currentData) => {
+      const newPads = [...(currentData.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
+      newPads[padIndex] = { ...newPads[padIndex], vfsPath };
+
+      return { pads: newPads };
+    });
+
     await loadPadBuffer(padIndex, vfsPath);
   }
 
   function clearPad(padIndex: number) {
-    const newPads = [...pads];
-    newPads[padIndex] = {};
-    updateNodeData(node.id, { ...node.data, pads: newPads });
+    updateNodeDataFromCurrent<PadsNodeData>(updateNode, node.id, (currentData) => {
+      const newPads = [...(currentData.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
+      newPads[padIndex] = {};
+
+      return { pads: newPads };
+    });
+
     v2Node?.clearBuffer(padIndex);
     padBuffers[padIndex] = null;
   }
@@ -128,30 +137,30 @@
   };
 
   function updatePadCount(value: PadCount) {
-    updateNodeData(node.id, { ...node.data, padCount: value });
+    updateNodeData(node.id, { padCount: value });
     const rows = value / 4;
     const targetHeight = Math.round(width * (rows / 4));
     updateNode(node.id, { height: targetHeight });
   }
 
   function updateMaxVoices(value: number) {
-    updateNodeData(node.id, { ...node.data, maxVoices: value });
+    updateNodeData(node.id, { maxVoices: value });
   }
 
   function updateNoteOffMode(value: NoteOffMode) {
-    updateNodeData(node.id, { ...node.data, noteOffMode: value });
+    updateNodeData(node.id, { noteOffMode: value });
   }
 
   function updateShowGmLabels(value: boolean) {
-    updateNodeData(node.id, { ...node.data, showGmLabels: value });
+    updateNodeData(node.id, { showGmLabels: value });
   }
 
   function updateShowWaveform(value: boolean) {
-    updateNodeData(node.id, { ...node.data, showWaveform: value });
+    updateNodeData(node.id, { showWaveform: value });
   }
 
   function updateShowPadNumbers(value: boolean) {
-    updateNodeData(node.id, { ...node.data, showPadNumbers: value });
+    updateNodeData(node.id, { showPadNumbers: value });
   }
 
   function triggerPad(padIndex: number) {
@@ -180,25 +189,29 @@
     if (node.data._initialUrls) {
       const vfs = VirtualFilesystem.getInstance();
       const urls = { ...node.data._initialUrls };
-
-      // Build updated pads array locally — can't rely on derived `pads` updating
-      // synchronously between awaits since node.data is a prop from xyflow store.
-      const updatedPads = [...pads];
+      const loadedPadPaths = new SvelteMap<number, string>();
 
       for (const [idx, url] of Object.entries(urls)) {
         const padIndex = Number(idx);
         if (isNaN(padIndex) || padIndex < 0 || padIndex >= padCount) continue;
         try {
           const vfsPath = await vfs.registerUrl(url, VFS_FOLDERS.SAMPLES);
-          updatedPads[padIndex] = { ...updatedPads[padIndex], vfsPath };
+          loadedPadPaths.set(padIndex, vfsPath);
           await loadPadBuffer(padIndex, vfsPath);
         } catch (err) {
           console.error(`[pads~] failed to load initial URL for pad ${padIndex}:`, err);
         }
       }
 
-      // Single updateNodeData call with all pads + clear _initialUrls
-      updateNodeData(node.id, { ...node.data, pads: updatedPads, _initialUrls: undefined });
+      updateNodeDataFromCurrent<PadsNodeData>(updateNode, node.id, (currentData) => {
+        const updatedPads = [...(currentData.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
+
+        for (const [padIndex, vfsPath] of loadedPadPaths) {
+          updatedPads[padIndex] = { ...updatedPads[padIndex], vfsPath };
+        }
+
+        return { pads: updatedPads, _initialUrls: undefined };
+      });
     }
 
     // Load all pads that have a saved vfsPath

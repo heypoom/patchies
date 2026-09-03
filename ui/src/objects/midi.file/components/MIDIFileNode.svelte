@@ -200,7 +200,6 @@
       const parsed = parseMidiFile(bytes, fileName);
       setParsedFile(parsed);
       updateNodeData(nodeId, {
-        ...data,
         fileName,
         fileData: bytesToBase64(bytes),
         vfsPath: undefined,
@@ -217,7 +216,6 @@
       const parsed = parseMidiFile(bytes, file.name);
       setParsedFile(parsed);
       updateNodeData(nodeId, {
-        ...data,
         fileName: file.name,
         ...source,
         fileData: source.vfsPath ? undefined : bytesToBase64(bytes),
@@ -286,7 +284,6 @@
     playState = player.playState;
     sendPosition();
     updateNodeData(nodeId, {
-      ...data,
       positionSeconds,
       playState
     });
@@ -312,7 +309,7 @@
     value: MidiFileNodeData[K]
   ): void {
     const oldValue = data[key];
-    updateNodeData(nodeId, { ...data, [key]: value });
+    updateNodeData(nodeId, { [key]: value });
     tracker.commit(String(key), oldValue, value);
   }
 

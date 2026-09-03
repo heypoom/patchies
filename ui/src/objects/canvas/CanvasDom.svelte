@@ -41,6 +41,7 @@
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { CanvasDomExpandController } from '$lib/canvas/CanvasDomExpandController';
   import { replaceUserTags } from '$lib/runtime/services/graph-tags';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
 
   let {
     id: nodeId,
@@ -456,7 +457,9 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags(tags: string[]) {
-          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+          updateNodeDataFromCurrent<{ tags?: string[] }>(updateNode, nodeId, (currentData) => ({
+            tags: replaceUserTags(currentData.tags, tags)
+          }));
         },
         extraContext: {
           settings: createSettingsAPI(settingsManager),

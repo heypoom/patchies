@@ -138,7 +138,7 @@
       .with(P.number, (index) => {
         const normIndex = Math.max(0, Math.min(Math.floor(index), gongCount - 1));
 
-        updateNodeData(nodeId, { ...data, index: normIndex });
+        updateNodeData(nodeId, { index: normIndex });
         sendGong(normIndex, true);
       })
       .with(P.string, (value) => {
@@ -146,7 +146,7 @@
 
         if (found) {
           flushActiveNotes();
-          updateNodeData(nodeId, { ...data, tuning: found.title, index: 0 });
+          updateNodeData(nodeId, { tuning: found.title, index: 0 });
         }
       })
       .otherwise(() => {});
@@ -170,7 +170,7 @@
   function onTuningChange(e: Event) {
     const title = (e.target as HTMLSelectElement).value;
     flushActiveNotes();
-    updateNodeData(nodeId, { ...data, tuning: title, index: 0 });
+    updateNodeData(nodeId, { tuning: title, index: 0 });
   }
 
   const containerClass = $derived(
@@ -223,7 +223,7 @@
 
       <button
         class="ml-auto cursor-pointer rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200"
-        onclick={() => updateNodeData(nodeId, { ...data, showInfo: !showInfo })}
+        onclick={() => updateNodeData(nodeId, { showInfo: !showInfo })}
         title={showInfo ? 'Hide info' : 'Show info'}
       >
         {#if showInfo}

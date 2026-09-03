@@ -12,6 +12,7 @@
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SliderSettings from '$lib/components/settings/SliderSettings.svelte';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
@@ -23,7 +24,7 @@
     data: {
       min?: number;
       max?: number;
-      step?: number;
+      step?: number | null;
       defaultValue?: number;
       isFloat?: boolean;
       value?: number;
@@ -37,7 +38,7 @@
     height?: number;
   } = $props();
 
-  const { updateNodeData, updateNode } = useSvelteFlow();
+  const { updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const store = useStore();
   const edges = useEdges();
@@ -90,9 +91,11 @@
   }
 
   function updateControlData(updates: Partial<typeof node.data>) {
-    const nextData = { ...node.data, ...updates };
+    updateNodeDataFromCurrent<typeof node.data>(updateNode, node.id, (currentData) => {
+      const nextData = { ...currentData, ...updates };
 
-    updateNodeData(node.id, getSliderData(nextData));
+      return { ...updates, ...getSliderData(nextData) };
+    });
   }
 
   function handleSliderChange(event: Event) {
@@ -108,26 +111,39 @@
   }
 
   function updateConfig(updates: Partial<typeof node.data>) {
-    const newData = { ...node.data, ...updates };
+    updateNodeDataFromCurrent<typeof node.data>(updateNode, node.id, (currentData) => {
+      const currentControlData = getSliderData(currentData);
+      const currentMin = currentControlData.min ?? 0;
+      const currentIsFloat = currentControlData.isFloat === true;
+      const currentMax = currentControlData.max ?? (currentIsFloat ? 1 : 100);
+      const currentStep = currentControlData.step ?? undefined;
+      const currentDefaultValue = currentControlData.defaultValue ?? currentMin;
+      const currentValue = currentControlData.value ?? currentDefaultValue;
+      const newData = { ...currentData, ...updates };
 
-    // Ensure value is within new bounds
-    if ('min' in updates || 'max' in updates || 'step' in updates || 'isFloat' in updates) {
-      const newMin = updates.min ?? min;
-      const newMax = updates.max ?? max;
-      const newStep = getControlStep({
-        step: updates.step ?? node.data.step,
-        isFloat: updates.isFloat ?? isFloat
-      });
-      const clampedValue = snapControlValue(currentValue, {
-        min: newMin,
-        max: newMax,
-        step: newStep,
-        isFloat: updates.isFloat ?? isFloat
-      });
-      if (clampedValue !== currentValue) {
-        newData.value = clampedValue;
+      // Ensure value is within new bounds
+      if ('min' in updates || 'max' in updates || 'step' in updates || 'isFloat' in updates) {
+        const newMin = updates.min ?? currentMin;
+        const newMax = updates.max ?? currentMax;
+        const newIsFloat = updates.isFloat ?? currentIsFloat;
+        const newStep = getControlStep({
+          step: updates.step ?? currentStep,
+          isFloat: newIsFloat
+        });
+        const clampedValue = snapControlValue(currentValue, {
+          min: newMin,
+          max: newMax,
+          step: newStep,
+          isFloat: newIsFloat
+        });
+
+        if (clampedValue !== currentValue) {
+          newData.value = clampedValue;
+        }
       }
-    }
+
+      return { ...updates, ...getSliderData(newData) };
+    });
 
     // Set appropriate default dimensions when switching orientation
     if ('vertical' in updates) {
@@ -139,8 +155,6 @@
         updateNode(node.id, { width: 130, height: undefined });
       }
     }
-
-    updateNodeData(node.id, getSliderData(newData));
 
     setTimeout(() => {
       updateNodeInternals();

@@ -20,6 +20,7 @@
   import { webCodecsEnabled, showVideoStats } from '../../stores/video.store';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import { VideoProfiler, type VideoStats } from '$objects/video';
   import { LatestVideoSeek } from '$objects/video/latest-video-seek';
   import { getVideoNodeDisplaySize } from '$objects/video/video-node-size';
@@ -171,7 +172,7 @@
     nodeId: initialNodeId(),
     acceptMimePrefix: 'video/',
     onFileLoaded: handleFileLoaded,
-    updateNodeData: (newData) => updateNode(nodeId, { data: { ...data, ...newData } }),
+    updateNodeData: (newData) => updateNodeDataFromCurrent(updateNode, nodeId, () => newData),
     getVfsPath: () => data.vfsPath,
     filePickerAccept: ['.mp4', '.webm', '.mov', '.avi', '.mkv'],
     filePickerDescription: 'Video Files'
@@ -184,7 +185,7 @@
       .with(videoMessages.loop, ({ value }) => {
         const shouldLoop = value ?? true;
 
-        updateNode(nodeId, { data: { ...data, loop: shouldLoop } });
+        updateNodeDataFromCurrent(updateNode, nodeId, () => ({ loop: shouldLoop }));
 
         if (videoElement) {
           videoElement.loop = shouldLoop;
@@ -353,11 +354,16 @@
             previewHeight: get(previewHeight)
           });
 
-          updateNode(nodeId, {
+          updateNode(nodeId, (currentNode) => ({
             width: displaySize.width,
             height: displaySize.height,
-            data: { ...data, fileName: file.name, width: videoWidth, height: videoHeight }
-          });
+            data: {
+              ...currentNode.data,
+              fileName: file.name,
+              width: videoWidth,
+              height: videoHeight
+            }
+          }));
 
           isVideoLoaded = true;
           isPaused = true;

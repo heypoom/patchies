@@ -40,6 +40,7 @@
   import { LivePreviewExpandController } from '$lib/canvas/LivePreviewExpandController';
   import { getLivePreviewContainScale } from '$lib/canvas/live-preview-contain';
   import { replaceUserTags } from '$lib/runtime/services/graph-tags';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
 
   export type DomRuntimeRoot = {
     root: HTMLElement;
@@ -379,7 +380,9 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags(tags: string[]) {
-          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+          updateNodeDataFromCurrent<{ tags?: string[] }>(updateNode, nodeId, (currentData) => ({
+            tags: replaceUserTags(currentData.tags, tags)
+          }));
         },
         extraContext: {
           settings: createSettingsAPI(settingsManager),

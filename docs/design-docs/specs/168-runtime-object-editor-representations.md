@@ -203,12 +203,13 @@ graph and resolves each public object spec to a message or audio implementation.
 When an ID changes kind, it destroys the old implementation before it starts the new one.
 
 Runtime-to-editor updates must compose when several messages reach the same
-node synchronously. A view must accumulate same-turn mutations to a collection,
-such as changes to several object-box `params[]` entries, before writing editor
-state. When applying the batch, derive untouched values from the editor store's
-current node snapshot rather than a Svelte view prop captured before message
-fan-out began. This preserves every inlet update when one outlet connects to
-several inlets on the same node.
+node synchronously. Independent field changes should be partial data updates.
+Read-modify-write changes, such as edits to object-box `params[]`, sequencer
+tracks, or assembly memory, must derive from the editor store's current node
+snapshot and merge back into that snapshot. They must not derive from a Svelte
+view prop captured before message fan-out began. This preserves every update
+when one outlet connects to several inlets on the same node and prevents UI
+changes from overwriting concurrent runtime changes.
 
 Object synchronization is serialized. Each reconciliation waits for the last one
 before it reads or changes lifecycle state. A failed sync does not block a later

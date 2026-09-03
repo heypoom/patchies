@@ -45,7 +45,7 @@
   import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
   import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { createObjectParamUpdater } from './object-param-update';
+  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
   import type { ObjectNodeData } from './types';
 
   let {
@@ -309,10 +309,13 @@
     setTimeout(() => nodeElement?.focus(), 0);
   }
 
-  const queueParamUpdate = createObjectParamUpdater(() => nodeId, updateNodeData);
-
   function updateParamByIndex(index: number, value: unknown) {
-    queueParamUpdate(index, value);
+    updateNodeDataFromCurrent<ObjectNodeData>(updateNode, nodeId, (currentData) => {
+      const params = [...currentData.params];
+      params[index] = value;
+
+      return { params };
+    });
 
     isAutomated = { ...isAutomated, [index]: false };
   }
