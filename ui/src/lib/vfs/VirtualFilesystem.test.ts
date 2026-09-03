@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { HistoryManager } from '$lib/history';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { VfsPathRenamedEvent } from '$lib/eventbus/events';
 import { getPatchImportError, VirtualFilesystem } from './VirtualFilesystem';
+import type { EmbeddedVFSEntry } from './types';
 
 describe('VirtualFilesystem patch files', () => {
   beforeEach(() => {
@@ -157,5 +160,97 @@ describe('VirtualFilesystem patch files', () => {
     history.redo();
     expect(vfs.readEmbeddedFile('patch://utility.js')).toContain('2');
     expect(vfs.getEntry('patch://utility.js')).toMatchObject({ revision: 2 });
+  });
+
+  it('emits reverse and forward path changes when undoing and redoing a rename', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    const eventBus = PatchiesEventBus.getInstance();
+    const renames: VfsPathRenamedEvent[] = [];
+    const handleRename = (event: VfsPathRenamedEvent) => {
+      renames.push(event);
+    };
+    eventBus.addEventListener('vfsPathRenamed', handleRename);
+
+    vfs.createEmbeddedFile('patch://before.js', 'export {}');
+    history.clear();
+    vfs.renamePath('patch://before.js', 'patch://after.js');
+    history.undo();
+    history.redo();
+
+    expect(renames).toEqual([
+      { type: 'vfsPathRenamed', oldPath: 'patch://before.js', newPath: 'patch://after.js' },
+      { type: 'vfsPathRenamed', oldPath: 'patch://after.js', newPath: 'patch://before.js' },
+      { type: 'vfsPathRenamed', oldPath: 'patch://before.js', newPath: 'patch://after.js' }
+    ]);
+
+    eventBus.removeEventListener('vfsPathRenamed', handleRename);
+  });
+
+  it('clears path-only provider caches when switching patches', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    let activeContent = 'patch-a';
+    let cachedFile: File | undefined;
+
+    vfs.registerProvider({
+      type: 'local',
+      resolve: async () => {
+        cachedFile ??= new File([activeContent], 'shared.txt');
+
+        return cachedFile;
+      },
+      clear: () => {
+        cachedFile = undefined;
+      },
+      clearDirHandles: () => {},
+      storeDirHandle: async () => {}
+    } as never);
+    vfs.registerEntry('user://shared.txt', { provider: 'local', filename: 'shared.txt' });
+
+    await expect((await vfs.resolve('user://shared.txt')).text()).resolves.toBe('patch-a');
+
+    activeContent = 'patch-b';
+    vfs.clear();
+    vfs.registerEntry('user://shared.txt', { provider: 'local', filename: 'shared.txt' });
+
+    await expect((await vfs.resolve('user://shared.txt')).text()).resolves.toBe('patch-b');
+  });
+
+  it('loads oversized embedded files for recovery but refuses to resolve them', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const content = 'x'.repeat(256 * 1024 + 1);
+
+    await vfs.hydrate({
+      patch: {
+        'oversized.txt': {
+          provider: 'embedded',
+          filename: 'oversized.txt',
+          content,
+          size: content.length
+        } as EmbeddedVFSEntry
+      }
+    });
+
+    expect(vfs.getEntry('patch://oversized.txt')).toBeDefined();
+    expect(() => vfs.readEmbeddedFile('patch://oversized.txt')).toThrow('exceeds 256 KiB');
+    await expect(vfs.resolve('patch://oversized.txt')).rejects.toThrow('exceeds 256 KiB');
+    await expect(vfs.exportEmbeddedFile('patch://oversized.txt').text()).resolves.toBe(content);
+  });
+
+  it('deletes selected ancestors and descendants as one undoable operation', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    vfs.createFolder('patch://', 'folder');
+    vfs.createEmbeddedFile('patch://folder/child.js', 'export {}');
+    history.clear();
+
+    vfs.deletePaths(['patch://folder', 'patch://folder/child.js']);
+
+    expect(vfs.getEntry('patch://folder')).toBeUndefined();
+    expect(vfs.getEntry('patch://folder/child.js')).toBeUndefined();
+
+    history.undo();
+    expect(vfs.getEntry('patch://folder')).toBeDefined();
+    expect(vfs.getEntry('patch://folder/child.js')).toBeDefined();
   });
 });

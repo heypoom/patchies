@@ -107,6 +107,9 @@ export class VirtualFilesystem {
   /** Paths that need permission re-grant (local files after reload) */
   private pendingPermissions: Set<string> = new Set();
 
+  /** Hydrated embedded files that exceed the patch limits and cannot be executed. */
+  private invalidEmbeddedPaths: Map<string, string> = new Map();
+
   /** Version counter for reactivity - increments on any mutation */
   private versionStore = writable(0);
 
@@ -137,6 +140,7 @@ export class VirtualFilesystem {
   private restoreEntries(entries: Map<string, VFSEntry>): void {
     const previous = this.entries;
     this.entries = this.cloneEntries(entries);
+    this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(this.entries);
     this.pendingPermissions = new Set(
       [...this.pendingPermissions].filter((path) => this.entries.has(path))
     );
@@ -164,6 +168,7 @@ export class VirtualFilesystem {
     const before = this.cloneEntries();
 
     mutate();
+    this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(this.entries);
 
     const after = this.cloneEntries();
     const command: Command = {
@@ -181,7 +186,7 @@ export class VirtualFilesystem {
     HistoryManager.getInstance().record(command);
   }
 
-  private assertValidEntry(path: string, entry: VFSEntry): void {
+  private assertValidEntry(path: string, entry: VFSEntry, enforceEmbeddedLimits = true): void {
     const parsed = parseVFSPath(path);
     if (!parsed || parsed.segments.length === 0) {
       throw new Error(`VFS: Invalid path: ${path}`);
@@ -195,9 +200,40 @@ export class VirtualFilesystem {
       throw new Error(`VFS: embedded entries are only valid under patch://: ${path}`);
     }
 
-    if (isEmbeddedVFSEntry(entry)) {
+    if (entry.provider === 'embedded' && !isEmbeddedVFSEntry(entry)) {
+      throw new Error(`VFS: Embedded file content must be UTF-8 text: ${path}`);
+    }
+
+    if (enforceEmbeddedLimits && isEmbeddedVFSEntry(entry)) {
       this.assertEmbeddedContent(entry.content, path);
     }
+  }
+
+  private findInvalidEmbeddedPaths(entries: Map<string, VFSEntry>): Map<string, string> {
+    const invalidPaths = new Map<string, string>();
+    const encoder = new TextEncoder();
+    let totalBytes = 0;
+
+    for (const [path, entry] of entries) {
+      if (!isEmbeddedVFSEntry(entry)) continue;
+
+      const size = encoder.encode(entry.content).byteLength;
+      totalBytes += size;
+
+      if (size > MAX_EMBEDDED_FILE_BYTES) {
+        invalidPaths.set(path, `VFS: Embedded file exceeds 256 KiB: ${path}`);
+      }
+    }
+
+    if (totalBytes > MAX_EMBEDDED_PATCH_BYTES) {
+      for (const [path, entry] of entries) {
+        if (isEmbeddedVFSEntry(entry) && !invalidPaths.has(path)) {
+          invalidPaths.set(path, 'VFS: Embedded patch files exceed 1 MiB');
+        }
+      }
+    }
+
+    return invalidPaths;
   }
 
   private assertEmbeddedContent(content: string, path: string): void {
@@ -330,7 +366,22 @@ export class VirtualFilesystem {
       throw new Error(`VFS: Embedded file not found: ${path}`);
     }
 
+    const validationError = this.invalidEmbeddedPaths.get(path);
+    if (validationError) throw new Error(validationError);
+
     return entry.content;
+  }
+
+  /** Return embedded bytes for explicit export, including quarantined recovery files. */
+  exportEmbeddedFile(path: string): File {
+    const entry = this.entries.get(path);
+    if (!entry || !isEmbeddedVFSEntry(entry)) {
+      throw new Error(`VFS: Embedded file not found: ${path}`);
+    }
+
+    return new File([entry.content], entry.filename, {
+      type: entry.mimeType || 'text/plain;charset=utf-8'
+    });
   }
 
   private resolveCollision(path: string, collision: VfsCollisionStrategy): string | null {
@@ -575,6 +626,15 @@ export class VirtualFilesystem {
         }
       }
     };
+    const emitPathRenames = (direction: 'forward' | 'backward') => {
+      for (const move of moves) {
+        PatchiesEventBus.getInstance().dispatch({
+          type: 'vfsPathRenamed',
+          oldPath: direction === 'forward' ? move.oldPath : move.newPath,
+          newPath: direction === 'forward' ? move.newPath : move.oldPath
+        });
+      }
+    };
 
     this.recordMutation(
       `Rename ${oldPath.split('/').pop()}`,
@@ -583,27 +643,41 @@ export class VirtualFilesystem {
         for (const [path, entry] of renamed) this.entries.set(path, entry);
         movePersistedEntries('forward');
         this.notifyChange();
-        for (const path of paths) {
-          const destination =
-            path === oldPath ? newPath : `${newPath}${path.slice(oldPath.length)}`;
-          PatchiesEventBus.getInstance().dispatch({
-            type: 'vfsPathRenamed',
-            oldPath: path,
-            newPath: destination
-          });
-        }
+        emitPathRenames('forward');
       },
       {
-        redo: () => movePersistedEntries('forward'),
-        undo: () => movePersistedEntries('backward')
+        redo: () => {
+          movePersistedEntries('forward');
+          emitPathRenames('forward');
+        },
+        undo: () => {
+          movePersistedEntries('backward');
+          emitPathRenames('backward');
+        }
       }
     );
   }
 
   /** Delete a file or a complete folder tree as one undoable operation. */
   deletePath(path: string): void {
-    const paths = this.list().filter((item) => item === path || item.startsWith(`${path}/`));
-    if (paths.length === 0) throw new Error(`VFS: Path not found: ${path}`);
+    this.deletePaths([path]);
+  }
+
+  /** Delete multiple paths, collapsing descendants into one undoable operation. */
+  deletePaths(requestedPaths: Iterable<string>): void {
+    const requested = [...new Set(requestedPaths)];
+    const roots = requested.filter(
+      (path) => !requested.some((other) => other !== path && path.startsWith(`${other}/`))
+    );
+
+    for (const path of roots) {
+      if (!this.entries.has(path)) throw new Error(`VFS: Path not found: ${path}`);
+    }
+
+    const paths = this.list().filter((item) =>
+      roots.some((root) => item === root || item.startsWith(`${root}/`))
+    );
+    if (paths.length === 0) return;
 
     const linkedFolderPaths = paths.filter(
       (item) => this.entries.get(item)?.provider === 'local-folder'
@@ -623,7 +697,7 @@ export class VirtualFilesystem {
     };
 
     this.recordMutation(
-      `Delete ${path.split('/').pop()}`,
+      roots.length === 1 ? `Delete ${roots[0].split('/').pop()}` : `Delete ${roots.length} paths`,
       () => {
         for (const item of paths) {
           this.entries.delete(item);
@@ -854,10 +928,10 @@ export class VirtualFilesystem {
     const entry = this.entries.get(path);
     if (entry) {
       if (isEmbeddedVFSEntry(entry)) {
-        return new File([entry.content], entry.filename, {
-          type: entry.mimeType || 'text/plain;charset=utf-8'
-        });
+        const validationError = this.invalidEmbeddedPaths.get(path);
+        if (validationError) throw new Error(validationError);
       }
+
       // Direct entry found
       const provider = this.providers.get(entry.provider);
       if (!provider) {
@@ -1274,19 +1348,10 @@ export class VirtualFilesystem {
       }
     }
 
-    let totalEmbeddedBytes = 0;
-    for (const entry of hydrated.values()) {
-      if (isEmbeddedVFSEntry(entry)) {
-        totalEmbeddedBytes += new TextEncoder().encode(entry.content).byteLength;
-      }
-    }
-    if (totalEmbeddedBytes > MAX_EMBEDDED_PATCH_BYTES) {
-      throw new Error('VFS: Embedded patch files exceed 1 MiB');
-    }
-
     this.entries.clear();
     this.pendingPermissions.clear();
     this.entries = hydrated;
+    this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(hydrated);
 
     // Check which local files need permission
     for (const [path, entry] of this.entries) {
@@ -1355,7 +1420,7 @@ export class VirtualFilesystem {
       const path = `${prefix}${key}`;
       if (isVFSEntry(value)) {
         const entry = { ...value };
-        this.assertValidEntry(path, entry);
+        this.assertValidEntry(path, entry, false);
         entries.set(path, entry);
       } else {
         this.collectHydratedNamespace(entries, value as { [key: string]: VFSTreeNode }, `${path}/`);
@@ -1461,7 +1526,12 @@ export class VirtualFilesystem {
   clear(): void {
     this.entries.clear();
     this.pendingPermissions.clear();
-    this.getLocalProvider()?.clearDirHandles();
+    this.invalidEmbeddedPaths.clear();
+
+    const localProvider = this.getLocalProvider();
+    localProvider?.clear();
+    localProvider?.clearDirHandles();
+
     this.notifyChange();
   }
 

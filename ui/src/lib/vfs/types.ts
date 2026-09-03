@@ -32,7 +32,11 @@ export interface EmbeddedVFSEntry extends Omit<VFSEntry, 'provider'> {
 }
 
 export function isEmbeddedVFSEntry(entry: VFSEntry): entry is EmbeddedVFSEntry {
-  return entry.provider === 'embedded' && 'content' in entry;
+  return (
+    entry.provider === 'embedded' &&
+    'content' in entry &&
+    typeof (entry as EmbeddedVFSEntry).content === 'string'
+  );
 }
 
 /** A file or directory returned from the user-facing VFS browsing API. */

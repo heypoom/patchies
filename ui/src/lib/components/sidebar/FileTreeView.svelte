@@ -360,9 +360,7 @@
   async function deleteSelectedFiles() {
     if (selectedPaths.size === 0) return;
 
-    for (const path of selectedPaths) {
-      vfs.deletePath(path);
-    }
+    vfs.deletePaths(selectedPaths);
 
     selectedPaths.clear();
     lastSelectedPath = null;
@@ -850,7 +848,7 @@
     const entry = vfs.getEntry(path);
     if (!entry || isVFSFolder(entry)) return;
 
-    const vfsPath = await vfs.resolve(path);
+    const vfsPath = vfs.exportEmbeddedFile(path);
     const url = URL.createObjectURL(vfsPath);
 
     const link = document.createElement('a');
