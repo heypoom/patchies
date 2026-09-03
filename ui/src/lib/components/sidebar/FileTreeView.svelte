@@ -793,6 +793,8 @@
   }
 
   async function handleRenameSubmit(event: KeyboardEvent) {
+    event.stopPropagation();
+
     if (event.key === 'Enter' && renameInputValue.trim() && renamingPath) {
       event.preventDefault();
 
