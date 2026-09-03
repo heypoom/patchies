@@ -74,7 +74,7 @@
   };
 
   function updateConfig(updates: Partial<typeof data>) {
-    updateNodeData(nodeId, { ...data, ...updates });
+    updateNodeData(nodeId, updates);
 
     setTimeout(updateValue, 10);
   }

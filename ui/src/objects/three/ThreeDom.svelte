@@ -27,6 +27,7 @@
   import type { SettingsSchema } from '$lib/settings';
   import { getBorderResetDataForRun } from '$lib/components/border-chrome';
   import { replaceUserTags } from '$lib/runtime/services/graph-tags';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   let {
     id: nodeId,
@@ -85,6 +86,7 @@
   let THREE: typeof import('three') | null = null;
 
   const { updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const updateNodeInternals = useUpdateNodeInternals();
 
   const settingsManager = new SettingsManager(
@@ -361,7 +363,9 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags: (tags: string[]) => {
-          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+          updateData<{ tags?: string[] }>(nodeId, (data) => ({
+            tags: replaceUserTags(data.tags, tags)
+          }));
         },
         extraContext: {
           settings: createSettingsAPI(settingsManager),

@@ -41,6 +41,7 @@
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { CanvasDomExpandController } from '$lib/canvas/CanvasDomExpandController';
   import { replaceUserTags } from '$lib/runtime/services/graph-tags';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   let {
     id: nodeId,
@@ -103,6 +104,7 @@
   let animationFrameId: number | null = null;
   let pausedCallback: FrameRequestCallback | null = null;
   const { updateNode, updateNodeData, getNodes } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
@@ -456,7 +458,9 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags(tags: string[]) {
-          updateNodeData(nodeId, { tags: replaceUserTags(data.tags, tags) });
+          updateData<{ tags?: string[] }>(nodeId, (data) => ({
+            tags: replaceUserTags(data.tags, tags)
+          }));
         },
         extraContext: {
           settings: createSettingsAPI(settingsManager),

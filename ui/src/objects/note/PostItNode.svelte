@@ -82,7 +82,7 @@
   const formattedText = $derived(formatText(text));
 
   function updateConfig(updates: Partial<typeof node.data>) {
-    updateNodeData(node.id, { ...node.data, ...updates });
+    updateNodeData(node.id, updates);
   }
 
   function handleDoubleClick(e: MouseEvent) {

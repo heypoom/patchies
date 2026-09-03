@@ -5,8 +5,9 @@
   import KnobSettings from '$lib/components/settings/KnobSettings.svelte';
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
-  import { useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
+  import { useStore, useEdges } from '@xyflow/svelte';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
   import { useNodeViewMessageContext } from '$lib/messages';
@@ -18,7 +19,7 @@
     data: {
       min?: number;
       max?: number;
-      step?: number;
+      step?: number | null;
       defaultValue?: number;
       isFloat?: boolean;
       value?: number;
@@ -31,7 +32,7 @@
     selected: boolean;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const store = useStore();
   const edges = useEdges();
 
@@ -123,9 +124,11 @@
   }
 
   function updateControlData(updates: Partial<typeof node.data>) {
-    const nextData = { ...node.data, ...updates };
+    updateData<typeof node.data>(node.id, (data) => {
+      const nextData = { ...data, ...updates };
 
-    updateNodeData(node.id, { ...nextData, ...getKnobData(nextData) });
+      return { ...updates, ...getKnobData(nextData) };
+    });
   }
 
   function handlePointerDown(event: PointerEvent) {
@@ -162,29 +165,39 @@
   }
 
   function updateConfig(updates: Partial<typeof node.data>) {
-    const newData = { ...node.data, ...updates };
+    updateData<typeof node.data>(node.id, (data) => {
+      const controlData = getKnobData(data);
+      const currentMin = controlData.min ?? 0;
+      const currentIsFloat = controlData.isFloat === true;
+      const currentMax = controlData.max ?? (currentIsFloat ? 1 : 100);
+      const currentStep = controlData.step ?? undefined;
+      const currentDefaultValue = controlData.defaultValue ?? currentMin;
+      const currentValue = controlData.value ?? currentDefaultValue;
+      const newData = { ...data, ...updates };
 
-    // Ensure value is within new bounds
-    if ('min' in updates || 'max' in updates || 'step' in updates || 'isFloat' in updates) {
-      const newMin = updates.min ?? min;
-      const newMax = updates.max ?? max;
-      const newStep = getControlStep({
-        step: updates.step ?? node.data.step,
-        isFloat: updates.isFloat ?? isFloat
-      });
-      const clampedValue = snapControlValue(currentValue, {
-        min: newMin,
-        max: newMax,
-        step: newStep,
-        isFloat: updates.isFloat ?? isFloat
-      });
+      // Ensure value is within new bounds
+      if ('min' in updates || 'max' in updates || 'step' in updates || 'isFloat' in updates) {
+        const newMin = updates.min ?? currentMin;
+        const newMax = updates.max ?? currentMax;
+        const newIsFloat = updates.isFloat ?? currentIsFloat;
+        const newStep = getControlStep({
+          step: updates.step ?? currentStep,
+          isFloat: newIsFloat
+        });
+        const clampedValue = snapControlValue(currentValue, {
+          min: newMin,
+          max: newMax,
+          step: newStep,
+          isFloat: newIsFloat
+        });
 
-      if (clampedValue !== currentValue) {
-        newData.value = clampedValue;
+        if (clampedValue !== currentValue) {
+          newData.value = clampedValue;
+        }
       }
-    }
 
-    updateNodeData(node.id, { ...newData, ...getKnobData(newData) });
+      return { ...updates, ...getKnobData(newData) };
+    });
   }
 
   // Handle visibility: 3 states
@@ -330,7 +343,9 @@
             <button
               onclick={() => {
                 const oldLocked = node.data.locked ?? false;
-                updateNodeData(node.id, { ...node.data, locked: !oldLocked });
+                updateData<typeof node.data>(node.id, (data) => ({
+                  locked: !(data.locked ?? false)
+                }));
                 tracker.commit('locked', oldLocked, !oldLocked);
               }}
               class={[

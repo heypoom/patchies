@@ -47,11 +47,13 @@
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodePrimaryButtonUpdateEvent, PrimaryButton } from '$lib/eventbus/events';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, getNodes, updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   let {
     title,
@@ -202,14 +204,9 @@
 
   function handleConsoleToggle() {
     if (nodeId) {
-      const node = getNode(nodeId);
-
-      if (node) {
-        updateNodeData(nodeId, {
-          ...node.data,
-          showConsole: !node.data.showConsole
-        });
-      }
+      updateData<{ showConsole?: boolean }>(nodeId, (data) => ({
+        showConsole: !data.showConsole
+      }));
     }
   }
 

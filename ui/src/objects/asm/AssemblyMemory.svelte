@@ -11,6 +11,7 @@
   import { messages } from '$lib/objects/schemas';
   import { AssemblySystem } from '$objects/asm/AssemblySystem';
   import { useNodeDataTracker } from '$lib/history';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import {
     ASM_MEMORY_GRID_COLUMNS,
     ASM_MEMORY_GRID_LIMIT,
@@ -33,6 +34,7 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   function getInitialNodeId() {
     return nodeId;
@@ -81,25 +83,28 @@
       await match(message)
         .with(P.union(P.array(P.number), P.number), async (v) => {
           const body = Array.isArray(v) ? v : [v];
-          const nextValues = [...values, ...body];
 
-          updateNodeData(nodeId, { ...data, values: nextValues });
+          updateData<typeof data>(nodeId, (data) => ({
+            values: [...(data.values ?? []), ...body]
+          }));
         })
         .with(
           { type: 'write', address: P.number, data: P.array(P.number) },
           async ({ address, data: writeData }) => {
-            const nextValues = [...values];
-            // Ensure the array is large enough to accommodate the write
-            const requiredLength = address + writeData.length;
-            while (nextValues.length < requiredLength) {
-              nextValues.push(0);
-            }
+            updateData<typeof data>(nodeId, (data) => {
+              const nextValues = [...(data.values ?? [])];
+              // Ensure the array is large enough to accommodate the write
+              const requiredLength = address + writeData.length;
+              while (nextValues.length < requiredLength) {
+                nextValues.push(0);
+              }
 
-            for (let i = 0; i < writeData.length; i++) {
-              nextValues[address + i] = writeData[i];
-            }
+              for (let i = 0; i < writeData.length; i++) {
+                nextValues[address + i] = writeData[i];
+              }
 
-            updateNodeData(nodeId, { ...data, values: nextValues });
+              return { values: nextValues };
+            });
           }
         )
         .with({ type: 'read', address: P.number, count: P.number }, async ({ address, count }) => {
@@ -126,16 +131,17 @@
     }
   }
 
-  const updateConfig = (updates: Partial<typeof data>) =>
-    updateNodeData(nodeId, { ...data, ...updates });
+  const updateConfig = (updates: Partial<typeof data>) => updateNodeData(nodeId, updates);
 
   function setMemoryValue(address: number, value: number) {
     if (value > ASM_MAX_CELL_VALUE) return;
 
-    const newValues = [...values];
-    newValues[address] = value;
+    updateData<typeof data>(nodeId, (data) => {
+      const newValues = [...(data.values ?? [])];
+      newValues[address] = value;
 
-    updateNodeData(nodeId, { ...data, values: newValues });
+      return { values: newValues };
+    });
   }
 
   function writeMemoryValue(value: number, index: number) {
@@ -162,7 +168,7 @@
 
     if (newValues.length === 0) return;
 
-    updateNodeData(nodeId, { ...data, values: newValues });
+    updateNodeData(nodeId, { values: newValues });
   }
 
   onMount(() => {
@@ -222,7 +228,7 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
-              onclick={() => updateNodeData(nodeId, { ...data, values: [] })}
+              onclick={() => updateNodeData(nodeId, { values: [] })}
               class={['cursor-pointer rounded p-1 text-red-400 hover:bg-zinc-700']}
             >
               <Trash class="h-4 w-4" />

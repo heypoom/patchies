@@ -53,7 +53,7 @@
   });
 
   function updateConfig(updates: Partial<typeof node.data>) {
-    updateNodeData(node.id, { ...node.data, ...updates });
+    updateNodeData(node.id, updates);
   }
 
   function toggleSettings(event: MouseEvent) {

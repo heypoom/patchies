@@ -7,7 +7,7 @@
   type KnobData = {
     min?: number;
     max?: number;
-    step?: number;
+    step?: number | null;
     defaultValue?: number;
     isFloat?: boolean;
     value?: number;
@@ -35,7 +35,7 @@
   // Derived values with defaults
   const min = $derived(data.min ?? 0);
   const max = $derived(data.max ?? (data.isFloat ? 1 : 100));
-  const step = $derived(getControlStep(data));
+  const step = $derived(getControlStep({ step: data.step ?? undefined, isFloat: data.isFloat }));
   const defaultValue = $derived(data.defaultValue ?? min);
   const isFloat = $derived(data.isFloat ?? false);
   const size = $derived(data.size ?? 50);

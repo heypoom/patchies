@@ -8,7 +8,7 @@
     TriangleAlert,
     CircleQuestionMark
   } from '@lucide/svelte/icons';
-  import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
+  import { NodeResizer } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { iframeSchema } from '$objects/iframe/schema';
@@ -21,6 +21,7 @@
   import type { IframePostMessageEvent } from '$lib/eventbus/events';
   import { IframePostMessageListener } from '$lib/iframe/IframePostMessageListener';
   import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   // Feature-detect credentialless iframe support
   // When COEP is enabled but credentialless iframes aren't supported,
@@ -45,7 +46,7 @@
     height: number;
   } = $props();
 
-  const { updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   let messageContext: MessageContext;
   let urlInputRef: HTMLInputElement | undefined = $state();
@@ -98,12 +99,7 @@
   };
 
   function loadUrl(url: string) {
-    updateNode(node.id, {
-      data: {
-        ...node.data,
-        url
-      }
-    });
+    updateData(node.id, () => ({ url }));
     showUrlInput = false;
   }
 

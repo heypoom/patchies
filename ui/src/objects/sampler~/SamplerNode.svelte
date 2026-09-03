@@ -80,7 +80,7 @@
     nodeId: getInitialNodeId(),
     acceptMimePrefix: 'audio/',
     onFileLoaded: handleFileLoaded,
-    updateNodeData: (data) => updateNodeData(node.id, { ...node.data, ...data }),
+    updateNodeData: (data) => updateNodeData(node.id, data),
     getVfsPath: () => node.data.vfsPath,
     filePickerAccept: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
     filePickerDescription: 'Audio Files'
@@ -110,7 +110,6 @@
       const duration = decodedBuffer.duration;
 
       updateNodeData(node.id, {
-        ...node.data,
         hasRecording: true,
         duration: duration,
         loopStart: 0,
@@ -213,7 +212,6 @@
 
     // Reset start/end points for the new recording without recreating its runtime node.
     updateNodeData(node.id, {
-      ...node.data,
       hasRecording: false,
       loopStart: 0,
       loopEnd: 0,
@@ -237,7 +235,7 @@
     let currentDuration = 0;
     recordingInterval = setInterval(() => {
       currentDuration += 0.1;
-      updateNodeData(node.id, { ...node.data, duration: currentDuration });
+      updateNodeData(node.id, { duration: currentDuration });
     }, 100);
   }
 
@@ -269,7 +267,6 @@
     patchRuntime?.suppressNextAudioObjectSync(node.id);
 
     updateNodeData(node.id, {
-      ...node.data,
       hasRecording: true,
       duration,
       loopStart: 0,
@@ -349,7 +346,7 @@
 
   function toggleLoop() {
     const newLoopEnabled = !loopEnabled;
-    updateNodeData(node.id, { ...node.data, loop: newLoopEnabled });
+    updateNodeData(node.id, { loop: newLoopEnabled });
 
     if (newLoopEnabled) {
       audioService.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
@@ -394,7 +391,7 @@
 
   function persistRuntimeSettings(updates: Record<string, unknown>) {
     patchRuntime?.suppressNextAudioObjectSync(node.id);
-    updateNodeData(node.id, { ...node.data, ...updates });
+    updateNodeData(node.id, updates);
   }
 
   function downloadBuffer(name?: string) {

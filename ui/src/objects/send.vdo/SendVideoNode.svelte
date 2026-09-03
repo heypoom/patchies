@@ -4,9 +4,9 @@
   import { sendVdoSchema } from '$objects/send.vdo/schema';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { onDestroy, onMount } from 'svelte';
-  import { useSvelteFlow } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   let node: {
     id: string;
@@ -14,7 +14,7 @@
     selected: boolean;
   } = $props();
 
-  const { updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
 
@@ -24,12 +24,12 @@
   const handleMessage: MessageCallbackFn = (m, { inlet }) => {
     // Channel inlet (inlet 1) - accepts string to change channel
     if (inlet === 1 && typeof m === 'string' && m.trim()) {
-      updateNode(node.id, { data: { ...node.data, channel: m.trim() } });
+      updateData(node.id, () => ({ channel: m.trim() }));
     }
   };
 
   function handleChannelChange(newChannel: string) {
-    updateNode(node.id, { data: { ...node.data, channel: newChannel } });
+    updateData(node.id, () => ({ channel: newChannel }));
   }
 
   onMount(() => {

@@ -17,6 +17,7 @@
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   let node: {
     id: string;
@@ -32,6 +33,7 @@
   } = $props();
 
   const { updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   const IMAGE_PREVIEW_SCALE_FACTOR = 6;
 
@@ -45,7 +47,7 @@
     nodeId: (() => node.id)(),
     acceptMimePrefix: 'image/',
     onFileLoaded: displayImage,
-    updateNodeData: (data) => updateNode(node.id, { data: { ...node.data, ...data } }),
+    updateNodeData: (data) => updateData(node.id, () => data),
     getVfsPath: () => node.data.vfsPath,
     filePickerAccept: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'],
     filePickerDescription: 'Images'
@@ -78,14 +80,14 @@
     const previewWidth = Math.round(preview.width / IMAGE_PREVIEW_SCALE_FACTOR);
     const previewHeight = Math.round(preview.height / IMAGE_PREVIEW_SCALE_FACTOR);
 
-    updateNode(node.id, {
+    updateNode(node.id, (currentNode) => ({
       ...(shouldSetDimensions && { width: previewWidth, height: previewHeight }),
       data: {
-        ...node.data,
+        ...currentNode.data,
         width: preview.width,
         height: preview.height
       }
-    });
+    }));
 
     // Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
     const source = await createImageBitmap(img);
