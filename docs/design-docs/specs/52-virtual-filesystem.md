@@ -528,6 +528,7 @@ Scope:
 - support New File for GLSL files in Patch folders;
 - implement drafts, dirty state, explicit Save, and the shared navigation guard;
 - provide the same GLSL assistance as the `glsl` object;
+- save inline value-widget edits and refresh shader consumers immediately;
 - add Edit actions to normal rows, search results, and the mobile toolbar;
 - resolve relative, explicit Patch, and explicit User GLSL includes;
 - infer only the `.glsl` extension;
@@ -543,6 +544,7 @@ Verification:
 4. Unsaved drafts do not invalidate consumers.
 5. Invalid saved source reports an error and preserves the previous visual output.
 6. A missing VFS include appears in the consumer's virtual console and highlights the originating `#include` line.
+7. Inline value-widget edits save the Patch file and refresh its shader consumers.
 
 Release criterion: GLSL Patch-file authoring works end to end without depending on JavaScript module support.
 

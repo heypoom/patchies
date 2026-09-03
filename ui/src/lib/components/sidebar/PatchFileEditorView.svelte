@@ -115,6 +115,7 @@
     <CodeEditor
       value={draft}
       {onchange}
+      onrun={onsave}
       {onsave}
       language="glsl"
       nodeType="glsl"
