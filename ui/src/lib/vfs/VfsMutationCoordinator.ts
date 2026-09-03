@@ -1,14 +1,19 @@
 import { HistoryManager, type Command } from '$lib/history';
 import type { VFSEntry } from './types';
 
+export type VfsMutationSnapshot = {
+  entries: Map<string, VFSEntry>;
+  pendingPermissions: Set<string>;
+};
+
 type VfsMutationCallbacks = {
   redo?: () => void;
   undo?: () => void;
 };
 
 type VfsMutationAccess = {
-  snapshot: () => Map<string, VFSEntry>;
-  restore: (entries: Map<string, VFSEntry>) => void;
+  snapshot: () => VfsMutationSnapshot;
+  restore: (snapshot: VfsMutationSnapshot) => void;
   afterMutation: () => void;
 };
 

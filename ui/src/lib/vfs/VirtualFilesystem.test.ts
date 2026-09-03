@@ -358,6 +358,79 @@ describe('VirtualFilesystem patch files', () => {
     eventBus.removeEventListener('vfsPathRenamed', handleRename);
   });
 
+  it('serializes persisted renames when undo follows an in-flight move', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    const calls: string[] = [];
+    let releaseFirstMove: () => void;
+    let markFirstMoveStarted: () => void;
+    let markSecondMoveFinished: () => void;
+    const firstMoveStarted = new Promise<void>((resolve) => {
+      markFirstMoveStarted = resolve;
+    });
+    const firstMoveReleased = new Promise<void>((resolve) => {
+      releaseFirstMove = resolve;
+    });
+    const secondMoveFinished = new Promise<void>((resolve) => {
+      markSecondMoveFinished = resolve;
+    });
+
+    vfs.registerProvider({
+      type: 'local',
+      resolve: async () => new Blob(),
+      storeDirHandle: async () => {},
+      rename: async (from: string, to: string) => {
+        calls.push(`${from}->${to}`);
+        if (calls.length === 1) {
+          markFirstMoveStarted();
+          await firstMoveReleased;
+        } else {
+          markSecondMoveFinished();
+        }
+      }
+    } as never);
+    vfs.registerEntry('user://before.txt', { provider: 'local', filename: 'before.txt' });
+    history.clear();
+
+    vfs.renamePath('user://before.txt', 'user://after.txt');
+    await firstMoveStarted;
+    history.undo();
+
+    expect(calls).toEqual(['user://before.txt->user://after.txt']);
+
+    releaseFirstMove!();
+    await secondMoveFinished;
+
+    expect(calls).toEqual([
+      'user://before.txt->user://after.txt',
+      'user://after.txt->user://before.txt'
+    ]);
+  });
+
+  it('restores pending permissions when undoing a deletion', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    vfs.registerProvider({
+      type: 'local',
+      resolve: async () => new Blob(),
+      needsPermission: async () => true,
+      storeDirHandle: async () => {}
+    } as never);
+    await vfs.hydrate({
+      user: {
+        'locked.txt': { provider: 'local', filename: 'locked.txt' }
+      }
+    });
+    history.clear();
+
+    expect(vfs.getPendingPermissions()).toEqual(['user://locked.txt']);
+
+    vfs.deletePath('user://locked.txt');
+    history.undo();
+
+    expect(vfs.getPendingPermissions()).toEqual(['user://locked.txt']);
+  });
+
   it('clears path-only provider caches when switching patches', async () => {
     const vfs = VirtualFilesystem.getInstance();
     let activeContent = 'patch-a';

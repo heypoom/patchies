@@ -400,10 +400,16 @@
   async function deleteSelectedFiles() {
     if (selectedPaths.size === 0) return;
 
-    vfs.deletePaths(selectedPaths);
+    const paths = [...selectedPaths].filter((path) => vfs.has(path));
 
-    selectedPaths.clear();
-    lastSelectedPath = null;
+    try {
+      if (paths.length > 0) vfs.deletePaths(paths);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Delete failed');
+    } finally {
+      selectedPaths.clear();
+      lastSelectedPath = null;
+    }
   }
 
   function handleKeydown(event: KeyboardEvent) {

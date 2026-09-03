@@ -35,7 +35,7 @@ import {
 } from './PatchImportPlanner';
 import type { VfsCollisionStrategy } from './PatchImportPlanner';
 import { VfsEntryIndex } from './VfsEntryIndex';
-import { VfsMutationCoordinator } from './VfsMutationCoordinator';
+import { VfsMutationCoordinator, type VfsMutationSnapshot } from './VfsMutationCoordinator';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 export {
@@ -77,12 +77,15 @@ export class VirtualFilesystem {
   private invalidEmbeddedPaths: Map<string, string> = new Map();
 
   private mutationCoordinator = new VfsMutationCoordinator({
-    snapshot: () => this.cloneEntries(),
-    restore: (entries) => this.restoreEntries(entries),
+    snapshot: () => this.createMutationSnapshot(),
+    restore: (snapshot) => this.restoreEntries(snapshot),
     afterMutation: () => {
       this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(this.entries);
     }
   });
+
+  /** Serialize persisted rename effects across synchronous history callbacks. */
+  private persistedRenameQueue: Promise<void> = Promise.resolve();
 
   /** Version counter for reactivity - increments on any mutation */
   private versionStore = writable(0);
@@ -107,16 +110,19 @@ export class VirtualFilesystem {
     this.versionStore.update((v) => v + 1);
   }
 
-  private cloneEntries(): Map<string, VFSEntry> {
-    return this.entries.snapshot();
+  private createMutationSnapshot(): VfsMutationSnapshot {
+    return {
+      entries: this.entries.snapshot(),
+      pendingPermissions: new Set(this.pendingPermissions)
+    };
   }
 
-  private restoreEntries(entries: Map<string, VFSEntry>): void {
+  private restoreEntries({ entries, pendingPermissions }: VfsMutationSnapshot): void {
     const previous = this.entries.snapshot();
     this.entries.replace(entries);
     this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(this.entries);
     this.pendingPermissions = new Set(
-      [...this.pendingPermissions].filter((path) => this.entries.has(path))
+      [...pendingPermissions].filter((path) => this.entries.has(path))
     );
     this.notifyChange();
 
@@ -140,6 +146,13 @@ export class VirtualFilesystem {
     callbacks?: { redo?: () => void; undo?: () => void }
   ): void {
     this.mutationCoordinator.record(description, mutate, callbacks);
+  }
+
+  private queuePersistedRename(operation: () => Promise<void>): void {
+    const queued = this.persistedRenameQueue.catch(() => {}).then(operation);
+    this.persistedRenameQueue = queued;
+
+    void queued.catch((error) => console.error('VFS: Failed to persist renamed paths', error));
   }
 
   private assertValidEntry(path: string, entry: VFSEntry, enforceEmbeddedLimits = true): void {
@@ -608,16 +621,18 @@ export class VirtualFilesystem {
       const provider = this.getLocalProvider();
       if (!provider) return;
 
-      for (const move of moves) {
-        const from = direction === 'forward' ? move.oldPath : move.newPath;
-        const to = direction === 'forward' ? move.newPath : move.oldPath;
+      this.queuePersistedRename(async () => {
+        for (const move of moves) {
+          const from = direction === 'forward' ? move.oldPath : move.newPath;
+          const to = direction === 'forward' ? move.newPath : move.oldPath;
 
-        if (move.entry.provider === 'local') {
-          void provider.rename(from, to);
-        } else if (move.entry.provider === 'local-folder') {
-          void provider.renameDirHandle(from, to);
+          if (move.entry.provider === 'local') {
+            await provider.rename(from, to);
+          } else if (move.entry.provider === 'local-folder') {
+            await provider.renameDirHandle(from, to);
+          }
         }
-      }
+      });
     };
     const emitPathRenames = (direction: 'forward' | 'backward') => {
       for (const move of moves) {

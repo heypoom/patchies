@@ -59,7 +59,13 @@ export class VfsEntryIndex implements Iterable<[string, VFSEntry]> {
 
   paths(prefix?: string): string[] {
     const paths = [...this.entries.keys()];
-    return prefix ? paths.filter((path) => path.startsWith(prefix)) : paths;
+    if (!prefix) return paths;
+    if (prefix.endsWith('://')) return paths.filter((path) => path.startsWith(prefix));
+
+    const normalizedPrefix = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+    return paths.filter(
+      (path) => path === normalizedPrefix || path.startsWith(`${normalizedPrefix}/`)
+    );
   }
 
   treePaths(path: string): string[] {
