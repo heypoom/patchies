@@ -156,7 +156,11 @@ export class VirtualFilesystem {
     }
   }
 
-  private recordMutation(description: string, mutate: () => void): void {
+  private recordMutation(
+    description: string,
+    mutate: () => void,
+    callbacks?: { redo?: () => void; undo?: () => void }
+  ): void {
     const before = this.cloneEntries();
 
     mutate();
@@ -164,8 +168,14 @@ export class VirtualFilesystem {
     const after = this.cloneEntries();
     const command: Command = {
       description,
-      execute: () => this.restoreEntries(after),
-      undo: () => this.restoreEntries(before)
+      execute: () => {
+        this.restoreEntries(after);
+        callbacks?.redo?.();
+      },
+      undo: () => {
+        this.restoreEntries(before);
+        callbacks?.undo?.();
+      }
     };
 
     HistoryManager.getInstance().record(command);
@@ -538,19 +548,49 @@ export class VirtualFilesystem {
       return [destination, { ...entry, filename }] as const;
     });
 
-    this.recordMutation(`Rename ${oldPath.split('/').pop()}`, () => {
-      for (const path of paths) this.entries.delete(path);
-      for (const [path, entry] of renamed) this.entries.set(path, entry);
-      this.notifyChange();
-      for (const path of paths) {
-        const destination = path === oldPath ? newPath : `${newPath}${path.slice(oldPath.length)}`;
-        PatchiesEventBus.getInstance().dispatch({
-          type: 'vfsPathRenamed',
-          oldPath: path,
-          newPath: destination
-        });
+    const moves = renamed.map(([newPath, entry], index) => ({
+      oldPath: paths[index],
+      newPath,
+      entry
+    }));
+    const movePersistedEntries = (direction: 'forward' | 'backward') => {
+      const provider = this.getLocalProvider();
+      if (!provider) return;
+
+      for (const move of moves) {
+        const from = direction === 'forward' ? move.oldPath : move.newPath;
+        const to = direction === 'forward' ? move.newPath : move.oldPath;
+
+        if (move.entry.provider === 'local') {
+          void provider.rename(from, to);
+        } else if (move.entry.provider === 'local-folder') {
+          void provider.renameDirHandle(from, to);
+        }
       }
-    });
+    };
+
+    this.recordMutation(
+      `Rename ${oldPath.split('/').pop()}`,
+      () => {
+        for (const path of paths) this.entries.delete(path);
+        for (const [path, entry] of renamed) this.entries.set(path, entry);
+        movePersistedEntries('forward');
+        this.notifyChange();
+        for (const path of paths) {
+          const destination =
+            path === oldPath ? newPath : `${newPath}${path.slice(oldPath.length)}`;
+          PatchiesEventBus.getInstance().dispatch({
+            type: 'vfsPathRenamed',
+            oldPath: path,
+            newPath: destination
+          });
+        }
+      },
+      {
+        redo: () => movePersistedEntries('forward'),
+        undo: () => movePersistedEntries('backward')
+      }
+    );
   }
 
   /** Delete a file or a complete folder tree as one undoable operation. */
@@ -577,6 +617,9 @@ export class VirtualFilesystem {
     if (!source || isVFSFolder(source)) throw new Error(`VFS: File not found: ${sourcePath}`);
     if (!targetFolder.startsWith(VFS_PREFIXES.PATCH)) {
       throw new Error(`VFS: Patch destination required: ${targetFolder}`);
+    }
+    if (source.size && source.size > MAX_EMBEDDED_FILE_BYTES) {
+      throw new Error(`VFS: ${source.filename} exceeds 256 KiB Patch-file limit`);
     }
 
     const blob = await this.resolve(sourcePath);

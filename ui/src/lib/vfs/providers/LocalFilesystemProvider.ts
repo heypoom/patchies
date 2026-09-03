@@ -275,6 +275,17 @@ export class LocalFilesystemProvider implements VFSProvider {
     await removeDirHandle(path);
   }
 
+  /** Move a linked directory handle when its VFS path changes. */
+  async renameDirHandle(oldPath: string, newPath: string): Promise<void> {
+    const handle = await this.getDirHandle(oldPath);
+    if (!handle) return;
+
+    this.dirHandleCache.set(newPath, handle);
+    this.dirHandleCache.delete(oldPath);
+    await this.storeDirHandle(newPath, handle);
+    await this.removeDirHandle(oldPath);
+  }
+
   /**
    * Check if a directory handle has permission.
    */

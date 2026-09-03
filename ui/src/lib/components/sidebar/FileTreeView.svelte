@@ -44,6 +44,7 @@
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Popover from '$lib/components/ui/popover';
   import { toast } from 'svelte-sonner';
+  import { match } from 'ts-pattern';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
@@ -186,10 +187,13 @@
   // Get the currently selected file path (for mobile toolbar)
   const selectedFilePath = $derived.by(() => {
     if (selectedPaths.size !== 1) return null;
+
     const path = [...selectedPaths][0];
     const entry = vfs.getEntry(path);
+
     // Only return if it's a file (not a folder)
     if (entry && !isVFSFolder(entry)) return path;
+
     return null;
   });
 
@@ -203,9 +207,16 @@
   const moveFolderTree = $derived.by((): FolderNode[] => {
     const entries = $vfsEntries;
 
+    const selectedNamespace = selectedFilePath
+      ? parseVFSPath(selectedFilePath)?.namespace
+      : undefined;
+
+    const namespace = selectedNamespace === 'patch' ? 'patch' : 'user';
+    const namespacePath = namespace === 'patch' ? 'patch://' : 'user://';
+
     // Collect all folder paths
     const folderPaths = new SvelteSet<string>();
-    folderPaths.add('user://');
+    folderPaths.add(namespacePath);
 
     for (const [path, entry] of entries) {
       if (isVFSFolder(entry) && !isLocalFolder(entry)) {
@@ -215,9 +226,9 @@
       // Also add parent paths of all files as potential folders
       const parsed = parseVFSPath(path);
 
-      if (parsed && parsed.namespace === 'user' && parsed.segments.length > 1) {
+      if (parsed && parsed.namespace === namespace && parsed.segments.length > 1) {
         for (let i = 1; i < parsed.segments.length; i++) {
-          const parentPath = `user://${parsed.segments.slice(0, i).join('/')}`;
+          const parentPath = `${namespacePath}${parsed.segments.slice(0, i).join('/')}`;
           folderPaths.add(parentPath);
         }
       }
@@ -226,13 +237,14 @@
     // Build tree structure
     function buildChildren(parentPath: string): FolderNode[] {
       const children: FolderNode[] = [];
-      const prefix = parentPath === 'user://' ? 'user://' : `${parentPath}/`;
+      const prefix = parentPath === namespacePath ? namespacePath : `${parentPath}/`;
 
       for (const folderPath of folderPaths) {
         if (!folderPath.startsWith(prefix) || folderPath === parentPath) continue;
 
         // Check if this is a direct child
         const relativePath = folderPath.slice(prefix.length);
+
         if (!relativePath.includes('/')) {
           // Check if this folder is the current file's parent (disable it)
           const isCurrentParent = !!(
@@ -255,11 +267,11 @@
 
     return [
       {
-        id: 'user://',
-        name: 'user',
-        icon: User,
-        iconClass: 'text-yellow-400',
-        children: buildChildren('user://')
+        id: namespacePath,
+        name: namespace,
+        icon: namespace === 'patch' ? Package : User,
+        iconClass: namespace === 'patch' ? 'text-emerald-400' : 'text-yellow-400',
+        children: buildChildren(namespacePath)
       }
     ];
   });
@@ -313,11 +325,15 @@
       }
       if (node.path) paths.push(node.path);
       if (node.children === undefined) return;
+
       const isExpanded = node.path ? expandedPaths.has(node.path) : true;
       if (!isExpanded) return;
+
       const isLinkedFolderNode = node.entry && isLocalFolder(node.entry);
       if (!isLinkedFolderNode) {
-        for (const child of getSortedChildren(node)) traverseNode(child);
+        for (const child of getSortedChildren(node)) {
+          traverseNode(child);
+        }
       }
     }
 
@@ -344,24 +360,8 @@
   async function deleteSelectedFiles() {
     if (selectedPaths.size === 0) return;
 
-    const localProvider = getLocalProvider();
-
     for (const path of selectedPaths) {
-      // If it's a folder, also delete all children
-      const allPaths = vfs.list();
-      const pathsToDelete = allPaths.filter(
-        (p) => p === path || p.startsWith(path.endsWith('/') ? path : path + '/')
-      );
-
-      for (const pathToDelete of pathsToDelete) {
-        // Remove from VFS in-memory entries
-        vfs.remove(pathToDelete);
-
-        // Clean up persisted data (handle + file data from IndexedDB)
-        if (localProvider) {
-          await localProvider.remove(pathToDelete);
-        }
-      }
+      vfs.deletePath(path);
     }
 
     selectedPaths.clear();
@@ -374,6 +374,7 @@
 
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
+
       deleteSelectedFiles();
     }
   }
@@ -410,7 +411,7 @@
       children: new Map()
     };
 
-    // Create namespace roots
+    // Namespace roots
     const patchRoot: TreeNode = { name: 'Patch', path: 'patch://', children: new Map() };
     const userRoot: TreeNode = { name: 'User', path: 'user://', children: new Map() };
     const objRoot: TreeNode = { name: 'objects', path: 'obj://', children: new Map() };
@@ -419,8 +420,11 @@
       const parsed = parseVFSPath(path);
       if (!parsed) continue;
 
-      const targetRoot =
-        parsed.namespace === 'patch' ? patchRoot : parsed.namespace === 'user' ? userRoot : objRoot;
+      const targetRoot = match(parsed.namespace)
+        .with('patch', () => patchRoot)
+        .with('user', () => userRoot)
+        .otherwise(() => objRoot);
+
       let current = targetRoot;
 
       // Build nested structure
@@ -433,17 +437,18 @@
         }
 
         if (!current.children.has(segment)) {
-          const prefix =
-            parsed.namespace === 'patch'
-              ? 'patch://'
-              : parsed.namespace === 'user'
-                ? 'user://'
-                : 'obj://';
+          const prefix = match(parsed.namespace)
+            .with('patch', () => 'patch://')
+            .with('user', () => 'user://')
+            .otherwise(() => 'obj://');
+
           const nodePath = `${prefix}${parsed.segments.slice(0, i + 1).join('/')}`;
           const isFolder = isLast && isVFSFolder(entry);
+
           current.children.set(segment, {
             name: segment,
             path: nodePath,
+
             // Folders always have children map (even if empty), files don't
             children: isLast && !isFolder ? undefined : new Map(),
             entry: isLast ? entry : undefined
@@ -485,6 +490,7 @@
       // Folders come before files
       const aIsFolder = a.children !== undefined;
       const bIsFolder = b.children !== undefined;
+
       if (aIsFolder && !bIsFolder) return -1;
       if (!aIsFolder && bIsFolder) return 1;
 
@@ -526,6 +532,7 @@
   // Check if a path is within the drop target folder
   function isInDropTarget(nodePath: string | undefined): boolean {
     if (!dropTargetPath || !nodePath) return false;
+
     return (
       nodePath === dropTargetPath || nodePath.startsWith(dropTargetPath.replace(/\/$/, '') + '/')
     );
@@ -542,9 +549,11 @@
     if (hasFiles || hasVfsPath) {
       event.preventDefault();
       event.stopPropagation();
+
       if (event.dataTransfer) {
         event.dataTransfer.dropEffect = hasVfsPath ? 'move' : 'copy';
       }
+
       dropTargetPath = folderPath;
     }
   }
@@ -556,9 +565,11 @@
 
     if (hasFiles || hasVfsPath) {
       event.preventDefault();
+
       if (event.dataTransfer) {
         event.dataTransfer.dropEffect = hasVfsPath ? 'move' : 'copy';
       }
+
       // Only set to user:// if we're not already targeting a folder
       if (dropTargetPath === null) {
         dropTargetPath = 'user://';
@@ -569,6 +580,7 @@
   function handleFolderDragLeave(event: DragEvent) {
     // Only clear if leaving the tree entirely
     const relatedTarget = event.relatedTarget as HTMLElement | null;
+
     if (!relatedTarget?.closest('[role="tree"]')) {
       dropTargetPath = null;
     }
@@ -585,6 +597,7 @@
     const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
     if (vfsPath && targetFolder) {
       await moveVfsFile(vfsPath, targetFolder);
+
       return;
     }
 
@@ -593,7 +606,12 @@
     if (!files || files.length === 0) return;
 
     if (targetFolder?.startsWith('patch://')) {
-      await vfs.importToPatch(Array.from(files), targetFolder);
+      try {
+        await vfs.importToPatch(Array.from(files), targetFolder);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Import failed');
+      }
+
       return;
     }
 
@@ -608,7 +626,15 @@
     if (!parsed) return;
 
     if (parsed.namespace === 'user' && targetFolder.startsWith('patch://')) {
+      const source = vfs.getEntry(oldPath);
+
+      if (source && isVFSFolder(source)) {
+        toast.error('Folder import to Patch is not supported yet');
+        return;
+      }
+
       await vfs.copyToPatch(oldPath, targetFolder, 'keep-both');
+
       return;
     }
 
@@ -619,6 +645,7 @@
 
     // Get the entry to access the real filename
     const rootEntry = vfs.getEntry(oldPath);
+
     // Use entry.filename (the real name) or fall back to path segment
     const filename = rootEntry?.filename || parsed.segments[parsed.segments.length - 1];
 
@@ -641,19 +668,7 @@
       return;
     }
 
-    // Get all paths that need to be moved (the item and all its children)
-    const allPaths = vfs.list();
-    const pathsToMove = allPaths.filter((p) => p === oldPath || p.startsWith(oldPathPrefix));
-
-    const localProvider = getLocalProvider();
-
     vfs.renamePath(oldPath, newBasePath);
-
-    for (const pathToMove of pathsToMove) {
-      const newPath =
-        newBasePath + (pathToMove === oldPath ? '' : pathToMove.slice(oldPath.length));
-      await localProvider?.rename(pathToMove, newPath);
-    }
 
     // Update selection if moved item was selected
     if (selectedPaths.has(oldPath)) {
@@ -668,6 +683,7 @@
 
   function handleUploadClick(folderPath: string, event: MouseEvent) {
     event.stopPropagation();
+
     pendingUploadFolder = folderPath;
 
     if (folderPath.startsWith('patch://')) {
@@ -707,6 +723,7 @@
 
   function handleAddUrlClick(folderPath: string, event: MouseEvent) {
     event.stopPropagation();
+
     showUrlInput = folderPath;
     urlInputValue = '';
   }
@@ -714,9 +731,11 @@
   async function handleUrlSubmit(event: KeyboardEvent) {
     if (event.key === 'Enter' && urlInputValue.trim()) {
       event.preventDefault();
+
       // For now, registerUrl doesn't support target folder, so we just register at root
       // TODO: Add folder support to registerUrl
       await vfs.registerUrl(urlInputValue.trim());
+
       showUrlInput = null;
       urlInputValue = '';
     } else if (isDismissKey(event)) {
@@ -731,6 +750,7 @@
 
   function handleCreateFolderClick(folderPath: string, event: MouseEvent) {
     event.stopPropagation();
+
     showFolderInput = folderPath;
     folderInputValue = '';
   }
@@ -738,7 +758,9 @@
   function handleFolderInputSubmit(event: KeyboardEvent) {
     if (event.key === 'Enter' && folderInputValue.trim()) {
       event.preventDefault();
+
       const parentPath = showFolderInput;
+
       if (parentPath) {
         // Create the folder in VFS
         const newFolderPath = vfs.createFolder(parentPath, folderInputValue.trim());
@@ -747,6 +769,7 @@
         expandedPaths.add(parentPath);
         expandedPaths.add(newFolderPath);
       }
+
       showFolderInput = null;
       folderInputValue = '';
     } else if (isDismissKey(event)) {
@@ -767,13 +790,16 @@
   async function handleRenameSubmit(event: KeyboardEvent) {
     if (event.key === 'Enter' && renameInputValue.trim() && renamingPath) {
       event.preventDefault();
+
       const newName = renameInputValue.trim();
       const oldPath = renamingPath;
 
       // Get the parent path and construct new path
       const parsed = parseVFSPath(oldPath);
+
       if (parsed) {
         const parentSegments = parsed.segments.slice(0, -1);
+
         const newPath =
           parentSegments.length > 0
             ? `${parsed.namespace}://${parentSegments.join('/')}/${newName}`
@@ -781,14 +807,9 @@
 
         // Rename through the VFS so this mutation has global undo/redo support.
         const entry = vfs.getEntry(oldPath);
+
         if (entry) {
           vfs.renamePath(oldPath, newPath);
-
-          // Also rename in LocalProvider to persist the change
-          const localProvider = getLocalProvider();
-          if (localProvider) {
-            await localProvider.rename(oldPath, newPath);
-          }
 
           // Update selection if renamed item was selected
           if (selectedPaths.has(oldPath)) {
@@ -813,22 +834,21 @@
 
   async function handleSaveToDisk(path: string) {
     const entry = vfs.getEntry(path);
-    if (!entry) return;
+    if (!entry || isVFSFolder(entry)) return;
 
-    const url = URL.createObjectURL(await vfs.resolve(path));
+    const vfsPath = await vfs.resolve(path);
+    const url = URL.createObjectURL(vfsPath);
+
     const link = document.createElement('a');
     link.href = url;
     link.download = entry.filename;
     link.click();
+
     URL.revokeObjectURL(url);
   }
 
   async function handleDeleteFromContextMenu(path: string) {
-    const localProvider = getLocalProvider();
-
-    const pathsToDelete = vfs.list().filter((p) => p === path || p.startsWith(`${path}/`));
     vfs.deletePath(path);
-    for (const pathToDelete of pathsToDelete) await localProvider?.remove(pathToDelete);
 
     selectedPaths.clear();
     lastSelectedPath = null;
@@ -872,6 +892,7 @@
 
         const file = await handle.getFile();
         await vfs.replaceFile(path, file, handle);
+
         return;
       } catch (err) {
         // User cancelled or error - fall back to input
@@ -914,7 +935,7 @@
 
   // Cache for directory handles within linked folders (for expanding subdirs)
   let subdirHandleCache = new SvelteMap<string, FileSystemDirectoryHandle>();
-  const loadingLocalFolderPaths = new Set<string>();
+  const loadingLocalFolderPaths = new SvelteSet<string>();
 
   async function handleLinkFolderClick(event: MouseEvent) {
     event.stopPropagation();
@@ -994,7 +1015,7 @@
   function queueLocalFolderContentsLoad(path: string) {
     loadingLocalFolderPaths.add(path);
 
-    void loadLocalFolderContents(path).finally(() => {
+    loadLocalFolderContents(path).finally(() => {
       loadingLocalFolderPaths.delete(path);
     });
   }
@@ -1013,14 +1034,12 @@
     }
   });
 
-  // Load contents when a local folder is expanded (always refresh to pick up filesystem changes)
-  async function handleLocalFolderExpand(path: string) {
-    await loadLocalFolderContents(path);
-  }
-
   async function handleRefreshLinkedFolder(path: string, event: MouseEvent) {
     event.stopPropagation();
-    await loadLocalFolderContents(path, undefined, { refreshExpandedDescendants: true });
+
+    await loadLocalFolderContents(path, undefined, {
+      refreshExpandedDescendants: true
+    });
   }
 
   async function handleRelinkFolderClick(path: string, event: MouseEvent) {
@@ -1053,6 +1072,7 @@
 
     // Toggle expansion
     const willExpand = !expandedPaths.has(subdirPath);
+
     if (willExpand) {
       expandedPaths.add(subdirPath);
     } else {
@@ -1204,7 +1224,7 @@
 
                 // Load local folder contents when expanding
                 if (isLinkedFolder && willExpand) {
-                  await handleLocalFolderExpand(node.path);
+                  await loadLocalFolderContents(node.path);
                 }
               } else if (isFolder && node.path) {
                 // For namespace roots: just expand/collapse
@@ -1394,7 +1414,7 @@
             <Copy class="mr-2 h-4 w-4" />
             Copy Path
           </ContextMenu.Item>
-          {#if node.path?.startsWith('patch://')}
+          {#if isFile && node.path?.startsWith('patch://')}
             <ContextMenu.Item onclick={() => handleSaveToDisk(node.path!)}>
               <File class="mr-2 h-4 w-4" />
               Save to Disk…

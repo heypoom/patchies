@@ -73,6 +73,18 @@ describe('VirtualFilesystem patch files', () => {
     expect(vfs.getEntry('patch://archive.zip')).toBeUndefined();
   });
 
+  it('rejects an oversized User file before trying to resolve it for a Patch copy', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.registerEntry('user://large.txt', {
+      provider: 'url',
+      filename: 'large.txt',
+      size: 256 * 1024 + 1,
+      url: 'https://example.test/large.txt'
+    });
+
+    await expect(vfs.copyToPatch('user://large.txt')).rejects.toThrow('exceeds 256 KiB');
+  });
+
   it('uses numbered names for collision-safe imports and leaves rejected batches untouched', async () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.createEmbeddedFile('patch://utility.js', 'export const one = 1');
