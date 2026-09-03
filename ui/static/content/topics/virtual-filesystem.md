@@ -1,6 +1,6 @@
 # Virtual Filesystem
 
-The virtual filesystem (VFS) stores images, videos, fonts, 3D models, and other patch assets.
+The virtual filesystem (VFS) gives patches stable paths for embedded source files, uploads, linked files, and other assets.
 
 ![Virtual filesystem with canvas demo](/content/images/canvas-vfs.webp)
 
@@ -11,6 +11,36 @@ This VFS includes assets for a canvas demo. Add a file to the patch or link it f
 Use the sidebar to manage patch files. Open it with `Ctrl/Cmd + B > Files`. You can also click "Open Sidebar" at the bottom right.
 
 See [Files](/docs/manage-files) for file management details.
+
+## Patch and User Files
+
+The namespace tells you who owns a file and whether it travels with the patch:
+
+| Namespace  | Use it for                                   | Embedded in the patch | Files sidebar editor |
+| ---------- | -------------------------------------------- | --------------------- | -------------------- |
+| `patch://` | Small source files owned by the patch        | Yes                   | GLSL files editable  |
+| `user://`  | Uploads, browser-local files, linked folders | No                    | Read-only            |
+
+Use `patch://` for a GLSL utility that should work when someone else opens your patch. Use `user://` for personal files and larger assets that live outside the patch, such as samples, videos, or a linked project folder.
+
+> **Important**: A linked `user://` file may need permission again after you reopen the patch. A `patch://` file needs no external permission.
+
+### GLSL Includes
+
+Relative GLSL includes resolve from `patch://`, so these two paths select the same file from a shader node:
+
+```glsl
+#include "./shaders/noise.glsl"
+#include "patch://shaders/noise.glsl"
+```
+
+Use an explicit User path to include a linked or uploaded file:
+
+```glsl
+#include "user://my-shaders/noise.glsl"
+```
+
+See [GLSL Imports](/docs/glsl-imports) for supported shader objects, nested includes, and examples.
 
 ## Loading Files in Code
 
@@ -30,6 +60,14 @@ const data = await vfs.get("user://data.json").json();
 ```
 
 VFS paths use the `user://` prefix for uploaded files. Patchies clears object URLs when it destroys the object.
+
+Relative paths in the JavaScript `vfs` API continue to resolve from `user://`. Use an explicit `patch://` path to read an embedded Patch file:
+
+```javascript
+const source = await vfs.get("patch://shaders/noise.glsl").text();
+```
+
+This differs from GLSL `#include`, where relative paths resolve from `patch://`.
 
 ## Browsing Files in Code
 
@@ -70,5 +108,6 @@ Use `vfs` in all [JavaScript Runner](/docs/javascript-runner)-based objects.
 ## See Also
 
 - [Files](/docs/manage-files) — Manage files in the sidebar.
+- [GLSL Imports](/docs/glsl-imports) — Share GLSL functions between shader nodes.
 - [JavaScript Runner](/docs/javascript-runner) — Use the full JSRunner API.
 - [Data Storage](/docs/data-storage) — Store persistent key-value data.

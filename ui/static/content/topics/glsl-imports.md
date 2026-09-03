@@ -1,6 +1,6 @@
 # GLSL Imports
 
-Use `#include` to import GLSL functions from NPM packages, your files, or URLs. You do not need to copy shader code between nodes.
+Use `#include` to import GLSL functions from NPM packages, Patch files, User files, or URLs. You do not need to copy shader code between nodes.
 
 `#include` works in [glsl](/docs/objects/glsl), [swgl](/docs/objects/swgl), [regl](/docs/objects/regl), and [hydra](/docs/objects/hydra) inside `setFunction`. It also works in [three](/docs/objects/three) through the `await glsl` tagged template.
 
@@ -21,7 +21,7 @@ This example gets the `snoise` function from the [lygia](https://lygia.xyz) shad
 
 ## Import Sources
 
-You can import GLSL code from three sources:
+You can import GLSL code from four sources:
 
 ### NPM Packages
 
@@ -35,7 +35,22 @@ Use angle brackets to import from shader libraries, such as lygia:
 
 The `.glsl` extension is optional. `<lygia/generative/snoise>` and `<lygia/generative/snoise.glsl>` are equivalent.
 
-### Your Files
+### Patch Files
+
+Files under `patch://` are embedded in the current patch. They travel with the patch when you save or share it, and supported GLSL files are editable in the Files sidebar.
+
+Relative GLSL paths start from the `patch://` root when you include them from a node:
+
+```glsl
+#include "./utils.glsl"
+#include "patch://shaders/palette.glsl"
+```
+
+Inside an included Patch file, a relative path starts from that file's folder. The `.glsl` extension is optional.
+
+Create a Patch GLSL file in the sidebar with `Ctrl/Cmd + B > Files`, then use it from any supported shader node.
+
+### User Files
 
 Use double quotes and a `user://` path to import from [Virtual Filesystem](/docs/virtual-filesystem) files:
 
@@ -44,7 +59,7 @@ Use double quotes and a `user://` path to import from [Virtual Filesystem](/docs
 #include "user://sdf-functions.glsl"
 ```
 
-Add `.glsl` files in the sidebar (`Ctrl/Cmd + B > Files`). Then include them in any shader node.
+User files come from uploads, browser-local storage, or linked folders. They are not embedded as source in the patch and are read-only in the Files sidebar editor. Linked files may need permission again after you reopen the patch.
 
 ### URLs
 
@@ -60,13 +75,13 @@ Patchies caches URL imports in memory for the session. It gets each URL once.
 
 `#include` works in five visual objects. Most of them preprocess your shaders automatically.
 
-| Object | How it works |
-| --- | --- |
-| [glsl](/docs/objects/glsl) | Auto-preprocessed before shader compilation |
-| [swgl](/docs/objects/swgl) | Auto-preprocessed in `FP`, `VP`, and `Inc` fields |
-| [regl](/docs/objects/regl) | Auto-preprocessed in `frag` and `vert` fields |
-| [hydra](/docs/objects/hydra) | Auto-preprocessed inside `setFunction` GLSL strings |
-| [three](/docs/objects/three) | Use `await glsl` tagged template or `processIncludes()` |
+| Object                        | How it works                                               |
+| ----------------------------- | ---------------------------------------------------------- |
+| [glsl](/docs/objects/glsl)    | Auto-preprocessed before shader compilation               |
+| [swgl](/docs/objects/swgl)    | Auto-preprocessed in `FP`, `VP`, and `Inc` fields          |
+| [regl](/docs/objects/regl)    | Auto-preprocessed in `frag` and `vert` fields              |
+| [hydra](/docs/objects/hydra)  | Auto-preprocessed inside `setFunction` GLSL strings        |
+| [three](/docs/objects/three)  | Use `await glsl` tagged template or `processIncludes()`     |
 
 ### Hydra Usage
 
@@ -140,7 +155,7 @@ vec3 palette(float t) {
 4. In a `glsl` object, include and use the file:
 
 ```glsl
-#include "user://utils.glsl"
+#include "./utils.glsl"
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = vec4(palette(uv.x + iTime * 0.2), 1.0);
@@ -148,7 +163,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 ```
 
 5. Create a second `glsl` object.
-6. Include the same file. Both nodes share the function.
+6. Include the same file. Both nodes share the function, and saving `utils.glsl` updates both nodes.
 
 ## Nested Includes
 
@@ -174,4 +189,4 @@ These requirements do not apply if your shaders do not import Lygia with `#inclu
 - [swgl](/docs/objects/swgl) — Create SwissGL shaders.
 - [regl](/docs/objects/regl) — Use WebGL with REGL.
 - [three](/docs/objects/three) — Create Three.js scenes.
-- [Virtual Filesystem](/docs/virtual-filesystem) — Manage files for `user://` imports.
+- [Virtual Filesystem](/docs/virtual-filesystem) — Understand `patch://` and `user://` files.
