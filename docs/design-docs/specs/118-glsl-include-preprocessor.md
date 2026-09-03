@@ -56,6 +56,8 @@ A successful Patch file save emits a path-specific content revision. The revisio
 
 When new source fails, the consumer reports the error and retains its previous working visual output. Linked `user://` GLSL files remain read-only in the first editor release. Patchies rereads them when an importing node explicitly executes, but does not promise automatic filesystem change observation.
 
+This work ships in Stage 2 of the three-stage VFS delivery plan in spec 52. Stage 2 must be independently releasable without JavaScript Patch-module support.
+
 ### Example
 
 ```glsl

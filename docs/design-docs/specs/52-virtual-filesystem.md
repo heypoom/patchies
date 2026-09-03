@@ -474,3 +474,88 @@ Existing `user://` entries are not converted to `patch://`. A patch migration ad
 IndexedDB remains a fallback for browsers without filesystem handles and a persistence store for handles, but new keys are scoped by patch ID plus VFS path. When a scoped record is missing, Patchies may read a matching legacy path-only record once and copy it to the scoped key. It does not delete the legacy record because another old patch may still reference it.
 
 The existing user-code VFS API keeps its current defaults: `vfs.getUrl("./foo")`, `vfs.list(".")`, and similar relative paths resolve under `user://`. The `patch://` shorthand applies only to JavaScript imports and GLSL includes.
+
+## Delivery Plan
+
+Ship the feature in exactly three pull requests. Each pull request is a complete release point with its own user outcome and focused verification. Tests stay in the same commit as the behavior they verify; do not create preparatory commits containing only types or unused helpers.
+
+### Stage 1: Portable Patch Files
+
+Users can store small files inside a patch, save and share them, and manage them from the Files tree. Patch files are not editable in this stage.
+
+Scope:
+
+- add the `patch://` namespace and `embedded` provider;
+- serialize and hydrate contents under `files.patch`;
+- migrate older patches with an empty Patch namespace;
+- enforce UTF-8, per-file, and per-patch size limits;
+- show Patch, User, and Objects roots in the Files tree;
+- make OS drops namespace-sensitive;
+- support User-to-Patch copy, Save to Disk, collision handling, and atomic folder imports;
+- make VFS create, write, replace, rename, delete, and copy operations globally undoable;
+- scope new IndexedDB keys by patch ID and VFS path, with non-destructive legacy fallback.
+
+Verification:
+
+1. Embedded contents survive serialize and hydrate round trips.
+2. Older patches load with an empty Patch namespace without converting `user://` entries.
+3. Invalid provider and namespace combinations and size violations are rejected.
+4. Two patches using the same `user://` path do not share browser-local bytes or handles.
+5. Files-tree tests cover namespace order, each drop target, rejected and atomic drops, collisions, export, and history.
+6. Undo and redo restore VFS state and content revisions for every mutation.
+
+Release criterion: Patch files are portable and manageable through the Files tree without requiring the editor or a runtime import consumer.
+
+### Stage 2: Patch GLSL Editing and Imports
+
+Users can create, edit, and import GLSL utilities from `patch://`. JavaScript Patch files remain visible and portable but read-only until Stage 3.
+
+Scope:
+
+- transform the Files panel into a CodeMirror editor for supported GLSL files;
+- support New File for GLSL files in Patch folders;
+- implement drafts, dirty state, explicit Save, and the shared navigation guard;
+- provide the same GLSL assistance as the `glsl` object;
+- add Edit actions to normal rows, search results, and the mobile toolbar;
+- resolve relative, explicit Patch, and explicit User GLSL includes;
+- infer only the `.glsl` extension;
+- invalidate affected caches and direct and transitive shader consumers after saved revisions;
+- retain the last working visual output when saved source fails.
+
+Verification:
+
+1. Editor tests cover entry points, draft isolation, `Cmd/Ctrl+S`, Save / Discard / Cancel, and global history while open.
+2. Resolver tests cover relative, explicit, inferred-extension, circular, and namespace-escape cases.
+3. Saved changes refresh direct and transitive consumers exactly once.
+4. Unsaved drafts do not invalidate consumers.
+5. Invalid saved source reports an error and preserves the previous visual output.
+
+Release criterion: GLSL Patch-file authoring works end to end without depending on JavaScript module support.
+
+### Stage 3: Patch JavaScript Editing and Modules
+
+Users can edit Patch JavaScript modules and import them in every JSRunner-backed environment.
+
+Scope:
+
+- enable `.js` and `.mjs` in the Patch editor with module-specific CodeMirror behavior;
+- centralize JS module resolution for Rollup, dependency readiness, workers, and dependent lookup;
+- preserve `// @lib` precedence and add top-level Patch fallback;
+- support standard relative and explicit VFS imports;
+- report structured missing-import errors promptly;
+- hydrate and register Patch modules before runtime execution;
+- synchronize modules to main-thread, dedicated-worker, and render-worker JSRunner environments;
+- generalize dependency tracking from source node IDs to canonical module sources;
+- rerun direct and transitive importers after Save and global undo;
+- retain last-working runtime or visual output on failure where the owning runtime supports it.
+
+Verification:
+
+1. Resolver tests cover `// @lib`, bare Patch fallback, relative, explicit Patch, explicit User, npm, and URL precedence.
+2. The same Patch module imports successfully in every JSRunner environment.
+3. Hydration completes before importer execution.
+4. Missing imports fail promptly with structured diagnostics rather than a dependency timeout or empty program.
+5. Alias, relative, explicit, and transitive dependencies rerun in dependency order exactly once.
+6. Existing `// @lib`, npm, URL, and `user://` behavior remains compatible.
+
+Release criterion: JavaScript Patch modules work end to end with automatic synchronization and dependent reruns.

@@ -34,6 +34,8 @@ import { random } from "user://shared/utility.js";
 
 `patch://` contents are UTF-8 text serialized under `files.patch`. `user://` continues to represent external or browser-local resources. Spec 52 defines namespace ownership, persistence limits, Files-panel behavior, and editing lifecycle.
 
+This work ships in Stage 3 of the three-stage VFS delivery plan in spec 52. It builds on portable Patch files and the shared editor delivered in Stages 1 and 2, while remaining isolated from the GLSL resolver implementation.
+
 ## Why Keep Canvas and File Libraries
 
 | | `// @lib` nodes | `patch://` modules |
