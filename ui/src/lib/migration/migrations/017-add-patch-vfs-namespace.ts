@@ -10,7 +10,6 @@ export const migration017: Migration = {
       ...patch,
       files: {
         user: {},
-        objects: {},
         ...(patch.files ?? {}),
         patch: patch.files?.patch ?? {}
       }

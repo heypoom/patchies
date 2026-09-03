@@ -22,7 +22,7 @@ export const migration002: Migration = {
     // Add empty files structure if not present
     const migratedPatch = {
       ...patch,
-      files: { user: {}, objects: {}, ...(patch.files ?? {}), patch: patch.files?.patch ?? {} }
+      files: { user: {}, ...(patch.files ?? {}), patch: patch.files?.patch ?? {} }
     };
 
     // Strip file and fileName from `img` node

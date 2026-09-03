@@ -12,8 +12,7 @@ describe('migration017', () => {
 
     expect(migrated.files).toEqual({
       patch: {},
-      user: { 'shared.js': { provider: 'url', filename: 'shared.js', url: '/shared.js' } },
-      objects: {}
+      user: { 'shared.js': { provider: 'url', filename: 'shared.js', url: '/shared.js' } }
     });
   });
 });

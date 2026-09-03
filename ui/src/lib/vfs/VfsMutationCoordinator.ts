@@ -17,8 +17,10 @@ type VfsMutationAccess = {
   afterMutation: () => void;
 };
 
-/** Records entry-map transitions as one reversible VFS history operation. */
+/** Records VFS entry change as one reversible VFS history operation. */
 export class VfsMutationCoordinator {
+  private effectQueue: Promise<void> = Promise.resolve();
+
   constructor(private access: VfsMutationAccess) {}
 
   record(description: string, mutate: () => void, callbacks?: VfsMutationCallbacks): void {
@@ -28,6 +30,7 @@ export class VfsMutationCoordinator {
     this.access.afterMutation();
 
     const after = this.access.snapshot();
+
     const command: Command = {
       description,
       execute: () => {
@@ -41,5 +44,13 @@ export class VfsMutationCoordinator {
     };
 
     HistoryManager.getInstance().record(command);
+  }
+
+  /** Serialize asynchronous provider effects initiated by synchronous history commands. */
+  queueEffect(description: string, operation: () => Promise<void>): void {
+    const queued = this.effectQueue.catch(() => {}).then(operation);
+    this.effectQueue = queued;
+
+    queued.catch((error) => console.error(`VFS: Failed to ${description}`, error));
   }
 }

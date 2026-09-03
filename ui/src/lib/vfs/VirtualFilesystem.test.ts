@@ -26,11 +26,13 @@ describe('VirtualFilesystem patch files', () => {
     expect(hydrated.readEmbeddedFile('patch://shaders/noise.glsl')).toBe(
       'float noise() { return 2.; }'
     );
+
     expect(hydrated.getEntry('patch://shaders/noise.glsl')).toMatchObject({ revision: 2 });
   });
 
   it('keeps user files in their namespace when a patch has no embedded files', async () => {
     const vfs = VirtualFilesystem.getInstance();
+
     vfs.registerEntry('user://shared.js', {
       provider: 'url',
       filename: 'shared.js',
@@ -44,6 +46,29 @@ describe('VirtualFilesystem patch files', () => {
 
     expect(vfs.getEntry('user://shared.js')).toMatchObject({ provider: 'url' });
     expect(vfs.getEntry('patch://shared.js')).toBeUndefined();
+  });
+
+  it('keeps object files runtime-only during serialization and hydration', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+
+    vfs.registerEntry('obj://script-1/source.js', {
+      provider: 'url',
+      filename: 'source.js',
+      url: '/source.js'
+    });
+
+    expect(vfs.getEntry('obj://script-1/source.js')).toBeDefined();
+    expect(vfs.serialize()).toEqual({});
+
+    await vfs.hydrate({
+      objects: {
+        'legacy-object': {
+          'source.js': { provider: 'url', filename: 'source.js', url: '/legacy.js' }
+        }
+      }
+    } as never);
+
+    expect(vfs.getEntry('obj://legacy-object/source.js')).toBeUndefined();
   });
 
   it('rejects embedded entries outside Patch and enforces embedded byte limits', () => {
@@ -78,6 +103,7 @@ describe('VirtualFilesystem patch files', () => {
 
   it('rejects an oversized User file before trying to resolve it for a Patch copy', async () => {
     const vfs = VirtualFilesystem.getInstance();
+
     vfs.registerEntry('user://large.txt', {
       provider: 'url',
       filename: 'large.txt',
@@ -113,6 +139,7 @@ describe('VirtualFilesystem patch files', () => {
 
   it('keeps folder imports relative to the selected Patch folder', async () => {
     const vfs = VirtualFilesystem.getInstance();
+
     const file = new File(['export const color = 1'], 'color.js');
     Object.defineProperty(file, 'webkitRelativePath', { value: 'shaders/palette/color.js' });
 
@@ -125,6 +152,7 @@ describe('VirtualFilesystem patch files', () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.createFolder('patch://', 'bundle');
     vfs.createEmbeddedFile('patch://bundle/old.js', 'export const old = true');
+
     const items = [
       { kind: 'directory' as const, relativePath: 'bundle' },
       { kind: 'directory' as const, relativePath: 'bundle/empty' },
@@ -136,6 +164,7 @@ describe('VirtualFilesystem patch files', () => {
     ];
 
     expect(vfs.getPatchImportCollisions(items)).toEqual(['patch://bundle']);
+
     await expect(vfs.importToPatch(items, 'patch://', 'keep-both')).resolves.toEqual([
       'patch://bundle-1/src/index.js'
     ]);
@@ -172,6 +201,7 @@ describe('VirtualFilesystem patch files', () => {
   it('replaces and restores complete imported folder trees as one history operation', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const history = HistoryManager.getInstance();
+
     vfs.createFolder('patch://', 'bundle');
     vfs.createEmbeddedFile('patch://bundle/old.js', 'export const old = true');
     history.clear();
@@ -282,7 +312,9 @@ describe('VirtualFilesystem patch files', () => {
   it('restores local file bytes and metadata when replacement is undone and redone', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const history = HistoryManager.getInstance();
+
     let storedFile: File | undefined = new File(['before'], 'before.txt', { type: 'text/plain' });
+
     vfs.registerProvider({
       type: 'local',
       resolve: async () => {
@@ -296,6 +328,7 @@ describe('VirtualFilesystem patch files', () => {
         storedFile = state.file;
       }
     } as never);
+
     vfs.registerEntry('user://before.txt', {
       provider: 'local',
       filename: 'before.txt',
@@ -314,6 +347,7 @@ describe('VirtualFilesystem patch files', () => {
       mimeType: 'text/markdown',
       size: 5
     });
+
     await expect((await vfs.resolve('user://before.txt')).text()).resolves.toBe('after');
 
     history.undo();
@@ -322,6 +356,7 @@ describe('VirtualFilesystem patch files', () => {
       mimeType: 'text/plain',
       size: 6
     });
+
     await expect((await vfs.resolve('user://before.txt')).text()).resolves.toBe('before');
 
     history.redo();
@@ -330,6 +365,7 @@ describe('VirtualFilesystem patch files', () => {
       mimeType: 'text/markdown',
       size: 5
     });
+
     await expect((await vfs.resolve('user://before.txt')).text()).resolves.toBe('after');
   });
 
@@ -338,9 +374,11 @@ describe('VirtualFilesystem patch files', () => {
     const history = HistoryManager.getInstance();
     const eventBus = PatchiesEventBus.getInstance();
     const renames: VfsPathRenamedEvent[] = [];
+
     const handleRename = (event: VfsPathRenamedEvent) => {
       renames.push(event);
     };
+
     eventBus.addEventListener('vfsPathRenamed', handleRename);
 
     vfs.createEmbeddedFile('patch://before.js', 'export {}');
@@ -362,15 +400,19 @@ describe('VirtualFilesystem patch files', () => {
     const vfs = VirtualFilesystem.getInstance();
     const history = HistoryManager.getInstance();
     const calls: string[] = [];
+
     let releaseFirstMove: () => void;
     let markFirstMoveStarted: () => void;
     let markSecondMoveFinished: () => void;
+
     const firstMoveStarted = new Promise<void>((resolve) => {
       markFirstMoveStarted = resolve;
     });
+
     const firstMoveReleased = new Promise<void>((resolve) => {
       releaseFirstMove = resolve;
     });
+
     const secondMoveFinished = new Promise<void>((resolve) => {
       markSecondMoveFinished = resolve;
     });

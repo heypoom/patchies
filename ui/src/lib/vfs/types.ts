@@ -72,16 +72,13 @@ export interface VFSSearchPage {
 /**
  * Check if a VFSEntry is a folder (regular or linked)
  */
-export function isVFSFolder(entry: VFSEntry): boolean {
-  return entry.provider === 'folder' || entry.provider === 'local-folder';
-}
+export const isVFSFolder = (entry: VFSEntry): boolean =>
+  entry.provider === 'folder' || entry.provider === 'local-folder';
 
 /**
  * Check if a VFSEntry is a linked local folder
  */
-export function isLocalFolder(entry: VFSEntry): boolean {
-  return entry.provider === 'local-folder';
-}
+export const isLocalFolder = (entry: VFSEntry): boolean => entry.provider === 'local-folder';
 
 /**
  * Provider interface for resolving VFS entries to actual file content.
@@ -107,17 +104,20 @@ export interface VFSProvider {
 export type VFSTreeNode = VFSEntry | { [key: string]: VFSTreeNode };
 
 export interface VFSTree {
-  patch?: { [key: string]: VFSTreeNode };
-  user?: { [key: string]: VFSTreeNode };
-  objects?: { [nodeId: string]: { [key: string]: VFSTreeNode } };
+  patch?: {
+    [key: string]: VFSTreeNode;
+  };
+
+  user?: {
+    [key: string]: VFSTreeNode;
+  };
 }
 
 /**
  * Check if a tree node is a VFSEntry (leaf) or a directory (branch).
  */
-export function isVFSEntry(node: VFSTreeNode): node is VFSEntry {
-  return typeof node === 'object' && node !== null && 'provider' in node && 'filename' in node;
-}
+export const isVFSEntry = (node: VFSTreeNode): node is VFSEntry =>
+  typeof node === 'object' && node !== null && 'provider' in node && 'filename' in node;
 
 /**
  * VFS path prefixes
@@ -152,8 +152,11 @@ export const isVFSPath = (path: string): boolean =>
   path.startsWith(VFS_PREFIXES.USER) ||
   path.startsWith(VFS_PREFIXES.OBJECT);
 
+const getSegments = (path: string) => path.split('/').filter(Boolean);
+
 /**
  * Parse a VFS path into its components.
+ *
  * Example: 'user://images/photo.jpg' -> { namespace: 'user', segments: ['images', 'photo.jpg'] }
  */
 export function parseVFSPath(
@@ -162,19 +165,19 @@ export function parseVFSPath(
   if (path.startsWith(VFS_PREFIXES.PATCH)) {
     const rest = path.slice(VFS_PREFIXES.PATCH.length);
 
-    return { namespace: 'patch', segments: rest.split('/').filter(Boolean) };
+    return { namespace: 'patch', segments: getSegments(rest) };
   }
 
   if (path.startsWith(VFS_PREFIXES.USER)) {
     const rest = path.slice(VFS_PREFIXES.USER.length);
 
-    return { namespace: 'user', segments: rest.split('/').filter(Boolean) };
+    return { namespace: 'user', segments: getSegments(rest) };
   }
 
   if (path.startsWith(VFS_PREFIXES.OBJECT)) {
     const rest = path.slice(VFS_PREFIXES.OBJECT.length);
 
-    return { namespace: 'obj', segments: rest.split('/').filter(Boolean) };
+    return { namespace: 'obj', segments: getSegments(rest) };
   }
 
   return null;

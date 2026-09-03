@@ -51,7 +51,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
     - example: `obj://csound~-42` contains filesystem for a Csound object
     - only some node will have a virtual node filesystem, such as `chuck~` and `elem~` and `csound~`
   - the prefixes helps us to check if it is a virtual filesystem path, or an already resolved path.
-- In the saved patches, we should also store a `files` mapping as well, with top-level namespaces `user` (`user://`) and `objects` (`obj://`):
+- Saved patches store a `files` mapping for persistent namespaces such as `user://`. The `obj://` tree is runtime-only and is rebuilt from the objects in the patch; serializing it would create a second source of truth.
 
 ```ts
 {
@@ -68,11 +68,6 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
                     provider: "local",
                 },
             }
-        },
-        "objects": {
-           "csound~-24": {},
-           "elem~-36": {},
-           "chuck~-48": {}
         }
     }
 }
@@ -131,7 +126,6 @@ export interface VFSProvider {
 // Tree structure for serialization (matches patch format)
 export interface VFSTree {
   user?: Record<string, VFSEntry | VFSTree>;
-  objects?: Record<string, VFSTree>;
 }
 ```
 
@@ -330,7 +324,7 @@ export const migration002: Migration = {
   migrate(patch: RawPatchData): RawPatchData {
     return {
       ...patch,
-      files: patch.files ?? { user: {}, objects: {} },
+      files: patch.files ?? { user: {} },
     };
   },
 };
@@ -384,7 +378,7 @@ The VFS has three namespaces:
 | --- | --- | --- | --- |
 | `patch://` | Embedded in the current patch | Serialized under `files.patch` | Supported text files are editable |
 | `user://` | External or browser-local user resource | Handle, URL, or patch-scoped IndexedDB fallback | Read-only in the first editor release |
-| `obj://` | Object-owned resource | Existing object VFS behavior | Not editable independently |
+| `obj://` | Object-owned resource | Runtime-only; rebuilt from object state | Not editable independently |
 
 An embedded entry uses the `embedded` provider and stores UTF-8 text directly:
 
@@ -401,9 +395,10 @@ interface EmbeddedVFSEntry extends VFSEntry {
 interface VFSTree {
   patch?: Record<string, VFSTreeNode>;
   user?: Record<string, VFSTreeNode>;
-  objects?: Record<string, VFSTreeNode>;
 }
 ```
+
+`obj://` is deliberately excluded from `VFSTree`. Object-owned entries are a virtual runtime view of each object's own state. Serialization and hydration ignore that namespace so patch files never contain a competing copy.
 
 The serialized text is a normal JSON string, not base64. Limits use UTF-8 byte length:
 
@@ -479,11 +474,14 @@ The existing user-code VFS API keeps its current defaults: `vfs.getUrl("./foo")`
 
 ### Internal Architecture
 
-`VirtualFilesystem` is the stable public facade. Its implementation composes internal modules so provider, persistence, history, and Patch-import rules do not accumulate in the facade:
+`VirtualFilesystem` is the stable public facade. Its implementation composes internal modules so provider, persistence, history, browsing, and Patch-file rules do not accumulate in the facade:
 
-- `VfsEntryIndex` owns the in-memory entry map, snapshots, and path-tree queries.
-- `PatchImportPlanner` turns browser files or recursive copy sources into a validated atomic Patch import plan. It owns text validation, path normalization, collision allocation, and embedded-content budgets.
-- `VfsMutationCoordinator` records entry-map transitions and their provider effects as one global history operation.
+- `VfsEntryIndex` owns the in-memory entry map and all path-tree calculations, including rename and deletion plans.
+- `VfsDirectoryReader` owns directory listing, pagination, recursive search, and traversal of linked local folders.
+- `VfsTreeCodec` converts between the flat entry index and the serialized patch tree without accessing providers or UI state.
+- `VfsPermissionTracker` owns paths that need file or directory permission and scans hydrated entries against the local provider.
+- `PatchFileOperations` owns the complete `patch://` lifecycle. It delegates atomic import staging to `PatchImportPlanner` and applies the same embedded-content policy to create, write, read, export, import, and recovery hydration.
+- `VfsMutationCoordinator` records complete VFS state transitions as one global history operation and serializes asynchronous provider effects from undo and redo.
 
 The Files panel continues to own user interaction such as asking whether to Replace, Keep Both, or Cancel. Browser `DataTransfer` traversal stays in a separate adapter. These modules report plans and outcomes; they do not depend on Svelte UI state.
 

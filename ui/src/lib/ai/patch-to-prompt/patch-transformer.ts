@@ -175,22 +175,6 @@ function filterVfsTreeForUrls(tree: VFSTree): VFSTree | null {
     }
   }
 
-  if (tree.objects) {
-    const filteredObjects: VFSTree['objects'] = {};
-
-    for (const [nodeId, nodeFiles] of Object.entries(tree.objects)) {
-      const filtered = filterUrlEntries(nodeFiles);
-
-      if (filtered && !isVFSEntry(filtered)) {
-        filteredObjects[nodeId] = filtered;
-      }
-    }
-
-    if (Object.keys(filteredObjects).length > 0) {
-      result.objects = filteredObjects;
-    }
-  }
-
   return Object.keys(result).length > 0 ? result : null;
 }
 
