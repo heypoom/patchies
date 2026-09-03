@@ -28,59 +28,23 @@ import {
   guessMimeType
 } from './path-utils';
 import { clearFileData, clearHandles } from './persistence';
+import {
+  MAX_EMBEDDED_FILE_BYTES,
+  MAX_EMBEDDED_PATCH_BYTES,
+  PatchImportPlanner
+} from './PatchImportPlanner';
+import type { VfsCollisionStrategy } from './PatchImportPlanner';
+import { VfsEntryIndex } from './VfsEntryIndex';
+import { VfsMutationCoordinator } from './VfsMutationCoordinator';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import { HistoryManager, type Command } from '$lib/history';
 
-export const MAX_EMBEDDED_FILE_BYTES = 256 * 1024;
-export const MAX_EMBEDDED_PATCH_BYTES = 1024 * 1024;
-
-export const PATCH_TEXT_FILE_ACCEPT =
-  'text/*,.js,.mjs,.gl,.glsl,.frag,.vert,.glslf,.glslv,.json,.jsonc,.css,.html,.htm,.svg,.xml,.yaml,.yml,.md,.txt,.csv';
-
-const PATCH_TEXT_EXTENSIONS = new Set([
-  '.js',
-  '.mjs',
-  '.gl',
-  '.glsl',
-  '.frag',
-  '.vert',
-  '.glslf',
-  '.glslv',
-  '.json',
-  '.jsonc',
-  '.css',
-  '.html',
-  '.htm',
-  '.svg',
-  '.xml',
-  '.yaml',
-  '.yml',
-  '.md',
-  '.txt',
-  '.csv'
-]);
-
-export type VfsCollisionStrategy = 'replace' | 'keep-both' | 'cancel';
-
-export function getPatchImportError(file: File): string | null {
-  if (file.size > MAX_EMBEDDED_FILE_BYTES) {
-    return `${file.name} exceeds 256 KiB Patch-file limit`;
-  }
-
-  const extension = getExtension(file.name).toLowerCase();
-  const isTextMimeType =
-    file.type.startsWith('text/') ||
-    file.type === 'application/javascript' ||
-    file.type === 'application/json' ||
-    file.type === 'application/xml' ||
-    file.type === 'image/svg+xml';
-
-  if (!isTextMimeType && !PATCH_TEXT_EXTENSIONS.has(extension)) {
-    return `${file.name} is not a supported text file`;
-  }
-
-  return null;
-}
+export {
+  MAX_EMBEDDED_FILE_BYTES,
+  MAX_EMBEDDED_PATCH_BYTES,
+  PATCH_TEXT_FILE_ACCEPT,
+  getPatchImportError
+} from './PatchImportPlanner';
+export type { VfsCollisionStrategy } from './PatchImportPlanner';
 
 declare global {
   interface Window {
@@ -101,7 +65,7 @@ export class VirtualFilesystem {
   private static instance: VirtualFilesystem | null = null;
 
   /** Flat map of path -> entry for quick lookups */
-  private entries: Map<string, VFSEntry> = new Map();
+  private entries = new VfsEntryIndex();
 
   /** Registered providers */
   private providers: Map<string, VFSProvider> = new Map();
@@ -111,6 +75,14 @@ export class VirtualFilesystem {
 
   /** Hydrated embedded files that exceed the patch limits and cannot be executed. */
   private invalidEmbeddedPaths: Map<string, string> = new Map();
+
+  private mutationCoordinator = new VfsMutationCoordinator({
+    snapshot: () => this.cloneEntries(),
+    restore: (entries) => this.restoreEntries(entries),
+    afterMutation: () => {
+      this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(this.entries);
+    }
+  });
 
   /** Version counter for reactivity - increments on any mutation */
   private versionStore = writable(0);
@@ -135,13 +107,13 @@ export class VirtualFilesystem {
     this.versionStore.update((v) => v + 1);
   }
 
-  private cloneEntries(entries = this.entries): Map<string, VFSEntry> {
-    return new Map([...entries].map(([path, entry]) => [path, { ...entry }] as [string, VFSEntry]));
+  private cloneEntries(): Map<string, VFSEntry> {
+    return this.entries.snapshot();
   }
 
   private restoreEntries(entries: Map<string, VFSEntry>): void {
-    const previous = this.entries;
-    this.entries = this.cloneEntries(entries);
+    const previous = this.entries.snapshot();
+    this.entries.replace(entries);
     this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(this.entries);
     this.pendingPermissions = new Set(
       [...this.pendingPermissions].filter((path) => this.entries.has(path))
@@ -167,25 +139,7 @@ export class VirtualFilesystem {
     mutate: () => void,
     callbacks?: { redo?: () => void; undo?: () => void }
   ): void {
-    const before = this.cloneEntries();
-
-    mutate();
-    this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(this.entries);
-
-    const after = this.cloneEntries();
-    const command: Command = {
-      description,
-      execute: () => {
-        this.restoreEntries(after);
-        callbacks?.redo?.();
-      },
-      undo: () => {
-        this.restoreEntries(before);
-        callbacks?.undo?.();
-      }
-    };
-
-    HistoryManager.getInstance().record(command);
+    this.mutationCoordinator.record(description, mutate, callbacks);
   }
 
   private assertValidEntry(path: string, entry: VFSEntry, enforceEmbeddedLimits = true): void {
@@ -211,7 +165,7 @@ export class VirtualFilesystem {
     }
   }
 
-  private findInvalidEmbeddedPaths(entries: Map<string, VFSEntry>): Map<string, string> {
+  private findInvalidEmbeddedPaths(entries: Iterable<[string, VFSEntry]>): Map<string, string> {
     const invalidPaths = new Map<string, string>();
     const encoder = new TextEncoder();
     let totalBytes = 0;
@@ -629,7 +583,7 @@ export class VirtualFilesystem {
     if (!this.entries.has(oldPath)) throw new Error(`VFS: Path not found: ${oldPath}`);
     if (this.entries.has(newPath)) throw new Error(`VFS: Path already exists: ${newPath}`);
 
-    const paths = this.list().filter((path) => path === oldPath || path.startsWith(`${oldPath}/`));
+    const paths = this.entries.treePaths(oldPath);
     const renamed = paths.map((path) => {
       const entry = this.entries.get(path)!;
       const destination = path === oldPath ? newPath : `${newPath}${path.slice(oldPath.length)}`;
@@ -713,9 +667,9 @@ export class VirtualFilesystem {
       if (!this.entries.has(path)) throw new Error(`VFS: Path not found: ${path}`);
     }
 
-    const paths = this.list().filter((item) =>
-      roots.some((root) => item === root || item.startsWith(`${root}/`))
-    );
+    const paths = this.entries
+      .paths()
+      .filter((item) => roots.some((root) => item === root || item.startsWith(`${root}/`)));
     if (paths.length === 0) return;
 
     const linkedFolderPaths = paths.filter(
@@ -766,56 +720,11 @@ export class VirtualFilesystem {
 
   /** Resolve a User file or folder into a portable, atomic Patch import batch. */
   async preparePatchCopy(sourcePath: string): Promise<PatchImportItem[]> {
-    const source = this.getEntryOrLinkedFile(sourcePath);
-    if (!source) throw new Error(`VFS: Path not found: ${sourcePath}`);
-
-    if (!isVFSFolder(source)) {
-      this.assertPatchCopySize(source);
-
-      const blob = await this.resolve(sourcePath);
-      const file =
-        blob instanceof File
-          ? blob
-          : new File([blob], source.filename, { type: source.mimeType ?? blob.type });
-
-      return [{ kind: 'file', file, relativePath: source.filename }];
-    }
-
-    const rootName = source.filename;
-    const items: PatchImportItem[] = [{ kind: 'directory', relativePath: rootName }];
-    const collectChildren = async (directory: string, relativeDirectory: string): Promise<void> => {
-      for (const child of await this.listChildren(directory)) {
-        const relativePath = `${relativeDirectory}/${child.name}`;
-
-        if (child.kind === 'directory') {
-          items.push({ kind: 'directory', relativePath });
-          await collectChildren(child.path, relativePath);
-
-          continue;
-        }
-
-        const entry = this.getEntryOrLinkedFile(child.path);
-        if (!entry) throw new Error(`VFS: File not found: ${child.path}`);
-        this.assertPatchCopySize(entry);
-
-        const blob = await this.resolve(child.path);
-        const file =
-          blob instanceof File
-            ? blob
-            : new File([blob], entry.filename, { type: entry.mimeType ?? blob.type });
-        items.push({ kind: 'file', file, relativePath });
-      }
-    };
-
-    await collectChildren(sourcePath, rootName);
-
-    return items;
-  }
-
-  private assertPatchCopySize(entry: VFSEntry): void {
-    if (entry.size && entry.size > MAX_EMBEDDED_FILE_BYTES) {
-      throw new Error(`VFS: ${entry.filename} exceeds 256 KiB Patch-file limit`);
-    }
+    return this.createPatchImportPlanner().prepareCopy(sourcePath, {
+      getEntry: (path) => this.getEntryOrLinkedFile(path),
+      listChildren: (path) => this.listChildren(path),
+      resolve: (path) => this.resolve(path)
+    });
   }
 
   /** Return top-level destination paths that require a collision decision. */
@@ -823,18 +732,7 @@ export class VirtualFilesystem {
     files: Iterable<File | PatchImportItem>,
     targetFolder: string = VFS_PREFIXES.PATCH
   ): string[] {
-    const items = this.normalizePatchImportItems(files);
-    const collisions = items
-      .map((item) => this.joinVfsPath(targetFolder, item.relativePath))
-      .filter((path) =>
-        [...this.entries.keys()].some(
-          (existing) => existing === path || existing.startsWith(`${path}/`)
-        )
-      );
-
-    return [...new Set(collisions)].filter(
-      (path, _, all) => !all.some((other) => other !== path && path.startsWith(`${other}/`))
-    );
+    return this.createPatchImportPlanner().getCollisions(files, targetFolder);
   }
 
   /** Import text files atomically: an invalid file or budget violation imports nothing. */
@@ -843,123 +741,12 @@ export class VirtualFilesystem {
     targetFolder: string = VFS_PREFIXES.PATCH,
     collision: VfsCollisionStrategy = 'keep-both'
   ): Promise<string[]> {
-    if (!targetFolder.startsWith(VFS_PREFIXES.PATCH)) {
-      throw new Error(`VFS: Patch destination required: ${targetFolder}`);
-    }
-
-    const items = this.normalizePatchImportItems(files);
-    const decodedContent = new Map<PatchImportItem, string>();
-    const errors: string[] = [];
-
-    for (const item of items) {
-      if (item.kind === 'directory') continue;
-
-      const importError = getPatchImportError(item.file);
-      if (importError) {
-        errors.push(importError);
-        continue;
-      }
-
-      try {
-        decodedContent.set(item, await this.decodeUtf8(item.file, item.relativePath));
-      } catch (error) {
-        errors.push(
-          error instanceof Error ? error.message.replace('VFS: ', '') : item.relativePath
-        );
-      }
-    }
-
-    if (errors.length > 0) throw new Error(`VFS: ${errors.join('; ')}`);
-
-    const staged = new Map<string, VFSEntry>();
-    const occupied = new Set(this.entries.keys());
-    const removedExistingPaths = new Set<string>();
-    const resolvedDirectories = new Map<string, string>();
-    let totalBytes = this.getEmbeddedByteLength();
-
-    const removeExistingTree = (path: string) => {
-      for (const [existingPath, entry] of this.entries) {
-        if (existingPath !== path && !existingPath.startsWith(`${path}/`)) continue;
-        if (removedExistingPaths.has(existingPath)) continue;
-
-        removedExistingPaths.add(existingPath);
-        occupied.delete(existingPath);
-        if (isEmbeddedVFSEntry(entry)) {
-          totalBytes -= new TextEncoder().encode(entry.content).byteLength;
-        }
-      }
-    };
-    const removeStagedTree = (path: string) => {
-      for (const [stagedPath, entry] of staged) {
-        if (stagedPath !== path && !stagedPath.startsWith(`${path}/`)) continue;
-
-        staged.delete(stagedPath);
-        occupied.delete(stagedPath);
-        if (isEmbeddedVFSEntry(entry)) {
-          totalBytes -= new TextEncoder().encode(entry.content).byteLength;
-        }
-      }
-    };
-    const resolveParent = (relativePath: string) => {
-      const separator = relativePath.lastIndexOf('/');
-      if (separator === -1) {
-        return targetFolder;
-      }
-
-      const relativeParent = relativePath.slice(0, separator);
-
-      return resolvedDirectories.get(relativeParent);
-    };
-
-    for (const item of items) {
-      const parent = resolveParent(item.relativePath);
-      if (!parent) throw new Error(`VFS: Invalid import path: ${item.relativePath}`);
-
-      const name = getFilename(item.relativePath);
-      const rawPath = this.joinVfsPath(parent, name);
-      const priorEntry = staged.get(rawPath) ?? this.entries.get(rawPath);
-      const path = this.resolveCollision(rawPath, collision, occupied, item.kind === 'directory');
-      if (!path) throw new Error(`VFS: Import cancelled because ${name} already exists`);
-
-      if (collision === 'replace' && path === rawPath) {
-        removeStagedTree(path);
-        removeExistingTree(path);
-      }
-
-      if (item.kind === 'directory') {
-        resolvedDirectories.set(item.relativePath, path);
-        staged.set(path, { provider: 'folder', filename: getFilename(path) });
-        occupied.add(path);
-
-        continue;
-      }
-
-      const content = decodedContent.get(item)!;
-      const size = new TextEncoder().encode(content).byteLength;
-
-      totalBytes += size;
-      if (totalBytes > MAX_EMBEDDED_PATCH_BYTES) {
-        throw new Error('VFS: Embedded patch files exceed 1 MiB');
-      }
-
-      occupied.add(path);
-      const entry: EmbeddedVFSEntry = {
-        provider: 'embedded',
-        filename: getFilename(path),
-        mimeType: item.file.type || guessMimeType(item.file.name) || 'text/plain;charset=utf-8',
-        content,
-        size,
-        revision: priorEntry && isEmbeddedVFSEntry(priorEntry) ? (priorEntry.revision ?? 0) + 1 : 1
-      };
-      staged.set(path, entry);
-    }
-
-    const importedFiles = [...staged].filter(([, entry]) => isEmbeddedVFSEntry(entry));
+    const plan = await this.createPatchImportPlanner().plan(files, targetFolder, collision);
     this.recordMutation(
-      `Import ${importedFiles.length} patch file${importedFiles.length === 1 ? '' : 's'}`,
+      `Import ${plan.importedPaths.length} patch file${plan.importedPaths.length === 1 ? '' : 's'}`,
       () => {
-        for (const path of removedExistingPaths) this.entries.delete(path);
-        for (const [path, entry] of staged) {
+        for (const path of plan.removedExistingPaths) this.entries.delete(path);
+        for (const [path, entry] of plan.stagedEntries) {
           this.entries.set(path, entry);
           if (isEmbeddedVFSEntry(entry)) {
             this.emitContentModified(path, entry.revision ?? 1);
@@ -969,66 +756,11 @@ export class VirtualFilesystem {
       }
     );
 
-    return importedFiles.map(([path]) => path);
+    return plan.importedPaths;
   }
 
-  private normalizePatchImportItems(files: Iterable<File | PatchImportItem>): PatchImportItem[] {
-    const directories = new Set<string>();
-    const fileItems: PatchImportItem[] = [];
-
-    for (const input of files) {
-      const item: PatchImportItem =
-        input instanceof File
-          ? { kind: 'file', file: input, relativePath: this.getImportRelativePath(input) }
-          : { ...input, relativePath: this.normalizeImportRelativePath(input.relativePath) };
-      const segments = item.relativePath.split('/');
-
-      for (let index = 1; index < segments.length; index += 1) {
-        directories.add(segments.slice(0, index).join('/'));
-      }
-
-      if (item.kind === 'directory') {
-        directories.add(item.relativePath);
-      } else {
-        fileItems.push(item);
-      }
-    }
-
-    const directoryItems: PatchImportItem[] = [...directories]
-      .sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b))
-      .map((relativePath) => ({ kind: 'directory', relativePath }));
-
-    return [...directoryItems, ...fileItems];
-  }
-
-  private async decodeUtf8(blob: Blob, path: string): Promise<string> {
-    try {
-      return new TextDecoder('utf-8', { fatal: true }).decode(await blob.arrayBuffer());
-    } catch {
-      throw new Error(`VFS: Only UTF-8 text can be embedded: ${path}`);
-    }
-  }
-
-  private getImportRelativePath(file: File): string {
-    const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
-    return this.normalizeImportRelativePath(relativePath || file.name);
-  }
-
-  private normalizeImportRelativePath(relativePath: string): string {
-    const normalized = relativePath.replaceAll('\\', '/');
-    const segments = normalized.split('/').filter(Boolean);
-
-    if (segments.length === 0 || segments.some((segment) => segment === '.' || segment === '..')) {
-      throw new Error(`VFS: Invalid import path: ${normalized}`);
-    }
-
-    return segments.join('/');
-  }
-
-  private joinVfsPath(parent: string, child: string): string {
-    if (parent.endsWith('://') || parent.endsWith('/')) return `${parent}${child}`;
-
-    return `${parent}/${child}`;
+  private createPatchImportPlanner(): PatchImportPlanner {
+    return new PatchImportPlanner(this.entries.snapshot());
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -1229,9 +961,7 @@ export class VirtualFilesystem {
    * List all paths, optionally filtered by prefix.
    */
   list(prefix?: string): string[] {
-    const paths = Array.from(this.entries.keys());
-    if (!prefix) return paths;
-    return paths.filter((p) => p.startsWith(prefix));
+    return this.entries.paths(prefix);
   }
 
   /** List the immediate children of a VFS directory, including linked local folders. */
@@ -1539,7 +1269,7 @@ export class VirtualFilesystem {
 
     this.entries.clear();
     this.pendingPermissions.clear();
-    this.entries = hydrated;
+    this.entries.replace(hydrated);
     this.invalidEmbeddedPaths = this.findInvalidEmbeddedPaths(hydrated);
 
     // Check which local files need permission

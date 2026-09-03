@@ -475,6 +475,16 @@ IndexedDB remains a fallback for browsers without filesystem handles and a persi
 
 The existing user-code VFS API keeps its current defaults: `vfs.getUrl("./foo")`, `vfs.list(".")`, and similar relative paths resolve under `user://`. The `patch://` shorthand applies only to JavaScript imports and GLSL includes.
 
+### Internal Architecture
+
+`VirtualFilesystem` is the stable public facade. Its implementation composes internal modules so provider, persistence, history, and Patch-import rules do not accumulate in the facade:
+
+- `VfsEntryIndex` owns the in-memory entry map, snapshots, and path-tree queries.
+- `PatchImportPlanner` turns browser files or recursive copy sources into a validated atomic Patch import plan. It owns text validation, path normalization, collision allocation, and embedded-content budgets.
+- `VfsMutationCoordinator` records entry-map transitions and their provider effects as one global history operation.
+
+The Files panel continues to own user interaction such as asking whether to Replace, Keep Both, or Cancel. Browser `DataTransfer` traversal stays in a separate adapter. These modules report plans and outcomes; they do not depend on Svelte UI state.
+
 ## Delivery Plan
 
 Ship the feature in exactly three pull requests. Each pull request is a complete release point with its own user outcome and focused verification. Tests stay in the same commit as the behavior they verify; do not create preparatory commits containing only types or unused helpers.
