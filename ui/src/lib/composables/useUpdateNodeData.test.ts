@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { MessageSystem } from '$lib/messages/MessageSystem';
 
-import { updateNodeDataFromCurrent } from './update-node-data';
+import { updateNodeDataFromCurrent } from './useUpdateNodeData.svelte';
 
 type TestData = {
   params: unknown[];
