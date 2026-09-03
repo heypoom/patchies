@@ -14,6 +14,8 @@ import {
   storeDirHandle,
   getDirHandle,
   removeDirHandle,
+  markDirHandleDeleted,
+  restoreDeletedDirHandle,
   getAllDirHandles,
   hasDirPermission,
   requestDirHandlePermission
@@ -273,6 +275,15 @@ export class LocalFilesystemProvider implements VFSProvider {
   async removeDirHandle(path: string): Promise<void> {
     this.dirHandleCache.delete(path);
     await removeDirHandle(path);
+  }
+
+  async hideDirHandle(path: string): Promise<void> {
+    this.dirHandleCache.delete(path);
+    await markDirHandleDeleted(path);
+  }
+
+  async restoreDirHandle(path: string): Promise<void> {
+    await restoreDeletedDirHandle(path);
   }
 
   /** Move a linked directory handle when its VFS path changes. */

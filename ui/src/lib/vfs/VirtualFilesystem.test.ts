@@ -118,6 +118,32 @@ describe('VirtualFilesystem patch files', () => {
     expect(vfs.readEmbeddedFile('patch://assets/shaders/palette/color.js')).toContain('color');
   });
 
+  it('rejects a folder rename that would overwrite a descendant', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createFolder('patch://', 'source');
+    vfs.createEmbeddedFile('patch://source/utility.js', 'export const source = true');
+    vfs.createEmbeddedFile('patch://target/utility.js', 'export const target = true');
+
+    expect(() => vfs.renamePath('patch://source', 'patch://target')).toThrow(
+      'Path already exists: patch://target/utility.js'
+    );
+    expect(vfs.readEmbeddedFile('patch://source/utility.js')).toContain('source');
+    expect(vfs.readEmbeddedFile('patch://target/utility.js')).toContain('target');
+  });
+
+  it('uses the final size when replacing an embedded import', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const fullSize = 256 * 1024;
+    vfs.createEmbeddedFile('patch://replace.js', 'a'.repeat(fullSize));
+    vfs.createEmbeddedFile('patch://one.js', 'b'.repeat(fullSize));
+    vfs.createEmbeddedFile('patch://two.js', 'c'.repeat(fullSize));
+    vfs.createEmbeddedFile('patch://three.js', 'd'.repeat(fullSize));
+
+    await expect(
+      vfs.importToPatch([new File(['e'.repeat(fullSize)], 'replace.js')], 'patch://', 'replace')
+    ).resolves.toEqual(['patch://replace.js']);
+  });
+
   it('restores content and revisions with global undo and redo', () => {
     const vfs = VirtualFilesystem.getInstance();
     const history = HistoryManager.getInstance();

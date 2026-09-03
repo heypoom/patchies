@@ -548,6 +548,13 @@ export class VirtualFilesystem {
       return [destination, { ...entry, filename }] as const;
     });
 
+    const movedPaths = new Set(paths);
+    for (const [destination] of renamed) {
+      if (this.entries.has(destination) && !movedPaths.has(destination)) {
+        throw new Error(`VFS: Path already exists: ${destination}`);
+      }
+    }
+
     const moves = renamed.map(([newPath, entry], index) => ({
       oldPath: paths[index],
       newPath,
@@ -598,13 +605,38 @@ export class VirtualFilesystem {
     const paths = this.list().filter((item) => item === path || item.startsWith(`${path}/`));
     if (paths.length === 0) throw new Error(`VFS: Path not found: ${path}`);
 
-    this.recordMutation(`Delete ${path.split('/').pop()}`, () => {
-      for (const item of paths) {
-        this.entries.delete(item);
-        this.pendingPermissions.delete(item);
+    const linkedFolderPaths = paths.filter(
+      (item) => this.entries.get(item)?.provider === 'local-folder'
+    );
+    const setLinkedFoldersDeleted = (deleted: boolean) => {
+      const provider = this.getLocalProvider();
+      if (!provider) return;
+
+      for (const linkedFolderPath of linkedFolderPaths) {
+        const operation = deleted
+          ? provider.hideDirHandle(linkedFolderPath)
+          : provider.restoreDirHandle(linkedFolderPath);
+        void operation.catch((error) =>
+          console.error('VFS: Failed to update deleted folder state', error)
+        );
       }
-      this.notifyChange();
-    });
+    };
+
+    this.recordMutation(
+      `Delete ${path.split('/').pop()}`,
+      () => {
+        for (const item of paths) {
+          this.entries.delete(item);
+          this.pendingPermissions.delete(item);
+        }
+        setLinkedFoldersDeleted(true);
+        this.notifyChange();
+      },
+      {
+        redo: () => setLinkedFoldersDeleted(true),
+        undo: () => setLinkedFoldersDeleted(false)
+      }
+    );
   }
 
   /** Copy a user-owned text file into patch ownership without moving the original. */
@@ -657,6 +689,12 @@ export class VirtualFilesystem {
       if (size > MAX_EMBEDDED_FILE_BYTES) {
         throw new Error(`VFS: Embedded file exceeds 256 KiB: ${file.name}`);
       }
+      const stagedEntry = staged.find((item) => item.path === path)?.entry;
+      const existingEntry = stagedEntry ?? this.entries.get(path);
+      if (collision === 'replace' && existingEntry && isEmbeddedVFSEntry(existingEntry)) {
+        totalBytes -= new TextEncoder().encode(existingEntry.content).byteLength;
+      }
+
       totalBytes += size;
       if (totalBytes > MAX_EMBEDDED_PATCH_BYTES) {
         throw new Error('VFS: Embedded patch files exceed 1 MiB');

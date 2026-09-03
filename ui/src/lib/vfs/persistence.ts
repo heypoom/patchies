@@ -16,10 +16,11 @@ interface FileSystemFileHandleWithPermissions extends FileSystemFileHandle {
 }
 
 const DB_NAME = 'patchies-vfs';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const HANDLES_STORE = 'handles';
 const FILES_STORE = 'files'; // Fallback store for file data (Firefox, Safari)
 const DIR_HANDLES_STORE = 'dir-handles'; // Store for FileSystemDirectoryHandle
+const DELETED_DIR_HANDLES_STORE = 'deleted-dir-handles';
 
 /**
  * Cached file data for browsers without FileSystemFileHandle support.
@@ -43,6 +44,10 @@ interface VfsDB {
   [DIR_HANDLES_STORE]: {
     key: string;
     value: FileSystemDirectoryHandle;
+  };
+  [DELETED_DIR_HANDLES_STORE]: {
+    key: string;
+    value: true;
   };
 }
 
@@ -97,6 +102,10 @@ async function getDb(): Promise<IDBPDatabase<VfsDB>> {
 
       if (!db.objectStoreNames.contains(DIR_HANDLES_STORE)) {
         db.createObjectStore(DIR_HANDLES_STORE);
+      }
+
+      if (!db.objectStoreNames.contains(DELETED_DIR_HANDLES_STORE)) {
+        db.createObjectStore(DELETED_DIR_HANDLES_STORE);
       }
     },
     blocked() {
@@ -302,11 +311,27 @@ export async function getAllDirHandles(): Promise<Map<string, FileSystemDirector
   const handles = new Map<string, FileSystemDirectoryHandle>();
 
   for (const key of keys) {
+    if (await db.get(DELETED_DIR_HANDLES_STORE, key)) continue;
+
     const value = await db.get(DIR_HANDLES_STORE, key);
     if (value) handles.set(key.slice(prefix.length), value);
   }
 
   return handles;
+}
+
+/** Hide a persisted directory handle while its delete action remains undoable. */
+export async function markDirHandleDeleted(path: string): Promise<void> {
+  const db = await getDb();
+
+  await db.put(DELETED_DIR_HANDLES_STORE, true, scopedKey(path));
+}
+
+/** Restore a directory handle hidden by an undoable delete. */
+export async function restoreDeletedDirHandle(path: string): Promise<void> {
+  const db = await getDb();
+
+  await db.delete(DELETED_DIR_HANDLES_STORE, scopedKey(path));
 }
 
 /**

@@ -668,7 +668,12 @@
       return;
     }
 
-    vfs.renamePath(oldPath, newBasePath);
+    try {
+      vfs.renamePath(oldPath, newBasePath);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Move failed');
+      return;
+    }
 
     // Update selection if moved item was selected
     if (selectedPaths.has(oldPath)) {
@@ -809,7 +814,14 @@
         const entry = vfs.getEntry(oldPath);
 
         if (entry) {
-          vfs.renamePath(oldPath, newPath);
+          try {
+            vfs.renamePath(oldPath, newPath);
+          } catch (error) {
+            toast.error(
+              error instanceof Error ? error.message.replace('VFS: ', '') : 'Rename failed'
+            );
+            return;
+          }
 
           // Update selection if renamed item was selected
           if (selectedPaths.has(oldPath)) {
