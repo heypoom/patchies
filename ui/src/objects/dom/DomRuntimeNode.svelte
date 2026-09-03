@@ -40,7 +40,7 @@
   import { LivePreviewExpandController } from '$lib/canvas/LivePreviewExpandController';
   import { getLivePreviewContainScale } from '$lib/canvas/live-preview-contain';
   import { replaceUserTags } from '$lib/runtime/services/graph-tags';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   export type DomRuntimeRoot = {
     root: HTMLElement;
@@ -121,6 +121,7 @@
   } = $props();
 
   const { getNodes, updateNode, updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
 
@@ -380,8 +381,8 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags(tags: string[]) {
-          updateNodeDataFromCurrent<{ tags?: string[] }>(updateNode, nodeId, (currentData) => ({
-            tags: replaceUserTags(currentData.tags, tags)
+          updateData<{ tags?: string[] }>(nodeId, (data) => ({
+            tags: replaceUserTags(data.tags, tags)
           }));
         },
         extraContext: {

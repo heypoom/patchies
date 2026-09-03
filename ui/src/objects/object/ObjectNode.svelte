@@ -45,7 +45,7 @@
   import { useObjectPorts } from '$objects/object/useObjectPorts.svelte';
   import { useObjectRuntimeView } from '$objects/object/useObjectRuntimeView.svelte';
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import type { ObjectNodeData } from './types';
 
   let {
@@ -59,6 +59,7 @@
   } = $props();
 
   const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   const edgesHelper = useEdges();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -310,8 +311,8 @@
   }
 
   function updateParamByIndex(index: number, value: unknown) {
-    updateNodeDataFromCurrent<ObjectNodeData>(updateNode, nodeId, (currentData) => {
-      const params = [...currentData.params];
+    updateData<ObjectNodeData>(nodeId, (data) => {
+      const params = [...data.params];
       params[index] = value;
 
       return { params };

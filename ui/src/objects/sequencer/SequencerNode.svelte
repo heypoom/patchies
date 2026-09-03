@@ -18,7 +18,7 @@
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
   import { Settings, VolumeX, X } from '@lucide/svelte/icons';
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   let {
     id: nodeId,
@@ -32,6 +32,7 @@
 
   const store = useStore();
   const { updateNodeData, updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const updateNodeInternals = useUpdateNodeInternals();
 
   function getInitialNodeId() {
@@ -89,9 +90,9 @@
     let oldTracks = tracks;
     let newTracks = oldTracks;
 
-    updateNodeDataFromCurrent<SequencerData>(updateNode, nodeId, (currentData) => {
-      oldTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
-      newTracks = getNewTracks(currentData);
+    updateData<SequencerData>(nodeId, (data) => {
+      oldTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
+      newTracks = getNewTracks(data);
 
       return { tracks: newTracks };
     });
@@ -130,8 +131,8 @@
   });
 
   function toggleStep(trackIdx: number, stepIdx: number): void {
-    applyTracks((currentData) => {
-      const currentTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
+    applyTracks((data) => {
+      const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
 
       return currentTracks.map((t, i) => {
         if (i !== trackIdx) return t;
@@ -147,9 +148,9 @@
   function setStepCount(newSteps: number): void {
     let oldSteps = steps;
 
-    updateNodeDataFromCurrent<SequencerData>(updateNode, nodeId, (currentData) => {
-      oldSteps = currentData.steps ?? 16;
-      const currentTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
+    updateData<SequencerData>(nodeId, (data) => {
+      oldSteps = data.steps ?? 16;
+      const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
       const newTracks = currentTracks.map((track) => ({
         ...track,
         stepOn: Array.from({ length: newSteps }, (_, i) => track.stepOn[i] ?? false),
@@ -163,13 +164,13 @@
   }
 
   function addTrack(): void {
-    applyTracks((currentData) => {
-      const currentTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
+    applyTracks((data) => {
+      const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
       if (currentTracks.length >= 8) return currentTracks;
 
       const usedColors = new Set(currentTracks.map((t) => t.color));
       const nextColor = TRACK_COLORS.find((c) => !usedColors.has(c)) ?? TRACK_COLORS[0];
-      const currentSteps = currentData.steps ?? 16;
+      const currentSteps = data.steps ?? 16;
 
       return [
         ...currentTracks,
@@ -184,8 +185,8 @@
   }
 
   function removeTrack(trackIdx: number): void {
-    applyTracks((currentData) => {
-      const currentTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
+    applyTracks((data) => {
+      const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
       if (currentTracks.length <= 1) return currentTracks;
 
       return currentTracks.filter((_, i) => i !== trackIdx);
@@ -193,15 +194,15 @@
   }
 
   const updateTrackName = (trackIdx: number, name: string): void =>
-    applyTracks((currentData) => {
-      const currentTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
+    applyTracks((data) => {
+      const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
 
       return currentTracks.map((t, i) => (i === trackIdx ? { ...t, name } : t));
     });
 
   const updateTrackColor = (trackIdx: number, color: string): void =>
-    applyTracks((currentData) => {
-      const currentTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
+    applyTracks((data) => {
+      const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
 
       return currentTracks.map((t, i) => (i === trackIdx ? { ...t, color } : t));
     });
@@ -209,8 +210,8 @@
   function setStepValue(trackIdx: number, stepIdx: number, value: number): void {
     const clamped = Math.max(0, Math.min(1, value));
 
-    updateNodeDataFromCurrent<SequencerData>(updateNode, nodeId, (currentData) => {
-      const currentTracks = (currentData.tracks ?? DEFAULT_TRACKS) as TrackData[];
+    updateData<SequencerData>(nodeId, (data) => {
+      const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
       const newTracks = currentTracks.map((t, i) => {
         if (i !== trackIdx) return t;
 

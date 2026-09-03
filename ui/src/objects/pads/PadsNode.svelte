@@ -24,11 +24,12 @@
     type NoteOffMode
   } from './constants';
   import { SvelteMap } from 'svelte/reactivity';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 
   let node: NodeProps & { data: PadsNodeData } = $props();
 
   const { updateNodeData, updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const audioService = AudioService.getInstance();
 
   let v2Node: PadsAudioNodeType | null = null;
@@ -82,8 +83,8 @@
   }
 
   async function assignSample(padIndex: number, vfsPath: string) {
-    updateNodeDataFromCurrent<PadsNodeData>(updateNode, node.id, (currentData) => {
-      const newPads = [...(currentData.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
+    updateData<PadsNodeData>(node.id, (data) => {
+      const newPads = [...(data.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
       newPads[padIndex] = { ...newPads[padIndex], vfsPath };
 
       return { pads: newPads };
@@ -93,8 +94,8 @@
   }
 
   function clearPad(padIndex: number) {
-    updateNodeDataFromCurrent<PadsNodeData>(updateNode, node.id, (currentData) => {
-      const newPads = [...(currentData.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
+    updateData<PadsNodeData>(node.id, (data) => {
+      const newPads = [...(data.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
       newPads[padIndex] = {};
 
       return { pads: newPads };
@@ -203,8 +204,8 @@
         }
       }
 
-      updateNodeDataFromCurrent<PadsNodeData>(updateNode, node.id, (currentData) => {
-        const updatedPads = [...(currentData.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
+      updateData<PadsNodeData>(node.id, (data) => {
+        const updatedPads = [...(data.pads ?? DEFAULT_PADS_NODE_DATA.pads)];
 
         for (const [padIndex, vfsPath] of loadedPadPaths) {
           updatedPads[padIndex] = { ...updatedPads[padIndex], vfsPath };

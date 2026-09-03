@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { useSvelteFlow } from '@xyflow/svelte';
-
   import CodeBlockBase from '$objects/code/CodeBlockBase.svelte';
   import { useNodeViewMessageContext } from '$lib/messages';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import type { SettingsSchema } from '$lib/settings';
 
   let {
@@ -32,7 +30,7 @@
     selected: boolean;
   } = $props();
 
-  const { updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   const viewMessageContext = useNodeViewMessageContext(
     () => nodeId,
@@ -43,8 +41,8 @@
   const handleRuntimeExecute = async () => {};
 
   const executeCode = async () =>
-    updateNodeDataFromCurrent<typeof data>(updateNode, nodeId, (currentData) => ({
-      executeCode: (currentData.executeCode ?? 0) + 1
+    updateData<typeof data>(nodeId, (data) => ({
+      executeCode: (data.executeCode ?? 0) + 1
     }));
 
   const cleanupRunningTasks = async () => viewMessageContext.send({ type: 'stop' });

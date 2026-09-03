@@ -6,7 +6,7 @@ Prevent synchronous editor updates from overwriting each other when several mess
 
 ## Key Challenges & Solutions
 
-XYFlow's `updateNodeData` functional form can read from a node lookup that lags behind the current nodes array during same-turn fan-out. A shared `updateNodeDataFromCurrent` helper now performs read-modify-write changes through `updateNode`, whose callback receives the current node being reduced.
+XYFlow's `updateNodeData` functional form can read from a node lookup that lags behind the current nodes array during same-turn fan-out. The shared `useUpdateNodeData` composable binds the current flow instance to a pure updater that performs read-modify-write changes through `updateNode`, whose callback receives the current node being reduced.
 
 The audit separated two update shapes:
 
@@ -22,5 +22,5 @@ The upstream flow API exposes two functional update paths with subtly different 
 ## Action Items
 
 - Use partial data writes for independent fields.
-- Use `updateNodeDataFromCurrent` for read-modify-write operations.
+- Use `useUpdateNodeData` for read-modify-write operations in Svelte components.
 - Keep regression coverage for same-turn message fan-out and sequential collection updates.

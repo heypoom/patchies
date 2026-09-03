@@ -11,7 +11,7 @@
   import { messages } from '$lib/objects/schemas';
   import { AssemblySystem } from '$objects/asm/AssemblySystem';
   import { useNodeDataTracker } from '$lib/history';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import {
     ASM_MEMORY_GRID_COLUMNS,
     ASM_MEMORY_GRID_LIMIT,
@@ -33,7 +33,8 @@
     selected?: boolean;
   } = $props();
 
-  const { updateNodeData, updateNode } = useSvelteFlow();
+  const { updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   function getInitialNodeId() {
     return nodeId;
@@ -83,15 +84,15 @@
         .with(P.union(P.array(P.number), P.number), async (v) => {
           const body = Array.isArray(v) ? v : [v];
 
-          updateNodeDataFromCurrent<typeof data>(updateNode, nodeId, (currentData) => ({
-            values: [...(currentData.values ?? []), ...body]
+          updateData<typeof data>(nodeId, (data) => ({
+            values: [...(data.values ?? []), ...body]
           }));
         })
         .with(
           { type: 'write', address: P.number, data: P.array(P.number) },
           async ({ address, data: writeData }) => {
-            updateNodeDataFromCurrent<typeof data>(updateNode, nodeId, (currentData) => {
-              const nextValues = [...(currentData.values ?? [])];
+            updateData<typeof data>(nodeId, (data) => {
+              const nextValues = [...(data.values ?? [])];
               // Ensure the array is large enough to accommodate the write
               const requiredLength = address + writeData.length;
               while (nextValues.length < requiredLength) {
@@ -135,8 +136,8 @@
   function setMemoryValue(address: number, value: number) {
     if (value > ASM_MAX_CELL_VALUE) return;
 
-    updateNodeDataFromCurrent<typeof data>(updateNode, nodeId, (currentData) => {
-      const newValues = [...(currentData.values ?? [])];
+    updateData<typeof data>(nodeId, (data) => {
+      const newValues = [...(data.values ?? [])];
       newValues[address] = value;
 
       return { values: newValues };

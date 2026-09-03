@@ -20,7 +20,7 @@
   import { webCodecsEnabled, showVideoStats } from '../../stores/video.store';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import { VideoProfiler, type VideoStats } from '$objects/video';
   import { LatestVideoSeek } from '$objects/video/latest-video-seek';
   import { getVideoNodeDisplaySize } from '$objects/video/video-node-size';
@@ -90,6 +90,7 @@
   }
 
   const { updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
 
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
@@ -172,7 +173,7 @@
     nodeId: initialNodeId(),
     acceptMimePrefix: 'video/',
     onFileLoaded: handleFileLoaded,
-    updateNodeData: (newData) => updateNodeDataFromCurrent(updateNode, nodeId, () => newData),
+    updateNodeData: (data) => updateData(nodeId, () => data),
     getVfsPath: () => data.vfsPath,
     filePickerAccept: ['.mp4', '.webm', '.mov', '.avi', '.mkv'],
     filePickerDescription: 'Video Files'
@@ -185,7 +186,7 @@
       .with(videoMessages.loop, ({ value }) => {
         const shouldLoop = value ?? true;
 
-        updateNodeDataFromCurrent(updateNode, nodeId, () => ({ loop: shouldLoop }));
+        updateData(nodeId, () => ({ loop: shouldLoop }));
 
         if (videoElement) {
           videoElement.loop = shouldLoop;

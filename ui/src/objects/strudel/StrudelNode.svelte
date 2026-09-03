@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Ellipsis, Expand, Link, Play, Square, Terminal, VolumeX, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -55,7 +55,8 @@
   }
 
   // Get flow utilities to update node data
-  const { updateNodeData, updateNode } = useSvelteFlow();
+  const { updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const { warnIfNoAudioConnection } = useAudioOutletWarning(initialNodeId());
 
   let strudelEditor: StrudelEditor | null = null;
@@ -377,11 +378,9 @@
               <button
                 class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
                 onclick={() => {
-                  updateNodeDataFromCurrent<{ showConsole?: boolean }>(
-                    updateNode,
-                    nodeId,
-                    (currentData) => ({ showConsole: !currentData.showConsole })
-                  );
+                  updateData<{ showConsole?: boolean }>(nodeId, (data) => ({
+                    showConsole: !data.showConsole
+                  }));
                   menuOpen = false;
                 }}
               >

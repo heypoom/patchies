@@ -33,7 +33,7 @@
   import { createKVStore } from '$lib/storage';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { replaceUserTags } from '$lib/runtime/services/graph-tags';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import { shouldShowHandles } from '../../stores/ui.store';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
@@ -80,6 +80,7 @@
   } = $props();
 
   const { updateNode, updateNodeData, getNodes } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const updateNodeInternals = useUpdateNodeInternals();
 
   const glSystem = GLSystem.getInstance();
@@ -291,8 +292,8 @@ return {
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags(tags: string[]) {
-          updateNodeDataFromCurrent<{ tags?: string[] }>(updateNode, nodeId, (currentData) => ({
-            tags: replaceUserTags(currentData.tags, tags)
+          updateData<{ tags?: string[] }>(nodeId, (data) => ({
+            tags: replaceUserTags(data.tags, tags)
           }));
         },
         extraContext: {

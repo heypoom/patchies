@@ -12,7 +12,7 @@
   import { shouldShowHandles } from '../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SliderSettings from '$lib/components/settings/SliderSettings.svelte';
   import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
@@ -39,6 +39,7 @@
   } = $props();
 
   const { updateNode } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const updateNodeInternals = useUpdateNodeInternals();
   const store = useStore();
   const edges = useEdges();
@@ -91,8 +92,8 @@
   }
 
   function updateControlData(updates: Partial<typeof node.data>) {
-    updateNodeDataFromCurrent<typeof node.data>(updateNode, node.id, (currentData) => {
-      const nextData = { ...currentData, ...updates };
+    updateData<typeof node.data>(node.id, (data) => {
+      const nextData = { ...data, ...updates };
 
       return { ...updates, ...getSliderData(nextData) };
     });
@@ -111,15 +112,15 @@
   }
 
   function updateConfig(updates: Partial<typeof node.data>) {
-    updateNodeDataFromCurrent<typeof node.data>(updateNode, node.id, (currentData) => {
-      const currentControlData = getSliderData(currentData);
-      const currentMin = currentControlData.min ?? 0;
-      const currentIsFloat = currentControlData.isFloat === true;
-      const currentMax = currentControlData.max ?? (currentIsFloat ? 1 : 100);
-      const currentStep = currentControlData.step ?? undefined;
-      const currentDefaultValue = currentControlData.defaultValue ?? currentMin;
-      const currentValue = currentControlData.value ?? currentDefaultValue;
-      const newData = { ...currentData, ...updates };
+    updateData<typeof node.data>(node.id, (data) => {
+      const controlData = getSliderData(data);
+      const currentMin = controlData.min ?? 0;
+      const currentIsFloat = controlData.isFloat === true;
+      const currentMax = controlData.max ?? (currentIsFloat ? 1 : 100);
+      const currentStep = controlData.step ?? undefined;
+      const currentDefaultValue = controlData.defaultValue ?? currentMin;
+      const currentValue = controlData.value ?? currentDefaultValue;
+      const newData = { ...data, ...updates };
 
       // Ensure value is within new bounds
       if ('min' in updates || 'max' in updates || 'step' in updates || 'isFloat' in updates) {

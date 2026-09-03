@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Code, Loader, RefreshCw, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { updateNodeDataFromCurrent } from '$lib/nodes/update-node-data';
+  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -33,7 +33,8 @@
     selected: boolean;
   } = $props();
 
-  const { updateNodeData, updateNode } = useSvelteFlow();
+  const { updateNodeData } = useSvelteFlow();
+  const updateData = useUpdateNodeData();
   const updateNodeInternals = useUpdateNodeInternals();
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -355,11 +356,9 @@
           <button
             class="rounded p-1 hover:bg-zinc-700"
             onclick={() => {
-              updateNodeDataFromCurrent<{ showConsole?: boolean }>(
-                updateNode,
-                nodeId,
-                (currentData) => ({ showConsole: !currentData.showConsole })
-              );
+              updateData<{ showConsole?: boolean }>(nodeId, (data) => ({
+                showConsole: !data.showConsole
+              }));
               setTimeout(() => updateContentWidth(), 10);
             }}
             title="Console"
