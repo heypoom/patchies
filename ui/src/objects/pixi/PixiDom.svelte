@@ -36,6 +36,7 @@
   import { shouldShowHandles } from '../../stores/ui.store';
 
   import { useFluidCanvas } from '$objects/canvas/useFluidCanvas.svelte';
+  import { createPixiDomSetPortCount, getPixiDomPortLayout } from '$objects/pixi/pixi-dom-ports';
   import { pixiDomManager } from '$objects/pixi/PixiDomManager';
 
   import {
@@ -62,6 +63,8 @@
       code: string;
       executeCode?: number;
       hidePorts?: boolean;
+      inletCount?: number;
+      outletCount?: number;
       fluidCanvasResizerVisible?: boolean;
       noBorder?: boolean;
       paused?: boolean;
@@ -125,6 +128,7 @@
 
   let previewWidth = $derived(previewSize.width);
   let previewHeight = $derived(previewSize.height);
+  let portLayout = $derived(getPixiDomPortLayout(data, videoOutputEnabled));
 
   let expandController: CanvasDomExpandController | null = null;
 
@@ -196,6 +200,12 @@
     videoOutputEnabled = enabled;
     updateNodeInternals(nodeId);
   }
+
+  const setPortCount = createPixiDomSetPortCount({
+    getNodeId: () => nodeId,
+    updateNodeData: (id, updates) => updateNodeData(id, updates),
+    updateNodeInternals
+  });
 
   function togglePlayback() {
     const wasPaused = !!data.paused;
@@ -276,6 +286,7 @@ return {
 
       const candidate = await jsRunner.executeJavaScript(nodeId, code, {
         customConsole,
+        setPortCount,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         setTags(tags: string[]) {
@@ -501,18 +512,44 @@ return {
     hideBorder={resizeControlsVisible}
     displayExtraMenuItems={fluidCanvas.displayExtraMenuItems}
   >
+    {#snippet topHandle()}
+      {#each portLayout.inletIndices as index (index)}
+        <TypedHandle
+          port="inlet"
+          spec={{ handleId: index }}
+          title={`Inlet ${index}`}
+          total={portLayout.inletIndices.length}
+          {index}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
+    {/snippet}
+
     {#snippet bottomHandle()}
-      {#if videoOutputEnabled}
+      {#if portLayout.videoOutletIndex !== undefined}
         <TypedHandle
           port="outlet"
           spec={{ handleType: 'video', handleId: '0' }}
           title="Video output"
-          total={1}
-          index={0}
+          total={portLayout.totalOutletCount}
+          index={portLayout.videoOutletIndex}
           class={handleClass}
           {nodeId}
         />
       {/if}
+
+      {#each portLayout.messageOutletIndices as layoutIndex, handleId (handleId)}
+        <TypedHandle
+          port="outlet"
+          spec={{ handleId }}
+          title={`Outlet ${handleId}`}
+          total={portLayout.totalOutletCount}
+          index={layoutIndex}
+          class={handleClass}
+          {nodeId}
+        />
+      {/each}
     {/snippet}
 
     {#snippet codeEditor()}

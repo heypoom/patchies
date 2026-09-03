@@ -29,14 +29,15 @@ their layout during a resize. `onCanvasResize()` updates static scenes after a
 resize, coalesced to one callback per animation frame. Fluid resizing never
 re-runs the user's code, preserving the stage and its interaction state.
 
-The first DOM version exposes Pixi's normal canvas, stage, renderer, optional
+The DOM version exposes Pixi's normal canvas, stage, renderer, optional
 `draw(time)` callback, sizing APIs, `onKeyDown(callback)`, `onKeyUp(callback)`,
-and `setVideoOutput(enabled)`. Keyboard callbacks run while the focused canvas
-receives browser events, stop propagation to the Patchies editor, and report
-callback errors through the virtual console. It supports one copied video
-output, disabled by default to avoid an unnecessary CPU-to-GPU canvas copy.
-`setVideoOutput(true)` enables it. Patchies message APIs and dynamic ports can
-be added once the core event and lifecycle path has settled.
+`setPortCount(inlets, outlets)`, and `setVideoOutput(enabled)`. Keyboard
+callbacks run while the focused canvas receives browser events, stop
+propagation to the Patchies editor, and report callback errors through the
+virtual console. Dynamic message ports use the same indexed handles as other
+main-thread visual objects. It supports one copied video output, disabled by
+default to avoid an unnecessary CPU-to-GPU canvas copy. `setVideoOutput(true)`
+enables it.
 
 `pixi.dom` also supports `setPrimaryButton()`, `setHidePorts()`, and `setTags()`
 with the same behavior as other main-thread visual objects. `setHidePorts()`
