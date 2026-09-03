@@ -30,8 +30,11 @@
   import {
     PATCH_TEXT_FILE_ACCEPT,
     VirtualFilesystem,
+    collectDroppedPatchItems,
     getLocalProvider,
-    guessMimeType
+    guessMimeType,
+    type PatchImportItem,
+    type VfsCollisionStrategy
   } from '$lib/vfs';
   import {
     parseVFSPath,
@@ -48,6 +51,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
+  import VfsCollisionDialog from './VfsCollisionDialog.svelte';
   import {
     getExpandedChildDirectories,
     getExpandedLinkedFolderPathsToLoad,
@@ -93,6 +97,42 @@
 
   let expandedPaths = new SvelteSet(loadExpandedPaths());
   let searchQuery = $state('');
+  let collisionDialogOpen = $state(false);
+  let collisionPaths = $state<string[]>([]);
+  let collisionResolver: ((strategy: VfsCollisionStrategy) => void) | null = null;
+
+  function handleCollisionChoice(strategy: VfsCollisionStrategy) {
+    const resolve = collisionResolver;
+    collisionResolver = null;
+    collisionPaths = [];
+    collisionDialogOpen = false;
+
+    resolve?.(strategy);
+  }
+
+  function requestCollisionChoice(paths: string[]): Promise<VfsCollisionStrategy> {
+    if (paths.length === 0) return Promise.resolve('keep-both');
+    if (collisionResolver) return Promise.resolve('cancel');
+
+    collisionPaths = paths;
+    collisionDialogOpen = true;
+
+    return new Promise((resolve) => {
+      collisionResolver = resolve;
+    });
+  }
+
+  async function importPatchItems(
+    items: Iterable<globalThis.File | PatchImportItem>,
+    targetFolder: string
+  ): Promise<string[]> {
+    const importItems = [...items];
+    const collisions = vfs.getPatchImportCollisions(importItems, targetFolder);
+    const strategy = await requestCollisionChoice(collisions);
+    if (strategy === 'cancel') return [];
+
+    return vfs.importToPatch(importItems, targetFolder, strategy);
+  }
 
   // Search result type for flat display
   type FileSearchResult = {
@@ -600,12 +640,15 @@
     }
 
     // Handle external file drops
-    const files = event.dataTransfer?.files;
-    if (!files || files.length === 0) return;
+    const dataTransfer = event.dataTransfer;
+    if (!dataTransfer) return;
 
     if (targetFolder?.startsWith('patch://')) {
       try {
-        await vfs.importToPatch(Array.from(files), targetFolder);
+        const items = await collectDroppedPatchItems(dataTransfer);
+        if (items.length === 0) return;
+
+        await importPatchItems(items, targetFolder);
       } catch (error) {
         toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Import failed');
       }
@@ -614,7 +657,7 @@
     }
 
     // Store each dropped file in User with linked-file behavior.
-    for (const file of Array.from(files)) {
+    for (const file of Array.from(dataTransfer.files)) {
       await vfs.storeFile(file, undefined, targetFolder ?? undefined);
     }
   }
@@ -624,14 +667,12 @@
     if (!parsed) return;
 
     if (parsed.namespace === 'user' && targetFolder.startsWith('patch://')) {
-      const source = vfs.getEntry(oldPath);
-
-      if (source && isVFSFolder(source)) {
-        toast.error('Folder import to Patch is not supported yet');
-        return;
+      try {
+        const items = await vfs.preparePatchCopy(oldPath);
+        await importPatchItems(items, targetFolder);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Import failed');
       }
-
-      await vfs.copyToPatch(oldPath, targetFolder, 'keep-both');
 
       return;
     }
@@ -705,7 +746,7 @@
 
     try {
       if (pendingUploadFolder?.startsWith('patch://')) {
-        await vfs.importToPatch(Array.from(files), pendingUploadFolder);
+        await importPatchItems(Array.from(files), pendingUploadFolder);
       } else {
         for (const file of Array.from(files)) {
           await vfs.storeFile(file, undefined, pendingUploadFolder ?? undefined);
@@ -1682,4 +1723,10 @@
   confirmText="Move here"
   folders={moveFolderTree}
   onSelect={handleMoveFile}
+/>
+
+<VfsCollisionDialog
+  bind:open={collisionDialogOpen}
+  paths={collisionPaths}
+  onChoose={handleCollisionChoice}
 />

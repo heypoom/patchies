@@ -1,6 +1,6 @@
 // Virtual Filesystem - main exports
 
-export { VirtualFilesystem } from './VirtualFilesystem';
+export { VirtualFilesystem, type VfsCollisionStrategy } from './VirtualFilesystem';
 export {
   MAX_EMBEDDED_FILE_BYTES,
   MAX_EMBEDDED_PATCH_BYTES,
@@ -14,6 +14,7 @@ export { useVfsMedia, type UseVfsMediaOptions, type UseVfsMediaReturn } from './
 export {
   type VFSEntry,
   type EmbeddedVFSEntry,
+  type PatchImportItem,
   type VFSListEntry,
   type VFSListPage,
   type VFSSearchPage,
@@ -31,6 +32,7 @@ export {
   VFS_FOLDERS,
   VFS_DEFAULT_EXPANDED
 } from './types';
+export { collectDroppedPatchItems } from './drop-import';
 export {
   generateUserPath,
   generateObjectPath,

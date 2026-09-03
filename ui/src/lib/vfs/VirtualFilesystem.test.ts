@@ -121,6 +121,123 @@ describe('VirtualFilesystem patch files', () => {
     expect(vfs.readEmbeddedFile('patch://assets/shaders/palette/color.js')).toContain('color');
   });
 
+  it('imports complete folder trees atomically and applies one collision strategy to the root', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createFolder('patch://', 'bundle');
+    vfs.createEmbeddedFile('patch://bundle/old.js', 'export const old = true');
+    const items = [
+      { kind: 'directory' as const, relativePath: 'bundle' },
+      { kind: 'directory' as const, relativePath: 'bundle/empty' },
+      {
+        kind: 'file' as const,
+        relativePath: 'bundle/src/index.js',
+        file: new File(['export const next = true'], 'index.js', { type: 'text/javascript' })
+      }
+    ];
+
+    expect(vfs.getPatchImportCollisions(items)).toEqual(['patch://bundle']);
+    await expect(vfs.importToPatch(items, 'patch://', 'keep-both')).resolves.toEqual([
+      'patch://bundle-1/src/index.js'
+    ]);
+
+    expect(vfs.getEntry('patch://bundle-1')).toMatchObject({ provider: 'folder' });
+    expect(vfs.getEntry('patch://bundle-1/empty')).toMatchObject({ provider: 'folder' });
+    expect(vfs.readEmbeddedFile('patch://bundle-1/src/index.js')).toContain('next');
+    expect(vfs.readEmbeddedFile('patch://bundle/old.js')).toContain('old');
+
+    await expect(
+      vfs.importToPatch(
+        [
+          { kind: 'directory', relativePath: 'rejected' },
+          {
+            kind: 'file',
+            relativePath: 'rejected/valid.txt',
+            file: new File(['valid'], 'valid.txt', { type: 'text/plain' })
+          },
+          {
+            kind: 'file',
+            relativePath: 'rejected/archive.zip',
+            file: new File(['PK'], 'archive.zip', { type: 'application/zip' })
+          }
+        ],
+        'patch://',
+        'replace'
+      )
+    ).rejects.toThrow('archive.zip is not a supported text file');
+
+    expect(vfs.getEntry('patch://rejected')).toBeUndefined();
+    expect(vfs.getEntry('patch://rejected/valid.txt')).toBeUndefined();
+  });
+
+  it('replaces and restores complete imported folder trees as one history operation', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    vfs.createFolder('patch://', 'bundle');
+    vfs.createEmbeddedFile('patch://bundle/old.js', 'export const old = true');
+    history.clear();
+
+    await vfs.importToPatch(
+      [
+        { kind: 'directory', relativePath: 'bundle' },
+        {
+          kind: 'file',
+          relativePath: 'bundle/new.js',
+          file: new File(['export const next = true'], 'new.js', { type: 'text/javascript' })
+        }
+      ],
+      'patch://',
+      'replace'
+    );
+
+    expect(vfs.getEntry('patch://bundle/old.js')).toBeUndefined();
+    expect(vfs.readEmbeddedFile('patch://bundle/new.js')).toContain('next');
+
+    history.undo();
+    expect(vfs.readEmbeddedFile('patch://bundle/old.js')).toContain('old');
+    expect(vfs.getEntry('patch://bundle/new.js')).toBeUndefined();
+  });
+
+  it('keeps a file separate from an existing implicit directory collision', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://utility/dependency.js', 'export {}');
+
+    await expect(
+      vfs.importToPatch(
+        [new File(['root'], 'utility', { type: 'text/plain' })],
+        'patch://',
+        'keep-both'
+      )
+    ).resolves.toEqual(['patch://utility-1']);
+
+    expect(vfs.getEntry('patch://utility')).toBeUndefined();
+    expect(vfs.readEmbeddedFile('patch://utility-1')).toBe('root');
+  });
+
+  it('increments replacement import revisions and restores them through undo and redo', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    vfs.createEmbeddedFile('patch://utility.js', 'export const value = 1');
+    vfs.writeEmbeddedFile('patch://utility.js', 'export const value = 2');
+    history.clear();
+
+    await vfs.importToPatch(
+      [new File(['export const value = 3'], 'utility.js', { type: 'text/javascript' })],
+      'patch://',
+      'replace'
+    );
+
+    expect(vfs.getEntry('patch://utility.js')).toMatchObject({ revision: 3 });
+    expect(vfs.readEmbeddedFile('patch://utility.js')).toContain('3');
+
+    history.undo();
+    expect(vfs.getEntry('patch://utility.js')).toMatchObject({ revision: 2 });
+    expect(vfs.readEmbeddedFile('patch://utility.js')).toContain('2');
+
+    history.redo();
+    expect(vfs.getEntry('patch://utility.js')).toMatchObject({ revision: 3 });
+    expect(vfs.readEmbeddedFile('patch://utility.js')).toContain('3');
+  });
+
   it('rejects a folder rename that would overwrite a descendant', () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.createFolder('patch://', 'source');
@@ -160,6 +277,60 @@ describe('VirtualFilesystem patch files', () => {
     history.redo();
     expect(vfs.readEmbeddedFile('patch://utility.js')).toContain('2');
     expect(vfs.getEntry('patch://utility.js')).toMatchObject({ revision: 2 });
+  });
+
+  it('restores local file bytes and metadata when replacement is undone and redone', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    let storedFile: File | undefined = new File(['before'], 'before.txt', { type: 'text/plain' });
+    vfs.registerProvider({
+      type: 'local',
+      resolve: async () => {
+        if (!storedFile) throw new Error('missing file');
+
+        return storedFile;
+      },
+      storeDirHandle: async () => {},
+      captureFileState: async () => ({ file: storedFile }),
+      restoreFileState: async (_path: string, state: { file?: File }) => {
+        storedFile = state.file;
+      }
+    } as never);
+    vfs.registerEntry('user://before.txt', {
+      provider: 'local',
+      filename: 'before.txt',
+      mimeType: 'text/plain',
+      size: 6
+    });
+    history.clear();
+
+    await vfs.replaceFile(
+      'user://before.txt',
+      new File(['after'], 'after.txt', { type: 'text/markdown' })
+    );
+
+    expect(vfs.getEntry('user://before.txt')).toMatchObject({
+      filename: 'after.txt',
+      mimeType: 'text/markdown',
+      size: 5
+    });
+    await expect((await vfs.resolve('user://before.txt')).text()).resolves.toBe('after');
+
+    history.undo();
+    expect(vfs.getEntry('user://before.txt')).toMatchObject({
+      filename: 'before.txt',
+      mimeType: 'text/plain',
+      size: 6
+    });
+    await expect((await vfs.resolve('user://before.txt')).text()).resolves.toBe('before');
+
+    history.redo();
+    expect(vfs.getEntry('user://before.txt')).toMatchObject({
+      filename: 'after.txt',
+      mimeType: 'text/markdown',
+      size: 5
+    });
+    await expect((await vfs.resolve('user://before.txt')).text()).resolves.toBe('after');
   });
 
   it('emits reverse and forward path changes when undoing and redoing a rename', () => {

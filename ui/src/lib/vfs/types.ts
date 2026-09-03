@@ -31,6 +31,11 @@ export interface EmbeddedVFSEntry extends Omit<VFSEntry, 'provider'> {
   content: string;
 }
 
+/** A file or directory staged for an atomic Patch import. */
+export type PatchImportItem =
+  | { kind: 'file'; file: File; relativePath: string }
+  | { kind: 'directory'; relativePath: string };
+
 export function isEmbeddedVFSEntry(entry: VFSEntry): entry is EmbeddedVFSEntry {
   return (
     entry.provider === 'embedded' &&
