@@ -48,6 +48,7 @@ export { UrlProvider } from './providers/UrlProvider';
 export { LocalFilesystemProvider } from './providers/LocalFilesystemProvider';
 export { EmbeddedProvider } from './providers/EmbeddedProvider';
 export { createVfs, revokeObjectUrls } from './vfs-url-helper';
+export type { VfsFileReader } from './file-reader';
 export type { VfsApi } from './user-api';
 
 // Persistence utilities (for advanced use)

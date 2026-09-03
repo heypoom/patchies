@@ -7,6 +7,8 @@ Load images, videos, fonts, and other files from the patch virtual filesystem:
 ```javascript
 const url = await vfs.getUrl("./my-image.png");
 const img = loadImage(url); // works in p5, for example
+
+const config = await vfs.get("./config.json").json();
 ```
 
 List one folder level or search recursively:

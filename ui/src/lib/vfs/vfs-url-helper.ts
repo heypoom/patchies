@@ -34,12 +34,12 @@ export function revokeObjectUrls(nodeId: string): void {
 /**
  * Create the `vfs` object for a specific node.
  *
- * The object provides `getUrl()`, `list()`, and `search()`. URLs created by
- * `getUrl()` are tied to the node lifecycle and revoked on destroy.
+ * The object provides `get()`, `getUrl()`, `list()`, and `search()`. URLs created
+ * while reading or resolving files are tied to the node lifecycle and revoked on destroy.
  *
  * @example
  * const files = await vfs.list('.');
- * const url = await vfs.getUrl(files[0].path);
+ * const contents = await vfs.get(files[0].path).text();
  */
 export const createVfs = (nodeId: string): VfsApi =>
   createVfsApi((url) => trackObjectUrl(nodeId, url));

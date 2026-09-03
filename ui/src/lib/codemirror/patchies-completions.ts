@@ -432,8 +432,8 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
   {
     label: 'vfs',
     type: 'variable',
-    detail: '{ getUrl(path), list(path?), search(query, path?) }',
-    info: "Access VFS files. Relative paths use the user:// namespace. Example: await vfs.getUrl('./file.png')",
+    detail: '{ get(path), getUrl(path), list(path?), search(query, path?) }',
+    info: "Access VFS files. Relative paths use the user:// namespace. Example: await vfs.get('./file.json').json()",
     apply: 'vfs'
   },
 
@@ -888,6 +888,13 @@ const memberCompletions: Record<string, Completion[]> = {
 
   vfs: [
     {
+      label: 'get',
+      type: 'method',
+      detail: '(path: string) => VfsFileReader',
+      info: 'Read a virtual filesystem file as JSON, text, a Blob, or an ArrayBuffer.',
+      apply: "get('./file.json')"
+    },
+    {
       label: 'getUrl',
       type: 'method',
       detail: '(path: string) => Promise<string>',
@@ -907,6 +914,37 @@ const memberCompletions: Record<string, Completion[]> = {
       detail: '(query: string, path?: string) => Promise<VFSListEntry[]>',
       info: 'Search entries with path, name, and kind. The path defaults to the user:// namespace.',
       apply: "search('')"
+    }
+  ],
+
+  vfsFile: [
+    {
+      label: 'arrayBuffer',
+      type: 'method',
+      detail: '() => Promise<ArrayBuffer>',
+      info: 'Read the file as binary data.',
+      apply: 'arrayBuffer()'
+    },
+    {
+      label: 'blob',
+      type: 'method',
+      detail: '() => Promise<Blob>',
+      info: 'Read the file as a Blob.',
+      apply: 'blob()'
+    },
+    {
+      label: 'json',
+      type: 'method',
+      detail: '<T = unknown>() => Promise<T>',
+      info: 'Read and parse the file as JSON.',
+      apply: 'json()'
+    },
+    {
+      label: 'text',
+      type: 'method',
+      detail: '() => Promise<string>',
+      info: 'Read the file as text.',
+      apply: 'text()'
     }
   ],
 
@@ -1275,7 +1313,7 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
     if (patchiesContext?.nodeType === 'expr') return null;
     if (patchiesContext?.nodeType === 'msg') return null;
 
-    // Check for member completions (fft()., kv., clock., settings.)
+    // Check for member completions (fft()., vfs.get()., kv., clock., settings.)
     const fftMemberMatch = context.matchBefore(/fft\(\)\.\w*/);
 
     if (fftMemberMatch) {
@@ -1286,6 +1324,23 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
 
       return {
         from: fftMemberMatch.from + 'fft().'.length,
+        options: partial
+          ? methods.filter((method) => method.label.toLowerCase().startsWith(partial))
+          : methods
+      };
+    }
+
+    const vfsFileMemberMatch = context.matchBefore(/vfs\.get\([^)]*\)\.\w*/);
+
+    if (vfsFileMemberMatch) {
+      if (!isCompletionAllowedForNode({ label: 'vfs' }, patchiesContext)) return null;
+
+      const dotIndex = vfsFileMemberMatch.text.lastIndexOf('.');
+      const partial = vfsFileMemberMatch.text.slice(dotIndex + 1).toLowerCase();
+      const methods = memberCompletions.vfsFile;
+
+      return {
+        from: vfsFileMemberMatch.from + dotIndex + 1,
         options: partial
           ? methods.filter((method) => method.label.toLowerCase().startsWith(partial))
           : methods
