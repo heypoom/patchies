@@ -56,17 +56,18 @@
   import PatchFileEditorView from './PatchFileEditorView.svelte';
   import UnsavedPatchFileDialog from './UnsavedPatchFileDialog.svelte';
   import {
-    PatchFileEditorSession,
+    getPatchFileEditorSession,
     type UnsavedChangesDecision
   } from '$lib/vfs/PatchFileEditorSession';
   import { registerUnsavedChangesGuard } from '$lib/vfs/file-editor-navigation';
-  import { isEditablePatchGlslPath } from '$lib/glsl-include/vfs-paths';
+  import { isEditablePatchCodePath } from '$lib/vfs/patch-file-editor';
   import {
     getExpandedChildDirectories,
     getExpandedLinkedFolderPathsToLoad,
     type LinkedFolderItem
   } from './file-tree-linked-folders';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import { getPatchRuntime } from '$lib/runtime';
 
   interface TreeNode {
     name: string;
@@ -78,7 +79,8 @@
 
   const vfs = VirtualFilesystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
-  const editorSession = new PatchFileEditorSession(vfs);
+  let editorSession = getPatchFileEditorSession(vfs);
+  const patchRuntime = getPatchRuntime();
 
   // Reactive store of VFS entries
   const vfsEntries = vfs.entries$;
@@ -202,10 +204,10 @@
   }
 
   async function openEditor(path: string) {
-    if (!isEditablePatchGlslPath(path)) return;
+    if (!isEditablePatchCodePath(path)) return;
 
     await requestEditorNavigation(() => {
-      editorSession.open(path);
+      editorSession = getPatchFileEditorSession(vfs, path);
       refreshEditor();
     });
   }
@@ -268,6 +270,8 @@
       eventBus.removeEventListener('vfsPathRenamed', renameListener);
     };
   });
+
+  $effect(() => editorSession.subscribe(refreshEditor));
 
   onDestroy(() => {
     unregisterNavigationGuard?.();
@@ -580,6 +584,7 @@
     if (selectedPaths.size === 0) return;
 
     const paths = [...selectedPaths].filter((path) => vfs.has(path));
+    if (!confirmModuleDependentMutation(paths, 'Delete')) return;
 
     try {
       if (paths.length > 0) vfs.deletePaths(paths);
@@ -589,6 +594,26 @@
       selectedPaths.clear();
       lastSelectedPath = null;
     }
+  }
+
+  function confirmModuleDependentMutation(paths: string[], action: 'Delete' | 'Rename'): boolean {
+    if (!patchRuntime) return true;
+
+    const modulePaths = [...vfs.getAllEntries().keys()].filter(
+      (candidate) =>
+        /^(?:patch|user):\/\/.+\.(?:js|mjs)$/.test(candidate) &&
+        paths.some((path) => candidate === path || candidate.startsWith(`${path}/`))
+    );
+    const dependentNodeIds = new Set(
+      modulePaths.flatMap((path) => patchRuntime.getModuleDependentNodeIds(path))
+    );
+    if (dependentNodeIds.size === 0) return true;
+
+    const noun = dependentNodeIds.size === 1 ? 'object imports' : 'objects import';
+
+    return confirm(
+      `${action} this path? ${dependentNodeIds.size} ${noun} its JavaScript modules and may stop working.`
+    );
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -1000,8 +1025,8 @@
       const parent = showFileInput.endsWith('/') ? showFileInput : `${showFileInput}/`;
       const path = `${parent}${fileInputValue.trim()}`;
 
-      if (!isEditablePatchGlslPath(path)) {
-        toast.error('New Patch files must use a supported GLSL extension');
+      if (!isEditablePatchCodePath(path)) {
+        toast.error('New Patch files must use a supported JavaScript or GLSL extension');
         return;
       }
 
@@ -1086,6 +1111,8 @@
         const entry = vfs.getEntry(oldPath);
 
         if (entry) {
+          if (!confirmModuleDependentMutation([oldPath], 'Rename')) return;
+
           try {
             vfs.renamePath(oldPath, newPath);
           } catch (error) {
@@ -1133,6 +1160,8 @@
 
   async function handleDeleteFromContextMenu(path: string) {
     const deletePath = () => {
+      if (!confirmModuleDependentMutation([path], 'Delete')) return;
+
       vfs.deletePath(path);
       if (editorSession.path === path) editorSession.close();
       refreshEditor();
@@ -1504,7 +1533,7 @@
             draggable={isDraggable ? 'true' : 'false'}
             ondragstart={(e) => isDraggable && handleDragStart(e, node)}
             ondblclick={() =>
-              node.path && isEditablePatchGlslPath(node.path) && openEditor(node.path)}
+              node.path && isEditablePatchCodePath(node.path) && openEditor(node.path)}
             onclick={async (e) => {
               if (isRenaming) return;
 
@@ -1715,7 +1744,7 @@
 
       {#if showContextMenu}
         <ContextMenu.Content>
-          {#if node.path && isEditablePatchGlslPath(node.path)}
+          {#if node.path && isEditablePatchCodePath(node.path)}
             <ContextMenu.Item onclick={() => openEditor(node.path!)}>
               <FileCode class="mr-2 h-4 w-4" />
               Edit
@@ -1845,6 +1874,8 @@
       editorSession.updateDraft(content);
       refreshEditor();
     }}
+    onundo={() => editorSession.undoDraft()}
+    onredo={() => editorSession.redoDraft()}
     onback={closeEditor}
     onsave={saveEditor}
     onrename={() => handleRenameClick(editorPath, editorPath.split('/').pop() ?? '')}
@@ -1888,7 +1919,7 @@
               <button
                 class="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 py-1 pl-2 text-left text-xs"
                 draggable="true"
-                ondblclick={() => isEditablePatchGlslPath(result.path) && openEditor(result.path)}
+                ondblclick={() => isEditablePatchCodePath(result.path) && openEditor(result.path)}
                 ondragstart={(e) => {
                   e.dataTransfer?.setData('application/x-vfs-path', result.path);
                   e.dataTransfer?.setData('text/plain', result.path);
@@ -1919,7 +1950,7 @@
 
                 <span class="truncate font-mono text-zinc-300">{result.name}</span>
               </button>
-              {#if isEditablePatchGlslPath(result.path)}
+              {#if isEditablePatchCodePath(result.path)}
                 <button
                   class="mr-1 cursor-pointer rounded p-1 text-zinc-500 opacity-100 hover:bg-zinc-700 hover:text-zinc-200 sm:opacity-0 sm:group-hover:opacity-100"
                   onclick={() => openEditor(result.path)}
@@ -1948,7 +1979,7 @@
           {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
         </span>
 
-        {#if isEditablePatchGlslPath(selectedFilePath)}
+        {#if isEditablePatchCodePath(selectedFilePath)}
           <button
             class="flex cursor-pointer items-center gap-1.5 rounded bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600"
             onclick={() => openEditor(selectedFilePath)}

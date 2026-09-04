@@ -135,6 +135,8 @@
     onrun = () => {},
     onsave,
     onchange = () => {},
+    onundo,
+    onredo,
     oncommit,
     nodeId,
     dataKey = 'code',
@@ -156,6 +158,8 @@
     onrun?: (code?: string) => void;
     onsave?: () => void;
     onchange?: (code: string) => void;
+    onundo?: () => boolean;
+    onredo?: () => boolean;
 
     /** Called on blur if value changed since focus. For undo/redo tracking. */
     oncommit?: (detail: { oldValue: string; newValue: string }) => void;
@@ -314,6 +318,18 @@
 
                 return true;
               }
+            },
+            {
+              key: 'Mod-z',
+              run: () => onundo?.() ?? false
+            },
+            {
+              key: 'Mod-Shift-z',
+              run: () => onredo?.() ?? false
+            },
+            {
+              key: 'Mod-y',
+              run: () => onredo?.() ?? false
             },
             {
               key: 'Tab',

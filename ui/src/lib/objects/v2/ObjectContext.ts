@@ -10,7 +10,6 @@ type DataChangeCallback = (data: Record<string, unknown>, updates: Record<string
 
 export type ObjectContextOptions = {
   subscribeGraph?: (query: GraphChangeQuery, callback: GraphChangeCallback) => () => void;
-  rerunLibraryDependents?: (sourceNodeId: string, libraryName: string) => void;
 };
 
 /**
@@ -74,10 +73,6 @@ export class ObjectContext {
 
   subscribeGraph(query: GraphChangeQuery, callback: GraphChangeCallback): (() => void) | null {
     return this.options.subscribeGraph?.(query, callback) ?? null;
-  }
-
-  rerunLibraryDependents(sourceNodeId: string, libraryName: string): void {
-    this.options.rerunLibraryDependents?.(sourceNodeId, libraryName);
   }
 
   /**

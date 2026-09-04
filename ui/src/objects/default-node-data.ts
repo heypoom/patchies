@@ -62,6 +62,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       allowResize: true
     }))
     .with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
+    .with('js.module', () => ({ vfsPath: '' }))
     .with('python', () => ({ code: DEFAULT_PYTHON_CODE, showConsole: true }))
     .with('peppermint', () => ({ code: DEFAULT_PEPPERMINT_CODE, showConsole: true }))
     .with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))

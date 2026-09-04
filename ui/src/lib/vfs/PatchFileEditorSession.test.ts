@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HistoryManager } from '$lib/history';
-import { PatchFileEditorSession, isEditorSaveShortcut } from './PatchFileEditorSession';
+import {
+  PatchFileEditorSession,
+  getPatchFileEditorSession,
+  isEditorSaveShortcut
+} from './PatchFileEditorSession';
 import { VirtualFilesystem } from './VirtualFilesystem';
 
 describe('PatchFileEditorSession', () => {
@@ -51,11 +55,53 @@ describe('PatchFileEditorSession', () => {
     expect(isEditorSaveShortcut({ key: 's', metaKey: false, ctrlKey: false })).toBe(false);
   });
 
-  it('keeps JavaScript and User GLSL files read-only in Stage 2', () => {
+  it('opens Patch JavaScript modules while keeping User files read-only', () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.createEmbeddedFile('patch://module.js', 'export {}');
 
     const session = new PatchFileEditorSession(vfs);
-    expect(() => session.open('patch://module.js')).toThrow('not editable');
+    session.open('patch://module.js');
+
+    expect(session.path).toBe('patch://module.js');
+    expect(() => session.open('user://module.js')).toThrow('not editable');
+  });
+
+  it('reopens a cached Patch editor session after returning to the file tree', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://module.js', 'export {}');
+
+    const firstOpen = getPatchFileEditorSession(vfs, 'patch://module.js');
+    firstOpen.close();
+
+    const reopened = getPatchFileEditorSession(vfs, 'patch://module.js');
+
+    expect(reopened).toBe(firstOpen);
+    expect(reopened.path).toBe('patch://module.js');
+    expect(reopened.draft).toBe('export {}');
+  });
+
+  it('shares a JavaScript module draft and its undo history across editor views', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://module.js', 'export const value = 1');
+
+    const filesSession = getPatchFileEditorSession(vfs);
+    filesSession.open('patch://module.js');
+    const mirrorSession = getPatchFileEditorSession(vfs, 'patch://module.js');
+    const changes = vi.fn();
+    const unsubscribe = mirrorSession.subscribe(changes);
+
+    expect(mirrorSession).toBe(filesSession);
+
+    filesSession.updateDraft('export const value = 2');
+    expect(mirrorSession.draft).toBe('export const value = 2');
+    expect(changes).toHaveBeenCalledTimes(1);
+
+    expect(mirrorSession.undoDraft()).toBe(true);
+    expect(filesSession.draft).toBe('export const value = 1');
+
+    expect(filesSession.redoDraft()).toBe(true);
+    expect(mirrorSession.draft).toBe('export const value = 2');
+
+    unsubscribe();
   });
 });

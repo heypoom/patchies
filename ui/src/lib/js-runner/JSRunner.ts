@@ -1,4 +1,4 @@
-import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
+import { getImportedModuleNames, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { opencv } from './opencv';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { profiler, typeFromNodeId } from '$lib/profiler';
@@ -11,6 +11,9 @@ import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler, type ClockState } from '$lib/transport/ClockScheduler';
 import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 import type { GraphChangeCallback, GraphChangeQuery } from '$lib/runtime/services/GraphObserver';
+import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
+import { isEmbeddedVFSEntry } from '$lib/vfs/types';
+import { JSModuleResolver } from './JSModuleResolver';
 
 import type { FBOFormat } from '$lib/rendering/types';
 import type { createLLMFunction } from '$lib/ai/google';
@@ -42,8 +45,6 @@ export interface JSRunnerOptions {
   onSchedulerCallbackRegistered?: () => void;
 }
 
-const SET_JS_LIBRARY_CODE_DEBOUNCE = 500;
-
 /**
  * If we are using the no message context execution mode,
  * e.g. `filter` object, some methods will not be available.
@@ -64,17 +65,26 @@ export class JSRunner {
 
   public moduleProviderUrl = `https://esm.sh/`;
   public modules: Map<string, string> = new Map();
+  public moduleResolver = new JSModuleResolver(this.modules);
 
   private messageContextMap: Map<string, MessageContext> = new Map();
   private lookaheadClockSchedulerMap: Map<string, LookaheadClockScheduler> = new Map();
 
-  /** Avoid collision caused by multiple nodes having same library names. */
-  private libraryNamesByNode: Map<string, string> = new Map();
-
   private sendToRenderWorker?: (moduleName: string, code: string | null) => void;
   private sendToRenderWorkerSlow?: (moduleName: string, code: string | null) => void;
+  private moduleListeners = new Set<(moduleName: string, code: string | null) => void>();
+
+  constructor() {
+    this.moduleResolver.setVfsModuleLoader(async (path) => {
+      const blob = await VirtualFilesystem.getInstance().resolve(path);
+
+      return blob.text();
+    });
+  }
 
   async gen(inputName: string): Promise<string> {
+    await this.prepareModuleGraph(inputName);
+
     try {
       const { rollup } = await import('@rollup/browser');
 
@@ -101,9 +111,14 @@ export class JSRunner {
 
                     const key = `${importSource}!!${localName}!!${isDefault ? 'default' : 'named'}`;
 
-                    // import sources must start with 'npm'
-                    if (typeof importSource !== 'string' || !importSource.startsWith('npm:'))
+                    if (
+                      typeof importSource !== 'string' ||
+                      (!importSource.startsWith('npm:') &&
+                        !importSource.startsWith('http://') &&
+                        !importSource.startsWith('https://'))
+                    ) {
                       continue;
+                    }
 
                     importMappings.set(key, {
                       source: importSource,
@@ -114,15 +129,19 @@ export class JSRunner {
                 }
               }
             },
-            resolveId: (source) => {
-              if (this.modules.has(source)) {
-                return source;
-              }
+            resolveId: async (source, importer) => {
+              if (!importer && source === inputName) return source;
+
+              const resolved = await this.moduleResolver.resolve(
+                source,
+                importer ?? inputName,
+                inputName
+              );
+
+              return resolved.external ? { id: resolved.id, external: true } : resolved.id;
             },
             load: async (id) => {
-              if (this.modules.has(id)) {
-                return this.modules.get(id);
-              }
+              return this.moduleResolver.load(id, inputName);
             },
             renderChunk(code) {
               let transformedCode = code;
@@ -149,7 +168,9 @@ export class JSRunner {
               // Process each source once
               for (const [source, { namedImports, defaultImport }] of importsBySource) {
                 const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const packageName = source.replace('npm:', '');
+                const importExpression = source.startsWith('npm:')
+                  ? `esm('${source.replace('npm:', '')}')`
+                  : `import('${source}')`;
 
                 // Match the entire import statement for this source
                 const importRegex = new RegExp(
@@ -165,13 +186,13 @@ export class JSRunner {
 
                   if (defaultImport) {
                     replacements.push(
-                      `const ${defaultImport} = (await esm('${packageName}')).default`
+                      `const ${defaultImport} = (await ${importExpression}).default`
                     );
                   }
 
                   if (namedImports.length > 0) {
                     replacements.push(
-                      `const { ${namedImports.join(', ')} } = await esm('${packageName}')`
+                      `const { ${namedImports.join(', ')} } = await ${importExpression}`
                     );
                   }
 
@@ -182,10 +203,9 @@ export class JSRunner {
                 }
 
                 // Process side effect imports
-                transformedCode = transformedCode.replace(
-                  `import '${source}'`,
-                  `await esm('${packageName}')`
-                );
+                transformedCode = transformedCode
+                  .replace(`import '${source}'`, `await ${importExpression}`)
+                  .replace(`import "${source}"`, `await ${importExpression}`);
               }
 
               return transformedCode;
@@ -199,76 +219,38 @@ export class JSRunner {
       return output[0].code;
     } catch (error) {
       console.warn('rollup bundling error', error);
-    }
 
-    return '';
-  }
-
-  /** Wait for module dependencies to be available */
-  private async waitForDependencies(code: string, maxWait = 5000): Promise<void> {
-    const importRegex = /import\s+(?:[\w\s{},*]+\s+from\s+)?['"]([^'"]+)['"]/g;
-    const dependencies = new Set<string>();
-    let match;
-
-    // Extract all import statements
-    while ((match = importRegex.exec(code)) !== null) {
-      const moduleName = match[1];
-
-      if (!moduleName.startsWith('npm:') && !moduleName.startsWith('http')) {
-        dependencies.add(moduleName);
-      }
-    }
-
-    const startTime = Date.now();
-
-    // wait for all dependencies to be available.
-    for (const dependency of dependencies) {
-      while (!this.modules.has(dependency)) {
-        if (Date.now() - startTime > maxWait) {
-          console.warn(`dependency '${dependency}' not found within ${maxWait}ms`);
-          break;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
+      throw error;
     }
   }
 
-  async preprocessCode(
-    code: string,
-    options: {
-      nodeId: string;
-      setLibraryName?: (name: string | null) => void;
-    }
-  ): Promise<string | null> {
-    const { nodeId, setLibraryName } = options;
+  private async prepareModuleGraph(inputName: string): Promise<void> {
+    const visited = new Set<string>();
 
-    // Wait for module dependencies first
-    await this.waitForDependencies(code);
+    const visit = async (moduleName: string): Promise<void> => {
+      if (visited.has(moduleName)) return;
+
+      visited.add(moduleName);
+
+      const code = await this.moduleResolver.load(moduleName, inputName);
+      if (code === null) return;
+
+      for (const specifier of getImportedModuleNames(code)) {
+        const resolved = await this.moduleResolver.resolve(specifier, moduleName, inputName);
+        if (!resolved.external) await visit(resolved.id);
+      }
+    };
+
+    await visit(inputName);
+  }
+
+  async preprocessCode(code: string, options: { nodeId: string }): Promise<string> {
+    const { nodeId } = options;
 
     const isModule = isSnippetModule(code);
 
     if (isModule) {
       const moduleName = getModuleNameByNode(nodeId);
-
-      // If the module is tagged as `@lib <lib-name>`
-      const libName = getLibName(code);
-
-      if (libName) {
-        await this.setLibraryCode(nodeId, code, { syncImmediately: true });
-        setLibraryName?.(libName);
-
-        return null;
-      }
-
-      // Un-register library (if any)
-      const previousLibName = this.libraryNamesByNode.get(nodeId);
-      if (previousLibName) {
-        this.libraryNamesByNode.delete(nodeId);
-        this.setModuleAndSync(previousLibName, null);
-      }
-
-      setLibraryName?.(null);
 
       this.setModuleAndSync(moduleName, code);
 
@@ -276,6 +258,15 @@ export class JSRunner {
     }
 
     return code;
+  }
+
+  /** Bundle a registered Patch module without creating a node-owned runtime. */
+  async validatePatchModule(path: string): Promise<void> {
+    if (!path.startsWith('patch://')) {
+      throw new Error(`Only Patch modules can be validated: ${path}`);
+    }
+
+    await this.gen(path);
   }
 
   getMessageContext(nodeId: string): MessageContext {
@@ -321,13 +312,6 @@ export class JSRunner {
   }
 
   destroy(nodeId: string): void {
-    const libraryName = this.libraryNamesByNode.get(nodeId);
-
-    if (libraryName) {
-      this.libraryNamesByNode.delete(nodeId);
-      this.setModuleAndSync(libraryName, null);
-    }
-
     // Destroy context before removing from map (runs cleanup callbacks)
     const context = this.messageContextMap.get(nodeId);
     if (context) {
@@ -574,45 +558,72 @@ export class JSRunner {
     return userFunction(...functionArgs);
   }
 
-  async setLibraryCode(
-    nodeId: string,
-    code: string,
-    { syncImmediately = false }: { syncImmediately?: boolean } = {}
-  ) {
-    const libName = getLibName(code);
-    if (!libName) return;
-
-    this.libraryNamesByNode.set(nodeId, libName);
-    this.modules.set(libName, code);
-
-    await this.ensureRenderWorker();
-
-    if (syncImmediately) {
-      this.sendToRenderWorker?.(libName, code);
-    } else {
-      this.sendToRenderWorkerSlow?.(libName, code);
-    }
-  }
-
-  private setModuleAndSync(moduleName: string, code: string | null) {
+  setModuleAndSync(moduleName: string, code: string | null): void {
     if (code === null) {
       this.modules.delete(moduleName);
     } else {
       this.modules.set(moduleName, code);
     }
 
+    this.notifyModuleChanged(moduleName, code);
+  }
+
+  setVfsModuleLoader(loader: (path: string, importerId: string) => Promise<string>): void {
+    this.moduleResolver.setVfsModuleLoader(loader);
+  }
+
+  async syncPatchModules(vfs: VirtualFilesystem = VirtualFilesystem.getInstance()): Promise<void> {
+    const nextModules = new Map(
+      [...vfs.getAllEntries()].flatMap(([path, entry]) =>
+        isEmbeddedVFSEntry(entry) && /\.(?:js|mjs)$/.test(path)
+          ? [[path, entry.content] as const]
+          : []
+      )
+    );
+
+    for (const moduleName of [...this.modules.keys()]) {
+      if (moduleName.startsWith('patch://') && !nextModules.has(moduleName)) {
+        this.setModuleAndSync(moduleName, null);
+      }
+    }
+
+    for (const [moduleName, code] of nextModules) {
+      this.setModuleAndSync(moduleName, code);
+    }
+
+    await this.ensureRenderWorker();
+  }
+
+  subscribeModules(listener: (moduleName: string, code: string | null) => void): () => void {
+    this.moduleListeners.add(listener);
+
+    for (const [moduleName, code] of this.modules) listener(moduleName, code);
+
+    return () => this.moduleListeners.delete(listener);
+  }
+
+  private notifyModuleChanged(moduleName: string, code: string | null): void {
     this.sendToRenderWorker?.(moduleName, code);
+    this.notifyModuleListeners(moduleName, code);
+  }
+
+  private notifyModuleListeners(moduleName: string, code: string | null): void {
+    for (const listener of this.moduleListeners) listener(moduleName, code);
   }
 
   async ensureRenderWorker() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || this.sendToRenderWorker) return;
 
     const { GLSystem } = await import('../canvas/GLSystem');
 
     this.sendToRenderWorker = (moduleName: string, code: string | null) =>
       GLSystem.getInstance().send('updateJSModule', { moduleName, code });
 
-    this.sendToRenderWorkerSlow = debounce(this.sendToRenderWorker, SET_JS_LIBRARY_CODE_DEBOUNCE);
+    this.sendToRenderWorkerSlow = debounce(this.sendToRenderWorker, 500);
+
+    for (const [moduleName, code] of this.modules) {
+      this.sendToRenderWorker(moduleName, code);
+    }
   }
 
   public static getInstance(): JSRunner {

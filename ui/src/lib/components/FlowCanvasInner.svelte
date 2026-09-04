@@ -121,6 +121,7 @@
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
+  import { VfsCanvasMirrors } from '$lib/vfs/VfsCanvasMirrors';
   import { canNavigateAwayFromPatchFile } from '$lib/vfs/file-editor-navigation';
 
   import {
@@ -160,6 +161,7 @@
   // Initial nodes and edges
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
+  let unregisterCanvasMirrors: (() => void) | null = null;
 
   const runtimeServices = createDefaultRuntimeServices();
   const { glSystem, audioService, eventBus } = runtimeServices;
@@ -192,7 +194,6 @@
   // Event handlers for nodeOps (stored as variables for proper cleanup)
   const handleNodeReplace = (e: NodeReplaceEvent) => nodeOps.replaceNode(e);
   const handleVfsPathRenamed = (e: VfsPathRenamedEvent) => nodeOps.handleVfsPathRenamed(e);
-
   // Event handler for code commit (undo tracking)
   const handleCodeCommit = (e: CodeCommitEvent) => {
     historyManager.record(
@@ -932,6 +933,10 @@
 
     eventBus.addEventListener('nodeReplace', handleNodeReplace);
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
+    unregisterCanvasMirrors = VfsCanvasMirrors.register({
+      getNodes: () => nodes,
+      setNodes: (nextNodes) => (nodes = nextNodes)
+    });
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.addEventListener('insertSampleToCanvas', handleInsertSample);
@@ -965,6 +970,7 @@
 
     eventBus.removeEventListener('nodeReplace', handleNodeReplace);
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
+    unregisterCanvasMirrors?.();
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.removeEventListener('insertSampleToCanvas', handleInsertSample);
@@ -1046,7 +1052,17 @@
       dragDropManager = new CanvasDragDropManager({
         screenToFlowPosition,
         createNode: (...args) => nodeOps.createNode(...args),
-        createNodeFromName: (...args) => nodeOps.createNodeFromName(...args)
+        createNodeFromName: (...args) => nodeOps.createNodeFromName(...args),
+        focusModuleMirror: (path) => {
+          const mirror = nodes.find(
+            (node) => node.type === 'js.module' && node.data.vfsPath === path
+          );
+
+          if (!mirror) return false;
+
+          nodes = nodes.map((node) => ({ ...node, selected: node.id === mirror.id }));
+          return true;
+        }
       });
     }
 

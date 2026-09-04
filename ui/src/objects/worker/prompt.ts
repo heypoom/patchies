@@ -11,8 +11,7 @@ ${runOnMountInstructions}
 **Worker-specific gotchas:**
 - requestAnimationFrame uses 60fps setInterval fallback (no DOM in workers)
 - fft() is NOT available (no main-thread audio access)
-- No \`// @lib\` declaration (cannot create libraries, but CAN import them)
-- Libraries created with \`// @lib\` in regular \`js\` nodes can be imported here
+- Import shared code from Patch JavaScript files with their Patch-root path or patch:// path
 - onVideoFrame(callback, { resolution?, fps?, format? }) captures connected video inlets
   - format defaults to 'raw': frames are { data: Uint8ClampedArray, width, height }, ready for cv.matFromImageData()
   - use format: 'bitmap' only for Canvas APIs, then call frame.close() after use

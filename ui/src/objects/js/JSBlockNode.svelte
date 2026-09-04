@@ -17,7 +17,6 @@
       runOnMount?: boolean;
       inletCount?: number;
       outletCount?: number;
-      libraryName?: string | null;
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
@@ -62,7 +61,6 @@
   isMessageCallbackActive={data.isMessageCallbackActive === true}
   isTimerCallbackActive={data.isTimerCallbackActive === true ||
     data.isGraphSubscriptionActive === true}
-  supportsLibraries={true}
   nodeLabel="js"
   language="javascript"
   editorPlaceholder="Write your JavaScript code here..."

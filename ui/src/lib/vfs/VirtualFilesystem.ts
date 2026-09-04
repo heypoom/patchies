@@ -25,6 +25,8 @@ import { VfsEntryIndex, type VfsRenameMove } from './VfsEntryIndex';
 import { VfsMutationCoordinator, type VfsMutationSnapshot } from './VfsMutationCoordinator';
 import { VfsPermissionTracker } from './VfsPermissionTracker';
 import { VfsTreeCodec } from './VfsTreeCodec';
+import { VfsCanvasMirrors } from './VfsCanvasMirrors';
+import { getJavaScriptModuleSpecifiers } from '$lib/js-runner/js-module-utils';
 
 export {
   MAX_EMBEDDED_FILE_BYTES,
@@ -293,6 +295,22 @@ export class VirtualFilesystem {
 
   renamePath(oldPath: string, newPath: string): void {
     const plan = this.entries.planRename(oldPath, newPath);
+    const renamedPaths = new Map(plan.moves.map((move) => [move.oldPath, move.newPath]));
+    const mirrorsBefore = VfsCanvasMirrors.snapshot();
+    const rewrittenModules = new Map<string, string>();
+
+    for (const [path, entry] of this.entries) {
+      if (!isEmbeddedVFSEntry(entry) || !/\.m?js$/.test(path)) continue;
+
+      const nextPath = renamedPaths.get(path) ?? path;
+      const content = rewriteJavaScriptModuleSpecifiers(
+        entry.content,
+        path,
+        nextPath,
+        renamedPaths
+      );
+      if (content !== entry.content) rewrittenModules.set(nextPath, content);
+    }
 
     const persist = (direction: 'forward' | 'backward') =>
       this.queuePersistedRename(plan.moves, direction);
@@ -303,16 +321,33 @@ export class VirtualFilesystem {
       `Rename ${oldPath.split('/').pop()}`,
       () => {
         this.entries.applyRename(plan);
+        VfsCanvasMirrors.rename(renamedPaths);
+
+        for (const [path, content] of rewrittenModules) {
+          const entry = this.entries.get(path);
+          if (!entry || !isEmbeddedVFSEntry(entry)) continue;
+
+          this.entries.set(path, {
+            ...entry,
+            content,
+            size: new TextEncoder().encode(content).byteLength,
+            revision: (entry.revision ?? 0) + 1
+          } as typeof entry);
+          this.emitContentModified(path, (entry.revision ?? 0) + 1);
+        }
+
         persist('forward');
         this.notifyChange();
         emit('forward');
       },
       {
         redo: () => {
+          VfsCanvasMirrors.rename(renamedPaths);
           persist('forward');
           emit('forward');
         },
         undo: () => {
+          VfsCanvasMirrors.restore(mirrorsBefore);
           persist('backward');
           emit('backward');
         }
@@ -327,6 +362,7 @@ export class VirtualFilesystem {
   deletePaths(requestedPaths: Iterable<string>): void {
     const plan = this.entries.planDelete(requestedPaths);
     if (plan.paths.length === 0) return;
+    const mirrorsBefore = VfsCanvasMirrors.snapshot();
 
     const deletedEmbeddedFiles = plan.paths.flatMap((path) => {
       const entry = this.entries.get(path);
@@ -360,6 +396,7 @@ export class VirtualFilesystem {
         ? `Delete ${plan.roots[0].split('/').pop()}`
         : `Delete ${plan.roots.length} paths`,
       () => {
+        VfsCanvasMirrors.remove(new Set(plan.paths));
         this.entries.removePaths(plan.paths);
         this.permissions.deleteAll(plan.paths);
         setLinkedFoldersDeleted(true);
@@ -370,8 +407,14 @@ export class VirtualFilesystem {
         }
       },
       {
-        redo: () => setLinkedFoldersDeleted(true),
-        undo: () => setLinkedFoldersDeleted(false)
+        redo: () => {
+          VfsCanvasMirrors.remove(new Set(plan.paths));
+          setLinkedFoldersDeleted(true);
+        },
+        undo: () => {
+          VfsCanvasMirrors.restore(mirrorsBefore);
+          setLinkedFoldersDeleted(false);
+        }
       }
     );
   }
@@ -698,3 +741,95 @@ export class VirtualFilesystem {
     });
   }
 }
+
+const withJavaScriptExtension = (path: string): string =>
+  /\.m?js$/.test(path) ? path : `${path}.js`;
+
+const relativePath = (from: string, to: string): string => {
+  const fromParts = from
+    .replace(/^[a-z]+:\/\//, '')
+    .split('/')
+    .slice(0, -1);
+  const toParts = to.replace(/^[a-z]+:\/\//, '').split('/');
+
+  while (fromParts[0] && fromParts[0] === toParts[0]) {
+    fromParts.shift();
+    toParts.shift();
+  }
+
+  const prefix = fromParts.map(() => '..');
+  const result = [...prefix, ...toParts].join('/');
+
+  return result.startsWith('.') ? result : `./${result}`;
+};
+
+const resolveModuleSpecifier = (specifier: string, importer: string): string | null => {
+  if (specifier.startsWith('patch://')) return withJavaScriptExtension(specifier);
+  if (
+    specifier.startsWith('user://') ||
+    specifier.startsWith('npm:') ||
+    /^https?:\/\//.test(specifier)
+  ) {
+    return null;
+  }
+
+  if (specifier.startsWith('./') || specifier.startsWith('../')) {
+    const [namespace, rest] = importer.split('://');
+    const parts = rest.split('/').slice(0, -1);
+
+    for (const part of specifier.split('/')) {
+      if (!part || part === '.') continue;
+      if (part === '..') parts.pop();
+      else parts.push(part);
+    }
+
+    return `${namespace}://${withJavaScriptExtension(parts.join('/'))}`;
+  }
+
+  if (
+    specifier.includes('\\') ||
+    specifier.startsWith('/') ||
+    specifier.split('/').some((part) => !part || part === '.' || part === '..')
+  ) {
+    return null;
+  }
+
+  return `patch://${withJavaScriptExtension(specifier)}`;
+};
+
+const rewriteJavaScriptModuleSpecifiers = (
+  content: string,
+  oldImporter: string,
+  newImporter: string,
+  renamedPaths: ReadonlyMap<string, string>
+): string => {
+  const replacements = getJavaScriptModuleSpecifiers(content)
+    .map(({ specifier, start, end }) => {
+      const resolved = resolveModuleSpecifier(specifier, oldImporter);
+      const renamed = resolved && renamedPaths.get(resolved);
+      if (!renamed) return null;
+
+      if (specifier.startsWith('patch://')) return { start, end, value: renamed };
+      if (specifier.startsWith('./') || specifier.startsWith('../')) {
+        const relative = relativePath(newImporter, renamed);
+        const hadExtension = /\.m?js$/.test(specifier);
+
+        return { start, end, value: hadExtension ? relative : relative.replace(/\.js$/, '') };
+      }
+
+      const root = renamed.slice('patch://'.length);
+      const hadExtension = /\.m?js$/.test(specifier);
+
+      return { start, end, value: hadExtension ? root : root.replace(/\.js$/, '') };
+    })
+    .filter(
+      (replacement): replacement is { start: number; end: number; value: string } => !!replacement
+    )
+    .sort((left, right) => right.start - left.start);
+
+  return replacements.reduce(
+    (nextContent, replacement) =>
+      `${nextContent.slice(0, replacement.start)}${replacement.value}${nextContent.slice(replacement.end)}`,
+    content
+  );
+};

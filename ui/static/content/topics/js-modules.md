@@ -25,28 +25,48 @@ const { uniq } = await esm("lodash-es");
 
 > **Note**: Patchies does not support `import * as X from "npm:..."`. Use named or default imports.
 
-## Shared Libraries
+## Patch Modules
 
-![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
+Patch modules are small JavaScript files stored with your patch. Use them for utilities that should travel with a saved or shared patch without taking up canvas space.
 
-This patch shows a shared JavaScript library.
+### Create and import a module
 
-Add the `// @lib <name>` comment at the top of a `js` object to make a library. Other `js` objects can import code from the library:
-
-```javascript
-// In a js object — add "// @lib utils" at the very top
-// @lib utils
-export const rand = (min, max) => Math.random() * (max - min) + min;
-export class Vector { /* ... */ }
-```
+1. Open **Files** and create `math.js` under **Patch**.
+2. Add an exported function, then save the file:
 
 ```javascript
-// In any other js object
-import { rand, Vector } from 'utils';
-console.log(rand(0, 10));
+export const double = (value) => value * 2;
 ```
 
-The library object shows a package icon in the patch. When you change it, Patchies runs all importers again.
+3. Import it from a `js` object:
+
+```javascript
+import { double } from "math";
+
+send(double(21)); // 42
+```
+
+You can organize modules in folders and use relative paths. A module resolves relative imports beside its own file:
+
+```javascript
+// patch://visual/camera.js
+import { clamp } from "../math.js";
+```
+
+Use a full VFS path when you want ownership to be explicit:
+
+```javascript
+import { camera } from "patch://visual/camera.js";
+import { sharedTool } from "user://scripts/shared-tool.js";
+```
+
+Only `.js` is inferred. Write the `.mjs` extension when importing an `.mjs` file.
+
+Saving a Patch module runs its direct and indirect importers again. An unsaved Files editor draft does not affect running objects.
+
+## Canvas scripts
+
+Canvas `js` objects execute scripts, but they are not importable modules. Create a Patch JavaScript file in **Files** to share code between nodes. You can drag a Patch `.js` or `.mjs` file to the canvas to create an editor-only mirror; it still has the file as its single source of truth.
 
 > **Note**: Top-level variables belong to one object. Each object has its own scope. Use message passing or named channels to send values between objects at runtime.
 

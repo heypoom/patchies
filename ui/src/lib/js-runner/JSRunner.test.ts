@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { JSRunner } from './JSRunner';
+import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
+import type { EmbeddedVFSEntry } from '$lib/vfs/types';
 
 describe('JSRunner', () => {
   const runner = new JSRunner();
@@ -19,5 +21,49 @@ describe('JSRunner', () => {
     });
 
     expect(setTags).toHaveBeenCalledWith(['shader/foo/function']);
+  });
+
+  it('fails missing imports before starting the bundler', async () => {
+    await expect(
+      runner.preprocessCode("import { value } from 'missing'; send(value)", { nodeId })
+    ).rejects.toMatchObject({
+      code: 'JS_MODULE_NOT_FOUND',
+      details: {
+        specifier: 'missing',
+        importer: `node-${nodeId}.js`,
+        attemptedPaths: ['patch://missing.js']
+      }
+    });
+  });
+
+  it('registers hydrated Patch modules and replays them to later environments', async () => {
+    VirtualFilesystem.resetInstance();
+    const vfs = VirtualFilesystem.getInstance();
+    const hydratedRunner = new JSRunner();
+
+    await vfs.hydrate({
+      patch: {
+        'utils.js': {
+          provider: 'embedded',
+          filename: 'utils.js',
+          content: 'export const value = 1'
+        } satisfies EmbeddedVFSEntry,
+        'shader.glsl': {
+          provider: 'embedded',
+          filename: 'shader.glsl',
+          content: 'float value = 1.0;'
+        } satisfies EmbeddedVFSEntry
+      }
+    });
+
+    await hydratedRunner.syncPatchModules(vfs);
+
+    const updates: Array<[string, string | null]> = [];
+    hydratedRunner.subscribeModules((moduleName, code) => updates.push([moduleName, code]));
+
+    expect(hydratedRunner.modules).toEqual(
+      new Map([['patch://utils.js', 'export const value = 1']])
+    );
+    expect(updates).toEqual([['patch://utils.js', 'export const value = 1']]);
   });
 });

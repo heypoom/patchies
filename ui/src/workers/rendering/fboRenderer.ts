@@ -43,6 +43,7 @@ import { ShaderRendererFactory } from './ShaderRendererFactory';
 import { buildRenderGraph } from './buildRenderGraph';
 import { FFTTextureStore } from './FFTTextureStore';
 import { renderFrame } from './renderFrame';
+import { resolveVfsText } from '$lib/glsl-include/vfs-resolver';
 
 interface ViewportCookCache {
   renderGraph: RenderGraph;
@@ -168,6 +169,10 @@ export class FBORenderer {
   private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
+    this.jsRunner.setVfsModuleLoader((path, requesterId) =>
+      resolveVfsText(requesterId.replace(/^node-(.*)\.js$/, '$1'), path)
+    );
+
     const [width, height] = this.outputSize;
 
     this.offscreenCanvas = new OffscreenCanvas(width, height);

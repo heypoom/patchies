@@ -101,7 +101,7 @@ export interface VFSProvider {
  *   }
  * }
  */
-export type VFSTreeNode = VFSEntry | { [key: string]: VFSTreeNode };
+export type VFSTreeNode = VFSEntry | EmbeddedVFSEntry | { [key: string]: VFSTreeNode };
 
 export interface VFSTree {
   patch?: {

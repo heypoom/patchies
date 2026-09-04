@@ -3,14 +3,14 @@ computations without blocking the main thread.
 
 Everything in the [Patchies JavaScript Runner](/docs/javascript-runner) is
 supported, except `requestAnimationFrame()` (uses 60fps setInterval as fallback)
-and `// @lib` declaration (libraries must be created in regular `js` nodes).
+and import shared code from Patch JavaScript files.
 
 ## Special Methods
 
 - **`setRunOnMount(true)`** - run the code automatically when created
 - **`flash()`** - briefly flash the node's border for visual feedback
 
-Libraries created with `// @lib` in a regular `js` node can be imported in
+Patch JavaScript files can be imported in
 `worker` nodes.
 
 ## OpenCV

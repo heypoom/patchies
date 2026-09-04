@@ -4,12 +4,15 @@
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { getPatchFileEditorLanguage } from '$lib/vfs/patch-file-editor';
 
   let {
     path,
     draft,
     dirty,
     onchange,
+    onundo,
+    onredo,
     onback,
     onsave,
     onrename,
@@ -21,6 +24,8 @@
     draft: string;
     dirty: boolean;
     onchange: (content: string) => void;
+    onundo: () => boolean;
+    onredo: () => boolean;
     onback: () => void;
     onsave: () => void;
     onrename: () => void;
@@ -35,6 +40,8 @@
 
   let menuOpen = $state(false);
   const displayPath = $derived(path.replace(/^patch:\/\//, ''));
+  const language = $derived(getPatchFileEditorLanguage(path));
+  const placeholder = $derived(language === 'glsl' ? GLSL_PLACEHOLDER : '');
 
   function runMenuAction(action: () => void) {
     menuOpen = false;
@@ -115,11 +122,13 @@
     <CodeEditor
       value={draft}
       {onchange}
+      {onundo}
+      {onredo}
       onrun={onsave}
       {onsave}
-      language="glsl"
-      nodeType="glsl"
-      placeholder={GLSL_PLACEHOLDER}
+      {language}
+      nodeType={language === 'javascript' ? 'js' : 'glsl'}
+      {placeholder}
       class="h-full w-full resize-none"
     />
   </div>

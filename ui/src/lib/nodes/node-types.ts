@@ -1,5 +1,6 @@
 import P5CanvasNode from '$objects/p5/P5CanvasNode.svelte';
 import JSBlockNode from '$objects/js/JSBlockNode.svelte';
+import JSModuleMirrorNode from '$objects/js/JSModuleMirrorNode.svelte';
 import HydraNode from '$objects/hydra/HydraNode.svelte';
 import JSCanvasNode from '$objects/canvas/JSCanvasNode.svelte';
 import TextmodeNode from '$objects/textmode/TextmodeNode.svelte';
@@ -134,6 +135,7 @@ export const nodeTypes: Record<string, any> = {
   msg: MessageNode,
   p5: P5CanvasNode,
   js: JSBlockNode,
+  'js.module': JSModuleMirrorNode,
   hydra: HydraNode,
   swgl: SwissGLNode,
   canvas: JSCanvasNode,

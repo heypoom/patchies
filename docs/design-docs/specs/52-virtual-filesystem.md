@@ -1,6 +1,6 @@
 # 52. Virtual Filesystem
 
-> Status: Implemented through Stage 2; Patch JavaScript modules planned for Stage 3
+> Status: Implemented through Stage 3; single VFS JavaScript module system and canvas mirrors planned
 
 I wanted the ability to persist, browse and resolve files in a virtual file system.
 
@@ -374,11 +374,11 @@ Patchies needs an explicit ownership boundary between files embedded in a patch 
 
 The VFS has three namespaces:
 
-| Namespace | Ownership | Persistence | Editing in the Files panel |
-| --- | --- | --- | --- |
-| `patch://` | Embedded in the current patch | Serialized under `files.patch` | Supported text files are editable |
-| `user://` | External or browser-local user resource | Handle, URL, or patch-scoped IndexedDB fallback | Read-only in the first editor release |
-| `obj://` | Object-owned resource | Runtime-only; rebuilt from object state | Not editable independently |
+| Namespace  | Ownership                               | Persistence                                     | Editing in the Files panel            |
+| ---------- | --------------------------------------- | ----------------------------------------------- | ------------------------------------- |
+| `patch://` | Embedded in the current patch           | Serialized under `files.patch`                  | Supported text files are editable     |
+| `user://`  | External or browser-local user resource | Handle, URL, or patch-scoped IndexedDB fallback | Read-only in the first editor release |
+| `obj://`   | Object-owned resource                   | Runtime-only; rebuilt from object state         | Not editable independently            |
 
 An embedded entry uses the `embedded` provider and stores UTF-8 text directly:
 
@@ -487,9 +487,9 @@ The existing user-code VFS API keeps its current defaults: `vfs.getUrl("./foo")`
 
 The Files panel continues to own user interaction such as asking whether to Replace, Keep Both, or Cancel. Browser `DataTransfer` traversal stays in a separate adapter. These modules report plans and outcomes; they do not depend on Svelte UI state.
 
-## Delivery Plan
+## Initial Delivery Plan
 
-Ship the feature in exactly three pull requests. Each pull request is a complete release point with its own user outcome and focused verification. Tests stay in the same commit as the behavior they verify; do not create preparatory commits containing only types or unused helpers.
+The initial feature shipped in exactly three pull requests. Each pull request is a complete release point with its own user outcome and focused verification. Tests stay in the same commit as the behavior they verify; do not create preparatory commits containing only types or unused helpers.
 
 ### Stage 1: Portable Patch Files
 
@@ -552,13 +552,15 @@ Release criterion: GLSL Patch-file authoring works end to end without depending 
 
 ### Stage 3: Patch JavaScript Editing and Modules
 
+Status: Implemented.
+
 Users can edit Patch JavaScript modules and import them in every JSRunner-backed environment.
 
 Scope:
 
 - enable `.js` and `.mjs` in the Patch editor with module-specific CodeMirror behavior;
 - centralize JS module resolution for Rollup, dependency readiness, workers, and dependent lookup;
-- preserve `// @lib` precedence and add top-level Patch fallback;
+- preserve the then-existing canvas-library precedence and add Patch-root fallback;
 - support standard relative and explicit VFS imports;
 - report structured missing-import errors promptly;
 - hydrate and register Patch modules before runtime execution;
@@ -569,11 +571,41 @@ Scope:
 
 Verification:
 
-1. Resolver tests cover `// @lib`, bare Patch fallback, relative, explicit Patch, explicit User, npm, and URL precedence.
+1. Resolver tests cover the then-existing canvas libraries, Patch-root fallback, relative, explicit Patch, explicit User, npm, and URL precedence.
 2. The same Patch module imports successfully in every JSRunner environment.
 3. Hydration completes before importer execution.
 4. Missing imports fail promptly with structured diagnostics rather than a dependency timeout or empty program.
 5. Alias, relative, explicit, and transitive dependencies rerun in dependency order exactly once.
-6. Existing `// @lib`, npm, URL, and `user://` behavior remains compatible.
+6. Existing canvas-library, npm, URL, and `user://` behavior remains compatible at the Stage 3 release point.
 
 Release criterion: JavaScript Patch modules work end to end with automatic synchronization and dependent reruns.
+
+### Follow-up: Single VFS JavaScript Module System
+
+Status: Planned.
+
+Patch JavaScript files become the only importable user modules. Inline `js` objects remain executable scripts, while an optional canvas object can mirror a Patch file for editing. Spec 121 owns the complete resolution, editing, file/mirror lifecycle, rename-rewrite, diagnostic, and undo contracts.
+
+Scope:
+
+- remove the canvas-library parser, registry, node-data mode, precedence, and source directive without migration or compatibility behavior;
+- resolve non-relative user module specifiers directly from canonical paths under `patch://`, including nested paths and `.js` inference;
+- keep NPM, URL, relative, and explicit VFS resolution unambiguous;
+- create one editor-only canvas mirror when a Patch `.js` or `.mjs` file is dragged onto the canvas;
+- share one draft, dirty state, conflict guard, CodeMirror history, and committed revision between Files and a canvas mirror;
+- use Save or Run to commit through the existing Patch-file mutation contract and rerun direct and transitive dependents;
+- rewrite supported JavaScript module specifiers during atomic file and folder renames;
+- keep the canonical file when its mirror is deleted, and remove affected mirrors when files are deleted;
+- reject invalid paths, collisions, and incomplete rename staging without partial writes.
+
+Verification:
+
+1. Root and nested Patch shorthand resolve to canonical VFS modules without source declarations.
+2. File drops create at most one editor-only canvas mirror per Patch file.
+3. Canvas and Files share one guarded draft and commit through the same module revision.
+4. Save and Run synchronize and rerun direct and transitive consumers exactly once.
+5. Rename rewrites supported imports atomically, and deletion follows the asymmetric file/mirror lifecycle with exact undo and redo.
+6. The removed canvas-library mechanism has no remaining runtime or UI behavior.
+7. Invalid paths, collisions, and failed rename staging preserve all prior persisted state.
+
+Release criterion: Patch VFS files are the only user-module source, and optional canvas mirrors edit them without adding runtime identity or duplicate ownership.

@@ -13,7 +13,6 @@ import type { RuntimeObject } from '$lib/objects/v2/interfaces/text-objects';
 
 type JSObjectData = {
   code?: string;
-  libraryName?: string | null;
   runOnMount?: boolean;
   executeCode?: number;
   inletCount?: number;
@@ -63,7 +62,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     const data = this.context.getData<JSObjectData>();
     this.lastExecuteCode = data.executeCode;
 
-    if (data.runOnMount || data.libraryName) {
+    if (data.runOnMount) {
       await this.execute();
     }
   }
@@ -113,10 +112,10 @@ export class JSObject implements RuntimeObject<JSObjectData> {
   }
 
   async runAsLibraryDependent(): Promise<void> {
-    await this.execute({ rerunLibraryDependents: false });
+    await this.execute();
   }
 
-  private async execute({ rerunLibraryDependents = true } = {}): Promise<void> {
+  private async execute(): Promise<void> {
     this.clearSubscriptions();
     this.settingsManager.clearCallbacks();
 
@@ -148,29 +147,8 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     const runner = JSRunner.getInstance();
     const customConsole = createCustomConsole(this.nodeId);
 
-    let libraryName: string | null = null;
-
     try {
-      const processedCode = await runner.preprocessCode(code, {
-        nodeId: this.nodeId,
-        setLibraryName: (nextLibraryName) => {
-          libraryName = nextLibraryName;
-
-          const updates = nextLibraryName
-            ? { libraryName: nextLibraryName, inletCount: 0, outletCount: 0 }
-            : { libraryName: null };
-
-          this.context.setData(updates, { notifyUI: true });
-        }
-      });
-
-      if (processedCode === null) {
-        if (rerunLibraryDependents && libraryName) {
-          this.context.rerunLibraryDependents(this.nodeId, libraryName);
-        }
-
-        return;
-      }
+      const processedCode = await runner.preprocessCode(code, { nodeId: this.nodeId });
 
       await runner.executeJavaScript(this.nodeId, processedCode, {
         customConsole,

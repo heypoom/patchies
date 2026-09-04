@@ -166,7 +166,6 @@
   isRunning={isInitializing}
   isMessageCallbackActive={false}
   isTimerCallbackActive={false}
-  supportsLibraries={false}
   nodeLabel="peppermint"
   language="peppermint"
   editorPlaceholder="Write Peppermint code here..."

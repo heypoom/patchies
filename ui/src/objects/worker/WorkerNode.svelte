@@ -215,7 +215,6 @@
   {isRunning}
   {isMessageCallbackActive}
   {isTimerCallbackActive}
-  supportsLibraries={false}
   nodeLabel="worker"
   language="javascript"
   editorPlaceholder="Write your JavaScript code here..."

@@ -56,7 +56,7 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 | [125](125-glsl-metadata-directives.md)      | GLSL Metadata Directives      | `@title` for node titles, `@param` for ranged sliders — no deps ✓                      |
 | [123](123-shader-effect-format.md)          | Shader Effect Format          | Effect metadata, drag-drop scaffolding, material system, Hydra integration             |
 | [120](120-snippet-presets.md)               | Snippet Presets               | Cross-patch portability for GLSL/Hydra/JS snippets via preset system                   |
-| [121](121-vfs-js-modules.md)                | VFS JavaScript Modules        | Import JS modules from VFS files alongside `// @lib` nodes                             |
+| [121](121-vfs-js-modules.md)                | VFS JavaScript Modules        | Use Patch VFS files as the only user modules, with optional canvas editor mirrors      |
 | [122](122-render-pipeline-optimizations.md) | Render Pipeline Optimizations | Per-node resolution ✓, cook-on-demand caching ✓, channel formats, preview LOD (4a ✓, 4b ✓) |
 | [124](124-regl-to-webgl2-migration.md)      | regl → WebGL2 Migration       | Remove regl dependency, thin WebGL2 helpers, native MRT + float formats                |
 
