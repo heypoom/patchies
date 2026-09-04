@@ -2,6 +2,7 @@
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { WorkerNodeSystem } from '$lib/js-runner';
+  import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type {
@@ -199,6 +200,8 @@
 
     try {
       await workerSystem.executeCode(nodeId, code);
+    } catch (error) {
+      handleCodeError(error, code, nodeId, console);
     } finally {
       isRunning = false;
     }

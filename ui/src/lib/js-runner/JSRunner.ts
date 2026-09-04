@@ -20,6 +20,81 @@ import type { createLLMFunction } from '$lib/ai/google';
 
 type LLMFunction = ReturnType<typeof createLLMFunction>;
 
+export type ExternalImportSpecifier =
+  | { type: 'default'; localName: string }
+  | { type: 'namespace'; localName: string }
+  | { type: 'named'; importedName: string; localName: string };
+
+export type ExternalImport = {
+  source: string;
+  specifiers: ExternalImportSpecifier[];
+};
+
+export const lowerExternalImports = (code: string, importMappings: ExternalImport[]): string => {
+  let transformedCode = code;
+
+  const importsBySource = new Map<string, ExternalImportSpecifier[]>();
+
+  for (const { source, specifiers } of importMappings) {
+    const imports = importsBySource.get(source) ?? [];
+    imports.push(...specifiers);
+    importsBySource.set(source, imports);
+  }
+
+  let importIndex = 0;
+
+  for (const [source, specifiers] of importsBySource) {
+    const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const importExpression = source.startsWith('npm:')
+      ? `esm('${source.replace('npm:', '')}')`
+      : `import('${source}')`;
+    const importRegex = new RegExp(
+      `^[\\t ]*import\\s+(?:[\\w$]+(?:\\s*,\\s*)?)?(?:\\*\\s+as\\s+[\\w$]+|\\{[^}]*\\}|[\\w$]+)\\s+from\\s+['"]${escapedSource}['"][\\t ]*;?[\\t ]*(?:\\r?\\n|$)`,
+      'gm'
+    );
+    const moduleName = `__patchies_import_${importIndex++}`;
+    const namedImports = specifiers.filter(
+      (specifier): specifier is Extract<ExternalImportSpecifier, { type: 'named' }> =>
+        specifier.type === 'named'
+    );
+    const replacements = [`const ${moduleName} = await ${importExpression};`];
+
+    for (const specifier of specifiers) {
+      if (specifier.type === 'default') {
+        replacements.push(`const ${specifier.localName} = ${moduleName}.default;`);
+      } else if (specifier.type === 'namespace') {
+        replacements.push(`const ${specifier.localName} = ${moduleName};`);
+      }
+    }
+
+    if (namedImports.length > 0) {
+      const bindings = namedImports.map(({ importedName, localName }) =>
+        importedName === localName ? importedName : `${importedName}: ${localName}`
+      );
+      replacements.push(`const { ${bindings.join(', ')} } = ${moduleName};`);
+    }
+
+    let replacedBindingImport = false;
+    transformedCode = transformedCode.replace(importRegex, () => {
+      if (replacedBindingImport) return '';
+
+      replacedBindingImport = true;
+      return `${replacements.join('\n')}\n`;
+    });
+
+    const sideEffectImportRegex = new RegExp(
+      `^[\\t ]*import\\s+['"]${escapedSource}['"][\\t ]*;?[\\t ]*(?:\\r?\\n|$)`,
+      'gm'
+    );
+    transformedCode = transformedCode.replace(
+      sideEffectImportRegex,
+      specifiers.length > 0 ? '' : `await ${importExpression};\n`
+    );
+  }
+
+  return transformedCode;
+};
+
 export interface JSRunnerOptions {
   customConsole?: {
     log: (...args: unknown[]) => void;
@@ -88,7 +163,7 @@ export class JSRunner {
     try {
       const { rollup } = await import('@rollup/browser');
 
-      const importMappings = new Map();
+      const importMappings: ExternalImport[] = [];
 
       const bundle = await rollup({
         input: inputName,
@@ -100,32 +175,40 @@ export class JSRunner {
               const body = moduleInfo.ast?.body;
               if (!body) return;
 
-              // Find and store import declarations as before
               for (const node of body) {
                 if (node.type === 'ImportDeclaration') {
                   const importSource = node.source.value;
 
-                  for (const specifier of node.specifiers) {
-                    const isDefault = specifier.type === 'ImportDefaultSpecifier';
-                    const localName = specifier.local.name;
-
-                    const key = `${importSource}!!${localName}!!${isDefault ? 'default' : 'named'}`;
-
-                    if (
-                      typeof importSource !== 'string' ||
-                      (!importSource.startsWith('npm:') &&
-                        !importSource.startsWith('http://') &&
-                        !importSource.startsWith('https://'))
-                    ) {
-                      continue;
-                    }
-
-                    importMappings.set(key, {
-                      source: importSource,
-                      localName,
-                      isDefault
-                    });
+                  if (
+                    typeof importSource !== 'string' ||
+                    (!importSource.startsWith('npm:') &&
+                      !importSource.startsWith('http://') &&
+                      !importSource.startsWith('https://'))
+                  ) {
+                    continue;
                   }
+
+                  importMappings.push({
+                    source: importSource,
+                    specifiers: node.specifiers.map((specifier): ExternalImportSpecifier => {
+                      if (specifier.type === 'ImportDefaultSpecifier') {
+                        return { type: 'default', localName: specifier.local.name };
+                      }
+
+                      if (specifier.type === 'ImportNamespaceSpecifier') {
+                        return { type: 'namespace', localName: specifier.local.name };
+                      }
+
+                      return {
+                        type: 'named',
+                        importedName:
+                          specifier.imported.type === 'Identifier'
+                            ? specifier.imported.name
+                            : String(specifier.imported.value),
+                        localName: specifier.local.name
+                      };
+                    })
+                  });
                 }
               }
             },
@@ -144,71 +227,7 @@ export class JSRunner {
               return this.moduleResolver.load(id, inputName);
             },
             renderChunk(code) {
-              let transformedCode = code;
-
-              // Group imports by source to handle multiple named imports from same source
-              const importsBySource = new Map<
-                string,
-                { namedImports: string[]; defaultImport: string | null }
-              >();
-
-              for (const { localName, source, isDefault } of importMappings.values()) {
-                if (!importsBySource.has(source)) {
-                  importsBySource.set(source, { namedImports: [], defaultImport: null });
-                }
-
-                const group = importsBySource.get(source)!;
-                if (isDefault) {
-                  group.defaultImport = localName;
-                } else {
-                  group.namedImports.push(localName);
-                }
-              }
-
-              // Process each source once
-              for (const [source, { namedImports, defaultImport }] of importsBySource) {
-                const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const importExpression = source.startsWith('npm:')
-                  ? `esm('${source.replace('npm:', '')}')`
-                  : `import('${source}')`;
-
-                // Match the entire import statement for this source
-                const importRegex = new RegExp(
-                  `^\\s*import\\s+(?:[\\w\\s{},*]+)\\s+from\\s+['"]${escapedSource}['"];?\\s*`,
-                  'm'
-                );
-
-                const match = transformedCode.match(importRegex);
-
-                if (match) {
-                  const fullStatement = match[0];
-                  const replacements: string[] = [];
-
-                  if (defaultImport) {
-                    replacements.push(
-                      `const ${defaultImport} = (await ${importExpression}).default`
-                    );
-                  }
-
-                  if (namedImports.length > 0) {
-                    replacements.push(
-                      `const { ${namedImports.join(', ')} } = await ${importExpression}`
-                    );
-                  }
-
-                  transformedCode = transformedCode.replace(
-                    fullStatement,
-                    replacements.join('\n') + '\n'
-                  );
-                }
-
-                // Process side effect imports
-                transformedCode = transformedCode
-                  .replace(`import '${source}'`, `await ${importExpression}`)
-                  .replace(`import "${source}"`, `await ${importExpression}`);
-              }
-
-              return transformedCode;
+              return lowerExternalImports(code, importMappings);
             }
           }
         ]

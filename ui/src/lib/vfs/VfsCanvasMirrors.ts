@@ -25,8 +25,12 @@ export class VfsCanvasMirrors {
     const accessor = this.accessor;
     if (!accessor) return;
 
-    const ordinaryNodes = accessor.getNodes().filter((node) => node.type !== 'js.module');
-    accessor.setNodes([...ordinaryNodes, ...snapshot]);
+    const snapshotIds = new Set(snapshot.map((node) => node.id));
+    const currentNodes = accessor
+      .getNodes()
+      .filter((node) => node.type !== 'js.module' || !snapshotIds.has(node.id));
+
+    accessor.setNodes([...currentNodes, ...snapshot]);
   }
 
   static rename(paths: ReadonlyMap<string, string>): void {

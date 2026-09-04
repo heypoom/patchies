@@ -63,7 +63,10 @@
 
   onMount(() => {
     const listener = (event: { path: string }) => {
-      if (event.path === path) version += 1;
+      if (event.path !== path) return;
+
+      session.syncSavedContent();
+      version += 1;
     };
 
     const eventBus = PatchiesEventBus.getInstance();

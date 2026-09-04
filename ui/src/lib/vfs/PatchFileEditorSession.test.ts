@@ -80,6 +80,34 @@ describe('PatchFileEditorSession', () => {
     expect(reopened.draft).toBe('export {}');
   });
 
+  it('keeps a dirty draft when another Patch file is opened', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://first.js', 'export const first = 1');
+    vfs.createEmbeddedFile('patch://second.js', 'export const second = 1');
+
+    const first = getPatchFileEditorSession(vfs, 'patch://first.js');
+    first.updateDraft('export const first = 2');
+    const second = getPatchFileEditorSession(vfs, 'patch://second.js');
+
+    expect(second.draft).toBe('export const second = 1');
+    expect(getPatchFileEditorSession(vfs, 'patch://first.js').draft).toBe('export const first = 2');
+  });
+
+  it('does not retain a clean draft after its file is deleted and recreated', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://module.js', 'export const value = 1');
+
+    const session = getPatchFileEditorSession(vfs, 'patch://module.js');
+    vfs.deletePaths(['patch://module.js']);
+
+    expect(session.syncSavedContent()).toBe('deleted');
+
+    vfs.createEmbeddedFile('patch://module.js', 'export const value = 2');
+    expect(getPatchFileEditorSession(vfs, 'patch://module.js').draft).toBe(
+      'export const value = 2'
+    );
+  });
+
   it('shares a JavaScript module draft and its undo history across editor views', () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.createEmbeddedFile('patch://module.js', 'export const value = 1');

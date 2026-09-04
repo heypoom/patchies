@@ -1061,6 +1061,7 @@
           if (!mirror) return false;
 
           nodes = nodes.map((node) => ({ ...node, selected: node.id === mirror.id }));
+          requestFocusNodeId.set(mirror.id);
           return true;
         }
       });

@@ -116,7 +116,12 @@ export class PatchFileEditorSession {
     if (!path || !state) return 'unchanged';
 
     const entry = this.vfs.getEntry(path);
-    if (!entry) return this.isDirty ? 'conflict' : 'deleted';
+    if (!entry) {
+      if (this.isDirty) return 'conflict';
+
+      this.states().delete(path);
+      return 'deleted';
+    }
 
     const nextContent = this.vfs.readEmbeddedFile(path);
     const nextRevision = entry.revision ?? 0;
@@ -217,9 +222,7 @@ export const getPatchFileEditorSession = (
     const existingSession = pathSessions.get(path);
 
     if (existingSession) {
-      if (existingSession.path !== path) {
-        existingSession.open(path);
-      }
+      existingSession.open(path);
 
       return existingSession;
     }

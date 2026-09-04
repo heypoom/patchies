@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { JSRunner } from './JSRunner';
+import { JSRunner, lowerExternalImports } from './JSRunner';
 import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
 import type { EmbeddedVFSEntry } from '$lib/vfs/types';
 
@@ -34,6 +34,34 @@ describe('JSRunner', () => {
         attemptedPaths: ['patch://missing.js']
       }
     });
+  });
+
+  it('lowers aliased, namespace, and side-effect external imports', async () => {
+    const output = lowerExternalImports(
+      [
+        "import defaultValue, { remoteValue as localValue } from 'https://example.test/module.js';",
+        "import * as namespace from 'https://example.test/module.js';",
+        "import 'https://example.test/setup.js';",
+        'console.log(defaultValue, localValue, namespace);'
+      ].join('\n'),
+      [
+        {
+          source: 'https://example.test/module.js',
+          specifiers: [
+            { type: 'default', localName: 'defaultValue' },
+            { type: 'named', importedName: 'remoteValue', localName: 'localValue' },
+            { type: 'namespace', localName: 'namespace' }
+          ]
+        },
+        { source: 'https://example.test/setup.js', specifiers: [] }
+      ]
+    );
+
+    expect(output).toContain('const { remoteValue: localValue } = __patchies_import_0;');
+    expect(output).toContain('const namespace = __patchies_import_0;');
+    expect(output).toContain("await import('https://example.test/setup.js');");
+    expect(output).not.toContain("from 'https://example.test/module.js'");
+    expect(output).not.toContain("import 'https://example.test/setup.js'");
   });
 
   it('registers hydrated Patch modules and replays them to later environments', async () => {
