@@ -11,6 +11,7 @@ export class VimWriteCommandDispatcher<TView extends object> {
     if (this.registered) return;
 
     registerCommand((view) => this.handlers.get(view)?.());
+
     this.registered = true;
   }
 
@@ -18,7 +19,9 @@ export class VimWriteCommandDispatcher<TView extends object> {
     this.handlers.set(view, handler);
 
     return () => {
-      if (this.handlers.get(view) === handler) this.handlers.delete(view);
+      if (this.handlers.get(view) === handler) {
+        this.handlers.delete(view);
+      }
     };
   }
 }
