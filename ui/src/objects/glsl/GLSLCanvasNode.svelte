@@ -438,12 +438,14 @@
 
   {#snippet console()}
     <!-- Always render VirtualConsole so it receives events even when hidden -->
+    <!-- We already have in-gutter errors, so we don't auto-show the console on new errors -->
     <div class="mt-3 w-full" class:hidden={!data.showConsole}>
       <VirtualConsole
         bind:this={consoleRef}
         {nodeId}
         placeholder="Shader compilation errors will appear here."
         maxHeight="200px"
+        shouldAutoShowConsoleOnError={false}
       />
     </div>
   {/snippet}
