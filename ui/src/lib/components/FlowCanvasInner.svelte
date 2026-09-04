@@ -601,15 +601,18 @@
   // Keyboard shortcuts delegated to KeyboardShortcutManager (created in onMount)
 
   async function toggleSidebar() {
-    if (!(await canNavigateAwayFromPatchFile())) return;
+    const canNavigate = await canNavigateAwayFromPatchFile();
+    if (!canNavigate) return;
 
     $isSidebarOpen = !$isSidebarOpen;
   }
 
   function triggerCommandPalette() {
     const dialogWidth = 320; // w-80
+
     const currentSidebarWidth = $isSidebarOpen && !$isMobile ? $sidebarWidth : 0;
     const availableWidth = window.innerWidth - currentSidebarWidth;
+
     const centerX = (availableWidth - dialogWidth) / 2;
     const centerY = window.innerHeight / 2 - 200;
 
@@ -876,7 +879,9 @@
       undo: () => historyManager.undo(),
       redo: () => historyManager.redo(),
       toggleSidebar: () => {
-        if (!$isFullscreenActive) void toggleSidebar();
+        if (!$isFullscreenActive) {
+          toggleSidebar();
+        }
       },
       openObjectBrowser: openObjectBrowser,
       openSettings: () => ($isSettingsOpen = true),
@@ -1251,7 +1256,8 @@
   }
 
   async function confirmNewPatch() {
-    if (!(await patchManager.createNewPatch())) return;
+    const ok = await patchManager.createNewPatch();
+    if (!ok) return;
 
     showNewPatchDialog = false;
   }
