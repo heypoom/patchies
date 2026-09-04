@@ -1274,10 +1274,13 @@
         pendingSharedPatchUrl = null;
         pendingReadOnlyMode = false;
         urlLoadError = result.error ?? 'Unknown error occurred';
+
         return;
       }
     } else if (pendingSharedPatch) {
-      if (!(await patchManager.loadSharedPatch(pendingSharedPatch))) return;
+      const patchLoaded = await patchManager.loadSharedPatch(pendingSharedPatch);
+
+      if (!patchLoaded) return;
     }
 
     pendingSharedPatch = null;

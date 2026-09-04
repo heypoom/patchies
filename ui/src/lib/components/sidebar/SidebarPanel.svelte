@@ -130,19 +130,22 @@
   // If the active view gets hidden, switch to the first visible tab
   $effect(() => {
     const visible = visibleViews;
+
     if (visible.length > 0 && !visible.some((v) => v.id === view)) {
       view = visible[0].id;
     }
   });
 
   async function handleTabClick(id: SidebarView) {
-    if (!(await canNavigateAwayFromPatchFile())) return;
+    const ok = await canNavigateAwayFromPatchFile();
+    if (!ok) return;
 
     view = id;
   }
 
   async function handleContextMenuToggle(id: SidebarView) {
-    if (!(await canNavigateAwayFromPatchFile())) return;
+    const ok = await canNavigateAwayFromPatchFile();
+    if (!ok) return;
 
     if (!$sidebarVisibleTabs.has(id)) {
       // Show the tab and switch to it
@@ -154,13 +157,15 @@
   }
 
   async function handleClose() {
-    if (!(await canNavigateAwayFromPatchFile())) return;
+    const ok = await canNavigateAwayFromPatchFile();
+    if (!ok) return;
 
     open = false;
   }
 
   // Track which tab was right-clicked for the "Hide" action
   let contextMenuTargetTab = $state<SidebarView | null>(null);
+
   // Block tooltips while context menu is open; reset key on close to clear stale focus
   let tooltipsBlocked = $state(false);
   let tooltipResetKey = $state(0);
