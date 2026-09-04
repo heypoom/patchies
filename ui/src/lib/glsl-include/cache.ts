@@ -19,12 +19,16 @@ export function createCachedResolver(base: IncludeResolver): CachedIncludeResolv
 
   function dedup(key: string, fetch: () => Promise<string>): Promise<string> {
     const cached = cache.get(key);
-    if (cached !== undefined) return Promise.resolve(cached);
+
+    if (cached !== undefined) {
+      return Promise.resolve(cached);
+    }
 
     const pending = inflight.get(key);
     if (pending) return pending;
 
     const generation = generations.get(key) ?? 0;
+
     const promise = fetch().then(
       (content) => {
         if ((generations.get(key) ?? 0) === generation) cache.set(key, content);
@@ -48,6 +52,7 @@ export function createCachedResolver(base: IncludeResolver): CachedIncludeResolv
     _cache: cache,
     _invalidateVfs(path?: string): void {
       const prefix = 'vfs:';
+
       const keys = path
         ? [`${prefix}${path}`]
         : new Set(
