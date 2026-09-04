@@ -1,7 +1,7 @@
 /**
  * VFS resolver for GLSL #include in web workers.
  *
- * Resolves "user://..." paths by posting a message to the main thread,
+ * Resolves Patch and User VFS paths by posting a message to the main thread,
  * which reads the VFS file and sends back the text content.
  *
  * Uses the same request/response pattern as vfsWorkerUtils.ts but returns

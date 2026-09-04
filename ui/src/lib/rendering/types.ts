@@ -246,7 +246,7 @@ export type RenderWorkerMessage =
       nodeId: string;
       error: string;
       stack?: string;
-      lineErrors?: Record<number, string>;
+      lineErrors?: Record<number, string[]>;
     }
   | {
       type: 'consoleOutput';
@@ -254,7 +254,7 @@ export type RenderWorkerMessage =
       level: 'log' | 'warn' | 'error';
       message?: string;
       args?: unknown[];
-      lineErrors?: Record<number, string>;
+      lineErrors?: Record<number, string[]>;
     }
   | {
       type: 'sendMessageFromNode';

@@ -1,3 +1,5 @@
+import { resolveVfsIncludeCandidates } from './vfs-paths';
+
 /**
  * GLSL #include preprocessor.
  *
@@ -19,6 +21,25 @@ export interface IncludeResolver {
 const INCLUDE_RE = /^[ \t]*#include\s+(?:<([^>]+)>|"([^"]+)")/gm;
 
 const MAX_DEPTH = 32;
+
+export class GlslIncludeError extends Error {
+  readonly lineErrors: Record<number, string[]>;
+
+  constructor(
+    readonly includePath: string,
+    readonly line: number,
+    reason: string
+  ) {
+    const message = `Include error on line ${line}: ${reason}`;
+
+    super(message);
+    this.name = 'GlslIncludeError';
+    this.lineErrors = { [line]: [reason] };
+  }
+}
+
+const getSourceLine = (source: string, index: number): number =>
+  source.slice(0, index).split('\n').length;
 
 function ensureGlslExtension(path: string): string {
   const lastSegment = path.split('/').pop() ?? '';
@@ -70,7 +91,8 @@ export async function processIncludes(
   resolver: IncludeResolver,
   seen: Set<string> = new Set(),
   depth: number = 0,
-  npmBasePath: string = ''
+  npmBasePath: string = '',
+  vfsImporterPath: string = 'patch://'
 ): Promise<string> {
   if (depth > MAX_DEPTH) {
     throw new Error(`#include recursion depth exceeded (max ${MAX_DEPTH})`);
@@ -102,23 +124,34 @@ export async function processIncludes(
 
   // Resolve all includes in parallel
   const resolutions = await Promise.all(
-    matches.map(async ({ npmPath, quotedPath }) => {
-      const { resolvedPath, content, nextBasePath } = await resolveInclude(
-        resolver,
-        npmPath,
-        quotedPath,
-        npmBasePath
-      );
+    matches.map(async ({ npmPath, quotedPath, index }) => {
+      const includePath = npmPath ?? quotedPath ?? '';
 
-      if (seen.has(resolvedPath)) {
-        throw new Error(`Circular #include detected: ${resolvedPath}`);
+      try {
+        const { resolvedPath, content, nextNpmBasePath, nextVfsImporterPath } =
+          await resolveInclude(resolver, npmPath, quotedPath, npmBasePath, vfsImporterPath);
+
+        if (seen.has(resolvedPath)) {
+          throw new Error(`Circular #include detected: ${resolvedPath}`);
+        }
+
+        const innerSeen = new Set(seen);
+        innerSeen.add(resolvedPath);
+
+        // Recursively resolve nested includes, passing the base path for relative resolution
+        return processIncludes(
+          content,
+          resolver,
+          innerSeen,
+          depth + 1,
+          nextNpmBasePath,
+          nextVfsImporterPath
+        );
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+
+        throw new GlslIncludeError(includePath, getSourceLine(source, index), reason);
       }
-
-      const innerSeen = new Set(seen);
-      innerSeen.add(resolvedPath);
-
-      // Recursively resolve nested includes, passing the base path for relative resolution
-      return processIncludes(content, resolver, innerSeen, depth + 1, nextBasePath);
     })
   );
 
@@ -142,42 +175,74 @@ async function resolveInclude(
   resolver: IncludeResolver,
   npmPath: string | undefined,
   quotedPath: string | undefined,
-  npmBasePath: string
-): Promise<{ resolvedPath: string; content: string; nextBasePath: string }> {
+  npmBasePath: string,
+  vfsImporterPath: string
+): Promise<{
+  resolvedPath: string;
+  content: string;
+  nextNpmBasePath: string;
+  nextVfsImporterPath: string;
+}> {
   // npm package imports: #include <lygia/generative/snoise>
   if (npmPath) {
     const resolved = ensureGlslExtension(npmPath);
     const content = await resolver.resolveNpm(resolved);
 
-    return { resolvedPath: `npm:${resolved}`, content, nextBasePath: dirname(resolved) };
+    return {
+      resolvedPath: `npm:${resolved}`,
+      content,
+      nextNpmBasePath: dirname(resolved),
+      nextVfsImporterPath: 'patch://'
+    };
   }
 
   if (quotedPath) {
-    // virtual filesystem imports
-    if (quotedPath.startsWith('user://')) {
-      const content = await resolver.resolveVfs(quotedPath);
-
-      return { resolvedPath: `vfs:${quotedPath}`, content, nextBasePath: '' };
-    }
-
     // HTTP imports
     if (quotedPath.startsWith('https://') || quotedPath.startsWith('http://')) {
       const content = await resolver.resolveUrl(quotedPath);
 
-      return { resolvedPath: `url:${quotedPath}`, content, nextBasePath: '' };
+      return {
+        resolvedPath: `url:${quotedPath}`,
+        content,
+        nextNpmBasePath: '',
+        nextVfsImporterPath: 'patch://'
+      };
     }
 
     // Relative imports within npm packages: #include "../math/mod289.glsl" or #include "mod289.glsl"
-    if (npmBasePath) {
+    if (npmBasePath && !quotedPath.startsWith('patch://') && !quotedPath.startsWith('user://')) {
       const resolved = ensureGlslExtension(resolveRelativePath(npmBasePath, quotedPath));
       const content = await resolver.resolveNpm(resolved);
 
-      return { resolvedPath: `npm:${resolved}`, content, nextBasePath: dirname(resolved) };
+      return {
+        resolvedPath: `npm:${resolved}`,
+        content,
+        nextNpmBasePath: dirname(resolved),
+        nextVfsImporterPath: 'patch://'
+      };
     }
 
-    throw new Error(
-      `Unsupported #include path: "${quotedPath}". Use <pkg/path> for npm, user:// for VFS, or https:// for URLs.`
-    );
+    const candidates = resolveVfsIncludeCandidates(quotedPath, vfsImporterPath);
+    let lastError: unknown;
+
+    for (const candidate of candidates) {
+      try {
+        const content = await resolver.resolveVfs(candidate);
+
+        return {
+          resolvedPath: `vfs:${candidate}`,
+          content,
+          nextNpmBasePath: '',
+          nextVfsImporterPath: candidate
+        };
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Failed to resolve GLSL #include "${quotedPath}"`);
   }
 
   throw new Error('Invalid #include directive');

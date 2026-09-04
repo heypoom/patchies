@@ -7,28 +7,37 @@
 
 import type { IncludeResolver } from './preprocessor';
 
-export type CachedIncludeResolver = IncludeResolver & { _cache: Map<string, string> };
+export type CachedIncludeResolver = IncludeResolver & {
+  _cache: Map<string, string>;
+  _invalidateVfs: (path?: string) => void;
+};
 
 export function createCachedResolver(base: IncludeResolver): CachedIncludeResolver {
   const cache = new Map<string, string>();
   const inflight = new Map<string, Promise<string>>();
+  const generations = new Map<string, number>();
 
   function dedup(key: string, fetch: () => Promise<string>): Promise<string> {
     const cached = cache.get(key);
-    if (cached !== undefined) return Promise.resolve(cached);
+
+    if (cached !== undefined) {
+      return Promise.resolve(cached);
+    }
 
     const pending = inflight.get(key);
     if (pending) return pending;
 
+    const generation = generations.get(key) ?? 0;
+
     const promise = fetch().then(
       (content) => {
-        cache.set(key, content);
-        inflight.delete(key);
+        if ((generations.get(key) ?? 0) === generation) cache.set(key, content);
+        if (inflight.get(key) === promise) inflight.delete(key);
 
         return content;
       },
       (error) => {
-        inflight.delete(key);
+        if (inflight.get(key) === promise) inflight.delete(key);
 
         throw error;
       }
@@ -41,6 +50,23 @@ export function createCachedResolver(base: IncludeResolver): CachedIncludeResolv
 
   return {
     _cache: cache,
+    _invalidateVfs(path?: string): void {
+      const prefix = 'vfs:';
+
+      const keys = path
+        ? [`${prefix}${path}`]
+        : new Set(
+            [...cache.keys(), ...inflight.keys(), ...generations.keys()].filter((key) =>
+              key.startsWith(prefix)
+            )
+          );
+
+      for (const key of keys) {
+        cache.delete(key);
+        inflight.delete(key);
+        generations.set(key, (generations.get(key) ?? 0) + 1);
+      }
+    },
 
     resolveNpm(packagePath: string): Promise<string> {
       return dedup(`npm:${packagePath}`, () => base.resolveNpm(packagePath));
@@ -59,15 +85,7 @@ export function createCachedResolver(base: IncludeResolver): CachedIncludeResolv
 /**
  * Clear VFS entries from cache (call when VFS files change).
  *
- * NOTE: Currently unused — VFS file editing is not yet supported, so cached
- * VFS includes can never go stale. Wire this up once in-place VFS file editing
- * is added: on every file-modified event, call this with the shared resolver
- * and trigger updateCode() on any GLSL nodes that reference the changed path.
  */
-export function clearVfsCache(resolver: CachedIncludeResolver): void {
-  for (const key of resolver._cache.keys()) {
-    if (key.startsWith('vfs:')) {
-      resolver._cache.delete(key);
-    }
-  }
+export function clearVfsCache(resolver: CachedIncludeResolver, path?: string): void {
+  resolver._invalidateVfs(path);
 }

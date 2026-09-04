@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy, onMount } from 'svelte';
   import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     ChevronRight,
@@ -52,6 +53,14 @@
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
   import VfsCollisionDialog from './VfsCollisionDialog.svelte';
+  import PatchFileEditorView from './PatchFileEditorView.svelte';
+  import UnsavedPatchFileDialog from './UnsavedPatchFileDialog.svelte';
+  import {
+    PatchFileEditorSession,
+    type UnsavedChangesDecision
+  } from '$lib/vfs/PatchFileEditorSession';
+  import { registerUnsavedChangesGuard } from '$lib/vfs/file-editor-navigation';
+  import { isEditablePatchGlslPath } from '$lib/glsl-include/vfs-paths';
   import {
     getExpandedChildDirectories,
     getExpandedLinkedFolderPathsToLoad,
@@ -69,6 +78,7 @@
 
   const vfs = VirtualFilesystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
+  const editorSession = new PatchFileEditorSession(vfs);
 
   // Reactive store of VFS entries
   const vfsEntries = vfs.entries$;
@@ -100,6 +110,175 @@
   let collisionDialogOpen = $state(false);
   let collisionPaths = $state<string[]>([]);
   let collisionResolver: ((strategy: VfsCollisionStrategy) => void) | null = null;
+  let editorVersion = $state(0);
+  let unsavedDialogOpen = $state(false);
+  let unsavedResolver: ((allowed: boolean) => void) | null = null;
+  let pendingNavigation: (() => void | Promise<void>) | null = null;
+
+  const editorPath = $derived.by(() => {
+    void editorVersion;
+
+    return editorSession.path;
+  });
+
+  const editorDraft = $derived.by(() => {
+    void editorVersion;
+
+    return editorSession.draft;
+  });
+
+  const editorDirty = $derived.by(() => {
+    void editorVersion;
+
+    return editorSession.isDirty;
+  });
+
+  const refreshEditor = () => {
+    editorVersion += 1;
+  };
+
+  function saveEditor(): boolean {
+    try {
+      const saved = editorSession.save();
+      refreshEditor();
+
+      return saved;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Save failed');
+
+      return false;
+    }
+  }
+
+  function requestEditorNavigation(action: () => void | Promise<void>): Promise<boolean> {
+    if (!editorSession.isDirty) {
+      void action();
+
+      return Promise.resolve(true);
+    }
+
+    if (unsavedResolver) return Promise.resolve(false);
+
+    pendingNavigation = action;
+    unsavedDialogOpen = true;
+
+    return new Promise((resolve) => {
+      unsavedResolver = resolve;
+    });
+  }
+
+  async function handleUnsavedChoice(decision: UnsavedChangesDecision) {
+    const resolve = unsavedResolver;
+    const action = pendingNavigation;
+    unsavedResolver = null;
+    pendingNavigation = null;
+    unsavedDialogOpen = false;
+
+    if (decision === 'cancel') {
+      resolve?.(false);
+      return;
+    }
+
+    if (decision === 'save' && !saveEditor()) {
+      resolve?.(false);
+      return;
+    }
+
+    if (decision === 'discard') {
+      editorSession.discard();
+      refreshEditor();
+    }
+
+    let completed = false;
+
+    try {
+      await action?.();
+      completed = true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Action failed');
+    } finally {
+      resolve?.(completed);
+    }
+  }
+
+  async function openEditor(path: string) {
+    if (!isEditablePatchGlslPath(path)) return;
+
+    await requestEditorNavigation(() => {
+      editorSession.open(path);
+      refreshEditor();
+    });
+  }
+
+  function closeEditor() {
+    void requestEditorNavigation(() => {
+      editorSession.close();
+      refreshEditor();
+    });
+  }
+
+  function handleEditorContentModified(path: string, revision: number) {
+    if (editorSession.path !== path || editorSession.revision === revision) return;
+
+    queueMicrotask(() => {
+      const result = editorSession.syncSavedContent();
+
+      if (result === 'conflict') {
+        void requestEditorNavigation(() => {
+          editorSession.discard();
+          const synced = editorSession.syncSavedContent();
+          if (synced === 'deleted') editorSession.close();
+
+          refreshEditor();
+        });
+      } else if (result === 'deleted') {
+        editorSession.close();
+      }
+
+      refreshEditor();
+    });
+  }
+
+  function handleEditorPathRenamed(oldPath: string, newPath: string) {
+    editorSession.rename(oldPath, newPath);
+    refreshEditor();
+
+    if (editorSession.isDirty) {
+      void requestEditorNavigation(() => refreshEditor());
+    }
+  }
+
+  let unregisterNavigationGuard: (() => void) | null = null;
+
+  onMount(() => {
+    unregisterNavigationGuard = registerUnsavedChangesGuard(() =>
+      requestEditorNavigation(() => editorSession.close())
+    );
+
+    const contentListener = (event: { path: string; revision: number }) =>
+      handleEditorContentModified(event.path, event.revision);
+    const renameListener = (event: { oldPath: string; newPath: string }) =>
+      handleEditorPathRenamed(event.oldPath, event.newPath);
+
+    eventBus.addEventListener('vfsContentModified', contentListener);
+    eventBus.addEventListener('vfsPathRenamed', renameListener);
+
+    return () => {
+      eventBus.removeEventListener('vfsContentModified', contentListener);
+      eventBus.removeEventListener('vfsPathRenamed', renameListener);
+    };
+  });
+
+  onDestroy(() => {
+    unregisterNavigationGuard?.();
+  });
+
+  function handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (!editorSession.isDirty) return;
+
+    event.preventDefault();
+    event.returnValue = '';
+  }
 
   function handleCollisionChoice(strategy: VfsCollisionStrategy) {
     const resolve = collisionResolver;
@@ -797,12 +976,53 @@
   // Create folder state
   let showFolderInput = $state<string | null>(null);
   let folderInputValue = $state('');
+  let showFileInput = $state<string | null>(null);
+  let fileInputValue = $state('');
 
   function handleCreateFolderClick(folderPath: string, event: MouseEvent) {
     event.stopPropagation();
 
     showFolderInput = folderPath;
     folderInputValue = '';
+  }
+
+  function handleCreateFileClick(folderPath: string, event: MouseEvent) {
+    event.stopPropagation();
+
+    showFileInput = folderPath;
+    fileInputValue = '';
+  }
+
+  function handleFileNameSubmit(event: KeyboardEvent) {
+    if (event.key === 'Enter' && fileInputValue.trim() && showFileInput) {
+      event.preventDefault();
+
+      const parent = showFileInput.endsWith('/') ? showFileInput : `${showFileInput}/`;
+      const path = `${parent}${fileInputValue.trim()}`;
+
+      if (!isEditablePatchGlslPath(path)) {
+        toast.error('New Patch files must use a supported GLSL extension');
+        return;
+      }
+
+      try {
+        const createdPath = vfs.createEmbeddedFile(path);
+        if (!createdPath) {
+          toast.error('A file already exists at that path');
+          return;
+        }
+
+        expandedPaths.add(showFileInput);
+        showFileInput = null;
+        fileInputValue = '';
+        void openEditor(createdPath);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Create failed');
+      }
+    } else if (isDismissKey(event)) {
+      showFileInput = null;
+      fileInputValue = '';
+    }
   }
 
   function handleFolderInputSubmit(event: KeyboardEvent) {
@@ -833,8 +1053,13 @@
   let renameInputValue = $state('');
 
   function handleRenameClick(path: string, currentName: string) {
-    renamingPath = path;
-    renameInputValue = currentName;
+    void requestEditorNavigation(() => {
+      if (editorSession.path === path) editorSession.close();
+
+      renamingPath = path;
+      renameInputValue = currentName;
+      refreshEditor();
+    });
   }
 
   async function handleRenameSubmit(event: KeyboardEvent) {
@@ -907,7 +1132,17 @@
   }
 
   async function handleDeleteFromContextMenu(path: string) {
-    vfs.deletePath(path);
+    const deletePath = () => {
+      vfs.deletePath(path);
+      if (editorSession.path === path) editorSession.close();
+      refreshEditor();
+    };
+
+    if (editorSession.path === path) {
+      await requestEditorNavigation(deletePath);
+    } else {
+      deletePath();
+    }
 
     selectedPaths.clear();
     lastSelectedPath = null;
@@ -1268,6 +1503,8 @@
             style="padding-left: {paddingLeft}px"
             draggable={isDraggable ? 'true' : 'false'}
             ondragstart={(e) => isDraggable && handleDragStart(e, node)}
+            ondblclick={() =>
+              node.path && isEditablePatchGlslPath(node.path) && openEditor(node.path)}
             onclick={async (e) => {
               if (isRenaming) return;
 
@@ -1358,6 +1595,21 @@
                 </Tooltip.Trigger>
                 <Tooltip.Content side="bottom">Create folder</Tooltip.Content>
               </Tooltip.Root>
+
+              {#if node.path.startsWith('patch://')}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="cursor-pointer rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                      onclick={(e) => handleCreateFileClick(node.path!, e)}
+                      aria-label="Create GLSL file"
+                    >
+                      <Plus class="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="bottom">New File</Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
 
               {#if isUserNamespace && supportsDirectoryPicker}
                 <Tooltip.Root>
@@ -1463,6 +1715,12 @@
 
       {#if showContextMenu}
         <ContextMenu.Content>
+          {#if node.path && isEditablePatchGlslPath(node.path)}
+            <ContextMenu.Item onclick={() => openEditor(node.path!)}>
+              <FileCode class="mr-2 h-4 w-4" />
+              Edit
+            </ContextMenu.Item>
+          {/if}
           <ContextMenu.Item
             onclick={() => handleRenameClick(node.path!, node.entry?.filename || node.name)}
           >
@@ -1527,6 +1785,22 @@
         />
       </div>
     {/if}
+
+    {#if showFileInput === node.path}
+      <div class="flex items-center gap-1.5 py-1" style="padding-left: {(depth + 1) * 12 + 8}px">
+        <span class="w-3"></span>
+        <FileCode class="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          type="text"
+          class="min-w-0 flex-1 bg-transparent font-mono text-xs text-zinc-300 placeholder-zinc-500 outline-none"
+          placeholder="utility.glsl"
+          bind:value={fileInputValue}
+          onkeydown={handleFileNameSubmit}
+          autofocus
+        />
+      </div>
+    {/if}
   {/if}
 
   {#if isFolder && (node.name === 'root' || isExpanded)}
@@ -1560,165 +1834,210 @@
   {/if}
 {/snippet}
 
-<div class="flex h-full flex-col">
-  <!-- Search bar -->
-  <SearchBar bind:value={searchQuery} placeholder="Search files..." />
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
-  <div
-    class="flex-1 overflow-y-auto py-2 outline-none {dropTargetPath === 'user://' &&
-    (!tree.children || tree.children.size === 0)
-      ? 'bg-blue-600/30'
-      : ''} {$isMobile && selectedFilePath ? 'pb-14' : ''}"
-    tabindex="0"
-    role="tree"
-    onkeydown={handleKeydown}
-    ondragover={handleTreeDragOver}
-    ondragleave={handleFolderDragLeave}
-    ondrop={handleFolderDrop}
-  >
-    {#if searchQuery.trim()}
-      <!-- Flat search results -->
-      {#if searchResults.length === 0}
-        <div class="px-4 py-8 text-center text-xs text-zinc-500">
-          No files matching "{searchQuery}"
-        </div>
+{#if editorPath}
+  <PatchFileEditorView
+    path={editorPath}
+    draft={editorDraft}
+    dirty={editorDirty}
+    onchange={(content) => {
+      editorSession.updateDraft(content);
+      refreshEditor();
+    }}
+    onback={closeEditor}
+    onsave={saveEditor}
+    onrename={() => handleRenameClick(editorPath, editorPath.split('/').pop() ?? '')}
+    oncopy={() => handleCopyPath(editorPath)}
+    onexport={() => handleSaveToDisk(editorPath)}
+    ondelete={() => handleDeleteFromContextMenu(editorPath)}
+  />
+{:else}
+  <div class="flex h-full flex-col">
+    <!-- Search bar -->
+    <SearchBar bind:value={searchQuery} placeholder="Search files..." />
+
+    <div
+      class="flex-1 overflow-y-auto py-2 outline-none {dropTargetPath === 'user://' &&
+      (!tree.children || tree.children.size === 0)
+        ? 'bg-blue-600/30'
+        : ''} {$isMobile && selectedFilePath ? 'pb-14' : ''}"
+      tabindex="0"
+      role="tree"
+      onkeydown={handleKeydown}
+      ondragover={handleTreeDragOver}
+      ondragleave={handleFolderDragLeave}
+      ondrop={handleFolderDrop}
+    >
+      {#if searchQuery.trim()}
+        <!-- Flat search results -->
+        {#if searchResults.length === 0}
+          <div class="px-4 py-8 text-center text-xs text-zinc-500">
+            No files matching "{searchQuery}"
+          </div>
+        {:else}
+          {#each searchResults as result (result.path)}
+            {@const isSelected = selectedPaths.has(result.path)}
+            {@const mimeType = result.entry ? result.entry.mimeType : guessMimeType(result.name)}
+            {@const fileIcon = getFileIcon(mimeType)}
+            <div
+              class="group flex w-full items-center {isSelected
+                ? 'bg-blue-900/40 hover:bg-blue-900/50'
+                : 'hover:bg-zinc-800'}"
+            >
+              <button
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 py-1 pl-2 text-left text-xs"
+                draggable="true"
+                ondblclick={() => isEditablePatchGlslPath(result.path) && openEditor(result.path)}
+                ondragstart={(e) => {
+                  e.dataTransfer?.setData('application/x-vfs-path', result.path);
+                  e.dataTransfer?.setData('text/plain', result.path);
+                  if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = result.isLinked ? 'copy' : 'copyMove';
+                  }
+                }}
+                onclick={(e) => {
+                  if (e.shiftKey && lastSelectedPath) {
+                    const paths = searchResults.map((r) => r.path);
+                    const startIdx = paths.indexOf(lastSelectedPath);
+                    const endIdx = paths.indexOf(result.path);
+
+                    if (startIdx !== -1 && endIdx !== -1) {
+                      const [from, to] =
+                        startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+                      selectedPaths.clear();
+                      for (const p of paths.slice(from, to + 1)) selectedPaths.add(p);
+
+                      return;
+                    }
+                  }
+
+                  toggleSelected(result.path);
+                }}
+              >
+                <fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
+
+                <span class="truncate font-mono text-zinc-300">{result.name}</span>
+              </button>
+              {#if isEditablePatchGlslPath(result.path)}
+                <button
+                  class="mr-1 cursor-pointer rounded p-1 text-zinc-500 opacity-100 hover:bg-zinc-700 hover:text-zinc-200 sm:opacity-0 sm:group-hover:opacity-100"
+                  onclick={() => openEditor(result.path)}
+                  aria-label={`Edit ${result.name}`}
+                >
+                  <Pencil class="h-3.5 w-3.5" />
+                </button>
+              {/if}
+            </div>
+          {/each}
+        {/if}
       {:else}
-        {#each searchResults as result (result.path)}
-          {@const isSelected = selectedPaths.has(result.path)}
-          {@const mimeType = result.entry ? result.entry.mimeType : guessMimeType(result.name)}
-          {@const fileIcon = getFileIcon(mimeType)}
-          <button
-            class="flex w-full cursor-pointer items-center gap-1.5 py-1 pl-2 text-left text-xs {isSelected
-              ? 'bg-blue-900/40 hover:bg-blue-900/50'
-              : 'hover:bg-zinc-800'}"
-            draggable="true"
-            ondragstart={(e) => {
-              e.dataTransfer?.setData('application/x-vfs-path', result.path);
-              e.dataTransfer?.setData('text/plain', result.path);
-              if (e.dataTransfer) {
-                e.dataTransfer.effectAllowed = result.isLinked ? 'copy' : 'copyMove';
-              }
-            }}
-            onclick={(e) => {
-              if (e.shiftKey && lastSelectedPath) {
-                const paths = searchResults.map((r) => r.path);
-                const startIdx = paths.indexOf(lastSelectedPath);
-                const endIdx = paths.indexOf(result.path);
-
-                if (startIdx !== -1 && endIdx !== -1) {
-                  const [from, to] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
-                  selectedPaths.clear();
-                  for (const p of paths.slice(from, to + 1)) selectedPaths.add(p);
-
-                  return;
-                }
-              }
-
-              toggleSelected(result.path);
-            }}
-          >
-            <fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
-
-            <span class="truncate font-mono text-zinc-300">{result.name}</span>
-          </button>
-        {/each}
+        {@render treeNode(tree)}
       {/if}
-    {:else}
-      {@render treeNode(tree)}
-    {/if}
-  </div>
-</div>
-
-<!-- Mobile floating toolbar -->
-{#if $isMobile && selectedFilePath}
-  <div
-    class="fixed right-0 bottom-0 left-0 border-t border-zinc-800 bg-zinc-900/95 px-4 pt-2 backdrop-blur-sm"
-    style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))"
-  >
-    <div class="flex items-center justify-center gap-2">
-      <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
-        {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
-      </span>
-
-      <button
-        class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-        onclick={handleInsertToCanvas}
-        title="Insert to Canvas"
-      >
-        <Plus class="h-3.5 w-3.5" />
-        <span>Insert</span>
-      </button>
-
-      <button
-        class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
-        onclick={() => (showMoveDialog = true)}
-        title="Move to folder"
-      >
-        <FolderInput class="h-3.5 w-3.5" />
-        <span>Move</span>
-      </button>
-
-      <Popover.Root bind:open={mobileMoreOpen}>
-        <Popover.Trigger
-          class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
-        >
-          <Ellipsis class="h-4 w-4" />
-        </Popover.Trigger>
-        <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
-          <button
-            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-            onclick={() => {
-              if (selectedFilePath) {
-                const entry = vfs.getEntry(selectedFilePath);
-                handleRenameClick(
-                  selectedFilePath,
-                  entry?.filename || selectedFilePath.split('/').pop() || ''
-                );
-              }
-              mobileMoreOpen = false;
-            }}
-          >
-            <Pencil class="h-4 w-4 text-zinc-400" />
-            Rename
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-            onclick={async () => {
-              if (selectedFilePath) {
-                await handleCopyPath(selectedFilePath);
-              }
-              mobileMoreOpen = false;
-            }}
-          >
-            <Copy class="h-4 w-4 text-zinc-400" />
-            Copy Path
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
-            onclick={async () => {
-              if (selectedFilePath) {
-                await handleDeleteFromContextMenu(selectedFilePath);
-              }
-              mobileMoreOpen = false;
-            }}
-          >
-            <Trash2 class="h-4 w-4" />
-            Delete
-          </button>
-        </Popover.Content>
-      </Popover.Root>
-
-      <button
-        class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
-        onclick={() => {
-          selectedPaths.clear();
-          lastSelectedPath = null;
-        }}
-      >
-        Cancel
-      </button>
     </div>
   </div>
+
+  <!-- Mobile floating toolbar -->
+  {#if $isMobile && selectedFilePath}
+    <div
+      class="fixed right-0 bottom-0 left-0 border-t border-zinc-800 bg-zinc-900/95 px-4 pt-2 backdrop-blur-sm"
+      style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))"
+    >
+      <div class="flex items-center justify-center gap-2">
+        <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
+          {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
+        </span>
+
+        {#if isEditablePatchGlslPath(selectedFilePath)}
+          <button
+            class="flex cursor-pointer items-center gap-1.5 rounded bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600"
+            onclick={() => openEditor(selectedFilePath)}
+          >
+            <Pencil class="h-3.5 w-3.5" />
+            <span>Edit</span>
+          </button>
+        {/if}
+
+        <button
+          class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+          onclick={handleInsertToCanvas}
+          title="Insert to Canvas"
+        >
+          <Plus class="h-3.5 w-3.5" />
+          <span>Insert</span>
+        </button>
+
+        <button
+          class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
+          onclick={() => (showMoveDialog = true)}
+          title="Move to folder"
+        >
+          <FolderInput class="h-3.5 w-3.5" />
+          <span>Move</span>
+        </button>
+
+        <Popover.Root bind:open={mobileMoreOpen}>
+          <Popover.Trigger
+            class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+          >
+            <Ellipsis class="h-4 w-4" />
+          </Popover.Trigger>
+          <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+            <button
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+              onclick={() => {
+                if (selectedFilePath) {
+                  const entry = vfs.getEntry(selectedFilePath);
+                  handleRenameClick(
+                    selectedFilePath,
+                    entry?.filename || selectedFilePath.split('/').pop() || ''
+                  );
+                }
+                mobileMoreOpen = false;
+              }}
+            >
+              <Pencil class="h-4 w-4 text-zinc-400" />
+              Rename
+            </button>
+            <button
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+              onclick={async () => {
+                if (selectedFilePath) {
+                  await handleCopyPath(selectedFilePath);
+                }
+                mobileMoreOpen = false;
+              }}
+            >
+              <Copy class="h-4 w-4 text-zinc-400" />
+              Copy Path
+            </button>
+            <button
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
+              onclick={async () => {
+                if (selectedFilePath) {
+                  await handleDeleteFromContextMenu(selectedFilePath);
+                }
+                mobileMoreOpen = false;
+              }}
+            >
+              <Trash2 class="h-4 w-4" />
+              Delete
+            </button>
+          </Popover.Content>
+        </Popover.Root>
+
+        <button
+          class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+          onclick={() => {
+            selectedPaths.clear();
+            lastSelectedPath = null;
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <!-- Move to folder dialog -->
@@ -1735,4 +2054,10 @@
   bind:open={collisionDialogOpen}
   paths={collisionPaths}
   onChoose={handleCollisionChoice}
+/>
+
+<UnsavedPatchFileDialog
+  bind:open={unsavedDialogOpen}
+  path={editorPath ?? ''}
+  onChoose={handleUnsavedChoice}
 />

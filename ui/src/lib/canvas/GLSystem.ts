@@ -32,6 +32,9 @@ import {
   outputTarget
 } from '../../stores/canvas.store';
 import { currentPatchId } from '../../stores/ui.store';
+import { GlslDependencyIndex } from '$lib/glsl-include/dependency-index';
+import { clearBrowserVfsIncludeCache } from '$lib/glsl-include/browser-resolver';
+import { isEmbeddedVFSEntry } from '$lib/vfs/types';
 import { renderFpsCap, showCookStats } from '../../stores/renderer.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
@@ -171,19 +174,9 @@ export class GLSystem {
   >();
 
   /** Node types whose shaders may contain #include directives */
-  private static SHADER_NODE_TYPES = new Set(['glsl', 'swgl', 'regl', 'three']);
+  private static SHADER_NODE_TYPES = new Set(['glsl', 'swgl', 'regl', 'three', 'hydra']);
 
-  /** File extensions that could be #included in shaders */
-  private static SHADER_EXTENSIONS = new Set([
-    '.gl',
-    '.glsl',
-    '.frag',
-    '.vert',
-    '.glslf',
-    '.glslv',
-    '.hlsl',
-    '.wgsl'
-  ]);
+  private glslDependencies = new GlslDependencyIndex();
 
   public outputSize = DEFAULT_OUTPUT_SIZE;
   public hasExplicitOutputSize = false;
@@ -238,34 +231,12 @@ export class GLSystem {
       this.syncOutputEnabled();
     });
 
-    // Invalidate shader nodes when VFS shader files are added, removed, or modified
-    let lastShaderEntryHash = '';
+    this.eventBus.addEventListener('vfsContentModified', ({ path }) => {
+      this.invalidateShaderIncludes([path]);
+    });
 
-    VirtualFilesystem.getInstance().entries$.subscribe((entries) => {
-      // Build a fingerprint of only shader-relevant VFS entries, including content metadata
-      const shaderPaths: string[] = [];
-
-      for (const [path, entry] of entries.entries()) {
-        const ext = path.slice(path.lastIndexOf('.'));
-
-        if (GLSystem.SHADER_EXTENSIONS.has(ext)) {
-          // Include content-sensitive metadata (size) so changes to file contents trigger invalidation
-          const size = entry.size ?? '';
-
-          shaderPaths.push(`${path}\0${size}`);
-        }
-      }
-
-      const hash = shaderPaths.sort().join('\0');
-      if (hash === lastShaderEntryHash) return;
-
-      const isInitial = lastShaderEntryHash === '';
-      lastShaderEntryHash = hash;
-
-      // Skip the initial subscription — no change to react to yet
-      if (isInitial) return;
-
-      this.invalidateShaderIncludes();
+    this.eventBus.addEventListener('vfsPathRenamed', ({ oldPath, newPath }) => {
+      this.invalidateShaderIncludes([oldPath, newPath]);
     });
 
     // Listen for video frame requests from WorkerNodeSystem
@@ -928,12 +899,33 @@ export class GLSystem {
    * Bump _includeRevision on all shader nodes so their fingerprint changes,
    * forcing the render worker to recompile shaders with fresh #include content.
    */
-  private invalidateShaderIncludes() {
+  private invalidateShaderIncludes(paths: string[]) {
+    const vfs = VirtualFilesystem.getInstance();
+    const consumers = this.nodes
+      .filter((node) => GLSystem.SHADER_NODE_TYPES.has(node.type))
+      .map((node) => ({ id: node.id, code: String(node.data.code ?? '') }));
+
+    this.glslDependencies.rebuild(consumers, (path) => {
+      const entry = vfs.getEntry(path);
+
+      return entry && isEmbeddedVFSEntry(entry) ? entry.content : undefined;
+    });
+
+    const affectedNodeIds = new Set<string>();
+
+    for (const path of paths) {
+      clearBrowserVfsIncludeCache(path);
+
+      for (const nodeId of this.glslDependencies.getConsumers(path)) {
+        affectedNodeIds.add(nodeId);
+      }
+    }
+
     let dirty = false;
 
     for (let i = 0; i < this.nodes.length; i++) {
       const node = this.nodes[i];
-      if (!GLSystem.SHADER_NODE_TYPES.has(node.type)) continue;
+      if (!affectedNodeIds.has(node.id)) continue;
 
       const rev = ((node.data._includeRevision as number) ?? 0) + 1;
       this.nodes[i] = { ...node, data: { ...node.data, _includeRevision: rev } };

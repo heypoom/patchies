@@ -44,6 +44,7 @@
     showSidebarTab
   } from '../../../stores/sidebar-visibility.store';
   import type { CodeEditorTarget } from '../../../stores/code-editor-layout.store';
+  import { canNavigateAwayFromPatchFile } from '$lib/vfs/file-editor-navigation';
 
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import type { ChatNode, ChatGraphSummary, ChatViewportSummary } from '$lib/ai/chat/resolver';
@@ -129,16 +130,23 @@
   // If the active view gets hidden, switch to the first visible tab
   $effect(() => {
     const visible = visibleViews;
+
     if (visible.length > 0 && !visible.some((v) => v.id === view)) {
       view = visible[0].id;
     }
   });
 
-  function handleTabClick(id: SidebarView) {
+  async function handleTabClick(id: SidebarView) {
+    const ok = await canNavigateAwayFromPatchFile();
+    if (!ok) return;
+
     view = id;
   }
 
-  function handleContextMenuToggle(id: SidebarView) {
+  async function handleContextMenuToggle(id: SidebarView) {
+    const ok = await canNavigateAwayFromPatchFile();
+    if (!ok) return;
+
     if (!$sidebarVisibleTabs.has(id)) {
       // Show the tab and switch to it
       showSidebarTab(id);
@@ -148,8 +156,16 @@
     }
   }
 
+  async function handleClose() {
+    const ok = await canNavigateAwayFromPatchFile();
+    if (!ok) return;
+
+    open = false;
+  }
+
   // Track which tab was right-clicked for the "Hide" action
   let contextMenuTargetTab = $state<SidebarView | null>(null);
+
   // Block tooltips while context menu is open; reset key on close to clear stale focus
   let tooltipsBlocked = $state(false);
   let tooltipResetKey = $state(0);
@@ -243,8 +259,8 @@
                   {#each availableViews as v (v.id)}
                     <button
                       class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-200 transition-colors hover:bg-zinc-800"
-                      onclick={() => {
-                        handleContextMenuToggle(v.id);
+                      onclick={async () => {
+                        await handleContextMenuToggle(v.id);
                         popoverOpen = false;
                       }}
                     >
@@ -264,7 +280,7 @@
 
           <button
             class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-            onclick={() => (open = false)}
+            onclick={handleClose}
             title="Close sidebar"
           >
             <X class="h-4 w-4" />
@@ -275,7 +291,7 @@
           {#if contextMenuTargetTab}
             {@const target = availableViews.find((v) => v.id === contextMenuTargetTab)}
             {#if target}
-              <ContextMenu.Item onclick={() => toggleSidebarTab(target.id)}>
+              <ContextMenu.Item onclick={() => handleContextMenuToggle(target.id)}>
                 Hide {target.title}
               </ContextMenu.Item>
               <ContextMenu.Separator />

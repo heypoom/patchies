@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 
 vi.mock('$workers/rendering/renderWorkerEntry?worker', () => ({
@@ -23,8 +23,17 @@ vi.mock('./IpcSystem', () => ({
 import { GLSystem } from './GLSystem';
 import { VideoChannelRegistry } from './VideoChannelRegistry';
 import { previewVisibleMap } from '../../stores/renderer.store';
+import { VirtualFilesystem } from '$lib/vfs';
+import { HistoryManager } from '$lib/history';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
 describe('GLSystem', () => {
+  beforeEach(() => {
+    VirtualFilesystem.resetInstance();
+    HistoryManager.getInstance().clear();
+  });
+
   it('sends connected video output node ids with render graph updates', () => {
     const glSystem = new GLSystem();
     const worker = glSystem.renderWorker as unknown as { postMessage: ReturnType<typeof vi.fn> };
@@ -111,5 +120,96 @@ describe('GLSystem', () => {
     glSystem.removeNode(nodeId);
 
     expect(get(previewVisibleMap)).not.toHaveProperty(nodeId);
+  });
+
+  it('routes shader line errors to the node virtual console', async () => {
+    const nodeId = `glsl-${crypto.randomUUID()}`;
+    const eventBus = PatchiesEventBus.getInstance();
+    const glSystem = new GLSystem();
+
+    const consoleOutput = new Promise<ConsoleOutputEvent>((resolve) => {
+      const handleConsoleOutput = (event: ConsoleOutputEvent) => {
+        if (event.nodeId !== nodeId) return;
+
+        eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+        resolve(event);
+      };
+
+      eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+    });
+
+    const reason = 'VFS: Path not found: patch://missing.glsl';
+    const message = `Include error on line 2: ${reason}`;
+
+    glSystem.handleRenderWorkerMessage({
+      data: {
+        type: 'shaderError',
+        nodeId,
+        error: message,
+        lineErrors: { 2: [reason] }
+      }
+    } as MessageEvent);
+
+    await expect(consoleOutput).resolves.toMatchObject({
+      nodeId,
+      messageType: 'error',
+      args: ['Shader compilation failed:', message],
+      lineErrors: { 2: [reason] }
+    });
+  });
+
+  it('refreshes direct and transitive GLSL consumers exactly once for same-length saves', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://shaders/math.glsl', 'float tone = 1.0;');
+
+    vfs.createEmbeddedFile(
+      'patch://shaders/material.glsl',
+      '#include "./math.glsl"\nfloat material() { return tone; }'
+    );
+
+    const glSystem = new GLSystem();
+    const worker = glSystem.renderWorker as unknown as { postMessage: ReturnType<typeof vi.fn> };
+
+    glSystem.upsertNode('glsl-transitive', 'glsl', {
+      code: '#include "./shaders/material.glsl"',
+      glUniformDefs: []
+    });
+
+    glSystem.upsertNode('glsl-direct', 'glsl', {
+      code: '#include "patch://shaders/math.glsl"',
+      glUniformDefs: []
+    });
+
+    glSystem.upsertNode('glsl-unrelated', 'glsl', {
+      code: 'void mainImage() {}',
+      glUniformDefs: []
+    });
+
+    worker.postMessage.mockClear();
+
+    vfs.writeEmbeddedFile('patch://shaders/math.glsl', 'float tone = 2.0;');
+
+    const rebuilds = worker.postMessage.mock.calls
+      .map(([message]) => message)
+      .filter((message) => message.type === 'buildRenderGraph');
+
+    expect(rebuilds).toHaveLength(1);
+
+    expect(rebuilds[0].graph.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'glsl-transitive',
+          data: expect.objectContaining({ _includeRevision: 1 })
+        }),
+        expect.objectContaining({
+          id: 'glsl-direct',
+          data: expect.objectContaining({ _includeRevision: 1 })
+        }),
+        expect.objectContaining({
+          id: 'glsl-unrelated',
+          data: expect.not.objectContaining({ _includeRevision: 1 })
+        })
+      ])
+    );
   });
 });

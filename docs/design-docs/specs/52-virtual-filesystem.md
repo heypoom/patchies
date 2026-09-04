@@ -1,6 +1,6 @@
 # 52. Virtual Filesystem
 
-> Status: Implemented (original VFS); `patch://` extension planned
+> Status: Implemented through Stage 2; Patch JavaScript modules planned for Stage 3
 
 I wanted the ability to persist, browse and resolve files in a virtual file system.
 
@@ -518,27 +518,33 @@ Release criterion: Patch files are portable and manageable through the Files tre
 
 ### Stage 2: Patch GLSL Editing and Imports
 
+Status: Implemented.
+
 Users can create, edit, and import GLSL utilities from `patch://`. JavaScript Patch files remain visible and portable but read-only until Stage 3.
 
 Scope:
 
 - transform the Files panel into a CodeMirror editor for supported GLSL files;
 - support New File for GLSL files in Patch folders;
-- implement drafts, dirty state, explicit Save, and the shared navigation guard;
+- implement drafts, dirty state, equivalent button / shortcut / Vim `:w` saves, and the shared navigation guard;
 - provide the same GLSL assistance as the `glsl` object;
+- save inline value-widget edits and refresh shader consumers immediately;
 - add Edit actions to normal rows, search results, and the mobile toolbar;
 - resolve relative, explicit Patch, and explicit User GLSL includes;
 - infer only the `.glsl` extension;
 - invalidate affected caches and direct and transitive shader consumers after saved revisions;
+- report missing includes in the consumer's virtual console and highlight the originating `#include` line;
 - retain the last working visual output when saved source fails.
 
 Verification:
 
-1. Editor tests cover entry points, draft isolation, `Cmd/Ctrl+S`, Save / Discard / Cancel, and global history while open.
+1. Editor tests cover entry points, draft isolation, `Cmd/Ctrl+S`, `Shift+Enter`, Vim `:w`, Save / Discard / Cancel, and global history while open.
 2. Resolver tests cover relative, explicit, inferred-extension, circular, and namespace-escape cases.
 3. Saved changes refresh direct and transitive consumers exactly once.
 4. Unsaved drafts do not invalidate consumers.
 5. Invalid saved source reports an error and preserves the previous visual output.
+6. A missing VFS include appears in the consumer's virtual console and highlights the originating `#include` line.
+7. Inline value-widget edits save the Patch file and refresh its shader consumers.
 
 Release criterion: GLSL Patch-file authoring works end to end without depending on JavaScript module support.
 

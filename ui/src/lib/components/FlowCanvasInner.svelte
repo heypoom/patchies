@@ -121,6 +121,7 @@
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
+  import { canNavigateAwayFromPatchFile } from '$lib/vfs/file-editor-navigation';
 
   import {
     HistoryManager,
@@ -599,10 +600,19 @@
 
   // Keyboard shortcuts delegated to KeyboardShortcutManager (created in onMount)
 
+  async function toggleSidebar() {
+    const canNavigate = await canNavigateAwayFromPatchFile();
+    if (!canNavigate) return;
+
+    $isSidebarOpen = !$isSidebarOpen;
+  }
+
   function triggerCommandPalette() {
     const dialogWidth = 320; // w-80
+
     const currentSidebarWidth = $isSidebarOpen && !$isMobile ? $sidebarWidth : 0;
     const availableWidth = window.innerWidth - currentSidebarWidth;
+
     const centerX = (availableWidth - dialogWidth) / 2;
     const centerY = window.innerHeight / 2 - 200;
 
@@ -869,7 +879,9 @@
       undo: () => historyManager.undo(),
       redo: () => historyManager.redo(),
       toggleSidebar: () => {
-        if (!$isFullscreenActive) $isSidebarOpen = !$isSidebarOpen;
+        if (!$isFullscreenActive) {
+          toggleSidebar();
+        }
       },
       openObjectBrowser: openObjectBrowser,
       openSettings: () => ($isSettingsOpen = true),
@@ -1243,8 +1255,10 @@
     showNewPatchDialog = true;
   }
 
-  function confirmNewPatch() {
-    patchManager.createNewPatch();
+  async function confirmNewPatch() {
+    const ok = await patchManager.createNewPatch();
+    if (!ok) return;
+
     showNewPatchDialog = false;
   }
 
@@ -1255,13 +1269,18 @@
       const result = await patchManager.loadSharedPatchFromUrl(pendingSharedPatchUrl);
 
       if (!result.success) {
+        if (result.cancelled) return;
+
         pendingSharedPatchUrl = null;
         pendingReadOnlyMode = false;
         urlLoadError = result.error ?? 'Unknown error occurred';
+
         return;
       }
     } else if (pendingSharedPatch) {
-      await patchManager.loadSharedPatch(pendingSharedPatch);
+      const patchLoaded = await patchManager.loadSharedPatch(pendingSharedPatch);
+
+      if (!patchLoaded) return;
     }
 
     pendingSharedPatch = null;
@@ -1669,7 +1688,7 @@
             showMissingApiKeyDialog = true;
           }}
           onNewPatch={newPatch}
-          onToggleSidebar={() => ($isSidebarOpen = !$isSidebarOpen)}
+          onToggleSidebar={toggleSidebar}
           onSaveAsPreset={(node) => {
             nodeToSaveAsPreset = node;
             showSavePresetDialog = true;
@@ -1723,9 +1742,7 @@
         onCommandPalette={triggerCommandPalette}
         onNewPatch={newPatch}
         onLoadPatch={loadDemoPatch}
-        onToggleLeftSidebar={() => {
-          $isSidebarOpen = !$isSidebarOpen;
-        }}
+        onToggleLeftSidebar={toggleSidebar}
         onSaveSelectedAsPreset={() => {
           if (selectedNodeIds.length === 1) {
             const node = nodes.find((n) => n.id === selectedNodeIds[0]);

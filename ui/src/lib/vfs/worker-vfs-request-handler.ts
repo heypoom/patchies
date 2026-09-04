@@ -75,9 +75,9 @@ export async function searchVfsEntries(query: string, path: string): Promise<Vfs
 
 /** Resolve a text-only VFS request used by render-worker GLSL includes. */
 export async function resolveVfsText(path: string): Promise<VfsTextResponse> {
-  if (!path.startsWith('user://')) {
+  if (!path.startsWith('patch://') && !path.startsWith('user://')) {
     return {
-      error: `Invalid VFS path: "${path}". Only user:// paths are supported.`
+      error: `Invalid VFS path: "${path}". Only patch:// and user:// paths are supported.`
     };
   }
 

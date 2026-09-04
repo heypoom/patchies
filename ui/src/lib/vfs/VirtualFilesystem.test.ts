@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { HistoryManager } from '$lib/history';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { VfsPathRenamedEvent } from '$lib/eventbus/events';
+import type { VfsContentModifiedEvent } from '$lib/eventbus/events';
 import { getPatchImportError, VirtualFilesystem } from './VirtualFilesystem';
 import type { EmbeddedVFSEntry } from './types';
 
@@ -309,6 +310,24 @@ describe('VirtualFilesystem patch files', () => {
     expect(vfs.getEntry('patch://utility.js')).toMatchObject({ revision: 2 });
   });
 
+  it('emits monotonic content revisions across Save, undo, and redo', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+    const revisions: number[] = [];
+    const listener = (event: VfsContentModifiedEvent) => revisions.push(event.revision);
+
+    PatchiesEventBus.getInstance().addEventListener('vfsContentModified', listener);
+
+    vfs.createEmbeddedFile('patch://utility.glsl', 'float value = 1.0;');
+    vfs.writeEmbeddedFile('patch://utility.glsl', 'float value = 2.0;');
+    history.undo();
+    history.redo();
+
+    expect(revisions).toEqual([1, 2, 3, 4]);
+
+    PatchiesEventBus.getInstance().removeEventListener('vfsContentModified', listener);
+  });
+
   it('restores local file bytes and metadata when replacement is undone and redone', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const history = HistoryManager.getInstance();
@@ -500,6 +519,46 @@ describe('VirtualFilesystem patch files', () => {
     vfs.registerEntry('user://shared.txt', { provider: 'local', filename: 'shared.txt' });
 
     await expect((await vfs.resolve('user://shared.txt')).text()).resolves.toBe('patch-b');
+  });
+
+  it('emits embedded deletion revisions for low-level remove and clear', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const eventBus = PatchiesEventBus.getInstance();
+    const deletions: VfsContentModifiedEvent[] = [];
+    const handleContentModified = (event: VfsContentModifiedEvent) => deletions.push(event);
+
+    vfs.createEmbeddedFile('patch://removed.glsl', 'float removed = 1.0;');
+    vfs.createEmbeddedFile('patch://cleared.glsl', 'float cleared = 1.0;');
+    eventBus.addEventListener('vfsContentModified', handleContentModified);
+
+    vfs.remove('patch://removed.glsl');
+    vfs.clear();
+
+    expect(deletions).toEqual([
+      { type: 'vfsContentModified', path: 'patch://removed.glsl', revision: 2 },
+      { type: 'vfsContentModified', path: 'patch://cleared.glsl', revision: 2 }
+    ]);
+
+    eventBus.removeEventListener('vfsContentModified', handleContentModified);
+  });
+
+  it('keeps revisions monotonic when a cleared path is recreated', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const eventBus = PatchiesEventBus.getInstance();
+    const revisions: number[] = [];
+    const handleContentModified = (event: VfsContentModifiedEvent) => {
+      if (event.path === 'patch://recreated.glsl') revisions.push(event.revision);
+    };
+
+    eventBus.addEventListener('vfsContentModified', handleContentModified);
+
+    vfs.createEmbeddedFile('patch://recreated.glsl', 'float value = 1.0;');
+    vfs.clear();
+    vfs.createEmbeddedFile('patch://recreated.glsl', 'float value = 2.0;');
+
+    expect(revisions).toEqual([1, 2, 3]);
+
+    eventBus.removeEventListener('vfsContentModified', handleContentModified);
   });
 
   it('loads oversized embedded files for recovery but refuses to resolve them', async () => {

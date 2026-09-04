@@ -186,11 +186,17 @@ const includeCompletions: Completion[] = [
     detail: 'include Lygia shader library code',
     info: 'Import a GLSL helper from Lygia.'
   }),
-  snippetCompletion('#include "${path}"', {
-    label: '#include "..."',
+  snippetCompletion('#include "patch://${path}"', {
+    label: '#include "patch://..."',
     type: 'keyword',
-    detail: 'include VFS or URL shader code',
-    info: 'Import GLSL from the patch VFS, npm-style path, or URL.'
+    detail: 'include embedded Patch GLSL',
+    info: 'Import a GLSL file that is embedded in the current patch.'
+  }),
+  snippetCompletion('#include "user://${path}"', {
+    label: '#include "user://..."',
+    type: 'keyword',
+    detail: 'include external User GLSL',
+    info: 'Import GLSL from an uploaded, browser-local, or linked User file.'
   })
 ];
 

@@ -41,6 +41,7 @@
     setInlineDecorationsEffect,
     type InlineDecoration
   } from '$lib/codemirror/inline-decorations';
+  import { vimWriteCommandDispatcher } from '$lib/codemirror/vim-write-command';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
@@ -132,6 +133,7 @@
     placeholder = '',
     class: className = '',
     onrun = () => {},
+    onsave,
     onchange = () => {},
     oncommit,
     nodeId,
@@ -152,6 +154,7 @@
     placeholder?: string;
     class?: string;
     onrun?: (code?: string) => void;
+    onsave?: () => void;
     onchange?: (code: string) => void;
 
     /** Called on blur if value changed since focus. For undo/redo tracking. */
@@ -188,6 +191,7 @@
   let lastValueWidgetRunAt = 0;
   let pendingValueWidgetRunCode: string | undefined;
   let languageRequestVersion = 0;
+  let removeVimWriteHandler: (() => void) | null = null;
 
   function runValueWidgetCode(code: string | undefined) {
     onrun(code);
@@ -290,9 +294,24 @@
         Prec.highest(
           keymap.of([
             {
+              key: 'Mod-s',
+              run: () => {
+                if (!onsave) return false;
+
+                onsave();
+
+                return true;
+              }
+            },
+            {
               key: 'Shift-Enter',
               run: () => {
-                onrun(editorView?.state.doc.toString());
+                if (onsave) {
+                  onsave();
+                } else {
+                  onrun(editorView?.state.doc.toString());
+                }
+
                 return true;
               }
             },
@@ -535,9 +554,17 @@
         ...extraExtensions
       ];
 
-      if ($useVimInEditor) {
+      const vimEnabled = $useVimInEditor;
+
+      if (vimEnabled) {
         const { vim, Vim } = await import('@replit/codemirror-vim');
-        Vim.defineEx('write', 'w', () => onrun(editorView?.state.doc.toString()));
+
+        vimWriteCommandDispatcher.register((dispatchWrite) => {
+          Vim.defineEx('write', 'w', (cm) => {
+            dispatchWrite(cm.cm6);
+          });
+        });
+
         extensions.push(drawSelection());
         extensions.push(vim({ status: false }));
       }
@@ -556,6 +583,20 @@
         state,
         parent: editorElement
       });
+
+      if (vimEnabled) {
+        const view = editorView;
+
+        removeVimWriteHandler = vimWriteCommandDispatcher.setHandler(view, () => {
+          if (onsave) {
+            onsave();
+
+            return;
+          }
+
+          onrun(view.state.doc.toString());
+        });
+      }
 
       onready?.();
     }
@@ -584,6 +625,8 @@
     if (valueWidgetRunTimeout) {
       clearTimeout(valueWidgetRunTimeout);
     }
+
+    removeVimWriteHandler?.();
 
     if (editorView) {
       editorView.destroy();
