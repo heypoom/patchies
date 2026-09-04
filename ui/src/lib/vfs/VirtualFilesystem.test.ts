@@ -542,6 +542,25 @@ describe('VirtualFilesystem patch files', () => {
     eventBus.removeEventListener('vfsContentModified', handleContentModified);
   });
 
+  it('keeps revisions monotonic when a cleared path is recreated', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const eventBus = PatchiesEventBus.getInstance();
+    const revisions: number[] = [];
+    const handleContentModified = (event: VfsContentModifiedEvent) => {
+      if (event.path === 'patch://recreated.glsl') revisions.push(event.revision);
+    };
+
+    eventBus.addEventListener('vfsContentModified', handleContentModified);
+
+    vfs.createEmbeddedFile('patch://recreated.glsl', 'float value = 1.0;');
+    vfs.clear();
+    vfs.createEmbeddedFile('patch://recreated.glsl', 'float value = 2.0;');
+
+    expect(revisions).toEqual([1, 2, 3]);
+
+    eventBus.removeEventListener('vfsContentModified', handleContentModified);
+  });
+
   it('loads oversized embedded files for recovery but refuses to resolve them', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const content = 'x'.repeat(256 * 1024 + 1);

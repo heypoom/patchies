@@ -583,8 +583,6 @@ export class VirtualFilesystem {
     for (const file of deletedEmbeddedFiles) {
       this.emitContentModified(file.path, file.revision);
     }
-
-    this.contentRevisionClock.clear();
   }
 
   clearPersistedData(): void {
