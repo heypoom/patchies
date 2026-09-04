@@ -183,7 +183,7 @@ NPM packages (lygia etc.) live in `node_modules/` — no Patchies-maintained GLS
 1. ✓ **`#include` preprocessor** — NPM package resolution (lygia), VFS, URL, with caching
 2. ✓ **Per-node integration** — run preprocessor in each shader node type's compilation step
 3. ✓ **`glsl` tagged template literal** — preprocessor for JS-based nodes (REGL, Three.js, SwissGL)
-4. **CodeMirror autocomplete** — lygia function names + user effect function names
+4. ✓ **CodeMirror autocomplete** — Patch/User include snippets and GLSL function completions
 5. ✓ **CodeMirror GLSL highlighting in JS** — mixed-language syntax highlighting via `parseMixed` for `glsl` tagged templates and GLSL property keys (`frag`, `vert`, `glsl`, `FP`, `VP`)
 
 ## Dependencies

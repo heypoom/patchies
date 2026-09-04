@@ -430,7 +430,7 @@ The drop target declares ownership:
 
 Patch folder drops are atomic. Patchies embeds the complete folder only when every file is allowed and the result fits within the patch budget. Otherwise it embeds nothing and reports the offending files. Name collisions show Replace, Keep Both, and Cancel; replacement is undoable, and Keep Both uses numbered suffixes.
 
-New File is available in Patch and its folders. It creates empty content, requires an explicit supported extension, and rejects case-sensitive duplicate paths.
+New File is available in Patch and its folders. It creates empty content, requires an explicit supported extension, rejects case-sensitive duplicate paths, and opens the new file in the editor. An empty GLSL file shows a non-persisted example function placeholder so users know the file can contain reusable GLSL functions.
 
 ### Editor Behavior
 
@@ -439,12 +439,14 @@ Double-clicking an editable Patch file, or choosing **Edit** from its context me
 The editor header contains:
 
 - Back
-- the full `patch://` path
+- the path relative to the `patch://` root, without the namespace prefix
 - a dirty indicator
-- Save with a `Cmd/Ctrl+S` shortcut
+- an icon-only Save button with a shortcut tooltip
 - Rename, Copy Path, Save to Disk, and Delete in an overflow menu
 
-CodeMirror keeps a local draft. Save is explicit; unsaved drafts do not change consumers. Back, sidebar navigation, opening another file, loading another patch, and rename while dirty use one Save / Discard / Cancel guard. Browser reload and window close use the standard unsaved-changes warning.
+CodeMirror keeps a local draft. Save is explicit; unsaved drafts do not change consumers. The Save button, `Cmd/Ctrl+S`, `Shift+Enter`, and Vim `:w` run the same Save action. Inline value-widget changes also save immediately so shader consumers refresh while the value is adjusted.
+
+Back, opening another file, loading another patch, rename while dirty, and every action that hides or leaves the Files sidebar use one Save / Discard / Cancel guard. This includes the sidebar keyboard shortcut, command palette, tab and context-menu actions, close control, and bottom toolbar. Browser reload and window close use the standard unsaved-changes warning.
 
 Invalid JavaScript or GLSL remains saveable because include files may not compile independently and users may save work in progress. Save validates only path, UTF-8 encoding, and size. Consumers retain their last working output when the saved source fails.
 
@@ -538,13 +540,13 @@ Scope:
 
 Verification:
 
-1. Editor tests cover entry points, draft isolation, `Cmd/Ctrl+S`, `Shift+Enter`, Vim `:w`, Save / Discard / Cancel, and global history while open.
+1. Session and integration tests cover draft isolation, Save-triggered invalidation, and global history while the editor is open. Manual UI verification covers the row, search, and mobile entry points; the Save button, `Cmd/Ctrl+S`, `Shift+Enter`, and Vim `:w`; and Save / Discard / Cancel navigation because the repository does not have a rendered component-test harness for the Files panel.
 2. Resolver tests cover relative, explicit, inferred-extension, circular, and namespace-escape cases.
 3. Saved changes refresh direct and transitive consumers exactly once.
 4. Unsaved drafts do not invalidate consumers.
 5. Invalid saved source reports an error and preserves the previous visual output.
-6. A missing VFS include appears in the consumer's virtual console and highlights the originating `#include` line.
-7. Inline value-widget edits save the Patch file and refresh its shader consumers.
+6. Worker and system tests verify that a missing VFS include reaches the consumer's virtual console with the originating `#include` line diagnostic. Manually verify the rendered CodeMirror line highlight.
+7. Unit tests cover inline value-widget rerun policy. Manually verify that a widget edit saves the Patch file and refreshes its shader consumers.
 
 Release criterion: GLSL Patch-file authoring works end to end without depending on JavaScript module support.
 
