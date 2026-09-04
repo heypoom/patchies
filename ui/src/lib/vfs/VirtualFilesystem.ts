@@ -550,6 +550,9 @@ export class VirtualFilesystem {
 
   remove(path: string): void {
     const entry = this.entries.get(path);
+    const deletionRevision =
+      entry && isEmbeddedVFSEntry(entry) ? (entry.revision ?? 0) + 1 : undefined;
+
     this.entries.delete(path);
     this.permissions.delete(path);
 
@@ -558,12 +561,17 @@ export class VirtualFilesystem {
     }
 
     this.notifyChange();
+
+    if (deletionRevision !== undefined) this.emitContentModified(path, deletionRevision);
   }
 
   clear(): void {
+    const deletedEmbeddedFiles = [...this.entries].flatMap(([path, entry]) =>
+      isEmbeddedVFSEntry(entry) ? [{ path, revision: (entry.revision ?? 0) + 1 }] : []
+    );
+
     this.entries.clear();
     this.permissions.clear();
-    this.contentRevisionClock.clear();
     this.patchFiles.refreshValidation();
 
     const provider = this.getLocalProvider();
@@ -571,6 +579,12 @@ export class VirtualFilesystem {
     provider?.clearDirHandles();
 
     this.notifyChange();
+
+    for (const file of deletedEmbeddedFiles) {
+      this.emitContentModified(file.path, file.revision);
+    }
+
+    this.contentRevisionClock.clear();
   }
 
   clearPersistedData(): void {

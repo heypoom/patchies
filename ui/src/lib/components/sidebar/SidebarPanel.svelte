@@ -286,7 +286,7 @@
           {#if contextMenuTargetTab}
             {@const target = availableViews.find((v) => v.id === contextMenuTargetTab)}
             {#if target}
-              <ContextMenu.Item onclick={() => toggleSidebarTab(target.id)}>
+              <ContextMenu.Item onclick={() => handleContextMenuToggle(target.id)}>
                 Hide {target.title}
               </ContextMenu.Item>
               <ContextMenu.Separator />

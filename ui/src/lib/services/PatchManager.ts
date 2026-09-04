@@ -34,6 +34,7 @@ export interface LoadPatchResult {
 
 export interface LoadUrlResult {
   success: boolean;
+  cancelled?: boolean;
   error?: string;
 }
 
@@ -432,7 +433,7 @@ export class PatchManager {
 
       if (result.success) {
         const restored = await this.loadSharedPatch(result.data);
-        if (!restored) return { success: false, error: 'Patch load cancelled' };
+        if (!restored) return { success: false, cancelled: true };
 
         return { success: true };
       }

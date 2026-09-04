@@ -521,6 +521,27 @@ describe('VirtualFilesystem patch files', () => {
     await expect((await vfs.resolve('user://shared.txt')).text()).resolves.toBe('patch-b');
   });
 
+  it('emits embedded deletion revisions for low-level remove and clear', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const eventBus = PatchiesEventBus.getInstance();
+    const deletions: VfsContentModifiedEvent[] = [];
+    const handleContentModified = (event: VfsContentModifiedEvent) => deletions.push(event);
+
+    vfs.createEmbeddedFile('patch://removed.glsl', 'float removed = 1.0;');
+    vfs.createEmbeddedFile('patch://cleared.glsl', 'float cleared = 1.0;');
+    eventBus.addEventListener('vfsContentModified', handleContentModified);
+
+    vfs.remove('patch://removed.glsl');
+    vfs.clear();
+
+    expect(deletions).toEqual([
+      { type: 'vfsContentModified', path: 'patch://removed.glsl', revision: 2 },
+      { type: 'vfsContentModified', path: 'patch://cleared.glsl', revision: 2 }
+    ]);
+
+    eventBus.removeEventListener('vfsContentModified', handleContentModified);
+  });
+
   it('loads oversized embedded files for recovery but refuses to resolve them', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const content = 'x'.repeat(256 * 1024 + 1);

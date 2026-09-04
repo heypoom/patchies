@@ -29,4 +29,14 @@ describe('GlslDependencyIndex', () => {
 
     expect(index.getConsumers('patch://missing.glsl')).toEqual(new Set(['glsl-1']));
   });
+
+  it('tracks an unresolved exact candidate that can outrank an inferred extension', () => {
+    const files = new Map([['patch://utility.glsl', 'vec3 utility() { return vec3(1.0); }']]);
+    const index = new GlslDependencyIndex();
+
+    index.rebuild([{ id: 'glsl-1', code: '#include "./utility"' }], (path) => files.get(path));
+
+    expect(index.getConsumers('patch://utility')).toEqual(new Set(['glsl-1']));
+    expect(index.getConsumers('patch://utility.glsl')).toEqual(new Set(['glsl-1']));
+  });
 });

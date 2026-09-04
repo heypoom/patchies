@@ -54,21 +54,31 @@ export class GlslDependencyIndex {
         }
 
         const candidates = resolveVfsIncludeCandidates(specifier, importerPath);
-        const resolved = candidates.find((candidate) => readSource(candidate) !== undefined);
-        const dependency = resolved ?? candidates[0];
+        let dependency: string | undefined;
+        let dependencySource: string | undefined;
 
-        let consumers = this.consumersByPath.get(dependency);
-        if (!consumers) {
-          consumers = new Set();
-          this.consumersByPath.set(dependency, consumers);
+        for (const candidate of candidates) {
+          let consumers = this.consumersByPath.get(candidate);
+          if (!consumers) {
+            consumers = new Set();
+            this.consumersByPath.set(candidate, consumers);
+          }
+
+          consumers.add(consumer.id);
+
+          const source = readSource(candidate);
+          if (source !== undefined) {
+            dependency = candidate;
+            dependencySource = source;
+            break;
+          }
         }
 
-        consumers.add(consumer.id);
+        dependency ??= candidates[0];
 
         if (visited.has(dependency)) continue;
         visited.add(dependency);
 
-        const dependencySource = readSource(dependency);
         if (dependencySource !== undefined) visit(dependencySource, dependency);
       }
     };

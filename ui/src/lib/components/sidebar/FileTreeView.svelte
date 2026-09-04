@@ -189,8 +189,16 @@
       refreshEditor();
     }
 
-    await action?.();
-    resolve?.(true);
+    let completed = false;
+
+    try {
+      await action?.();
+      completed = true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Action failed');
+    } finally {
+      resolve?.(completed);
+    }
   }
 
   async function openEditor(path: string) {
@@ -1124,11 +1132,17 @@
   }
 
   async function handleDeleteFromContextMenu(path: string) {
-    await requestEditorNavigation(() => {
+    const deletePath = () => {
       vfs.deletePath(path);
       if (editorSession.path === path) editorSession.close();
       refreshEditor();
-    });
+    };
+
+    if (editorSession.path === path) {
+      await requestEditorNavigation(deletePath);
+    } else {
+      deletePath();
+    }
 
     selectedPaths.clear();
     lastSelectedPath = null;

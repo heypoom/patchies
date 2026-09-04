@@ -1256,6 +1256,8 @@
       const result = await patchManager.loadSharedPatchFromUrl(pendingSharedPatchUrl);
 
       if (!result.success) {
+        if (result.cancelled) return;
+
         pendingSharedPatchUrl = null;
         pendingReadOnlyMode = false;
         urlLoadError = result.error ?? 'Unknown error occurred';
