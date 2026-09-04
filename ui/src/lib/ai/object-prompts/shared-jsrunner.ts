@@ -133,11 +133,11 @@ export const runOnMountInstructions = `
 `.trim();
 
 /**
- * Instructions for objects that support patcher libraries.
+ * Instructions for objects that can import Patch JavaScript modules.
  * Used by: js, p5, sonic~, elem~
  */
 export const patcherLibraryInstructions = `
-**Patcher Libraries - Share code across js/p5/sonic~/elem~ objects:**
-- Add \`// @lib myModule\` at top, export constants/functions/classes
-- Import elsewhere with: import { func } from 'myModule'
+**Patch JavaScript Modules - Share code across js/p5/sonic~/elem~ objects:**
+- Create a Patch JavaScript file in Files and export constants, functions, or classes
+- Import it elsewhere with: import { func } from 'my-module'
 `.trim();

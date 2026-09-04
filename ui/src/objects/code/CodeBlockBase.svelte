@@ -2,7 +2,6 @@
   import {
     Code,
     Loader,
-    Package,
     Pause,
     Play,
     Expand,
@@ -64,9 +63,6 @@
     isMessageCallbackActive,
     isTimerCallbackActive,
 
-    // Library support (js only)
-    supportsLibraries = false,
-
     // Custom label
     nodeLabel = 'js',
 
@@ -96,7 +92,6 @@
       showConsole?: boolean;
       inletCount?: number;
       outletCount?: number;
-      libraryName?: string | null;
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
@@ -112,7 +107,6 @@
     showRunningIndicator?: boolean;
     isMessageCallbackActive: boolean;
     isTimerCallbackActive: boolean;
-    supportsLibraries?: boolean;
     nodeLabel?: string;
     language?: SupportedLanguage;
     editorPlaceholder?: string;
@@ -132,9 +126,7 @@
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 1);
 
-  let settingsSidebarLabel = $derived(
-    (supportsLibraries && data.libraryName) || data.title || nodeLabel
-  );
+  let settingsSidebarLabel = $derived(data.title || nodeLabel);
 
   let showEditor = $state(false);
   let showSettings = $state(false);
@@ -264,8 +256,6 @@
   });
 
   const playOrStopIcon = $derived.by(() => {
-    if (supportsLibraries && data.libraryName) return Package;
-
     // Prioritize showing Pause if there are active timers (so user can stop them)
     if (isLongRunningTaskActive) return Pause;
     if (showRunningIndicator && isRunning) return Loader;
@@ -336,7 +326,7 @@
       dataKey: 'code',
       language,
       nodeType,
-      title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+      title: data.title || nodeLabel,
       placeholder: editorPlaceholder,
       onrun: executeCode,
       lineErrors,
@@ -354,7 +344,7 @@
       dataKey: 'code',
       language,
       nodeType,
-      title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+      title: data.title || nodeLabel,
       placeholder: editorPlaceholder,
       onrun: executeCode,
       lineErrors,
@@ -367,11 +357,6 @@
   }
 
   function handleCodeOpen(event?: MouseEvent) {
-    if (supportsLibraries && data.libraryName) {
-      toggleInlineEditor();
-      return;
-    }
-
     openEditorLayout({
       defaultLayout: $defaultEditorLayout,
       useAlternateLayout: event?.shiftKey ?? false,
@@ -391,11 +376,6 @@
   }
 
   function handleRunButtonClick() {
-    if (supportsLibraries && data.libraryName) {
-      toggleInlineEditor();
-      return;
-    }
-
     runOrStop();
   }
 
@@ -444,8 +424,8 @@
     dataKey: 'code',
     language,
     nodeType,
-    label: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
-    title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+    label: data.title || nodeLabel,
+    title: data.title || nodeLabel,
     placeholder: editorPlaceholder,
     value: code,
     onchange: onCodeChange,
@@ -506,35 +486,33 @@
           class="node-title-drag-handle z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1 text-nowrap whitespace-nowrap"
         >
           <div class="font-mono text-xs font-medium text-zinc-400">
-            {(supportsLibraries && data.libraryName) || data.title || nodeLabel}
+            {data.title || nodeLabel}
           </div>
         </div>
 
         <div class="node-floating-controls flex items-center sm:group-hover/header:opacity-100">
-          {#if !(supportsLibraries && data.libraryName)}
-            {#if settingsSchema && hasVisibleSettingsFields(settingsSchema)}
-              <CodeBlockOverflowMenu
-                showConsole={data.showConsole ?? false}
-                {showSettings}
-                {settingsSchema}
-                onConsoleToggle={handleConsoleToggle}
-                onSettingsToggle={settingsSidebarTarget.toggle}
-                onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
-              />
-            {:else}
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                    onclick={handleConsoleToggle}
-                    aria-label="Console"
-                  >
-                    <Terminal class="h-4 w-4 text-zinc-300" />
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content>Console</Tooltip.Content>
-              </Tooltip.Root>
-            {/if}
+          {#if settingsSchema && hasVisibleSettingsFields(settingsSchema)}
+            <CodeBlockOverflowMenu
+              showConsole={data.showConsole ?? false}
+              {showSettings}
+              {settingsSchema}
+              onConsoleToggle={handleConsoleToggle}
+              onSettingsToggle={settingsSidebarTarget.toggle}
+              onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
+            />
+          {:else}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={handleConsoleToggle}
+                  aria-label="Console"
+                >
+                  <Terminal class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Console</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
           {#if resolvedPrimary === 'settings'}
@@ -598,7 +576,7 @@
           {/each}
         </div>
 
-        {#if data.showConsole && !(supportsLibraries && data.libraryName)}
+        {#if data.showConsole}
           <VirtualConsole
             bind:this={inlineConsoleRef}
             {nodeId}
@@ -637,11 +615,7 @@
             style={`min-width: ${minContainerWidth}px`}
             onclick={handleRunButtonClick}
             aria-disabled={showRunningIndicator && isRunning && !isLongRunningTaskActive}
-            aria-label={supportsLibraries && data.libraryName
-              ? 'Edit shared code'
-              : isLongRunningTaskActive
-                ? 'Stop'
-                : 'Run code'}
+            aria-label={isLongRunningTaskActive ? 'Stop' : 'Run code'}
           >
             <div
               class={[
@@ -660,13 +634,7 @@
               selected ? '' : 'group-hover:opacity-100'
             ]}
           >
-            {#if supportsLibraries && data.libraryName}
-              {#if !showEditor}
-                <div>click to edit shared code</div>
-              {/if}
-            {:else}
-              <div>click to run</div>
-            {/if}
+            <div>click to run</div>
           </div>
         {/if}
 
@@ -702,37 +670,19 @@
   {#if showEditor && !codeEditorOverlay.isOpen}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        {#if !(supportsLibraries && data.libraryName)}
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={openExpandedCodeEditor}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                aria-label="Open expanded editor"
-              >
-                <Expand class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={openExpandedCodeEditor}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              aria-label="Open expanded editor"
+            >
+              <Expand class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
 
-            <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
-          </Tooltip.Root>
-        {/if}
-
-        {#if supportsLibraries && data.libraryName}
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={executeCode}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                aria-label="Re-run dependent code"
-              >
-                <Play class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-
-            <Tooltip.Content>Re-run dependent code</Tooltip.Content>
-          </Tooltip.Root>
-        {/if}
+          <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
+        </Tooltip.Root>
 
         <Tooltip.Root>
           <Tooltip.Trigger>

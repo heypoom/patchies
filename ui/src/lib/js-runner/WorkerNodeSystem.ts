@@ -85,6 +85,17 @@ export class WorkerNodeSystem {
   private unsubscribeProfilerEnable: (() => void) | null = null;
 
   constructor() {
+    this.jsRunner.subscribeModules((moduleName, code) => {
+      for (const [nodeId, instance] of this.workers) {
+        instance.worker.postMessage({
+          type: 'updateModule',
+          nodeId,
+          moduleName,
+          code
+        } satisfies WorkerMessage);
+      }
+    });
+
     // Subscribe to FFT data updates - forward to all workers that have FFT enabled
     this.setupFFTForwarding();
 
@@ -701,30 +712,7 @@ export class WorkerNodeSystem {
     // Sync modules before execution to ensure we have the latest libraries
     this.syncModulesToWorker(nodeId, instance.worker);
 
-    // Preprocess code (handle modules, @lib, etc.)
-    const processedCode = await this.jsRunner.preprocessCode(code, {
-      nodeId,
-      setLibraryName: (name) => {
-        // Only warn when user is trying to create a library (name is truthy)
-        // name=null means "no library" or "unregister library"
-        if (name) {
-          this.eventBus.dispatch({
-            type: 'consoleOutput',
-            nodeId,
-            messageType: 'warn',
-            timestamp: Date.now(),
-            args: [
-              '@lib modules are not supported in worker nodes. Use a regular js node for shared libraries.'
-            ]
-          });
-        }
-      }
-    });
-
-    if (processedCode === null) {
-      // Code was registered as library - already warned above
-      return;
-    }
+    const processedCode = await this.jsRunner.preprocessCode(code, { nodeId });
 
     instance.worker.postMessage({
       type: 'executeCode',

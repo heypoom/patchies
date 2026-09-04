@@ -55,6 +55,7 @@ export interface CanvasDragDropManagerConfig {
   screenToFlowPosition: ScreenToFlowPositionFn;
   createNode: CreateNodeCallback;
   createNodeFromName: CreateNodeFromNameCallback;
+  focusModuleMirror?: (path: string) => boolean;
 }
 
 /**
@@ -66,11 +67,13 @@ export class CanvasDragDropManager {
   private screenToFlowPosition: ScreenToFlowPositionFn;
   private createNode: CreateNodeCallback;
   private createNodeFromName: CreateNodeFromNameCallback;
+  private focusModuleMirror?: (path: string) => boolean;
 
   constructor(config: CanvasDragDropManagerConfig) {
     this.screenToFlowPosition = config.screenToFlowPosition;
     this.createNode = config.createNode;
     this.createNodeFromName = config.createNodeFromName;
+    this.focusModuleMirror = config.focusModuleMirror;
   }
 
   /**
@@ -352,6 +355,13 @@ export class CanvasDragDropManager {
 
     if (!entry) {
       logger.warn('VFS entry not found:', vfsPath);
+      return;
+    }
+
+    if (vfsPath.startsWith('patch://') && /\.(?:js|mjs)$/.test(vfsPath)) {
+      if (this.focusModuleMirror?.(vfsPath)) return;
+
+      this.createNode('js.module', position, { vfsPath });
       return;
     }
 

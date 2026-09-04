@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getImportedModuleNames,
-  getLibraryDependentNodeIds,
-  isSnippetModule,
-  getLibName
+  getModuleDependentNodeIds,
+  isSnippetModule
 } from './js-module-utils';
+import { JSModuleResolver } from './JSModuleResolver';
 
 describe('js module utils', () => {
   const ism = isSnippetModule;
@@ -19,39 +19,80 @@ describe('js module utils', () => {
     expect(ism('// imma import this\nimport { a } from "foo"')).toBe(true);
   });
 
-  it('should extract lib name from @lib comment', () => {
-    expect(getLibName('// @lib lodash\nconst a = 1')).toBe('lodash');
-    expect(getLibName('// @lib react-dom\nexport const Component = () => {}')).toBe('react-dom');
-    expect(getLibName('const a = 1')).toBe(null);
-    expect(getLibName('// some other comment\nconst a = 1')).toBe(null);
-    expect(getLibName('//   @lib   three   \nconst scene = new THREE.Scene()')).toBe('three');
-  });
-
-  it('should extract static import module names', () => {
+  it('extracts static imports, re-exports, and literal dynamic imports', () => {
     expect(
       getImportedModuleNames(
-        "import { add } from 'math'\nimport helpers from \"helpers\"\nimport 'setup'\n// import 'ignored'"
+        "import { add } from 'math'\nimport helpers from \"helpers\"\nimport 'setup'\nexport * from 're-export'\nexport { value } from 'named-re-export'\nimport('dynamic')\n// import 'ignored'\nconst label = \"from 'ignored-string'\""
       )
-    ).toEqual(new Set(['math', 'helpers', 'setup']));
+    ).toEqual(new Set(['math', 'helpers', 'setup', 're-export', 'named-re-export', 'dynamic']));
   });
 
-  it('should find direct and transitive library dependents', () => {
+  it('finds alias, relative, explicit, and transitive VFS dependents in order', () => {
+    const modules = new Map([
+      ['patch://math.js', 'export const add = () => 1'],
+      [
+        'patch://lib/render.js',
+        "import { add } from '../math.js'\nexport const render = () => add()"
+      ]
+    ]);
+    const resolver = new JSModuleResolver(modules);
+
     expect(
-      getLibraryDependentNodeIds(
+      getModuleDependentNodeIds(
         [
-          { id: 'math', data: { code: '// @lib math\nexport const add = () => {}' } },
           {
-            id: 'render-utils',
-            data: {
-              code: "// @lib render-utils\nimport { add } from 'math'\nexport const draw = () => add()"
-            }
+            id: 'explicit',
+            data: { code: "import { add } from 'patch://math.js'\nsend(add())" }
           },
-          { id: 'canvas', data: { code: "import { draw } from 'render-utils'\ndraw()" } },
-          { id: 'unrelated', data: { code: "import { x } from 'other'" } }
+          {
+            id: 'transitive',
+            data: { code: "import { render } from './lib/render.js'\nsend(render())" }
+          },
+          { id: 'alias', data: { code: "import { add } from 'math'\nsend(add())" } }
         ],
-        'math',
-        'math'
+        'patch://math.js',
+        modules,
+        resolver
       )
-    ).toEqual(['render-utils', 'canvas']);
+    ).toEqual(['explicit', 'alias', 'transitive']);
+  });
+
+  it('finds dependents through re-exports and literal dynamic imports', () => {
+    const modules = new Map([
+      ['patch://math.js', 'export const add = () => 1'],
+      ['patch://re-export.js', "export { add } from './math.js'"],
+      ['patch://dynamic.js', "export const load = () => import('./math.js')"]
+    ]);
+    const resolver = new JSModuleResolver(modules);
+
+    expect(
+      getModuleDependentNodeIds(
+        [
+          { id: 're-export-consumer', data: { code: "import { add } from 're-export'" } },
+          { id: 'dynamic-consumer', data: { code: "import { load } from 'dynamic'" } }
+        ],
+        'patch://math.js',
+        modules,
+        resolver
+      )
+    ).toEqual(['re-export-consumer', 'dynamic-consumer']);
+  });
+
+  it('continues collecting dependents when another module cannot be scanned', () => {
+    const modules = new Map([
+      ['patch://math.js', 'export const add = () => 1'],
+      ['patch://broken.js', "import { add } from 'math' /*"],
+      ['patch://valid.js', "import { add } from 'math'"]
+    ]);
+    const resolver = new JSModuleResolver(modules);
+
+    expect(
+      getModuleDependentNodeIds(
+        [{ id: 'valid-consumer', data: { code: "import { add } from 'valid'" } }],
+        'patch://math.js',
+        modules,
+        resolver
+      )
+    ).toEqual(['valid-consumer']);
   });
 });

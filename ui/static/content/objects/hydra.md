@@ -173,15 +173,12 @@ snoiseGen(6.0).kaleid(6).out()
 
 ### Sharing Custom Functions Across Nodes
 
-Use a [Shared Library](/docs/javascript-runner)
-(`// @lib`) to define custom functions once and reuse them in multiple
-`hydra` objects.
+Use a [Patch JavaScript module](/docs/js-modules) to define custom functions
+once and reuse them in multiple `hydra` objects.
 
 In JS object:
 
 ```javascript
-// @lib hydra-utils
-
 export const getUtils = async () => ({
   snoiseGen: await setFunction({
     name: 'snoiseGen',

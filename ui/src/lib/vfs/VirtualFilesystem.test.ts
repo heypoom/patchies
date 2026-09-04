@@ -415,6 +415,73 @@ describe('VirtualFilesystem patch files', () => {
     eventBus.removeEventListener('vfsPathRenamed', handleRename);
   });
 
+  it('rewrites Patch module imports with the file rename and restores them through history', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const history = HistoryManager.getInstance();
+
+    vfs.createEmbeddedFile('patch://lib/math.js', 'export const value = 1');
+    vfs.createEmbeddedFile(
+      'patch://consumer.js',
+      [
+        "import { value } from './lib/math.js'",
+        "export { value as rootValue } from 'lib/math'",
+        "const load = () => import('patch://lib/math.js')"
+      ].join('\n')
+    );
+    history.clear();
+
+    vfs.renamePath('patch://lib/math.js', 'patch://lib/numbers.js');
+
+    expect(vfs.readEmbeddedFile('patch://consumer.js')).toContain("from './lib/numbers.js'");
+    expect(vfs.readEmbeddedFile('patch://consumer.js')).toContain("from 'lib/numbers'");
+    expect(vfs.readEmbeddedFile('patch://consumer.js')).toContain(
+      "import('patch://lib/numbers.js')"
+    );
+
+    history.undo();
+
+    expect(vfs.readEmbeddedFile('patch://consumer.js')).toContain("from './lib/math.js'");
+    expect(vfs.readEmbeddedFile('patch://consumer.js')).toContain("from 'lib/math'");
+    expect(vfs.readEmbeddedFile('patch://consumer.js')).toContain("import('patch://lib/math.js')");
+  });
+
+  it('rewrites only module specifiers when renaming a Patch JavaScript file', () => {
+    const vfs = VirtualFilesystem.getInstance();
+
+    vfs.createEmbeddedFile('patch://utils.js', 'export const value = 1');
+    vfs.createEmbeddedFile(
+      'patch://consumer.js',
+      [
+        "import { value } from 'utils'",
+        'const label = "from \'utils\'"',
+        "// import { value } from 'utils'"
+      ].join('\n')
+    );
+
+    vfs.renamePath('patch://utils.js', 'patch://numbers.js');
+
+    expect(vfs.readEmbeddedFile('patch://consumer.js')).toBe(
+      [
+        "import { value } from 'numbers'",
+        'const label = "from \'utils\'"',
+        "// import { value } from 'utils'"
+      ].join('\n')
+    );
+  });
+
+  it('rewrites relative module imports when only the importer moves', () => {
+    const vfs = VirtualFilesystem.getInstance();
+
+    vfs.createEmbeddedFile('patch://shared.js', 'export const value = 1');
+    vfs.createEmbeddedFile('patch://folder/consumer.js', "import { value } from '../shared.js'");
+
+    vfs.renamePath('patch://folder/consumer.js', 'patch://nested/deeper/consumer.js');
+
+    expect(vfs.readEmbeddedFile('patch://nested/deeper/consumer.js')).toContain(
+      "from '../../shared.js'"
+    );
+  });
+
   it('serializes persisted renames when undo follows an in-flight move', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const history = HistoryManager.getInstance();

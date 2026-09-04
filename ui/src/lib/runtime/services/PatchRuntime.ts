@@ -26,7 +26,10 @@ import type {
 import type { GraphChangeCallback, GraphChangeQuery } from './GraphObserver';
 
 import type { PatchRuntimeOptions, RuntimeServices } from '../types/patch-runtime';
-import { getLibraryDependentNodeIds } from '$lib/js-runner/js-module-utils';
+import { getModuleDependentNodeIds } from '$lib/js-runner/js-module-utils';
+import { JSRunner } from '$lib/js-runner/JSRunner';
+import { VirtualFilesystem } from '$lib/vfs';
+import { isEmbeddedVFSEntry } from '$lib/vfs/types';
 
 export class PatchRuntime {
   private graph = new PatchGraph();
@@ -43,6 +46,7 @@ export class PatchRuntime {
   private objectResolver: RuntimeObjectResolver;
   private objectReconciler: RuntimeObjectReconciler;
   private objectSyncQueue = createSerialQueue();
+  private moduleRerunQueue = createSerialQueue();
 
   constructor(options: PatchRuntimeOptions) {
     const { objectService, audioService, eventBus, messageSystem, profilerCoordinator } =
@@ -55,10 +59,7 @@ export class PatchRuntime {
       onObjectParamsChange: options.onObjectParamsChange,
       onObjectDataChange: options.onObjectDataChange,
       objectContextOptions: {
-        subscribeGraph: (query, callback) => this.subscribeGraph(query, callback),
-        rerunLibraryDependents: (sourceNodeId, libraryName) => {
-          queueMicrotask(() => this.rerunLibraryDependents(sourceNodeId, libraryName));
-        }
+        subscribeGraph: (query, callback) => this.subscribeGraph(query, callback)
       }
     });
 
@@ -87,6 +88,9 @@ export class PatchRuntime {
       getAudioObject: (nodeId) => this.getAudioObject(nodeId),
       consumeSuppressedAudioObjectSync: (nodeId) => this.consumeSuppressedAudioObjectSync(nodeId)
     });
+
+    this.eventBus.addEventListener('vfsContentModified', this.handleVfsContentModified);
+    this.eventBus.addEventListener('vfsPathRenamed', this.handleVfsPathRenamed);
   }
 
   isObjectInRegistry(objectType: string): boolean {
@@ -162,6 +166,17 @@ export class PatchRuntime {
 
   getGraph(): RuntimeGraphSpec {
     return this.graph.getGraph();
+  }
+
+  getModuleDependentNodeIds(moduleSource: string): string[] {
+    const runner = JSRunner.getInstance();
+
+    return getModuleDependentNodeIds(
+      this.graph.getObjects(),
+      moduleSource,
+      runner.modules,
+      runner.moduleResolver
+    );
   }
 
   /**
@@ -310,6 +325,9 @@ export class PatchRuntime {
   }
 
   destroy(): void {
+    this.eventBus.removeEventListener('vfsContentModified', this.handleVfsContentModified);
+    this.eventBus.removeEventListener('vfsPathRenamed', this.handleVfsPathRenamed);
+
     this.graphObserver.destroy();
     this.message.destroy();
     this.audio.destroy();
@@ -339,13 +357,76 @@ export class PatchRuntime {
     } while (sync !== this.objectSyncQueue.current);
   }
 
-  private async rerunLibraryDependents(sourceNodeId: string, libraryName: string): Promise<void> {
-    const dependentNodeIds = getLibraryDependentNodeIds(
-      this.graph.getObjects(),
-      libraryName,
-      sourceNodeId
-    );
+  private handleVfsContentModified = ({ path }: { path: string }): void => {
+    if (!/^(?:patch|user):\/\/.+\.(?:js|mjs)$/.test(path)) return;
 
+    const runner = JSRunner.getInstance();
+    const previousDependentNodeIds = getModuleDependentNodeIds(
+      this.graph.getObjects(),
+      path,
+      runner.modules,
+      runner.moduleResolver
+    );
+    const entry = VirtualFilesystem.getInstance().getEntry(path);
+
+    runner.setModuleAndSync(path, entry && isEmbeddedVFSEntry(entry) ? entry.content : null);
+
+    const nextDependentNodeIds = getModuleDependentNodeIds(
+      this.graph.getObjects(),
+      path,
+      runner.modules,
+      runner.moduleResolver
+    );
+    const dependentNodeIds = [...new Set([...previousDependentNodeIds, ...nextDependentNodeIds])];
+
+    void this.moduleRerunQueue.runSerialized(() =>
+      this.rerunModuleDependentNodes(dependentNodeIds)
+    );
+  };
+
+  private handleVfsPathRenamed = ({
+    oldPath,
+    newPath
+  }: {
+    oldPath: string;
+    newPath: string;
+  }): void => {
+    const runner = JSRunner.getInstance();
+    const oldWasModule = /^(?:patch|user):\/\/.+\.(?:js|mjs)$/.test(oldPath);
+    const newIsModule = /^(?:patch|user):\/\/.+\.(?:js|mjs)$/.test(newPath);
+    if (!oldWasModule && !newIsModule) return;
+
+    const previousDependentNodeIds = oldWasModule
+      ? getModuleDependentNodeIds(
+          this.graph.getObjects(),
+          oldPath,
+          runner.modules,
+          runner.moduleResolver
+        )
+      : [];
+    const entry = VirtualFilesystem.getInstance().getEntry(newPath);
+
+    if (oldWasModule) runner.setModuleAndSync(oldPath, null);
+    if (newIsModule && entry && isEmbeddedVFSEntry(entry)) {
+      runner.setModuleAndSync(newPath, entry.content);
+    }
+
+    const nextDependentNodeIds = newIsModule
+      ? getModuleDependentNodeIds(
+          this.graph.getObjects(),
+          newPath,
+          runner.modules,
+          runner.moduleResolver
+        )
+      : [];
+    const dependentNodeIds = [...new Set([...previousDependentNodeIds, ...nextDependentNodeIds])];
+
+    void this.moduleRerunQueue.runSerialized(() =>
+      this.rerunModuleDependentNodes(dependentNodeIds)
+    );
+  };
+
+  private async rerunModuleDependentNodes(dependentNodeIds: string[]): Promise<void> {
     const changedObjectIds = new Set<string>();
 
     for (const nodeId of dependentNodeIds) {

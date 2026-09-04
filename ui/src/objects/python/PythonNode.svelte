@@ -122,7 +122,6 @@
   {isRunning}
   isMessageCallbackActive={false}
   isTimerCallbackActive={false}
-  supportsLibraries={false}
   nodeLabel="python"
   language="python"
   editorPlaceholder="Write your Python code here..."

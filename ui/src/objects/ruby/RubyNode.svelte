@@ -158,7 +158,6 @@
   {isRunning}
   {isMessageCallbackActive}
   isTimerCallbackActive={false}
-  supportsLibraries={false}
   nodeLabel="ruby"
   language="ruby"
   editorPlaceholder="Write your Ruby code here..."

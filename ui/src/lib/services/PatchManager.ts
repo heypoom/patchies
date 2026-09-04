@@ -22,6 +22,7 @@ import { get } from 'svelte/store';
 import type { CanvasContext } from './CanvasContext';
 import { logger } from '$lib/utils/logger';
 import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
+import { JSRunner } from '$lib/js-runner/JSRunner';
 
 const DEMO_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -312,6 +313,8 @@ export class PatchManager {
       }
     }
 
+    await JSRunner.getInstance().syncPatchModules(vfs);
+
     // Set nodes and edges
     this.ctx.nodes = migrated.nodes;
     this.ctx.edges = migrated.edges;
@@ -388,6 +391,7 @@ export class PatchManager {
     const vfs = VirtualFilesystem.getInstance();
     vfs.clear();
     vfs.clearPersistedData();
+    await JSRunner.getInstance().syncPatchModules(vfs);
 
     // Clear localStorage autosave
     localStorage.removeItem('patchies-patch-autosave');
