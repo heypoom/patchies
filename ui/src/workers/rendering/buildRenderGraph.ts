@@ -184,8 +184,6 @@ export const buildRenderGraph = async (
       framebuffer = fbo.framebuffer;
     }
 
-    host.cookState.markDirty(node.id, existingFbo ? 'config' : 'first-frame');
-
     pending.push({
       node,
       colorAttachments,
@@ -284,6 +282,7 @@ export const buildRenderGraph = async (
     };
 
     host.fboNodes.set(node.id, fboNode);
+    host.cookState.markDirty(node.id, existingFbo ? 'config' : 'first-frame');
 
     // Do not send previews back to external texture nodes,
     // as the texture is managed by the node on the frontend.
