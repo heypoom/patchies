@@ -125,6 +125,8 @@ describe('GLSystem', () => {
   it('routes shader line errors to the node virtual console', async () => {
     const nodeId = `glsl-${crypto.randomUUID()}`;
     const eventBus = PatchiesEventBus.getInstance();
+    const glSystem = new GLSystem();
+
     const consoleOutput = new Promise<ConsoleOutputEvent>((resolve) => {
       const handleConsoleOutput = (event: ConsoleOutputEvent) => {
         if (event.nodeId !== nodeId) return;
@@ -135,7 +137,7 @@ describe('GLSystem', () => {
 
       eventBus.addEventListener('consoleOutput', handleConsoleOutput);
     });
-    const glSystem = new GLSystem();
+
     const reason = 'VFS: Path not found: patch://missing.glsl';
     const message = `Include error on line 2: ${reason}`;
 
@@ -158,11 +160,12 @@ describe('GLSystem', () => {
 
   it('refreshes direct and transitive GLSL consumers exactly once for same-length saves', () => {
     const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://shaders/math.glsl', 'float tone = 1.0;');
+
     vfs.createEmbeddedFile(
       'patch://shaders/material.glsl',
       '#include "./math.glsl"\nfloat material() { return tone; }'
     );
-    vfs.createEmbeddedFile('patch://shaders/math.glsl', 'float tone = 1.0;');
 
     const glSystem = new GLSystem();
     const worker = glSystem.renderWorker as unknown as { postMessage: ReturnType<typeof vi.fn> };
@@ -171,14 +174,17 @@ describe('GLSystem', () => {
       code: '#include "./shaders/material.glsl"',
       glUniformDefs: []
     });
+
     glSystem.upsertNode('glsl-direct', 'glsl', {
       code: '#include "patch://shaders/math.glsl"',
       glUniformDefs: []
     });
+
     glSystem.upsertNode('glsl-unrelated', 'glsl', {
       code: 'void mainImage() {}',
       glUniformDefs: []
     });
+
     worker.postMessage.mockClear();
 
     vfs.writeEmbeddedFile('patch://shaders/math.glsl', 'float tone = 2.0;');
@@ -188,6 +194,7 @@ describe('GLSystem', () => {
       .filter((message) => message.type === 'buildRenderGraph');
 
     expect(rebuilds).toHaveLength(1);
+
     expect(rebuilds[0].graph.nodes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
