@@ -17,42 +17,45 @@
   } = $props();
 
   const vfs = VirtualFilesystem.getInstance();
+  const vfsEntries = vfs.entries$;
   const path = $derived(data.vfsPath ?? '');
-  const session = $derived(getPatchFileEditorSession(vfs, path));
+  const session = $derived(
+    isEditablePatchCodePath(path) ? getPatchFileEditorSession(vfs, path) : null
+  );
   let version = $state(0);
   let editing = $state(false);
   let validationError = $state<string | null>(null);
-  const exists = $derived(isEditablePatchCodePath(path) && !!vfs.getEntry(path));
+  const exists = $derived(isEditablePatchCodePath(path) && $vfsEntries.has(path));
   const draft = $derived.by(() => {
     void version;
 
     if (!exists) return '';
 
-    return session.draft;
+    return session?.draft ?? '';
   });
 
   const dirty = $derived.by(() => {
     void version;
 
-    return session.path === path && session.isDirty;
+    return session?.path === path && session.isDirty;
   });
 
-  $effect(() => session.subscribe(() => (version += 1)));
+  $effect(() => session?.subscribe(() => (version += 1)));
 
   function updateDraft(content: string) {
-    if (!exists) return;
+    if (!exists || !session) return;
 
     session.updateDraft(content);
     version += 1;
   }
 
   async function commit() {
-    if (!exists) return;
+    if (!exists || !session) return;
 
-    session.save();
     validationError = null;
 
     try {
+      session.save();
       await JSRunner.getInstance().validatePatchModule(path);
     } catch (error) {
       validationError = error instanceof Error ? error.message : 'Module validation failed';
@@ -63,7 +66,7 @@
 
   onMount(() => {
     const listener = (event: { path: string }) => {
-      if (event.path !== path) return;
+      if (event.path !== path || !session) return;
 
       session.syncSavedContent();
       version += 1;
@@ -96,8 +99,8 @@
     <CodeEditor
       value={draft}
       onchange={updateDraft}
-      onundo={() => session.undoDraft()}
-      onredo={() => session.redoDraft()}
+      onundo={() => session?.undoDraft() ?? false}
+      onredo={() => session?.redoDraft() ?? false}
       onrun={commit}
       onsave={commit}
       language="javascript"

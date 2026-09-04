@@ -9,8 +9,6 @@ export const isEditorSaveShortcut = (event: Pick<KeyboardEvent, 'key' | 'metaKey
 /** Owns one Patch-file draft and keeps unsaved content outside the VFS. */
 export class PatchFileEditorSession {
   private pathValue: string | null = null;
-  private draftUndoStack: string[] = [];
-  private draftRedoStack: string[] = [];
   private listeners = new Set<() => void>();
 
   constructor(private vfs: VirtualFilesystem) {}
@@ -53,7 +51,9 @@ export class PatchFileEditorSession {
       this.states().set(path, {
         savedContent,
         draft: savedContent,
-        revision: this.vfs.getEntry(path)?.revision ?? 0
+        revision: this.vfs.getEntry(path)?.revision ?? 0,
+        draftUndoStack: [],
+        draftRedoStack: []
       });
     }
   }
@@ -63,8 +63,8 @@ export class PatchFileEditorSession {
     if (!state) throw new Error('VFS: No Patch file is open');
     if (state.draft === content) return;
 
-    this.draftUndoStack.push(state.draft);
-    this.draftRedoStack = [];
+    state.draftUndoStack.push(state.draft);
+    state.draftRedoStack = [];
     state.draft = content;
     this.notify();
   }
@@ -86,8 +86,8 @@ export class PatchFileEditorSession {
     const state = this.getState();
     if (!state || state.draft === state.savedContent) return;
 
-    this.draftUndoStack.push(state.draft);
-    this.draftRedoStack = [];
+    state.draftUndoStack.push(state.draft);
+    state.draftRedoStack = [];
     state.draft = state.savedContent;
     this.notify();
   }
@@ -102,6 +102,12 @@ export class PatchFileEditorSession {
     if (state) {
       this.states().delete(oldPath);
       this.states().set(newPath, state);
+    }
+
+    const pathSessions = sessionsByPath.get(this.vfs);
+    if (pathSessions?.get(oldPath) === this) {
+      pathSessions.delete(oldPath);
+      pathSessions.set(newPath, this);
     }
 
     if (this.pathValue === oldPath) {
@@ -132,8 +138,8 @@ export class PatchFileEditorSession {
     state.savedContent = nextContent;
     state.draft = nextContent;
     state.revision = nextRevision;
-    this.draftUndoStack = [];
-    this.draftRedoStack = [];
+    state.draftUndoStack = [];
+    state.draftRedoStack = [];
     this.notify();
 
     return 'updated';
@@ -141,10 +147,10 @@ export class PatchFileEditorSession {
 
   undoDraft(): boolean {
     const state = this.getState();
-    const previous = this.draftUndoStack.pop();
+    const previous = state?.draftUndoStack.pop();
     if (!state || previous === undefined) return false;
 
-    this.draftRedoStack.push(state.draft);
+    state.draftRedoStack.push(state.draft);
     state.draft = previous;
     this.notify();
 
@@ -153,10 +159,10 @@ export class PatchFileEditorSession {
 
   redoDraft(): boolean {
     const state = this.getState();
-    const next = this.draftRedoStack.pop();
+    const next = state?.draftRedoStack.pop();
     if (!state || next === undefined) return false;
 
-    this.draftUndoStack.push(state.draft);
+    state.draftUndoStack.push(state.draft);
     state.draft = next;
     this.notify();
 
@@ -186,6 +192,8 @@ type PatchFileEditorState = {
   savedContent: string;
   draft: string;
   revision: number;
+  draftUndoStack: string[];
+  draftRedoStack: string[];
 };
 
 const sessions = new WeakMap<VirtualFilesystem, PatchFileEditorSession>();

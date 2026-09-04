@@ -93,6 +93,22 @@ describe('PatchFileEditorSession', () => {
     expect(getPatchFileEditorSession(vfs, 'patch://first.js').draft).toBe('export const first = 2');
   });
 
+  it('keeps draft undo history with the file that created it', () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://first.js', 'export const first = 1');
+    vfs.createEmbeddedFile('patch://second.js', 'export const second = 1');
+
+    const session = new PatchFileEditorSession(vfs);
+    session.open('patch://first.js');
+    session.updateDraft('export const first = 2');
+    session.open('patch://second.js');
+    session.updateDraft('export const second = 2');
+    session.open('patch://first.js');
+
+    expect(session.undoDraft()).toBe(true);
+    expect(session.draft).toBe('export const first = 1');
+  });
+
   it('does not retain a clean draft after its file is deleted and recreated', () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.createEmbeddedFile('patch://module.js', 'export const value = 1');

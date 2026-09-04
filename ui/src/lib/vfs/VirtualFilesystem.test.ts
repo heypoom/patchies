@@ -469,6 +469,19 @@ describe('VirtualFilesystem patch files', () => {
     );
   });
 
+  it('rewrites relative module imports when only the importer moves', () => {
+    const vfs = VirtualFilesystem.getInstance();
+
+    vfs.createEmbeddedFile('patch://shared.js', 'export const value = 1');
+    vfs.createEmbeddedFile('patch://folder/consumer.js', "import { value } from '../shared.js'");
+
+    vfs.renamePath('patch://folder/consumer.js', 'patch://nested/deeper/consumer.js');
+
+    expect(vfs.readEmbeddedFile('patch://nested/deeper/consumer.js')).toContain(
+      "from '../../shared.js'"
+    );
+  });
+
   it('serializes persisted renames when undo follows an in-flight move', async () => {
     const vfs = VirtualFilesystem.getInstance();
     const history = HistoryManager.getInstance();

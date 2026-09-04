@@ -77,4 +77,22 @@ describe('js module utils', () => {
       )
     ).toEqual(['re-export-consumer', 'dynamic-consumer']);
   });
+
+  it('continues collecting dependents when another module cannot be scanned', () => {
+    const modules = new Map([
+      ['patch://math.js', 'export const add = () => 1'],
+      ['patch://broken.js', "import { add } from 'math' /*"],
+      ['patch://valid.js', "import { add } from 'math'"]
+    ]);
+    const resolver = new JSModuleResolver(modules);
+
+    expect(
+      getModuleDependentNodeIds(
+        [{ id: 'valid-consumer', data: { code: "import { add } from 'valid'" } }],
+        'patch://math.js',
+        modules,
+        resolver
+      )
+    ).toEqual(['valid-consumer']);
+  });
 });

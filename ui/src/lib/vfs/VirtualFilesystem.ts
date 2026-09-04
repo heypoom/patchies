@@ -807,15 +807,17 @@ const rewriteJavaScriptModuleSpecifiers = (
     .map(({ specifier, start, end }) => {
       const resolved = resolveModuleSpecifier(specifier, oldImporter);
       const renamed = resolved && renamedPaths.get(resolved);
-      if (!renamed) return null;
-
-      if (specifier.startsWith('patch://')) return { start, end, value: renamed };
       if (specifier.startsWith('./') || specifier.startsWith('../')) {
-        const relative = relativePath(newImporter, renamed);
+        if (!resolved) return null;
+
+        const relative = relativePath(newImporter, renamed ?? resolved);
         const hadExtension = /\.m?js$/.test(specifier);
 
         return { start, end, value: hadExtension ? relative : relative.replace(/\.js$/, '') };
       }
+
+      if (!renamed) return null;
+      if (specifier.startsWith('patch://')) return { start, end, value: renamed };
 
       const root = renamed.slice('patch://'.length);
       const hadExtension = /\.m?js$/.test(specifier);

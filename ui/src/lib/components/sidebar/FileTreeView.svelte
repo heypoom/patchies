@@ -79,7 +79,7 @@
 
   const vfs = VirtualFilesystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
-  let editorSession = getPatchFileEditorSession(vfs);
+  let editorSession = $state(getPatchFileEditorSession(vfs));
   const patchRuntime = getPatchRuntime();
 
   // Reactive store of VFS entries

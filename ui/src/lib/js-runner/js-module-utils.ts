@@ -234,7 +234,15 @@ export const getModuleDependentNodeIds = (
   const dependentsBySource = new Map<string, string[]>();
 
   for (const [importer, code] of sourceCode) {
-    for (const specifier of getImportedModuleNames(code)) {
+    let specifiers: Set<string>;
+
+    try {
+      specifiers = getImportedModuleNames(code);
+    } catch {
+      continue;
+    }
+
+    for (const specifier of specifiers) {
       let dependency: string | null;
 
       try {
