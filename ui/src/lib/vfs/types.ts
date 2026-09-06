@@ -1,6 +1,6 @@
 // Virtual Filesystem Types
 
-export type VFSProviderType = 'url' | 'local' | 'folder' | 'local-folder' | 'embedded';
+export type VFSProviderType = 'url' | 'local' | 'folder' | 'local-folder' | 'embedded' | 'object';
 
 /**
  * Entry metadata stored in the VFS tree.

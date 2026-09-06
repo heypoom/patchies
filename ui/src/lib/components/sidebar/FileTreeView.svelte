@@ -60,7 +60,8 @@
     type UnsavedChangesDecision
   } from '$lib/vfs/PatchFileEditorSession';
   import { registerUnsavedChangesGuard } from '$lib/vfs/file-editor-navigation';
-  import { isEditablePatchCodePath } from '$lib/vfs/patch-file-editor';
+  import { isObjectPath } from '$lib/vfs/ObjectFileProjection';
+  import { isEditableCodePath } from '$lib/vfs/patch-file-editor';
   import {
     getExpandedChildDirectories,
     getExpandedLinkedFolderPathsToLoad,
@@ -152,6 +153,15 @@
     }
   }
 
+  async function runEditor(code?: string): Promise<void> {
+    try {
+      await editorSession.run(code);
+      refreshEditor();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message.replace('VFS: ', '') : 'Run failed');
+    }
+  }
+
   function requestEditorNavigation(action: () => void | Promise<void>): Promise<boolean> {
     if (!editorSession.isDirty) {
       void action();
@@ -204,9 +214,11 @@
   }
 
   async function openEditor(path: string) {
-    if (!isEditablePatchCodePath(path)) return;
+    if (!isEditableCodePath(path)) return;
 
     await requestEditorNavigation(() => {
+      if (editorSession.path && isObjectPath(editorSession.path)) editorSession.save();
+
       editorSession = getPatchFileEditorSession(vfs, path);
       refreshEditor();
     });
@@ -220,7 +232,8 @@
   }
 
   function handleEditorContentModified(path: string, revision: number) {
-    if (editorSession.path !== path || editorSession.revision === revision) return;
+    if (editorSession.path !== path) return;
+    if (!isObjectPath(path) && editorSession.revision === revision) return;
 
     queueMicrotask(() => {
       const result = editorSession.syncSavedContent();
@@ -274,6 +287,8 @@
   $effect(() => editorSession.subscribe(refreshEditor));
 
   onDestroy(() => {
+    if (editorSession.path && isObjectPath(editorSession.path)) editorSession.save();
+
     unregisterNavigationGuard?.();
   });
 
@@ -583,7 +598,7 @@
   async function deleteSelectedFiles() {
     if (selectedPaths.size === 0) return;
 
-    const paths = [...selectedPaths].filter((path) => vfs.has(path));
+    const paths = [...selectedPaths].filter((path) => !isObjectPath(path) && vfs.has(path));
     if (!confirmModuleDependentMutation(paths, 'Delete')) return;
 
     try {
@@ -662,7 +677,7 @@
     // Namespace roots
     const patchRoot: TreeNode = { name: 'Patch', path: 'patch://', children: new Map() };
     const userRoot: TreeNode = { name: 'User', path: 'user://', children: new Map() };
-    const objRoot: TreeNode = { name: 'objects', path: 'obj://', children: new Map() };
+    const objRoot: TreeNode = { name: 'Objects', path: 'obj://', children: new Map() };
 
     for (const [path, entry] of entries) {
       const parsed = parseVFSPath(path);
@@ -715,10 +730,7 @@
     root.children!.set('patch', patchRoot);
     root.children!.set('user', userRoot);
 
-    // Only add objects namespace if it has children
-    if (objRoot.children && objRoot.children.size > 0) {
-      root.children!.set('objects', objRoot);
-    }
+    root.children!.set('objects', objRoot);
 
     return root;
   });
@@ -733,6 +745,7 @@
 
   function getSortedChildren(node: TreeNode): TreeNode[] {
     if (!node.children) return [];
+    if (node.name === 'root') return [...node.children.values()];
 
     return [...node.children.values()].sort((a, b) => {
       // Folders come before files
@@ -1025,7 +1038,7 @@
       const parent = showFileInput.endsWith('/') ? showFileInput : `${showFileInput}/`;
       const path = `${parent}${fileInputValue.trim()}`;
 
-      if (!isEditablePatchCodePath(path)) {
+      if (!isEditableCodePath(path)) {
         toast.error('New Patch files must use a supported JavaScript or GLSL extension');
         return;
       }
@@ -1496,6 +1509,7 @@
   {@const isPatchNamespace = node.path === 'patch://'}
   {@const isUserNamespace = node.path === 'user://'}
   {@const isObjectNamespace = node.path === 'obj://'}
+  {@const isObjectEntry = !!node.path && isObjectPath(node.path)}
   {@const isDropTarget = isInDropTarget(node.path)}
   {@const isNamespace = isPatchNamespace || isUserNamespace || isObjectNamespace}
   {@const isLinkedFolder = node.entry && isLocalFolder(node.entry)}
@@ -1509,7 +1523,8 @@
 
   {@const isRenaming = renamingPath === node.path}
   {@const showContextMenu = node.path && !isNamespace && !isLinkedFolder}
-  {@const isDraggable = (isFile || (isFolder && !isNamespace && !isLinkedFolder)) && node.path}
+  {@const isDraggable =
+    !isObjectEntry && (isFile || (isFolder && !isNamespace && !isLinkedFolder)) && node.path}
 
   {#if node.name !== 'root'}
     <ContextMenu.Root>
@@ -1524,89 +1539,138 @@
               : isSelected
                 ? 'bg-blue-900/40 hover:bg-blue-900/50'
                 : 'hover:bg-zinc-800'}"
-          ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
-          ondrop={(e) => isFolder && handleFolderDrop(e)}
+          ondragover={(e) => {
+            if (isObjectEntry) {
+              e.stopPropagation();
+              dropTargetPath = null;
+              return;
+            }
+            if (isFolder && node.path) handleFolderDragOver(e, node.path);
+          }}
+          ondrop={(e) => {
+            if (isObjectEntry) {
+              e.preventDefault();
+              e.stopPropagation();
+              dropTargetPath = null;
+              return;
+            }
+            if (isFolder) void handleFolderDrop(e);
+          }}
         >
-          <button
-            class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
-            style="padding-left: {paddingLeft}px"
-            draggable={isDraggable ? 'true' : 'false'}
-            ondragstart={(e) => isDraggable && handleDragStart(e, node)}
-            ondblclick={() =>
-              node.path && isEditablePatchCodePath(node.path) && openEditor(node.path)}
-            onclick={async (e) => {
-              if (isRenaming) return;
-
-              if (isFolder && node.path && !isNamespace) {
-                // For non-namespace folders: select (without deselect) and toggle expand
-                selectedPaths.clear();
-                selectedPaths.add(node.path);
-                lastSelectedPath = node.path;
-
-                // Check if we're about to expand (before toggling)
-                const willExpand = !expandedPaths.has(node.path);
-                toggleExpanded(node.path);
-
-                // Load local folder contents when expanding
-                if (isLinkedFolder && willExpand) {
-                  await loadLocalFolderContents(node.path);
-                }
-              } else if (isFolder && node.path) {
-                // For namespace roots: just expand/collapse
-                toggleExpanded(node.path);
-              } else if (isFile && node.path) {
-                handleNodeClick(node.path, e);
-              }
-            }}
-          >
-            {#if isFolder}
-              {#if isExpanded}
-                <ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
-              {:else}
-                <ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
-              {/if}
-              {#if isPatchNamespace}
-                <Package class="h-3.5 w-3.5 shrink-0 text-emerald-400" />
-              {:else if isUserNamespace}
-                <User class="h-3.5 w-3.5 shrink-0 text-blue-400" />
-              {:else if isObjectNamespace}
-                <Box class="h-3.5 w-3.5 shrink-0 text-blue-400" />
-              {:else if isLinkedFolder}
-                <FolderSymlink class="h-3.5 w-3.5 shrink-0 text-cyan-400" />
-              {:else if isExpanded}
-                <FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-              {:else}
-                <Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-              {/if}
-            {:else}
-              {@const fileIcon = getFileIcon(
-                node.entry?.mimeType || guessMimeType(node.entry?.filename || node.name)
-              )}
-              <span class="w-3"></span>
-              <fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
-            {/if}
-
-            {#if isRenaming}
-              <!-- svelte-ignore a11y_autofocus -->
-              <input
-                type="text"
-                class="flex-1 truncate rounded bg-transparent px-1 font-mono text-zinc-300 ring-1 ring-blue-500 outline-none"
-                bind:value={renameInputValue}
-                onkeydown={handleRenameSubmit}
-                onclick={(e) => e.stopPropagation()}
-                autofocus
-              />
-            {:else}
-              <span
-                class="truncate font-mono {isNamespace
-                  ? 'font-medium text-zinc-200'
-                  : 'text-zinc-300'}"
-                title={node.entry?.filename || node.name}
+          {#if isNamespace}
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
+                style="padding-left: {paddingLeft}px"
+                onclick={() => node.path && toggleExpanded(node.path)}
+                aria-expanded={isExpanded}
               >
-                {node.entry?.filename || node.name}
-              </span>
-            {/if}
-          </button>
+                {#if isExpanded}
+                  <ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
+                {:else}
+                  <ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+                {/if}
+                {#if isPatchNamespace}
+                  <Package class="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                {:else if isUserNamespace}
+                  <User class="h-3.5 w-3.5 shrink-0 text-blue-400" />
+                {:else}
+                  <Box class="h-3.5 w-3.5 shrink-0 text-blue-400" />
+                {/if}
+                <span class="truncate font-mono font-medium text-zinc-200">{node.name}</span>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="right" class="max-w-64">
+                {#if isPatchNamespace}
+                  Files saved inside this patch. They're included when you save or share it.
+                {:else if isUserNamespace}
+                  Files from your device or the web. The patch saves links, not the files
+                  themselves.
+                {:else}
+                  Code from the objects in this patch. Edits here also update the object.
+                {/if}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            <button
+              class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
+              style="padding-left: {paddingLeft}px"
+              draggable={isDraggable ? 'true' : 'false'}
+              ondragstart={(e) => isDraggable && handleDragStart(e, node)}
+              ondblclick={() => node.path && isEditableCodePath(node.path) && openEditor(node.path)}
+              onclick={async (e) => {
+                if (isRenaming) return;
+
+                if (isFolder && node.path && !isNamespace) {
+                  // For non-namespace folders: select (without deselect) and toggle expand
+                  selectedPaths.clear();
+                  selectedPaths.add(node.path);
+                  lastSelectedPath = node.path;
+
+                  // Check if we're about to expand (before toggling)
+                  const willExpand = !expandedPaths.has(node.path);
+                  toggleExpanded(node.path);
+
+                  // Load local folder contents when expanding
+                  if (isLinkedFolder && willExpand) {
+                    await loadLocalFolderContents(node.path);
+                  }
+                } else if (isFolder && node.path) {
+                  // For namespace roots: just expand/collapse
+                  toggleExpanded(node.path);
+                } else if (isFile && node.path) {
+                  handleNodeClick(node.path, e);
+                }
+              }}
+            >
+              {#if isFolder}
+                {#if isExpanded}
+                  <ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
+                {:else}
+                  <ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+                {/if}
+                {#if isPatchNamespace}
+                  <Package class="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                {:else if isUserNamespace}
+                  <User class="h-3.5 w-3.5 shrink-0 text-blue-400" />
+                {:else if isObjectNamespace}
+                  <Box class="h-3.5 w-3.5 shrink-0 text-blue-400" />
+                {:else if isLinkedFolder}
+                  <FolderSymlink class="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+                {:else if isExpanded}
+                  <FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+                {:else}
+                  <Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+                {/if}
+              {:else}
+                {@const fileIcon = getFileIcon(
+                  node.entry?.mimeType || guessMimeType(node.entry?.filename || node.name)
+                )}
+                <span class="w-3"></span>
+                <fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
+              {/if}
+
+              {#if isRenaming}
+                <!-- svelte-ignore a11y_autofocus -->
+                <input
+                  type="text"
+                  class="flex-1 truncate rounded bg-transparent px-1 font-mono text-zinc-300 ring-1 ring-blue-500 outline-none"
+                  bind:value={renameInputValue}
+                  onkeydown={handleRenameSubmit}
+                  onclick={(e) => e.stopPropagation()}
+                  autofocus
+                />
+              {:else}
+                <span
+                  class="truncate font-mono {isNamespace
+                    ? 'font-medium text-zinc-200'
+                    : 'text-zinc-300'}"
+                  title={node.entry?.filename || node.name}
+                >
+                  {node.entry?.filename || node.name}
+                </span>
+              {/if}
+            </button>
+          {/if}
 
           {#if canHaveChildren && node.path}
             <div
@@ -1744,18 +1808,20 @@
 
       {#if showContextMenu}
         <ContextMenu.Content>
-          {#if node.path && isEditablePatchCodePath(node.path)}
+          {#if node.path && isEditableCodePath(node.path)}
             <ContextMenu.Item onclick={() => openEditor(node.path!)}>
               <FileCode class="mr-2 h-4 w-4" />
               Edit
             </ContextMenu.Item>
           {/if}
-          <ContextMenu.Item
-            onclick={() => handleRenameClick(node.path!, node.entry?.filename || node.name)}
-          >
-            <Pencil class="mr-2 h-4 w-4" />
-            Rename
-          </ContextMenu.Item>
+          {#if !isObjectEntry}
+            <ContextMenu.Item
+              onclick={() => handleRenameClick(node.path!, node.entry?.filename || node.name)}
+            >
+              <Pencil class="mr-2 h-4 w-4" />
+              Rename
+            </ContextMenu.Item>
+          {/if}
           <ContextMenu.Item onclick={() => handleCopyPath(node.path!)}>
             <Copy class="mr-2 h-4 w-4" />
             Copy Path
@@ -1766,14 +1832,16 @@
               Save to Disk…
             </ContextMenu.Item>
           {/if}
-          <ContextMenu.Separator />
-          <ContextMenu.Item
-            variant="destructive"
-            onclick={() => handleDeleteFromContextMenu(node.path!)}
-          >
-            <Trash2 class="mr-2 h-4 w-4" />
-            Delete
-          </ContextMenu.Item>
+          {#if !isObjectEntry}
+            <ContextMenu.Separator />
+            <ContextMenu.Item
+              variant="destructive"
+              onclick={() => handleDeleteFromContextMenu(node.path!)}
+            >
+              <Trash2 class="mr-2 h-4 w-4" />
+              Delete
+            </ContextMenu.Item>
+          {/if}
         </ContextMenu.Content>
       {/if}
     </ContextMenu.Root>
@@ -1853,7 +1921,7 @@
         class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
         style="padding-left: {paddingLeft + 20}px"
       >
-        Drop files to add
+        {isObjectEntry ? 'No code objects in this patch' : 'Drop files to add'}
       </div>
     {:else}
       {#each getSortedChildren(node) as child (child.path)}
@@ -1878,6 +1946,7 @@
     onredo={() => editorSession.redoDraft()}
     onback={closeEditor}
     onsave={saveEditor}
+    onrun={runEditor}
     onrename={() => handleRenameClick(editorPath, editorPath.split('/').pop() ?? '')}
     oncopy={() => handleCopyPath(editorPath)}
     onexport={() => handleSaveToDisk(editorPath)}
@@ -1918,8 +1987,8 @@
             >
               <button
                 class="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 py-1 pl-2 text-left text-xs"
-                draggable="true"
-                ondblclick={() => isEditablePatchCodePath(result.path) && openEditor(result.path)}
+                draggable={!isObjectPath(result.path)}
+                ondblclick={() => isEditableCodePath(result.path) && openEditor(result.path)}
                 ondragstart={(e) => {
                   e.dataTransfer?.setData('application/x-vfs-path', result.path);
                   e.dataTransfer?.setData('text/plain', result.path);
@@ -1950,7 +2019,7 @@
 
                 <span class="truncate font-mono text-zinc-300">{result.name}</span>
               </button>
-              {#if isEditablePatchCodePath(result.path)}
+              {#if isEditableCodePath(result.path)}
                 <button
                   class="mr-1 cursor-pointer rounded p-1 text-zinc-500 opacity-100 hover:bg-zinc-700 hover:text-zinc-200 sm:opacity-0 sm:group-hover:opacity-100"
                   onclick={() => openEditor(result.path)}
@@ -1979,7 +2048,7 @@
           {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
         </span>
 
-        {#if isEditablePatchCodePath(selectedFilePath)}
+        {#if isEditableCodePath(selectedFilePath)}
           <button
             class="flex cursor-pointer items-center gap-1.5 rounded bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600"
             onclick={() => openEditor(selectedFilePath)}
@@ -1989,74 +2058,75 @@
           </button>
         {/if}
 
-        <button
-          class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-          onclick={handleInsertToCanvas}
-          title="Insert to Canvas"
-        >
-          <Plus class="h-3.5 w-3.5" />
-          <span>Insert</span>
-        </button>
-
-        <button
-          class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
-          onclick={() => (showMoveDialog = true)}
-          title="Move to folder"
-        >
-          <FolderInput class="h-3.5 w-3.5" />
-          <span>Move</span>
-        </button>
-
-        <Popover.Root bind:open={mobileMoreOpen}>
-          <Popover.Trigger
-            class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+        {#if !isObjectPath(selectedFilePath)}
+          <button
+            class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+            onclick={handleInsertToCanvas}
+            title="Insert to Canvas"
           >
-            <Ellipsis class="h-4 w-4" />
-          </Popover.Trigger>
-          <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
-            <button
-              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-              onclick={() => {
-                if (selectedFilePath) {
-                  const entry = vfs.getEntry(selectedFilePath);
-                  handleRenameClick(
-                    selectedFilePath,
-                    entry?.filename || selectedFilePath.split('/').pop() || ''
-                  );
-                }
-                mobileMoreOpen = false;
-              }}
-            >
-              <Pencil class="h-4 w-4 text-zinc-400" />
-              Rename
-            </button>
-            <button
-              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-              onclick={async () => {
-                if (selectedFilePath) {
-                  await handleCopyPath(selectedFilePath);
-                }
-                mobileMoreOpen = false;
-              }}
-            >
-              <Copy class="h-4 w-4 text-zinc-400" />
-              Copy Path
-            </button>
-            <button
-              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
-              onclick={async () => {
-                if (selectedFilePath) {
-                  await handleDeleteFromContextMenu(selectedFilePath);
-                }
-                mobileMoreOpen = false;
-              }}
-            >
-              <Trash2 class="h-4 w-4" />
-              Delete
-            </button>
-          </Popover.Content>
-        </Popover.Root>
+            <Plus class="h-3.5 w-3.5" />
+            <span>Insert</span>
+          </button>
 
+          <button
+            class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
+            onclick={() => (showMoveDialog = true)}
+            title="Move to folder"
+          >
+            <FolderInput class="h-3.5 w-3.5" />
+            <span>Move</span>
+          </button>
+
+          <Popover.Root bind:open={mobileMoreOpen}>
+            <Popover.Trigger
+              class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+            >
+              <Ellipsis class="h-4 w-4" />
+            </Popover.Trigger>
+            <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+              <button
+                class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                onclick={() => {
+                  if (selectedFilePath) {
+                    const entry = vfs.getEntry(selectedFilePath);
+                    handleRenameClick(
+                      selectedFilePath,
+                      entry?.filename || selectedFilePath.split('/').pop() || ''
+                    );
+                  }
+                  mobileMoreOpen = false;
+                }}
+              >
+                <Pencil class="h-4 w-4 text-zinc-400" />
+                Rename
+              </button>
+              <button
+                class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                onclick={async () => {
+                  if (selectedFilePath) {
+                    await handleCopyPath(selectedFilePath);
+                  }
+                  mobileMoreOpen = false;
+                }}
+              >
+                <Copy class="h-4 w-4 text-zinc-400" />
+                Copy Path
+              </button>
+              <button
+                class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
+                onclick={async () => {
+                  if (selectedFilePath) {
+                    await handleDeleteFromContextMenu(selectedFilePath);
+                  }
+                  mobileMoreOpen = false;
+                }}
+              >
+                <Trash2 class="h-4 w-4" />
+                Delete
+              </button>
+            </Popover.Content>
+          </Popover.Root>
+        {/if}
         <button
           class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
           onclick={() => {

@@ -1,3 +1,4 @@
+import { ObjectFileProjection, isObjectPath, assertMutableVfsPath } from './ObjectFileProjection';
 // Virtual Filesystem Singleton
 
 import { match } from 'ts-pattern';
@@ -46,6 +47,11 @@ declare global {
 /** Stable public façade for virtual file operations and provider coordination. */
 export class VirtualFilesystem {
   private static instance: VirtualFilesystem | null = null;
+
+  readonly objectFiles = new ObjectFileProjection((path, revision) => {
+    this.notifyChange();
+    this.emitContentModified(path, revision);
+  });
 
   private entries = new VfsEntryIndex();
   private providers = new Map<string, VFSProvider>();
@@ -109,6 +115,8 @@ export class VirtualFilesystem {
   }
 
   registerEntry(path: string, entry: VFSEntry): void {
+    assertMutableVfsPath(path);
+
     this.patchFiles.validateEntry(path, entry);
     this.entries.set(path, entry);
     this.notifyChange();
@@ -130,13 +138,20 @@ export class VirtualFilesystem {
     return this.patchFiles.read(path);
   }
 
-  exportEmbeddedFile(path: string): File {
-    return this.patchFiles.export(path);
+  readCodeFile(path: string): string {
+    return isObjectPath(path) ? this.objectFiles.get(path).content : this.readEmbeddedFile(path);
   }
 
-  /** @deprecated Use storeFile() instead for clarity. */
-  async registerLocalFile(file: File): Promise<string> {
-    return this.storeFile(file);
+  writeCodeFile(path: string, content: string): void {
+    if (isObjectPath(path)) {
+      this.objectFiles.write(path, content);
+    } else {
+      this.writeEmbeddedFile(path, content);
+    }
+  }
+
+  exportEmbeddedFile(path: string): File {
+    return this.patchFiles.export(path);
   }
 
   async storeFile(
@@ -144,17 +159,21 @@ export class VirtualFilesystem {
     handle?: FileSystemFileHandle,
     targetFolder?: string
   ): Promise<string> {
+    assertMutableVfsPath(targetFolder ?? VFS_PREFIXES.USER);
+
     const path = generateUserPath(file.name, file.type, new Set(this.entries.keys()), targetFolder);
+
+    const isMedia =
+      file.type?.startsWith('audio/') ||
+      file.type?.startsWith('video/') ||
+      file.type?.startsWith('image/');
+
+    const mimeType = isMedia ? file.type : (guessMimeType(file.name) ?? file.type);
 
     const entry: VFSEntry = {
       provider: 'local',
       filename: file.name,
-      mimeType:
-        file.type?.startsWith('audio/') ||
-        file.type?.startsWith('video/') ||
-        file.type?.startsWith('image/')
-          ? file.type
-          : (guessMimeType(file.name) ?? file.type),
+      mimeType,
       size: file.size
     };
 
@@ -186,6 +205,8 @@ export class VirtualFilesystem {
   }
 
   async replaceFile(path: string, file: File, handle?: FileSystemFileHandle): Promise<void> {
+    assertMutableVfsPath(path);
+
     const entry = this.entries.get(path);
     if (!entry) {
       throw new Error(`VFS: Cannot replace file at non-existent path: ${path}`);
@@ -250,6 +271,8 @@ export class VirtualFilesystem {
   }
 
   async registerUrl(url: string, targetFolder?: string): Promise<string> {
+    assertMutableVfsPath(targetFolder ?? VFS_PREFIXES.USER);
+
     const filename = getFilenameFromUrl(url);
     const mimeType = guessMimeType(filename);
     const path = generateUserPath(filename, mimeType, new Set(this.entries.keys()), targetFolder);
@@ -270,6 +293,8 @@ export class VirtualFilesystem {
   }
 
   createFolder(parentPath: string, folderName: string): string {
+    assertMutableVfsPath(parentPath);
+
     const normalizedParent =
       parentPath.endsWith('/') && !parentPath.endsWith('://')
         ? parentPath.slice(0, -1)
@@ -288,12 +313,15 @@ export class VirtualFilesystem {
   }
 
   isFolder(path: string): boolean {
-    const provider = this.entries.get(path)?.provider;
+    const provider = this.getEntry(path)?.provider;
 
     return provider === 'folder' || provider === 'local-folder';
   }
 
   renamePath(oldPath: string, newPath: string): void {
+    assertMutableVfsPath(oldPath);
+    assertMutableVfsPath(newPath);
+
     const plan = this.entries.planRename(oldPath, newPath);
     const renamedPaths = new Map(plan.moves.map((move) => [move.oldPath, move.newPath]));
     const mirrorsBefore = VfsCanvasMirrors.snapshot();
@@ -303,13 +331,17 @@ export class VirtualFilesystem {
       if (!isEmbeddedVFSEntry(entry) || !/\.m?js$/.test(path)) continue;
 
       const nextPath = renamedPaths.get(path) ?? path;
+
       const content = rewriteJavaScriptModuleSpecifiers(
         entry.content,
         path,
         nextPath,
         renamedPaths
       );
-      if (content !== entry.content) rewrittenModules.set(nextPath, content);
+
+      if (content !== entry.content) {
+        rewrittenModules.set(nextPath, content);
+      }
     }
 
     const persist = (direction: 'forward' | 'backward') =>
@@ -333,6 +365,7 @@ export class VirtualFilesystem {
             size: new TextEncoder().encode(content).byteLength,
             revision: (entry.revision ?? 0) + 1
           } as typeof entry);
+
           this.emitContentModified(path, (entry.revision ?? 0) + 1);
         }
 
@@ -360,7 +393,10 @@ export class VirtualFilesystem {
   }
 
   deletePaths(requestedPaths: Iterable<string>): void {
-    const plan = this.entries.planDelete(requestedPaths);
+    const paths = [...requestedPaths];
+    paths.forEach(assertMutableVfsPath);
+
+    const plan = this.entries.planDelete(paths);
     if (plan.paths.length === 0) return;
     const mirrorsBefore = VfsCanvasMirrors.snapshot();
 
@@ -477,13 +513,22 @@ export class VirtualFilesystem {
     }
 
     entry.filename = handle.name;
+
     await this.getLocalProvider()?.storeDirHandle(path, handle);
+
     this.permissions.delete(path);
     this.notifyChange();
   }
 
   async resolve(path: string): Promise<File | Blob> {
+    if (isObjectPath(path)) {
+      const file = this.objectFiles.get(path);
+
+      return new File([file.content], file.filename, { type: this.getEntry(path)?.mimeType });
+    }
+
     const entry = this.entries.get(path);
+
     if (entry) {
       if (isEmbeddedVFSEntry(entry)) this.patchFiles.assertReadable(path);
 
@@ -509,15 +554,17 @@ export class VirtualFilesystem {
   }
 
   getEntryOrLinkedFile(path: string): VFSEntry | undefined {
-    return this.directoryReader.getEntry(path);
+    return isObjectPath(path)
+      ? this.objectFiles.reader.getEntry(path)
+      : this.directoryReader.getEntry(path);
   }
 
   getEntry(path: string): VFSEntry | undefined {
-    return this.entries.get(path);
+    return isObjectPath(path) ? this.objectFiles.entries.get(path) : this.entries.get(path);
   }
 
   has(path: string): boolean {
-    return this.entries.has(path);
+    return isObjectPath(path) ? this.objectFiles.entries.has(path) : this.entries.has(path);
   }
 
   isVFSPath(path: string): boolean {
@@ -525,22 +572,26 @@ export class VirtualFilesystem {
   }
 
   list(prefix?: string): string[] {
-    return this.entries.paths(prefix);
+    return [...this.entries.paths(prefix), ...this.objectFiles.entries.paths(prefix)];
+  }
+
+  getDirectoryReader(directory: string) {
+    return isObjectPath(directory) ? this.objectFiles.reader : this.directoryReader;
   }
 
   async listChildren(directory: string): Promise<VFSListEntry[]> {
-    return this.directoryReader.listChildren(directory);
+    return this.getDirectoryReader(directory).listChildren(directory);
   }
 
   async listChildrenPage(
     directory: string,
     options: { offset?: number; limit?: number } = {}
   ): Promise<VFSListPage> {
-    return this.directoryReader.listChildrenPage(directory, options);
+    return this.getDirectoryReader(directory).listChildrenPage(directory, options);
   }
 
   async search(query: string, directory: string): Promise<VFSListEntry[]> {
-    return this.directoryReader.search(query, directory);
+    return this.getDirectoryReader(directory).search(query, directory);
   }
 
   async searchPage(
@@ -548,11 +599,11 @@ export class VirtualFilesystem {
     directory: string,
     options: { offset?: number; limit?: number } = {}
   ): Promise<VFSSearchPage> {
-    return this.directoryReader.searchPage(query, directory, options);
+    return this.getDirectoryReader(directory).searchPage(query, directory, options);
   }
 
   getAllEntries(): Map<string, VFSEntry> {
-    return this.entries.toMap();
+    return new Map([...this.entries, ...this.objectFiles.entries]);
   }
 
   serialize(): VFSTree {
@@ -592,6 +643,8 @@ export class VirtualFilesystem {
   }
 
   remove(path: string): void {
+    assertMutableVfsPath(path);
+
     const entry = this.entries.get(path);
     const deletionRevision =
       entry && isEmbeddedVFSEntry(entry) ? (entry.revision ?? 0) + 1 : undefined;
@@ -750,6 +803,7 @@ const relativePath = (from: string, to: string): string => {
     .replace(/^[a-z]+:\/\//, '')
     .split('/')
     .slice(0, -1);
+
   const toParts = to.replace(/^[a-z]+:\/\//, '').split('/');
 
   while (fromParts[0] && fromParts[0] === toParts[0]) {
@@ -764,7 +818,10 @@ const relativePath = (from: string, to: string): string => {
 };
 
 const resolveModuleSpecifier = (specifier: string, importer: string): string | null => {
-  if (specifier.startsWith('patch://')) return withJavaScriptExtension(specifier);
+  if (specifier.startsWith('patch://')) {
+    return withJavaScriptExtension(specifier);
+  }
+
   if (
     specifier.startsWith('user://') ||
     specifier.startsWith('npm:') ||
@@ -779,8 +836,12 @@ const resolveModuleSpecifier = (specifier: string, importer: string): string | n
 
     for (const part of specifier.split('/')) {
       if (!part || part === '.') continue;
-      if (part === '..') parts.pop();
-      else parts.push(part);
+
+      if (part === '..') {
+        parts.pop();
+      } else {
+        parts.push(part);
+      }
     }
 
     return `${namespace}://${withJavaScriptExtension(parts.join('/'))}`;
@@ -807,22 +868,34 @@ const rewriteJavaScriptModuleSpecifiers = (
     .map(({ specifier, start, end }) => {
       const resolved = resolveModuleSpecifier(specifier, oldImporter);
       const renamed = resolved && renamedPaths.get(resolved);
+
       if (specifier.startsWith('./') || specifier.startsWith('../')) {
         if (!resolved) return null;
 
         const relative = relativePath(newImporter, renamed ?? resolved);
         const hadExtension = /\.m?js$/.test(specifier);
 
-        return { start, end, value: hadExtension ? relative : relative.replace(/\.js$/, '') };
+        return {
+          start,
+          end,
+          value: hadExtension ? relative : relative.replace(/\.js$/, '')
+        };
       }
 
       if (!renamed) return null;
-      if (specifier.startsWith('patch://')) return { start, end, value: renamed };
+
+      if (specifier.startsWith('patch://')) {
+        return { start, end, value: renamed };
+      }
 
       const root = renamed.slice('patch://'.length);
       const hadExtension = /\.m?js$/.test(specifier);
 
-      return { start, end, value: hadExtension ? root : root.replace(/\.js$/, '') };
+      return {
+        start,
+        end,
+        value: hadExtension ? root : root.replace(/\.js$/, '')
+      };
     })
     .filter(
       (replacement): replacement is { start: number; end: number; value: string } => !!replacement

@@ -15,6 +15,7 @@
     onredo,
     onback,
     onsave,
+    onrun,
     onrename,
     oncopy,
     onexport,
@@ -28,6 +29,7 @@
     onredo: () => boolean;
     onback: () => void;
     onsave: () => void;
+    onrun: (code?: string) => void;
     onrename: () => void;
     oncopy: () => void;
     onexport: () => void;
@@ -39,7 +41,7 @@
 }`;
 
   let menuOpen = $state(false);
-  const displayPath = $derived(path.replace(/^patch:\/\//, ''));
+  const displayPath = $derived(path.replace(/^(?:patch|obj):\/\//, ''));
   const language = $derived(getPatchFileEditorLanguage(path));
   const placeholder = $derived(language === 'glsl' ? GLSL_PLACEHOLDER : '');
 
@@ -98,22 +100,26 @@
         <Ellipsis class="h-4 w-4" />
       </Popover.Trigger>
       <Popover.Content class="w-44 border-zinc-700 bg-zinc-900 p-1" align="end">
-        <button class="menu-item" onclick={() => runMenuAction(onrename)}>
-          <Pencil class="h-4 w-4" /> Rename
-        </button>
+        {#if !path.startsWith('obj://')}
+          <button class="menu-item" onclick={() => runMenuAction(onrename)}>
+            <Pencil class="h-4 w-4" /> Rename
+          </button>
+        {/if}
         <button class="menu-item" onclick={() => runMenuAction(oncopy)}>
           <Copy class="h-4 w-4" /> Copy Path
         </button>
-        <button class="menu-item" onclick={() => runMenuAction(onexport)}>
-          <File class="h-4 w-4" /> Save to Disk…
-        </button>
-        <div class="my-1 h-px bg-zinc-800"></div>
-        <button
-          class="menu-item text-red-400 hover:text-red-300"
-          onclick={() => runMenuAction(ondelete)}
-        >
-          <Trash2 class="h-4 w-4" /> Delete
-        </button>
+        {#if !path.startsWith('obj://')}
+          <button class="menu-item" onclick={() => runMenuAction(onexport)}>
+            <File class="h-4 w-4" /> Save to Disk…
+          </button>
+          <div class="my-1 h-px bg-zinc-800"></div>
+          <button
+            class="menu-item text-red-400 hover:text-red-300"
+            onclick={() => runMenuAction(ondelete)}
+          >
+            <Trash2 class="h-4 w-4" /> Delete
+          </button>
+        {/if}
       </Popover.Content>
     </Popover.Root>
   </div>
@@ -122,9 +128,15 @@
     <CodeEditor
       value={draft}
       {onchange}
+      oncommit={() => {
+        // Object edits are already live; blur commits one undo step. Patch files require explicit saving.
+        if (path.startsWith('obj://')) {
+          onsave();
+        }
+      }}
       {onundo}
       {onredo}
-      onrun={onsave}
+      {onrun}
       {onsave}
       {language}
       nodeType={language === 'javascript' ? 'js' : 'glsl'}
