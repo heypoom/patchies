@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
+  import { codeSidebarTargets } from '../../stores/code-sidebar.store';
+  import { editObjectCodeFile } from '$lib/objects/object-code-files';
+  import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
   import { Volume2, Cable } from '@lucide/svelte/icons';
   import {
     SvelteFlow,
@@ -161,6 +165,7 @@
   // Initial nodes and edges
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
+  let unregisterObjectFiles: (() => void) | null = null;
   let unregisterCanvasMirrors: (() => void) | null = null;
 
   const runtimeServices = createDefaultRuntimeServices();
@@ -194,6 +199,12 @@
   // Event handlers for nodeOps (stored as variables for proper cleanup)
   const handleNodeReplace = (e: NodeReplaceEvent) => nodeOps.replaceNode(e);
   const handleVfsPathRenamed = (e: VfsPathRenamedEvent) => nodeOps.handleVfsPathRenamed(e);
+
+  // Keep object files in sync with graph edits, undo, and replacement.
+  $effect(() => {
+    VirtualFilesystem.getInstance().objectFiles.sync(nodes);
+  });
+
   // Event handler for code commit (undo tracking)
   const handleCodeCommit = (e: CodeCommitEvent) => {
     historyManager.record(
@@ -854,19 +865,24 @@
 
     // Check for ?startup= param to force-open startup modal at a specific tab
     const startupParam = params.get('startup');
+
     if (startupParam) {
       const validTabs = ['about', 'demos', 'sparks', 'shortcuts', 'thanks'] as const;
+
       if (validTabs.includes(startupParam as (typeof validTabs)[number])) {
         startupInitialTab = startupParam as (typeof validTabs)[number];
         showStartupModal = true;
+
         // The SvelteKit router is not initialized yet during this boot-time effect.
         // Use the browser history directly to remove this one-shot startup instruction.
         const startupUrl = new URL(window.location.href);
         startupUrl.searchParams.delete('startup');
+
         window.history.replaceState(window.history.state, '', startupUrl);
       }
     } else if (!isLoadingFromUrlParam) {
       const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
+
       // Default to true if not set (first time users), or respect user's preference
       if (showStartupSetting === null || showStartupSetting === 'true') {
         showStartupModal = true;
@@ -933,10 +949,57 @@
 
     eventBus.addEventListener('nodeReplace', handleNodeReplace);
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
+
+    const objectVfs = VirtualFilesystem.getInstance();
+
+    unregisterObjectFiles = objectVfs.objectFiles.connect(
+      (file, content, options) => {
+        const object = getNode(file.objectId);
+        if (!object) throw new Error(`VFS: Object no longer exists: ${file.objectId}`);
+
+        const edit = editObjectCodeFile(object, file.filename, content);
+        const currentContent = object.data[edit.dataKey] as string;
+        const oldValue = options?.previousContent ?? currentContent;
+
+        if (currentContent !== content) updateNodeData(file.objectId, edit.updates);
+
+        if (options?.recordHistory !== false && oldValue !== content)
+          handleCodeCommit({
+            type: 'codeCommit',
+            nodeId: file.objectId,
+            dataKey: file.dataKey,
+            oldValue,
+            newValue: content
+          });
+
+        objectVfs.objectFiles.sync(nodes);
+      },
+      async (file) => {
+        await tick();
+
+        const object = getNode(file.objectId);
+        if (!object) throw new Error(`VFS: Object no longer exists: ${file.objectId}`);
+
+        const target = get(codeSidebarTargets).get(file.objectId);
+        if (target?.dataKey === file.dataKey && target.onrun) {
+          target.onrun(objectVfs.readCodeFile(`obj://${file.objectId}/${file.filename}`));
+          return;
+        }
+
+        updateNodeData(file.objectId, {
+          executeCode:
+            (typeof object.data.executeCode === 'number' ? object.data.executeCode : 0) + 1
+        });
+      }
+    );
+
+    objectVfs.objectFiles.sync(nodes);
+
     unregisterCanvasMirrors = VfsCanvasMirrors.register({
       getNodes: () => nodes,
       setNodes: (nextNodes) => (nodes = nextNodes)
     });
+
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.addEventListener('insertSampleToCanvas', handleInsertSample);
@@ -971,6 +1034,7 @@
     eventBus.removeEventListener('nodeReplace', handleNodeReplace);
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
     unregisterCanvasMirrors?.();
+    unregisterObjectFiles?.();
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.removeEventListener('insertSampleToCanvas', handleInsertSample);

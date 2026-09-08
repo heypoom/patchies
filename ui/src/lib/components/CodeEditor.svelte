@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { useViewport } from '@xyflow/svelte';
   import { EditorView, minimalSetup } from 'codemirror';
-  import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
+  import { Annotation, Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
   import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
   import {
     keymap,
@@ -187,7 +187,7 @@
   let isAltNavigationActive = $state(false);
   let altHoveredDecoration: Element | null = null;
   const viewport = useViewport();
-  let isInternalUpdate = false; // Flag to prevent loops when user types
+  const externalValueUpdate = Annotation.define<boolean>();
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
   let resolvedFontSize = $derived(fontSize ?? `${$editorFontSize}px`);
   let resolvedFontFamily = $derived(fontFamily ?? $editorFontFamily);
@@ -310,11 +310,7 @@
             {
               key: 'Shift-Enter',
               run: () => {
-                if (onsave) {
-                  onsave();
-                } else {
-                  onrun(editorView?.state.doc.toString());
-                }
+                onrun(editorView?.state.doc.toString());
 
                 return true;
               }
@@ -548,22 +544,17 @@
         }),
         inlineDecorationTheme,
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
+          if (
+            update.docChanged &&
+            !update.transactions.some((transaction) => transaction.annotation(externalValueUpdate))
+          ) {
             const updatedValue = update.state.doc.toString();
-
-            // Set flag to prevent the $effect from triggering on user input
-            isInternalUpdate = true;
 
             if (onchange) {
               onchange(updatedValue);
             } else {
               value = updatedValue;
             }
-
-            // Reset flag after microtask to allow external updates
-            queueMicrotask(() => {
-              isInternalUpdate = false;
-            });
           }
         }),
         autocompleteComp.of($editorAutocompleteEnabled ? autocompletion() : []),
@@ -657,15 +648,12 @@
     // Only update if editor is mounted
     if (!editorView) return;
 
-    // Skip update if the change came from the editor itself (user typing)
-    // This prevents unnecessary XYFlow updates on every keystroke
-    if (isInternalUpdate) return;
-
     const currentDoc = editorView.state.doc.toString();
 
     // Only dispatch if the values are actually different
     if (currentDoc !== newValue) {
       editorView.dispatch({
+        annotations: externalValueUpdate.of(true),
         changes: {
           from: 0,
           to: editorView.state.doc.length,

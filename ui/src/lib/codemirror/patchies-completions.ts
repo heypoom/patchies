@@ -905,7 +905,7 @@ const memberCompletions: Record<string, Completion[]> = {
       label: 'list',
       type: 'method',
       detail: '(path?: string) => Promise<VFSListEntry[]>',
-      info: 'List direct entries with path, name, and kind. Defaults to the user:// namespace.',
+      info: 'List direct entries with path, name, and kind. Defaults to user://.',
       apply: "list('.')"
     },
     {

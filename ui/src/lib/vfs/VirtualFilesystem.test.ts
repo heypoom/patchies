@@ -52,13 +52,9 @@ describe('VirtualFilesystem patch files', () => {
   it('keeps object files runtime-only during serialization and hydration', async () => {
     const vfs = VirtualFilesystem.getInstance();
 
-    vfs.registerEntry('obj://script-1/source.js', {
-      provider: 'url',
-      filename: 'source.js',
-      url: '/source.js'
-    });
+    vfs.objectFiles.sync([{ id: 'script-1', type: 'js', data: { code: 'source' } }]);
 
-    expect(vfs.getEntry('obj://script-1/source.js')).toBeDefined();
+    expect(vfs.getEntry('obj://script-1/code.js')).toBeDefined();
     expect(vfs.serialize()).toEqual({});
 
     await vfs.hydrate({

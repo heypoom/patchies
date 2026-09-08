@@ -137,7 +137,6 @@ class VirtualFilesystem {
 
   // Registration
   registerFile(path: string, entry: VFSEntry): void;
-  registerLocalFile(file: File): Promise<string>; // returns generated path like 'user://images/photo.jpg'
   registerUrl(url: string): Promise<string>; // returns generated path
 
   // Resolution
@@ -238,7 +237,7 @@ data: {
 
 **Drop/select flow:**
 
-1. User drops file → `vfs.registerLocalFile(file)` → returns path
+1. User drops file → `vfs.storeFile(file)` → returns path
 2. Store path in `node.data.vfsPath`
 3. Load image into GLSystem
 
@@ -378,7 +377,7 @@ The VFS has three namespaces:
 | ---------- | --------------------------------------- | ----------------------------------------------- | ------------------------------------- |
 | `patch://` | Embedded in the current patch           | Serialized under `files.patch`                  | Supported text files are editable     |
 | `user://`  | External or browser-local user resource | Handle, URL, or patch-scoped IndexedDB fallback | Read-only in the first editor release |
-| `obj://`   | Object-owned resource                   | Runtime-only; rebuilt from object state         | Not editable independently            |
+| `obj://`   | Object-owned resource                   | Runtime-only; rebuilt from object state         | Edit existing object code only            |
 
 An embedded entry uses the `embedded` provider and stores UTF-8 text directly:
 
@@ -406,7 +405,7 @@ The serialized text is a normal JSON string, not base64. Limits use UTF-8 byte l
 - 1 MiB maximum total embedded content per patch
 - UTF-8 text only
 
-The initial editable formats are:
+The editable formats under `patch://` are:
 
 - JavaScript: `.js`, `.mjs`
 - GLSL: `.gl`, `.glsl`, `.frag`, `.vert`, `.glslf`, `.glslv`
@@ -419,7 +418,13 @@ The Files tree shows namespace roots in this order:
 
 1. Patch (always visible)
 2. User (always visible)
-3. Objects (visible only when populated)
+3. Objects (always visible)
+
+Each root label has a tooltip on hover and keyboard focus:
+
+- **Patch:** Files saved inside this patch. They're included when you save or share it.
+- **User:** Files from your device or the web. The patch saves links, not the files themselves.
+- **Objects:** Code from the objects in this patch. Edits here also update the object.
 
 The drop target declares ownership:
 
@@ -432,7 +437,10 @@ Patch folder drops are atomic. Patchies embeds the complete folder only when eve
 
 New File is available in Patch and its folders. It creates empty content, requires an explicit supported extension, rejects case-sensitive duplicate paths, and opens the new file in the editor. An empty GLSL file shows a non-persisted example function placeholder so users know the file can contain reusable GLSL functions.
 
-### Editor Behavior
+### Editor Behavior (Patch Files)
+
+These draft and save rules apply to `patch://`. Objects files use the live editing
+behavior described under **Live object code namespace** below.
 
 Double-clicking an editable Patch file, or choosing **Edit** from its context menu, transforms the Files panel into a CodeMirror editor. Search results provide the same actions. On mobile, Edit appears in the selection toolbar. A single click continues to select a row.
 
@@ -609,3 +617,54 @@ Verification:
 7. Invalid paths, collisions, and failed rename staging preserve all prior persisted state.
 
 Release criterion: Patch VFS files are the only user-module source, and optional canvas mirrors edit them without adding runtime identity or duplicate ownership.
+
+## Live object code namespace
+
+`obj://` exposes an always-visible **Objects** root. Existing code-bearing objects
+appear as `<node-id>/<filename>`, including `glsl-4/shader.glsl` and `js-6/code.js`.
+A transport-independent representation maps object type, data field, filename,
+language, and source text. Remote sync can consume this representation without
+Svelte, XYFlow, or VFS storage dependencies.
+
+Object files are derived from current graph data, never serialized into the VFS
+tree. Listing, reading, search, and Files editing use this live projection.
+Typing updates the original data field immediately, with normal node undo history
+committed at editing boundaries. Graph edits, undo, replacement, and deletion
+refresh the projection. Objects without source code expose no files.
+
+Only existing source contents can be edited. Creating, uploading, replacing,
+renaming, moving, or deleting entries under `obj://` is rejected by the VFS and
+unavailable in desktop/mobile file controls. Object creation is out of scope.
+
+### Object editor synchronization and execution
+
+Existing object source is authoritative when it changes externally: an open or
+reopened Objects editor immediately refreshes from that source. Patch-file drafts
+retain their conflict protection.
+CodeMirror applies external values without emitting a user-edit callback.
+
+Shift+Enter commits the current editing gesture and invokes the object's registered
+Run handler after the editor state settles. It also reruns unchanged source.
+Cmd/Ctrl+S only commits the editing gesture; source changes have already propagated.
+Hosts without a mounted editor use the existing executeCode trigger.
+
+### Bidirectional live object editing
+
+Typing in an Objects file immediately updates its object data, just like typing
+in the main object editor. Objects files have no isolated unsaved draft. Save,
+Run, blur, and navigation commit a single undo step for the editing gesture;
+Run alone requests execution. Undo and redo use node history and update both
+editors. Patch files retain their explicit save/discard drafts.
+
+Objects file editors retain the source object's editor type. Inline value widgets
+use the main editor's rerun policy and throttle, including automatic Hydra reruns
+while adjusting values.
+
+Object-file projection updates metadata only for changed sources. Unchanged
+sources are not re-encoded or rebuilt on each keystroke.
+
+### Object file highlighting
+
+The source representation supplies the filename and editor language for each
+object file. ChucK's `code.ck` uses JavaScript-style highlighting to match the
+current main ChucK editor; it does not yet use a dedicated ChucK grammar.

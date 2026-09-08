@@ -1,12 +1,14 @@
+import { HistoryManager } from '$lib/history';
+import { isObjectPath } from './ObjectFileProjection';
 import type { VirtualFilesystem } from './VirtualFilesystem';
-import { isEditablePatchCodePath } from './patch-file-editor';
+import { isEditableCodePath } from './patch-file-editor';
 
 export type UnsavedChangesDecision = 'save' | 'discard' | 'cancel';
 
 export const isEditorSaveShortcut = (event: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey'>) =>
   event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey);
 
-/** Owns one Patch-file draft and keeps unsaved content outside the VFS. */
+/** Owns Patch-file drafts and live object-source editing gestures. */
 export class PatchFileEditorSession {
   private pathValue: string | null = null;
   private listeners = new Set<() => void>();
@@ -40,14 +42,14 @@ export class PatchFileEditorSession {
   }
 
   open(path: string): void {
-    if (!isEditablePatchCodePath(path)) {
-      throw new Error(`VFS: Patch code file is not editable: ${path}`);
+    if (!isEditableCodePath(path)) {
+      throw new Error(`VFS: Code file is not editable: ${path}`);
     }
 
     this.pathValue = path;
 
     if (!this.states().has(path)) {
-      const savedContent = this.vfs.readEmbeddedFile(path);
+      const savedContent = this.vfs.readCodeFile(path);
       this.states().set(path, {
         savedContent,
         draft: savedContent,
@@ -55,13 +57,34 @@ export class PatchFileEditorSession {
         draftUndoStack: [],
         draftRedoStack: []
       });
+    } else {
+      this.syncSavedContent();
+    }
+  }
+
+  async run(content = this.draft): Promise<void> {
+    this.updateDraft(content);
+    this.save();
+
+    if (this.pathValue && isObjectPath(this.pathValue)) {
+      await this.vfs.objectFiles.run(this.pathValue);
     }
   }
 
   updateDraft(content: string): void {
     const state = this.getState();
-    if (!state) throw new Error('VFS: No Patch file is open');
+    if (!state) throw new Error('VFS: No code file is open');
     if (state.draft === content) return;
+
+    if (this.pathValue && isObjectPath(this.pathValue)) {
+      state.editStart ??= state.savedContent;
+      this.vfs.objectFiles.write(this.pathValue, content, { recordHistory: false });
+      state.savedContent = content;
+      state.draft = content;
+      state.revision = this.vfs.getEntry(this.pathValue)?.revision ?? state.revision;
+      this.notify();
+      return;
+    }
 
     state.draftUndoStack.push(state.draft);
     state.draftRedoStack = [];
@@ -72,9 +95,27 @@ export class PatchFileEditorSession {
   save(): boolean {
     const path = this.pathValue;
     const state = this.getState();
-    if (!path || !state || !this.isDirty) return false;
+    if (!path || !state) return false;
 
-    this.vfs.writeEmbeddedFile(path, state.draft);
+    if (isObjectPath(path)) {
+      const previousContent = state.editStart;
+      if (
+        !this.vfs.has(path) ||
+        previousContent === undefined ||
+        previousContent === state.savedContent
+      ) {
+        state.editStart = undefined;
+        return false;
+      }
+
+      this.vfs.objectFiles.write(path, state.savedContent, { previousContent });
+      state.editStart = undefined;
+      return true;
+    }
+
+    if (!this.isDirty) return false;
+
+    this.vfs.writeCodeFile(path, state.draft);
     state.savedContent = state.draft;
     state.revision = this.vfs.getEntry(path)?.revision ?? state.revision + 1;
     this.notify();
@@ -93,6 +134,8 @@ export class PatchFileEditorSession {
   }
 
   close(): void {
+    if (this.pathValue && isObjectPath(this.pathValue)) this.save();
+
     this.pathValue = null;
     this.notify();
   }
@@ -123,18 +166,19 @@ export class PatchFileEditorSession {
 
     const entry = this.vfs.getEntry(path);
     if (!entry) {
-      if (this.isDirty) return 'conflict';
+      if (this.isDirty && !isObjectPath(path)) return 'conflict';
 
       this.states().delete(path);
       return 'deleted';
     }
 
-    const nextContent = this.vfs.readEmbeddedFile(path);
+    const nextContent = this.vfs.readCodeFile(path);
     const nextRevision = entry.revision ?? 0;
 
     if (nextContent === state.savedContent && nextRevision === state.revision) return 'unchanged';
-    if (this.isDirty) return 'conflict';
+    if (this.isDirty && !isObjectPath(path)) return 'conflict';
 
+    state.editStart = undefined;
     state.savedContent = nextContent;
     state.draft = nextContent;
     state.revision = nextRevision;
@@ -146,6 +190,13 @@ export class PatchFileEditorSession {
   }
 
   undoDraft(): boolean {
+    if (this.pathValue && isObjectPath(this.pathValue)) {
+      this.save();
+      const undone = HistoryManager.getInstance().undo() !== null;
+      this.syncSavedContent();
+      return undone;
+    }
+
     const state = this.getState();
     const previous = state?.draftUndoStack.pop();
     if (!state || previous === undefined) return false;
@@ -158,6 +209,12 @@ export class PatchFileEditorSession {
   }
 
   redoDraft(): boolean {
+    if (this.pathValue && isObjectPath(this.pathValue)) {
+      const redone = HistoryManager.getInstance().redo() !== null;
+      this.syncSavedContent();
+      return redone;
+    }
+
     const state = this.getState();
     const next = state?.draftRedoStack.pop();
     if (!state || next === undefined) return false;
@@ -192,6 +249,7 @@ type PatchFileEditorState = {
   savedContent: string;
   draft: string;
   revision: number;
+  editStart?: string;
   draftUndoStack: string[];
   draftRedoStack: string[];
 };
