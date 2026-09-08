@@ -1936,6 +1936,7 @@
 {#if editorPath}
   <PatchFileEditorView
     path={editorPath}
+    nodeType={isObjectPath(editorPath) ? vfs.objectFiles.get(editorPath).nodeType : undefined}
     draft={editorDraft}
     dirty={editorDirty}
     onchange={(content) => {

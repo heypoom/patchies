@@ -8,6 +8,7 @@
 
   let {
     path,
+    nodeType,
     draft,
     dirty,
     onchange,
@@ -22,6 +23,7 @@
     ondelete
   }: {
     path: string;
+    nodeType?: string;
     draft: string;
     dirty: boolean;
     onchange: (content: string) => void;
@@ -139,7 +141,7 @@
       {onrun}
       {onsave}
       {language}
-      nodeType={language === 'javascript' ? 'js' : 'glsl'}
+      nodeType={nodeType ?? (language === 'javascript' ? 'js' : 'glsl')}
       {placeholder}
       class="h-full w-full resize-none"
     />

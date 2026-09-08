@@ -9,6 +9,7 @@ export interface CodeObject {
 
 export interface ObjectCodeFile {
   objectId: string;
+  nodeType: string;
   filename: string;
   dataKey: string;
   language: SupportedLanguage;
@@ -75,14 +76,17 @@ for (const type of [
 }
 
 export function getObjectCodeFiles(object: CodeObject): ObjectCodeFile[] {
-  const definition = object.type ? definitions[object.type] : undefined;
+  const nodeType = object.type;
+  if (!nodeType) return [];
+
+  const definition = definitions[nodeType];
   if (!definition) return [];
 
   const [dataKey, filename, language] = definition;
   const content = object.data[dataKey];
   if (typeof content !== 'string') return [];
 
-  return [{ objectId: object.id, filename, dataKey, language, content }];
+  return [{ objectId: object.id, nodeType, filename, dataKey, language, content }];
 }
 
 /** Validates an existing source and returns a host-applicable data update. */

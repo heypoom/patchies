@@ -17,6 +17,10 @@ import {
 } from './worker-vfs-request-handler';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { createVfsApi } from './user-api';
+import {
+  shouldRunOnValueWidgetChange,
+  valueWidgetRunThrottleMs
+} from '$lib/codemirror/value-widget-events';
 
 const jsPath = 'obj://js-6/code.js';
 
@@ -27,11 +31,13 @@ describe('live object files', () => {
   beforeEach(() => {
     VirtualFilesystem.resetInstance();
     vfs = VirtualFilesystem.getInstance();
+
     objects = [
       { id: 'glsl-4', type: 'glsl', data: { code: 'void main() {}' } },
       { id: 'js-6', type: 'js', data: { code: 'send(1)' } },
       { id: 'slider-1', type: 'slider', data: { value: 1 } }
     ];
+
     vfs.objectFiles.connect((file, content) => {
       objects = objects.map((object) =>
         object.id === file.objectId
@@ -44,8 +50,10 @@ describe('live object files', () => {
             }
           : object
       );
+
       vfs.objectFiles.sync(objects);
     });
+
     vfs.objectFiles.sync(objects);
   });
 
@@ -54,6 +62,7 @@ describe('live object files', () => {
       { path: 'obj://glsl-4', name: 'glsl-4', kind: 'directory' },
       { path: 'obj://js-6', name: 'js-6', kind: 'directory' }
     ]);
+
     expect(await listVfsEntries('obj://glsl-4')).toEqual({
       entries: [{ path: 'obj://glsl-4/shader.glsl', name: 'shader.glsl', kind: 'file' }]
     });
@@ -62,6 +71,7 @@ describe('live object files', () => {
     expect(await vfs.search('shader', 'obj://')).toEqual([
       { path: 'obj://glsl-4/shader.glsl', name: 'shader.glsl', kind: 'file' }
     ]);
+
     expect((await vfs.listChildrenPage('obj://', { limit: 1 })).nextOffset).toBe(1);
     expect((await vfs.searchPage('code', 'obj://')).entries).toHaveLength(1);
 
@@ -70,8 +80,10 @@ describe('live object files', () => {
 
     expect(await resolveVfsUrl('worker-1', jsPath)).toEqual({ url: 'blob:object-code' });
     expect(await (createUrl.mock.calls[0][0] as Blob).text()).toBe('send(1)');
+
     revokeWorkerVfsObjectUrls('worker-1');
     expect(revokeUrl).toHaveBeenCalledWith('blob:object-code');
+
     vi.restoreAllMocks();
   });
 
@@ -141,28 +153,61 @@ describe('live object files', () => {
     expect(editor.isDirty).toBe(false);
   });
 
+  it('preserves Hydra widget reruns for Objects files', async () => {
+    const path = 'obj://hydra-1/code.js';
+    const object = { id: 'hydra-1', type: 'hydra', data: { code: 'osc(10).out()' } };
+    const run = vi.fn();
+
+    vfs.objectFiles.connect((file, content) => {
+      object.data.code = content;
+      vfs.objectFiles.sync([object]);
+    }, run);
+
+    vfs.objectFiles.sync([object]);
+
+    const file = vfs.objectFiles.get(path);
+    expect(file.nodeType).toBe('hydra');
+    expect(shouldRunOnValueWidgetChange(file.language, file.nodeType)).toBe(true);
+    expect(valueWidgetRunThrottleMs(file.language, file.nodeType)).toBe(30);
+
+    const editor = new PatchFileEditorSession(vfs);
+    editor.open(path);
+
+    await editor.run('osc(20).out()');
+    expect(object.data.code).toBe('osc(20).out()');
+
+    expect(run).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ nodeType: 'hydra', content: 'osc(20).out()' })
+    );
+  });
+
   it('saves the latest document before Run and reruns unchanged code', async () => {
     const run = vi.fn((file) => {
       expect(file.content).toBe('latest document');
       expect(objects[1].data.code).toBe('latest document');
     });
+
     vfs.objectFiles.connect((file, content) => {
       objects[1].data[file.dataKey] = content;
       vfs.objectFiles.sync(objects);
     }, run);
+
     const editor = new PatchFileEditorSession(vfs);
     editor.open(jsPath);
     editor.updateDraft('older draft');
+
     expect(objects[1].data.code).toBe('older draft');
     expect(run).not.toHaveBeenCalled();
 
     await editor.run('latest document');
     await editor.run();
+
     expect(run).toHaveBeenCalledTimes(2);
     expect(editor.isDirty).toBe(false);
 
     editor.updateDraft('save only');
     editor.save();
+
     expect(run).toHaveBeenCalledTimes(2);
   });
 
@@ -170,6 +215,7 @@ describe('live object files', () => {
     const events: string[] = [];
     const listener = (event: { path: string }) => events.push(event.path);
     const bus = PatchiesEventBus.getInstance();
+
     bus.addEventListener('vfsContentModified', listener);
     const revision = vfs.getEntry(jsPath)?.revision;
 
@@ -257,6 +303,7 @@ describe('live object files', () => {
     expect(getObjectCodeFiles(object)).toEqual([
       {
         objectId: 'uiua-1',
+        nodeType: 'uiua',
         filename: 'code.ua',
         dataKey: 'expr',
         language: 'uiua',

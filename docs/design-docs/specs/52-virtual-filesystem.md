@@ -656,6 +656,10 @@ Run, blur, and navigation commit a single undo step for the editing gesture;
 Run alone requests execution. Undo and redo use node history and update both
 editors. Patch files retain their explicit save/discard drafts.
 
+Objects file editors retain the source object's editor type. Inline value widgets
+use the main editor's rerun policy and throttle, including automatic Hydra reruns
+while adjusting values.
+
 Object-file projection updates metadata only for changed sources. Unchanged
 sources are not re-encoded or rebuilt on each keystroke.
 
