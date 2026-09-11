@@ -149,6 +149,9 @@ export class JSObject implements RuntimeObject<JSObjectData> {
         customConsole,
         messageContext,
 
+        onSchedulerCallbackRegistered: () =>
+          this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true }),
+
         setPortCount: (inletCount = 1, outletCount = 1) =>
           this.context.setData({ inletCount, outletCount }, { notifyUI: true }),
 
@@ -177,7 +180,6 @@ export class JSObject implements RuntimeObject<JSObjectData> {
           };
 
           const unsubscribe = this.context.subscribeGraph(query, notifyGraphChange);
-
           if (!unsubscribe) return () => {};
 
           this.subscriptions.add(unsubscribe);
@@ -225,10 +227,11 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     this.settingsManager.clearCallbacks();
 
     const messageContext = this.context.getMessageContext();
-
     messageContext.runCleanupCallbacks();
     messageContext.clearTimers();
     messageContext.messageCallbacks = [];
+
+    JSRunner.getInstance().clearSchedulerCallbacks(this.nodeId);
 
     const updates = {
       isGraphSubscriptionActive: false,

@@ -330,6 +330,10 @@ export class JSRunner {
     return this.lookaheadClockSchedulerMap.get(nodeId)!;
   }
 
+  clearSchedulerCallbacks(nodeId: string): void {
+    this.lookaheadClockSchedulerMap.get(nodeId)?.cancelAll();
+  }
+
   destroy(nodeId: string): void {
     // Destroy context before removing from map (runs cleanup callbacks)
     const context = this.messageContextMap.get(nodeId);
@@ -495,7 +499,11 @@ export class JSRunner {
 
         return scheduler.onBeat(...args);
       },
-      schedule: scheduler.schedule.bind(scheduler),
+      schedule: (...args: Parameters<typeof scheduler.schedule>) => {
+        onSchedulerCallbackRegistered?.();
+
+        return scheduler.schedule(...args);
+      },
       every: (...args: Parameters<typeof scheduler.every>) => {
         onSchedulerCallbackRegistered?.();
 

@@ -339,4 +339,34 @@ describe('JSObject', () => {
     object.destroy();
     context.destroy();
   });
+
+  it('marks clock callbacks as active and clears them on stop', async () => {
+    const messageContext = new MessageContext(compilerId);
+    const scheduler = JSRunner.getInstance().getLookaheadClockScheduler(compilerId);
+
+    const code = `
+      clock.onBeat('*', () => {});
+      clock.schedule(60, () => {});
+      clock.every('1:0:0', () => {});
+      clock.onPlayStateChange(() => {});
+    `;
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code,
+      runOnMount: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: true });
+    expect(scheduler.getEventSnapshot()).toHaveLength(3);
+
+    object.onMessage({ type: 'stop' });
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: false });
+    expect(scheduler.getEventSnapshot()).toEqual([]);
+
+    object.destroy();
+    context.destroy();
+  });
 });

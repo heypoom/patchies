@@ -92,6 +92,25 @@ describe('JSRunner', () => {
     expect(hydratedRunner.modules).toEqual(
       new Map([['patch://utils.js', 'export const value = 1']])
     );
+
     expect(updates).toEqual([['patch://utils.js', 'export const value = 1']]);
+  });
+
+  it('reports every clock callback registration', async () => {
+    const onSchedulerCallbackRegistered = vi.fn();
+
+    const code = `
+      clock.onBeat('*', () => {});
+      clock.schedule(60, () => {});
+      clock.every('1:0:0', () => {});
+      clock.onPlayStateChange(() => {});
+    `;
+
+    await runner.executeJavaScript(nodeId, code, {
+      skipMessageContext: true,
+      onSchedulerCallbackRegistered
+    });
+
+    expect(onSchedulerCallbackRegistered).toHaveBeenCalledTimes(4);
   });
 });
