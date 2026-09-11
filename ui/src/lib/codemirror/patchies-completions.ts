@@ -570,14 +570,12 @@ const TOP_LEVEL_ONLY_FUNCTIONS = new Set([
   'setHidePorts',
   'setKeepAlive',
   'setMouseScope',
-  'setMouseForwarding',
   'setPortCount',
   'setPrimaryButton',
   'setResolution',
   'setRunOnMount',
   'setSize',
   'setTextureFormat',
-  'setTags',
   'onGraphChange',
   'setVideoCount'
 ]);
