@@ -7,18 +7,25 @@ import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 
 function createSend(channel: string) {
   const values: Array<string | null> = [null, channel];
+  const setParamOptions: unknown[] = [];
+
   const paramsChangeCallbacks = new Set<
     (params: unknown[], index: number, value: unknown) => void
   >();
+
   const context = {
     getParam(indexOrName: number | string) {
       return indexOrName === 'channel' || indexOrName === 1 ? values[1] : values[0];
     },
-    setParam(indexOrName: number | string, value: unknown) {
-      if (indexOrName === 'channel' || indexOrName === 1) values[1] = String(value);
+    setParam(indexOrName: number | string, value: unknown, options?: unknown) {
+      if (indexOrName === 'channel' || indexOrName === 1) {
+        values[1] = String(value);
+        setParamOptions[1] = options;
+      }
     },
     onParamsChange(callback: (params: unknown[], index: number, value: unknown) => void) {
       paramsChangeCallbacks.add(callback);
+
       return () => {
         paramsChangeCallbacks.delete(callback);
       };
@@ -30,6 +37,7 @@ function createSend(channel: string) {
 
   return {
     object,
+    setParamOptions,
     triggerParamsChange(params: unknown[], index: number, value: unknown) {
       for (const callback of paramsChangeCallbacks) {
         callback(params, index, value);
@@ -41,22 +49,21 @@ function createSend(channel: string) {
 describe('SendObject', () => {
   it('registers its channel name for patchbay resolution', () => {
     const channel = `send-channel-${crypto.randomUUID()}`;
-    const { object } = createSend(channel);
+    const registry = MessageChannelRegistry.getInstance();
 
-    expect(MessageChannelRegistry.getInstance().getChannelNames()).toContain(channel);
+    const { object } = createSend(channel);
+    expect(registry.getChannelNames()).toContain(channel);
 
     object.destroy();
-
-    expect(MessageChannelRegistry.getInstance().getChannelNames()).not.toContain(channel);
+    expect(registry.getChannelNames()).not.toContain(channel);
   });
 
   it('exposes sender node ids for a channel', () => {
     const channel = `send-channel-${crypto.randomUUID()}`;
-    const { object } = createSend(channel);
+    const registry = MessageChannelRegistry.getInstance();
 
-    expect(MessageChannelRegistry.getInstance().getChannelNodeIds(channel)).toEqual([
-      object.nodeId
-    ]);
+    const { object } = createSend(channel);
+    expect(registry.getChannelNodeIds(channel)).toEqual([object.nodeId]);
 
     object.destroy();
   });
@@ -64,19 +71,30 @@ describe('SendObject', () => {
   it('re-registers when the channel parameter changes', () => {
     const oldChannel = `send-channel-old-${crypto.randomUUID()}`;
     const newChannel = `send-channel-new-${crypto.randomUUID()}`;
-    const { object, triggerParamsChange } = createSend(oldChannel);
+    const registry = MessageChannelRegistry.getInstance();
 
-    expect(MessageChannelRegistry.getInstance().getChannelNodeIds(oldChannel)).toEqual([
-      object.nodeId
-    ]);
+    const { object, triggerParamsChange } = createSend(oldChannel);
+    expect(registry.getChannelNodeIds(oldChannel)).toEqual([object.nodeId]);
 
     object.context.setParam('channel', newChannel);
     triggerParamsChange([null, newChannel], 1, newChannel);
 
-    expect(MessageChannelRegistry.getInstance().getChannelNodeIds(oldChannel)).toEqual([]);
-    expect(MessageChannelRegistry.getInstance().getChannelNodeIds(newChannel)).toEqual([
-      object.nodeId
-    ]);
+    expect(registry.getChannelNodeIds(oldChannel)).toEqual([]);
+    expect(registry.getChannelNodeIds(newChannel)).toEqual([object.nodeId]);
+
+    object.destroy();
+  });
+
+  it('updates the channel label when receiving a channel message', () => {
+    const { object, setParamOptions } = createSend(`send-channel-${crypto.randomUUID()}`);
+
+    object.onMessage('new-channel', {
+      inletName: 'channel',
+      source: ''
+    });
+
+    expect(object.context.getParam('channel')).toBe('new-channel');
+    expect(setParamOptions[1]).toEqual({ notifyUI: true });
 
     object.destroy();
   });
@@ -88,8 +106,8 @@ describe('SendObject', () => {
 
     object.destroy();
     object.context.setParam('channel', newChannel);
-    triggerParamsChange([null, newChannel], 1, newChannel);
 
+    triggerParamsChange([null, newChannel], 1, newChannel);
     expect(MessageChannelRegistry.getInstance().getChannelNodeIds(oldChannel)).toEqual([]);
     expect(MessageChannelRegistry.getInstance().getChannelNodeIds(newChannel)).toEqual([]);
   });
@@ -100,7 +118,6 @@ describe('SendObject', () => {
     const syntheticNodeId = `patchbay-${crypto.randomUUID()}:${channel}`;
 
     registry.subscribe(channel, syntheticNodeId, () => {});
-
     expect(registry.getReceiverChannelNames()).not.toContain(channel);
     expect(registry.getChannelNodeIds(channel)).toEqual([]);
 

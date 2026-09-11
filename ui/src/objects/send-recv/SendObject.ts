@@ -81,7 +81,7 @@ export class SendObject implements TextObjectV2 {
       })
       .with('channel', () => {
         if (typeof data === 'string' || typeof data === 'number') {
-          this.context.setParam('channel', String(data));
+          this.context.setParam('channel', String(data), { notifyUI: true });
         }
       })
       .otherwise(() => {});

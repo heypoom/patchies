@@ -87,7 +87,7 @@ export class RecvObject implements TextObjectV2 {
     match(meta.inletName)
       .with('channel', () => {
         if (typeof data === 'string' || typeof data === 'number') {
-          this.context.setParam('channel', String(data));
+          this.context.setParam('channel', String(data), { notifyUI: true });
         }
       })
       .otherwise(() => {});
