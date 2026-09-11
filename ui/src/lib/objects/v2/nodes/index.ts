@@ -20,6 +20,7 @@ import { ClipObject } from '$objects/clip/ClipObject';
 import { DebounceObject } from '$objects/debounce/DebounceObject';
 import { DelayObject } from '$objects/delay/DelayObject';
 import { FloatObject } from '$objects/float/FloatObject';
+import { GateObject } from '$objects/gate/GateObject';
 import { IntObject } from '$objects/int/IntObject';
 import { KVObject } from '$objects/kv/KVObject';
 import { KnobObject } from '$objects/knob/KnobObject';
@@ -54,6 +55,7 @@ import { UnpackObject } from '$objects/unpack/UnpackObject';
 import { StackObject } from '$objects/stack/StackObject';
 import { QueueObject } from '$objects/queue/QueueObject';
 import { SwitchObject } from '$objects/switch/SwitchObject';
+import { ToggleSwitchObject } from '$objects/toggleswitch/ToggleSwitchObject';
 import { TextboxObject } from '$objects/textbox/TextboxObject';
 import { JSObject } from '$objects/js/JSObject';
 
@@ -68,6 +70,7 @@ export const TEXT_OBJECTS = [
   DebounceObject,
   DelayObject,
   FloatObject,
+  GateObject,
   IntObject,
   KVObject,
   MetroObject,
@@ -99,6 +102,7 @@ export const TEXT_OBJECTS = [
   UnpackObject,
   StackObject,
   QueueObject,
+  SwitchObject,
   LoadbangObject
 ] as const satisfies TextObjectClass[];
 
@@ -112,7 +116,7 @@ export const VISUAL_OBJECTS = [
   TitleObject,
   ToggleObject,
   SequencerObject,
-  SwitchObject,
+  ToggleSwitchObject,
   TextboxObject,
   JSObject
 ] as const satisfies TextObjectClass[];

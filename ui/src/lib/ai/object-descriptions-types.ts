@@ -101,6 +101,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - clip: Clamp a number to a min/max range (clip min max)
 - pack: Collect float, symbol, and any inlet values into one list (pack f s a, pack 0 symbol any)
 - unpack: Split an array into individual element outlets
+- switch: Route one selected input to an output (switch 3)
+- gate: Route input to one selected output (gate 3)
 - stack: LIFO stack — push messages to inlet 0, bang inlet 1 to pop; also accepts clear and size commands on inlet 1
 - queue: FIFO queue — push messages to inlet 0, bang inlet 1 to dequeue; also accepts clear and size commands on inlet 1
 - patchbay: Text-based message, audio, and video channel router. Uses [Message]/[Audio]/[Video] sections, explicit chan declarations, and channel routes like A -> B -> C.

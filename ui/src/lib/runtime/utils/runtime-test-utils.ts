@@ -264,9 +264,9 @@ export const toggleNode = (id: string, data: Record<string, unknown> = {}): Node
   data
 });
 
-export const switchNode = (id: string, data: Record<string, unknown> = {}): Node => ({
+export const toggleSwitchNode = (id: string, data: Record<string, unknown> = {}): Node => ({
   id,
-  type: 'switch',
+  type: 'toggleswitch',
   position: { x: 0, y: 0 },
   data
 });

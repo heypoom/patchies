@@ -43,7 +43,7 @@ import {
   PatchRuntimeTestObject,
   resetPatchRuntimeTestObject,
   sliderNode,
-  switchNode,
+  toggleSwitchNode,
   tapTildeNode,
   TEST_OBJECT_TYPE,
   textboxNode,
@@ -1809,17 +1809,17 @@ describe('EditorRuntimeReconciler', () => {
     ]);
   });
 
-  it('translates XYFlow switch value into runtime data', async () => {
+  it('translates XYFlow toggleswitch value into runtime data', async () => {
     const runtime = createFakeEditorRuntime();
-    const nodeId = 'switch-editor-runtime-test';
+    const nodeId = 'toggleswitch-editor-runtime-test';
 
-    await setRuntimeGraphFromEditorGraph(runtime, [switchNode(nodeId, { value: true })]);
+    await setRuntimeGraphFromEditorGraph(runtime, [toggleSwitchNode(nodeId, { value: true })]);
 
     expect(runtime.setGraph).toHaveBeenCalledWith({
       objects: [
         {
           id: nodeId,
-          type: 'switch',
+          type: 'toggleswitch',
           data: { value: true }
         }
       ],
