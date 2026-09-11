@@ -5,7 +5,6 @@
  */
 
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './shared-jsrunner';
-import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './ui-design-guidelines';
 import { GLSL_IMPORT_OBJECTS, GLSL_IMPORTS_GUIDELINES } from './glsl-imports-guidelines';
 import { getObjectSpecificInstructions } from '../object-descriptions';
 
@@ -44,10 +43,6 @@ export function buildObjectTypeInstructions(objectType: string): string {
 
   if (JS_ENABLED_OBJECTS.has(objectType)) {
     parts.push(`## Common JSRunner Runtime Functions\n\n${jsRunnerInstructions}`);
-  }
-
-  if (UI_DESIGN_OBJECTS.has(objectType)) {
-    parts.push(UI_DESIGN_GUIDELINES);
   }
 
   if (GLSL_IMPORT_OBJECTS.has(objectType)) {
