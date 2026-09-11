@@ -5,10 +5,12 @@ const AUTOCOMPLETE_STORAGE_KEY = 'editor.autocomplete';
 const HOVER_HINTS_STORAGE_KEY = 'editor.hoverHints';
 const FONT_SIZE_STORAGE_KEY = 'editor.fontSize';
 const FULLSCREEN_FONT_SIZE_STORAGE_KEY = 'editor.fullscreenFontSize';
+const FULLSCREEN_TEXT_BACKGROUND_OPACITY_STORAGE_KEY = 'editor.fullscreenTextBackgroundOpacity';
 const FONT_FAMILY_STORAGE_KEY = 'editor.fontFamily';
 
 const DEFAULT_FONT_SIZE = 12;
 const DEFAULT_FULLSCREEN_FONT_SIZE = 28;
+const DEFAULT_FULLSCREEN_TEXT_BACKGROUND_OPACITY = 0;
 const DEFAULT_FONT_FAMILY = 'var(--font-mono)';
 
 function readStoredBoolean(key: string, defaultValue: boolean): boolean {
@@ -71,6 +73,15 @@ export const editorFullscreenFontSize = writable(
   readStoredNumber(FULLSCREEN_FONT_SIZE_STORAGE_KEY, DEFAULT_FULLSCREEN_FONT_SIZE, 14, 48)
 );
 
+export const editorFullscreenTextBackgroundOpacity = writable(
+  readStoredNumber(
+    FULLSCREEN_TEXT_BACKGROUND_OPACITY_STORAGE_KEY,
+    DEFAULT_FULLSCREEN_TEXT_BACKGROUND_OPACITY,
+    0,
+    100
+  )
+);
+
 export const editorFontFamily = writable(readFontFamily());
 
 export function setEditorAutocompleteEnabled(enabled: boolean): void {
@@ -95,6 +106,13 @@ export function setEditorFullscreenFontSize(fontSize: number): void {
 
   editorFullscreenFontSize.set(next);
   persistNumber(FULLSCREEN_FONT_SIZE_STORAGE_KEY, next);
+}
+
+export function setEditorFullscreenTextBackgroundOpacity(opacity: number): void {
+  const next = clampFontSize(opacity, 0, 100, DEFAULT_FULLSCREEN_TEXT_BACKGROUND_OPACITY);
+
+  editorFullscreenTextBackgroundOpacity.set(next);
+  persistNumber(FULLSCREEN_TEXT_BACKGROUND_OPACITY_STORAGE_KEY, next);
 }
 
 export function setEditorFontFamily(fontFamily: string): void {

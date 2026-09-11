@@ -16,10 +16,12 @@
     editorFontFamily,
     editorFontSize,
     editorFullscreenFontSize,
+    editorFullscreenTextBackgroundOpacity,
     editorHoverHintsEnabled,
     setEditorFontFamily,
     setEditorFontSize,
     setEditorFullscreenFontSize,
+    setEditorFullscreenTextBackgroundOpacity,
     setEditorAutocompleteEnabled,
     setEditorHoverHintsEnabled,
     useVimInEditor
@@ -63,6 +65,12 @@
     const target = event.target as HTMLInputElement;
 
     setEditorFullscreenFontSize(Number(target.value));
+  }
+
+  function handleFullscreenTextBackgroundOpacityInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+
+    setEditorFullscreenTextBackgroundOpacity(Number(target.value));
   }
 </script>
 
@@ -153,6 +161,28 @@
     />
     <span class="w-11 text-right font-mono text-xs text-zinc-400"
       >{$editorFullscreenFontSize}px</span
+    >
+  </div>
+</SettingRow>
+
+<SettingRow
+  title="Fullscreen text background opacity"
+  description="Add a dark background behind text in the expanded editor for more contrast."
+>
+  <div class="flex items-center gap-3">
+    <input
+      type="range"
+      min="0"
+      max="100"
+      step="5"
+      value={$editorFullscreenTextBackgroundOpacity}
+      oninput={handleFullscreenTextBackgroundOpacityInput}
+      class="h-1.5 w-28 cursor-pointer accent-zinc-500"
+      aria-label="Fullscreen text background opacity"
+    />
+
+    <span class="w-9 text-right font-mono text-xs text-zinc-400"
+      >{$editorFullscreenTextBackgroundOpacity}%</span
     >
   </div>
 </SettingRow>

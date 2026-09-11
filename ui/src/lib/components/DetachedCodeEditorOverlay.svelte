@@ -10,6 +10,7 @@
     type CodeEditorTargetSettings
   } from '../../stores/code-editor-layout.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
+  import { editorFullscreenTextBackgroundOpacity } from '../../stores/editor.store';
   import { isSidebarOpen } from '../../stores/ui.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { hasVisibleSettingsFields } from '$lib/settings';
@@ -42,6 +43,8 @@
   } = $props();
 
   let panelBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
+  let textBackground = $derived(`rgba(9, 9, 11, ${$editorFullscreenTextBackgroundOpacity / 100})`);
+
   let showSettings = $state(false);
   let showConsole = $state(false);
   let hasSettings = $derived(hasCodeEditorTargetSettings({ settings, customSettings }));
@@ -87,6 +90,7 @@
 <div
   class={['detached-code-editor-overlay fixed inset-0 z-[60]', className]}
   style:background-color={panelBackground}
+  style:--fullscreen-text-background={textBackground}
 >
   <div class="overlay-actions absolute z-10 flex gap-1">
     {#if customActions}
@@ -217,7 +221,9 @@
   }
 
   :global(.detached-code-editor-overlay .cm-line) {
+    width: fit-content;
     padding: 0 8px !important;
+    background: var(--fullscreen-text-background);
   }
 
   :global(.detached-code-editor-overlay .cm-scroller) {

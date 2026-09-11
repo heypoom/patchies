@@ -6,11 +6,13 @@ import {
   editorFontFamily,
   editorFontSize,
   editorFullscreenFontSize,
+  editorFullscreenTextBackgroundOpacity,
   editorHoverHintsEnabled,
   setEditorAutocompleteEnabled,
   setEditorFontFamily,
   setEditorFontSize,
   setEditorFullscreenFontSize,
+  setEditorFullscreenTextBackgroundOpacity,
   setEditorHoverHintsEnabled
 } from './editor.store';
 
@@ -30,6 +32,7 @@ describe('editor settings store', () => {
     setEditorHoverHintsEnabled(true);
     setEditorFontSize(12);
     setEditorFullscreenFontSize(28);
+    setEditorFullscreenTextBackgroundOpacity(0);
     setEditorFontFamily('mono');
   });
 
@@ -68,6 +71,18 @@ describe('editor settings store', () => {
 
     expect(get(editorFontSize)).toBe(10);
     expect(get(editorFullscreenFontSize)).toBe(48);
+  });
+
+  it('persists fullscreen text background opacity from transparent to opaque', () => {
+    setEditorFullscreenTextBackgroundOpacity(65);
+    expect(get(editorFullscreenTextBackgroundOpacity)).toBe(65);
+    expect(localStorage.getItem('editor.fullscreenTextBackgroundOpacity')).toBe('65');
+
+    setEditorFullscreenTextBackgroundOpacity(200);
+    expect(get(editorFullscreenTextBackgroundOpacity)).toBe(100);
+
+    setEditorFullscreenTextBackgroundOpacity(-10);
+    expect(get(editorFullscreenTextBackgroundOpacity)).toBe(0);
   });
 
   it('persists a custom editor font family stack', () => {
