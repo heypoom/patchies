@@ -309,4 +309,34 @@ describe('JSObject', () => {
     object.destroy();
     context.destroy();
   });
+
+  it('clears persisted callback indicators without running code after reload', async () => {
+    const messageContext = new MessageContext(compilerId);
+    const executeJavaScript = vi.fn();
+
+    vi.spyOn(JSRunner, 'getInstance').mockReturnValue({
+      executeJavaScript,
+      destroy: vi.fn()
+    } as unknown as JSRunner);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: 'recv(() => {})',
+      isMessageCallbackActive: true,
+      isTimerCallbackActive: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(executeJavaScript).not.toHaveBeenCalled();
+
+    expect(context.getData()).toMatchObject({
+      isGraphSubscriptionActive: false,
+      isMessageCallbackActive: false,
+      isTimerCallbackActive: false
+    });
+
+    object.destroy();
+    context.destroy();
+  });
 });

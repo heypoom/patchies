@@ -62,6 +62,8 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     const data = this.context.getData<JSObjectData>();
     this.lastExecuteCode = data.executeCode;
 
+    this.resetRuntimeIndicators();
+
     if (data.runOnMount) {
       await this.execute();
     }
@@ -133,14 +135,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     messageContext.onAnimationFrameCallbackRegistered = () =>
       this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true });
 
-    this.context.setData(
-      {
-        isGraphSubscriptionActive: false,
-        isMessageCallbackActive: false,
-        isTimerCallbackActive: false
-      },
-      { notifyUI: true }
-    );
+    this.resetRuntimeIndicators();
 
     const data = this.context.getData<JSObjectData>();
     const code = typeof data.code === 'string' ? data.code : '';
@@ -212,6 +207,17 @@ export class JSObject implements RuntimeObject<JSObjectData> {
 
     this.subscriptions.clear();
     this.context.setData({ isGraphSubscriptionActive: false }, { notifyUI: true });
+  }
+
+  private resetRuntimeIndicators(): void {
+    this.context.setData(
+      {
+        isGraphSubscriptionActive: false,
+        isMessageCallbackActive: false,
+        isTimerCallbackActive: false
+      },
+      { notifyUI: true }
+    );
   }
 
   private stop(): void {
