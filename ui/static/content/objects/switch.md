@@ -1,10 +1,14 @@
-A horizontal switch that sends `true` or `false` when toggled.
+Routes one of several message inlets to a single outlet.
 
 ## Usage
 
-Click to toggle between on (`true`) and off (`false`).
+```text
+switch <inlet-count>
+```
+
+`switch` has one data inlet for each route and a selector inlet on the far right. Send a one-based integer to the selector, then messages arriving at the matching data inlet pass to the outlet. Send `0` to block every route. It has two data inlets by default.
 
 ## See Also
 
-- [toggle](/docs/objects/toggle) - circular toggle button
-- [button](/docs/objects/button) - one-shot trigger
+- [gate](/docs/objects/gate) - select one of several output routes
+- [spigot](/docs/objects/spigot) - allow or block a single message route

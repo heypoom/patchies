@@ -59,7 +59,7 @@ import SonicNode from '$objects/sonic~/SonicNode.svelte';
 import ElementaryAudioNode from '$objects/elem~/ElementaryAudioNode.svelte';
 import CsoundNode from '$objects/csound~/CsoundNode.svelte';
 import ToggleButtonNode from '$objects/toggle/ToggleButtonNode.svelte';
-import SwitchNode from '$objects/switch/SwitchNode.svelte';
+import ToggleSwitchNode from '$objects/toggleswitch/ToggleSwitchNode.svelte';
 import LabelNode from '$objects/label/LabelNode.svelte';
 import LinkButton from '$objects/link/LinkButton.svelte';
 import ChannelMergerNode from '$objects/audio-channel/ChannelMergerNode.svelte';
@@ -131,7 +131,7 @@ export const nodeTypes: Record<string, any> = {
   object: ObjectNode,
   button: ButtonNode,
   toggle: ToggleButtonNode,
-  switch: SwitchNode,
+  toggleswitch: ToggleSwitchNode,
   msg: MessageNode,
   p5: P5CanvasNode,
   js: JSBlockNode,

@@ -2,9 +2,8 @@
   import { useSvelteFlow } from '@xyflow/svelte';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { SwitchObject } from '$objects/switch/SwitchObject';
+  import { ToggleSwitchObject } from '$objects/toggleswitch/ToggleSwitchObject';
   import { Switch } from '$lib/components/ui/switch';
-
   import { useNodeDataTracker } from '$lib/history';
   import { useNodeViewMessageContext } from '$lib/messages';
 
@@ -15,8 +14,6 @@
   }: { id: string; selected: boolean; data: { value: boolean } } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-
-  // Undo/redo tracking
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   const viewMessageContext = useNodeViewMessageContext(
@@ -24,14 +21,13 @@
     () => {}
   );
 
-  // Get toggle state from node data, default to false
-  let isOn = $derived(data.value === true);
-  const switchOutlet = SwitchObject.outlets[0];
+  const isOn = $derived(data.value === true);
+  const switchOutlet = ToggleSwitchObject.outlets[0];
 
   const handleCheckedChange = (checked: boolean) => {
     const oldValue = isOn;
-    updateNodeData(nodeId, { value: checked });
 
+    updateNodeData(nodeId, { value: checked });
     tracker.commit('value', oldValue, checked);
     viewMessageContext.send(checked);
   };

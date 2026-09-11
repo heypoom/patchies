@@ -1,50 +1,90 @@
-import { Type } from '@sinclair/typebox';
-import { match } from 'ts-pattern';
-
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
-import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+import type { MessageMeta, TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
-import { schema } from '$lib/objects/schemas/types';
 
-const BooleanValue = Type.Boolean();
+const DEFAULT_ROUTE_COUNT = 2;
 
-const switchMessages = {
-  booleanValue: schema(BooleanValue)
+const getRouteCount = (params: unknown[]) => {
+  const count = Number(params[0]);
+
+  return Number.isInteger(count) && count > 0 ? count : DEFAULT_ROUTE_COUNT;
 };
 
+/** Routes messages from the selected data inlet to one outlet. Mirrors Max's [switch] object. */
 export class SwitchObject implements TextObjectV2 {
   static type = 'switch';
-  static category = 'interface';
-  static description = 'A horizontal switch that sends true/false when toggled';
-  static tags = ['interface', 'control', 'switch', 'boolean', 'input'];
+  static description = 'Route one selected input to an output';
+  static tags = ['control', 'routing', 'switch', 'gate'];
 
-  static inlets: ObjectInlet[] = [];
-
-  static outlets: ObjectOutlet[] = [
+  static inlets: ObjectInlet[] = [
     {
-      name: 'message',
-      type: 'bool',
-      description: 'Switch output',
-      messages: [{ schema: BooleanValue, description: 'Current state' }],
-      handle: { handleType: 'message' }
+      name: '1',
+      type: 'any',
+      description: 'First data input',
+      hot: true
+    },
+    {
+      name: '2',
+      type: 'any',
+      description: 'Second data input',
+      hot: true
+    },
+    {
+      name: 'select',
+      type: 'int',
+      description: 'One-based input selector; 0 closes routing',
+      hot: false
     }
   ];
+
+  static outlets: ObjectOutlet[] = [
+    { name: 'out', type: 'any', description: 'Messages from the selected input' }
+  ];
+
+  private routeCount = DEFAULT_ROUTE_COUNT;
+  private selectedRoute = 0;
 
   constructor(
     readonly nodeId: string,
     readonly context: ObjectContext
   ) {}
 
-  onMessage(data: unknown): void {
-    match(data)
-      .with(switchMessages.booleanValue, (value) => {
-        this.setAndSend(value);
-      })
-      .otherwise(() => {});
+  create(params: unknown[]): void {
+    this.routeCount = getRouteCount(params);
   }
 
-  private setAndSend(value: boolean): void {
-    this.context.setData({ value }, { notifyUI: true });
-    this.context.send(value);
+  onMessage(data: unknown, meta: MessageMeta): void {
+    const inlet = meta.inlet ?? 0;
+
+    if (inlet === this.routeCount) {
+      if (typeof data === 'number' && Number.isInteger(data)) {
+        this.selectedRoute = data;
+      }
+
+      return;
+    }
+
+    if (inlet === this.selectedRoute - 1) {
+      this.context.send(data);
+    }
+  }
+
+  getInlets(): ObjectInlet[] {
+    const dataInlets = Array.from({ length: this.routeCount }, (_, index) => ({
+      name: String(index + 1),
+      type: 'any' as const,
+      description: `Data input ${index + 1}`,
+      hot: true
+    }));
+
+    return [
+      ...dataInlets,
+      {
+        name: 'select',
+        type: 'int',
+        description: 'One-based input selector; 0 closes routing',
+        hot: false
+      }
+    ];
   }
 }

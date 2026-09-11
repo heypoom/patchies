@@ -34,6 +34,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'metro',
       'trigger',
       'spigot',
+      'switch',
+      'gate',
       'delay',
       'throttle',
       'debounce',
@@ -85,7 +87,17 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'User Interfaces',
     description: 'Interface building components',
     icon: 'Layout',
-    objects: ['keyboard', 'markdown', 'iframe', 'link', 'dom', 'vue', 'switch', 'curve', 'sheet']
+    objects: [
+      'keyboard',
+      'markdown',
+      'iframe',
+      'link',
+      'dom',
+      'vue',
+      'toggleswitch',
+      'curve',
+      'sheet'
+    ]
   },
   {
     id: 'media',
