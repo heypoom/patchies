@@ -14,6 +14,8 @@ describe('JSObject', () => {
   const targetId = 'js-graph-target';
 
   afterEach(() => {
+    vi.restoreAllMocks();
+
     messageSystem.unregisterNode(compilerId);
     messageSystem.unregisterNode(targetId);
     messageSystem.updateEdges([]);
@@ -236,6 +238,7 @@ describe('JSObject', () => {
     const received: unknown[] = [];
 
     targetQueue.addCallback((message) => received.push(message));
+
     messageSystem.updateEdges([
       {
         id: 'compiler-target',
@@ -257,6 +260,7 @@ describe('JSObject', () => {
     const object = new JSObject(compilerId, context);
     await object.create();
     await object.runAsLibraryDependent();
+
     object.onMessage({ type: 'setSetting', key: 'gain', value: 0.75 });
 
     expect(received).toEqual([0.75]);
@@ -266,6 +270,41 @@ describe('JSObject', () => {
     object.onMessage({ type: 'setSetting', key: 'gain', value: 1 });
 
     expect(received).toEqual([0.75]);
+
+    object.destroy();
+    context.destroy();
+  });
+
+  it('updates the exposed message ports when a rerun changes their counts', async () => {
+    const messageContext = new MessageContext(compilerId);
+
+    const executeJavaScript = vi.fn(async (_nodeId, _code, options) => {
+      if (executeJavaScript.mock.calls.length === 2) {
+        options.setPortCount?.(3, 3);
+      }
+    });
+
+    vi.spyOn(JSRunner, 'getInstance').mockReturnValue({
+      preprocessCode: vi.fn(async (code: string) => code),
+      executeJavaScript,
+      destroy: vi.fn()
+    } as unknown as JSRunner);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: 'setPortCount(3, 3)',
+      runOnMount: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(object.getInlets()).toHaveLength(1);
+    expect(object.getOutlets()).toHaveLength(1);
+
+    await object.runAsLibraryDependent();
+
+    expect(object.getInlets()).toHaveLength(3);
+    expect(object.getOutlets()).toHaveLength(3);
 
     object.destroy();
     context.destroy();

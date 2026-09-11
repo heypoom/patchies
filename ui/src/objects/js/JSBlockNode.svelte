@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useUpdateNodeInternals } from '@xyflow/svelte';
   import CodeBlockBase from '$objects/code/CodeBlockBase.svelte';
   import { useNodeViewMessageContext } from '$lib/messages';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
@@ -30,6 +31,7 @@
   } = $props();
 
   const updateData = useUpdateNodeData();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const viewMessageContext = useNodeViewMessageContext(
     () => nodeId,
@@ -48,6 +50,13 @@
 
   const setSetting = (key: string, value: unknown) =>
     viewMessageContext.send({ type: 'setSetting', key, value });
+
+  $effect(() => {
+    void data.inletCount;
+    void data.outletCount;
+
+    updateNodeInternals(nodeId);
+  });
 </script>
 
 <CodeBlockBase
