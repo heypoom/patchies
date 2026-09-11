@@ -22,7 +22,7 @@ describe('editor layout settings store', () => {
 
     localStorage.clear();
     setDefaultEditorLayout('inline');
-    setOverlayEditorTransparency(0.72);
+    setOverlayEditorTransparency(0);
   });
 
   it('persists the default editor layout preference', () => {
@@ -42,6 +42,14 @@ describe('editor layout settings store', () => {
 
     expect(get(overlayEditorTransparency)).toBe(0);
     expect(localStorage.getItem('editor.overlayTransparency')).toBe('0');
+  });
+
+  it('defaults overlay transparency to 0%', async () => {
+    localStorage.clear();
+    vi.resetModules();
+    const { overlayEditorTransparency } = await import('./editor-layout-settings.store');
+
+    expect(get(overlayEditorTransparency)).toBe(0);
   });
 
   it('resolves shift-click alternate editor layouts', () => {

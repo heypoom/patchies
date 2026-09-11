@@ -32,7 +32,7 @@ describe('editor settings store', () => {
     setEditorHoverHintsEnabled(true);
     setEditorFontSize(12);
     setEditorFullscreenFontSize(28);
-    setEditorFullscreenTextBackgroundOpacity(0);
+    setEditorFullscreenTextBackgroundOpacity(70);
     setEditorFontFamily('mono');
   });
 
@@ -83,6 +83,14 @@ describe('editor settings store', () => {
 
     setEditorFullscreenTextBackgroundOpacity(-10);
     expect(get(editorFullscreenTextBackgroundOpacity)).toBe(0);
+  });
+
+  it('defaults fullscreen text background opacity to 70%', async () => {
+    localStorage.clear();
+    vi.resetModules();
+    const { editorFullscreenTextBackgroundOpacity } = await import('./editor.store');
+
+    expect(get(editorFullscreenTextBackgroundOpacity)).toBe(70);
   });
 
   it('persists a custom editor font family stack', () => {

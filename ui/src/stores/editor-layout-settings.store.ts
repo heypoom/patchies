@@ -9,7 +9,7 @@ const OVERLAY_TRANSPARENCY_KEY = 'editor.overlayTransparency';
 const OPEN_OBJECT_SETTINGS_IN_SIDEBAR_KEY = 'editor.openObjectSettingsInSidebar';
 
 const DEFAULT_EDITOR_LAYOUT: EditorLayoutPreference = 'inline';
-const DEFAULT_OVERLAY_TRANSPARENCY = 0.72;
+const DEFAULT_OVERLAY_TRANSPARENCY = 0;
 
 export const defaultEditorLayout = writable<EditorLayoutPreference>(readDefaultEditorLayout());
 export const overlayEditorTransparency = writable<number>(readOverlayTransparency());

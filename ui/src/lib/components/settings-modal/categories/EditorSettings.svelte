@@ -97,26 +97,6 @@
   />
 </SettingRow>
 
-<SettingRow
-  title="Overlay transparency"
-  description="Adjust the Zen editor panel background opacity."
->
-  <div class="flex items-center gap-3">
-    <input
-      type="range"
-      min="0"
-      max="100"
-      step="5"
-      value={overlayTransparencyPercent}
-      oninput={handleTransparencyInput}
-      class="h-1.5 w-28 cursor-pointer accent-zinc-500"
-      aria-label="Overlay editor transparency"
-    />
-    <span class="w-9 text-right font-mono text-xs text-zinc-400">{overlayTransparencyPercent}%</span
-    >
-  </div>
-</SettingRow>
-
 <SettingRow title="Font family" description="Choose the typeface used by code editors.">
   <input
     type="text"
@@ -166,7 +146,7 @@
 </SettingRow>
 
 <SettingRow
-  title="Fullscreen text background opacity"
+  title="Text background overlay opacity"
   description="Add a dark background behind text in the expanded editor for more contrast."
 >
   <div class="flex items-center gap-3">
@@ -178,11 +158,31 @@
       value={$editorFullscreenTextBackgroundOpacity}
       oninput={handleFullscreenTextBackgroundOpacityInput}
       class="h-1.5 w-28 cursor-pointer accent-zinc-500"
-      aria-label="Fullscreen text background opacity"
+      aria-label="Text background overlay opacity"
     />
 
     <span class="w-9 text-right font-mono text-xs text-zinc-400"
       >{$editorFullscreenTextBackgroundOpacity}%</span
+    >
+  </div>
+</SettingRow>
+
+<SettingRow
+  title="Overlay transparency"
+  description="Adjust the Zen editor panel background opacity."
+>
+  <div class="flex items-center gap-3">
+    <input
+      type="range"
+      min="0"
+      max="100"
+      step="5"
+      value={overlayTransparencyPercent}
+      oninput={handleTransparencyInput}
+      class="h-1.5 w-28 cursor-pointer accent-zinc-500"
+      aria-label="Overlay editor transparency"
+    />
+    <span class="w-9 text-right font-mono text-xs text-zinc-400">{overlayTransparencyPercent}%</span
     >
   </div>
 </SettingRow>

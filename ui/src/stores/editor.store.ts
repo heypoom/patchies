@@ -10,7 +10,7 @@ const FONT_FAMILY_STORAGE_KEY = 'editor.fontFamily';
 
 const DEFAULT_FONT_SIZE = 12;
 const DEFAULT_FULLSCREEN_FONT_SIZE = 28;
-const DEFAULT_FULLSCREEN_TEXT_BACKGROUND_OPACITY = 0;
+const DEFAULT_FULLSCREEN_TEXT_BACKGROUND_OPACITY = 70;
 const DEFAULT_FONT_FAMILY = 'var(--font-mono)';
 
 function readStoredBoolean(key: string, defaultValue: boolean): boolean {
