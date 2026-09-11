@@ -5,17 +5,21 @@ import { GateObject } from '$objects/gate/GateObject';
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { MessageMeta } from '$lib/objects/v2/interfaces/text-objects';
 
-const meta = (inlet: number): MessageMeta => ({ source: 'source', inlet });
+const meta = (inlet: number): MessageMeta => ({
+  source: 'source',
+  inlet
+});
 
 function createGate(params: unknown[] = []) {
-  const sent: Array<{ data: unknown; options: unknown }> = [];
+  const sent: { data: unknown; options: unknown }[] = [];
+
   const context = {
     send(data: unknown, options?: unknown) {
       sent.push({ data, options });
     }
   } as ObjectContext;
-  const object = new GateObject('gate-1', context);
 
+  const object = new GateObject('gate-1', context);
   object.create(params);
 
   return { object, sent };
@@ -31,7 +35,6 @@ describe('GateObject', () => {
 
   it('routes data to the selected default outlet', () => {
     const { object, sent } = createGate();
-
     object.onMessage?.(2, meta(0));
     object.onMessage?.('second outlet', meta(1));
 
@@ -40,7 +43,6 @@ describe('GateObject', () => {
 
   it('uses its argument to create outlets', () => {
     const { object, sent } = createGate([3]);
-
     object.onMessage?.(3, meta(0));
     object.onMessage?.('third outlet', meta(1));
 
@@ -50,7 +52,6 @@ describe('GateObject', () => {
 
   it('closes for zero and out-of-range selectors', () => {
     const { object, sent } = createGate();
-
     object.onMessage?.(0, meta(0));
     object.onMessage?.('closed', meta(1));
     object.onMessage?.(3, meta(0));
