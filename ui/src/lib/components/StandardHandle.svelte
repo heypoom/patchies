@@ -10,7 +10,8 @@
     connectingFromHandleId,
     connectingFromAcceptsFloat,
     connectingFromIsAudioParam,
-    audioSourceConnections
+    audioSourceConnections,
+    isCablesVisible
   } from '../../stores/ui.store';
   import { shouldDimHandle } from '$lib/utils/handle-dimming';
 
@@ -145,7 +146,7 @@
   position={handlePosition}
   id={handleId}
   class={handleClass}
-  style={positionStyle}
+  style={[positionStyle, $isCablesVisible ? '' : 'display: none'].filter(Boolean).join('; ')}
   title={isAudioParam ? `${title} (a-rate)` : title}
 />
 
