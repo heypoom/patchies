@@ -555,6 +555,10 @@
             } else {
               value = updatedValue;
             }
+
+            if (nodeId) {
+              PatchiesEventBus.getInstance().dispatch({ type: 'codeChange', nodeId, dataKey });
+            }
           }
         }),
         autocompleteComp.of($editorAutocompleteEnabled ? autocompletion() : []),

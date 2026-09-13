@@ -8,7 +8,8 @@ export const SETTINGS_CATEGORIES = [
   // Per-Patch
   'visual',
   'transport',
-  'network'
+  'network',
+  'remote-control'
 ] as const;
 
 export type SettingsCategory = (typeof SETTINGS_CATEGORIES)[number];
@@ -70,5 +71,11 @@ export const CATEGORY_INFO: SettingsCategoryInfo[] = [
     label: 'Network',
     scope: 'per-patch',
     description: 'Peer-to-peer room settings for this patch.'
+  },
+  {
+    id: 'remote-control',
+    label: 'Remote Control',
+    scope: 'per-patch',
+    description: 'Local CLI access to code in this open patch.'
   }
 ];
