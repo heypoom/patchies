@@ -47,6 +47,7 @@ import { DEFAULT_SHEET_DATA } from '$objects/sheet/constants';
 import { DEFAULT_PIXI_CODE, DEFAULT_PIXI_DOM_CODE } from '$objects/pixi/constants';
 import { GM_DEFAULT_SETTINGS, GM_SETTINGS_SCHEMA } from '$objects/smplr/gm-settings';
 import { smplrDescriptors, type SmplrObjectType } from '$objects/smplr/descriptors';
+import { DEFAULT_WAM_URL } from '$objects/wam~/WamAudioNode';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -338,6 +339,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       autoEval: true,
       syncTransport: false
     }))
+    .with('wam~', () => ({ url: DEFAULT_WAM_URL, resizable: false }))
     .with('sequencer', () => ({
       steps: 8,
       tracks: DEFAULT_TRACKS,

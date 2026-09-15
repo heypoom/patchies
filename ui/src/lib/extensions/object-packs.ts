@@ -168,6 +168,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'csound~',
       'tone~',
       'bytebeat~',
+      'wam~',
       'ngea'
     ]
   },

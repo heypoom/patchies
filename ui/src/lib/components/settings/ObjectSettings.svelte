@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { Check, ChevronDown, ChevronsUpDown, RotateCcw, X } from '@lucide/svelte/icons';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
@@ -23,7 +24,12 @@
     settingsPrefix = 'settings',
     showCloseButton = true,
     showRevertButton = true,
-    variant = 'floating'
+    variant = 'floating',
+    header,
+    content,
+    footer,
+    footerSeparator = true,
+    class: className = ''
   }: {
     nodeId: string;
     schema: SettingsSchema;
@@ -38,6 +44,11 @@
     showCloseButton?: boolean;
     showRevertButton?: boolean;
     variant?: 'floating' | 'sidebar';
+    header?: Snippet;
+    content?: Snippet;
+    footer?: Snippet;
+    footerSeparator?: boolean;
+    class?: string;
   } = $props();
 
   const createComboboxOpenState = (schema: SettingsSchema): Record<string, boolean> =>
@@ -223,7 +234,7 @@
 {/if}
 
 <!-- Settings panel -->
-<div class={variant === 'floating' ? 'relative w-48' : 'w-full'}>
+<div class={variant === 'floating' ? `relative w-48 ${className}` : `w-full ${className}`}>
   <div
     bind:this={floatingScroll.element}
     onscroll={floatingScroll.onScroll}
@@ -235,6 +246,10 @@
       : 'nodrag w-full'}
   >
     <div class="flex flex-col gap-3">
+      {#if header}
+        {@render header()}
+      {/if}
+
       {#each schema as field (field.key)}
         {#if isSettingsFieldVisible(schema, values, field)}
           {#if field.type === 'slider'}
@@ -587,6 +602,16 @@
           {/if}
         {/if}
       {/each}
+
+      {#if content}
+        {@render content()}
+      {/if}
+
+      {#if footer}
+        <div class={footerSeparator ? 'border-t border-zinc-700 pt-3' : 'pt-1'}>
+          {@render footer()}
+        </div>
+      {/if}
     </div>
   </div>
 

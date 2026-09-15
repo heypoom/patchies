@@ -86,6 +86,7 @@ import { DelwriteNode } from '$objects/delay-lines/native-dsp/nodes/delwrite.nod
 import { DelreadNode } from '$objects/delay-lines/native-dsp/nodes/delread.node';
 import { Delread4Node } from '$objects/delay-lines/native-dsp/nodes/delread4.node';
 import { BytebeatNode } from '$objects/bytebeat~/BytebeatNode';
+import { WamAudioNode } from '$objects/wam~/WamAudioNode';
 import { PadsAudioNode } from '$objects/pads/PadsAudioNode';
 import { PatchbayAudioEndpoint } from '$objects/patchbay/PatchbayAudioEndpointNode';
 import { SMPLR_AUDIO_NODES } from '$objects/smplr/audio-nodes';
@@ -179,6 +180,7 @@ export const AUDIO_NODES = [
   DelreadNode,
   Delread4Node,
   BytebeatNode,
+  WamAudioNode,
   PadsAudioNode,
   PatchbayAudioEndpoint,
   ...SMPLR_AUDIO_NODES

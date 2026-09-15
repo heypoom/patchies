@@ -335,20 +335,12 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     description: 'Audio file player. Format: soundfile~ [url]',
     transform: (expr, name) => {
       const url = expr.replace(name, '').trim();
+
       return {
         nodeType: 'soundfile~',
         data: url ? { _initialUrl: url } : {}
       };
     }
-  },
-  {
-    names: ['gm~'],
-    nodeType: 'gm~',
-    description: 'Multi-channel General MIDI sampled instrument',
-    transform: () => ({
-      nodeType: 'gm~',
-      data: getDefaultNodeData('gm~')
-    })
   }
 ];
 

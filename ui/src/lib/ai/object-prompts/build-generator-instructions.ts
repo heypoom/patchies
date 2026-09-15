@@ -61,13 +61,11 @@ export function buildObjectTypeInstructions(objectType: string): string {
  */
 export function buildMultiObjectInstructionParts(objectTypes: string[]): {
   jsInstructions: string;
-  uiDesignInstructions: string;
   glslImportInstructions: string;
   objectInstructions: string;
 } {
   const uniqueObjectTypes = [...new Set(objectTypes)];
   const jsEnabledTypes = uniqueObjectTypes.filter((t) => JS_ENABLED_OBJECTS.has(t));
-  const uiDesignTypes = uniqueObjectTypes.filter((t) => UI_DESIGN_OBJECTS.has(t));
   const glslImportTypes = uniqueObjectTypes.filter((t) => GLSL_IMPORT_OBJECTS.has(t));
 
   return {
@@ -75,8 +73,6 @@ export function buildMultiObjectInstructionParts(objectTypes: string[]): {
       jsEnabledTypes.length > 0
         ? `## Common JSRunner Runtime Functions (applies to: ${jsEnabledTypes.join(', ')})\n\n${jsRunnerInstructions}`
         : '',
-
-    uiDesignInstructions: uiDesignTypes.length > 0 ? UI_DESIGN_GUIDELINES : '',
 
     glslImportInstructions: glslImportTypes.length > 0 ? GLSL_IMPORTS_GUIDELINES : '',
 
