@@ -8,7 +8,7 @@ import type {
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import { msg } from '$lib/objects/schemas/helpers';
-import { isVFSPath } from '$lib/vfs';
+import { isVFSPath, VirtualFilesystem } from '$lib/vfs';
 import { loadPdCodeBundle, loadPdFileBundle, loadPdUrlBundle, type PdFileBundle } from './pd-files';
 import { loadLibPd } from './libpd-loader';
 import { pdMessageToPatchies, sendPdValue } from './pd-messages';
@@ -356,6 +356,14 @@ export class PdAudioNode implements AudioNodeV2 {
     try {
       const bundle = await this.resolveSource(source);
       this.loadedSourceCode = bundle.source;
+      if (source.kind !== 'code') {
+        VirtualFilesystem.getInstance().objectFiles.setRuntimeContent(
+          this.nodeId,
+          'patch.pd',
+          source.value,
+          bundle.source
+        );
+      }
       const compiledFiles = Object.fromEntries(
         Object.entries(bundle.files).map(([name, code]) => [name, compilePdComments(code)])
       );

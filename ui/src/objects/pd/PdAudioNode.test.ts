@@ -152,6 +152,13 @@ describe('PdAudioNode', () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.registerProvider(new EmbeddedProvider());
     vfs.createEmbeddedFile('patch://pd/synth.pd', code);
+    vfs.objectFiles.sync([
+      {
+        id: 'pd-1',
+        type: 'pd',
+        data: { sourceCode: null, vfsPath: 'patch://pd/synth.pd' }
+      }
+    ]);
     loadLibPd.mockResolvedValue({
       checkPatch: vi.fn(() => ({ ok: true, messages: [] })),
       createPd,
@@ -172,6 +179,7 @@ describe('PdAudioNode', () => {
       expect.objectContaining({ files: { 'synth.pd': code }, entry: 'synth.pd' })
     );
     expect(node.getSourceCode()).toBe(code);
+    expect(vfs.readCodeFile('obj://pd-1/patch.pd')).toBe(code);
   });
 
   it('persists edited code while keeping its external source as provenance', async () => {
