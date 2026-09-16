@@ -292,7 +292,7 @@ Now analyze this prompt:`;
  */
 function buildMultiObjectGeneratorPrompt(objectTypes: string[], structure: string): string {
   // Build all instruction sections at once (deduplicates shared sections)
-  const { jsInstructions, uiDesignInstructions, glslImportInstructions, objectInstructions } =
+  const { jsInstructions, glslImportInstructions, objectInstructions } =
     buildMultiObjectInstructionParts(objectTypes);
 
   // Generate handle ID reference from schemas for the requested object types
@@ -357,7 +357,7 @@ LAYOUT EXAMPLE (top-to-bottom like Pd with generous spacing):
 
 OBJECT-SPECIFIC INSTRUCTIONS:
 
-${[jsInstructions, uiDesignInstructions, glslImportInstructions, objectInstructions].filter(Boolean).join('\n\n')}
+${[jsInstructions, glslImportInstructions, objectInstructions].filter(Boolean).join('\n\n')}
 
 Now generate the multi-object configuration.`;
 }
