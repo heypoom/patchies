@@ -47,6 +47,7 @@
   import { isDismissKey } from '$lib/keyboard/dismiss';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import type { ObjectNodeData } from './types';
+  import { useObjectParameterDrag } from '$objects/object/useObjectParameterDrag.svelte';
 
   let {
     id: nodeId,
@@ -142,6 +143,13 @@
   const inlets = $derived(objectPorts.inlets);
   const outlets = $derived(objectPorts.outlets);
   const hasDynamicOutlets = $derived(objectPorts.hasDynamicOutlets);
+
+  const parameterDrag = useObjectParameterDrag({
+    getNodeId: () => nodeId,
+    getData: () => data,
+    getInlets: () => inlets,
+    updateParam: updateParamByIndex
+  });
 
   // Visible inlets for rendering handles (excludes hidden inlets)
   // Preserves original index for param mapping
@@ -828,6 +836,7 @@
             <!-- Locked state: show read-only text -->
             <div
               bind:this={nodeElement}
+              {@attach parameterDrag.attach}
               class={['w-full cursor-pointer rounded-lg border px-3 py-2', containerClass]}
               style={minWidthStyle}
               ondblclick={handleDoubleClick}
@@ -843,11 +852,12 @@
                   <span class="text-zinc-400">{rawParamsFromExpr}</span>
                 {:else}
                   {#each data.params as param, index (index)}
+                    {@const dragHint = parameterDrag.getHint(index)}
                     {#if index === iconParamIndex && dynamicIconComponent}
                       <!-- Render icon in place of the param text -->
                       {@const IconComponent = dynamicIconComponent}
                       <Tooltip.Root>
-                        <Tooltip.Trigger class="flex">
+                        <Tooltip.Trigger class="flex" data-param-index={index}>
                           <div
                             class={[
                               'inline-flex cursor-pointer justify-end text-zinc-400 underline-offset-2',
@@ -862,11 +872,15 @@
                           {#if inlets[index]?.description}
                             <p class="text-xs text-zinc-500">{inlets[index].description}</p>
                           {/if}
+
+                          {#if dragHint}
+                            <p class="text-xs text-zinc-500">{dragHint}</p>
+                          {/if}
                         </Tooltip.Content>
                       </Tooltip.Root>
                     {:else if (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) && !inlets[index]?.hideTextParam && (param != null || inlets[index]?.formatter) && (param !== '' || inlets[index]?.formatter)}
                       <Tooltip.Root>
-                        <Tooltip.Trigger>
+                        <Tooltip.Trigger data-param-index={index}>
                           <span
                             class={[
                               'text-zinc-400 underline-offset-2',
@@ -889,6 +903,10 @@
 
                           {#if inlets[index]?.description}
                             <p class="text-xs text-zinc-500">{inlets[index].description}</p>
+                          {/if}
+
+                          {#if dragHint}
+                            <p class="text-xs text-zinc-500">{dragHint}</p>
                           {/if}
 
                           {#if isAutomated[index]}

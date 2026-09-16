@@ -22,6 +22,41 @@ Object nodes have two distinct states to optimize both editing and usage:
 - Displays the object name as **read-only text**
 - **Double-click** to enter editing state
 
+### Numeric parameter dragging
+
+- Hold **Alt** and drag a displayed numeric parameter vertically to change it live.
+  Up increases the value; down decreases it. Integer inlets change by 1 per pixel.
+  Float inlets (including signal inlets that accept floats) use 1 per pixel when
+  the starting value is a whole number, such as `440`, and 0.01 otherwise.
+- Float parameters whose numeric default is between −1 and 1, or whose declared
+  bounds fit within that range, keep fractional steps even at whole values.
+  This keeps gain, pan, and similar controls adjustable at `0` and `1`.
+  Display precision can require a larger fractional step. The step is determined
+  from the value at pointerdown and stays fixed until the drag ends.
+- Respect inlet bounds, allowed values, validators, and display precision. Values
+  must remain finite, and integer parameters must remain integers.
+- Alt-clicking or dragging anywhere on the locked object body prevents node movement,
+  including over the object name and nonnumeric parameters. Ordinary dragging and
+  double-click editing keep their existing behavior.
+- Track each numeric drag as one undoable parameter edit. Pointer release,
+  cancellation, loss of pointer capture, and window blur finish the edit.
+- Show the gesture in numeric parameter tooltips. Raw structural arguments on
+  objects with dynamic outlets retain their existing text-editing behavior.
+
+### Oscillator waveform dragging
+
+- Alt-drag the `osc~` waveform icon (or its text before the audio runtime is ready)
+  to cycle through `sine`, `square`, `sawtooth`, and `triangle`.
+- Each 12 pixels upward advances one waveform; downward reverses the order.
+  Cycling wraps in both directions and creates one undo entry per drag.
+- Custom waveforms cannot be changed by dragging. Check the live oscillator as
+  well as the stored parameter, because a custom periodic wave can arrive by message.
+
+The object-owned `useObjectParameterDrag` composable owns pointer handling, Alt
+event guards, drag undo tracking, waveform eligibility, and tooltip hints.
+`ObjectNode` supplies current data/inlets and its shared parameter update callback.
+Numeric and waveform calculations remain in the independently tested parameter helpers.
+
 ### Editing State
 
 - **Text input field** is active and focused
