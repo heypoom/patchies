@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import {
   getObjectCodeFiles,
   type CodeObject,
@@ -11,6 +12,12 @@ export const isObjectPath = (path: string) => path.startsWith('obj://');
 export const assertMutableVfsPath = (path: string) => {
   if (isObjectPath(path)) throw new Error('VFS: Objects only allows editing existing code');
 };
+
+const getObjectCodeMimeType = (language: ObjectCodeFile['language']) =>
+  match(language)
+    .with('javascript', () => 'application/javascript')
+    .with('puredata', () => 'text/x-puredata')
+    .otherwise(() => 'text/plain');
 
 export interface ObjectFileWriteOptions {
   recordHistory?: boolean;
@@ -102,12 +109,7 @@ export class ObjectFileProjection {
       this.entries.set(path, {
         provider: 'object',
         filename: file.filename,
-        mimeType:
-          file.language === 'javascript'
-            ? 'application/javascript'
-            : file.language === 'puredata'
-              ? 'text/x-puredata'
-              : 'text/plain',
+        mimeType: getObjectCodeMimeType(file.language),
         size: new TextEncoder().encode(file.content).byteLength,
         revision: revisions.get(path)
       });
@@ -135,7 +137,7 @@ export class ObjectFileProjection {
     this.entries.set(path, {
       provider: 'object',
       filename: nextFile.filename,
-      mimeType: nextFile.language === 'puredata' ? 'text/x-puredata' : 'text/plain',
+      mimeType: getObjectCodeMimeType(nextFile.language),
       size: new TextEncoder().encode(content).byteLength,
       revision
     });
