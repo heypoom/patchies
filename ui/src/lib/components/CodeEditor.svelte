@@ -23,8 +23,7 @@
     useVimInEditor
   } from '../../stores/editor.store';
   import { loadLanguageExtension } from '$lib/codemirror/language';
-  import { autocompletion, acceptCompletion, completionStatus } from '@codemirror/autocomplete';
-  import { indentMore } from '@codemirror/commands';
+  import { autocompletion } from '@codemirror/autocomplete';
   import { search, searchKeymap } from '@codemirror/search';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
@@ -42,6 +41,7 @@
     type InlineDecoration
   } from '$lib/codemirror/inline-decorations';
   import { vimWriteCommandDispatcher } from '$lib/codemirror/vim-write-command';
+  import { completionOrIndentKeymap } from '$lib/codemirror/editor-keymap';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
@@ -327,17 +327,7 @@
               key: 'Mod-y',
               run: () => onredo?.() ?? false
             },
-            {
-              key: 'Tab',
-              run: (view) => {
-                // Accept completion if one is active, otherwise indent
-                if (completionStatus(view.state) === 'active') {
-                  return acceptCompletion(view);
-                }
-
-                return indentMore(view);
-              }
-            }
+            ...completionOrIndentKeymap
           ])
         ),
 

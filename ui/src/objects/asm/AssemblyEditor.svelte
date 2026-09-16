@@ -13,6 +13,7 @@
   import { loadLanguageExtension } from '$lib/codemirror/language';
   import { onDestroy, onMount } from 'svelte';
   import { insertNewline } from '@codemirror/commands';
+  import { completionOrIndentKeymap } from '$lib/codemirror/editor-keymap';
 
   interface Props {
     value: string;
@@ -122,7 +123,8 @@
               insertNewline(view);
               return true;
             }
-          }
+          },
+          ...completionOrIndentKeymap
         ])
       );
 
