@@ -560,6 +560,13 @@ export const portedCode: PortedCode[] = [
       "Patchies reimplements Pd's object designs using Web Audio API and AudioWorklets — no code was directly ported. The tilde (~) naming convention, inlet/outlet paradigm, hot/cold inlet semantics, and message-passing architecture all originate from Miller Puckette's work on Pure Data and its predecessor Max."
   },
   {
+    name: 'libpd-wasm',
+    description: 'The pd object uses libpd-wasm to load and run Pure Data patches in the browser.',
+    authors: 'Jonas Holmer (@hyrfilm)',
+    repository: 'https://github.com/hyrfilm/libpd-wasm',
+    license: 'BSD-3-Clause'
+  },
+  {
     name: 'TouchDesigner',
     description:
       "Patchies' GLSL Operators preset pack is inspired by TouchDesigner's Texture Operators (TOPs), including operator names and comparable texture-processing functionality.",

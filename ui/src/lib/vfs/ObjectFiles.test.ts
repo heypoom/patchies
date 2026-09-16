@@ -7,6 +7,7 @@ import { VirtualFilesystem } from './VirtualFilesystem';
 import { PatchFileEditorSession } from './PatchFileEditorSession';
 import {
   getObjectCodeFiles,
+  getObjectCodeLanguage,
   editObjectCodeFile,
   type CodeObject
 } from '$lib/objects/object-code-files';
@@ -35,6 +36,11 @@ describe('live object files', () => {
     objects = [
       { id: 'glsl-4', type: 'glsl', data: { code: 'void main() {}' } },
       { id: 'js-6', type: 'js', data: { code: 'send(1)' } },
+      {
+        id: 'pd-7',
+        type: 'pd',
+        data: { sourceCode: null, vfsPath: 'patch://synth/main.pd' }
+      },
       { id: 'slider-1', type: 'slider', data: { value: 1 } }
     ];
 
@@ -60,7 +66,8 @@ describe('live object files', () => {
   it('lists and reads current sources through the main and worker APIs', async () => {
     expect(await createVfsApi(() => {}).list('obj://')).toEqual([
       { path: 'obj://glsl-4', name: 'glsl-4', kind: 'directory' },
-      { path: 'obj://js-6', name: 'js-6', kind: 'directory' }
+      { path: 'obj://js-6', name: 'js-6', kind: 'directory' },
+      { path: 'obj://pd-7', name: 'pd-7', kind: 'directory' }
     ]);
 
     expect(await listVfsEntries('obj://glsl-4')).toEqual({
@@ -98,6 +105,66 @@ describe('live object files', () => {
       urls.forEach((url) => URL.revokeObjectURL(url));
       vi.unstubAllGlobals();
     }
+  });
+
+  it('projects a Pd runtime source until its persisted buffer is modified', async () => {
+    const path = 'obj://pd-7/patch.pd';
+    const vfsSource = '#N canvas 0 0 200 200 10;';
+    const modifiedSource = `${vfsSource}\n#X obj 20 20 osc~ 440;`;
+
+    expect(vfs.getEntry(path)).toMatchObject({ mimeType: 'text/x-puredata' });
+    expect(getObjectCodeLanguage('patch.pd')).toBe('puredata');
+    expect(vfs.readCodeFile(path)).toBe('');
+
+    vfs.objectFiles.setRuntimeContent('pd-7', 'patch.pd', 'patch://synth/main.pd', vfsSource);
+
+    expect(vfs.readCodeFile(path)).toBe(vfsSource);
+
+    objects[2].data.sourceCode = modifiedSource;
+    vfs.objectFiles.sync(objects);
+
+    expect(vfs.readCodeFile(path)).toBe(modifiedSource);
+    expect(editObjectCodeFile(objects[2], 'patch.pd', 'edited').updates).toEqual({
+      sourceCode: 'edited'
+    });
+  });
+
+  it('does not reuse runtime source after the Pd VFS path changes', () => {
+    const path = 'obj://pd-7/patch.pd';
+    vfs.objectFiles.setRuntimeContent('pd-7', 'patch.pd', 'patch://synth/main.pd', 'old source');
+
+    objects[2].data.vfsPath = 'patch://synth/next.pd';
+    vfs.objectFiles.sync(objects);
+
+    expect(vfs.readCodeFile(path)).toBe('');
+
+    vfs.objectFiles.setRuntimeContent('pd-7', 'patch.pd', 'patch://synth/next.pd', 'new source');
+
+    expect(vfs.readCodeFile(path)).toBe('new source');
+  });
+
+  it('retains null as the undo origin for the first edit of a VFS-loaded Pd patch', () => {
+    const path = 'obj://pd-7/patch.pd';
+    const writes: Array<{ content: string; previousValue?: unknown }> = [];
+
+    vfs.objectFiles.setRuntimeContent(
+      'pd-7',
+      'patch.pd',
+      'patch://synth/main.pd',
+      'external source'
+    );
+    vfs.objectFiles.connect((file, content, options) => {
+      writes.push({ content, previousValue: options?.previousValue });
+      objects[2].data.sourceCode = content;
+      vfs.objectFiles.sync(objects);
+    });
+
+    const editor = new PatchFileEditorSession(vfs);
+    editor.open(path);
+    editor.updateDraft('modified source');
+    editor.save();
+
+    expect(writes.at(-1)).toEqual({ content: 'modified source', previousValue: null });
   });
 
   it('writes typing immediately to original fields and synchronizes external edits and deletion', () => {
@@ -219,7 +286,7 @@ describe('live object files', () => {
     bus.addEventListener('vfsContentModified', listener);
     const revision = vfs.getEntry(jsPath)?.revision;
 
-    objects[2].data.value = 2;
+    objects[3].data.value = 2;
     vfs.objectFiles.sync(objects);
     expect(vfs.getEntry(jsPath)?.revision).toBe(revision);
     expect(events).toEqual([]);

@@ -14,6 +14,7 @@ export interface ObjectCodeFile {
   dataKey: string;
   language: SupportedLanguage;
   content: string;
+  runtimeSource?: string;
 }
 
 type SourceDefinition = readonly [string, string, SupportedLanguage];
@@ -29,7 +30,8 @@ const definitions: Record<string, SourceDefinition> = {
   uxn: ['code', 'code.tal', 'assembly'],
   uiua: ['expr', 'code.ua', 'uiua'],
   'chuck~': ['expr', 'code.ck', 'javascript'],
-  'csound~': ['expr', 'code.csd', 'plain']
+  'csound~': ['expr', 'code.csd', 'plain'],
+  pd: ['sourceCode', 'patch.pd', 'puredata']
 };
 
 for (const type of [
@@ -84,6 +86,23 @@ export function getObjectCodeFiles(object: CodeObject): ObjectCodeFile[] {
 
   const [dataKey, filename, language] = definition;
   const content = object.data[dataKey];
+
+  if (nodeType === 'pd' && content == null) {
+    const runtimeSource = object.data.vfsPath || object.data.sourceUrl || '';
+
+    return [
+      {
+        objectId: object.id,
+        nodeType,
+        filename,
+        dataKey,
+        language,
+        content: '',
+        runtimeSource: typeof runtimeSource === 'string' ? runtimeSource : ''
+      }
+    ];
+  }
+
   if (typeof content !== 'string') return [];
 
   return [{ objectId: object.id, nodeType, filename, dataKey, language, content }];

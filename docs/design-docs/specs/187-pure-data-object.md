@@ -12,38 +12,44 @@ Add a dedicated runtime-managed audio object named `pd`.
 - `.pd` files are accepted as portable text files in the `patch://` namespace.
 - `libpd-wasm` and its full worklet are loaded only while at least one `pd` node is present. Registering the object must not fetch or initialize libpd.
 - The runtime uses the full build: vanilla Pd, Cyclone, and ELSE.
-- The initial node surface has one message inlet, one audio inlet, one message outlet, and one stereo audio outlet.
-- The message inlet accepts `{ type: 'set', key, value }`. `key` is a Pd receiver name. `value` is sent as a Pd bang, float, symbol, or list according to its Patchies value.
+- The initial node surface has one control-message inlet, one stereo audio inlet, and one stereo audio outlet. Message inlet and outlet handles discovered from the patch are added when exposed; an empty node does not show a message outlet.
+- The control-message inlet accepts `{ type: 'set', key, value }`. `key` is a non-empty Pd receiver name. A Patchies bang, `null`, or `undefined` sends a Pd bang; a finite number sends a float; a string sends a symbol; and an array containing only finite numbers and strings sends a list. Unsupported values are ignored.
 - The message inlet accepts `{ type: 'load', src }` for a VFS path or HTTP(S) URL and `{ type: 'load', code }` for an inline Pd source string.
 - The message outlet forwards values from explicitly exposed Pd senders. Pd bangs become Patchies bang messages, floats become numbers, symbols become strings, lists become arrays, and other selectors become `{ type, values }` messages.
 - MIDI conversion is outside the first release.
-- The node persists its VFS entry path or HTTP(S) URL and the set of exposed ports. External patch source remains runtime-only until edited.
+- The node persists its VFS entry path or HTTP(S) URL, discovered port metadata, exposed port IDs, and whether the user has configured the exposure set. External patch source remains runtime-only until edited.
 - The node has separate floating code and settings buttons. Its code editor shows the currently loaded entry source.
 - The code editor is available before a source is loaded so a patch can be authored from an empty node.
+- The compact node body shows the external filename, `Inline patch` for source without external provenance, `Loading…` while loading, and `Load error` after a failed load. It shows `Choose a patch` only when no source has been loaded.
+- Every `pd` node exposes `obj://<node-id>/patch.pd` in the Objects VFS tree, even before source is available. It is initially empty, shows the resolved VFS or URL source while `sourceCode` is `null`, then switches to the persisted buffer after the first edit. Runtime source is keyed by the current external path or URL so a previous source is not shown after switching files.
 - The code editor provides lightweight syntax highlighting for Pd directives, record kinds, object names, values, substitutions, escaped symbols, messages, and text comments.
 - `Cmd-/` and `Ctrl-/` toggle Patchies-only `//` line comments in the code editor. Before loading, disabled Pd items become inert text records so object ordinals stay stable, and connections touching disabled items are omitted. Commenting the line again restores the original item and wiring. Structural canvas and restore records cannot be commented out.
-- Editing source or loading `{ type: 'load', code }` persists the Pd source in `sourceCode`. Loading a new VFS path or HTTP(S) URL sets `sourceCode` to `null`, so the external source remains authoritative. Code edits participate in undo and redo.
+- Editing source or loading `{ type: 'load', code }` persists the Pd source in `sourceCode`. Editing a VFS- or URL-loaded patch keeps its external source field as provenance and, for VFS patches, continues loading sibling abstractions from the original directory. Loading a new VFS path or HTTP(S) URL clears `sourceCode` to `null`, so the new external source becomes authoritative. Source selection prefers `sourceCode`, then `sourceUrl`, then `vfsPath`. Code edits from either the node editor or Objects VFS participate in undo and redo.
 - The runtime survives Svelte view culling. Removing the node closes its Pd runtime without closing Patchies' shared `AudioContext`.
 
 ## Patch Interface Discovery
 
 Patchies analyzes the entry patch before loading it.
 
-- Root-canvas `inlet`, `inlet~`, `outlet`, and `outlet~` objects are reliable abstraction ports. Their stable identities are their kind and root-canvas order.
+- Root-canvas `inlet`, `inlet~`, `outlet`, and `outlet~` objects are reliable abstraction ports. Inputs and outputs are each ordered from left to right by canvas position, with Pd record order breaking ties. Stable identities use the input/output side and that ordered index.
 - Literal `receive`/`r` and `send`/`s` names are offered as best-effort message endpoints.
 - Dynamic names containing Pd substitutions such as `$0` or `$1` are not exposed automatically.
 - Named sends and receives may be internal patch implementation details, so discovery never exposes them without the user selecting them.
 - Ports without a Pd name use positional labels such as `message inlet 1` and `audio outlet 2`.
 
-The settings panel groups discovered message inputs, audio inputs, message outputs, and audio outputs. Checked message entries become handles on that `pd` node. The first two selected audio inputs and outputs map to the left and right channels of the node's fixed stereo audio handles.
+On first analysis, all root abstraction ports are exposed by default and named endpoints remain unselected. After the user changes the selection, Patchies preserves that explicit exposure set across reloads. Loading or editing a source resets the configured-state flag so the newly analyzed patch can establish a fresh default set.
+
+The settings panel groups discovered message inputs, audio inputs, message outputs, and audio outputs. Checked message entries become handles on that `pd` node. A message arriving at an exposed named receiver handle is sent directly to that receiver; one arriving at an exposed abstraction inlet is sent through a generated host receiver. The first two selected abstraction audio inputs and outputs map, in discovered order, to the left and right channels of the node's fixed stereo audio handles. Additional selected audio ports remain visible in settings but are not connected.
 
 ## Runtime Wrapper
 
-When selected root-canvas abstraction ports need host wiring, Patchies generates a wrapper patch that instantiates the selected `.pd` file and connects those ports to host-facing message receivers, message senders, `adc~`, and `dac~` channels. Standalone patches without selected abstraction ports load directly, preserving their own `adc~` and `dac~` routing.
+When any selected root-canvas abstraction port needs host wiring, Patchies generates a wrapper patch that instantiates the entry `.pd` file as an abstraction. It connects selected message inputs and outputs to node-specific host receivers and senders, and connects up to two selected audio inputs and outputs to `adc~ 1 2` and `dac~ 1 2`. Standalone patches without selected abstraction ports load directly, preserving their own `adc~` and `dac~` routing.
 
-Literal named receivers do not need wrapper wiring: `{ type: 'set', key, value }` sends directly to the named Pd receiver. Selected named senders are subscribed through libpd and routed to their corresponding Patchies message outlets.
+Literal named receivers do not need wrapper wiring: `{ type: 'set', key, value }` and exposed named-input handles send directly to the named Pd receiver. Selected named senders and wrapper senders are subscribed through libpd and routed to their corresponding Patchies message outlets.
 
-The Pd virtual filesystem contains the entry patch and sibling `.pd` files beneath its containing VFS directory, preserving relative paths so local abstractions resolve. Binary patch assets are outside the first release because the current library file API accepts patch source strings.
+For VFS sources, the Pd virtual filesystem contains the entry patch and all descendant `.pd` files beneath its containing directory, preserving relative paths so local abstractions resolve. An edited VFS entry replaces only that file in the collected bundle. URL and inline-code loads contain only the entry patch. Binary patch assets are outside the first release because the current library file API accepts patch source strings.
+
+Patchies runs libpd's compatibility check against the compiled user entry and its sibling files, not the generated wrapper. Compatibility warnings are logged for diagnosis but do not prevent libpd from attempting to load the patch.
 
 ## Audio Worklet
 
@@ -53,6 +59,7 @@ The published `libpd-wasm` full worklet currently initializes libpd with zero au
 - Web Audio input is copied into libpd's interleaved input buffer before each process call.
 - Missing input channels are zero-filled.
 - Libpd's stereo output is exposed through the Patchies audio outlet.
+- The patched runtime caches worklet registration per `AudioContext` and worklet URL so multiple `pd` nodes do not call `audioWorklet.addModule()` repeatedly.
 - Patchies passes its shared `AudioContext` to `createPd`; `pd.close()` must not close that context.
 
 ## Lazy Loading
@@ -67,7 +74,8 @@ The `pd` object module does not statically import `libpd-wasm` or its worklet as
 - Unit-test editor line-comment toggling, stable object ordinals, disabled connections, nested canvases, and structural-record rejection.
 - Test VFS entry loading, sibling abstraction collection, missing files, and invalid patches.
 - Test that VFS and HTTP(S) loads retain source only in runtime memory, code edits persist `sourceCode`, and later external loads clear it to `null`.
-- Test async creation, queued messages during startup, reload, stale-load cleanup, and destruction without closing the shared audio context.
+- Test the `obj://<node-id>/patch.pd` projection before load, after an external source resolves, after source switching, and after an edit commits the persisted buffer.
+- Test async creation, repeated and concurrent loads, stale-load cleanup, and destruction without closing the shared audio context.
 - Test settings selection persistence and undo/redo through rendered behavior.
 - Run a browser smoke test with audio entering `[inlet~]`, leaving `[outlet~]`, a named receiver controlled by `set`, and a selected message outlet.
 - Build the application and verify that the full worklet is split from the initial JavaScript and is not present in the PWA precache manifest.
