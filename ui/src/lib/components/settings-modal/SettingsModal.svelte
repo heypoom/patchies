@@ -7,6 +7,7 @@
     Image,
     MonitorUp,
     Network,
+    Palette,
     Settings2,
     SlidersHorizontal,
     Timer,
@@ -14,6 +15,7 @@
   } from '@lucide/svelte/icons';
   import { CATEGORY_INFO, type SettingsCategory } from './types';
   import GeneralSettings from './categories/GeneralSettings.svelte';
+  import AppearanceSettings from './categories/AppearanceSettings.svelte';
   import EditorSettings from './categories/EditorSettings.svelte';
   import RenderingSettings from './categories/RenderingSettings.svelte';
   import DebugSettings from './categories/DebugSettings.svelte';
@@ -33,6 +35,7 @@
 
   const CATEGORY_ICONS = {
     general: SlidersHorizontal,
+    appearance: Palette,
     editor: Code2,
     rendering: MonitorUp,
     ai: Bot,
@@ -299,6 +302,8 @@
             >
               {#if activeCategory === 'general'}
                 <GeneralSettings />
+              {:else if activeCategory === 'appearance'}
+                <AppearanceSettings />
               {:else if activeCategory === 'editor'}
                 <EditorSettings />
               {:else if activeCategory === 'rendering'}

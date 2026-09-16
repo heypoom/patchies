@@ -4,6 +4,7 @@
   import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
   import { isCablesVisible } from '../../../stores/ui.store';
   import { feedbackEdgeIds } from '../../../stores/renderer.store';
+  import { edgeOpacity } from '../../../stores/appearance-settings.store';
   import { getStandardEdgeClass } from './edge-style';
 
   let {
@@ -60,7 +61,11 @@
   path={edgePath}
   {markerEnd}
   class={edgeClass}
-  style={[$isCablesVisible ? '' : 'display: none', isFeedback ? 'stroke-dasharray: 6 4' : '']
+  style={[
+    $isCablesVisible ? '' : 'display: none',
+    `opacity: ${$edgeOpacity / 100}`,
+    isFeedback ? 'stroke-dasharray: 6 4' : ''
+  ]
     .filter(Boolean)
     .join('; ')}
 />

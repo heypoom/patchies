@@ -114,6 +114,7 @@
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
   import { allPreviewsDisabled, overrideOutputNodeId } from '../../stores/renderer.store';
+  import { nodeOpacity } from '../../stores/appearance-settings.store';
   import { cullObjects } from '../../stores/debug.store';
   import {
     activeCodeEditorTarget,
@@ -1641,6 +1642,7 @@
     <div
       bind:this={flowContainer}
       class="relative flex-1"
+      style:--node-opacity={$nodeOpacity / 100}
       ondrop={onDrop}
       ondragover={onDragOver}
       onmousemove={handleMouseMove}
@@ -1950,6 +1952,10 @@
 
   :global(.svelte-flow__background) {
     background: transparent !important;
+  }
+
+  :global(.svelte-flow__node) {
+    opacity: var(--node-opacity);
   }
 
   :global(.svelte-flow__controls) {

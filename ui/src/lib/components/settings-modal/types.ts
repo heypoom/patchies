@@ -1,6 +1,7 @@
 export const SETTINGS_CATEGORIES = [
   // Per-User
   'general',
+  'appearance',
   'editor',
   'rendering',
   'ai',
@@ -30,6 +31,12 @@ export const CATEGORY_INFO: SettingsCategoryInfo[] = [
     description: 'Startup and workspace preferences.'
   },
   {
+    id: 'appearance',
+    label: 'Appearance',
+    scope: 'per-user',
+    description: 'Canvas and preview presentation preferences.'
+  },
+  {
     id: 'editor',
     label: 'Editor',
     scope: 'per-user',
@@ -55,9 +62,9 @@ export const CATEGORY_INFO: SettingsCategoryInfo[] = [
   },
   {
     id: 'visual',
-    label: 'Visual',
+    label: 'Canvas',
     scope: 'per-patch',
-    description: 'Canvas display and render size for this patch.'
+    description: 'Canvas behavior and render size for this patch.'
   },
   {
     id: 'transport',
