@@ -13,7 +13,7 @@ export const MAX_EMBEDDED_FILE_BYTES = 256 * 1024;
 export const MAX_EMBEDDED_PATCH_BYTES = 1024 * 1024;
 
 export const PATCH_TEXT_FILE_ACCEPT =
-  'text/*,.js,.mjs,.gl,.glsl,.frag,.vert,.glslf,.glslv,.json,.jsonc,.css,.html,.htm,.svg,.xml,.yaml,.yml,.md,.txt,.csv';
+  'text/*,.js,.mjs,.gl,.glsl,.frag,.vert,.glslf,.glslv,.json,.jsonc,.css,.html,.htm,.svg,.xml,.yaml,.yml,.md,.txt,.csv,.pd';
 
 const PATCH_TEXT_EXTENSIONS = new Set([
   '.js',
@@ -35,7 +35,8 @@ const PATCH_TEXT_EXTENSIONS = new Set([
   '.yml',
   '.md',
   '.txt',
-  '.csv'
+  '.csv',
+  '.pd'
 ]);
 
 export type VfsCollisionStrategy = 'replace' | 'keep-both' | 'cancel';

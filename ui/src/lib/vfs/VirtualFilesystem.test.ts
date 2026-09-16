@@ -98,6 +98,15 @@ describe('VirtualFilesystem patch files', () => {
     expect(vfs.getEntry('patch://archive.zip')).toBeUndefined();
   });
 
+  it('imports Pd patches with an unknown MIME type into the Patch namespace', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    const patch = new File(['#N canvas 0 0 200 200 10;'], 'kijjaz-test.pd');
+
+    expect(getPatchImportError(patch)).toBeNull();
+    await expect(vfs.importToPatch([patch])).resolves.toEqual(['patch://kijjaz-test.pd']);
+    expect(vfs.readEmbeddedFile('patch://kijjaz-test.pd')).toContain('#N canvas');
+  });
+
   it('rejects an oversized User file before trying to resolve it for a Patch copy', async () => {
     const vfs = VirtualFilesystem.getInstance();
 

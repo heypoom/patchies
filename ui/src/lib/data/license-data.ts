@@ -285,6 +285,12 @@ export const dependencies: ProjectLicense[] = [
     license: 'MIT',
     url: 'https://npmjs.com/package/lezer-glsl'
   },
+  {
+    name: 'libpd-wasm',
+    version: '0.1.6',
+    license: 'BSD-3-Clause',
+    url: 'https://github.com/hyrfilm/libpd-wasm'
+  },
   { name: 'lodash', version: '^4.17.21', license: 'MIT', url: 'https://npmjs.com/package/lodash' },
   {
     name: 'lygia',
