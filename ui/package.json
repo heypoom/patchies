@@ -133,6 +133,7 @@
     "json5": "^2.2.3",
     "katex": "^0.16.38",
     "lezer-glsl": "^0.6.0",
+    "libpd-wasm": "0.1.6",
     "lodash": "^4.17.21",
     "lygia": "^1.4.1",
     "machine": "./src/assets/vasm",
@@ -180,7 +181,8 @@
     "core-js"
   ],
   "patchedDependencies": {
-    "superdough@1.2.6": "patches/superdough@1.2.6.patch"
+    "superdough@1.2.6": "patches/superdough@1.2.6.patch",
+    "libpd-wasm@0.1.6": "patches/libpd-wasm@0.1.6.patch"
   },
   "packageManager": "bun@1.2.0",
   "lint-staged": {

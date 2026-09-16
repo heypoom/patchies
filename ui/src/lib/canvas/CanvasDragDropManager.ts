@@ -365,8 +365,11 @@ export class CanvasDragDropManager {
       return;
     }
 
+    const extensionNodeType = this.getNodeTypeFromExtension(entry.filename);
     const nodeType =
-      this.getNodeTypeFromMimeType(entry.mimeType) ?? this.getNodeTypeFromExtension(entry.filename);
+      extensionNodeType === 'pd'
+        ? extensionNodeType
+        : (this.getNodeTypeFromMimeType(entry.mimeType) ?? extensionNodeType);
 
     if (nodeType) {
       const customData = await this.getVfsFileNodeData(vfsPath, nodeType);
@@ -378,12 +381,15 @@ export class CanvasDragDropManager {
    * Get node type from file, checking both MIME type and extension
    */
   private getNodeTypeFromFile(file: File): string | null {
+    const fromExtension = this.getNodeTypeFromExtension(file.name);
+    if (fromExtension === 'pd') return fromExtension;
+
     // First try MIME type
     const fromMime = this.getNodeTypeFromMimeType(file.type);
     if (fromMime) return fromMime;
 
     // Fall back to extension-based detection for custom types
-    return this.getNodeTypeFromExtension(file.name);
+    return fromExtension;
   }
 
   /**
@@ -398,6 +404,7 @@ export class CanvasDragDropManager {
       .with('csd', () => 'csound~')
       .with('ck', () => 'chuck~')
       .with('mid', 'midi', () => 'midi.file')
+      .with('pd', () => 'pd')
       .otherwise(() => null);
   }
 
@@ -430,6 +437,10 @@ export class CanvasDragDropManager {
       .when(
         (t) => t === 'text/x-chuck',
         () => 'chuck~'
+      )
+      .when(
+        (t) => t === 'text/x-puredata' || t === 'application/x-puredata',
+        () => 'pd'
       )
       .when(
         (t) => t === 'text/csv',
@@ -489,7 +500,7 @@ export class CanvasDragDropManager {
       }
     }
 
-    if (['img', 'video', 'soundfile~', 'midi.file', 'uxn'].includes(nodeType)) {
+    if (['img', 'video', 'soundfile~', 'midi.file', 'uxn', 'pd'].includes(nodeType)) {
       return { ...getDefaultNodeData(nodeType), vfsPath };
     }
 
@@ -585,6 +596,14 @@ export class CanvasDragDropManager {
           ...getDefaultNodeData('uxn'),
           vfsPath,
           fileName: file.name
+        };
+      })
+      .with('pd', async () => {
+        const vfsPath = await vfs.storeFile(file, handle);
+
+        return {
+          ...getDefaultNodeData('pd'),
+          vfsPath
         };
       })
       .with('csound~', async () => {

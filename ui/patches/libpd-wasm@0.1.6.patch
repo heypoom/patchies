@@ -1,0 +1,70 @@
+diff --git a/assets/libpd-worklet-full.js b/assets/libpd-worklet-full.js
+index aba1ba6d42189f73bcee8409d25e2d3754d4cf90..b6c6b2dc0c6704dd95a02ebf4b15a740966ef653 100644
+--- a/assets/libpd-worklet-full.js
++++ b/assets/libpd-worklet-full.js
+@@ -5195,7 +5195,7 @@
+   var PD_BLOCK = 64;
+   var QUANTUM = 128;
+   var TICKS = QUANTUM / PD_BLOCK;
+-  var IN_CH = 0;
++  var IN_CH = 2;
+   var OUT_CH = 2;
+   var PATCH_DIR = "/patches";
+   var LibPdProcessor = class extends AudioWorkletProcessor {
+@@ -5361,12 +5361,19 @@
+         }
+       }
+     }
+-    process(_inputs, outputs) {
++    process(inputs, outputs) {
+       if (!this.ready) return true;
++      const input = inputs[0];
++      const heap = this.lib.HEAPF32;
++      const inputBase = this.inPtr >> 2;
++      for (let i = 0; i < QUANTUM; i++) {
++        for (let ch = 0; ch < IN_CH; ch++) {
++          heap[inputBase + i * IN_CH + ch] = input?.[ch]?.[i] ?? 0;
++        }
++      }
+       this.processFloat(TICKS, this.inPtr, this.outPtr);
+       const out = outputs[0];
+       if (!out || out.length === 0) return true;
+-      const heap = this.lib.HEAPF32;
+       const base = this.outPtr >> 2;
+       const channels = Math.min(out.length, OUT_CH);
+       for (let ch = 0; ch < channels; ch++) {
+diff --git a/dist/runtime.js b/dist/runtime.js
+index 16b7db1..d719b9e 100644
+--- a/dist/runtime.js
++++ b/dist/runtime.js
+@@ -1,6 +1,21 @@
+ import { selectRuntimeBundle } from "./runtimeBundles.js";
+ import { manifest as bundledManifest } from "./generatedManifest.js";
+ import { prepareRuntimeFiles } from "./patchRuntime.js";
++const loadedWorklets = new WeakMap();
++async function ensureWorklet(audioContext, workletUrl) {
++    let contextWorklets = loadedWorklets.get(audioContext);
++    if (!contextWorklets) {
++        contextWorklets = new Map();
++        loadedWorklets.set(audioContext, contextWorklets);
++    }
++    let loading = contextWorklets.get(workletUrl);
++    if (!loading) {
++        loading = audioContext.audioWorklet.addModule(workletUrl);
++        contextWorklets.set(workletUrl, loading);
++        void loading.catch(() => contextWorklets.delete(workletUrl));
++    }
++    await loading;
++}
+ function validatePath(path) {
+     if (path === "")
+         throw new Error("Pd file path cannot be empty.");
+@@ -207,7 +222,7 @@ export async function createPd(options) {
+     const ownsAudioContext = options.audioContext === undefined;
+     const bundle = selectRuntimeBundle({ packages: options.packages });
+     const workletUrl = options.workletUrl ?? bundle.worklet;
+-    await audioContext.audioWorklet.addModule(workletUrl);
++    await ensureWorklet(audioContext, workletUrl);
+     const node = new AudioWorkletNode(audioContext, "libpd", {
+         outputChannelCount: [2],
+     });
