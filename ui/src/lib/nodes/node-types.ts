@@ -97,6 +97,7 @@ import TapTildeNode from '$objects/tap~/TapTildeNode.svelte';
 import UiuaNode from '$objects/uiua/UiuaNode.svelte';
 import BytebeatNode from '$objects/bytebeat~/BytebeatNode.svelte';
 import WamNode from '$objects/wam~/WamNode.svelte';
+import PdNode from '$objects/pd/PdNode.svelte';
 import SequencerNode from '$objects/sequencer/SequencerNode.svelte';
 import CurveNode from '$objects/curve/CurveNode.svelte';
 import PadsNode from '$objects/pads/PadsNode.svelte';
@@ -228,6 +229,7 @@ export const nodeTypes: Record<string, any> = {
   uiua: UiuaNode,
   'bytebeat~': BytebeatNode,
   'wam~': WamNode,
+  pd: PdNode,
   sequencer: SequencerNode,
   curve: CurveNode,
   'pads~': PadsNode,

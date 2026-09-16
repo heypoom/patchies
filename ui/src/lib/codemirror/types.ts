@@ -5,6 +5,7 @@ export type SupportedLanguage =
   | 'python'
   | 'peppermint'
   | 'patchbay'
+  | 'puredata'
   | 'ruby'
   | 'markdown'
   | 'plain'
