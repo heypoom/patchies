@@ -216,7 +216,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   bind:this={editorContainer}
-  class="assembly-editor nodrag nopan nowheel overflow-hidden"
+  class="assembly-editor nodrag nopan nowheel overflow-visible"
   class:cursor-not-allowed={readonly}
   onkeydown={handleKeydown}
 >
