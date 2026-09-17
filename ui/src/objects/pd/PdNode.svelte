@@ -50,6 +50,7 @@
   const mountedSource = $derived(getPdMountedSource(node.data));
   const editorReadOnly = $derived(editorMode === 'readonly');
   const showConsole = $derived(node.data.showConsole ?? false);
+  const hasOpenPanel = $derived(showSettings || showEditor || showConsole);
   const summary = $derived(
     status.state === 'loading' ? 'Loading…' : status.state === 'error' ? 'Load error' : filename
   );
@@ -244,7 +245,7 @@
 </script>
 
 <div
-  class="relative"
+  class={['relative', hasOpenPanel && 'pd-node--panel-open']}
   role="group"
   aria-label="Pure Data patch"
   ondragover={handleDragOver}
@@ -388,30 +389,29 @@
 
   {#if showEditor}
     <div class="absolute top-0 left-full z-20 ml-3">
+      {#if mountedSource}
+        <div class="absolute -top-7 right-0 z-10">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                type="button"
+                class="nodrag nopan flex h-6 cursor-pointer items-center gap-1 rounded bg-zinc-950 px-1.5 text-[10px] text-zinc-300 outline-none hover:bg-zinc-700 hover:text-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/70 disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={status.state === 'loading'}
+                aria-label="Detach Pure Data patch"
+                onclick={() => void detachSource()}
+              >
+                <Unlink class="h-3 w-3" />
+                Detach
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              {editorReadOnly ? 'Detach to edit inline' : 'Detach into this object'}
+            </Tooltip.Content>
+          </Tooltip.Root>
+        </div>
+      {/if}
+
       <div class="min-w-96 overflow-hidden rounded-md border border-zinc-600 bg-zinc-900 shadow-xl">
-        {#if mountedSource}
-          <div class="flex items-center gap-2 border-b border-zinc-700 px-2 py-1.5">
-            <div class="min-w-0 flex-1">
-              <div class="truncate font-mono text-[10px] text-zinc-300" title={mountedSource}>
-                {mountedSource}
-              </div>
-              {#if editorReadOnly}
-                <div class="text-[10px] text-zinc-500">Read-only until detached</div>
-              {/if}
-            </div>
-
-            <button
-              type="button"
-              class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={status.state === 'loading'}
-              onclick={() => void detachSource()}
-            >
-              <Unlink class="h-3 w-3" />
-              Detach
-            </button>
-          </div>
-        {/if}
-
         <CodeEditor
           value={editorCode}
           onchange={(code) => (editorCode = code)}
@@ -444,3 +444,9 @@
     />
   </div>
 </div>
+
+<style>
+  :global(.svelte-flow__node-pd:has(> .pd-node--panel-open)) {
+    z-index: 10000 !important;
+  }
+</style>
