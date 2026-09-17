@@ -46,6 +46,10 @@ export class PatchFileEditorSession {
       throw new Error(`VFS: Code file is not editable: ${path}`);
     }
 
+    if (isObjectPath(path) && this.vfs.objectFiles.get(path).readOnly) {
+      throw new Error('VFS: Detach the mounted Pd source before editing it.');
+    }
+
     this.pathValue = path;
 
     if (!this.states().has(path)) {
@@ -72,16 +76,17 @@ export class PatchFileEditorSession {
   }
 
   updateDraft(content: string): void {
+    const path = this.pathValue;
     const state = this.getState();
-    if (!state) throw new Error('VFS: No code file is open');
+    if (!path || !state) throw new Error('VFS: No code file is open');
     if (state.draft === content) return;
 
-    if (this.pathValue && isObjectPath(this.pathValue)) {
+    if (this.usesLiveObjectEdits(path)) {
       state.editStart ??= state.savedContent;
-      this.vfs.objectFiles.write(this.pathValue, content, { recordHistory: false });
+      this.vfs.objectFiles.write(path, content, { recordHistory: false });
       state.savedContent = content;
       state.draft = content;
-      state.revision = this.vfs.getEntry(this.pathValue)?.revision ?? state.revision;
+      state.revision = this.vfs.getEntry(path)?.revision ?? state.revision;
       this.notify();
       return;
     }
@@ -97,7 +102,7 @@ export class PatchFileEditorSession {
     const state = this.getState();
     if (!path || !state) return false;
 
-    if (isObjectPath(path)) {
+    if (this.usesLiveObjectEdits(path)) {
       const previousContent = state.editStart;
       if (
         !this.vfs.has(path) ||
@@ -134,7 +139,7 @@ export class PatchFileEditorSession {
   }
 
   close(): void {
-    if (this.pathValue && isObjectPath(this.pathValue)) this.save();
+    if (this.usesLiveObjectEdits()) this.save();
 
     this.pathValue = null;
     this.notify();
@@ -166,7 +171,7 @@ export class PatchFileEditorSession {
 
     const entry = this.vfs.getEntry(path);
     if (!entry) {
-      if (this.isDirty && !isObjectPath(path)) return 'conflict';
+      if (this.isDirty && !this.usesLiveObjectEdits(path)) return 'conflict';
 
       this.states().delete(path);
       return 'deleted';
@@ -176,7 +181,7 @@ export class PatchFileEditorSession {
     const nextRevision = entry.revision ?? 0;
 
     if (nextContent === state.savedContent && nextRevision === state.revision) return 'unchanged';
-    if (this.isDirty && !isObjectPath(path)) return 'conflict';
+    if (this.isDirty && !this.usesLiveObjectEdits(path)) return 'conflict';
 
     state.editStart = undefined;
     state.savedContent = nextContent;
@@ -190,7 +195,7 @@ export class PatchFileEditorSession {
   }
 
   undoDraft(): boolean {
-    if (this.pathValue && isObjectPath(this.pathValue)) {
+    if (this.usesLiveObjectEdits()) {
       this.save();
       const undone = HistoryManager.getInstance().undo() !== null;
       this.syncSavedContent();
@@ -209,7 +214,7 @@ export class PatchFileEditorSession {
   }
 
   redoDraft(): boolean {
-    if (this.pathValue && isObjectPath(this.pathValue)) {
+    if (this.usesLiveObjectEdits()) {
       const redone = HistoryManager.getInstance().redo() !== null;
       this.syncSavedContent();
       return redone;
@@ -238,6 +243,12 @@ export class PatchFileEditorSession {
 
   private getState(): PatchFileEditorState | undefined {
     return this.pathValue ? this.states().get(this.pathValue) : undefined;
+  }
+
+  private usesLiveObjectEdits(path = this.pathValue): boolean {
+    return Boolean(
+      path && isObjectPath(path) && this.vfs.has(path) && !this.vfs.objectFiles.get(path).writePath
+    );
   }
 
   private notify(): void {

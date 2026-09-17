@@ -182,7 +182,7 @@ describe('PdAudioNode', () => {
     expect(vfs.readCodeFile('obj://pd-1/patch.pd')).toBe(code);
   });
 
-  it('persists edited code while keeping its external source as provenance', async () => {
+  it('edits a patch-mounted source in place without creating inline code', async () => {
     const pd = pdMock();
     const createPd = vi.fn().mockResolvedValue(pd);
     const update = vi.fn();
@@ -204,14 +204,15 @@ describe('PdAudioNode', () => {
     await node.setPath('patch://pd/synth.pd');
     update.mockClear();
 
-    await node.setEditedCode(editedCode);
+    await node.updateMountedPatch(editedCode);
 
-    expect(update).toHaveBeenCalledWith({ sourceCode: editedCode, hasConfiguredPorts: false });
+    expect(update).toHaveBeenCalledWith({ hasConfiguredPorts: false });
+    expect(vfs.readEmbeddedFile('patch://pd/synth.pd')).toBe(editedCode);
     expect(node.getData()).toEqual(
       expect.objectContaining({
         vfsPath: 'patch://pd/synth.pd',
         sourceUrl: '',
-        sourceCode: editedCode
+        sourceCode: null
       })
     );
     expect(createPd).toHaveBeenLastCalledWith(
@@ -220,9 +221,68 @@ describe('PdAudioNode', () => {
         entry: 'synth.pd'
       })
     );
+  });
+
+  it('detaches a mounted source into inline code', async () => {
+    const pd = pdMock();
+    const createPd = vi.fn().mockResolvedValue(pd);
+    const update = vi.fn();
+    const code = '#N canvas 0 0 200 200 10;';
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.registerProvider(new EmbeddedProvider());
+    vfs.createEmbeddedFile('patch://pd/synth.pd', code);
+    loadLibPd.mockResolvedValue({
+      checkPatch: vi.fn(() => ({ ok: true, messages: [] })),
+      createPd,
+      workletUrl: '/libpd-worklet-full.js'
+    });
+    const node = new PdAudioNode('pd-1', audioContextMock());
+    node.bindRuntimeData({ initialData: {}, update });
 
     await node.setPath('patch://pd/synth.pd');
+    update.mockClear();
+    await node.detachSource(code);
 
-    expect(node.getData().sourceCode).toBeNull();
+    expect(update).toHaveBeenCalledWith({
+      vfsPath: '',
+      sourceUrl: '',
+      sourceCode: code,
+      hasConfiguredPorts: false
+    });
+    expect(node.getData()).toEqual(
+      expect.objectContaining({ vfsPath: '', sourceUrl: '', sourceCode: code })
+    );
+    expect(createPd).toHaveBeenLastCalledWith(
+      expect.objectContaining({ files: { 'inline.pd': code }, entry: 'inline.pd' })
+    );
+  });
+
+  it('reloads when its mounted patch file changes externally', async () => {
+    const pd = pdMock();
+    const createPd = vi.fn().mockResolvedValue(pd);
+    const originalCode = '#N canvas 0 0 200 200 10;';
+    const editedCode = `${originalCode}\n#X obj 20 20 osc~ 440;`;
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.registerProvider(new EmbeddedProvider());
+    vfs.createEmbeddedFile('patch://pd/synth.pd', originalCode);
+    loadLibPd.mockResolvedValue({
+      checkPatch: vi.fn(() => ({ ok: true, messages: [] })),
+      createPd,
+      workletUrl: '/libpd-worklet-full.js'
+    });
+    const node = new PdAudioNode('pd-1', audioContextMock());
+    node.bindRuntimeData({ initialData: {}, update: vi.fn() });
+
+    await node.setPath('patch://pd/synth.pd');
+    createPd.mockClear();
+    vfs.writeEmbeddedFile('patch://pd/synth.pd', editedCode);
+
+    await vi.waitFor(() => {
+      expect(createPd).toHaveBeenCalledWith(
+        expect.objectContaining({ files: { 'synth.pd': editedCode }, entry: 'synth.pd' })
+      );
+    });
+
+    expect(node.getSourceCode()).toBe(editedCode);
   });
 });

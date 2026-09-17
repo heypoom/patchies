@@ -6,6 +6,7 @@ import type {
   RuntimeDataBinding
 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import { msg } from '$lib/objects/schemas/helpers';
 import { isVFSPath, VirtualFilesystem } from '$lib/vfs';
@@ -79,6 +80,8 @@ export class PdAudioNode implements AudioNodeV2 {
 
   private audioContext: AudioContext;
   private inputNode: GainNode;
+  private vfs: VirtualFilesystem;
+  private eventBus: PatchiesEventBus;
   private pd: Pd | null = null;
   private binding: RuntimeDataBinding | null = null;
   private runtimeData: Required<PdNodeData> = {
@@ -92,6 +95,7 @@ export class PdAudioNode implements AudioNodeV2 {
   private status: PdRuntimeStatus = { state: 'idle' };
   private loadedSourceCode = '';
   private loadToken = 0;
+  private skipNextVfsReload = false;
   private unsubscribers: Array<() => void> = [];
 
   constructor(nodeId: string, audioContext: AudioContext) {
@@ -99,6 +103,9 @@ export class PdAudioNode implements AudioNodeV2 {
     this.audioContext = audioContext;
     this.inputNode = audioContext.createGain();
     this.audioNode = audioContext.createGain();
+    this.vfs = VirtualFilesystem.getInstance();
+    this.eventBus = PatchiesEventBus.getInstance();
+    this.eventBus.addEventListener('vfsContentModified', this.handleVfsContentModified);
   }
 
   bindRuntimeData(binding: RuntimeDataBinding): void {
@@ -215,10 +222,61 @@ export class PdAudioNode implements AudioNodeV2 {
     this.loadedSourceCode = sourceCode;
     this.runtimeData = {
       ...this.runtimeData,
+      vfsPath: '',
+      sourceUrl: '',
       sourceCode,
       hasConfiguredPorts: false
     };
-    this.binding?.update({ sourceCode, hasConfiguredPorts: false });
+    this.binding?.update({
+      vfsPath: '',
+      sourceUrl: '',
+      sourceCode,
+      hasConfiguredPorts: false
+    });
+
+    await this.load({ kind: 'code', value: sourceCode });
+  }
+
+  async updateMountedPatch(sourceCode: string): Promise<void> {
+    const path = this.runtimeData.vfsPath;
+    if (this.runtimeData.sourceCode !== null || !path.startsWith('patch://')) {
+      throw new Error('Only mounted patch:// Pd sources can be edited in place.');
+    }
+
+    this.runtimeData = { ...this.runtimeData, hasConfiguredPorts: false };
+    this.binding?.update({ hasConfiguredPorts: false });
+
+    this.skipNextVfsReload = true;
+    try {
+      this.vfs.writeEmbeddedFile(path, sourceCode);
+    } finally {
+      this.skipNextVfsReload = false;
+    }
+
+    await this.load({ kind: 'vfs', value: path });
+  }
+
+  async detachSource(sourceCode: string): Promise<void> {
+    this.loadedSourceCode = sourceCode;
+    this.runtimeData = {
+      ...this.runtimeData,
+      vfsPath: '',
+      sourceUrl: '',
+      sourceCode,
+      hasConfiguredPorts: false
+    };
+    this.binding?.update({
+      vfsPath: '',
+      sourceUrl: '',
+      sourceCode,
+      hasConfiguredPorts: false
+    });
+
+    if (!sourceCode.trim()) {
+      await this.disposePd();
+      this.setStatus({ state: 'idle' });
+      return;
+    }
 
     await this.load({ kind: 'code', value: sourceCode });
   }
@@ -283,6 +341,7 @@ export class PdAudioNode implements AudioNodeV2 {
 
   destroy(): void {
     this.loadToken += 1;
+    this.eventBus.removeEventListener('vfsContentModified', this.handleVfsContentModified);
     this.inputNode.disconnect();
     this.audioNode.disconnect();
 
@@ -294,6 +353,13 @@ export class PdAudioNode implements AudioNodeV2 {
       (port) => port.kind === 'message-in' && this.runtimeData.exposedPortIds.includes(port.id)
     );
   }
+
+  private handleVfsContentModified = ({ path }: { path: string }): void => {
+    if (this.skipNextVfsReload || VirtualFilesystem.getInstance() !== this.vfs) return;
+    if (this.runtimeData.sourceCode !== null || path !== this.runtimeData.vfsPath) return;
+
+    void this.load({ kind: 'vfs', value: path });
+  };
 
   private getSource(): PdSource | null {
     if (this.runtimeData.sourceCode !== null) {

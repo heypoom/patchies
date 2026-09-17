@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code2, Settings } from '@lucide/svelte/icons';
+  import { Code2, Settings, Unlink } from '@lucide/svelte/icons';
   import { onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals, type NodeProps } from '@xyflow/svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
@@ -7,11 +7,14 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { useNodeDataTracker } from '$lib/history';
   import { getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
+  import { VirtualFilesystem } from '$lib/vfs';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { toast } from 'svelte-sonner';
   import { PdAudioNode, type PdNodeData, type PdRuntimeStatus } from './PdAudioNode';
   import { getPdDisplayFilename } from './pd-display';
   import { resolvePdDropPath } from './pd-drop';
+  import { getPdMessageInletLayout } from './pd-inlets';
+  import { getDetachedPdData, getPdEditorMode, getPdMountedSource } from './pd-source';
   import PdSettings from './PdSettings.svelte';
 
   let node: NodeProps & { data: PdNodeData } = $props();
@@ -35,12 +38,16 @@
   const messageInputs = $derived(
     ports.filter((port) => port.kind === 'message-in' && exposedPortIds.includes(port.id))
   );
+  const messageInletLayout = $derived(getPdMessageInletLayout(messageInputs));
   const messageOutputs = $derived(
     ports.filter((port) => port.kind === 'message-out' && exposedPortIds.includes(port.id))
   );
   const inletCount = $derived(2 + messageInputs.length);
   const outletCount = $derived(1 + messageOutputs.length);
   const filename = $derived(getPdDisplayFilename(node.data, status));
+  const editorMode = $derived(getPdEditorMode(node.data));
+  const mountedSource = $derived(getPdMountedSource(node.data));
+  const editorReadOnly = $derived(editorMode === 'readonly');
   const summary = $derived(
     status.state === 'loading' ? 'Loading…' : status.state === 'error' ? 'Load error' : filename
   );
@@ -95,13 +102,41 @@
     showSettings = false;
 
     if (nextOpen) {
-      editorCode = node.data.sourceCode ?? runtimeNode?.getSourceCode() ?? '';
+      if (editorMode === 'patch' && node.data.vfsPath) {
+        try {
+          editorCode = VirtualFilesystem.getInstance().readEmbeddedFile(node.data.vfsPath);
+        } catch {
+          editorCode = runtimeNode?.getSourceCode() ?? '';
+        }
+      } else {
+        editorCode = node.data.sourceCode ?? runtimeNode?.getSourceCode() ?? '';
+      }
     }
 
     showEditor = nextOpen;
   }
 
   async function commitCode(newCode: string) {
+    if (editorReadOnly) return;
+
+    if (editorMode === 'patch') {
+      if (runtimeNode?.getSourceCode() === newCode) return;
+
+      if (runtimeNode) {
+        await runtimeNode.updateMountedPatch(newCode);
+        return;
+      }
+
+      const path = node.data.vfsPath;
+      if (!path) return;
+
+      const vfs = VirtualFilesystem.getInstance();
+      vfs.writeEmbeddedFile(path, newCode);
+      vfs.objectFiles.setRuntimeContent(node.id, 'patch.pd', path, newCode);
+      updateNodeData(node.id, { hasConfiguredPorts: false });
+      return;
+    }
+
     const oldCode = node.data.sourceCode ?? null;
     if (oldCode === newCode) return;
 
@@ -112,7 +147,35 @@
       return;
     }
 
-    updateNodeData(node.id, { sourceCode: newCode, hasConfiguredPorts: false });
+    updateNodeData(node.id, {
+      vfsPath: '',
+      sourceUrl: '',
+      sourceCode: newCode,
+      hasConfiguredPorts: false
+    });
+  }
+
+  async function detachSource() {
+    const updates = getDetachedPdData(editorCode);
+
+    tracker.commitMany('Detach Pd patch', [
+      { dataKey: 'vfsPath', oldValue: node.data.vfsPath ?? '', newValue: updates.vfsPath },
+      { dataKey: 'sourceUrl', oldValue: node.data.sourceUrl ?? '', newValue: updates.sourceUrl },
+      {
+        dataKey: 'sourceCode',
+        oldValue: node.data.sourceCode ?? null,
+        newValue: updates.sourceCode
+      },
+      {
+        dataKey: 'hasConfiguredPorts',
+        oldValue: node.data.hasConfiguredPorts ?? false,
+        newValue: updates.hasConfiguredPorts
+      }
+    ]);
+
+    pathDraft = '';
+    updateNodeData(node.id, updates);
+    await runtimeNode?.detachSource(editorCode);
   }
 
   async function togglePort(portId: string) {
@@ -223,23 +286,14 @@
     index={0}
     nodeId={node.id}
   />
-  <StandardHandle
-    port="inlet"
-    type="message"
-    id={1}
-    title="set receiver"
-    total={inletCount}
-    index={1}
-    nodeId={node.id}
-  />
-  {#each messageInputs as port, index (port.id)}
+  {#each messageInletLayout as inlet (inlet.key)}
     <StandardHandle
       port="inlet"
       type="message"
-      id={index + 2}
-      title={port.label}
+      id={inlet.handleId}
+      title={inlet.title}
       total={inletCount}
-      index={index + 2}
+      index={inlet.position}
       nodeId={node.id}
     />
   {/each}
@@ -307,7 +361,30 @@
 
   {#if showEditor}
     <div class="absolute top-0 left-full z-20 ml-3">
-      <div class="min-w-96 rounded-md border border-zinc-600 bg-zinc-900 shadow-xl">
+      <div class="min-w-96 overflow-hidden rounded-md border border-zinc-600 bg-zinc-900 shadow-xl">
+        {#if mountedSource}
+          <div class="flex items-center gap-2 border-b border-zinc-700 px-2 py-1.5">
+            <div class="min-w-0 flex-1">
+              <div class="truncate font-mono text-[10px] text-zinc-300" title={mountedSource}>
+                {mountedSource}
+              </div>
+              {#if editorReadOnly}
+                <div class="text-[10px] text-zinc-500">Read-only until detached</div>
+              {/if}
+            </div>
+
+            <button
+              type="button"
+              class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={status.state === 'loading'}
+              onclick={() => void detachSource()}
+            >
+              <Unlink class="h-3 w-3" />
+              Detach
+            </button>
+          </div>
+        {/if}
+
         <CodeEditor
           value={editorCode}
           onchange={(code) => (editorCode = code)}
@@ -319,6 +396,7 @@
           placeholder="Pure Data patch source"
           class="nodrag h-72 w-full min-w-96 resize-none"
           lineWrap
+          readOnly={editorReadOnly}
         />
       </div>
     </div>

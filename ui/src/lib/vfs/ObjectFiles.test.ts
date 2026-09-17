@@ -32,6 +32,7 @@ describe('live object files', () => {
   beforeEach(() => {
     VirtualFilesystem.resetInstance();
     vfs = VirtualFilesystem.getInstance();
+    vfs.createEmbeddedFile('patch://synth/main.pd', '#N canvas 0 0 200 200 10;');
 
     objects = [
       { id: 'glsl-4', type: 'glsl', data: { code: 'void main() {}' } },
@@ -45,13 +46,24 @@ describe('live object files', () => {
     ];
 
     vfs.objectFiles.connect((file, content) => {
+      const object = objects.find((candidate) => candidate.id === file.objectId);
+      if (!object) throw new Error(`Missing object: ${file.objectId}`);
+
+      const edit = editObjectCodeFile(object, file.filename, content);
+      if (edit.writePath) {
+        vfs.writeCodeFile(edit.writePath, content);
+        vfs.objectFiles.setRuntimeContent(file.objectId, file.filename, edit.writePath, content);
+        vfs.objectFiles.sync(objects);
+        return;
+      }
+
       objects = objects.map((object) =>
         object.id === file.objectId
           ? {
               ...object,
               data: {
                 ...object.data,
-                ...editObjectCodeFile(object, file.filename, content).updates
+                ...edit.updates!
               }
             }
           : object
@@ -107,7 +119,7 @@ describe('live object files', () => {
     }
   });
 
-  it('projects a Pd runtime source until its persisted buffer is modified', async () => {
+  it('writes a patch-mounted Pd projection back to its embedded file', () => {
     const path = 'obj://pd-7/patch.pd';
     const vfsSource = '#N canvas 0 0 200 200 10;';
     const modifiedSource = `${vfsSource}\n#X obj 20 20 osc~ 440;`;
@@ -120,13 +132,15 @@ describe('live object files', () => {
 
     expect(vfs.readCodeFile(path)).toBe(vfsSource);
 
-    objects[2].data.sourceCode = modifiedSource;
-    vfs.objectFiles.sync(objects);
+    const edit = editObjectCodeFile(objects[2], 'patch.pd', modifiedSource);
+    expect(edit.writePath).toBe('patch://synth/main.pd');
+    expect(edit.updates).toBeNull();
 
+    vfs.writeCodeFile(path, modifiedSource);
+
+    expect(vfs.readEmbeddedFile('patch://synth/main.pd')).toBe(modifiedSource);
     expect(vfs.readCodeFile(path)).toBe(modifiedSource);
-    expect(editObjectCodeFile(objects[2], 'patch.pd', 'edited').updates).toEqual({
-      sourceCode: 'edited'
-    });
+    expect(objects[2].data.sourceCode).toBeNull();
   });
 
   it('does not reuse runtime source after the Pd VFS path changes', () => {
@@ -143,28 +157,52 @@ describe('live object files', () => {
     expect(vfs.readCodeFile(path)).toBe('new source');
   });
 
-  it('retains null as the undo origin for the first edit of a VFS-loaded Pd patch', () => {
+  it('keeps user and URL-mounted Pd projections read-only until detached', () => {
     const path = 'obj://pd-7/patch.pd';
-    const writes: Array<{ content: string; previousValue?: unknown }> = [];
+    objects[2].data.vfsPath = 'user://synth/main.pd';
+    vfs.objectFiles.sync(objects);
+    vfs.objectFiles.setRuntimeContent('pd-7', 'patch.pd', 'user://synth/main.pd', 'user source');
 
+    const editor = new PatchFileEditorSession(vfs);
+    expect(vfs.objectFiles.get(path).readOnly).toBe(true);
+    expect(() => editObjectCodeFile(objects[2], 'patch.pd', 'edited')).toThrow(
+      'Detach the mounted Pd source before editing it.'
+    );
+    expect(() => editor.open(path)).toThrow('Detach the mounted Pd source before editing it.');
+
+    objects[2].data.vfsPath = '';
+    objects[2].data.sourceUrl = 'https://example.com/main.pd';
+    vfs.objectFiles.sync(objects);
     vfs.objectFiles.setRuntimeContent(
       'pd-7',
       'patch.pd',
-      'patch://synth/main.pd',
-      'external source'
+      'https://example.com/main.pd',
+      'URL source'
     );
-    vfs.objectFiles.connect((file, content, options) => {
-      writes.push({ content, previousValue: options?.previousValue });
-      objects[2].data.sourceCode = content;
-      vfs.objectFiles.sync(objects);
-    });
+
+    expect(vfs.objectFiles.get(path).readOnly).toBe(true);
+    expect(() => editor.open(path)).toThrow('Detach the mounted Pd source before editing it.');
+  });
+
+  it('stages patch-mounted Pd edits until save without creating inline source', () => {
+    const path = 'obj://pd-7/patch.pd';
+    const originalSource = '#N canvas 0 0 200 200 10;';
+    const modifiedSource = `${originalSource}\n#X obj 20 20 osc~ 440;`;
+    vfs.objectFiles.setRuntimeContent('pd-7', 'patch.pd', 'patch://synth/main.pd', originalSource);
 
     const editor = new PatchFileEditorSession(vfs);
     editor.open(path);
-    editor.updateDraft('modified source');
-    editor.save();
+    editor.updateDraft(modifiedSource);
 
-    expect(writes.at(-1)).toEqual({ content: 'modified source', previousValue: null });
+    expect(editor.isDirty).toBe(true);
+    expect(vfs.readEmbeddedFile('patch://synth/main.pd')).toBe(originalSource);
+    expect(objects[2].data.sourceCode).toBeNull();
+
+    expect(editor.save()).toBe(true);
+
+    expect(editor.isDirty).toBe(false);
+    expect(vfs.readEmbeddedFile('patch://synth/main.pd')).toBe(modifiedSource);
+    expect(objects[2].data.sourceCode).toBeNull();
   });
 
   it('writes typing immediately to original fields and synchronizes external edits and deletion', () => {
@@ -194,7 +232,8 @@ describe('live object files', () => {
     vfs.objectFiles.sync([]);
     expect(editor.syncSavedContent()).toBe('deleted');
     expect(() => vfs.writeCodeFile(jsPath, 'cannot recreate')).toThrow();
-    expect(get(vfs.entries$).size).toBe(0);
+    expect(get(vfs.entries$).has('obj://js-6/code.js')).toBe(false);
+    expect(get(vfs.entries$).has('patch://synth/main.pd')).toBe(true);
   });
 
   it('closes safely if the object disappears during live editing', () => {
