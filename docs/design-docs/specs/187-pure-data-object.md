@@ -19,7 +19,8 @@ Add a dedicated runtime-managed audio object named `pd`.
 - The message outlet forwards values from explicitly exposed Pd senders. Pd bangs become Patchies bang messages, floats become numbers, symbols become strings, lists become arrays, and other selectors become `{ type, values }` messages.
 - MIDI conversion is outside the first release.
 - The node persists its VFS entry path or HTTP(S) URL, discovered port metadata, exposed port IDs, and whether the user has configured the exposure set. Mounted external source remains runtime-only; editing a mounted source does not create a hidden object-local overlay.
-- The node has separate floating code and settings buttons. Its code editor shows the currently loaded entry source.
+- The node has separate floating code, console, and settings buttons. Its code editor shows the currently loaded entry source.
+- The console opens as a floating panel attached to the node. Libpd print messages appear as console logs, and libpd errors appear as console errors without being duplicated in DevTools. Output produced while Vanilla, Cyclone, and ELSE register their classes is suppressed; patch loading and runtime output remain visible. Generic compatibility-parser diagnostics for unsupported Pd record syntax are also suppressed, while actionable compatibility warnings remain visible.
 - The code editor is available before a source is loaded so a patch can be authored from an empty node.
 - The compact node body shows the external filename, `Inline patch` for source without external provenance, `Loading…` while loading, and `Load error` after a failed load. It shows `Choose a patch` only when no source has been loaded.
 - Every `pd` node exposes `obj://<node-id>/patch.pd` in the Objects VFS tree, even before source is available. It is initially empty and shows the resolved mounted or inline source. Runtime source is keyed by the current external path or URL so a previous source is not shown after switching files.

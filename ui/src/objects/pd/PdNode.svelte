@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { Code2, Settings, Unlink } from '@lucide/svelte/icons';
+  import { Code2, Settings, Terminal, Unlink } from '@lucide/svelte/icons';
   import { onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals, type NodeProps } from '@xyflow/svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { useNodeDataTracker } from '$lib/history';
   import { getPatchRuntimeViewRevisionTracker } from '$lib/runtime';
   import { VirtualFilesystem } from '$lib/vfs';
@@ -48,6 +49,7 @@
   const editorMode = $derived(getPdEditorMode(node.data));
   const mountedSource = $derived(getPdMountedSource(node.data));
   const editorReadOnly = $derived(editorMode === 'readonly');
+  const showConsole = $derived(node.data.showConsole ?? false);
   const summary = $derived(
     status.state === 'loading' ? 'Loading…' : status.state === 'error' ? 'Load error' : filename
   );
@@ -94,12 +96,14 @@
 
   function toggleSettings() {
     showEditor = false;
+    if (showConsole) updateNodeData(node.id, { showConsole: false });
     showSettings = !showSettings;
   }
 
   function toggleEditor() {
     const nextOpen = !showEditor;
     showSettings = false;
+    if (showConsole) updateNodeData(node.id, { showConsole: false });
 
     if (nextOpen) {
       if (editorMode === 'patch' && node.data.vfsPath) {
@@ -114,6 +118,12 @@
     }
 
     showEditor = nextOpen;
+  }
+
+  function toggleConsole() {
+    showEditor = false;
+    showSettings = false;
+    updateNodeData(node.id, { showConsole: !showConsole });
   }
 
   async function commitCode(newCode: string) {
@@ -241,6 +251,23 @@
   ondrop={handleDrop}
 >
   <div class="absolute -top-7 left-0 z-10 flex w-full justify-end gap-x-1">
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          type="button"
+          class={[
+            'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700',
+            showConsole && 'bg-zinc-700'
+          ]}
+          aria-label="Pure Data console"
+          onclick={toggleConsole}
+        >
+          <Terminal class="h-4 w-4" />
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>Pure Data console</Tooltip.Content>
+    </Tooltip.Root>
+
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
@@ -401,4 +428,19 @@
       </div>
     </div>
   {/if}
+
+  <div
+    class={[
+      'absolute top-full left-0 z-20 mt-3 w-96',
+      !showConsole && 'pointer-events-none hidden'
+    ]}
+  >
+    <VirtualConsole
+      nodeId={node.id}
+      placeholder="Pure Data output will appear here."
+      showRunControls={false}
+      initialWidth={384}
+      class="shadow-xl"
+    />
+  </div>
 </div>
