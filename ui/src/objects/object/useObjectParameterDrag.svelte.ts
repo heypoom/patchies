@@ -1,6 +1,7 @@
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { useObjectDataTracker } from '$lib/history';
 import { getPatchRuntime } from '$lib/runtime';
+import { MessageSystem } from '$lib/messages/MessageSystem';
 
 import type { ObjectNodeData } from './types';
 
@@ -15,7 +16,6 @@ type ObjectParameterDragOptions = {
   getNodeId: () => string;
   getData: () => ObjectNodeData;
   getInlets: () => ObjectInlet[];
-  updateParam: (index: number, value: unknown) => void;
 };
 
 export function useObjectParameterDrag(options: ObjectParameterDragOptions) {
@@ -106,7 +106,14 @@ export function useObjectParameterDrag(options: ObjectParameterDragOptions) {
       const value = drag.getValue(drag.startY - event.clientY);
 
       if (value !== null && value !== options.getData().params[drag.index]) {
-        options.updateParam(drag.index, value);
+        const nodeId = options.getNodeId();
+
+        // Use the inlet path so the live object handles the value before its view updates.
+        MessageSystem.getInstance().registerNode(nodeId).sendMessage({
+          source: nodeId,
+          inlet: drag.index,
+          data: value
+        });
       }
     }
 

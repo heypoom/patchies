@@ -40,6 +40,9 @@ Object nodes have two distinct states to optimize both editing and usage:
   double-click editing keep their existing behavior.
 - Track each numeric drag as one undoable parameter edit. Pointer release,
   cancellation, loss of pointer capture, and window blur finish the edit.
+- Send each dragged value through the object's inlet message queue. Numeric and
+  waveform drags update the live object just like incoming inlet messages, without
+  destroying and recreating it. The normal message handlers update displayed parameters.
 - Show the gesture in numeric parameter tooltips. Raw structural arguments on
   objects with dynamic outlets retain their existing text-editing behavior.
 
@@ -54,7 +57,7 @@ Object nodes have two distinct states to optimize both editing and usage:
 
 The object-owned `useObjectParameterDrag` composable owns pointer handling, Alt
 event guards, drag undo tracking, waveform eligibility, and tooltip hints.
-`ObjectNode` supplies current data/inlets and its shared parameter update callback.
+`ObjectNode` supplies current data and inlets.
 Numeric and waveform calculations remain in the independently tested parameter helpers.
 
 ### Editing State

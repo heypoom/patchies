@@ -147,8 +147,7 @@
   const parameterDrag = useObjectParameterDrag({
     getNodeId: () => nodeId,
     getData: () => data,
-    getInlets: () => inlets,
-    updateParam: updateParamByIndex
+    getInlets: () => inlets
   });
 
   // Visible inlets for rendering handles (excludes hidden inlets)
