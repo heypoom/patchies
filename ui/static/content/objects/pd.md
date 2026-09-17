@@ -21,9 +21,16 @@ abstractions can resolve.
 Select the code button above the object to inspect or edit the loaded `.pd`
 source. Press Shift+Enter or leave the editor to load your changes.
 
-Patchies stores only the VFS path or URL until you change the code. After the
-first edit, the modified source is stored with the object. Loading another VFS
-path or URL clears that copy and reads from the external source again.
+How edits are saved depends on the source:
+
+- `patch://` files are part of the patch, so edits write directly to that file.
+- `user://` files and URLs are read-only while mounted.
+- An empty `pd` object is editable immediately and stores its code inline.
+
+Select **Detach** to copy any mounted source into the object before editing it
+inline. Detaching clears the source path and changes the object label to
+`Inline patch`. Detaching from `patch://` is optional; `user://` files and URLs
+must be detached before they can be edited.
 
 ## Messages
 

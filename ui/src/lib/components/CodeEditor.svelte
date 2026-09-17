@@ -126,6 +126,7 @@
   let languageComp = new Compartment();
   let autocompleteComp = new Compartment();
   let placeholderComp = new Compartment();
+  let readOnlyComp = new Compartment();
 
   let {
     value = $bindable(),
@@ -149,6 +150,7 @@
     inlineDecorations = [],
     onaltdecorationclick,
     lineWrap = false,
+    readOnly = false,
     ...restProps
   }: {
     value?: string;
@@ -180,6 +182,9 @@
 
     /** Enable line wrapping */
     lineWrap?: boolean;
+
+    /** Disable document changes while preserving selection and copy behavior. */
+    readOnly?: boolean;
   } = $props();
 
   let editorElement: HTMLDivElement;
@@ -340,6 +345,7 @@
 
         languageComp.of(languageExtension),
         placeholderComp.of(placeholder ? cmPlaceholder(placeholder) : []),
+        readOnlyComp.of([EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly)]),
 
         // Error line highlighting with hover tooltips
         tooltips({ parent: document.body }),
@@ -651,6 +657,17 @@
         }
       });
     }
+  });
+
+  $effect(() => {
+    if (!editorView) return;
+
+    editorView.dispatch({
+      effects: readOnlyComp.reconfigure([
+        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(!readOnly)
+      ])
+    });
   });
 
   // Sync language, autocomplete, and hover-hint extensions with editor settings.
