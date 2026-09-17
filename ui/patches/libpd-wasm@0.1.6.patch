@@ -11,6 +11,34 @@ index aba1ba6d42189f73bcee8409d25e2d3754d4cf90..b6c6b2dc0c6704dd95a02ebf4b15a740
    var OUT_CH = 2;
    var PATCH_DIR = "/patches";
    var LibPdProcessor = class extends AudioWorkletProcessor {
+@@ -5208,6 +5208,7 @@
+       this.patchHandle = 0;
+       this.bindings = /* @__PURE__ */ new Map();
+       this.printBuf = "";
++      this.forwardPrint = false;
+       this.port.onmessage = (e) => this._onMessage(e.data);
+       this._boot().catch((err) => {
+         this.port.postMessage({ type: "error", message: String(err) });
+@@ -5224,7 +5225,9 @@
+         while ((nl = this.printBuf.indexOf("\n")) >= 0) {
+           const line = this.printBuf.slice(0, nl);
+           this.printBuf = this.printBuf.slice(nl + 1);
+-          this.port.postMessage({ type: "print", text: line });
++          if (this.forwardPrint) {
++            this.port.postMessage({ type: "print", text: line });
++          }
+         }
+       }, "vi");
+       lib._libpd_set_printhook(printhookPtr);
+@@ -5252,6 +5255,8 @@
+         ["string", "string"],
+         ["pd", "dsp"]
+       );
++      this.printBuf = "";
++      this.forwardPrint = true;
+       this.ready = true;
+       this.port.postMessage({ type: "ready" });
+     }
 @@ -5361,12 +5361,19 @@
          }
        }
