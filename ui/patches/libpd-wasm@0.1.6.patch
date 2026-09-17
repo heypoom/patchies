@@ -37,10 +37,10 @@ diff --git a/dist/runtime.js b/dist/runtime.js
 index 16b7db1..d719b9e 100644
 --- a/dist/runtime.js
 +++ b/dist/runtime.js
-@@ -1,6 +1,21 @@
- import { selectRuntimeBundle } from "./runtimeBundles.js";
- import { manifest as bundledManifest } from "./generatedManifest.js";
- import { prepareRuntimeFiles } from "./patchRuntime.js";
+@@ -204,12 +204,27 @@ class PdRuntime {
+         }
+     }
+ }
 +const loadedWorklets = new WeakMap();
 +async function ensureWorklet(audioContext, workletUrl) {
 +    let contextWorklets = loadedWorklets.get(audioContext);
@@ -56,10 +56,8 @@ index 16b7db1..d719b9e 100644
 +    }
 +    await loading;
 +}
- function validatePath(path) {
-     if (path === "")
-         throw new Error("Pd file path cannot be empty.");
-@@ -207,7 +222,7 @@ export async function createPd(options) {
+ export async function createPd(options) {
+     const audioContext = options.audioContext ?? new AudioContext();
      const ownsAudioContext = options.audioContext === undefined;
      const bundle = selectRuntimeBundle({ packages: options.packages });
      const workletUrl = options.workletUrl ?? bundle.worklet;

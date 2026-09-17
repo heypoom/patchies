@@ -15,6 +15,8 @@ export interface ObjectCodeFile {
   language: SupportedLanguage;
   content: string;
   runtimeSource?: string;
+  writePath?: string;
+  readOnly?: boolean;
 }
 
 type SourceDefinition = readonly [string, string, SupportedLanguage];
@@ -88,7 +90,10 @@ export function getObjectCodeFiles(object: CodeObject): ObjectCodeFile[] {
   const content = object.data[dataKey];
 
   if (nodeType === 'pd' && content == null) {
-    const runtimeSource = object.data.vfsPath || object.data.sourceUrl || '';
+    const vfsPath = typeof object.data.vfsPath === 'string' ? object.data.vfsPath : '';
+    const sourceUrl = typeof object.data.sourceUrl === 'string' ? object.data.sourceUrl : '';
+    const runtimeSource = vfsPath || sourceUrl;
+    const writePath = vfsPath.startsWith('patch://') ? vfsPath : undefined;
 
     return [
       {
@@ -98,7 +103,9 @@ export function getObjectCodeFiles(object: CodeObject): ObjectCodeFile[] {
         dataKey,
         language,
         content: '',
-        runtimeSource: typeof runtimeSource === 'string' ? runtimeSource : ''
+        runtimeSource,
+        writePath,
+        readOnly: Boolean(runtimeSource && !writePath)
       }
     ];
   }
@@ -112,8 +119,13 @@ export function getObjectCodeFiles(object: CodeObject): ObjectCodeFile[] {
 export function editObjectCodeFile(object: CodeObject, filename: string, content: string) {
   const file = getObjectCodeFiles(object).find((file) => file.filename === filename);
   if (!file) throw new Error(`Object source not found: ${object.id}/${filename}`);
+  if (file.readOnly) throw new Error('Detach the mounted Pd source before editing it.');
 
-  return { ...file, content, updates: { [file.dataKey]: content } };
+  return {
+    ...file,
+    content,
+    updates: file.writePath ? null : { [file.dataKey]: content }
+  };
 }
 
 export const getObjectCodeLanguage = (filename: string): SupportedLanguage =>
