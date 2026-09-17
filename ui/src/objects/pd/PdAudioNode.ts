@@ -9,6 +9,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import { msg } from '$lib/objects/schemas/helpers';
+import { logger } from '$lib/utils/logger';
 import { isVFSPath, VirtualFilesystem } from '$lib/vfs';
 import { loadPdCodeBundle, loadPdFileBundle, loadPdUrlBundle, type PdFileBundle } from './pd-files';
 import { loadLibPd } from './libpd-loader';
@@ -17,6 +18,10 @@ import { analyzePdPatch, createPdWrapper, getPdHostReceiver, type PdPort } from 
 import { compilePdComments } from './pd-comments';
 
 const FULL_PACKAGES = ['vanilla', 'cyclone', 'else'];
+const LIBPD_SETUP_TRACE_PATTERN = /^(?:>>|<<) (?:setup_[a-zA-Z0-9_]+|[a-zA-Z0-9_]+_setup)$/;
+const IGNORED_COMPATIBILITY_WARNINGS = new Set(['Unsupported record', 'Unsupported #X record']);
+
+const isLibPdSetupTrace = (text: string) => LIBPD_SETUP_TRACE_PATTERN.test(text);
 
 const SetReceiver = msg('set', {
   key: Type.String(),
@@ -37,6 +42,7 @@ export type PdNodeData = {
   ports?: PdPort[];
   exposedPortIds?: string[];
   hasConfiguredPorts?: boolean;
+  showConsole?: boolean;
 };
 
 export type PdRuntimeStatus =
@@ -90,7 +96,8 @@ export class PdAudioNode implements AudioNodeV2 {
     sourceCode: null,
     ports: [],
     exposedPortIds: [],
-    hasConfiguredPorts: false
+    hasConfiguredPorts: false,
+    showConsole: false
   };
   private status: PdRuntimeStatus = { state: 'idle' };
   private loadedSourceCode = '';
@@ -124,7 +131,8 @@ export class PdAudioNode implements AudioNodeV2 {
       exposedPortIds: Array.isArray(binding.initialData.exposedPortIds)
         ? (binding.initialData.exposedPortIds as string[])
         : [],
-      hasConfiguredPorts: binding.initialData.hasConfiguredPorts === true
+      hasConfiguredPorts: binding.initialData.hasConfiguredPorts === true,
+      showConsole: binding.initialData.showConsole === true
     };
     this.loadedSourceCode = this.runtimeData.sourceCode ?? '';
   }
@@ -395,11 +403,11 @@ export class PdAudioNode implements AudioNodeV2 {
           source: source.value
         };
       } catch (error) {
-        console.debug('[pd] unable to resolve edited patch siblings; loading entry only', {
-          nodeId: this.nodeId,
-          path: this.runtimeData.vfsPath,
+        logger.nodeDebug(
+          this.nodeId,
+          `Unable to resolve sibling patches from ${this.runtimeData.vfsPath}; loading the entry only.`,
           error
-        });
+        );
       }
     }
 
@@ -417,6 +425,7 @@ export class PdAudioNode implements AudioNodeV2 {
   private async load(source: PdSource): Promise<void> {
     const token = ++this.loadToken;
     const sourceLabel = source.kind === 'code' ? 'inline Pd code' : source.value;
+    let reportedRuntimeError: unknown;
     this.setStatus({ state: 'loading', path: sourceLabel });
 
     try {
@@ -465,13 +474,12 @@ export class PdAudioNode implements AudioNodeV2 {
         files: compiledFiles,
         entry: bundle.entry
       });
+      const compatibilityWarnings = [
+        ...new Set(check.messages.filter((message) => !IGNORED_COMPATIBILITY_WARNINGS.has(message)))
+      ];
 
-      if (!check.ok) {
-        console.debug('[pd] compatibility check warnings', {
-          nodeId: this.nodeId,
-          source: sourceLabel,
-          messages: check.messages
-        });
+      if (compatibilityWarnings.length > 0) {
+        logger.nodeWarn(this.nodeId, 'Pd compatibility warnings:', ...compatibilityWarnings);
       }
 
       const pd = await library.createPd({
@@ -480,8 +488,15 @@ export class PdAudioNode implements AudioNodeV2 {
         entry,
         workletUrl: library.workletUrl,
         audioContext: this.audioContext,
-        onPrint: (text) => console.debug('[pd]', { nodeId: this.nodeId, text }),
-        onError: (error) => console.error('[pd]', { nodeId: this.nodeId, error })
+        onPrint: (text) => {
+          if (isLibPdSetupTrace(text)) return;
+
+          logger.nodeLog(this.nodeId, text);
+        },
+        onError: (error) => {
+          reportedRuntimeError = error;
+          logger.nodeError(this.nodeId, error);
+        }
       });
 
       if (token !== this.loadToken) {
@@ -510,11 +525,9 @@ export class PdAudioNode implements AudioNodeV2 {
       if (token !== this.loadToken) return;
 
       const message = error instanceof Error ? error.message : String(error);
-      console.error('[pd] unable to load patch', {
-        nodeId: this.nodeId,
-        source: sourceLabel,
-        error
-      });
+      if (error !== reportedRuntimeError) {
+        logger.nodeError(this.nodeId, `Unable to load ${sourceLabel}:`, error);
+      }
       this.setStatus({ state: 'error', path: sourceLabel, message });
     }
   }

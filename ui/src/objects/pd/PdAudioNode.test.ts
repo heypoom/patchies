@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Pd } from 'libpd-wasm';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 import { EmbeddedProvider, VirtualFilesystem } from '$lib/vfs';
 
 const { loadLibPd } = vi.hoisted(() => ({ loadLibPd: vi.fn() }));
@@ -110,6 +112,62 @@ describe('PdAudioNode', () => {
     expect(createPd).toHaveBeenCalledWith(
       expect.objectContaining({ files: { 'inline.pd': compiledCode } })
     );
+  });
+
+  it('routes libpd print and error callbacks to the node console only', async () => {
+    const pd = pdMock();
+    const events: ConsoleOutputEvent[] = [];
+    const eventBus = PatchiesEventBus.getInstance();
+    const handleConsoleOutput = (event: ConsoleOutputEvent) => {
+      if (event.nodeId === 'pd-console') events.push(event);
+    };
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const createPd = vi.fn(
+      async (options: { onPrint?: (text: string) => void; onError?: (error: Error) => void }) => {
+        options.onPrint?.('>> setup_canvas0x2emouse');
+        options.onPrint?.('<< setup_canvas0x2emouse');
+        options.onPrint?.('>> ceil_setup');
+        options.onPrint?.('<< ceil_setup');
+        options.onPrint?.('hello from Pd');
+        options.onError?.(new Error('Pd DSP failed'));
+
+        return pd;
+      }
+    );
+    loadLibPd.mockResolvedValue({
+      checkPatch: vi.fn(() => ({
+        ok: false,
+        messages: [
+          'Unsupported record',
+          'Unsupported #X record',
+          'Unsupported Pd objects: unavailable.'
+        ]
+      })),
+      createPd,
+      workletUrl: '/libpd-worklet-full.js'
+    });
+    const node = new PdAudioNode('pd-console', audioContextMock());
+    node.bindRuntimeData({ initialData: {}, update: vi.fn() });
+    eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+
+    try {
+      await node.setSourceCode('#N canvas 0 0 200 200 10;');
+      await vi.waitFor(() => expect(events).toHaveLength(3));
+
+      expect(events[0]).toMatchObject({
+        messageType: 'warn',
+        args: ['Pd compatibility warnings:', 'Unsupported Pd objects: unavailable.']
+      });
+      expect(events[1]).toMatchObject({ messageType: 'log', args: ['hello from Pd'] });
+      expect(events[2]).toMatchObject({ messageType: 'error' });
+      expect(events[2].args[0]).toEqual(new Error('Pd DSP failed'));
+      expect(debug).not.toHaveBeenCalled();
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+      vi.restoreAllMocks();
+    }
   });
 
   it('fetches and persists Pd patches loaded by URL', async () => {
