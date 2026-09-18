@@ -7,6 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/heypoom/patchies/server/remotecontrol"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
 )
@@ -62,6 +63,42 @@ func TestFrontendHandlerProxiesToVite(t *testing.T) {
 
 	if body := response.Body.String(); body != "/_app/immutable/start.js?version=1" {
 		t.Fatalf("proxied path = %q", body)
+	}
+}
+
+func TestRemoteControlRoutesDoNotReachFrontendProxy(t *testing.T) {
+	proxyCalls := 0
+	frontend := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		proxyCalls++
+		response.WriteHeader(http.StatusTeapot)
+	})
+	routes := router.NewRouter(func(response http.ResponseWriter, request *http.Request) (*core.RequestEvent, router.EventCleanupFunc) {
+		return &core.RequestEvent{Event: router.Event{Request: request, Response: response}}, nil
+	})
+	registerServerRoutes(routes, remotecontrol.NewHTTPHandler(remotecontrol.NewRelay()), frontend)
+
+	mux, err := routes.BuildMux()
+	if err != nil {
+		t.Fatalf("build route mux: %v", err)
+	}
+
+	request := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodGet,
+		"/api/remote-control/sessions/missing/browser/events",
+		nil,
+	)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
+	}
+	if body := response.Body.String(); body != "{\"code\":\"session_not_found\",\"message\":\"remote control session not found\"}\n" {
+		t.Fatalf("response body = %q", body)
+	}
+	if proxyCalls != 0 {
+		t.Fatalf("frontend proxy calls = %d, want 0", proxyCalls)
 	}
 }
 

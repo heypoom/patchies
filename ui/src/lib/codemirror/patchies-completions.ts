@@ -806,8 +806,13 @@ const NODE_SPECIFIC_FUNCTIONS: Record<string, string[]> = {
     'three.dom',
     'pixi',
     'pixi.dom',
+    'regl',
+    'swgl',
     'dom',
-    'vue'
+    'vue',
+    'tone~',
+    'sonic~',
+    'elem~'
   ],
   clock: [
     'js',

@@ -10,6 +10,7 @@ Pixi.js 8 runs in the web-worker render pipeline. Use it for 2D graphics that ch
 - loadExtensions(...names): await before using optional Pixi APIs, for example await loadExtensions('filters'). Use loadExtensions('all') for every worker-safe extension.
 
 **Rules:**
+- Almost always call setTitle() with a very short name describing the object, for example setTitle('Particles'). Prefer one or two words rather than a sentence.
 - Graphics is available by default.
 - Draw a shape before calling fill() or stroke(). For paths, chain moveTo()/lineTo()/arcTo() directly on Graphics; never call Graphics.path() without a GraphicsPath argument.
 - Define draw(time) for animation. Do not use requestAnimationFrame.
@@ -47,6 +48,8 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - onKeyDown(event => {}) / onKeyUp(event => {}): receive keyboard events while the Pixi canvas is focused. Events do not leak to the Patchies editor.
 
 **Rules:**
+- Almost always call setTitle() with a very short name describing the object, for example setTitle('Calculator'). Prefer one or two words rather than a sentence.
+- If the object is resizable by default and its background is neither transparent nor black, you must call noBorder(). All three conditions must hold; a colored shape on a transparent background alone does not require it.
 - Graphics is available by default.
 - Draw a shape before calling fill() or stroke(). For paths, chain moveTo()/lineTo()/arcTo() directly on Graphics; never call Graphics.path() without a GraphicsPath argument.
 - Define draw(time) for animation. Do not use requestAnimationFrame.

@@ -2,7 +2,10 @@ module github.com/heypoom/patchies/server
 
 go 1.26.0
 
-require github.com/pocketbase/pocketbase v0.39.11
+require (
+	github.com/labstack/echo/v5 v5.3.1
+	github.com/pocketbase/pocketbase v0.39.11
+)
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
