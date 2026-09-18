@@ -218,6 +218,20 @@
     }
   });
 
+  $effect(() => {
+    const currentFontFamily = fontFamily;
+    if (!editor) return;
+
+    editor.setFontFamily(currentFontFamily);
+  });
+
+  $effect(() => {
+    const currentFontSize = fontSize;
+    if (!editor) return;
+
+    editor.setFontSize(currentFontSize);
+  });
+
   onDestroy(() => {
     editor?.stop();
   });

@@ -9,6 +9,7 @@
     borderColorClass = '',
     labelColorClass = 'text-zinc-200',
     channelColorClass = 'text-zinc-400',
+    fontFamily = 'var(--font-mono)',
     onChannelChange,
     inlets,
     outlets
@@ -19,6 +20,7 @@
     borderColorClass?: string;
     labelColorClass?: string;
     channelColorClass?: string;
+    fontFamily?: string;
     onChannelChange: (newChannel: string) => void;
     inlets?: Snippet;
     outlets?: Snippet;
@@ -68,7 +70,7 @@
   });
 </script>
 
-<div class="relative">
+<div class="relative" style:--patchies-object-common-font-family={fontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="relative">
@@ -83,7 +85,7 @@
                 onblur={handleBlur}
                 onkeydown={handleKeydown}
                 placeholder="channel"
-                class="nodrag bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
+                class="object-common-font nodrag bg-transparent px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 outline-none"
               />
             </div>
           {:else}
@@ -95,7 +97,7 @@
               tabindex="0"
               onkeydown={(e) => e.key === 'Enter' && enterEditingMode()}
             >
-              <div class="flex items-center gap-1.5 font-mono text-xs">
+              <div class="object-common-font flex items-center gap-1.5 text-xs">
                 <span class={labelColorClass}>{nodeLabel}</span>
                 <span class={channelColorClass}>{channel}</span>
               </div>
@@ -108,3 +110,9 @@
     </div>
   </div>
 </div>
+
+<style>
+  .object-common-font {
+    font-family: var(--patchies-object-common-font-family, var(--font-mono));
+  }
+</style>

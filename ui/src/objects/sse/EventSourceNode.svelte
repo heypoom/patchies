@@ -9,6 +9,7 @@
   import { match } from 'ts-pattern';
   import { sseMessages } from '$objects/sse/schema';
   import { useNodeDataTracker } from '$lib/history';
+  import { editorFontFamily } from '../../stores/editor.store';
 
   export type EventSourceNodeData = {
     url: string;
@@ -133,7 +134,7 @@
   }
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex gap-x-3" style:--patchies-sse-node-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -176,7 +177,7 @@
         >
           <div class="flex items-center gap-2">
             <Rss class="h-3 w-3 text-zinc-400" />
-            <span class="font-mono text-xs text-zinc-300">sse</span>
+            <span class="sse-node-font text-xs text-zinc-300">sse</span>
           </div>
         </button>
       </div>
@@ -267,3 +268,9 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .sse-node-font {
+    font-family: var(--patchies-sse-node-font-family, var(--font-mono));
+  }
+</style>

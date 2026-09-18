@@ -9,6 +9,7 @@
   import { mqttMessages } from '$objects/mqtt/schema';
   import type { MqttClient } from 'mqtt';
   import { useNodeDataTracker } from '$lib/history';
+  import { editorFontFamily } from '../../stores/editor.store';
 
   export type MqttNodeData = {
     topics: string[];
@@ -326,7 +327,7 @@
   }
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex gap-x-3" style:--patchies-mqtt-node-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -367,7 +368,7 @@
               <Radio class="h-4 w-4 text-zinc-500" />
             </div>
 
-            <div class="font-mono text-xs text-zinc-300">mqtt</div>
+            <div class="mqtt-node-font text-xs text-zinc-300">mqtt</div>
           </div>
         </button>
 
@@ -472,7 +473,7 @@
             <!-- Topic list -->
             {#if (data.topics ?? []).length > 0}
               <div class="mb-2 space-y-1">
-                {#each data.topics ?? [] as topic}
+                {#each data.topics ?? [] as topic (topic)}
                   <div
                     class="flex items-center justify-between rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
                   >
@@ -550,3 +551,9 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .mqtt-node-font {
+    font-family: var(--patchies-mqtt-node-font-family, var(--font-mono));
+  }
+</style>

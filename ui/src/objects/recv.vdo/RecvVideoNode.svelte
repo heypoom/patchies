@@ -7,6 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
+  import { editorFontFamily } from '../../stores/editor.store';
 
   let node: {
     id: string;
@@ -54,6 +55,7 @@
   {nodeLabel}
   {channel}
   selected={node.selected}
+  fontFamily={$editorFontFamily}
   onChannelChange={handleChannelChange}
 >
   {#snippet inlets()}

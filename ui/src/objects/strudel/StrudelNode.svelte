@@ -26,7 +26,11 @@
     openDetachedStrudelEditor
   } from '../../stores/detached-strudel-editor.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
-  import { editorFullscreenTextBackgroundOpacity } from '../../stores/editor.store';
+  import {
+    editorFontFamily,
+    editorFontSize,
+    editorFullscreenTextBackgroundOpacity
+  } from '../../stores/editor.store';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
   import {
     getExpandedDismissShortcutLabel,
@@ -71,6 +75,8 @@
   let menuOpen = $state(false);
 
   const code = $derived(data.code || '');
+  const fontFamily = $derived(data.fontFamily ?? $editorFontFamily);
+  const fontSize = $derived(data.fontSize ?? $editorFontSize);
   const dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
   const customConsole = createCustomConsole(initialNodeId());
 
@@ -504,8 +510,8 @@
           >
             <StrudelEditor
               {code}
-              fontFamily={data.fontFamily}
-              fontSize={data.fontSize}
+              {fontFamily}
+              {fontSize}
               bind:this={strudelEditor}
               onUpdateState={handleUpdateState}
               onBeforeEvaluate={() => {

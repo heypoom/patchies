@@ -17,6 +17,7 @@
     parseVdoNinjaParams
   } from '$objects/vdo-ninja/VdoNinjaParamsInput.svelte';
   import { useNodeDataTracker } from '$lib/history';
+  import { editorFontFamily } from '../../stores/editor.store';
 
   export type VdoNinjaNodeData = {
     room?: string;
@@ -544,7 +545,7 @@
   });
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex gap-x-3" style:--patchies-vdo-ninja-push-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -607,7 +608,7 @@
               <Video class="h-4 w-4 text-zinc-500" />
             </div>
 
-            <div class="font-mono text-xs text-zinc-300">vdo.ninja.push</div>
+            <div class="vdo-ninja-push-font text-xs text-zinc-300">vdo.ninja.push</div>
           </div>
         </button>
 
@@ -858,3 +859,9 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .vdo-ninja-push-font {
+    font-family: var(--patchies-vdo-ninja-push-font-family, var(--font-mono));
+  }
+</style>

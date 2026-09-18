@@ -9,6 +9,7 @@
   import { P2PManager, type P2PMessageHandler } from '$lib/p2p/P2PManager';
   import { match } from 'ts-pattern';
   import { netrecvMessages } from '$objects/netrecv/schema';
+  import { editorFontFamily } from '../../stores/editor.store';
 
   let {
     id: nodeId,
@@ -103,6 +104,7 @@
   {selected}
   {borderColorClass}
   {labelColorClass}
+  fontFamily={$editorFontFamily}
   onChannelChange={handleChannelChange}
 >
   {#snippet inlets()}

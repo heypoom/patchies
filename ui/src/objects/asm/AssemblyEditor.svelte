@@ -14,6 +14,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { insertNewline } from '@codemirror/commands';
   import { completionOrIndentKeymap } from '$lib/codemirror/editor-keymap';
+  import { editorFontFamily } from '../../stores/editor.store';
 
   interface Props {
     value: string;
@@ -141,12 +142,15 @@
         EditorView.theme({
           '&': {
             fontSize: '13px',
-            fontFamily: 'var(--font-mono)'
+            fontFamily: 'var(--patchies-assembly-editor-font-family, var(--font-mono))'
           },
           '.cm-content': {
             padding: '0px',
             minHeight: '50px',
             maxHeight: '300px'
+          },
+          '.cm-scroller': {
+            fontFamily: 'inherit'
           },
           '.cm-focused': {
             outline: 'none'
@@ -218,10 +222,11 @@
   bind:this={editorContainer}
   class="assembly-editor nodrag nopan nowheel overflow-visible"
   class:cursor-not-allowed={readonly}
+  style:--patchies-assembly-editor-font-family={$editorFontFamily}
   onkeydown={handleKeydown}
 >
   {#if !editorContainer}
-    <div class="p-4 font-mono text-sm text-zinc-400">
+    <div class="assembly-editor-placeholder p-4 text-sm text-zinc-400">
       {placeholder}
     </div>
   {/if}
@@ -229,7 +234,11 @@
 
 <style>
   .assembly-editor {
-    --cm-font-family: var(--font-mono);
+    --cm-font-family: var(--patchies-assembly-editor-font-family, var(--font-mono));
+  }
+
+  .assembly-editor-placeholder {
+    font-family: var(--patchies-assembly-editor-font-family, var(--font-mono));
   }
 
   /* Background color overrides to match CodeEditor.svelte */

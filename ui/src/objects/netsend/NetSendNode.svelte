@@ -9,6 +9,7 @@
   import { P2PManager } from '$lib/p2p/P2PManager';
   import { match } from 'ts-pattern';
   import { netsendMessages } from '$objects/netsend/schema';
+  import { editorFontFamily } from '../../stores/editor.store';
 
   let {
     id: nodeId,
@@ -89,6 +90,7 @@
   {selected}
   {borderColorClass}
   {labelColorClass}
+  fontFamily={$editorFontFamily}
   onChannelChange={handleChannelChange}
 >
   {#snippet inlets()}
