@@ -29,6 +29,7 @@
     openDetachedOrcaEditor
   } from '../../stores/detached-orca-editor.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
+  import { editorFullscreenTextBackgroundOpacity } from '../../stores/editor.store';
   import { screenToOrcaGridCell } from '$lib/orca/pointer';
   import { fillOrcaSelection, getOrcaSelectionBounds } from '$lib/orca/selection';
   import {
@@ -37,7 +38,8 @@
     getOrcaColors,
     getOrcaDisplayFontSize,
     getOrcaDisplayForegroundMode,
-    getOrcaFullscreenOverlayBackground
+    getOrcaFullscreenOverlayBackground,
+    getOrcaFullscreenTextBackgrounds
   } from '$lib/orca/layout';
   import type { OrcaForegroundMode } from '$lib/orca/layout';
   import {
@@ -121,6 +123,9 @@
   );
   const fullscreenOverlayBackground = $derived(
     getOrcaFullscreenOverlayBackground($overlayEditorTransparency)
+  );
+  const fullscreenTextBackgrounds = $derived(
+    getOrcaFullscreenTextBackgrounds($editorFullscreenTextBackgroundOpacity)
   );
   const displayForegroundMode = $derived(
     getOrcaDisplayForegroundMode({
@@ -600,7 +605,9 @@
       showInterface,
       showGuide,
       selection,
-      canvasBackground
+      canvasBackground,
+      isDetached ? fullscreenTextBackgrounds.content : undefined,
+      isDetached ? fullscreenTextBackgrounds.subdued : undefined
     );
   }
 

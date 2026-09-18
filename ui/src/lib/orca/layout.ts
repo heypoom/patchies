@@ -1,4 +1,5 @@
 export const DEFAULT_ORCA_FULLSCREEN_FONT_SIZE = 2.7;
+const ORCA_SUBDUED_TEXT_BACKGROUND_OPACITY_FACTOR = 0.3;
 
 export type OrcaForegroundMode = 'dark' | 'light';
 
@@ -83,6 +84,20 @@ export function getOrcaPortForeground(colors: OrcaColors, portType: number): str
 
 export function getOrcaFullscreenOverlayBackground(transparency: number): string {
   return `rgba(0, 0, 0, ${transparency})`;
+}
+
+export function getOrcaFullscreenTextBackgrounds(opacity: number): {
+  content: string;
+  subdued: string;
+} {
+  const contentAlpha = Math.min(100, Math.max(0, opacity)) / 100;
+  const subduedAlpha =
+    Math.round(contentAlpha * ORCA_SUBDUED_TEXT_BACKGROUND_OPACITY_FACTOR * 1000) / 1000;
+
+  return {
+    content: `rgba(9, 9, 11, ${contentAlpha})`,
+    subdued: `rgba(9, 9, 11, ${subduedAlpha})`
+  };
 }
 
 export function getOrcaCanvasBackground(background: string): string {

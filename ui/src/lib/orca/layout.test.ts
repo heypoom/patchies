@@ -7,6 +7,7 @@ import {
   getOrcaDisplayFontSize,
   getOrcaDisplayForegroundMode,
   getOrcaFullscreenOverlayBackground,
+  getOrcaFullscreenTextBackgrounds,
   getOrcaPortForeground
 } from './layout';
 
@@ -31,6 +32,15 @@ describe('getOrcaDisplayFontSize', () => {
 describe('getOrcaFullscreenOverlayBackground', () => {
   it('uses black with the shared overlay transparency value', () => {
     expect(getOrcaFullscreenOverlayBackground(0.45)).toBe('rgba(0, 0, 0, 0.45)');
+  });
+});
+
+describe('getOrcaFullscreenTextBackgrounds', () => {
+  it('keeps content at the configured opacity and makes secondary text much lighter', () => {
+    expect(getOrcaFullscreenTextBackgrounds(70)).toEqual({
+      content: 'rgba(9, 9, 11, 0.7)',
+      subdued: 'rgba(9, 9, 11, 0.21)'
+    });
   });
 });
 

@@ -8,7 +8,14 @@
  */
 
 import type { Orca } from './Orca';
+
 import { getOrcaPortForeground, type OrcaColors } from './layout';
+
+// Local markers: smaller grid markers (every 4 cells) near cursor
+const LOCAL_GRID_SIZE = 4;
+
+// Markers appear at 8x8 grid intervals (matching original Orca)
+const MARKER_GRID_SIZE = 8;
 
 export class OrcaRenderer {
   private orca: Orca;
@@ -39,13 +46,16 @@ export class OrcaRenderer {
 
     this.tileW = 10 * fontScale;
     this.tileH = 15 * fontScale;
+
     this.tileWS = Math.floor(this.tileW * this.scale);
     this.tileHS = Math.floor(this.tileH * this.scale);
 
     const ctx = canvas.getContext('2d');
+
     if (!ctx) {
       throw new Error('Could not get 2D context from canvas');
     }
+
     this.ctx = ctx;
   }
 
@@ -62,10 +72,13 @@ export class OrcaRenderer {
   }
 
   findPorts(): void {
-    this.ports = new Array(this.orca.w * this.orca.h - 1);
+    this.ports = Array.from({ length: this.orca.w * this.orca.h - 1 });
+
     for (const operator of this.orca.runtime) {
       if (this.orca.lockAt(operator.x, operator.y)) continue;
+
       const operatorPorts = operator.getPorts();
+
       for (const port of operatorPorts) {
         const index = this.orca.indexAt(port[0], port[1]);
         this.ports[index] = port;
@@ -74,9 +87,7 @@ export class OrcaRenderer {
   }
 
   isMarker(x: number, y: number): boolean {
-    // Markers appear at 8x8 grid intervals (matching original Orca)
-    const gridSize = 8;
-    return x % gridSize === 0 && y % gridSize === 0;
+    return x % MARKER_GRID_SIZE === 0 && y % MARKER_GRID_SIZE === 0;
   }
 
   isNear(x: number, y: number, cursorX: number, cursorY: number): boolean {
@@ -86,14 +97,13 @@ export class OrcaRenderer {
     const cursorGridY = Math.floor(cursorY / gridSize);
     const cellGridX = Math.floor(x / gridSize);
     const cellGridY = Math.floor(y / gridSize);
+
     return cellGridX === cursorGridX && cellGridY === cursorGridY;
   }
 
   isLocals(x: number, y: number, cursorX: number, cursorY: number): boolean {
-    // Local markers: smaller grid markers (every 4 cells) near cursor
-    const localGridSize = 4;
     return (
-      this.isNear(x, y, cursorX, cursorY) && x % localGridSize === 0 && y % localGridSize === 0
+      this.isNear(x, y, cursorX, cursorY) && x % LOCAL_GRID_SIZE === 0 && y % LOCAL_GRID_SIZE === 0
     );
   }
 
@@ -118,15 +128,28 @@ export class OrcaRenderer {
     offsetX: number,
     offsetY: number,
     limit: number = 50,
-    colorType: keyof OrcaColors = 'f_low'
+    colorType: keyof OrcaColors = 'f_low',
+    background?: string
   ): void {
     if (!this.ctx) return;
 
     const color = this.colors[colorType] || this.colors.f_low;
-    this.ctx.fillStyle = color;
 
     for (let x = 0; x < text.length && x < limit; x++) {
       const char = text.charAt(x);
+
+      if (background) {
+        this.ctx.fillStyle = background;
+
+        this.ctx.fillRect(
+          (offsetX + x) * this.tileWS,
+          offsetY * this.tileHS,
+          this.tileWS,
+          this.tileHS
+        );
+      }
+
+      this.ctx.fillStyle = color;
       this.ctx.fillText(char, (offsetX + x + 0.5) * this.tileWS, (offsetY + 1) * this.tileHS);
     }
   }
@@ -136,7 +159,8 @@ export class OrcaRenderer {
     cursorY: number,
     isPaused: boolean,
     selectionW: number,
-    selectionH: number
+    selectionH: number,
+    textBackground?: string
   ): void {
     if (!this.ctx) return;
 
@@ -145,13 +169,16 @@ export class OrcaRenderer {
 
     // Get operator info at cursor (matching original Orca's cursor.inspect())
     let operatorInfo = '';
+
     if (selectionW !== 0 || selectionH !== 0) {
       operatorInfo = 'multi';
     } else {
       const index = this.orca.indexAt(cursorX, cursorY);
       const port = this.ports[index];
+
       if (port) {
-        operatorInfo = port[3]; // Port name (e.g., "Random", "Uclid")
+        // Port name (e.g., "Random", "Uclid")
+        operatorInfo = port[3];
       } else if (this.orca.lockAt(cursorX, cursorY)) {
         operatorInfo = 'locked';
       } else {
@@ -164,33 +191,41 @@ export class OrcaRenderer {
     const spaceBy = 2;
 
     // Operator info (e.g., "empty", "Random", "multi")
-    this.write(operatorInfo, currentX, interfaceY, operatorInfo.length + 1, 'f_med');
+    this.write(
+      operatorInfo,
+      currentX,
+      interfaceY,
+      operatorInfo.length + 1,
+      'f_med',
+      textBackground
+    );
+
     currentX += operatorInfo.length + spaceBy; // Move cursor position for next element
 
     // Position (e.g., "10,7")
     const positionStr = `${cursorX},${cursorY}`;
-    this.write(positionStr, currentX, interfaceY, positionStr.length + 1, 'f_low');
+    this.write(positionStr, currentX, interfaceY, positionStr.length + 1, 'f_low', textBackground);
     currentX += positionStr.length + spaceBy;
 
     // Grid size (e.g., "32:16")
     const gridSizeStr = `${this.orca.w}:${this.orca.h}`;
-    this.write(gridSizeStr, currentX, interfaceY, gridSizeStr.length + 1, 'f_low');
+    this.write(gridSizeStr, currentX, interfaceY, gridSizeStr.length + 1, 'f_low', textBackground);
     currentX += gridSizeStr.length + spaceBy;
 
     // Frame count (e.g., "27f" or "27f~")
     const frameStr = `${this.orca.f}f${isPaused ? '~' : ''}`;
-    this.write(frameStr, currentX, interfaceY, frameStr.length + 1, 'f_med');
+    this.write(frameStr, currentX, interfaceY, frameStr.length + 1, 'f_med', textBackground);
     currentX += frameStr.length + spaceBy;
 
     // Show variables if any (on same line, to the right)
     const varKeys = Object.keys(this.orca.variables);
     if (varKeys.length > 0) {
       const varsStr = varKeys.join('');
-      this.write(varsStr, currentX, interfaceY, varsStr.length + 1, 'f_high');
+      this.write(varsStr, currentX, interfaceY, varsStr.length + 1, 'f_high', textBackground);
     }
   }
 
-  drawGuide(): void {
+  drawGuide(textBackground?: string): void {
     if (!this.ctx) return;
 
     // Get all operator keys (excluding numbers)
@@ -199,20 +234,21 @@ export class OrcaRenderer {
 
     for (let id = 0; id < operators.length; id++) {
       const key = operators[id];
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const OpClass = this.orca.getLibrary()[key] as any;
-      if (!OpClass) continue;
+      const OperatorClass = this.orca.getLibrary()[key] as any;
+      if (!OperatorClass) continue;
 
       // Create a temporary instance to get info
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tempOp = new OpClass(this.orca, 0, 0, key, false) as any;
-      const text = tempOp.info || tempOp.name;
+      const tempOperator = new OperatorClass(this.orca, 0, 0, key, false) as any;
+      const text = tempOperator.info || tempOperator.name;
 
       const x = Math.floor(id / frame) * 32 + 2;
       const y = (id % frame) + 2;
 
-      this.write(key, x, y, 99, 'b_high');
-      this.write(text, x + 2, y, 99, 'f_low');
+      this.write(key, x, y, 99, 'b_high', textBackground);
+      this.write(text, x + 2, y, 99, 'f_low', textBackground);
     }
   }
 
@@ -223,7 +259,9 @@ export class OrcaRenderer {
     showInterface: boolean = false,
     showGuide: boolean = false,
     selection?: { x: number; y: number; w: number; h: number },
-    background: string = this.colors.background
+    background: string = this.colors.background,
+    textBackground?: string,
+    subduedTextBackground?: string
   ): void {
     // Update ports map
     this.findPorts();
@@ -258,6 +296,7 @@ export class OrcaRenderer {
       selMinY = cursorY,
       selMaxX = cursorX,
       selMaxY = cursorY;
+
     if (selection && (selection.w !== 0 || selection.h !== 0)) {
       selMinX = selection.x < selection.x + selection.w ? selection.x : selection.x + selection.w;
       selMinY = selection.y < selection.y + selection.h ? selection.y : selection.y + selection.h;
@@ -295,19 +334,29 @@ export class OrcaRenderer {
           port,
           cursorX,
           cursorY,
-          isSelected
+          isSelected,
+          textBackground,
+          subduedTextBackground
         );
       }
     }
 
     // Draw optional overlays
     if (showGuide) {
-      this.drawGuide();
+      this.drawGuide(textBackground);
     }
+
     if (showInterface) {
       const selW = selection ? selection.w : 0;
       const selH = selection ? selection.h : 0;
-      this.drawInterface(cursorX, cursorY, isPaused, selW, selH);
+      this.drawInterface(
+        cursorX,
+        cursorY,
+        isPaused,
+        selW,
+        selH,
+        subduedTextBackground ?? textBackground
+      );
     }
   }
 
@@ -321,10 +370,13 @@ export class OrcaRenderer {
     port?: [number, number, number, string],
     cursorX?: number,
     cursorY?: number,
-    isSelected?: boolean
+    isSelected?: boolean,
+    textBackground?: string,
+    subduedTextBackground?: string
   ): void {
     // Determine what to display
     let displayGlyph = glyph;
+
     if (glyph === '.') {
       if (isCursor) {
         displayGlyph = isPaused ? '~' : '@';
@@ -345,8 +397,11 @@ export class OrcaRenderer {
     const theme = this.makeTheme(glyph, isCursor, isLocked, port, isSelected);
 
     // Draw background if present
-    if (theme.bg) {
-      this.ctx.fillStyle = theme.bg;
+    const background =
+      theme.bg ?? (glyph === '.' ? (subduedTextBackground ?? textBackground) : textBackground);
+
+    if (background) {
+      this.ctx.fillStyle = background;
       this.ctx.fillRect(x * this.tileWS, y * this.tileHS, this.tileWS, this.tileHS);
     }
 

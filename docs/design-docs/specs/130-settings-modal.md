@@ -84,7 +84,7 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 | Node opacity | Slider (0–100%) | `appearance.nodeOpacity` | Global canvas presentation control; defaults to 100%. |
 | Edge opacity | Slider (0–100%) | `appearance.edgeOpacity` | Global canvas presentation control; defaults to 100%. |
 | Preview background | Color + transparent option | `previewBackgroundColor` (renderer.store) | Per-user; transparent by default; applied as CSS behind preview canvases. The in-app picker updates the live setting while its controls are adjusted. |
-| Text background overlay opacity | Slider (0–100%) | `editor.fullscreenTextBackgroundOpacity` | Applies a contrast background behind text in expanded editors. |
+| Text background overlay opacity | Slider (0–100%) | `editor.fullscreenTextBackgroundOpacity` | Applies a contrast background behind text in expanded CodeMirror, Strudel, and Orca editors. |
 | Overlay transparency | Slider (0–100%) | `editor.overlayTransparency` | Adjusts the Zen editor panel background opacity. |
 
 **Editor**
