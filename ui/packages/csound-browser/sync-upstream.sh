@@ -1,84 +1,46 @@
-#!/bin/bash
-# Sync @csound/browser fork with upstream
-# Usage: ./sync-upstream.sh
+#!/usr/bin/env bash
+# Sync the vendored @csound/browser package with upstream's develop branch.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-UPSTREAM_DIR="$SCRIPT_DIR/../../../.references/csound/wasm/browser"
+REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+UPSTREAM_REPOSITORY="$REPOSITORY_ROOT/.references/csound"
+UPSTREAM_DIR="$UPSTREAM_REPOSITORY/wasm/browser"
 
-echo "=== Syncing @csound/browser fork with upstream ==="
-
-# Check if upstream exists
-if [ ! -d "$UPSTREAM_DIR" ]; then
-  echo "❌ Upstream not found at: $UPSTREAM_DIR"
-  echo "   Clone it first: git clone https://github.com/csound/csound.git .references/csound"
-  exit 1
+if [ ! -d "$UPSTREAM_REPOSITORY/.git" ]; then
+  mkdir -p "$(dirname "$UPSTREAM_REPOSITORY")"
+  git clone --filter=blob:none https://github.com/csound/csound.git "$UPSTREAM_REPOSITORY"
 fi
 
-# Show upstream version
-echo "📦 Upstream version:"
-grep '"version"' "$UPSTREAM_DIR/package.json" | head -1
+echo "Fetching upstream Csound develop branch..."
+git -C "$UPSTREAM_REPOSITORY" fetch origin develop
+git -C "$UPSTREAM_REPOSITORY" checkout --detach origin/develop
 
-echo ""
-echo "📦 Current fork version:"
-grep '"version"' "$SCRIPT_DIR/package.json" | head -1
+UPSTREAM_COMMIT="$(git -C "$UPSTREAM_REPOSITORY" rev-parse HEAD)"
+UPSTREAM_VERSION="$(node -p "require('$UPSTREAM_DIR/package.json').version")"
 
-echo ""
-read -p "Continue with sync? (y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "Aborted."
-  exit 0
-fi
-
-# Backup current patches (the modified files)
-echo ""
-echo "📋 Backing up current patches..."
-mkdir -p "$SCRIPT_DIR/.patch-backup"
-cp "$SCRIPT_DIR/src/workers/worklet.singlethread.worker.js" "$SCRIPT_DIR/.patch-backup/"
-cp "$SCRIPT_DIR/src/mains/worklet.singlethread.main.js" "$SCRIPT_DIR/.patch-backup/"
-
-# Copy fresh source from upstream
-echo "📥 Copying fresh source from upstream..."
-rsync -av --delete \
+echo "Syncing @csound/browser $UPSTREAM_VERSION from $UPSTREAM_COMMIT..."
+rsync -a --delete \
+  --exclude='examples' \
   --exclude='tests' \
   --exclude='node_modules' \
   --exclude='dist' \
-  --exclude='.patch-backup' \
+  --exclude='PATCHES.md' \
+  --exclude='UPSTREAM_COMMIT' \
   --exclude='sync-upstream.sh' \
   "$UPSTREAM_DIR/" "$SCRIPT_DIR/"
 
-echo ""
-echo "🔧 Re-applying patches..."
-echo "   You need to manually re-apply the patches."
-echo ""
-echo "   Patches to apply:"
-echo "   1. src/workers/worklet.singlethread.worker.js"
-echo "      - Move module globals to instance properties"
-echo "      - See .patch-backup for reference"
-echo ""
-echo "   2. src/mains/worklet.singlethread.main.js"
-echo "      - Don't close AudioContext in terminateInstance()"
-echo "      - See .patch-backup for reference"
-echo ""
-echo "   Backup files are in: $SCRIPT_DIR/.patch-backup/"
-echo ""
-read -p "Press enter when patches are applied..."
+printf '%s\n' "$UPSTREAM_COMMIT" > "$SCRIPT_DIR/UPSTREAM_COMMIT"
 
-# Rebuild
-echo ""
-echo "🔨 Installing dependencies..."
-cd "$SCRIPT_DIR"
-yarn install
+echo "Installing @csound/browser dependencies..."
+npm --prefix "$SCRIPT_DIR" ci
 
-echo ""
-echo "🔨 Building..."
-yarn build:prod
+echo "Building @csound/browser..."
+if command -v mise >/dev/null 2>&1; then
+  mise exec java@temurin-21 -- npm --prefix "$SCRIPT_DIR" run build:prod
+else
+  npm --prefix "$SCRIPT_DIR" run build:prod
+fi
 
-echo ""
-echo "✅ Sync complete!"
-echo ""
-echo "Next steps:"
-echo "  1. Test the changes: cd ../.. && bun run dev"
-echo "  2. Commit: git add packages/csound-browser && git commit -m 'chore: sync csound-browser fork'"
+echo "Synced @csound/browser $UPSTREAM_VERSION from $UPSTREAM_COMMIT."

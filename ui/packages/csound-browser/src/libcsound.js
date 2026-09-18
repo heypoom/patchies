@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {
   csoundCreate,
   csoundDestroy,
@@ -13,6 +28,7 @@ import {
   csoundStart,
   csoundCompileCSD,
   csoundPerformKsmps,
+  csoundSetDebugCallbackWasi,
   csoundStop,
   csoundReset,
 } from "./modules/performance";
@@ -34,18 +50,26 @@ import {
   csoundGetDebug,
   csoundSetDebug,
 } from "./modules/attributes";
-import { csoundGetSpin, csoundGetSpout } from "./modules/rtaudio";
+import {
+  csoundGetSpin,
+  csoundGetSpout,
+  isRequestingRtAudioInput,
+  _isRequestingRtAudioInput,
+} from "./modules/rtaudio";
 import {
   csoundGetMIDIDevList,
   csoundSetMidiCallbacks,
   csoundGetRtMidiName,
   csoundGetMidiOutFileName,
   csoundPushMidiMessage,
+  isRequestingRtMidiInput,
   _isRequestingRtMidiInput,
 } from "./modules/rtmidi";
+import { getRequestedPlugins, isRequestingPlugins } from "./modules/plugins";
 import {
   csoundInputMessage,
   csoundInputMessageAsync,
+  csoundReadlinePushText,
   csoundGetControlChannel,
   csoundSetControlChannel,
   csoundGetStringChannel,
@@ -69,6 +93,49 @@ import {
   csoundGetTable,
   csoundGetTableArgs,
 } from "./modules/table";
+import {
+  UGEN_ARG_TYPE,
+  csoundUgenFactoryNew,
+  csoundUgenFactoryDelete,
+  csoundUgenContextNew,
+  csoundUgenContextDelete,
+  csoundUgenSetContext,
+  csoundUgenNew,
+  csoundUgenDelete,
+  csoundUgenGetOutVar,
+  csoundUgenGetInVar,
+  csoundUgenSetInputVar,
+  csoundUgenVarNew,
+  csoundUgenVarDelete,
+  csoundUgenVarGetType,
+  csoundUgenVarGetSize,
+  csoundUgenVarSetValue,
+  csoundUgenVarGetValue,
+  csoundUgenVarGetData,
+  csoundUgenVarGetDataAsFloat64Array,
+  csoundUgenVarGetKsmps,
+  csoundUgenVarSetString,
+  csoundUgenVarGetString,
+  csoundUgenSetValue,
+  csoundUgenGetValue,
+  csoundUgenSetString,
+  csoundUgenGetString,
+  csoundUgenGetInCount,
+  csoundUgenGetOutCount,
+  csoundUgenGetInType,
+  csoundUgenGetOutType,
+  csoundUgenInit,
+  csoundUgenPerform,
+  csoundUgenListOpcodes,
+  csoundUgenFindOpcode,
+  csoundUgenGraphNew,
+  csoundUgenGraphAdd,
+  csoundUgenGraphInit,
+  csoundUgenGraphPerform,
+  csoundUgenGraphDelete,
+  csoundUgenGraphDeleteAll,
+  csoundUgenVarGetFloat64Array,
+} from "./modules/ugen";
 import fs from "./filesystem/worker-fs";
 
 goog.declareModuleId("libcsound");
@@ -98,6 +165,7 @@ export const api = {
   csoundStart,
   csoundCompileCSD,
   csoundPerformKsmps,
+  csoundSetDebugCallbackWasi,
   csoundStop,
   csoundReset,
   // @module/attributes
@@ -113,21 +181,30 @@ export const api = {
   csoundGetCurrentTimeSamples,
   csoundGetSizeOfMYFLT,
   csoundSetOption,
+  csoundSetParams,
+  csoundGetParams,
   csoundGetDebug,
   csoundSetDebug,
   // @module/rtaudio
   csoundGetSpin,
   csoundGetSpout,
+  isRequestingRtAudioInput,
+  _isRequestingRtAudioInput,
   // @module/rtmidi
   csoundGetMIDIDevList,
   csoundSetMidiCallbacks,
   csoundGetRtMidiName,
   csoundGetMidiOutFileName,
   csoundPushMidiMessage,
+  isRequestingRtMidiInput,
   _isRequestingRtMidiInput,
+  // @module/plugins
+  isRequestingPlugins,
+  getRequestedPlugins,
   // @module/control_events
   csoundInputMessage,
   csoundInputMessageAsync,
+  csoundReadlinePushText,
   csoundGetControlChannel,
   csoundSetControlChannel,
   csoundGetStringChannel,
@@ -152,12 +229,55 @@ export const api = {
   csoundTableCopyOut,
   csoundGetTable,
   csoundGetTableArgs,
+  // @module/ugen
+  UGEN_ARG_TYPE,
+  csoundUgenFactoryNew,
+  csoundUgenFactoryDelete,
+  csoundUgenContextNew,
+  csoundUgenContextDelete,
+  csoundUgenSetContext,
+  csoundUgenNew,
+  csoundUgenDelete,
+  csoundUgenGetOutVar,
+  csoundUgenGetInVar,
+  csoundUgenSetInputVar,
+  csoundUgenVarNew,
+  csoundUgenVarDelete,
+  csoundUgenVarGetType,
+  csoundUgenVarGetSize,
+  csoundUgenVarSetValue,
+  csoundUgenVarGetValue,
+  csoundUgenVarGetData,
+  csoundUgenVarGetDataAsFloat64Array,
+  csoundUgenVarGetKsmps,
+  csoundUgenVarSetString,
+  csoundUgenVarGetString,
+  csoundUgenSetValue,
+  csoundUgenGetValue,
+  csoundUgenSetString,
+  csoundUgenGetString,
+  csoundUgenGetInCount,
+  csoundUgenGetOutCount,
+  csoundUgenGetInType,
+  csoundUgenGetOutType,
+  csoundUgenInit,
+  csoundUgenPerform,
+  csoundUgenListOpcodes,
+  csoundUgenFindOpcode,
+  csoundUgenGraphNew,
+  csoundUgenGraphAdd,
+  csoundUgenGraphInit,
+  csoundUgenGraphPerform,
+  csoundUgenGraphDelete,
+  csoundUgenGraphDeleteAll,
+  csoundUgenVarGetFloat64Array,
   // filesystem
   fs,
 };
 
-export default function (wasm) {
-  const { fs: apiFs, ...apiRest } = api;
+export default function createLibcsound(wasm) {
+  /** @suppress {missingProperties} */
+  const { fs: apiFs, UGEN_ARG_TYPE: ugenArgType, ...apiRest } = api;
 
   return {
     ...Object.keys(apiRest).reduce((accumulator, k) => {
@@ -168,5 +288,6 @@ export default function (wasm) {
       accumulator[k] = apiFs[k](wasm);
       return accumulator;
     }, {}),
+    UGEN_ARG_TYPE: ugenArgType,
   };
 }

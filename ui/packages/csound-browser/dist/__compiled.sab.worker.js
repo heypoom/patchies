@@ -4,14 +4,14 @@
  Copyright The Closure Library Authors.
  SPDX-License-Identifier: Apache-2.0
 */
-  var m,
-    r = this || self;
-  function u(a, b) {
+  var n,
+    v = this || self;
+  function x(a, b) {
     a = a.split(".");
-    var c = r;
-    a[0] in c || "undefined" == typeof c.execScript || c.execScript("var " + a[0]);
+    var c = v;
+    a[0] in c || typeof c.execScript == "undefined" || c.execScript("var " + a[0]);
     for (var d; a.length && (d = a.shift()); )
-      a.length || void 0 === b
+      a.length || b === void 0
         ? c[d] && c[d] !== Object.prototype[d]
           ? (c = c[d])
           : (c = c[d] = {})
@@ -23,266 +23,311 @@
   const aa = Symbol("Comlink.proxy"),
     ba = Symbol("Comlink.endpoint"),
     ca = Symbol("Comlink.releaseProxy"),
-    da = Symbol("Comlink.thrown"),
-    ea = (a) => ("object" == typeof a && null !== a) || "function" == typeof a,
-    ja = new Map([
+    fa = Symbol("Comlink.thrown"),
+    ha = (a) => ("object" == typeof a && null !== a) || "function" == typeof a,
+    ka = new Map([
       [
         "proxy",
         {
-          M: (a) => ea(a) && a[aa],
-          V(a) {
+          aa: (a) => ha(a) && a[aa],
+          ja(a) {
             const { port1: b, port2: c } = new MessageChannel();
-            return (fa(a, b), [c, [c]]);
+            return (ia(a, b), [c, [c]]);
           },
-          N: (a) => (a.start(), ha(a)),
+          ba: (a) => (a.start(), ja(a)),
         },
       ],
       [
         "throw",
         {
-          M: (a) => ea(a) && da in a,
-          V({ value: a }) {
+          aa: (a) => ha(a) && fa in a,
+          ja({ value: a }) {
             let b;
             return (
               (b =
                 a instanceof Error
-                  ? { R: !0, value: { message: a.message, name: a.name, stack: a.stack } }
-                  : { R: !1, value: a }),
+                  ? { da: !0, value: { message: a.message, name: a.name, stack: a.stack } }
+                  : { da: !1, value: a }),
               [b, []]
             );
           },
-          N(a) {
-            if (a.R) throw Object.assign(Error(a.value.message), a.value);
+          ba(a) {
+            if (a.da) throw Object.assign(Error(a.value.message), a.value);
             throw a.value;
           },
         },
       ],
     ]);
-  function fa(a, b = self) {
+  function ia(a, b = self) {
     b.addEventListener("message", function e(d) {
       if (d && d.data) {
-        var g = d.data.argumentList,
-          { id: h, type: f, path: k } = Object.assign({ path: [] }, d.data);
-        g = (g || []).map(I);
+        var h = d.data.argumentList,
+          { id: f, type: l, path: g } = Object.assign({ path: [] }, d.data);
+        h = (h || []).map(J);
         try {
-          const n = k.slice(0, -1).reduce((p, t) => p[t], a),
-            q = k.reduce((p, t) => p[t], a);
-          switch (f) {
+          const m = g.slice(0, -1).reduce((q, t) => q[t], a),
+            r = g.reduce((q, t) => q[t], a);
+          switch (l) {
             case "GET":
-              var l = q;
+              var k = r;
               break;
             case "SET":
-              n[k.slice(-1)[0]] = I(d.data.value);
-              l = !0;
+              m[g.slice(-1)[0]] = J(d.data.value);
+              k = !0;
               break;
             case "APPLY":
-              l = q.apply(n, g);
+              k = r.apply(m, h);
               break;
             case "CONSTRUCT":
-              l = Object.assign(new q(...g), { [aa]: !0 });
+              k = la(new r(...h));
               break;
             case "ENDPOINT":
-              const { port1: p, port2: t } = new MessageChannel();
-              fa(a, t);
-              l = ka(p, [p]);
+              const { port1: q, port2: t } = new MessageChannel();
+              ia(a, t);
+              k = ma(q, [q]);
               break;
             case "RELEASE":
-              l = void 0;
+              k = void 0;
               break;
             default:
               return;
           }
-        } catch (n) {
-          l = { value: n, [da]: 0 };
+        } catch (m) {
+          k = { value: m, [fa]: 0 };
         }
-        Promise.resolve(l)
-          .catch((n) => ({ value: n, [da]: 0 }))
-          .then((n) => {
-            const [q, p] = la(n);
-            n = { ...q };
-            n.id = h;
-            b.postMessage(n, p);
-            "RELEASE" === f && (b.removeEventListener("message", e), ma(b));
+        Promise.resolve(k)
+          .catch((m) => ({ value: m, [fa]: 0 }))
+          .then((m) => {
+            const [r, q] = na(m);
+            b.postMessage({ ...r, id: f }, q);
+            "RELEASE" === l && (b.removeEventListener("message", e), oa(b));
           });
       }
     });
     b.start && b.start();
   }
-  function ma(a) {
+  function oa(a) {
     "MessagePort" === a.constructor.name && a.close();
   }
-  function ha(a) {
-    return (function g(c, d = [], e = function () {}) {
-      let h = !1;
-      const f = new Proxy(e, {
-        get(k, l) {
-          if ((na(h), l === ca))
+  function ja(a) {
+    return (function h(c, d = [], e = function () {}) {
+      let f = !1;
+      const l = new Proxy(e, {
+        get(g, k) {
+          if ((pa(f), k === ca))
             return () =>
-              J(c, { type: "RELEASE", path: d.map((n) => n.toString()) }).then(() => {
-                ma(c);
-                h = !0;
+              qa(c, { type: "RELEASE", path: d.map((m) => m.toString()) }).then(() => {
+                oa(c);
+                f = !0;
               });
-          if ("then" === l) {
-            if (0 === d.length) return { then: () => f };
-            k = J(c, { type: "GET", path: d.map((n) => n.toString()) }).then(I);
-            return k.then.bind(k);
+          if ("then" === k) {
+            if (0 === d.length) return { then: () => l };
+            g = qa(c, { type: "GET", path: d.map((m) => m.toString()) }).then(J);
+            return g.then.bind(g);
           }
-          return g(c, [...d, l]);
+          return h(c, [...d, k]);
         },
-        set(k, l, n) {
-          na(h);
-          const [q, p] = la(n);
-          return J(c, { type: "SET", path: [...d, l].map((t) => t.toString()), value: q }, p).then(
-            I,
+        set(g, k, m) {
+          pa(f);
+          const [r, q] = na(m);
+          return qa(c, { type: "SET", path: [...d, k].map((t) => t.toString()), value: r }, q).then(
+            J,
           );
         },
-        apply(k, l, n) {
-          na(h);
-          k = d[d.length - 1];
-          if (k === ba) return J(c, { type: "ENDPOINT" }).then(I);
-          if ("bind" === k) return g(c, d.slice(0, -1));
-          const [q, p] = oa(n);
-          n = { type: "APPLY" };
-          n.path = d.map((t) => t.toString());
-          n.argumentList = q;
-          return J(c, n, p).then(I);
+        apply(g, k, m) {
+          pa(f);
+          g = d[d.length - 1];
+          if (g === ba) return qa(c, { type: "ENDPOINT" }).then(J);
+          if ("bind" === g) return h(c, d.slice(0, -1));
+          const [r, q] = ra(m);
+          m = { type: "APPLY" };
+          m.path = d.map((t) => t.toString());
+          m.argumentList = r;
+          return qa(c, m, q).then(J);
         },
-        construct(k, l) {
-          na(h);
-          const [n, q] = oa(l);
-          k = { type: "CONSTRUCT" };
-          k.path = d.map((p) => p.toString());
-          k.argumentList = n;
-          return J(c, k, q).then(I);
+        construct(g, k) {
+          pa(f);
+          const [m, r] = ra(k);
+          g = { type: "CONSTRUCT" };
+          g.path = d.map((q) => q.toString());
+          g.argumentList = m;
+          return qa(c, g, r).then(J);
         },
       });
-      return f;
+      return l;
     })(a, [], void 0);
   }
-  function na(a) {
+  function pa(a) {
     if (a) throw Error("Proxy has been released and is not useable");
   }
-  function oa(a) {
-    a = a.map(la);
-    const b = ((c = a.map((d) => d[1])), Array.prototype.concat.apply([], c));
-    return [a.map((d) => d[0]), b];
-    var c;
+  function ra(a) {
+    var b;
+    a = a.map(na);
+    const c = ((b = a.map((d) => d[1])), Array.prototype.concat.apply([], b));
+    return [a.map((d) => d[0]), c];
   }
-  const qa = new WeakMap();
-  function ka(a, b) {
-    return (qa.set(a, b), a);
+  const sa = new WeakMap();
+  function ma(a, b) {
+    return (sa.set(a, b), a);
   }
   function la(a) {
-    for (const [b, c] of ja)
-      if (c.M(a)) {
-        const [d, e] = c.V(a);
+    return Object.assign(a, { [aa]: !0 });
+  }
+  function na(a) {
+    for (const [b, c] of ka)
+      if (c.aa(a)) {
+        const [d, e] = c.ja(a);
         return [{ type: "HANDLER", name: b, value: d }, e];
       }
-    return [{ type: "RAW", value: a }, qa.get(a) || []];
+    return [{ type: "RAW", value: a }, sa.get(a) || []];
   }
-  function I(a) {
+  function J(a) {
     switch (a.type) {
       case "HANDLER":
-        return ja.get(a.name).N(a.value);
+        return ka.get(a.name).ba(a.value);
       case "RAW":
         return a.value;
     }
   }
-  function J(a, b, c) {
+  function qa(a, b, c) {
     return new Promise((d) => {
       const e = Array(4)
         .fill(0)
         .map(() => Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(16))
         .join("-");
-      a.addEventListener("message", function f(h) {
-        h.data && h.data.id && h.data.id === e && (a.removeEventListener("message", f), d(h.data));
+      a.addEventListener("message", function l(f) {
+        f.data && f.data.id && f.data.id === e && (a.removeEventListener("message", l), d(f.data));
       });
       a.start && a.start();
       b.id = e;
       a.postMessage(b, c);
     });
   }
-  function K() {}
-  K.prototype.g = !1;
-  K.prototype.port = void 0;
-  K.prototype.G = () => {};
-  K.prototype.o = () => {};
-  const ra = (a) => () => a.exports.csoundCreateWasi();
-  ra.toString = () => "create = async () => undefined;";
-  const sa = (a) => (b) => a.exports.csoundDestroy(b);
-  sa.toString = () => "destroy = async () => undefined;";
-  const ta = (a) => () => a.exports.csoundGetAPIVersion();
-  ta.toString = () => "getAPIVersion = async () => Number;";
-  const ua = (a) => () => a.exports.csoundGetVersion();
-  ua.toString = () => "getVersion = async () => Number;";
-  const va = (a) => (b, c) => a.exports.csoundInitialize(c);
-  va.toString = () => "initialize = async () => Number;";
-  const M = new TextDecoder("utf8"),
-    wa = new TextEncoder("utf8");
-  const N = (a) => {
-    const b = a.indexOf("\x00");
-    return -1 < b ? a.substr(0, b) : a;
-  };
-  const Q = (a, b) => {
+  function ua() {}
+  ua.prototype.ready = !1;
+  ua.prototype.port = void 0;
+  ua.prototype.L = () => {};
+  ua.prototype.o = () => {};
+  const va = (a) => () => a.exports.csoundCreateWasi();
+  va.toString = () => "create = async () => undefined;";
+  const wa = (a) => (b) => a.exports.csoundDestroy(b);
+  wa.toString = () => "destroy = async () => undefined;";
+  const xa = (a) => () => a.exports.csoundGetAPIVersion();
+  xa.toString = () => "getAPIVersion = async () => Number;";
+  const ya = (a) => () => a.exports.csoundGetVersion();
+  ya.toString = () => "getVersion = async () => Number;";
+  const za = (a) => (b, c) => a.exports.csoundInitialize(c);
+  za.toString = () => "initialize = async () => Number;";
+  const L = new TextDecoder("utf8"),
+    Aa = new TextEncoder("utf8");
+  const N = (a, b) => {
       a.exports.freeStringMem(b);
     },
-    R = (a, b) => {
-      if ("string" !== typeof b) console.error("Expected string but got", typeof b);
+    Fa = (a, b) => {
+      a = a.h.memory.buffer;
+      const c = new Uint8Array(a, b);
+      let d = 0;
+      for (; c[d] !== 0; ) d++;
+      if (d === 0) return "";
+      b = new Uint8Array(a, b, d);
+      return L.decode(b);
+    },
+    O = (a, b) => {
+      if (typeof b !== "string") console.error("Expected string but got", typeof b);
       else {
-        b = wa.encode(b);
+        b = Aa.encode(b);
         var c = a.exports.allocStringMem(b.length);
-        new Uint8Array(a.i.memory.buffer, c, b.length + 1).set(b);
+        new Uint8Array(a.h.memory.buffer, c, b.length + 1).set(b);
         return c;
       }
     };
-  const xa = (a) => (b, c) => {
-    c = R(a, c);
+  const Ga = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundParseOrc(b, c);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  xa.toString = () => "parseOrc = async (orchestra) => Object;";
-  const ya = (a) => (b, c) => a.exports.csoundCompileTree(b, c);
-  ya.toString = () => "compileTree = async (tree) => Number;";
-  const za = (a) => (b, c) => {
-    c = R(a, c);
+  Ga.toString = () => "parseOrc = async (orchestra) => Object;";
+  const Ha = (a) => (b, c) => a.exports.csoundCompileTree(b, c);
+  Ha.toString = () => "compileTree = async (tree) => Number;";
+  const Ia = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundCompileOrc(b, c);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  za.toString = () => "compileOrc = async (orchestra) => Number;";
-  const Aa = (a) => (b, c) => {
-    c = R(a, c);
+  Ia.toString = () => "compileOrc = async (orchestra) => Number;";
+  const Ja = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundEvalCode(b, c);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  Aa.toString = () => "csoundEvalCode = async (orchestra) => Number;";
-  const Ba = (a) => (b) => a.exports.csoundStartWasi(b);
-  Ba.toString = () => "start = async () => Number;";
-  const Ca =
+  Ja.toString = () => "csoundEvalCode = async (orchestra) => Number;";
+  const Ka = (a) => (b) => a.exports.csoundStartWasi(b);
+  Ka.toString = () => "start = async () => Number;";
+  const La =
     (a) =>
     (b, c, d = 1) => {
-      c = R(a, c);
+      c = O(a, c);
       b = a.exports.csoundCompileCSD(b, c, d, 0);
-      Q(a, c);
+      N(a, c);
       return b;
     };
-  Ca.toString = () => "compileCSD = async (csoundDocument) => Number;";
-  const Da = (a) => (b) => a.exports.csoundPerformKsmpsWasi(b);
-  Da.toString = () => "performKsmps = async (csound) => Number;";
-  const Ea = () => () => {};
-  Ea.toString = () => "stop = async () => undefined;";
-  const Fa = (a) => (b) => a.exports.csoundResetWasi(b);
-  Fa.toString = () => "reset = async () => Number;";
-  const Ga = [
+  La.toString = () => "compileCSD = async (csoundDocument) => Number;";
+  const Ma = (a) => (b) => a.exports.csoundPerformKsmps(b);
+  Ma.toString = () => "performKsmps = async (csound) => Number;";
+  const Na = (a) => (b) => a.exports.csoundSetDebugCallbackWasi(b);
+  Na.toString = () => "setDebugCallbackWasi = async (csound) => Number;";
+  const Oa = () => {},
+    Pa = () => Oa;
+  Pa.toString = () => "stop = async () => undefined;";
+  const Qa = (a) => (b) => a.exports.csoundResetWasi(b);
+  Qa.toString = () => "reset = async () => Number;";
+  const Ra = [
+      ["debug_mode", "int"],
+      ["buffer_frames", "int"],
+      ["hardware_buffer_frames", "int"],
+      ["displays", "int"],
+      ["ascii_graphs", "int"],
+      ["postscript_graphs", "int"],
+      ["message_level", "int"],
+      ["tempo", "int"],
+      ["ring_bell", "int"],
+      ["use_cscore", "int"],
+      ["terminate_on_midi", "int"],
+      ["heartbeat", "int"],
+      ["defer_gen01_load", "int"],
+      ["midi_key", "int"],
+      ["midi_key_cps", "int"],
+      ["midi_key_oct", "int"],
+      ["midi_key_pch", "int"],
+      ["midi_velocity", "int"],
+      ["midi_velocity_amp", "int"],
+      ["no_default_paths", "int"],
+      ["number_of_threads", "int"],
+      ["syntax_check_only", "int"],
+      ["csd_line_counts", "int"],
+      ["compute_weights", "int"],
+      ["realtime_mode", "int"],
+      ["sample_accurate", "int"],
+      ["sample_rate_override", "MYFLT"],
+      ["control_rate_override", "MYFLT"],
+      ["nchnls_override", "int"],
+      ["nchnls_i_override", "int"],
+      ["e0dbfs_override", "MYFLT"],
+      ["daemon", "int"],
+      ["ksmps_override", "int"],
+      ["FFT_library", "int"],
+    ],
+    Sa = [
       ["device_name", "char", 64],
       ["interface_name", "char", 64],
       ["device_id", "char", 64],
       ["midi_module", "char", 64],
       ["isOutput", "int"],
     ],
-    Ha = [
+    Ta = [
       ["type", "int"],
       ["lexme", "ptr"],
       ["value", "int"],
@@ -290,7 +335,7 @@
       ["optype", "ptr"],
       ["next", "ptr"],
     ],
-    Ia = [
+    Ua = [
       ["type", "int"],
       ["value", "ptr"],
       ["rate", "int"],
@@ -302,454 +347,678 @@
       ["next", "ptr"],
       ["markup", "ptr"],
     ];
-  const Ja = { ob: 4, Db: 8, Wa: 8, char: 1, lb: 8, yb: 4, Eb: 8 },
-    Ka = (a) =>
-      a ? a.reduce((b, [, c]) => (Ja[c] ? Ja[c] + b : Ka({ Ya: Ia, Xa: Ha }[c]) + b), 0) : 0;
-  Ka(Ia);
-  Ka(Ha);
-  Ka([
-    ["debug_mode", "int"],
-    ["buffer_frames", "int"],
-    ["hardware_buffer_frames", "int"],
-    ["displays", "int"],
-    ["ascii_graphs", "int"],
-    ["postscript_graphs", "int"],
-    ["message_level", "int"],
-    ["tempo", "int"],
-    ["ring_bell", "int"],
-    ["use_cscore", "int"],
-    ["terminate_on_midi", "int"],
-    ["heartbeat", "int"],
-    ["defer_gen01_load", "int"],
-    ["midi_key", "int"],
-    ["midi_key_cps", "int"],
-    ["midi_key_oct", "int"],
-    ["midi_key_pch", "int"],
-    ["midi_velocity", "int"],
-    ["midi_velocity_amp", "int"],
-    ["no_default_paths", "int"],
-    ["number_of_threads", "int"],
-    ["syntax_check_only", "int"],
-    ["csd_line_counts", "int"],
-    ["compute_weights", "int"],
-    ["realtime_mode", "int"],
-    ["sample_accurate", "int"],
-    ["sample_rate_override", "MYFLT"],
-    ["control_rate_override", "MYFLT"],
-    ["nchnls_override", "int"],
-    ["nchnls_i_override", "int"],
-    ["e0dbfs_override", "MYFLT"],
-    ["daemon", "int"],
-    ["ksmps_override", "int"],
-    ["FFT_library", "int"],
-  ]);
-  const La = Ka(Ga);
-  const Ma = (a) => {
-    const [b] = Ga.reduce(
-      ([c, d], [e, g, ...h]) => {
-        h = "char" === g ? Ja[g] * h[0] : Ja[g];
-        g = "char" === g ? N(M.decode(a.subarray(d, h))) || "" : a[d];
-        c[e] = g;
-        return [c, d + h];
+  const Va = { Db: 4, Pb: 8, kb: 8, char: 1, Ab: 8, Mb: 4, Qb: 8 },
+    Wa = (a) =>
+      a ? a.reduce((b, [, c]) => (Va[c] ? Va[c] + b : Wa({ mb: Ua, lb: Ta }[c]) + b), 0) : 0;
+  Wa(Ua);
+  Wa(Ta);
+  Wa(Ra);
+  const Xa = Wa(Sa);
+  const Ya = (a) => {
+    const b = a.indexOf("\x00");
+    return b !== -1 ? a.substr(0, b) : a;
+  };
+  const Za = (a, b) => {
+    [a] = a.reduce(
+      ([c, d], [e, h, ...f]) => {
+        f = h === "char" ? Va[h] * f[0] : Va[h];
+        h = h === "char" ? Ya(L.decode(b.subarray(d, f))) || "" : b[d];
+        c[e] = h;
+        return [c, d + f];
       },
       [{}, 0],
     );
-    return b;
+    return a;
   };
-  const Na = (a) => (b) => a.exports.csoundGetSr(b);
-  Na.toString = () => "getSr = async () => Number;";
-  const Oa = (a) => (b, c) => a.exports.csoundSystemSr(b, c);
-  Oa.toString = () => "systemSr = async (val) => Number;";
-  const Pa = (a) => (b) => a.exports.csoundGetKr(b);
-  Pa.toString = () => "getKr = async () => Number;";
-  const Qa = (a) => (b) => a.exports.csoundGetKsmps(b);
-  Qa.toString = () => "getKsmps = async () => Number;";
-  Qa.toString = () => "getChannels = async (isInput) => Number;";
-  const Sa = (a) => (b) => a.exports.csoundGetChannels(b, 0);
-  Sa.toString = () => "getNchnls = async () => Number;";
-  const Ta = (a) => (b) => a.exports.csoundGetChannels(b, 1);
-  Ta.toString = () => "getNchnlsInput = async () => Number;";
-  const Ua = (a) => (b) => a.exports.csoundGet0dBFS(b);
-  Ua.toString = () => "get0dBFS = async () => Number;";
-  const Va = (a) => (b) => a.exports.csoundGetA4(b);
-  Va.toString = () => "getA4 = async () => Number;";
-  const Wa = (a) => (b) => a.exports.csoundGetCurrentTimeSamples(b);
-  Wa.toString = () => "getCurrentTimeSamples = async () => Number;";
-  const Xa = (a) => (b) => a.exports.csoundGetSizeOfMYFLT(b);
-  Xa.toString = () => "getSizeOfMYFLT = async () => Number;";
-  const Ya = (a) => (b, c) => {
-    c = R(a, c);
+  const $a = (a) => (b) => a.exports.csoundGetSr(b);
+  $a.toString = () => "getSr = async () => Number;";
+  const ab = (a) => (b, c) => a.exports.csoundSystemSr(b, c);
+  ab.toString = () => "systemSr = async (val) => Number;";
+  const bb = (a) => (b) => a.exports.csoundGetKr(b);
+  bb.toString = () => "getKr = async () => Number;";
+  const cb = (a) => (b) => a.exports.csoundGetKsmps(b);
+  cb.toString = () => "getKsmps = async () => Number;";
+  cb.toString = () => "getChannels = async (isInput) => Number;";
+  const db = (a) => (b) => a.exports.csoundGetChannels(b, 0);
+  db.toString = () => "getNchnls = async () => Number;";
+  const eb = (a) => (b) => a.exports.csoundGetChannels(b, 1);
+  eb.toString = () => "getNchnlsInput = async () => Number;";
+  const fb = (a) => (b) => a.exports.csoundGet0dBFS(b);
+  fb.toString = () => "get0dBFS = async () => Number;";
+  const ib = (a) => (b) => a.exports.csoundGetA4(b);
+  ib.toString = () => "getA4 = async () => Number;";
+  const jb = (a) => (b) => a.exports.csoundGetCurrentTimeSamples(b);
+  jb.toString = () => "getCurrentTimeSamples = async () => Number;";
+  const kb = (a) => (b) => a.exports.csoundGetSizeOfMYFLT(b);
+  kb.toString = () => "getSizeOfMYFLT = async () => Number;";
+  const lb = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundSetOption(b, c);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  Ya.toString = () => "setOption = async (option) => Number;";
-  const Za = (a) => (b) => a.exports.csoundGetDebug(b);
-  Za.toString = () => "getDebug = async () => Number;";
-  const $a = (a) => (b, c) => {
+  lb.toString = () => "setOption = async (option) => Number;";
+  const mb = (a) => (b, c) => {
+    a.exports.csoundSetParams(b, c);
+  };
+  mb.toString = () => "setParams = async (csoundParams) => undefined;";
+  const nb = (a) => (b) => {
+    var c = a.h.memory.buffer;
+    const d = Wa(Ra),
+      e = a.exports.allocCsoundParamsStruct();
+    c = new Uint8Array(c, e, d);
+    a.exports.csoundGetParams(b, e);
+    b = Za(Ra, c);
+    a.exports.freeCsoundParams(e);
+    return b;
+  };
+  nb.toString = () => "getParams = async () => CSOUND_PARAMS;";
+  const ob = (a) => (b) => a.exports.csoundGetDebug(b);
+  ob.toString = () => "getDebug = async () => Number;";
+  const pb = (a) => (b, c) => {
     a.exports.csoundSetDebug(b, c);
   };
-  $a.toString = () => "setDebug = async (number) => undefined;";
-  const ab = (a) => (b) => a.exports.csoundGetSpin(b);
-  ab.toString = () => "getSpin = async (csound) => Number;";
-  const bb = (a) => (b) => a.exports.csoundGetSpout(b);
-  bb.toString = () => "getSpout = async () => Number;";
-  const cb = (a) => {
+  pb.toString = () => "setDebug = async (number) => undefined;";
+  const qb = (a) => (b) => a.exports.csoundGetSpin(b);
+  qb.toString = () => "getSpin = async (csound) => Number;";
+  const rb = (a) => (b) => a.exports.csoundGetSpout(b);
+  rb.toString = () => "getSpout = async () => Number;";
+  const sb = (a) => (b) => a.exports.isRequestingRtAudioInput(b);
+  const tb = (a) => {
     const b = [];
     for (let c = 0; c < a; c++) b.push(c);
     return b;
   };
-  const db = (a) => (b, c) => {
-    const d = a.i.memory.buffer,
+  const ub = (a) => (b, c) => {
+    const d = a.h.memory.buffer,
       e = a.exports.csoundGetMIDIDevList(b, void 0, c ? 1 : 0);
-    if (0 === e) return [];
-    const g = a.exports.allocCsMidiDeviceStruct(e);
-    a.exports.csoundGetMIDIDevList(b, g, c ? 1 : 0);
-    const h = new Uint8Array(d, g, La * e);
-    b = cb(e).map((f) => Ma(h.subarray(f * La, La)));
-    a.exports.freeCsMidiDeviceStruct(g);
+    if (e === 0) return [];
+    const h = a.exports.allocCsMidiDeviceStruct(e);
+    a.exports.csoundGetMIDIDevList(b, h, c ? 1 : 0);
+    const f = new Uint8Array(d, h, Xa * e);
+    b = tb(e).map((l) => Za(Sa, f.subarray(l * Xa, Xa)));
+    a.exports.freeCsMidiDeviceStruct(h);
     return b;
   };
-  db.toString = () => "getMIDIDevList = async (isOutput) => Object;";
-  const eb = (a) => (b) => {
-    var c = a.i.memory.buffer;
+  ub.toString = () => "getMIDIDevList = async (isOutput) => Object;";
+  const vb = (a) => (b) => {
+    var c = a.h.memory.buffer;
     b = a.exports.getRtMidiName(b);
     c = new Uint8Array(c, b, 128);
-    return N(M.decode(c)) || "";
+    return Ya(L.decode(c)) || "";
   };
-  eb.toString = () => "getRtMidiName = async () => String;";
-  const fb = (a) => (b, c, d, e) => {
-    a.exports.pushMidiMessage(b, c, d, e);
-  };
-  fb.toString = () => "midiMessage = async (status, data1, data2) => undefined;";
-  const gb = (a) => (b, c) => {
-    c = R(a, c);
+  vb.toString = () => "getRtMidiName = async () => String;";
+  const wb = (a) => (b) => a.exports.isRequestingRtMidiInput(b),
+    xb = (a) => (b, c, d, e) => {
+      a.exports.pushMidiMessage(b, c, d, e);
+    };
+  xb.toString = () => "midiMessage = async (status, data1, data2) => undefined;";
+  const yb = (a) => (b) => a.exports.isRequestingPlugins(b);
+  yb.toString = () => "isRequestingPlugins = async () => Number;";
+  const zb = (a) => (b) => ((b = a.exports.getRequestedPlugins(b)) ? Fa(a, b) : "");
+  zb.toString = () => "getRequestedPlugins = async () => String;";
+  const Ab = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundEventString(b, c, 0);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  gb.toString = () => "inputMessage = async (scoreEvent) => Number;";
-  const hb = (a) => (b, c) => {
-    c = R(a, c);
+  Ab.toString = () => "inputMessage = async (scoreEvent) => Number;";
+  const Bb = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundEventString(b, c, 1);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  hb.toString = () => "inputMessageAsync = async (scoreEvent) => Number;";
-  const ib = (a) => (b, c) => {
-    c = R(a, c);
+  Bb.toString = () => "inputMessageAsync = async (scoreEvent) => Number;";
+  const Cb = (a) => (b, c) => {
+    c = O(a, c);
+    b = a.exports.csoundReadlinePushText(b, c);
+    N(a, c);
+    return b;
+  };
+  Cb.toString = () => "readlinePushText = async (text) => Number;";
+  const Db = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundGetControlChannelWasi(b, c);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  ib.toString = () => "getControlChannel = async (channelName) => Number;";
-  const jb = (a) => (b, c, d) => {
-    c = R(a, c);
+  Db.toString = () => "getControlChannel = async (channelName) => Number;";
+  const Eb = (a) => (b, c, d) => {
+    c = O(a, c);
     a.exports.csoundSetControlChannel(b, c, d);
-    Q(a, c);
+    N(a, c);
   };
-  jb.toString = () => "setControlChannel = async (channelName, value) => void;";
-  const kb = (a) => (b, c) => {
-    c = R(a, c);
+  Eb.toString = () => "setControlChannel = async (channelName, value) => void;";
+  const Fb = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundGetStringChannelWasi(b, c);
-    var d = new Uint8Array(a.i.memory.buffer, b);
-    d = M.decode(d);
-    d = N(d);
-    Q(a, c);
-    Q(a, b);
+    const d = Fa(a, b);
+    N(a, c);
+    N(a, b);
     return d;
   };
-  kb.toString = () => "getStringChannel = async (channelName) => String;";
-  const lb = (a) => (b, c, d) => {
-    c = R(a, c);
-    d = R(a, d);
+  Fb.toString = () => "getStringChannel = async (channelName) => String;";
+  const Gb = (a) => (b, c, d) => {
+    c = O(a, c);
+    d = O(a, d);
     a.exports.csoundSetStringChannel(b, c, d);
-    Q(a, c);
-    Q(a, d);
+    N(a, c);
+    N(a, d);
   };
-  lb.toString = () => "setStringChannel = async (channelName, value) => void;";
-  const mb = (a) => (b) => {
-    var c = a.i.memory.buffer;
+  Gb.toString = () => "setStringChannel = async (channelName, value) => void;";
+  const Hb = (a) => (b) => {
+    var c = a.h.memory.buffer;
     b = a.exports.csoundGetOutputName(b);
     c = new Uint8Array(c, b, 64);
-    return N(M.decode(c)) || "";
+    return Ya(L.decode(c)) || "";
   };
-  mb.toString = () => "getOutputName = async () => String;";
-  const nb = (a) => (b) => {
-    var c = a.i.memory.buffer;
+  Hb.toString = () => "getOutputName = async () => String;";
+  const Ib = (a) => (b) => {
+    var c = a.h.memory.buffer;
     b = a.exports.csoundGetInputName(b);
     c = new Uint8Array(c, b, 64);
-    return N(M.decode(c)) || "";
+    return Ya(L.decode(c)) || "";
   };
-  nb.toString = () => "getInputName = async (csound) => String;";
-  const ob = (a) => (b, c, d) => {
-    c = R(a, c);
-    d = R(a, d);
+  Ib.toString = () => "getInputName = async (csound) => String;";
+  const Jb = (a) => (b, c, d) => {
+    c = O(a, c);
+    d = O(a, d);
     b = a.exports.csoundAppendEnv(b, c, d);
-    Q(a, c);
-    Q(a, d);
+    N(a, c);
+    N(a, d);
     return b;
   };
-  ob.toString = () => "appendEnv = async (csound, variable, value) => Number;";
-  const pb = (a) => (b) => a.exports.csoundIsScorePending(b);
-  pb.toString = () => "isScorePending = async () => Number;";
-  const qb = (a) => (b, c) => a.exports.csoundSetScorePending(b, c);
-  qb.toString = () => "setScorePending = async (pending) => Number;";
-  const rb = (a) => (b, c) => {
-    c = R(a, c);
+  Jb.toString = () => "appendEnv = async (csound, variable, value) => Number;";
+  const Kb = (a) => (b) => a.exports.csoundIsScorePending(b);
+  Kb.toString = () => "isScorePending = async () => Number;";
+  const Lb = (a) => (b, c) => a.exports.csoundSetScorePending(b, c);
+  Lb.toString = () => "setScorePending = async (pending) => Number;";
+  const Mb = (a) => (b, c) => {
+    c = O(a, c);
     b = a.exports.csoundEventString(b, c, 0);
-    Q(a, c);
+    N(a, c);
     return b;
   };
-  rb.toString = () => "readScore = async (score) => Number;";
-  const sb = (a) => (b) => a.exports.csoundGetScoreTime(b);
-  sb.toString = () => "getScoreTime = async () => Number;";
-  const tb = (a) => (b) => a.exports.csoundGetScoreOffsetSeconds(b);
-  tb.toString = () => "getScoreOffsetSeconds = async () => Number;";
-  const ub = (a) => (b, c) => a.exports.csoundSetScoreOffsetSeconds(b, c);
-  ub.toString = () => "setScoreOffsetSeconds = async () => Number;";
-  const vb = (a) => (b) => a.exports.csoundRewindScore(b);
-  vb.toString = () => "rewindScore = async () => undefined;";
-  const wb = (a) => (b, c) => a.exports.csoundTableLength(b, c);
-  wb.toString = () => "tableLength = async (tableNum) => Number;";
-  const xb = (a) => (b, c, d) => {
+  Mb.toString = () => "readScore = async (score) => Number;";
+  const Nb = (a) => (b) => a.exports.csoundGetScoreTime(b);
+  Nb.toString = () => "getScoreTime = async () => Number;";
+  const Ob = (a) => (b) => a.exports.csoundGetScoreOffsetSeconds(b);
+  Ob.toString = () => "getScoreOffsetSeconds = async () => Number;";
+  const Pb = (a) => (b, c) => a.exports.csoundSetScoreOffsetSeconds(b, c);
+  Pb.toString = () => "setScoreOffsetSeconds = async () => Number;";
+  const Qb = (a) => (b) => a.exports.csoundRewindScore(b);
+  Qb.toString = () => "rewindScore = async () => undefined;";
+  const Rb = (a) => (b, c) => a.exports.csoundTableLength(b, c);
+  Rb.toString = () => "tableLength = async (tableNum) => Number;";
+  const Sb = (a) => (b, c, d) => {
     const e = a.exports.allocFloatArray(d.length);
-    new Float64Array(a.i.memory.buffer, e, d.length).set(d);
+    new Float64Array(a.h.memory.buffer, e, d.length).set(d);
     a.exports.csoundTableCopyIn(b, c, e);
     a.exports.freeFloatArrayMem(e);
   };
-  xb.toString = () => "tableCopyIn = async (tableNum, float64Array) => undefined;";
-  const yb = (a) => (b, c) => {
+  Sb.toString = () => "tableCopyIn = async (tableNum, float64Array) => undefined;";
+  const Tb = (a) => (b, c) => {
     var d = a.exports.csoundTableLength(b, c);
-    if (0 < d) {
+    if (d > 0) {
       const e = a.exports.allocFloatArray(d);
       a.exports.csoundTableCopyOut(b, c, e);
-      b = new Float64Array(a.i.memory.buffer, e, d);
+      b = new Float64Array(a.h.memory.buffer, e, d);
       c = new Float64Array(b.length);
       for (d = 0; d < b.length; d++) c[d] = b[d];
       a.exports.freeFloatArrayMem(e);
       return c;
     }
   };
-  yb.toString = () => "tableCopyOut = async (tableNum) => ?Float64Array;";
-  yb.toString = yb.toString;
-  const zb = (a) => (b, c) => {
+  Tb.toString = () => "tableCopyOut = async (tableNum) => ?Float64Array;";
+  Tb.toString = Tb.toString;
+  const Ub = (a) => (b, c) => {
     const d = a.exports.allocFloatArray(1024);
     a.exports.csoundGetTableArgs(b, d, c);
-    b = new Float64Array(a.i.memory.buffer, d, 1024);
+    b = new Float64Array(a.h.memory.buffer, d, 1024);
     a.exports.freeFloatArrayMem(d);
     return b;
   };
-  zb.toString = () => "getTableArgs = async (tableNum) => ?Float64Array;";
-  function Ab(a) {
+  Ub.toString = () => "getTableArgs = async (tableNum) => ?Float64Array;";
+  function Vb(a) {
     return (b, c, d) => {
-      b = "string" === typeof d ? wa.encode(d) : d;
-      a.i.writeFile(c, b);
+      b = typeof d === "string" ? Aa.encode(d) : d;
+      a.h.writeFile(c, b);
     };
   }
-  u("writeFile$$module$src$filesystem$worker_fs", Ab);
-  Ab.toString = () => "async (path, data) => void";
-  function Bb(a) {
+  x("writeFile$$module$src$filesystem$worker_fs", Vb);
+  Vb.toString = () => "async (path, data) => void";
+  function Wb(a) {
     return (b, c, d) => {
-      b = "string" === typeof d ? wa.encode(d) : d;
-      a.i.appendFile(c, b);
+      b = typeof d === "string" ? Aa.encode(d) : d;
+      a.h.appendFile(c, b);
     };
   }
-  u("appendFile$$module$src$filesystem$worker_fs", Bb);
-  Bb.toString = () => "async (path, data) => void";
-  function Cb(a) {
-    return (b, c) => a.i.readFile(c);
+  x("appendFile$$module$src$filesystem$worker_fs", Wb);
+  Wb.toString = () => "async (path, data) => void";
+  function Xb(a) {
+    return (b, c) => a.h.readFile(c);
   }
-  u("readFile$$module$src$filesystem$worker_fs", Cb);
-  Cb.toString = () => "async (path) => ?Uint8Array";
-  function Db(a) {
-    return (b, c) => a.i.unlink(c);
+  x("readFile$$module$src$filesystem$worker_fs", Xb);
+  Xb.toString = () => "async (path) => ?Uint8Array";
+  function Yb(a) {
+    return (b, c) => a.h.unlink(c);
   }
-  u("unlink$$module$src$filesystem$worker_fs", Db);
-  Db.toString = () => "async (path) => void";
-  function Eb(a) {
-    return (b, c) => a.i.readdir(c);
+  x("unlink$$module$src$filesystem$worker_fs", Yb);
+  Yb.toString = () => "async (path) => void";
+  function Zb(a) {
+    return (b, c) => a.h.readdir(c);
   }
-  u("readdir$$module$src$filesystem$worker_fs", Eb);
-  Eb.toString = () => "async (path) => string[]";
-  function Fb(a) {
-    return (b, c) => a.i.mkdir(c);
+  x("readdir$$module$src$filesystem$worker_fs", Zb);
+  Zb.toString = () => "async (path) => string[]";
+  function $b(a) {
+    return (b, c) => a.h.mkdir(c);
   }
-  u("mkdir$$module$src$filesystem$worker_fs", Fb);
-  Fb.toString = () => "async (path) => void";
-  function Gb(a) {
-    return (b, c) => a.i.stat(c);
+  x("mkdir$$module$src$filesystem$worker_fs", $b);
+  $b.toString = () => "async (path) => void";
+  function ac(a) {
+    return (b, c) => a.h.stat(c);
   }
-  u("stat$$module$src$filesystem$worker_fs", Gb);
-  Gb.toString = () => "async (path) => ?object";
-  function Hb(a) {
-    return (b, c) => Ib(a.i, c);
+  x("stat$$module$src$filesystem$worker_fs", ac);
+  ac.toString = () => "async (path) => ?object";
+  function bc(a) {
+    return (b, c) => {
+      b = a.h;
+      c = S(b.cwd, c);
+      return !!cc(b, c);
+    };
   }
-  u("pathExists$$module$src$filesystem$worker_fs", Hb);
-  Hb.toString = () => "async (path) => boolean";
-  function Jb(a) {
-    return (b, c) => Kb(a.i, c);
+  x("pathExists$$module$src$filesystem$worker_fs", bc);
+  bc.toString = () => "async (path) => boolean";
+  function dc(a) {
+    return (b, c) => ec(a.h, c);
   }
-  u("chdir$$module$src$filesystem$worker_fs", Jb);
-  Jb.toString = () => "async (path) => number";
-  function Lb(a) {
-    return () => a.i.cwd;
+  x("chdir$$module$src$filesystem$worker_fs", dc);
+  dc.toString = () => "async (path) => number";
+  function fc(a) {
+    return () => a.h.cwd;
   }
-  u("getcwd$$module$src$filesystem$worker_fs", Lb);
-  Lb.toString = () => "async () => string";
-  const S = {};
-  S.writeFile = Ab;
-  S.appendFile = Bb;
-  S.readFile = Cb;
-  S.unlink = Db;
-  S.readdir = Eb;
-  S.mkdir = Fb;
-  S.stat = Gb;
-  S.pathExists = Hb;
-  S.chdir = Jb;
-  S.getcwd = Lb;
-  const Mb = {
-    csoundCreate: ra,
-    csoundDestroy: sa,
-    csoundGetAPIVersion: ta,
-    csoundGetVersion: ua,
-    csoundInitialize: va,
-    csoundParseOrc: xa,
-    csoundCompileTree: ya,
-    csoundCompileOrc: za,
-    csoundEvalCode: Aa,
-    csoundStart: Ba,
-    csoundCompileCSD: Ca,
-    csoundPerformKsmps: Da,
-    csoundStop: Ea,
-    csoundReset: Fa,
-    csoundGetSr: Na,
-    gb: Oa,
-    csoundGetKr: Pa,
-    csoundGetKsmps: Qa,
-    csoundGetNchnls: Sa,
-    csoundGetNchnlsInput: Ta,
-    eb: (a) => (b, c) => a.exports.csoundGetChannels(b, c),
-    csoundGet0dBFS: Ua,
-    csoundGetA4: Va,
-    csoundGetCurrentTimeSamples: Wa,
-    csoundGetSizeOfMYFLT: Xa,
-    csoundSetOption: Ya,
-    csoundGetDebug: Za,
-    csoundSetDebug: $a,
-    csoundGetSpin: ab,
-    csoundGetSpout: bb,
-    csoundGetMIDIDevList: db,
+  x("getcwd$$module$src$filesystem$worker_fs", fc);
+  fc.toString = () => "async () => string";
+  const X = {};
+  X.writeFile = Vb;
+  X.appendFile = Wb;
+  X.readFile = Xb;
+  X.unlink = Yb;
+  X.readdir = Zb;
+  X.mkdir = $b;
+  X.stat = ac;
+  X.pathExists = bc;
+  X.chdir = dc;
+  X.getcwd = fc;
+  const hc = {
+    csoundCreate: va,
+    csoundDestroy: wa,
+    csoundGetAPIVersion: xa,
+    csoundGetVersion: ya,
+    csoundInitialize: za,
+    csoundParseOrc: Ga,
+    csoundCompileTree: Ha,
+    csoundCompileOrc: Ia,
+    csoundEvalCode: Ja,
+    csoundStart: Ka,
+    csoundCompileCSD: La,
+    csoundPerformKsmps: Ma,
+    tb: Na,
+    csoundStop: Pa,
+    csoundReset: Qa,
+    csoundGetSr: $a,
+    ub: ab,
+    csoundGetKr: bb,
+    csoundGetKsmps: cb,
+    csoundGetNchnls: db,
+    csoundGetNchnlsInput: eb,
+    sb: (a) => (b, c) => a.exports.csoundGetChannels(b, c),
+    csoundGet0dBFS: fb,
+    csoundGetA4: ib,
+    csoundGetCurrentTimeSamples: jb,
+    csoundGetSizeOfMYFLT: kb,
+    csoundSetOption: lb,
+    csoundSetParams: mb,
+    csoundGetParams: nb,
+    csoundGetDebug: ob,
+    csoundSetDebug: pb,
+    csoundGetSpin: qb,
+    csoundGetSpout: rb,
+    isRequestingRtAudioInput: sb,
+    _isRequestingRtAudioInput: sb,
+    csoundGetMIDIDevList: ub,
     csoundSetMidiCallbacks: (a) => (b) => {
       a.exports.csoundSetMidiCallbacks(b);
     },
-    csoundGetRtMidiName: eb,
+    csoundGetRtMidiName: vb,
     csoundGetMidiOutFileName: (a) => (b) => {
-      var c = a.i.memory.buffer;
+      var c = a.h.memory.buffer;
       b = a.exports.getMidiOutFileName(b);
       c = new Uint8Array(c, b, 128);
-      b && 0 < b.length && Q(a, b);
-      return N(M.decode(c)) || "";
+      b && b.length > 0 && N(a, b);
+      return Ya(L.decode(c)) || "";
     },
-    csoundPushMidiMessage: fb,
-    _isRequestingRtMidiInput: (a) => (b) => a.exports.isRequestingRtMidiInput(b),
-    csoundInputMessage: gb,
-    csoundInputMessageAsync: hb,
-    csoundGetControlChannel: ib,
-    csoundSetControlChannel: jb,
-    csoundGetStringChannel: kb,
-    csoundSetStringChannel: lb,
-    csoundGetInputName: nb,
-    csoundGetOutputName: mb,
-    csoundAppendEnv: ob,
+    csoundPushMidiMessage: xb,
+    isRequestingRtMidiInput: wb,
+    _isRequestingRtMidiInput: wb,
+    isRequestingPlugins: yb,
+    getRequestedPlugins: zb,
+    csoundInputMessage: Ab,
+    csoundInputMessageAsync: Bb,
+    csoundReadlinePushText: Cb,
+    csoundGetControlChannel: Db,
+    csoundSetControlChannel: Eb,
+    csoundGetStringChannel: Fb,
+    csoundSetStringChannel: Gb,
+    csoundGetInputName: Ib,
+    csoundGetOutputName: Hb,
+    csoundAppendEnv: Jb,
     csoundShouldDaemonize: (a) => (b) => a.exports.csoundShouldDaemonize(b),
-    csoundIsScorePending: pb,
-    csoundSetScorePending: qb,
-    csoundReadScore: rb,
-    csoundGetScoreTime: sb,
-    csoundGetScoreOffsetSeconds: tb,
-    csoundSetScoreOffsetSeconds: ub,
-    csoundRewindScore: vb,
-    csoundTableLength: wb,
-    csoundTableCopyIn: xb,
-    csoundTableCopyOut: yb,
-    csoundGetTable: yb,
-    csoundGetTableArgs: zb,
-    fs: S,
+    csoundIsScorePending: Kb,
+    csoundSetScorePending: Lb,
+    csoundReadScore: Mb,
+    csoundGetScoreTime: Nb,
+    csoundGetScoreOffsetSeconds: Ob,
+    csoundSetScoreOffsetSeconds: Pb,
+    csoundRewindScore: Qb,
+    csoundTableLength: Rb,
+    csoundTableCopyIn: Sb,
+    csoundTableCopyOut: Tb,
+    csoundGetTable: Tb,
+    csoundGetTableArgs: Ub,
+    UGEN_ARG_TYPE: { I: 0, K: 1, A: 2, S: 3, F: 4, UNKNOWN: 5 },
+    csoundUgenFactoryNew: (a) => (b) => a.exports.csoundUgenFactoryNew(b),
+    csoundUgenFactoryDelete: (a) => (b) => a.exports.csoundUgenFactoryDelete(b),
+    csoundUgenContextNew: (a) => (b) => a.exports.csoundUgenContextNew(b),
+    csoundUgenContextDelete: (a) => (b) => a.exports.csoundUgenContextDelete(b),
+    csoundUgenSetContext: (a) => (b, c) => a.exports.csoundUgenSetContext(b, c),
+    csoundUgenNew: (a) => (b, c, d, e) => {
+      c = O(a, c);
+      d = O(a, d);
+      e = O(a, e);
+      b = a.exports.csoundUgenNew(b, c, d, e);
+      N(a, c);
+      N(a, d);
+      N(a, e);
+      return b;
+    },
+    csoundUgenDelete: (a) => (b) => a.exports.csoundUgenDelete(b),
+    csoundUgenGetOutVar: (a) => (b, c) => a.exports.csoundUgenGetOutVar(b, c),
+    csoundUgenGetInVar: (a) => (b, c) => a.exports.csoundUgenGetInVar(b, c),
+    csoundUgenSetInputVar: (a) => (b, c, d) => a.exports.csoundUgenSetInputVar(b, c, d),
+    csoundUgenVarNew: (a) => (b, c) => a.exports.csoundUgenVarNew(b, c),
+    csoundUgenVarDelete: (a) => (b) => a.exports.csoundUgenVarDelete(b),
+    csoundUgenVarGetType: (a) => (b) => a.exports.csoundUgenVarGetType(b),
+    csoundUgenVarGetSize: (a) => (b) => a.exports.csoundUgenVarGetSize(b),
+    csoundUgenVarSetValue: (a) => (b, c) => a.exports.csoundUgenVarSetValue(b, c),
+    csoundUgenVarGetValue: (a) => (b) => a.exports.csoundUgenVarGetValue(b),
+    csoundUgenVarGetData: (a) => (b) => a.exports.csoundUgenVarGetData(b),
+    csoundUgenVarGetDataAsFloat64Array: (a) => (b) =>
+      a.exports.csoundUgenVarGetDataAsFloat64Array(b),
+    csoundUgenVarGetKsmps: (a) => (b) => a.exports.csoundUgenVarGetKsmps(b),
+    csoundUgenVarSetString: (a) => (b, c) => {
+      c = O(a, c);
+      b = a.exports.csoundUgenVarSetString(b, c);
+      N(a, c);
+      return b;
+    },
+    csoundUgenVarGetString: (a) => (b) => {
+      b = a.exports.csoundUgenVarGetString(b);
+      return b === 0 ? null : Fa(a, b);
+    },
+    csoundUgenSetValue: (a) => (b, c, d) => a.exports.csoundUgenSetValue(b, c, d),
+    csoundUgenGetValue: (a) => (b, c) => a.exports.csoundUgenGetValue(b, c),
+    csoundUgenSetString: (a) => (b, c, d) => {
+      d = O(a, d);
+      b = a.exports.csoundUgenSetString(b, c, d);
+      N(a, d);
+      return b;
+    },
+    csoundUgenGetString: (a) => (b, c) => {
+      b = a.exports.csoundUgenGetString(b, c);
+      return b === 0 ? null : Fa(a, b);
+    },
+    csoundUgenGetInCount: (a) => (b) => a.exports.csoundUgenGetInCount(b),
+    csoundUgenGetOutCount: (a) => (b) => a.exports.csoundUgenGetOutCount(b),
+    csoundUgenGetInType: (a) => (b, c) => a.exports.csoundUgenGetInType(b, c),
+    csoundUgenGetOutType: (a) => (b, c) => a.exports.csoundUgenGetOutType(b, c),
+    csoundUgenInit: (a) => (b) => a.exports.csoundUgenInit(b),
+    csoundUgenPerform: (a) => (b) => a.exports.csoundUgenPerform(b),
+    csoundUgenListOpcodes: (a) => (b) => {
+      const c = a.exports.allocStringMem(4),
+        d = a.exports.allocStringMem(4);
+      if (a.exports.csoundUgenListOpcodes(b, c, d) !== 0)
+        return (a.exports.freeStringMem(c), a.exports.freeStringMem(d), []);
+      const e = new DataView(a.exports.memory.buffer),
+        h = e.getInt32(c, !0),
+        f = e.getInt32(d, !0),
+        l = [];
+      for (let k = 0; k < f; k++) {
+        var g = h + k * 20;
+        const m = e.getInt32(g, !0),
+          r = e.getInt32(g + 4, !0);
+        g = e.getInt32(g + 8, !0);
+        l.push({
+          opname: m ? Fa(a, m) : "",
+          outypes: r ? Fa(a, r) : "",
+          intypes: g ? Fa(a, g) : "",
+        });
+      }
+      a.exports.csoundUgenFreeOpcodeList(b, h);
+      a.exports.freeStringMem(c);
+      a.exports.freeStringMem(d);
+      return l;
+    },
+    csoundUgenFindOpcode: (a) => (b, c, d, e) => {
+      c = O(a, c);
+      d = O(a, d);
+      e = O(a, e);
+      b = a.exports.csoundUgenFindOpcode(b, c, d, e);
+      N(a, c);
+      N(a, d);
+      N(a, e);
+      return b;
+    },
+    csoundUgenGraphNew: (a) => (b) => a.exports.csoundUgenGraphNew(b),
+    csoundUgenGraphAdd: (a) => (b, c) => a.exports.csoundUgenGraphAdd(b, c),
+    csoundUgenGraphInit: (a) => (b) => a.exports.csoundUgenGraphInit(b),
+    csoundUgenGraphPerform: (a) => (b) => a.exports.csoundUgenGraphPerform(b),
+    csoundUgenGraphDelete: (a) => (b) => a.exports.csoundUgenGraphDelete(b),
+    csoundUgenGraphDeleteAll: (a) => (b) => a.exports.csoundUgenGraphDeleteAll(b),
+    csoundUgenVarGetFloat64Array: (a) => (b) => {
+      const c = a.exports.csoundUgenVarGetDataAsFloat64Array(b);
+      b = a.exports.csoundUgenVarGetKsmps(b);
+      return c === 0 || b === 0
+        ? new Float64Array(0)
+        : new Float64Array(a.exports.memory.buffer, c, b);
+    },
+    fs: X,
   };
-  function Nb(a) {
-    const { fs: b, ...c } = Mb;
+  function ic(a) {
+    const { fs: b, UGEN_ARG_TYPE: c, ...d } = hc;
     return {
-      ...Object.keys(c).reduce((d, e) => {
-        d[e] = c[e](a);
-        return d;
+      ...Object.keys(d).reduce((e, h) => {
+        e[h] = d[h](a);
+        return e;
       }, {}),
-      ...Object.keys(b).reduce((d, e) => {
-        d[e] = b[e](a);
-        return d;
+      ...Object.keys(b).reduce((e, h) => {
+        e[h] = b[h](a);
+        return e;
       }, {}),
+      UGEN_ARG_TYPE: c,
     };
   }
-  void 0 !== r && (r = {});
-  r.BigInt || (r.BigInt = void 0 === BigInt ? Number : BigInt);
-  const Ob =
-      r.BigInt(1) |
-      r.BigInt(2) |
-      r.BigInt(4) |
-      r.BigInt(8) |
-      r.BigInt(16) |
-      r.BigInt(32) |
-      r.BigInt(64) |
-      r.BigInt(128) |
-      r.BigInt(256) |
-      r.BigInt(2097152) |
-      r.BigInt(4194304) |
-      r.BigInt(8388608) |
-      r.BigInt(134217728),
-    Pb = r.BigInt(0);
-  function Qb(a) {
+  const jc = new WeakMap(),
+    kc = (a, b) => {
+      let c = jc.get(a);
+      c || ((c = new WeakMap()), jc.set(a, c));
+      let d = c.get(b);
+      if (d === void 0 || a.get(d) !== b) ((d = a.length), a.grow(1), a.set(d, b), c.set(b, d));
+      return d;
+    },
+    lc = (a, b, c, d, e = c, h) => {
+      var f = a && a.exports ? a.exports : {};
+      if (b.exports.csoundModuleInit)
+        if (typeof f.csoundWasiLoadPlugin !== "function")
+          (typeof b.exports.csoundModuleCreate === "function" && b.exports.csoundModuleCreate(d),
+            b.exports.csoundModuleInit(d));
+        else {
+          var l = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0),
+            g = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0),
+            k = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0),
+            m = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0);
+          typeof b.exports.csoundModuleCreate === "function" &&
+            (l.value = kc(c, b.exports.csoundModuleCreate));
+          typeof b.exports.csoundModuleInit === "function" &&
+            (g.value = kc(c, b.exports.csoundModuleInit));
+          typeof b.exports.csoundModuleDestroy === "function" &&
+            (k.value = kc(c, b.exports.csoundModuleDestroy));
+          typeof b.exports.csoundModuleErrorCodeToString === "function" &&
+            (m.value = kc(c, b.exports.csoundModuleErrorCodeToString));
+          f.csoundWasiLoadPlugin(d, l, g, k, m);
+        }
+      else if (b.exports.csound_opcode_init || b.exports.csound_fgen_init)
+        if (typeof f.csoundWasiLoadOpcodeLibrary !== "function") {
+          a = f.csoundAppendOpcodes;
+          var r = f.allocStringMem;
+          const w = f.freeStringMem;
+          h = h || f.memory;
+          f = [];
+          typeof a !== "function" && f.push("csoundAppendOpcodes");
+          typeof r !== "function" && f.push("allocStringMem");
+          typeof w !== "function" && f.push("freeStringMem");
+          h || f.push("memory");
+          if (typeof b.exports.csound_opcode_init === "function" && f.length === 0) {
+            f = r(4);
+            try {
+              var q = b.exports.csound_opcode_init(d, f),
+                t = Number(q);
+              l = new DataView(h.buffer).getUint32(f, !0);
+              g = Math.floor(t / 40);
+              if (g > 0 && l !== 0) {
+                k = r(g * 40);
+                m = new DataView(h.buffer);
+                q = (D) => {
+                  if (!D) return 0;
+                  const G = e.get(D);
+                  return G
+                    ? kc(c, G)
+                    : (console.error(`Missing plugin function at table index ${D}`), 0);
+                };
+                try {
+                  for (t = 0; t < g; t += 1) {
+                    r = l + t * 40;
+                    h = k + t * 40;
+                    const D = m.getUint32(r, !0),
+                      G = m.getUint32(r + 4, !0),
+                      P = m.getInt32(r + 8, !0),
+                      Q = m.getUint32(r + 12, !0),
+                      T = m.getUint32(r + 16, !0),
+                      I = m.getUint32(r + 20, !0),
+                      K = m.getUint32(r + 24, !0),
+                      U = m.getUint32(r + 28, !0),
+                      V = m.getUint32(r + 32, !0),
+                      p = m.getInt32(r + 36, !0);
+                    m.setUint32(h + 0, D, !0);
+                    m.setUint32(h + 4, G, !0);
+                    m.setInt32(h + 8, P, !0);
+                    m.setUint32(h + 12, Q, !0);
+                    m.setUint32(h + 16, T, !0);
+                    m.setUint32(h + 20, q(I), !0);
+                    m.setUint32(h + 24, q(K), !0);
+                    m.setUint32(h + 28, q(U), !0);
+                    m.setUint32(h + 32, V, !0);
+                    m.setInt32(h + 36, p, !0);
+                  }
+                  a(d, k, g);
+                } finally {
+                  w(k);
+                }
+              } else console.error("Invalid opcode table returned by csound_opcode_init");
+            } finally {
+              w(f);
+            }
+          } else
+            typeof b.exports.csound_opcode_init === "function" &&
+              console.error(
+                `Missing required host exports for opcode plugin loading: ${f.join(", ")}`,
+              );
+          typeof b.exports.csound_fgen_init === "function" &&
+            console.warn(
+              "csound_fgen_init plugins are not supported by the current WASM loader path.",
+            );
+        } else
+          ((l = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0)),
+            (g = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0)),
+            typeof b.exports.csound_opcode_init === "function" &&
+              (l.value = kc(c, b.exports.csound_opcode_init)),
+            typeof b.exports.csound_fgen_init === "function" &&
+              (g.value = kc(c, b.exports.csound_fgen_init)),
+            f.csoundWasiLoadOpcodeLibrary(d, g, l));
+      else console.error("Plugin doesn't export nececcary functions to quality as csound plugin.");
+    };
+  v !== void 0 && (v = {});
+  v.BigInt || (v.BigInt = BigInt === void 0 ? Number : BigInt);
+  const mc =
+      v.BigInt(1) |
+      v.BigInt(2) |
+      v.BigInt(4) |
+      v.BigInt(8) |
+      v.BigInt(16) |
+      v.BigInt(32) |
+      v.BigInt(64) |
+      v.BigInt(128) |
+      v.BigInt(256) |
+      v.BigInt(2097152) |
+      v.BigInt(4194304) |
+      v.BigInt(8388608) |
+      v.BigInt(134217728),
+    nc = v.BigInt(0);
+  function oc(a) {
     let b = arguments[0];
     for (let d = 1; d < arguments.length; d++) {
       const e = arguments[d];
-      if (0 == e.lastIndexOf("/", 0)) b = e;
+      if (e.lastIndexOf("/", 0) == 0) b = e;
       else {
         var c;
-        (c = "" == b) || ((c = b.length - 1), (c = 0 <= c && b.indexOf("/", c) == c));
+        (c = b == "") || ((c = b.length - 1), (c = c >= 0 && b.indexOf("/", c) == c));
         c ? (b += e) : (b += "/" + e);
       }
     }
     return b;
   }
-  function Rb(a) {
-    return a ? a.split("/").filter((b) => 0 < b.length && "." !== b) : [];
+  function pc(a) {
+    return a ? a.split("/").filter((b) => b.length > 0 && b !== ".") : [];
   }
-  function Sb(a) {
+  function qc(a) {
     if (!a) return "/";
     const b = [];
-    Rb(a).forEach((c) => {
-      ".." === c ? 0 < b.length && b.pop() : b.push(c);
+    pc(a).forEach((c) => {
+      c === ".." ? b.length > 0 && b.pop() : b.push(c);
     });
-    return 0 < b.length ? `/${b.join("/")}` : "/";
+    return b.length > 0 ? `/${b.join("/")}` : "/";
   }
-  function T(a, b) {
-    if (!b || "." === b) return Sb(a || "/");
-    if (/^\//.test(b)) return Sb(b);
-    a = Rb(a || "/");
+  function S(a, b) {
+    if (!b || b === ".") return qc(a || "/");
+    if (/^\//.test(b)) return qc(b);
+    a = pc(a || "/");
     b = b.split("/");
     const c = [...a];
     b.forEach((d) => {
-      d && "." !== d && (".." === d ? 0 < c.length && c.pop() : c.push(d));
+      d && d !== "." && (d === ".." ? c.length > 0 && c.pop() : c.push(d));
     });
-    return 0 < c.length ? `/${c.join("/")}` : "/";
+    return c.length > 0 ? `/${c.join("/")}` : "/";
   }
-  function Tb() {
-    return "undefined" === typeof performance || "undefined" === typeof performance.now
+  function rc() {
+    return typeof performance === "undefined" || typeof performance.now === "undefined"
       ? Date.now() - Date.now()
       : performance.now();
   }
-  function Ub(a) {
+  function sc(a) {
     var b = a.reduce((d, e) => d + e.length, 0);
-    if (0 !== a.length) {
+    if (a.length !== 0) {
       b = new Uint8Array(b);
       var c = 0;
       for (const d of a) (b.set(d, c), (c += d.length));
@@ -757,251 +1026,263 @@
     }
   }
   function F() {
-    var { T: a } = { T: { "/": "/" } };
+    ({ ha: a } = { ha: { "/": "/" } });
+    var a;
     this.fd = Array.from({ length: 4 });
-    this.fd[0] = { fd: 0, path: "/dev/stdin", seekPos: r.BigInt(0), buffers: [] };
-    this.fd[1] = { fd: 1, path: "/dev/stdout", seekPos: r.BigInt(0), buffers: [] };
-    this.fd[2] = { fd: 2, path: "/dev/stderr", seekPos: r.BigInt(0), buffers: [] };
-    this.fd[3] = { fd: 3, path: "/", seekPos: r.BigInt(0), buffers: [], type: "dir" };
-    this.h = this.h.bind(this);
+    this.fd[0] = { fd: 0, path: "/dev/stdin", seekPos: v.BigInt(0), buffers: [] };
+    this.fd[1] = { fd: 1, path: "/dev/stdout", seekPos: v.BigInt(0), buffers: [] };
+    this.fd[2] = { fd: 2, path: "/dev/stderr", seekPos: v.BigInt(0), buffers: [] };
+    this.fd[3] = { fd: 3, path: "/", seekPos: v.BigInt(0), buffers: [], type: "dir" };
+    this.getMemory = this.getMemory.bind(this);
     this.g = 0;
     this.cwd = "/";
-    this.T = a || {};
+    this.ha = a || {};
   }
   F.prototype.start = function (a) {
-    this.g = Tb();
-    a.exports._start();
+    this.g = rc();
+    a = a.exports._initialize;
+    if (typeof a !== "function")
+      throw new TypeError("Browser WASI module does not export _initialize");
+    a();
   };
-  function Vb(a, b) {
+  function tc(a, b) {
     const c = {};
     b = WebAssembly.Module.imports(b);
     for (const d of b)
-      "function" === d.kind &&
+      d.kind === "function" &&
         d.module.startsWith("wasi_") &&
-        ("object" !== typeof c[d.module] && (c[d.module] = {}),
+        (typeof c[d.module] !== "object" && (c[d.module] = {}),
         (c[d.module][d.name] = a[d.name].bind(a)));
     return c;
   }
-  F.prototype.h = function () {
+  F.prototype.getMemory = function () {
     (this.view && this.view.buffer && this.view.buffer.byteLength) ||
       (this.view = new DataView(this.memory.buffer));
     return this.view;
   };
-  function Wb(a, b) {
-    b = Sb(b);
+  function uc(a, b) {
+    b = qc(b);
+    const c = [];
     a = Object.values(a.fd);
-    for (const c of a) if (c && c.path === b) return c;
-    return null;
+    for (const d of a) {
+      let e;
+      ((e = d) == null ? void 0 : e.path) === b && c.push(d);
+    }
+    return c;
   }
-  function Kb(a, b) {
-    b = Sb(T(a.cwd, b));
-    if ("/" === b)
+  function cc(a, b) {
+    a = uc(a, b);
+    return a.length > 0 ? a[a.length - 1] : null;
+  }
+  function ec(a, b) {
+    b = qc(S(a.cwd, b));
+    if (b === "/")
       return ((a.cwd = "/"), a.fd[3] && ((a.fd[3].path = "/"), (a.fd[3].type = "dir")), 0);
-    const c = Wb(a, b);
+    const c = cc(a, b);
     if (!c) return 44;
-    if (c.type && "dir" !== c.type) return 54;
+    if (c.type && c.type !== "dir") return 54;
     a.cwd = b;
     a.fd[3] && ((a.fd[3].path = b), (a.fd[3].type = "dir"));
     return 0;
   }
-  function Xb(a) {
+  function vc(a) {
     const b = Math.trunc(a);
-    return r.BigInt(b) * r.BigInt(1e6) + r.BigInt(Math.round(1e6 * (a - b)));
+    return v.BigInt(b) * v.BigInt(1e6) + v.BigInt(Math.round((a - b) * 1e6));
   }
-  function Yb(a, b) {
+  function wc(a, b) {
     switch (b) {
       case 1:
-        return Math.floor(Tb());
+        return Math.floor(rc());
       case 0:
-        return Xb(Date.now());
+        return vc(Date.now());
       case 2:
       case 3:
-        return Math.floor(Tb() - a.g);
+        return Math.floor(rc() - a.g);
       default:
         return 0;
     }
   }
-  F.prototype.aa = function () {
-    return 0;
-  };
-  C("args_get", F.prototype.aa);
-  F.prototype.ba = function () {
-    return 0;
-  };
-  C("args_sizes_get", F.prototype.ba);
-  F.prototype.ca = function () {
-    return 0;
-  };
-  C("clock_res_get", F.prototype.ca);
-  F.prototype.da = function (a, b, c) {
-    this.h().setBigUint64(c, r.BigInt(Yb(this, a)), !0);
-    return 0;
-  };
-  C("clock_time_get", F.prototype.da);
-  F.prototype.ea = function () {
-    return 0;
-  };
-  C("environ_get", F.prototype.ea);
-  F.prototype.fa = function () {
-    return 0;
-  };
-  C("environ_sizes_get", F.prototype.fa);
-  F.prototype.ga = function () {
-    return 52;
-  };
-  C("fd_advise", F.prototype.ga);
-  F.prototype.ha = function () {
-    return 52;
-  };
-  C("fd_allocate", F.prototype.ha);
-  F.prototype.ia = function () {
-    return 0;
-  };
-  C("fd_close", F.prototype.ia);
-  F.prototype.ja = function () {
-    return 0;
-  };
-  C("fd_datasync", F.prototype.ja);
-  F.prototype.ka = function (a, b) {
-    a = this.h();
-    a.setUint8(b + 4, 4);
-    a.setUint16(b + 2, 0, !0);
-    a.setUint16(b + 4, 0, !0);
-    a.setBigUint64(b + 8, r.BigInt(Ob), !0);
-    a.setBigUint64(b + 8 + 8, r.BigInt(Pb), !0);
-    return 0;
-  };
-  C("fd_fdstat_get", F.prototype.ka);
   F.prototype.la = function () {
-    return 52;
+    return 0;
   };
-  C("fd_fdstat_set_flags", F.prototype.la);
+  C("args_get", F.prototype.la);
   F.prototype.ma = function () {
     return 0;
   };
-  C("fd_fdstat_set_rights", F.prototype.ma);
-  F.prototype.na = function (a, b) {
-    let c = 0;
-    this.fd[a] &&
-      (c = this.fd[a].buffers.reduce(function (e, g) {
-        return e + (null == g ? void 0 : g.byteLength) ? (null == g ? void 0 : g.byteLength) : 0;
-      }, 0));
-    const d = this.h();
-    d.setBigUint64(b, r.BigInt(a), !0);
-    b += 8;
-    d.setBigUint64(b, r.BigInt(a), !0);
-    b += 8;
-    d.setUint8(b, 4);
-    b += 8;
-    d.setBigUint64(b, r.BigInt(1), !0);
-    b += 8;
-    d.setBigUint64(b, r.BigInt(c), !0);
-    b += 8;
-    d.setBigUint64(b, Xb(this.g), !0);
-    b += 8;
-    d.setBigUint64(b, Xb(this.g), !0);
-    d.setBigUint64(b + 8, Xb(this.g), !0);
-    return 0;
-  };
-  C("fd_filestat_get", F.prototype.na);
+  C("args_sizes_get", F.prototype.ma);
   F.prototype.oa = function () {
     return 0;
   };
-  C("fd_filestat_set_size", F.prototype.oa);
-  F.prototype.pa = function () {
+  C("clock_res_get", F.prototype.oa);
+  F.prototype.pa = function (a, b, c) {
+    this.getMemory().setBigUint64(c, v.BigInt(wc(this, a)), !0);
     return 0;
   };
-  C("fd_filestat_set_times", F.prototype.pa);
-  F.prototype.qa = function () {
+  C("clock_time_get", F.prototype.pa);
+  F.prototype.ra = function () {
     return 0;
   };
-  C("fd_pread", F.prototype.qa);
-  F.prototype.ra = function (a, b) {
+  C("environ_get", F.prototype.ra);
+  F.prototype.sa = function () {
+    return 0;
+  };
+  C("environ_sizes_get", F.prototype.sa);
+  F.prototype.ta = function () {
+    return 52;
+  };
+  C("fd_advise", F.prototype.ta);
+  F.prototype.ua = function () {
+    return 52;
+  };
+  C("fd_allocate", F.prototype.ua);
+  F.prototype.va = function () {
+    return 0;
+  };
+  C("fd_close", F.prototype.va);
+  F.prototype.wa = function () {
+    return 0;
+  };
+  C("fd_datasync", F.prototype.wa);
+  F.prototype.xa = function (a, b) {
+    a = this.getMemory();
+    a.setUint8(b + 4, 4);
+    a.setUint16(b + 2, 0, !0);
+    a.setUint16(b + 4, 0, !0);
+    a.setBigUint64(b + 8, v.BigInt(mc), !0);
+    a.setBigUint64(b + 8 + 8, v.BigInt(nc), !0);
+    return 0;
+  };
+  C("fd_fdstat_get", F.prototype.xa);
+  F.prototype.ya = function () {
+    return 52;
+  };
+  C("fd_fdstat_set_flags", F.prototype.ya);
+  F.prototype.za = function () {
+    return 0;
+  };
+  C("fd_fdstat_set_rights", F.prototype.za);
+  F.prototype.Aa = function (a, b) {
+    let c = 0;
+    this.fd[a] &&
+      (c = this.fd[a].buffers.reduce(function (e, h) {
+        return e + (h == null ? void 0 : h.byteLength) ? (h == null ? void 0 : h.byteLength) : 0;
+      }, 0));
+    const d = this.getMemory();
+    d.setBigUint64(b, v.BigInt(a), !0);
+    b += 8;
+    d.setBigUint64(b, v.BigInt(a), !0);
+    b += 8;
+    d.setUint8(b, 4);
+    b += 8;
+    d.setBigUint64(b, v.BigInt(1), !0);
+    b += 8;
+    d.setBigUint64(b, v.BigInt(c), !0);
+    b += 8;
+    d.setBigUint64(b, vc(this.g), !0);
+    b += 8;
+    d.setBigUint64(b, vc(this.g), !0);
+    d.setBigUint64(b + 8, vc(this.g), !0);
+    return 0;
+  };
+  C("fd_filestat_get", F.prototype.Aa);
+  F.prototype.Ba = function () {
+    return 0;
+  };
+  C("fd_filestat_set_size", F.prototype.Ba);
+  F.prototype.Ca = function () {
+    return 0;
+  };
+  C("fd_filestat_set_times", F.prototype.Ca);
+  F.prototype.Da = function () {
+    return 0;
+  };
+  C("fd_pread", F.prototype.Da);
+  F.prototype.Ea = function (a, b) {
     if (!this.fd[a] && !this.fd[a - 1]) return 8;
     var { path: c } = this.fd[a];
-    a = this.h();
-    c = wa.encode(c);
+    a = this.getMemory();
+    c = Aa.encode(c);
     new Uint8Array(a.buffer).set(c, b);
     return 0;
   };
-  C("fd_prestat_dir_name", F.prototype.ra);
-  F.prototype.sa = function (a, b) {
+  C("fd_prestat_dir_name", F.prototype.Ea);
+  F.prototype.Fa = function (a, b) {
     if (!this.fd[a]) return 8;
     var { path: c } = this.fd[a];
-    a = this.h();
-    c = wa.encode(c);
+    a = this.getMemory();
+    c = Aa.encode(c);
     a.setUint8(b, 0);
     a.setUint32(b + 4, c.byteLength, !0);
     return 0;
   };
-  C("fd_prestat_get", F.prototype.sa);
-  F.prototype.ta = function (a, b, c, d, e) {
+  C("fd_prestat_get", F.prototype.Fa);
+  F.prototype.Ga = function (a, b, c, d, e) {
     console.log("fd_pwrite", a, b, c, d, e, arguments);
     return 0;
   };
-  C("fd_pwrite", F.prototype.ta);
-  F.prototype.ua = function (a, b, c, d) {
-    const e = this.h();
+  C("fd_pwrite", F.prototype.Ga);
+  F.prototype.Ha = function (a, b, c, d) {
+    const e = this.getMemory();
     a = this.fd[a];
     if (!a || !Array.isArray(a.buffers)) return (e.setUint32(d, 0, !0), 8);
-    const g = a.buffers;
-    if (0 === g.length) return (e.setUint32(d, 0, !0), (a.seekPos = r.BigInt(0)), 0);
-    var h = g.reduce((q, p) => q + p.length, 0);
-    let f = Number(a.seekPos),
-      k = 0,
-      l = !1;
-    if (f >= h) return ((b = e.getUint32(b, !0)), e.setUint8(b, 0), e.setUint32(d, 0, !0), 0);
-    for (h = 0; h < c; h++) {
-      var n = b + 8 * h;
-      const q = e.getUint32(n, !0);
-      n = e.getUint32(n + 4, !0);
-      l ||
-        ((k += n),
-        Array.from({ length: n }, (p, t) => t).reduce(
-          (p, t) => {
-            if (l) return p;
-            const [y, L] = p;
-            let A = (p = 0),
-              x = !1,
-              v = 0,
-              H;
-            if (0 === t)
-              for (; !x; )
-                ((H = g[p] ? g[p].byteLength : 0),
-                  v <= f && H + v > f ? ((x = !0), (A = f - v)) : ((v += H), (p += 1)));
-            else ((p = y), (A = L));
-            g[p]
-              ? (e.setUint8(q + t, g[p][A]),
-                A + 1 >= g[p].byteLength ? ((p = y + 1), (A = 0)) : (A += 1))
-              : (e.setUint8(q + t, 0), (f += t), (l = !0));
-            return [p, A];
+    const h = a.buffers;
+    if (h.length === 0) return (e.setUint32(d, 0, !0), (a.seekPos = v.BigInt(0)), 0);
+    var f = h.reduce((r, q) => r + q.length, 0);
+    let l = Number(a.seekPos),
+      g = 0,
+      k = !1;
+    if (l >= f) return ((b = e.getUint32(b, !0)), e.setUint8(b, 0), e.setUint32(d, 0, !0), 0);
+    for (f = 0; f < c; f++) {
+      var m = b + f * 8;
+      const r = e.getUint32(m, !0);
+      m = e.getUint32(m + 4, !0);
+      k ||
+        ((g += m),
+        Array.from({ length: m }, (q, t) => t).reduce(
+          (q, t) => {
+            if (k) return q;
+            const [w, D] = q;
+            let G = (q = 0),
+              P = !1,
+              Q = 0,
+              T;
+            if (t === 0)
+              for (; !P; )
+                ((T = h[q] ? h[q].byteLength : 0),
+                  Q <= l && T + Q > l ? ((P = !0), (G = l - Q)) : ((Q += T), (q += 1)));
+            else ((q = w), (G = D));
+            h[q]
+              ? (e.setUint8(r + t, h[q][G]),
+                G + 1 >= h[q].byteLength ? ((q = w + 1), (G = 0)) : (G += 1))
+              : (e.setUint8(r + t, 0), (l += t), (k = !0));
+            return [q, G];
           },
           [0, 0],
         ),
-        l || (f += n));
+        k || (l += m));
     }
-    a.seekPos = r.BigInt(f);
-    e.setUint32(d, k, !0);
+    a.seekPos = v.BigInt(l);
+    e.setUint32(d, g, !0);
     return 0;
   };
-  C("fd_read", F.prototype.ua);
-  F.prototype.va = function () {
+  C("fd_read", F.prototype.Ha);
+  F.prototype.Ia = function () {
     return 0;
   };
-  C("fd_readdir", F.prototype.va);
-  F.prototype.wa = function () {
+  C("fd_readdir", F.prototype.Ia);
+  F.prototype.Ja = function () {
     return 0;
   };
-  C("fd_renumber", F.prototype.wa);
-  F.prototype.xa = function (a, b, c, d) {
-    const e = this.h();
+  C("fd_renumber", F.prototype.Ja);
+  F.prototype.Ka = function (a, b, c, d) {
+    const e = this.getMemory();
     switch (c) {
       case 1:
-        let g;
-        this.fd[a].seekPos = (null != (g = this.fd[a].seekPos) ? g : r.BigInt(0)) + r.BigInt(b);
+        let h;
+        this.fd[a].seekPos = ((h = this.fd[a].seekPos) != null ? h : v.BigInt(0)) + v.BigInt(b);
         break;
       case 2:
-        c = (this.fd[a].buffers || []).reduce((h, f) => h + f.length, 0);
+        c = (this.fd[a].buffers || []).reduce((f, l) => f + l.length, 0);
         this.fd[a].seekPos = BigInt(c) + BigInt(b);
         break;
       case 0:
@@ -1010,417 +1291,515 @@
     e.setBigUint64(d, this.fd[a].seekPos, !0);
     return 0;
   };
-  C("fd_seek", F.prototype.xa);
-  F.prototype.ya = function () {
+  C("fd_seek", F.prototype.Ka);
+  F.prototype.La = function () {
     return 0;
   };
-  C("fd_sync", F.prototype.ya);
-  F.prototype.za = function (a, b) {
-    const c = this.h();
-    this.fd[a].seekPos || (this.fd[a].seekPos = r.BigInt(0));
+  C("fd_sync", F.prototype.La);
+  F.prototype.Ma = function (a, b) {
+    const c = this.getMemory();
+    this.fd[a].seekPos || (this.fd[a].seekPos = v.BigInt(0));
     c.setBigUint64(b, this.fd[a].seekPos, !0);
     return 0;
   };
-  C("fd_tell", F.prototype.za);
-  F.prototype.Aa = function (a, b, c, d) {
+  C("fd_tell", F.prototype.Ma);
+  F.prototype.Na = function (a, b, c, d) {
     let e = !1;
-    const g = this.h();
+    const h = this.getMemory();
     this.fd[a].buffers = this.fd[a].buffers || [];
-    this.fd[a].seekPos === r.BigInt(0) && 0 < this.fd[a].buffers.length && (e = !0);
-    let h = 0;
-    for (let l = 0; l < c; l++) {
-      var f = b + 8 * l,
-        k = g.getUint32(f, !0);
-      f = g.getUint32(f + 4, !0);
-      h += f;
-      k = new Uint8Array(g.buffer, k, f);
-      e ? this.fd[a].buffers.unshift(k.slice(0, f)) : this.fd[a].buffers.push(k.slice(0, f));
+    this.fd[a].seekPos === v.BigInt(0) && this.fd[a].buffers.length > 0 && (e = !0);
+    let f = 0;
+    for (let k = 0; k < c; k++) {
+      var l = b + k * 8,
+        g = h.getUint32(l, !0);
+      l = h.getUint32(l + 4, !0);
+      f += l;
+      g = new Uint8Array(h.buffer, g, l);
+      e ? this.fd[a].buffers.unshift(g.slice(0, l)) : this.fd[a].buffers.push(g.slice(0, l));
     }
-    this.fd[a].seekPos += r.BigInt(h);
-    g.setUint32(d, h, !0);
-    [1, 2].includes(a) && console.log(M.decode(Ub(this.fd[a].buffers)));
+    this.fd[a].seekPos += v.BigInt(f);
+    h.setUint32(d, f, !0);
+    [1, 2].includes(a) && console.log(L.decode(sc(this.fd[a].buffers)));
     return 0;
   };
-  C("fd_write", F.prototype.Aa);
-  F.prototype.Ba = function () {
+  C("fd_write", F.prototype.Na);
+  F.prototype.Oa = function () {
     return 0;
   };
-  C("path_create_directory", F.prototype.Ba);
-  F.prototype.Ca = function () {
+  C("path_create_directory", F.prototype.Oa);
+  F.prototype.Pa = function () {
     return 0;
   };
-  C("path_filestat_get", F.prototype.Ca);
-  F.prototype.Da = function () {
+  C("path_filestat_get", F.prototype.Pa);
+  F.prototype.Qa = function () {
     return 0;
   };
-  C("path_filestat_set_times", F.prototype.Da);
-  F.prototype.Ea = function () {
+  C("path_filestat_set_times", F.prototype.Qa);
+  F.prototype.Ra = function () {
     return 0;
   };
-  C("path_link", F.prototype.Ea);
-  F.prototype.Fa = function (a, b, c, d, e, g, h, f, k) {
-    b = this.h();
-    g = (this.fd[a] || { path: this.cwd }).path;
+  C("path_link", F.prototype.Ra);
+  F.prototype.Sa = function (a, b, c, d, e, h, f, l, g) {
+    b = this.getMemory();
+    h = (this.fd[a] || { path: this.cwd }).path;
     c = new Uint8Array(b.buffer, c, d);
-    c = M.decode(c);
-    let l;
-    3 === a ? (l = T(this.cwd, c)) : (l = Sb(Qb(g, c)));
-    if (l.startsWith("/..") || "/._" === l || "/.AppleDouble" === l) return 8;
-    a = 0 !== (e & 2);
-    d = 0 !== (e & 1);
-    if ((c = Wb(this, l)) && "dir" === c.type && !a) return 31;
+    c = L.decode(c);
+    let k;
+    a === 3 ? (k = S(this.cwd, c)) : (k = qc(oc(h, c)));
+    if (k.startsWith("/..") || k === "/._" || k === "/.AppleDouble") return 8;
+    a = (e & 2) !== 0;
+    d = (e & 1) !== 0;
+    if ((c = cc(this, k)) && c.type === "dir" && !a) return 31;
     if (!c && a) return 44;
-    if (!c && !d && !a) return (b.setUint32(k, 4294967295, !0), 44);
+    if (!c && !d && !a) return (b.setUint32(g, 4294967295, !0), 44);
     d = c ? c.fd : this.fd.length;
-    c || void 0 !== this.fd[d] || (this.fd[d] = { fd: d });
+    c || this.fd[d] !== void 0 || (this.fd[d] = { fd: d });
     c = c || this.fd[d] || { fd: d };
     this.fd[d] = {
       ...c,
       fd: d,
-      path: l,
+      path: k,
       type: a ? "dir" : c.type || "file",
-      seekPos: r.BigInt(0),
+      seekPos: v.BigInt(0),
       buffers: Array.isArray(c.buffers) ? c.buffers : [],
     };
-    0 === (e & 8) || a || (this.fd[d].buffers.length = 0);
-    b.setUint32(k, d, !0);
+    (e & 8) === 0 || a || (this.fd[d].buffers.length = 0);
+    b.setUint32(g, d, !0);
     return 0;
   };
-  C("path_open", F.prototype.Fa);
-  F.prototype.Ga = function () {
+  C("path_open", F.prototype.Sa);
+  F.prototype.Ta = function () {
     return 0;
   };
-  C("path_readlink", F.prototype.Ga);
-  F.prototype.Ha = function () {
+  C("path_readlink", F.prototype.Ta);
+  F.prototype.Ua = function () {
     return 0;
   };
-  C("path_remove_directory", F.prototype.Ha);
-  F.prototype.Ia = function () {
+  C("path_remove_directory", F.prototype.Ua);
+  F.prototype.Va = function () {
     return 0;
   };
-  C("path_rename", F.prototype.Ia);
-  F.prototype.Ja = function () {
+  C("path_rename", F.prototype.Va);
+  F.prototype.Wa = function () {
     return 0;
   };
-  C("path_symlink", F.prototype.Ja);
-  F.prototype.Ka = function () {
+  C("path_symlink", F.prototype.Wa);
+  F.prototype.Xa = function () {
     return 0;
   };
-  C("path_unlink_file", F.prototype.Ka);
-  F.prototype.La = function () {
+  C("path_unlink_file", F.prototype.Xa);
+  F.prototype.Za = function () {
     return 0;
   };
-  C("poll_oneoff", F.prototype.La);
-  F.prototype.Ma = function () {
+  C("poll_oneoff", F.prototype.Za);
+  F.prototype.$a = function () {
     return 0;
   };
-  C("proc_exit", F.prototype.Ma);
-  F.prototype.Na = function () {
+  C("proc_exit", F.prototype.$a);
+  F.prototype.ab = function () {
     return 0;
   };
-  C("proc_raise", F.prototype.Na);
-  F.prototype.Oa = function () {
+  C("proc_raise", F.prototype.ab);
+  F.prototype.bb = function () {
     return 0;
   };
-  C("random_get", F.prototype.Oa);
-  F.prototype.Pa = function () {
+  C("random_get", F.prototype.bb);
+  F.prototype.cb = function () {
     return 0;
   };
-  C("sched_yield", F.prototype.Pa);
-  F.prototype.Qa = function () {
+  C("sched_yield", F.prototype.cb);
+  F.prototype.fb = function () {
     return 52;
   };
-  C("sock_recv", F.prototype.Qa);
-  F.prototype.Ra = function () {
+  C("sock_recv", F.prototype.fb);
+  F.prototype.eb = function () {
     return 52;
   };
-  C("sock_send", F.prototype.Ra);
-  F.prototype.Sa = function () {
+  C("sock_accept", F.prototype.eb);
+  F.prototype.gb = function () {
     return 52;
   };
-  C("sock_shutdown", F.prototype.Sa);
-  function Zb(a, b) {
-    return (a = Object.values(a.fd).find(({ path: c }) => c === b)) && a.buffers;
+  C("sock_send", F.prototype.gb);
+  F.prototype.hb = function () {
+    return 52;
+  };
+  C("sock_shutdown", F.prototype.hb);
+  function xc(a, b) {
+    let c;
+    return (c = cc(a, b)) == null ? void 0 : c.buffers;
   }
-  m = F.prototype;
-  m.readdir = function (a) {
-    a = T(this.cwd, a);
-    const b = "/" === a ? "/" : `${a}/`,
+  n = F.prototype;
+  n.readdir = function (a) {
+    a = S(this.cwd, a);
+    const b = a === "/" ? "/" : `${a}/`,
       c = [];
     Object.values(this.fd).forEach((d) => {
-      if (d && d.path && ((d = d.path), d.startsWith(b))) {
+      if (d != null && d.path && ((d = d.path), d.startsWith(b))) {
         var e = d.slice(b.length);
-        0 !== e.length && (/\//g.test(e) || c.push(d));
+        e.length !== 0 && (/\//g.test(e) || c.push(d));
       }
     });
-    return c.map((d) => d.replace(b, "").replace(/^\//g, "")).filter((d) => !!d);
+    a = c.map((d) => d.replace(b, "").replace(/^\//, "")).filter((d) => !!d);
+    return [...new Set(a)];
   };
-  m.writeFile = function (a, b) {
-    const c = T(this.cwd, a);
-    a = Object.keys(this.fd).length;
-    const d = Object.values(this.fd).find(({ path: e }) => e === c);
-    this.fd[a] = { fd: a, path: c, seekPos: r.BigInt(0), buffers: [b], type: "file" };
-    d && delete this.fd[d];
+  n.writeFile = function (a, b) {
+    a = S(this.cwd, a);
+    var c = uc(this, a);
+    c.length > 0
+      ? c.find((d) => d.type === "dir")
+        ? console.error(`Can't write file ${a}, path is a directory`)
+        : ((a = c[c.length - 1]),
+          (a.seekPos = v.BigInt(0)),
+          (a.buffers = [b]),
+          (a.type = "file"),
+          c.slice(0, -1).forEach((d) => {
+            delete this.fd[d.fd];
+          }))
+      : ((c = this.fd.length),
+        (this.fd[c] = { fd: c, path: a, seekPos: v.BigInt(0), buffers: [b], type: "file" }));
   };
-  m.appendFile = function (a, b) {
-    var c = T(this.cwd, a);
-    (c = Zb(this, c)) ? c.push(b) : console.error(`Can't append to non-existing file ${a}`);
+  n.appendFile = function (a, b) {
+    var c = S(this.cwd, a);
+    (c = xc(this, c)) ? c.push(b) : console.error(`Can't append to non-existing file ${a}`);
   };
-  m.readFile = function (a) {
-    a = T(this.cwd, a);
-    if ((a = Zb(this, a))) return Ub(a);
+  n.readFile = function (a) {
+    a = S(this.cwd, a);
+    if ((a = xc(this, a))) return sc(a);
   };
-  m.unlink = function (a) {
-    const b = T(this.cwd, a);
-    (a = Object.values(this.fd).find(({ path: c }) => c === b))
-      ? delete this.fd[a.fd]
-      : console.error(`While trying to unlink ${b}, path not found`);
+  n.unlink = function (a) {
+    a = S(this.cwd, a);
+    const b = uc(this, a);
+    b.length > 0
+      ? b.forEach((c) => {
+          delete this.fd[c.fd];
+        })
+      : console.error(`While trying to unlink ${a}, path not found`);
   };
-  m.mkdir = function (a) {
-    const b = T(this.cwd, a),
+  n.mkdir = function (a) {
+    const b = S(this.cwd, a),
       c = [];
-    Object.values(this.fd).forEach(({ path: d }) => d.startsWith(b) && c.push(d));
-    0 < c.length
+    Object.values(this.fd).forEach((d) => {
+      if (d != null && d.path) return d.path.startsWith(b) && c.push(d.path);
+    });
+    c.length > 0
       ? console.warn(`mkdir: path ${a} already exists`)
-      : ((a = Object.keys(this.fd).length), (this.fd[a] = { fd: a, path: b, type: "dir" }));
+      : ((a = this.fd.length), (this.fd[a] = { fd: a, path: b, type: "dir" }));
   };
-  m.stat = function (a) {
-    const b = T(this.cwd, a);
-    if ((a = Object.values(this.fd).find(({ path: e }) => e === b))) {
-      var c = (a.buffers || []).reduce((e, g) => e + ((null == g ? void 0 : g.byteLength) || 0), 0),
-        d = "dir" === a.type;
+  n.stat = function (a) {
+    a = S(this.cwd, a);
+    if ((a = cc(this, a))) {
+      var b,
+        c = ((b = a == null ? void 0 : a.buffers) != null ? b : []).reduce(
+          (d, e) => d + ((e == null ? void 0 : e.byteLength) || 0),
+          0,
+        );
+      b = a.type === "dir";
       return {
-        kb: 0,
-        nb: a.fd,
-        mode: d ? 16877 : 33188,
-        xb: 1,
-        uid: 0,
-        mb: 0,
         zb: 0,
+        Cb: a.fd,
+        mode: b ? 16877 : 33188,
+        Lb: 1,
+        uid: 0,
+        Bb: 0,
+        Nb: 0,
         size: c,
-        cb: 4096,
-        A: Math.ceil(c / 512),
-        $a: this.g,
-        vb: this.g,
-        jb: this.g,
-        bb: this.g,
-        Za: new Date(this.g),
-        ub: new Date(this.g),
-        ib: new Date(this.g),
-        ab: new Date(this.g),
-        isFile: !d,
-        isDirectory: d,
-        pb: !1,
-        qb: !1,
-        tb: !1,
-        rb: !1,
-        sb: !1,
+        rb: 4096,
+        G: Math.ceil(c / 512),
+        ob: this.g,
+        Kb: this.g,
+        xb: this.g,
+        qb: this.g,
+        nb: new Date(this.g),
+        Jb: new Date(this.g),
+        wb: new Date(this.g),
+        pb: new Date(this.g),
+        isFile: !b,
+        isDirectory: b,
+        Eb: !1,
+        Fb: !1,
+        Ib: !1,
+        Gb: !1,
+        Hb: !1,
       };
     }
   };
-  function Ib(a, b) {
-    const c = T(a.cwd, b);
-    return !!Object.values(a.fd).find(({ path: d }) => d === c);
+  function yc(a) {
+    for (; a.length > 0; ) a.pop();
   }
-  function $b(a) {
-    for (; 0 < a.length; ) a.pop();
-  }
-  let V, ac, bc;
-  V = () => () => {};
-  ac = () => () => {};
-  bc = () => {}; /*
+  const zc = () => ({ O: !1, ia: 0, D: 0, C: 0, Y: 0, X: 0, fa: 0, J: [] }),
+    Ac = (a, b = new TextDecoder("utf8")) => {
+      const c = a instanceof Uint8Array ? a : new Uint8Array(a);
+      if (!(c.length >= 8 && c[0] === 0 && c[1] === 97 && c[2] === 115 && c[3] === 109))
+        return zc();
+      let d = 8;
+      const e = (g) => {
+          let k = 0,
+            m = 1;
+          for (let r = 0; r < 5; r += 1) {
+            if (d >= g) throw Error("Unexpected end of WebAssembly data while reading ULEB");
+            const q = c[d];
+            d += 1;
+            k += (q & 127) * m;
+            if (k > 4294967295) throw Error("WebAssembly ULEB value exceeds uint32");
+            if ((q & 128) === 0) return k;
+            m *= 128;
+          }
+          throw Error("WebAssembly ULEB value is too long");
+        },
+        h = (g) => {
+          const k = e(g);
+          if (d + k > g) throw Error("Unexpected end of WebAssembly data while reading a name");
+          g = b.decode(c.subarray(d, d + k));
+          d += k;
+          return g;
+        };
+      a = (g, k) => {
+        const m = e(k),
+          r = e(k),
+          q = e(k),
+          t = e(k),
+          w = e(k),
+          D = [];
+        for (let G = 0; G < w; G += 1) D.push(h(k));
+        if (d !== k) throw Error("Unexpected data at the end of the dylink section");
+        return { O: !0, ia: g, D: m, C: r, Y: q, X: t, fa: w, J: D };
+      };
+      const f = (g, k) => {
+        const m = zc();
+        m.O = !0;
+        m.ia = g;
+        for (g = !1; d < k; ) {
+          var r = c[d];
+          d += 1;
+          var q = e(k);
+          q = d + q;
+          if (q > k) throw Error("dylink.0 subsection extends past its section");
+          if (r === 1) {
+            if (g) throw Error("dylink.0 contains more than one memory info subsection");
+            g = !0;
+            m.D = e(q);
+            m.C = e(q);
+            m.Y = e(q);
+            m.X = e(q);
+            if (d !== q) throw Error("Unexpected data in the dylink.0 memory info subsection");
+          } else if (r === 2) {
+            r = e(q);
+            for (let t = 0; t < r; t += 1) m.J.push(h(q));
+            if (d !== q) throw Error("Unexpected data in the dylink.0 needed libraries subsection");
+          }
+          d = q;
+        }
+        if (!g) throw Error("dylink.0 is missing its memory info subsection");
+        m.fa = m.J.length;
+        return m;
+      };
+      for (; d < c.length; ) {
+        var l = c[d];
+        d += 1;
+        const g = e(c.length),
+          k = d + g;
+        if (k > c.length) throw Error("WebAssembly section extends past the end of the binary");
+        if (l === 0) {
+          l = h(k);
+          if (l === "dylink") return a(g, k);
+          if (l === "dylink.0") return f(g, k);
+        }
+        d = k;
+      }
+      return zc();
+    }; /*
  zlib.js 2012 - imaya [ https://github.com/imaya/zlib.js ] The MIT License */
-  function cc(a) {
+  function Bc(a) {
     const b = a.length;
     let c = 0,
       d = Number.POSITIVE_INFINITY,
       e,
-      g,
       h,
-      f;
-    let k, l;
-    for (k = 0; k < b; ++k) (a[k] > c && (c = a[k]), a[k] < d && (d = a[k]));
-    const n = 1 << c,
-      q = new Uint32Array(n);
+      f,
+      l;
+    let g, k;
+    for (g = 0; g < b; ++g) (a[g] > c && (c = a[g]), a[g] < d && (d = a[g]));
+    const m = 1 << c,
+      r = new Uint32Array(m);
     e = 1;
-    g = 0;
-    for (h = 2; e <= c; ) {
-      for (k = 0; k < b; ++k)
-        if (a[k] === e) {
-          f = 0;
-          var p = g;
-          for (l = 0; l < e; ++l) ((f = (f << 1) | (p & 1)), (p >>= 1));
-          p = (e << 16) | k;
-          for (l = f; l < n; l += h) q[l] = p;
-          ++g;
+    h = 0;
+    for (f = 2; e <= c; ) {
+      for (g = 0; g < b; ++g)
+        if (a[g] === e) {
+          l = 0;
+          var q = h;
+          for (k = 0; k < e; ++k) ((l = (l << 1) | (q & 1)), (q >>= 1));
+          q = (e << 16) | g;
+          for (k = l; k < m; k += f) r[k] = q;
+          ++h;
         }
       ++e;
-      g <<= 1;
       h <<= 1;
+      f <<= 1;
     }
-    return [q, c, d];
+    return [r, c, d];
   }
-  function dc(a, b) {
-    this.A = [];
+  function Cc(a, b) {
+    this.G = [];
     this.bufferSize = 32768;
-    this.l = this.v = this.j = this.F = 0;
-    this.u = new Uint8Array(a);
-    this.U = !1;
-    this.m = W;
+    this.j = this.v = this.i = this.P = 0;
+    this.input = new Uint8Array(a);
+    this.ea = !1;
+    this.l = Dc;
     this.resize = !1;
     if (b || !(b = {}))
-      (b.index && (this.j = b.index),
+      (b.index && (this.i = b.index),
         b.bufferSize && (this.bufferSize = b.bufferSize),
-        b.m && (this.m = b.m),
+        b.l && (this.l = b.l),
         b.resize && (this.resize = b.resize));
-    switch (this.m) {
-      case ec:
+    switch (this.l) {
+      case Ec:
         this.g = 32768;
-        this.h = new Uint8Array(this.bufferSize + 33026);
+        this.output = new Uint8Array(32768 + this.bufferSize + 258);
         break;
-      case W:
+      case Dc:
         this.g = 0;
-        this.h = new Uint8Array(this.bufferSize);
+        this.output = new Uint8Array(this.bufferSize);
         break;
       default:
         throw Error("invalid inflate mode");
     }
   }
-  var ec = 0,
-    W = 1,
-    fc = new Uint16Array([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]),
-    gc = new Uint16Array([
+  var Ec = 0,
+    Dc = 1,
+    Fc = new Uint16Array([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]),
+    Gc = new Uint16Array([
       3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131,
       163, 195, 227, 258, 258, 258,
     ]),
-    hc = new Uint8Array([
+    Hc = new Uint8Array([
       0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0,
     ]),
-    ic = new Uint16Array([
+    Ic = new Uint16Array([
       1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537,
       2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577,
     ]),
-    jc = new Uint8Array([
+    Jc = new Uint8Array([
       0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13,
       13,
     ]),
-    kc;
-  const lc = new Uint8Array(288);
-  let X, mc;
-  X = 0;
-  for (mc = lc.length; X < mc; ++X) lc[X] = 143 >= X ? 8 : 255 >= X ? 9 : 279 >= X ? 7 : 8;
-  kc = cc(lc);
-  var nc;
-  const oc = new Uint8Array(30);
-  let pc, qc;
-  pc = 0;
-  for (qc = oc.length; pc < qc; ++pc) oc[pc] = 5;
-  nc = cc(oc);
+    Kc;
+  const Lc = new Uint8Array(288);
+  let Mc, Nc;
+  Mc = 0;
+  for (Nc = Lc.length; Mc < Nc; ++Mc) Lc[Mc] = Mc <= 143 ? 8 : Mc <= 255 ? 9 : Mc <= 279 ? 7 : 8;
+  Kc = Bc(Lc);
+  var Pc;
+  const Qc = new Uint8Array(30);
+  let Rc, Sc;
+  Rc = 0;
+  for (Sc = Qc.length; Rc < Sc; ++Rc) Qc[Rc] = 5;
+  Pc = Bc(Qc);
   function Z(a, b) {
     let c = a.v,
-      d = a.l;
-    const e = a.u;
-    let g = a.j;
-    if (g + ((b - d + 7) >> 3) >= e.length) throw Error("input buffer is broken");
-    for (; d < b; ) ((c |= e[g++] << d), (d += 8));
+      d = a.j;
+    const e = a.input;
+    let h = a.i;
+    if (h + ((b - d + 7) >> 3) >= e.length) throw Error("input buffer is broken");
+    for (; d < b; ) ((c |= e[h++] << d), (d += 8));
     a.v = c >>> b;
-    a.l = d - b;
-    a.j = g;
+    a.j = d - b;
+    a.i = h;
     return c & ((1 << b) - 1);
   }
-  function rc(a, b) {
+  function Tc(a, b) {
     let c = a.v,
-      d = a.l;
-    var e = a.u;
-    let g = a.j;
-    var h = e.length;
-    const f = b[0];
-    for (b = b[1]; d < b && !(g >= h); ) ((c |= e[g++] << d), (d += 8));
-    e = f[c & ((1 << b) - 1)];
-    h = e >>> 16;
-    if (h > d) throw Error("invalid code length: " + h);
-    a.v = c >> h;
-    a.l = d - h;
-    a.j = g;
+      d = a.j;
+    var e = a.input;
+    let h = a.i;
+    var f = e.length;
+    const l = b[0];
+    for (b = b[1]; d < b && !(h >= f); ) ((c |= e[h++] << d), (d += 8));
+    e = l[c & ((1 << b) - 1)];
+    f = e >>> 16;
+    if (f > d) throw Error("invalid code length: " + f);
+    a.v = c >> f;
+    a.j = d - f;
+    a.i = h;
     return e & 65535;
   }
-  function sc(a, b, c) {
-    let d = a.h,
+  function Uc(a, b, c) {
+    let d = a.output,
       e = a.g;
-    a.Y = b;
-    const g = d.length - 258;
-    var h;
-    let f, k;
-    for (; 256 !== (h = rc(a, b)); )
-      if (256 > h) (e >= g && ((a.g = e), (d = tc(a)), (e = a.g)), (d[e++] = h));
+    a.ga = b;
+    const h = d.length - 258;
+    var f;
+    let l, g;
+    for (; (f = Tc(a, b)) !== 256; )
+      if (f < 256) (e >= h && ((a.g = e), (d = Vc(a)), (e = a.g)), (d[e++] = f));
       else
         for (
-          h -= 257,
-            k = gc[h],
-            0 < hc[h] && (k += Z(a, hc[h])),
-            h = rc(a, c),
-            f = ic[h],
-            0 < jc[h] && (f += Z(a, jc[h])),
-            e >= g && ((a.g = e), (d = tc(a)), (e = a.g));
-          k--;
+          f -= 257,
+            g = Gc[f],
+            Hc[f] > 0 && (g += Z(a, Hc[f])),
+            f = Tc(a, c),
+            l = Ic[f],
+            Jc[f] > 0 && (l += Z(a, Jc[f])),
+            e >= h && ((a.g = e), (d = Vc(a)), (e = a.g));
+          g--;
         )
-          d[e] = d[e++ - f];
-    for (; 8 <= a.l; ) ((a.l -= 8), a.j--);
+          d[e] = d[e++ - l];
+    for (; a.j >= 8; ) ((a.j -= 8), a.i--);
     a.g = e;
   }
-  function uc(a, b, c) {
-    let d = a.h,
+  function Wc(a, b, c) {
+    let d = a.output,
       e = a.g;
-    a.Y = b;
-    let g = d.length;
-    var h;
-    let f, k;
-    for (; 256 !== (h = rc(a, b)); )
-      if (256 > h) (e >= g && ((d = vc(a)), (g = d.length)), (d[e++] = h));
+    a.ga = b;
+    let h = d.length;
+    var f;
+    let l, g;
+    for (; (f = Tc(a, b)) !== 256; )
+      if (f < 256) (e >= h && ((d = Xc(a)), (h = d.length)), (d[e++] = f));
       else
         for (
-          h -= 257,
-            k = gc[h],
-            0 < hc[h] && (k += Z(a, hc[h])),
-            h = rc(a, c),
-            f = ic[h],
-            0 < jc[h] && (f += Z(a, jc[h])),
-            e + k > g && ((d = vc(a)), (g = d.length));
-          k--;
+          f -= 257,
+            g = Gc[f],
+            Hc[f] > 0 && (g += Z(a, Hc[f])),
+            f = Tc(a, c),
+            l = Ic[f],
+            Jc[f] > 0 && (l += Z(a, Jc[f])),
+            e + g > h && ((d = Xc(a)), (h = d.length));
+          g--;
         )
-          d[e] = d[e++ - f];
-    for (; 8 <= a.l; ) ((a.l -= 8), a.j--);
+          d[e] = d[e++ - l];
+    for (; a.j >= 8; ) ((a.j -= 8), a.i--);
     a.g = e;
   }
-  function tc(a) {
+  function Vc(a) {
     const b = new Uint8Array(a.g - 32768),
       c = a.g - 32768,
-      d = a.h;
+      d = a.output;
     b.set(d.subarray(32768, b.length));
-    a.A.push(b);
-    a.F += b.length;
+    a.G.push(b);
+    a.P += b.length;
     d.set(d.subarray(c, c + 32768));
     a.g = 32768;
     return d;
   }
-  function vc(a, b) {
-    let c = Math.trunc(a.u.length / a.j + 1);
-    const d = a.u,
-      e = a.h;
-    b && ("number" === typeof b.O && (c = b.O), "number" === typeof b.$ && (c += b.$));
-    2 > c
-      ? ((b = (d.length - a.j) / a.Y[2]),
+  function Xc(a, b) {
+    let c = Math.trunc(a.input.length / a.i + 1);
+    const d = a.input,
+      e = a.output;
+    b && (typeof b.ca === "number" && (c = b.ca), typeof b.ka === "number" && (c += b.ka));
+    c < 2
+      ? ((b = (d.length - a.i) / a.ga[2]),
         (b = Math.trunc((b / 2) * 258)),
         (b = b < e.length ? e.length + b : e.length << 1))
       : (b = e.length * c);
     b = new Uint8Array(b);
     b.set(e);
-    a.h = b;
-    return a.h;
+    a.output = b;
+    return a.output;
   }
-  function wc(a) {
+  function Yc(a) {
     var b;
-    this.j = a;
+    this.input = a;
     this.g = 0;
     if (b || !(b = {})) (b.index && (this.g = b.index), b.verify && (this.verify = b.verify));
     const c = a[this.g++],
@@ -1432,646 +1811,786 @@
       default:
         throw Error("unsupported compression method");
     }
-    if (0 !== ((c << 8) + d) % 31) throw Error("invalid fcheck flag:" + (((c << 8) + d) % 31));
+    if (((c << 8) + d) % 31 !== 0) throw Error("invalid fcheck flag:" + (((c << 8) + d) % 31));
     if (d & 32) throw Error("fdict flag is not supported");
-    this.h = new dc(a, { index: this.g, bufferSize: b.bufferSize, m: b.m, resize: b.resize });
+    this.i = new Cc(a, { index: this.g, bufferSize: b.bufferSize, l: b.l, resize: b.resize });
   }
-  function xc(a) {
-    var b = a.j,
+  function Zc(a) {
+    var b = a.input,
       c;
     a: {
-      for (c = a.h; !c.U; ) {
+      for (c = a.i; !c.ea; ) {
         var d = void 0,
           e = void 0,
-          g = void 0,
           h = void 0,
-          f = c,
-          k = Z(f, 3);
-        k & 1 && (f.U = !0);
-        k >>>= 1;
-        switch (k) {
+          f = void 0,
+          l = c,
+          g = Z(l, 3);
+        g & 1 && (l.ea = !0);
+        g >>>= 1;
+        switch (g) {
           case 0:
-            k = f.u;
-            e = f.j;
-            var l = f.h,
-              n = f.g;
-            g = k.length;
-            d = l.length;
-            f.v = 0;
-            f.l = 0;
-            if (e + 1 >= g) throw Error("invalid uncompressed block header: LEN");
-            h = k[e++] | (k[e++] << 8);
-            if (e + 1 >= g) throw Error("invalid uncompressed block header: NLEN");
-            g = k[e++] | (k[e++] << 8);
-            if (h === ~g) throw Error("invalid uncompressed block header: length verify");
-            if (e + h > k.length) throw Error("input buffer is broken");
-            switch (f.m) {
-              case ec:
-                for (; n + h > l.length; )
-                  ((g = d - n),
-                    (h -= g),
-                    l.set(k.subarray(e, e + g), n),
-                    (n += g),
-                    (e += g),
-                    (f.g = n),
-                    (l = tc(f)),
-                    (n = f.g));
+            g = l.input;
+            e = l.i;
+            var k = l.output,
+              m = l.g;
+            h = g.length;
+            d = k.length;
+            l.v = 0;
+            l.j = 0;
+            if (e + 1 >= h) throw Error("invalid uncompressed block header: LEN");
+            f = g[e++] | (g[e++] << 8);
+            if (e + 1 >= h) throw Error("invalid uncompressed block header: NLEN");
+            h = g[e++] | (g[e++] << 8);
+            if (f === ~h) throw Error("invalid uncompressed block header: length verify");
+            if (e + f > g.length) throw Error("input buffer is broken");
+            switch (l.l) {
+              case Ec:
+                for (; m + f > k.length; )
+                  ((h = d - m),
+                    (f -= h),
+                    k.set(g.subarray(e, e + h), m),
+                    (m += h),
+                    (e += h),
+                    (l.g = m),
+                    (k = Vc(l)),
+                    (m = l.g));
                 break;
-              case W:
-                for (; n + h > l.length; ) l = vc(f, { O: 2 });
+              case Dc:
+                for (; m + f > k.length; ) k = Xc(l, { ca: 2 });
                 break;
               default:
                 throw Error("invalid inflate mode");
             }
-            l.set(k.subarray(e, e + h), n);
-            f.j = e + h;
-            f.g = n + h;
-            f.h = l;
+            k.set(g.subarray(e, e + f), m);
+            l.i = e + f;
+            l.g = m + f;
+            l.output = k;
             break;
           case 1:
-            switch (f.m) {
-              case W:
-                uc(f, kc, nc);
+            switch (l.l) {
+              case Dc:
+                Wc(l, Kc, Pc);
                 break;
-              case ec:
-                sc(f, kc, nc);
+              case Ec:
+                Uc(l, Kc, Pc);
                 break;
               default:
                 throw Error("invalid inflate mode");
             }
             break;
           case 2:
-            k = Z(f, 5) + 257;
-            d = Z(f, 5) + 1;
-            l = Z(f, 4) + 4;
-            n = new Uint8Array(fc.length);
-            for (e = 0; e < l; ++e) n[fc[e]] = Z(f, 3);
-            n = cc(n);
-            l = new Uint8Array(k + d);
+            g = Z(l, 5) + 257;
+            d = Z(l, 5) + 1;
+            k = Z(l, 4) + 4;
+            m = new Uint8Array(Fc.length);
+            for (e = 0; e < k; ++e) m[Fc[e]] = Z(l, 3);
+            m = Bc(m);
+            k = new Uint8Array(g + d);
             e = 0;
-            for (d = k + d; e < d; )
-              switch (((g = rc(f, n)), g)) {
+            for (d = g + d; e < d; )
+              switch (((h = Tc(l, m)), h)) {
                 case 16:
-                  for (g = 3 + Z(f, 2); g--; ) l[e++] = h;
+                  for (h = 3 + Z(l, 2); h--; ) k[e++] = f;
                   break;
                 case 17:
-                  for (g = 3 + Z(f, 3); g--; ) l[e++] = 0;
-                  h = 0;
+                  for (h = 3 + Z(l, 3); h--; ) k[e++] = 0;
+                  f = 0;
                   break;
                 case 18:
-                  for (g = 11 + Z(f, 7); g--; ) l[e++] = 0;
-                  h = 0;
+                  for (h = 11 + Z(l, 7); h--; ) k[e++] = 0;
+                  f = 0;
                   break;
                 default:
-                  h = l[e++] = g;
+                  f = k[e++] = h;
               }
-            h = cc(l.subarray(0, k));
-            k = cc(l.subarray(k));
-            switch (f.m) {
-              case W:
-                uc(f, h, k);
+            f = Bc(k.subarray(0, g));
+            g = Bc(k.subarray(g));
+            switch (l.l) {
+              case Dc:
+                Wc(l, f, g);
                 break;
-              case ec:
-                sc(f, h, k);
+              case Ec:
+                Uc(l, f, g);
                 break;
               default:
                 throw Error("invalid inflate mode");
             }
             break;
           default:
-            throw Error("unknown BTYPE: " + k);
+            throw Error("unknown BTYPE: " + g);
         }
       }
-      switch (c.m) {
-        case ec:
+      switch (c.l) {
+        case Ec:
           {
-            f = 0;
-            h = c.h;
-            k = c.A;
-            l = new Uint8Array(c.F + (c.g - 32768));
-            let q;
-            if (0 === k.length) c = c.h.subarray(32768, c.g);
+            l = 0;
+            f = c.output;
+            g = c.G;
+            k = new Uint8Array(c.P + (c.g - 32768));
+            let r;
+            if (g.length === 0) c = c.output.subarray(32768, c.g);
             else {
-              n = 0;
-              for (d = k.length; n < d; ++n)
-                for (e = k[n], g = 0, q = e.length; g < q; ++g) l[f++] = e[g];
-              n = 32768;
-              for (d = c.g; n < d; ++n) l[f++] = h[n];
-              c.A = [];
-              c.buffer = l;
+              m = 0;
+              for (d = g.length; m < d; ++m)
+                for (e = g[m], h = 0, r = e.length; h < r; ++h) k[l++] = e[h];
+              m = 32768;
+              for (d = c.g; m < d; ++m) k[l++] = f[m];
+              c.G = [];
+              c.buffer = k;
               c = c.buffer;
             }
           }
           break a;
-        case W:
-          h = c.g;
+        case Dc:
+          f = c.g;
           c.resize
-            ? ((f = new Uint8Array(h)), f.set(c.h.subarray(0, h)))
-            : (f = c.h.subarray(0, h));
-          c.buffer = f;
+            ? ((l = new Uint8Array(f)), l.set(c.output.subarray(0, f)))
+            : (l = c.output.subarray(0, f));
+          c.buffer = l;
           c = c.buffer;
           break a;
         default:
           throw Error("invalid inflate mode");
       }
     }
-    a.g = a.h.j;
+    a.g = a.i.i;
     if (a.verify) {
       a = ((b[a.g++] << 24) | (b[a.g++] << 16) | (b[a.g++] << 8) | b[a.g++]) >>> 0;
       b = c;
-      if ("string" === typeof b) {
+      if (typeof b === "string") {
         b = [...b];
-        f = 0;
-        for (h = b.length; f < h; f++) b[f] = (b[f].charPointAt(0) & 255) >>> 0;
+        l = 0;
+        for (f = b.length; l < f; l++) b[l] = (b[l].charPointAt(0) & 255) >>> 0;
         b = new Uint8Array([b]);
       }
-      f = 1;
-      h = 0;
-      k = b.length;
-      for (l = 0; 0 < k; ) {
-        e = 1024 < k ? 1024 : k;
-        k -= e;
-        do ((f += b[l++]), (h += f));
+      l = 1;
+      f = 0;
+      g = b.length;
+      for (k = 0; g > 0; ) {
+        e = Math.min(g, 1024);
+        g -= e;
+        do ((l += b[k++]), (f += l));
         while (--e);
+        l %= 65521;
         f %= 65521;
-        h %= 65521;
       }
-      if (a !== ((h << 16) | f) >>> 0) throw Error("invalid adler-32 checksum");
+      if (a !== ((f << 16) | l) >>> 0) throw Error("invalid adler-32 checksum");
     }
     return c;
   }
-  const yc = ({ memory: a, messagePort: b, W: c }) =>
-      function (d, e, g, h) {
+  const $c = (a) => {
+      if (!Number.isInteger(a) || a < 0 || a > 30)
+        throw Error(`Invalid WebAssembly alignment exponent: ${a}`);
+      return 2 ** a;
+    },
+    ad = (a, b) => {
+      throw Error(`csound exit with code: ${b}`);
+    },
+    bd = ({ memory: a, messagePort: b, ib: c }) =>
+      function (d, e, h, f) {
         if (a) {
-          d = new Uint8Array(a.buffer, h, g);
-          d = M.decode(d);
-          var f = /\n$/g.test(d);
+          d = new Uint8Array(a.buffer, f, h);
+          d = L.decode(d);
+          var l = /\n$/g.test(d);
           e = /^\n/g.test(d);
-          var k = d.split("\n").filter((n) => 0 < n.length),
-            l = [];
-          if ((0 === k.length && f) || e) (l.push(c.join("")), $b(c));
-          k.forEach((n, q) => {
-            q + 1 === k.length
-              ? f
-                ? 0 === q
-                  ? (l.push(c.join("") + n), $b(c))
-                  : l.push(n)
-                : c.push(n)
-              : 0 === q
-                ? (l.push(c.join("") + n), $b(c))
-                : l.push(n);
+          var g = d.split("\n").filter((m) => m.length > 0),
+            k = [];
+          if ((g.length === 0 && l) || e) (k.push(c.join("")), yc(c));
+          g.forEach((m, r) => {
+            r + 1 === g.length
+              ? l
+                ? r === 0
+                  ? (k.push(c.join("") + m), yc(c))
+                  : k.push(m)
+                : c.push(m)
+              : r === 0
+                ? (k.push(c.join("") + m), yc(c))
+                : k.push(m);
           });
-          l.forEach((n) => {
-            n.replace(/(\r\n|\n|\r)/gm, "") && b.G({ log: n });
+          k.forEach((m) => {
+            m.replaceAll(/(\r\n|\n|\r)/gm, "") && b.L({ log: m });
           });
+        }
+      };
+  function cd(a) {
+    return a && a.length >= 8 && a[0] === 0 && a[1] === 97 && a[2] === 115 && a[3] === 109;
+  }
+  function dd(a, b) {
+    if (a === b) return !0;
+    if (!a || !b || a.length !== b.length) return !1;
+    for (const [c, d] of a.entries()) if (d !== b[c]) return !1;
+    return !0;
+  }
+  const ed = (a) => {
+    const b = new Set(a.map(({ name: c }) => c));
+    if (b.has("__wasm_call_ctors")) {
+      if (b.has("csoundModuleCreate") || b.has("csound_opcode_init") || b.has("csound_fgen_init"))
+        return !0;
+      console.error(
+        a,
+        "A csound plugin turns out to be neither a plugin, opcode or module.\nPerhaps csdl.h or module.h wasn't imported correctly?",
+      );
+      return !1;
+    }
+    console.error(
+      "A csound plugin didn't export __wasm_call_ctors.\nPlease re-run wasm-ld with either --export-all or include --export=__wasm_call_ctors",
+    );
+    return !1;
+  };
+  async function fd({ jb: a, withPlugins: b = [], messagePort: c }) {
+    const d = new F(),
+      e = new Map();
+    let h = 0;
+    a = new Uint8Array(a);
+    a = Zc(new Yc(a));
+    var f = Ac(a, L),
+      l = f.D;
+    f = f.C;
+    b = await b.reduce(async (p, u) => {
+      p = await p;
+      let y, z;
+      try {
+        y = new Uint8Array(u);
+        if (!cd(y))
+          return (
+            console.warn(
+              "Skipping plugin payload because it is not a wasm binary. Check plugin URL/path and server mapping.",
+            ),
+            p
+          );
+        z = Ac(y, L);
+      } catch (B) {
+        console.error("Error in plugin", B);
+      }
+      z && p.push({ u: z, m: y });
+      return p;
+    }, []);
+    l = Math.ceil((l + $c(f)) / 65536);
+    f = Math.ceil(b.reduce((p, { u }) => p + u.D + $c(u.C), 0) / 65536);
+    const g = new WebAssembly.Memory({ initial: l + f + 2048, maximum: 16384 });
+    d.memory = g;
+    l = new WebAssembly.Global({ value: "i32", mutable: !1 }, 2048);
+    f = new WebAssembly.Global({ value: "i32", mutable: !1 }, 1);
+    a = await WebAssembly.compile(a);
+    const k = tc(d, a),
+      m = [],
+      r = [],
+      q = new Map(),
+      t = new Map(),
+      w = { H: void 0, table: void 0 };
+    let D = 0;
+    var G = void 0;
+    const P = (p) => {
+        let u = t.get(p);
+        u || ((u = { T: new Set(), plugins: new Set() }), t.set(p, u));
+        return u;
+      },
+      Q = (p, u, y) => {
+        if (!y.plugins.has(p)) {
+          var z = p.instance || p,
+            B = p.table || w.table;
+          try {
+            lc(G, z, w.table, u, B, g);
+          } finally {
+            D = Math.max(D, w.table.length);
+          }
+          y.plugins.add(p);
         }
       },
-    zc = (a) => {
-      if (a && "object" === typeof a && "object" === typeof a.exports) {
-        if (a.exports.__wasm_call_ctors) {
-          if (
-            a.exports.csoundModuleCreate ||
-            a.exports.csound_opcode_init ||
-            a.exports.csound_fgen_init
-          )
-            return !0;
-          console.error(
-            a.exports,
-            "A csound plugin turns out to be neither a plugin, opcode or module.\nPerhaps csdl.h or module.h wasn't imported correctly?",
-          );
-          return !1;
-        }
-        console.error(
-          "A csound plugin didn't export __wasm_call_ctors.\nPlease re-run wasm-ld with either --export-all or include --export=__wasm_call_ctors",
-        );
-        return !1;
-      }
-      console.error("Error instantiating a csound plugin, instance and/or export is missing!");
-      return !1;
-    },
-    Ac = (a) => {
-      function b() {
-        let l = 0,
-          n = 1;
-        for (;;) {
-          const q = a[c++];
-          l += (q & 127) * n;
-          n *= 128;
-          if (!(q & 128)) break;
-        }
-        return l;
-      }
-      1836278016 !== new Uint32Array(new Uint8Array(a.subarray(0, 24)).buffer)[0] &&
-        console.error("Wasm magic number is missing!");
-      if (0 !== a[8]) return (bc(), "static");
-      let c = 9;
-      const d = b();
-      c++;
-      c++;
-      c++;
-      c++;
-      c++;
-      c++;
-      c++;
-      c++;
-      c += 3;
-      const e = b(),
-        g = b(),
-        h = b(),
-        f = b(),
-        k = b();
-      return { Bb: d, D: e, S: g, wb: k, X: h, Cb: f };
-    },
-    Bc = async ({ Ta: a, i: b, messagePort: c }) => {
-      const d = await WebAssembly.compile(a);
-      a = new WebAssembly.Memory({ initial: 16384 });
-      const e = Vb(b, d);
-      e.s = e.s || {};
-      e.s.fb = () => 0;
-      e.s.memory = a;
-      e.s.hb = yc({ memory: e.s.memory, W: [], messagePort: c });
-      c = await WebAssembly.instantiate(d, e);
-      b.memory = a;
-      b.start(c);
-      c.exports.__wasi_js_csoundSetMessageStringCallback();
-      return [c, b];
-    };
-  async function Cc({ Ua: a, withPlugins: b = [], messagePort: c }) {
-    var d = {};
-    const e = new F();
-    a = new Uint8Array(a);
-    a = xc(new wc(a));
-    var g = Ac(a);
-    if ("static" === g) return await Bc({ messagePort: c, Ta: a, Fb: d, i: e });
-    d = g.D;
-    const h = g.S;
-    g = g.X;
-    b = await b.reduce(async (x, v) => {
-      x = await x;
-      let H, D;
-      try {
-        ((H = new Uint8Array(v)), (D = Ac(H)));
-      } catch (G) {
-        console.error("Error in plugin", G);
-      }
-      D && x.push({ P: D, Va: H });
-      return x;
-    }, []);
-    d = Math.ceil((d + h) / 65536);
-    var f = Math.ceil(b.reduce((x, { P: v }) => ("static" === v ? 0 : x + (v.D + h)), 0) / 65536);
-    f = d + f + 2048;
-    const k = new WebAssembly.Memory({ initial: f, maximum: 16384 }),
-      l = new WebAssembly.Table({ initial: g + 1, element: "anyfunc" });
-    e.memory = k;
-    const n = new WebAssembly.Global({ value: "i32", mutable: !0 }, 65536 * f);
-    g = new WebAssembly.Global({ value: "i32", mutable: !0 }, 65536 * f);
-    f = new WebAssembly.Global({ value: "i32", mutable: !1 }, 2048);
-    const q = new WebAssembly.Global({ value: "i32", mutable: !1 }, 1),
-      p = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0);
-    a = await WebAssembly.compile(a);
-    const t = Vb(e, a);
-    let y = [],
-      L = d;
-    t.env = t.env || {};
-    t.env.memory = k;
-    t.env.__indirect_function_table = l;
-    t.env.__stack_pointer = n;
-    t.env.__memory_base = f;
-    t.env.__table_base = q;
-    t.env.csoundLoadModules = (x) => {
-      y.forEach((v) => {
-        if (void 0 === A) console.error("csound-wasm internal: timing problem detected!");
-        else {
-          var H = A;
-          if (v.exports.csoundModuleInit) {
-            var D = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0),
-              G = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0),
-              E = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0);
-            const P = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0);
-            let w = l.length;
-            "function" === typeof v.exports.csoundModuleCreate &&
-              (l.grow(1), (D.value = w), l.set(w, v.exports.csoundModuleCreate), (w += 1));
-            "function" === typeof v.exports.csoundModuleInit &&
-              (l.grow(1), (G.value = w), l.set(w, v.exports.csoundModuleInit), (w += 1));
-            "function" === typeof v.exports.csoundModuleDestroy &&
-              (l.grow(1), (E.value = w), l.set(w, v.exports.csoundModuleDestroy), (w += 1));
-            "function" === typeof v.exports.csoundModuleErrorCodeToString &&
-              (l.grow(1), (P.value = w), l.set(w, v.exports.csoundModuleErrorCodeToString));
-            H.exports.csoundWasiLoadPlugin(x, D, G, E, P);
-          } else
-            v.exports.csound_opcode_init || v.exports.csound_fgen_init
-              ? ((D = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0)),
-                (G = new WebAssembly.Global({ value: "i32", mutable: !0 }, 0)),
-                (E = l.length),
-                "function" === typeof v.exports.csound_opcode_init &&
-                  ((D.value = E), l.grow(1), l.set(E, v.exports.csound_opcode_init), (E += 1)),
-                "function" === typeof v.exports.csound_fgen_init &&
-                  ((G.value = E), l.grow(1), l.set(E, v.exports.csound_fgen_init)),
-                H.exports.csoundWasiLoadOpcodeLibrary(x, G, D))
-              : console.error(
-                  "Plugin doesn't export nececcary functions to quality as csound plugin.",
-                );
-        }
+      T = (p) => {
+        if (!p) return "";
+        p = new Uint8Array(g.buffer, p);
+        let u = 0;
+        for (; u < p.length && p[u] !== 0; ) u += 1;
+        return L.decode(p.subarray(0, u));
+      };
+    k.env = k.env || {};
+    k.env.memory = g;
+    k.env.__memory_base = l;
+    k.env.__table_base = f;
+    k.env.csoundLoadModules = (p) => {
+      const u = { T: new Set(), plugins: new Set() };
+      t.set(p, u);
+      m.forEach((y) => {
+        Q(y, p, u);
       });
       return 0;
     };
-    t.env.csoundLoadExternals = () => {};
-    t.env._ZTH5errno = function () {};
-    t.env.csoundWasiJsMessageCallback = yc({ memory: k, messagePort: c, W: [] });
-    t.env.printDebugCallback = (x, v) => {
-      x = new Uint8Array(k.buffer, x, v);
-      x = M.decode(x);
-      console.log(x);
+    k.env.csoundLoadExternals = (p, u) => {
+      if (typeof w.H !== "function") return -1;
+      u = T(u);
+      u = [...new Set(u.split(",").filter((B) => B.length > 0))];
+      u.sort();
+      const y = P(p);
+      let z = 0;
+      u.forEach((B) => {
+        if (!y.T.has(B))
+          try {
+            const H = d.readFile(B);
+            if (cd(H)) {
+              var E = q.get(B);
+              (E && dd(E.m, H)) ||
+                ((E = r.find((da) => dd(da.m, H))),
+                E || ((E = w.H({ u: Ac(H, L), m: H })) && r.push(E)),
+                E && q.set(B, E));
+              E ? (Q(E, p, y), y.T.add(B)) : (z = -1);
+            } else
+              (console.error(
+                `Unable to load requested Csound plugin '${B}' from the WASI filesystem.`,
+              ),
+                (z = -1));
+          } catch (H) {
+            (console.error(`Error while loading requested Csound plugin '${B}'`, H), (z = -1));
+          }
+      });
+      return z;
     };
-    t["GOT.mem"] = t["GOT.mem"] || {};
-    t["GOT.mem"].__heap_base = g;
-    t["GOT.func"] = t["GOT.func"] || {};
-    const A = await WebAssembly.instantiate(a, t);
-    c = Object.assign({}, A.exports);
-    a = {};
-    c.memory = k;
-    a.exports = c;
-    y = await b.reduce(async (x, { P: v, Va: H }) => {
-      x = await x;
-      try {
-        const D = v.D,
-          G = v.S,
-          E = v.X,
-          P = await WebAssembly.compile(H),
-          w = Vb(e, P),
-          pa = new WebAssembly.Global({ value: "i32", mutable: !1 }, 65536 * L);
-        l.grow(E);
-        w.env = Object.assign({}, w.env);
-        w.env.memory = k;
-        w.env.__indirect_function_table = l;
-        w.env.__memory_base = pa;
-        w.env.__stack_pointer = n;
-        w.env.__table_base = q;
-        w.env.csoundLoadModules = p;
-        delete w.env.csoundWasiJsMessageCallback;
-        L += Math.ceil((D + G) / 65536);
-        const B = await WebAssembly.instantiate(P, w);
-        zc(B) && (B.exports.__wasm_call_ctors(), x.push(B));
-      } catch (D) {
-        console.error("Error while compiling csound-plugin", D);
+    k.env.saveSetjmp = (p, u) => {
+      e.set(p, u);
+      return 0;
+    };
+    k.env.testSetjmp = (p) => (e.has(p) ? 1 : 0);
+    k.env.longjmp = (p, u) => {
+      if (!e.get(p)) throw Error(`Invalid longjmp target ${p}`);
+      throw Error(`csound exit with code: ${u}`);
+    };
+    k.env.__wasm_longjmp = ad;
+    k.env.getTempRet0 = () => h;
+    k.env.setTempRet0 = (p) => {
+      h = p;
+    };
+    k.env.csoundWasiJsMessageCallback = bd({ memory: g, messagePort: c, ib: [] });
+    k.env.csoundWasiJsDebugCallback = () => {
+      c.L({ yb: !0 });
+    };
+    k.env.printDebugCallback = (p, u) => {
+      p = new Uint8Array(g.buffer, p, u);
+      p = L.decode(p);
+      if (p.startsWith("CSOUND_WASI_LONGJMP:"))
+        throw (
+          (p = Number.parseInt(p.slice(20), 10)),
+          Error(`csound longjmp with code: ${Number.isNaN(p) ? -1 : p}`)
+        );
+      console.log(p);
+    };
+    a = await WebAssembly.instantiate(a, k);
+    a = Object.assign({}, a.exports);
+    const I = {};
+    a.memory = g;
+    const K = a.csoundDestroy;
+    typeof K === "function" &&
+      (a.csoundDestroy = (p) => {
+        try {
+          return K(p);
+        } finally {
+          t.delete(p);
+        }
+      });
+    I.exports = a;
+    G = I;
+    w.table = I.exports.__indirect_function_table;
+    D = w.table.length;
+    d.start(I);
+    const U =
+        typeof I.exports.csoundWasiLoadPlugin === "function" ||
+        typeof I.exports.csoundWasiLoadOpcodeLibrary === "function",
+      V = (p, u) => {
+        if (p === 0) return { M: 0, R: 0 };
+        var y = I.exports.allocStringMem;
+        const z = I.exports.freeStringMem;
+        if (typeof y !== "function")
+          throw new TypeError("The WebAssembly host does not export allocStringMem");
+        if (typeof z !== "function")
+          throw new TypeError("The WebAssembly host does not export freeStringMem");
+        u = $c(u);
+        const B = p + u - 1;
+        if (!Number.isSafeInteger(B) || B > 2147483647)
+          throw new TypeError("The WebAssembly plugin memory request is too large");
+        y = y(B);
+        if (y === 0) throw Error(`Could not reserve ${B} bytes for a WebAssembly plugin`);
+        u *= Math.ceil(y / u);
+        try {
+          new Uint8Array(g.buffer, u, p).fill(0);
+        } catch (E) {
+          throw (z(y), E);
+        }
+        return { M: y, R: u };
+      };
+    w.H = ({ u: p, Ya: u, m: y }) => {
+      const z = p.O,
+        B = p.D,
+        E = p.C,
+        H = p.Y,
+        da = p.X;
+      p = p.J;
+      if (p.length > 0)
+        throw Error(`WebAssembly plugin dependencies are not supported: ${p.join(", ")}`);
+      u = u || new WebAssembly.Module(y);
+      p = tc(d, u);
+      const gb = WebAssembly.Module.imports(u);
+      var A = WebAssembly.Module.exports(u);
+      if (ed(A)) {
+        var M = A.some(({ name: W }) => W === "csound_opcode_init" || W === "csound_fgen_init");
+        A = A.some(({ name: W }) => W === "csoundModuleInit");
+        var hb = !z && (!U || (M && !A)),
+          Ba = (M = 0);
+        A = 0;
+        var Ca = !1;
+        try {
+          let W = w.table,
+            Da = w.table.length;
+          if (hb) {
+            W = new WebAssembly.Table({
+              initial: Math.max(w.table.length + Math.max(H, 0) + 16, 16),
+              element: "anyfunc",
+            });
+            for (var Y = 0; Y < w.table.length; Y += 1) {
+              var ea = w.table.get(Y);
+              ea && W.set(Y, ea);
+            }
+          } else {
+            if (!Number.isSafeInteger(H) || H < 0 || H > 1e6)
+              throw new TypeError("Invalid WebAssembly plugin table size");
+            const R = $c(da);
+            Da = Math.ceil(D / R) * R;
+            ea = Da + H;
+            if (!Number.isSafeInteger(ea) || ea > 2147483647)
+              throw new TypeError("The WebAssembly plugin table request is too large");
+            Y = ea - w.table.length;
+            if (Y > 1e6) throw new TypeError("The WebAssembly plugin table request is too large");
+            Y > 0 && w.table.grow(Y);
+            Ba = Da;
+            A = ea;
+            Ca = !0;
+          }
+          p.env = Object.assign({}, p.env);
+          p.env.memory = g;
+          p.env.__indirect_function_table = W;
+          const Oc = z ? V(B, E) : { M: 0, R: 0 };
+          M = Oc.M;
+          p.env.__memory_base = new WebAssembly.Global({ value: "i32", mutable: !1 }, Oc.R);
+          p.env.__table_base = new WebAssembly.Global({ value: "i32", mutable: !1 }, Da);
+          for (const R of gb)
+            if (R.module === "env")
+              if (R.kind === "function" && !p.env[R.name]) {
+                const ta = I.exports[R.name];
+                if (typeof ta !== "function")
+                  throw new TypeError(`Missing WebAssembly host function: env.${R.name}`);
+                p.env[R.name] = ta;
+              } else if (R.kind === "global" && R.name === "__stack_pointer") {
+                const ta = I.exports.__stack_pointer;
+                if (!ta) throw Error("The WebAssembly host does not export __stack_pointer");
+                p.env.__stack_pointer = ta;
+              }
+          const Ea = new WebAssembly.Instance(u, p);
+          typeof Ea.exports.__wasm_apply_data_relocs === "function" &&
+            Ea.exports.__wasm_apply_data_relocs();
+          Ea.exports.__wasm_call_ctors();
+          M = 0;
+          Ca && ((D = A), (Ca = !1));
+          return { instance: Ea, table: W, m: y };
+        } finally {
+          if (Ca) for (y = Ba; y < A; y += 1) w.table.set(y, null);
+          M !== 0 && I.exports.freeStringMem(M);
+        }
       }
-      return x;
-    }, []);
-    e.start(a);
-    a.exports.__wasi_js_csoundSetMessageStringCallback();
-    return [a, e];
+    };
+    (
+      await Promise.all(
+        b.map(async ({ u: p, m: u }) => {
+          try {
+            const y = await WebAssembly.compile(u);
+            return { u: p, Ya: y, m: u };
+          } catch (y) {
+            console.error("Error while compiling csound-plugin", y);
+          }
+        }),
+      )
+    ).forEach((p) => {
+      if (p)
+        try {
+          const u = w.H(p);
+          u && (r.push(u), m.push(u));
+        } catch (u) {
+          console.error("Error while instantiating csound-plugin", u);
+        }
+    });
+    I.exports.__wasi_js_csoundSetMessageStringCallback();
+    return [I, d];
   }
-  const Dc = (a, b, c, d) => (e) => {
-    const g = e.csound,
-      h = 1 === b.csoundShouldDaemonize(g);
-    if (h) {
-      var f = b.csoundSetOption(g, "--daemon");
-      0 !== f && console.error("csoundSetOption daemon failed:", f);
-      f = b.csoundSetOption(g, "-odac");
-      0 !== f && console.error("csoundSetOption odac failed:", f);
+  let gd, hd;
+  gd = () => () => {};
+  hd = () => () => {};
+  const id = (a, b, c, d) => (e) => {
+    const h = e.csound,
+      f = b.csoundShouldDaemonize(h) === 1;
+    if (f) {
+      var l = b.csoundSetOption(h, "--daemon");
+      l !== 0 && console.error("csoundSetOption daemon failed:", l);
+      l = b.csoundSetOption(h, "-odac");
+      l !== 0 && console.error("csoundSetOption odac failed:", l);
     }
-    f = b.csoundStart(g);
-    const k = b.csoundGetOutputName(g) || "test.wav";
-    ac()();
-    0 !== f &&
-      a.G(
-        `error: csoundStart failed while trying to render ${k},` +
+    l = b.csoundStart(h);
+    const g = b.csoundGetOutputName(h) || "test.wav";
+    hd()();
+    l !== 0 &&
+      a.L(
+        `error: csoundStart failed while trying to render ${g},` +
           " look out for errors in options and syntax",
       );
     setTimeout(() => {
-      const l = b._isRequestingRtMidiInput(g);
-      if (h || l || k.includes("dac")) c(e);
-      else if ((a.o("renderStarted"), d)) d(e);
-      else for (; 0 === b.csoundPerformKsmps(g); );
+      const k = b.isRequestingRtMidiInput(h),
+        m = b.isRequestingRtAudioInput(h);
+      if (f || k || m || g.includes("dac")) c(e);
+      else if ((a.o("renderStarted", e.performanceGeneration), d)) d(e);
+      else for (; b.csoundPerformKsmps(h) === 0; );
     }, 0);
-    return f;
+    return l;
   };
-  const Ec = [0, 4096, 0, 0, 0, 0, -1, -1, -1, -1, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0];
-  let Fc, Gc, Hc;
-  const Ic =
-      ({ C: a, B: b, J: c, H: d, I: e, Z: g, K: h }) =>
-      async (f) => {
-        var k = f.audioStreamIn,
-          l = f.audioStreamOut;
-        const n = f.midiBuffer,
-          q = f.csound,
-          p = new Int32Array(f.audioStateBuffer);
-        Ec.forEach((Y, Ra) => {
-          Atomics.store(p, Ra, Y);
+  const jd = [0, 4096, 0, 0, 0, 0, -1, -1, -1, -1, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0];
+  let kd, ld, md;
+  const nd = ({ na: a, qa: b, B: c }) => {
+      if (a) {
+        var d = new Int32Array(a),
+          e = Atomics.load(d, 8);
+        a = Atomics.load(d, 9);
+        d = Atomics.load(d, 6);
+        e > -1 &&
+          ((e = c.csoundSetOption(b, "--nchnls=" + e)),
+          e !== 0 && console.error("csoundSetOption nchnls failed:", e));
+        a > -1 &&
+          ((a = c.csoundSetOption(b, "--nchnls_i=" + a)),
+          a !== 0 && console.error("csoundSetOption nchnls_i failed:", a));
+        d > -1 &&
+          ((b = c.csoundSetOption(b, "--sample-rate=" + d)),
+          b !== 0 && console.error("csoundSetOption sample-rate failed:", b));
+      }
+    },
+    od =
+      ({ B: a, N: b, W: c, U: d, V: e, wasm: h, Z: f }) =>
+      async (l) => {
+        var g = l.audioStreamIn,
+          k = l.audioStreamOut;
+        const m = l.midiBuffer,
+          r = l.csound,
+          q = l.performanceGeneration,
+          t = new Int32Array(l.audioStateBuffer);
+        l = Atomics.load(t, 8);
+        var w = Atomics.load(t, 9),
+          D = Atomics.load(t, 6);
+        jd.forEach((H, da) => {
+          Atomics.store(t, da, H);
         });
-        f = a._isRequestingRtMidiInput(q);
-        var t = 0 === Atomics.load(p, 9) && a.csoundGetInputName(q).includes("adc"),
-          y = Atomics.load(p, 8),
-          L = Atomics.load(p, 9),
-          A = Atomics.load(p, 6);
-        -1 < y &&
-          ((y = a.csoundSetOption(q, "--nchnls=" + y)),
-          0 !== y && console.error("csoundSetOption nchnls failed:", y));
-        -1 < L &&
-          ((y = a.csoundSetOption(q, "--nchnls_i=" + L)),
-          0 !== y && console.error("csoundSetOption nchnls_i failed:", y));
-        -1 < A &&
-          ((A = a.csoundSetOption(q, "--sample-rate=" + A)),
-          0 !== A && console.error("csoundSetOption sample-rate failed:", A));
-        const x = a.csoundGetNchnls(q),
-          v = L || t ? a.csoundGetNchnlsInput(q) : 0,
-          H = Atomics.load(p, 6) || a.csoundGetSr(q);
-        Atomics.store(p, 8, x);
-        Atomics.store(p, 9, v);
-        Atomics.store(p, 10, t ? 1 : 0);
-        Atomics.store(p, 6, a.csoundGetSr(q));
-        Atomics.store(p, 16, f);
-        t = a.csoundGetKsmps(q);
-        Atomics.store(p, 7, t);
-        const D = a.csoundGet0dBFS(q);
-        L = [];
-        A = [];
-        for (y = 0; y < x; ++y) L.push(new Float64Array(l, 16384 * y, 16384));
-        for (l = 0; l < v; ++l) A.push(new Float64Array(k, 16384 * l, 16384));
-        h.o("realtimePerformanceStarted");
-        Atomics.store(p, 2, 1);
-        V()();
-        k = !0;
-        let G = 0,
-          E = 0,
-          P = 0,
-          w = 0,
-          pa;
-        l = (Y = !1) =>
-          1 === Atomics.load(p, 5) || 1 !== Atomics.load(p, 2) || 0 !== G || Y
-            ? (0 === G && V()(), V()(), h.o("realtimePerformanceEnded"), V()(), c(), !0)
+        l > -1 && Atomics.store(t, 8, l);
+        w > -1 && Atomics.store(t, 9, w);
+        D > -1 && Atomics.store(t, 6, D);
+        l = a.isRequestingRtMidiInput(r);
+        D = Atomics.load(t, 9) === 0 && a.isRequestingRtAudioInput(r);
+        const G = a.csoundGetNchnls(r),
+          P = w || D ? a.csoundGetNchnlsInput(r) : 0,
+          Q = Atomics.load(t, 6) || a.csoundGetSr(r);
+        Atomics.store(t, 8, G);
+        Atomics.store(t, 9, P);
+        Atomics.store(t, 10, D ? 1 : 0);
+        Atomics.store(t, 6, a.csoundGetSr(r));
+        Atomics.store(t, 16, l);
+        w = a.csoundGetKsmps(r);
+        Atomics.store(t, 7, w);
+        const T = a.csoundGet0dBFS(r);
+        D = [];
+        const I = [];
+        for (var K = 0; K < G; ++K) D.push(new Float64Array(k, 16384 * K, 16384));
+        for (k = 0; k < P; ++k) I.push(new Float64Array(g, 16384 * k, 16384));
+        f.o("realtimePerformanceStarted", q);
+        Atomics.store(t, 2, 1);
+        gd()();
+        g = !0;
+        let U = 0,
+          V = 0,
+          p = 0,
+          u = 0,
+          y;
+        k = (H = !1) =>
+          Atomics.load(t, 5) === 1 || Atomics.load(t, 2) !== 1 || U !== 0 || H
+            ? (U === 0 && gd()(), gd()(), f.o("realtimePerformanceEnded", q), gd()(), c(q), !0)
             : !1;
-        for (y = !0; !y || (pa = Atomics.wait(p, 0, 1, 1e4)); ) {
-          if ("timed-out" === pa) {
-            l(!0);
+        for (K = !0; !K || (y = Atomics.wait(t, 0, 1, 1e4)); ) {
+          if (y === "timed-out") {
+            k(!0);
             break;
           }
-          k &&
-            ((k = !1),
-            await new Promise((z) => {
-              Hc = z;
-              h.L();
+          g &&
+            ((g = !1),
+            await new Promise((A) => {
+              md = A;
+              f.$();
             }),
-            V()());
-          1 === Atomics.load(p, 4) &&
-            (await new Promise((z) => setTimeout(z, 0)),
+            gd()());
+          Atomics.load(t, 4) === 1 &&
+            (await new Promise((A) => setTimeout(A, 0)),
             d(),
-            await new Promise((z) => setTimeout(z, 0)),
-            Atomics.wait(p, 4, 0),
-            await new Promise((z) => setTimeout(z, 0)),
+            await new Promise((A) => setTimeout(A, 0)),
+            Atomics.wait(t, 4, 0),
+            await new Promise((A) => setTimeout(A, 0)),
             e(),
-            await new Promise((z) => setTimeout(z, 0)));
-          if (l()) break;
-          if (f) {
-            var B = Atomics.load(p, 18);
-            if (0 < B) {
-              var U = Atomics.load(p, 17),
-                O = U;
-              for (let z = 0; z < B; z++) {
-                O = (U + 3 * z) % 1024;
-                const ia = Atomics.load(n, O),
-                  Jc = Atomics.load(n, O + 1),
-                  Kc = Atomics.load(n, O + 2);
-                a.csoundPushMidiMessage(q, ia, Jc, Kc);
+            await new Promise((A) => setTimeout(A, 0)));
+          if (k()) break;
+          if (l) {
+            var z = Atomics.load(t, 18);
+            if (z > 0) {
+              var B = Atomics.load(t, 17),
+                E = B;
+              for (let A = 0; A < z; A++) {
+                E = (B + 3 * A) % 1024;
+                const M = Atomics.load(m, E),
+                  hb = Atomics.load(m, E + 1),
+                  Ba = Atomics.load(m, E + 2);
+                a.csoundPushMidiMessage(r, M, hb, Ba);
               }
-              Atomics.store(p, 17, (O + 1) % 1024);
-              Atomics.sub(p, 18, B);
+              Atomics.store(t, 17, (E + 1) % 1024);
+              Atomics.sub(t, 18, z);
             }
           }
-          const Y = Atomics.load(p, 11);
-          B = Atomics.load(p, 14) >= Y;
-          U = a.csoundGetSpin(q);
-          O = a.csoundGetSpout(q);
-          const Ra = B && new Float64Array(g.i.memory.buffer, U, t * v),
-            Lc = new Float64Array(g.i.memory.buffer, O, t * x);
-          U = Atomics.load(p, 1);
-          for (O = 0; O < U; O++) {
-            if (0 === E)
-              if (0 === G) ((G = a.csoundPerformKsmps(q)), !y && Atomics.add(p, 15, t), (y = !1));
-              else if (0 !== G) {
-                Atomics.store(p, 2, 0);
-                l(!0);
+          const H = Atomics.load(t, 11);
+          z = Atomics.load(t, 14) >= H;
+          B = a.csoundGetSpin(r);
+          E = a.csoundGetSpout(r);
+          const da = z && new Float64Array(h.h.memory.buffer, B, w * P),
+            gb = new Float64Array(h.h.memory.buffer, E, w * G);
+          B = Atomics.load(t, 1);
+          for (E = 0; E < B; E++) {
+            if (V === 0)
+              if (U === 0) ((U = a.csoundPerformKsmps(r)), !K && Atomics.add(t, 15, w), (K = !1));
+              else if (U !== 0) {
+                Atomics.store(t, 2, 0);
+                k(!0);
                 return;
               }
-            L.forEach((z, ia) => {
-              z[w] = (Lc[E * x + ia] || 0) / D;
+            D.forEach((A, M) => {
+              A[u] = (gb[V * G + M] || 0) / T;
             });
-            B &&
-              (A.forEach((z, ia) => {
-                Ra[E * v + ia] = (z[P] || 0) * D;
+            z &&
+              (I.forEach((A, M) => {
+                da[V * P + M] = (A[p] || 0) * T;
               }),
-              (P = B && (P + 1) % 16384));
-            w = (w + 1) % 16384;
-            E = (E + 1) % t;
+              (p = z && (p + 1) % 16384));
+            u = (u + 1) % 16384;
+            V = (V + 1) % w;
           }
-          B && Atomics.sub(p, 14, U);
-          1 === Atomics.compareExchange(p, 19, 1, 0) &&
-            (await new Promise((z) => {
-              Gc = z;
+          z && Atomics.sub(t, 14, B);
+          Atomics.compareExchange(t, 19, 1, 0) === 1 &&
+            (await new Promise((A) => {
+              ld = A;
               b();
             }));
-          if (l()) break;
-          B = Atomics.load(p, 12);
-          B = Math.max(2048 - (w < B ? w + 16384 - B : w - B), 0);
-          Atomics.store(p, 1, B);
-          0 === B && (await new Promise((z) => setTimeout(z, (Y / H) * 1e3)));
+          if (k()) break;
+          z = Atomics.load(t, 12);
+          z = Math.max(2048 - (u < z ? u + 16384 - z : u - z), 0);
+          Atomics.store(t, 1, z);
+          z === 0 && (await new Promise((A) => setTimeout(A, (H / Q) * 1e3)));
         }
       },
-    Mc = ({ port: a }) => {
-      const b = new K();
-      b.G = (c) => {
+    pd = ({ port: a }) => {
+      const b = new ua();
+      b.L = (c) => {
         a.postMessage({ log: c });
       };
-      b.o = (c) => {
-        const d = {};
-        d.playStateChange = c;
-        a.postMessage(d);
+      b.o = (c, d) => {
+        const e = {};
+        e.playStateChange = c;
+        d !== void 0 && (e.performanceGeneration = d);
+        a.postMessage(e);
       };
-      b.L = () => {
-        a.postMessage({ Ab: "unlocked" });
+      b.$ = () => {
+        a.postMessage({ Ob: "unlocked" });
       };
-      b.g = !0;
+      b.ready = !0;
       return b;
     },
-    Nc = (a) => {
+    qd = (a) => {
       const b = a.port;
       b.addEventListener("message", (c) => {
-        if (c.data && c.data.unlock) ((c = Hc), (Hc = void 0), c && c());
+        if (c.data && c.data.unlock) ((c = md), (md = void 0), c && c());
         else {
           c = c.data;
-          var d = c.reduce((e, g) => {
-            const h = g.id;
-            var f = g.argumentz;
-            g = g.apiKey;
+          var d = c.reduce((e, h) => {
+            const f = h.id,
+              l = h.argumentz;
+            h = h.apiKey;
             try {
-              const k = Fc.get(g),
-                l = k && k.apply({}, f || []);
-              f = {};
-              f.id = h;
-              f.answer = l;
-              e.push(f);
-            } catch (k) {
-              throw Error(k);
+              const g = kd.get(h),
+                k = g && g.apply({}, l || []);
+              e.push({ id: f, answer: k });
+            } catch (g) {
+              throw Error(g);
             }
             return e;
           }, []);
           b.postMessage(d);
-          d = Gc;
-          Gc = void 0;
+          d = ld;
+          ld = void 0;
           d && d(c);
         }
       });
       b.start();
     },
-    Oc =
-      ({ C: a, B: b, J: c, H: d, I: e, K: g }) =>
-      async (h) => {
-        const f = h.csound;
-        h = new Int32Array(h.audioStateBuffer);
-        Atomics.store(h, 3, 1);
-        for (g.L(); 1 !== Atomics.load(h, 5) && 0 === a.csoundPerformKsmps(f); )
-          (1 === Atomics.load(h, 4) && (d(), Atomics.wait(h, 4, 0), e()),
-            1 === Atomics.compareExchange(h, 19, 1, 0) &&
+    rd =
+      ({ B: a, N: b, W: c, U: d, V: e, Z: h }) =>
+      async (f) => {
+        const l = f.csound,
+          g = f.performanceGeneration;
+        f = new Int32Array(f.audioStateBuffer);
+        Atomics.store(f, 3, 1);
+        for (h.$(); Atomics.load(f, 5) !== 1 && a.csoundPerformKsmps(l) === 0; )
+          (Atomics.load(f, 4) === 1 && (d(), Atomics.wait(f, 4, 0), e()),
+            Atomics.compareExchange(f, 19, 1, 0) === 1 &&
               (await new Promise((k) => {
-                Gc = k;
+                ld = k;
                 b();
               })));
-        Atomics.store(h, 3, 0);
-        g.o("renderEnded");
-        c();
+        Atomics.store(f, 3, 0);
+        h.o("renderEnded", g);
+        c(g);
       },
-    Pc = async (a) => {
+    sd = async (a) => {
       const b = a.wasmDataURI,
         c = a.withPlugins || [],
         d = a.messagePort,
         e = a.callbackPort;
-      V()();
-      const g = Mc({ port: d }),
-        h = () => e.postMessage("poll"),
-        f = () => e.postMessage("releaseStop"),
-        k = () => e.postMessage("releasePause"),
-        l = () => e.postMessage("releaseResumed");
-      Nc({ port: e });
-      const [n, q] = await Cc({ Ua: b, withPlugins: c, messagePort: g });
-      n.i = q;
-      const p = Nb(n);
-      Fc = new Map(
+      gd()();
+      const h = pd({ port: d }),
+        f = () => e.postMessage("poll"),
+        l = (t) => {
+          const w = { type: "releaseStop" };
+          w.performanceGeneration = t;
+          e.postMessage(w);
+        },
+        g = () => e.postMessage("releasePause"),
+        k = () => e.postMessage("releaseResumed");
+      qd({ port: e });
+      const [m, r] = await fd({ jb: b, withPlugins: c, messagePort: h });
+      m.h = r;
+      const q = ic(m);
+      kd = new Map(
         Object.entries({
-          ...p,
-          csoundStart: (t, y) =>
-            Dc(
-              g,
-              p,
-              Ic({ C: p, B: h, Z: n, K: g, J: f, H: k, I: l }),
-              Oc({ C: p, B: h, K: g, i: q, J: f, H: k, I: l }),
-            )(y),
-          Z: n,
+          ...q,
+          csoundStart: (t, w) => {
+            nd({ na: w && w.audioStateBuffer, qa: w && w.csound, B: q });
+            return id(
+              h,
+              q,
+              od({ B: q, N: f, wasm: m, Z: h, W: l, U: g, V: k }),
+              rd({ B: q, N: f, Z: h, h: r, W: l, U: g, V: k }),
+            )(w);
+          },
+          wasm: m,
         }),
       );
-      p.csoundInitialize(0);
-      return p.csoundCreate();
+      q.csoundInitialize(0);
+      return q.csoundCreate();
     };
-  u("initialize$$module$src$workers$sab_worker", Pc);
-  fa({ initialize: Pc, callUncloned: async (a, b) => (a = Fc.get(a)) && a.apply({}, b || []) });
+  x("initialize$$module$src$workers$sab_worker", sd);
+  ia({ initialize: sd, callUncloned: async (a, b) => (a = kd.get(a)) && a.apply({}, b || []) });
 }).call(this);
 //# sourceMappingURL=__compiled.sab.worker.js.map

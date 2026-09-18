@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import * as Comlink from "../utils/comlink.js";
 import { logVANMain as log } from "../logger";
 import { api as API } from "../libcsound";
@@ -5,6 +20,7 @@ import { csoundApiRename, fetchPlugins, makeProxyCallback, stopableStates } from
 import { IPCMessagePorts, messageEventHandler } from "./messages.main";
 import { EventPromises } from "../utils/event-promises";
 import { PublicEventAPI } from "../events";
+import { enableAudioInputInWorker } from "./io.utils.js";
 import VanillaWorker from "../../dist/__compiled.vanilla.worker.inline.js";
 
 class VanillaWorkerMainThread {
@@ -85,9 +101,10 @@ class VanillaWorkerMainThread {
     }
 
     this.audioWorker.sampleRate = await this.exportApi.getSr(this.csoundInstance);
-    const inputName = await this.exportApi.getInputName(this.csoundInstance);
-    this.audioWorker.isRequestingInput = inputName.includes("adc");
-    this.audioWorker["isRequestingMidi"] = await this.exportApi["_isRequestingRtMidiInput"](
+    this.audioWorker.isRequestingInput = await this.exportApi["isRequestingRtAudioInput"](
+      this.csoundInstance,
+    );
+    this.audioWorker["isRequestingMidi"] = await this.exportApi["isRequestingRtMidiInput"](
       this.csoundInstance,
     );
     this.audioWorker.outputsCount = await this.exportApi.getNchnls(this.csoundInstance);
@@ -234,10 +251,7 @@ class VanillaWorkerMainThread {
     };
 
     this.exportApi = this.publicEvents.decorateAPI(this.exportApi);
-    this.exportApi["enableAudioInput"] = () =>
-      console.warn(
-        `enableAudioInput was ignored: please use -iadc option before calling start with useWorker=true`,
-      );
+    this.exportApi["enableAudioInput"] = enableAudioInputInWorker.bind(this);
 
     this.exportApi["name"] = "Csound: Audio Worklet, Worker";
 
@@ -351,6 +365,12 @@ class VanillaWorkerMainThread {
         }
       }
     }
+
+    this.exportApi["enableDebugCallback"] = async () => {
+      const fn = this.exportApi["setDebugCallbackWasi"];
+      return typeof fn === "function" ? await fn() : -1;
+    };
+
     log(`exportAPI generated`)();
   }
 }

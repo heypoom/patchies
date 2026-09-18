@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * @fileoverview Public API.
  * @externs
@@ -38,23 +53,6 @@ Buffer.from = function (arrayBuffer, byteOffset, length) {};
 Buffer.concat = function (arrayBuffer, length) {};
 
 /**
- * @typedef {{value:string, mutable:boolean}}
- */
-var WasmGlobalMeta;
-
-/**
- * @constructor
- * @param {WasmGlobalMeta} wasmGlobalMeta
- * @param {number} initialValue
- */
-WebAssembly.Global = function (wasmGlobalMeta, initialValue) {};
-
-/**
- * @type {number}
- */
-WebAssembly.Global.prototype.value;
-
-/**
  * @function
  * @param {string} awScopeName
  * @param {Object} awClassName
@@ -88,10 +86,13 @@ var CsoundInst;
 var WasiFS;
 
 /** @typedef {{
- * _start: function(): void,
+ * _initialize: function(): void,
  * __wasm_call_ctors: function(): void,
  * __wasi_js_csoundSetMessageStringCallback: function(): void,
+ * isRequestingRtMidiInput: function(CsoundInst): number,
  * _isRequestingRtMidiInput: function(CsoundInst): number,
+ * isRequestingPlugins: function(CsoundInst): number,
+ * getRequestedPlugins: function(CsoundInst): number,
  * freeStringMem: function(number): void,
  * csoundCreate: function(CsoundInst): number,
  * csoundDestroy: function(CsoundInst): number,
@@ -130,6 +131,8 @@ var WasiFS;
  * csoundGetOutputBuffer: function(CsoundInst): number,
  * csoundGetSpout: function(CsoundInst): number,
  * csoundGetSpin: function(CsoundInst): number,
+ * isRequestingRtAudioInput: function(CsoundInst): number,
+ * _isRequestingRtAudioInput: function(CsoundInst): number,
  * csoundGetMIDIDevList: function(CsoundInst, Object, number): number,
  * csoundSetMidiCallbacks: function(CsoundInst): number,
  * csoundGetRtMidiName: function(CsoundInst): string,
@@ -137,6 +140,7 @@ var WasiFS;
  * csoundPushMidiMessage: function(CsoundInst, number, number, number): number,
  * csoundInputMessage: function(CsoundInst, string): number,
  * csoundInputMessageAsync: function(CsoundInst, string): number,
+ * csoundReadlinePushText: function(CsoundInst, string): number,
  * csoundGetControlChannel: function(CsoundInst, string): number,
  * csoundSetControlChannel: function(CsoundInst, string, number): undefined,
  * csoundGetStringChannel: function(CsoundInst, string): string,
@@ -161,6 +165,49 @@ var WasiFS;
  * csoundGetTableArgs: function(CsoundInst, number): (Float64Array | undefined),
  * csoundIsNamedGEN: function(CsoundInst, number): number,
  * csoundGetNamedGEN: function(CsoundInst, number): number,
+ * UGEN_ARG_TYPE: UgenArgTypeEnum,
+ * csoundUgenFactoryNew: function(CsoundInst): number,
+ * csoundUgenFactoryDelete: function(number): number,
+ * csoundUgenContextNew: function(CsoundInst): number,
+ * csoundUgenContextDelete: function(number): number,
+ * csoundUgenSetContext: function(number, number): number,
+ * csoundUgenNew: function(number, string, string, string): number,
+ * csoundUgenDelete: function(number): number,
+ * csoundUgenGetOutVar: function(number, number): number,
+ * csoundUgenGetInVar: function(number, number): number,
+ * csoundUgenSetInputVar: function(number, number, number): number,
+ * csoundUgenVarNew: function(CsoundInst, number): number,
+ * csoundUgenVarDelete: function(number): number,
+ * csoundUgenVarGetType: function(number): number,
+ * csoundUgenVarGetSize: function(number): number,
+ * csoundUgenVarSetValue: function(number, number): number,
+ * csoundUgenVarGetValue: function(number): number,
+ * csoundUgenVarGetData: function(number): number,
+ * csoundUgenVarGetDataAsFloat64Array: function(number): number,
+ * csoundUgenVarGetKsmps: function(number): number,
+ * csoundUgenVarSetString: function(number, string): number,
+ * csoundUgenVarGetString: function(number): (string|null),
+ * csoundUgenSetValue: function(number, number, number): number,
+ * csoundUgenGetValue: function(number, number): number,
+ * csoundUgenSetString: function(number, number, string): number,
+ * csoundUgenGetString: function(number, number): (string|null),
+ * csoundUgenGetInCount: function(number): number,
+ * csoundUgenGetOutCount: function(number): number,
+ * csoundUgenGetInType: function(number, number): number,
+ * csoundUgenGetOutType: function(number, number): number,
+ * csoundUgenInit: function(number): number,
+ * csoundUgenPerform: function(number): number,
+ * csoundUgenListOpcodes: function(CsoundInst, number, number): Array,
+ * csoundUgenFindOpcode: function(CsoundInst, string, string, string): number,
+ * csoundUgenGraphNew: function(CsoundInst): number,
+ * csoundUgenGraphAdd: function(number, number): number,
+ * csoundUgenGraphInit: function(number): number,
+ * csoundUgenGraphPerform: function(number): number,
+ * csoundUgenGraphDelete: function(number): number,
+ * csoundUgenGraphDeleteAll: function(number): number,
+ * csoundUgenVarGetFloat64Array: function(number): Float64Array,
+ * wasm: Object,
+ * getMemory: function(): Object,
  * fs: WasiFS,
  * eventNames: function(): Array<string>,
  * listenerCount: function(): number,
@@ -174,6 +221,17 @@ var WasiFS;
 var WasmExports;
 
 /** @typedef {{
+ * I: number,
+ * K: number,
+ * A: number,
+ * S: number,
+ * F: number,
+ * UNKNOWN: number,
+ * }}
+ */
+var UgenArgTypeEnum;
+
+/** @typedef {{
  * exports: WasmExports,
  * memory: DataView,
  * }}  */
@@ -185,7 +243,10 @@ var WasmInst;
  * getNchnls: function(CsoundInst): Promise.<number>,
  * getInputName: function(CsoundInst): Promise.<string>,
  * getSr: function(CsoundInst): Promise.<number>,
+ * isRequestingRtMidiInput: function(CsoundInst): Promise.<number>,
  * _isRequestingRtMidiInput: function(CsoundInst): Promise.<number>,
+ * isRequestingPlugins: function(): Promise.<number>,
+ * getRequestedPlugins: function(): Promise.<string>,
  * csoundPushMidiMessage: function(CsoundInst, number, number, number): void,
  * }}
  */

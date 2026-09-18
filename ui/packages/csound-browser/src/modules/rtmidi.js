@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { range } from "../utils.js";
 import { freeStringPtr } from "../utils/string-pointers.js";
 import { trimNull } from "../utils/trim-null.js";
@@ -61,9 +76,12 @@ export const csoundGetMidiOutFileName = (wasm) => (csound /* CsoundInst */) => {
   return trimNull(uint2String(stringBuffer)) || "";
 };
 
-export const _isRequestingRtMidiInput = (wasm) => (csound /* CsoundInst */) => {
+export const isRequestingRtMidiInput = (wasm) => (csound /* CsoundInst */) => {
   return wasm.exports["isRequestingRtMidiInput"](csound);
 };
+
+// Backwards-compatibility alias
+export const _isRequestingRtMidiInput = isRequestingRtMidiInput;
 
 /**
  * Emit a midi message with a given triplet of values

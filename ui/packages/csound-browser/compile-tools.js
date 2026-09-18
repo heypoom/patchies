@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import fs from "fs";
 import path from "path";
 import goog from "google-closure-compiler";
@@ -13,7 +28,7 @@ const rootDir = __dirname;
 
 fs.writeFileSync(
   path.join(rootDir, "dist", "__csound_wasm_static_tools.inline.js"),
-  inlineArraybuffer("./node_modules/@csound/wasm-bin/lib/csound.static.wasm.z", "binary.wasm"),
+  inlineArraybuffer("./node_modules/@csound/wasm-bin/lib/csound.wasm.z", "binary.wasm"),
 );
 
 (async () => {
@@ -36,6 +51,7 @@ fs.writeFileSync(
     hide_warnings_for: ["./node_modules/pako/dist/pako.min.js"],
 
     jscomp_off: ["accessControls"],
+    jscomp_error: ["globalThis"],
     assume_function_wrapper: false,
     compilation_level: "SIMPLE_OPTIMIZATIONS",
     language_in: "ECMASCRIPT_2021",

@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { getGlobalScope } from "./utils/global-scope.js";
+
+export { WebkitAudioContext } from "./utils/new-audio-context.js";
+
 export const appendBuffers = (buffer1, buffer2) => {
   const temporary = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
   temporary.set(new Uint8Array(buffer1), 0);
@@ -16,18 +35,17 @@ const isFirefox = () => navigator.userAgent.toLowerCase().includes("firefox");
 export const isSafari = () =>
   typeof navigator.vendor === "string" && navigator.vendor.includes("Apple");
 
-export const isSabSupported = () =>
-  !isFirefox() && window && window.Atomics !== undefined && window.SharedArrayBuffer !== undefined;
+export const isSabSupported = () => {
+  const globalScope = getGlobalScope();
+  return (
+    !isFirefox() &&
+    globalScope !== undefined &&
+    globalScope.Atomics !== undefined &&
+    globalScope.SharedArrayBuffer !== undefined
+  );
+};
 
 export const areWorkletsSupported = () => AudioNode !== undefined && AudioWorkletNode !== undefined;
-
-export const WebkitAudioContext = () => {
-  if (window.webkitAudioContext !== undefined) {
-    return window.webkitAudioContext;
-  } else if (window.AudioContext !== undefined) {
-    return window.AudioContext;
-  }
-};
 
 export const csoundApiRename = (apiName) => {
   let minusCsound = apiName.replace(/^csound/i, "");
@@ -47,12 +65,17 @@ export const stopableStates = new Set([
 export const makeProxyCallback =
   (proxyPort, csoundInstance, apiK, playState) =>
   async (...arguments_) => {
-    if (!playState || !stopableStates.has(playState)) {
-      const modifiedFs = {}; // getModifiedPersistentStorage();
-      Object.values(modifiedFs).length > 0 &&
-        (await proxyPort.callUncloned("syncWorkerFs", [csoundInstance, modifiedFs]));
+    try {
+      if (!playState || !stopableStates.has(playState)) {
+        const modifiedFs = {};
+        Object.values(modifiedFs).length > 0 &&
+          (await proxyPort.callUncloned("syncWorkerFs", [csoundInstance, modifiedFs]));
+      }
+      return await proxyPort.callUncloned(apiK, [csoundInstance, ...arguments_]);
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
-    return await proxyPort.callUncloned(apiK, [csoundInstance, ...arguments_]);
   };
 
 export const makeSingleThreadCallback =

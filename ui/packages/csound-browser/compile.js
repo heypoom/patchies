@@ -1,4 +1,19 @@
-import goog from "google-closure-compiler";
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import googClosureCompiler from "google-closure-compiler";
 import JarPath from "google-closure-compiler-java";
 import prettier from "prettier";
 import { Readable } from "stream";
@@ -7,7 +22,7 @@ import rimraf from "rimraf";
 import fs from "fs";
 import path from "path";
 import * as R from "ramda";
-const { compiler: ClosureCompiler } = goog;
+const ClosureCompiler = googClosureCompiler.compiler || googClosureCompiler;
 import { inlineWebworker } from "./goog/generate-webworker-module.js";
 import { inlineArraybuffer } from "./goog/inline-arraybuffer.js";
 
@@ -36,26 +51,36 @@ const monkeyPatches = (code) => {
 const inputFile = path.join(srcDir, "workers/sab.worker.js");
 const tmpOutFileName = path.join(rootDir, "dist", "test.min.js");
 
-const makeModuleExportsHack = () => {
-  const data = fs.readFileSync(path.join(rootDir, "dist", "csound.js")).toString();
-
-  if (DEV) {
-    const hackedData = data.replace(
-      "__GOOGLE_CLOSURE_REPLACEME__",
-      `const Csound = Csound$$$module$src$index; export { Csound }; export default Csound;`,
-    );
-    fs.writeFileSync(path.join(rootDir, "dist", "csound.js"), hackedData);
-  } else {
-    const matchResults = data.matchAll(/(\("__Csound__",)([A-Za-z]+)\)/g);
-    const matchResultsArr = Array.from(matchResults);
-    const obfuscatedVariableName = matchResultsArr[0][2];
-
-    const hackedData = data.replace(
-      "__GOOGLE_CLOSURE_REPLACEME__",
-      `const Csound = ${obfuscatedVariableName}; export { Csound }; export default Csound;`,
-    );
-    fs.writeFileSync(path.join(rootDir, "dist", "csound.js"), hackedData);
+const captureClosureExport = (data, exportName, variableName) => {
+  const marker = `("${exportName}",`;
+  if (!data.includes(marker)) {
+    throw new Error(`Could not find Closure export for ${exportName}`);
   }
+  return data.replace(marker, () => `${marker}${variableName}=`);
+};
+
+const makeModuleExportsHack = () => {
+  let data = fs.readFileSync(path.join(rootDir, "dist", "csound.js")).toString();
+  const marker = "__GOOGLE_CLOSURE_REPLACEME__";
+  if (!data.includes(marker)) {
+    throw new Error("Could not find the module export marker");
+  }
+
+  const csoundExport = "__csoundEsmExport__";
+  const libcsoundExport = "__libcsoundEsmExport__";
+  if (data.includes(csoundExport) || data.includes(libcsoundExport)) {
+    throw new Error("Closure output contains a reserved module export name");
+  }
+  data = captureClosureExport(data, "__Csound__", csoundExport);
+  data = captureClosureExport(data, "__libcsound__", libcsoundExport);
+  data = `let ${csoundExport}; let ${libcsoundExport};\n${data}`;
+
+  const exportStatement =
+    `const Csound = ${csoundExport};` +
+    ` const libcsound = ${libcsoundExport};` +
+    ` export { Csound, libcsound }; export default Csound;`;
+  const hackedData = data.replace(marker, () => exportStatement);
+  fs.writeFileSync(path.join(rootDir, "dist", "csound.js"), hackedData);
 };
 
 if (fs.existsSync(distDir)) {
@@ -63,24 +88,17 @@ if (fs.existsSync(distDir)) {
 }
 fs.mkdirSync(distDir);
 
-if (process.env.BUILD_STATIC) {
-  fs.writeFileSync(
-    path.join(rootDir, "dist", "__csound_wasm.inline.js"),
-    inlineArraybuffer("./node_modules/@csound/wasm-bin/lib/csound.static.wasm.z", "binary.wasm"),
-  );
-} else {
-  fs.writeFileSync(
-    path.join(rootDir, "dist", "__csound_wasm.inline.js"),
-    inlineArraybuffer("./node_modules/@csound/wasm-bin/lib/csound.dylib.wasm.z", "binary.wasm"),
-  );
-}
+fs.writeFileSync(
+  path.join(rootDir, "dist", "__csound_wasm.inline.js"),
+  inlineArraybuffer("./node_modules/@csound/wasm-bin/lib/csound.wasm.z", "binary.wasm"),
+);
 
-const polyfills = {
-  fetch_noop: fs.readFileSync("polyfills/fetch-noop.js", "utf-8"),
-  set_timeout_noop: fs.readFileSync("polyfills/set-timeout-noop.js", "utf-8"),
-  text_encoding: fs.readFileSync("polyfills/text-encoding.js", "utf-8"),
-  performance: fs.readFileSync("polyfills/performance.js", "utf-8"),
-};
+// const polyfills = {
+//   fetch_noop: fs.readFileSync("polyfills/fetch-noop.js", "utf-8"),
+//   set_timeout_noop: fs.readFileSync("polyfills/set-timeout-noop.js", "utf-8"),
+//   text_encoding: fs.readFileSync("polyfills/text-encoding.js", "utf-8"),
+//   performance: fs.readFileSync("polyfills/performance.js", "utf-8"),
+// };
 
 const compilationSequence = [
   {
@@ -179,8 +197,11 @@ const compile = async (config) => {
     hide_warnings_for: [
       "./node_modules/eventemitter3/umd/eventemitter3.min.js",
       "./node_modules/lines-logger/lib/index.js",
+      "./node_modules/google-closure-library/closure/goog/base.js",
+      "./node_modules/google-closure-library/closure/goog/dom/tagname.js",
     ],
     jscomp_off: ["accessControls"],
+    jscomp_error: ["globalThis"],
     assume_function_wrapper: false,
     compilation_level: DEV ? "SIMPLE_OPTIMIZATIONS" : "ADVANCED",
     language_in: "ECMASCRIPT_2021",
@@ -194,7 +215,7 @@ const compile = async (config) => {
   };
   const closureCompiler = new ClosureCompiler(deepMerge(defaultConfig, config));
 
-  closureCompiler.javaPath = `${process.env.JAVA_HOME}/bin/java`;
+  closureCompiler.javaPath = process.env.JAVA_HOME ? `${process.env.JAVA_HOME}/bin/java` : "java";
   closureCompiler.JAR_PATH = JarPath;
   await new Promise((resolve, reject) => {
     const javaProcess = closureCompiler.run((exitCode, inputString, stderr) => {
@@ -203,7 +224,7 @@ const compile = async (config) => {
         resolve();
       } else {
         reject();
-        process.exit(0);
+        process.exit(1);
       }
     });
   });

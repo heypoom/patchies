@@ -94,8 +94,8 @@ export const dependencies: ProjectLicense[] = [
   },
   {
     name: '@csound/browser',
-    version: 'local fork',
-    license: 'LGPL-2.1',
+    version: '7.0.0-beta33 (vendored)',
+    license: 'Apache-2.0',
     url: 'https://github.com/csound/csound'
   },
   {
@@ -533,14 +533,13 @@ export const portedCode: PortedCode[] = [
       'Adapted from @tailwindcss/browser to work within Shadow DOM for style isolation. The implementation creates a shared Tailwind compiler and per-shadow-root style injection with MutationObserver for class detection.'
   },
   {
-    name: '@csound/browser (local fork)',
-    description:
-      'The csound~ node uses a local fork of @csound/browser with fixes for multi-instance support.',
+    name: '@csound/browser (vendored)',
+    description: 'The csound~ node uses a vendored snapshot of @csound/browser.',
     authors: 'Steven Yi, Victor Lazzarini, and Csound contributors',
     repository: 'https://github.com/csound/csound',
-    license: 'LGPL-2.1',
+    license: 'Apache-2.0',
     notes:
-      'Local fork at ui/packages/csound-browser fixes module-level globals in the AudioWorklet that caused issues when multiple csound~ instances were created. The fix moves shared state to instance properties, allowing independent Csound instances.'
+      'Vendored from the upstream wasm/browser package. The exact source revision is recorded in ui/packages/csound-browser/UPSTREAM_COMMIT.'
   },
   {
     name: 'Pure Data (Pd)',
