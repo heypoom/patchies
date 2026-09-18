@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import {
   getObjectCodeFiles,
   type CodeObject,
@@ -12,9 +13,16 @@ export const assertMutableVfsPath = (path: string) => {
   if (isObjectPath(path)) throw new Error('VFS: Objects only allows editing existing code');
 };
 
+const getObjectCodeMimeType = (language: ObjectCodeFile['language']) =>
+  match(language)
+    .with('javascript', () => 'application/javascript')
+    .with('puredata', () => 'text/x-puredata')
+    .otherwise(() => 'text/plain');
+
 export interface ObjectFileWriteOptions {
   recordHistory?: boolean;
   previousContent?: string;
+  previousValue?: unknown;
 }
 
 /** Live graph projection; contains no persisted files or editor ownership. */
@@ -23,6 +31,8 @@ export class ObjectFileProjection {
   readonly reader = new VfsDirectoryReader(this.entries, () => undefined);
 
   private files = new Map<string, ObjectCodeFile>();
+  private editOrigins = new Map<string, unknown>();
+  private runtimeContents = new Map<string, { source: string; content: string }>();
   private revision = 0;
   private runSource?: (file: ObjectCodeFile) => void | Promise<void>;
   private writeSource?: (
@@ -52,9 +62,16 @@ export class ObjectFileProjection {
   sync(objects: readonly CodeObject[]): void {
     const next = new Map<string, ObjectCodeFile>(
       objects.flatMap((object) =>
-        getObjectCodeFiles(object).map(
-          (file) => [`obj://${file.objectId}/${file.filename}`, file] as const
-        )
+        getObjectCodeFiles(object).map((file) => {
+          const path = `obj://${file.objectId}/${file.filename}`;
+          const runtimeContent = this.runtimeContents.get(path);
+          const content =
+            file.runtimeSource !== undefined && runtimeContent?.source === file.runtimeSource
+              ? runtimeContent.content
+              : file.content;
+
+          return [path, { ...file, content }] as const;
+        })
       )
     );
 
@@ -64,7 +81,10 @@ export class ObjectFileProjection {
       (path) => this.files.get(path)?.content !== next.get(path)?.content
     );
 
-    if (changes.length === 0) return;
+    if (changes.length === 0) {
+      this.files = next;
+      return;
+    }
 
     const revisions = new Map(changes.map((path) => [path, ++this.revision]));
     const removedFolders = new Set<string>();
@@ -75,6 +95,8 @@ export class ObjectFileProjection {
       if (!file) {
         const previous = this.files.get(path)!;
         removedFolders.add(`obj://${previous.objectId}`);
+        this.editOrigins.delete(path);
+        this.runtimeContents.delete(path);
         this.entries.delete(path);
         continue;
       }
@@ -87,7 +109,7 @@ export class ObjectFileProjection {
       this.entries.set(path, {
         provider: 'object',
         filename: file.filename,
-        mimeType: file.language === 'javascript' ? 'application/javascript' : 'text/plain',
+        mimeType: getObjectCodeMimeType(file.language),
         size: new TextEncoder().encode(file.content).byteLength,
         revision: revisions.get(path)
       });
@@ -100,6 +122,26 @@ export class ObjectFileProjection {
     }
 
     for (const [path, revision] of revisions) this.changed(path, revision);
+  }
+
+  setRuntimeContent(objectId: string, filename: string, source: string, content: string): void {
+    const path = `obj://${objectId}/${filename}`;
+    this.runtimeContents.set(path, { source, content });
+
+    const file = this.files.get(path);
+    if (!file || file.runtimeSource !== source || file.content === content) return;
+
+    const nextFile = { ...file, content };
+    const revision = ++this.revision;
+    this.files.set(path, nextFile);
+    this.entries.set(path, {
+      provider: 'object',
+      filename: nextFile.filename,
+      mimeType: getObjectCodeMimeType(nextFile.language),
+      size: new TextEncoder().encode(content).byteLength,
+      revision
+    });
+    this.changed(path, revision);
   }
 
   get(path: string): ObjectCodeFile {
@@ -121,6 +163,21 @@ export class ObjectFileProjection {
     if (!this.writeSource) throw new Error('VFS: Object editor is unavailable');
     if (file.content === content && options?.previousContent === undefined) return;
 
-    this.writeSource(file, content, options);
+    if (options?.recordHistory === false && !this.editOrigins.has(path)) {
+      this.editOrigins.set(path, file.runtimeSource === undefined ? file.content : null);
+    }
+
+    const shouldCommit = options?.previousContent !== undefined;
+    const nextOptions = shouldCommit
+      ? {
+          ...options,
+          previousValue: this.editOrigins.has(path)
+            ? this.editOrigins.get(path)
+            : options.previousContent
+        }
+      : options;
+
+    this.writeSource(file, content, nextOptions);
+    if (shouldCommit) this.editOrigins.delete(path);
   }
 }

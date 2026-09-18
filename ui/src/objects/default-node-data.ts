@@ -340,6 +340,14 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       syncTransport: false
     }))
     .with('wam~', () => ({ url: DEFAULT_WAM_URL, resizable: false }))
+    .with('pd', () => ({
+      vfsPath: '',
+      sourceUrl: '',
+      sourceCode: null,
+      ports: [],
+      exposedPortIds: [],
+      hasConfiguredPorts: false
+    }))
     .with('sequencer', () => ({
       steps: 8,
       tracks: DEFAULT_TRACKS,

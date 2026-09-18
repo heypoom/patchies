@@ -60,6 +60,7 @@
         "json5": "^2.2.3",
         "katex": "^0.16.38",
         "lezer-glsl": "^0.6.0",
+        "libpd-wasm": "0.1.6",
         "lodash": "^4.17.21",
         "lygia": "^1.4.1",
         "machine": "./src/assets/vasm",
@@ -166,6 +167,7 @@
   ],
   "patchedDependencies": {
     "superdough@1.2.6": "patches/superdough@1.2.6.patch",
+    "libpd-wasm@0.1.6": "patches/libpd-wasm@0.1.6.patch",
   },
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
@@ -2074,6 +2076,8 @@
 
     "lezer-glsl": ["lezer-glsl@0.6.0", "", { "dependencies": { "@lezer/highlight": "^1.0.0", "@lezer/lr": "^1.0.0" } }, "sha512-H6KI5n4WXIw6BuCivmXP+5JtaCIfTKcxw+MiXbu8X3DzbIYz+7nIbVONi+JVw4RWj+oVrFCfxNi+S6oB8/S8Hg=="],
 
+    "libpd-wasm": ["libpd-wasm@0.1.6", "", { "dependencies": { "melange": "^6.0.1", "melange.js": "^6.0.1" } }, "sha512-zW5EjHo1MQogCCnhczyLI1SUgeJhD7LJDajpgrfz/8qKVV32dO0BDrnJ7U5hrRq9c3d82teUa/Rt0jMUyNWyOw=="],
+
     "libtess": ["libtess@1.2.2", "", {}, "sha512-Nps8HPeVVcsmJxUvFLKVJcCgcz+1ajPTXDVAVPs6+giOQP4AHV31uZFFkh+CKow/bkB7GbZWKmwmit7myaqDSw=="],
 
     "lie": ["lie@3.3.0", "", { "dependencies": { "immediate": "~3.0.5" } }, "sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ=="],
@@ -2187,6 +2191,10 @@
     "mdurl": ["mdurl@2.0.0", "", {}, "sha512-Lf+9+2r+Tdp5wXDXC4PcIBjTDtq4UKjCPMQhKIuzpJNW0b96kVqSwW0bT7FhRSfmAiFYgP+SCRvdrDozfh0U5w=="],
 
     "mediabunny": ["mediabunny@1.49.0", "", { "dependencies": { "@types/dom-mediacapture-transform": "^0.1.11", "@types/dom-webcodecs": "0.1.13" } }, "sha512-hDMtS/q22GFjyB3Yum+a6NHhDtVnye6hgaYTjx3DPUfnckRjzxFmXmCc3UQXdvo7d6PUCl7KM6Y9MRWzlvnAJQ=="],
+
+    "melange": ["melange@6.0.1", "", { "dependencies": { "melange.js": "6.0.1" } }, "sha512-0zluPIaP1DCDvPzostX+uCPM5CR9roibEFmdOCR1WSjkWlAFmVyIt+IRE0ywfo3hcWLdW6Cegbsu7eyeh0tIjQ=="],
+
+    "melange.js": ["melange.js@6.0.1", "", {}, "sha512-gAu4pCC5uL9ZCyq0HMJUXxArufoeqjg40yRREpHR11LSIbEPn6iEgobW1i7UwHsyHtWkWQUANVGnYCh0aBUT9Q=="],
 
     "memfs": ["memfs@4.39.0", "", { "dependencies": { "@jsonjoy.com/json-pack": "^1.11.0", "@jsonjoy.com/util": "^1.9.0", "glob-to-regex.js": "^1.0.1", "thingies": "^2.5.0", "tree-dump": "^1.0.3", "tslib": "^2.0.0" } }, "sha512-tFRr2IkSXl2B6IAJsxjHIMTOsfLt9W+8+t2uNxCeQcz4tFqgQR8DYk8hlLH2HsucTctLuoHq3U0G08atyBE3yw=="],
 

@@ -285,6 +285,12 @@ export const dependencies: ProjectLicense[] = [
     license: 'MIT',
     url: 'https://npmjs.com/package/lezer-glsl'
   },
+  {
+    name: 'libpd-wasm',
+    version: '0.1.6',
+    license: 'BSD-3-Clause',
+    url: 'https://github.com/hyrfilm/libpd-wasm'
+  },
   { name: 'lodash', version: '^4.17.21', license: 'MIT', url: 'https://npmjs.com/package/lodash' },
   {
     name: 'lygia',
@@ -552,6 +558,13 @@ export const portedCode: PortedCode[] = [
     copyright: '© 1996 Miller Puckette and others',
     notes:
       "Patchies reimplements Pd's object designs using Web Audio API and AudioWorklets — no code was directly ported. The tilde (~) naming convention, inlet/outlet paradigm, hot/cold inlet semantics, and message-passing architecture all originate from Miller Puckette's work on Pure Data and its predecessor Max."
+  },
+  {
+    name: 'libpd-wasm',
+    description: 'The pd object uses libpd-wasm to load and run Pure Data patches in the browser.',
+    authors: 'Jonas Holmer (@hyrfilm)',
+    repository: 'https://github.com/hyrfilm/libpd-wasm',
+    license: 'BSD-3-Clause'
   },
   {
     name: 'TouchDesigner',

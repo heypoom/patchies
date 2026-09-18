@@ -179,6 +179,11 @@ export async function loadLanguageExtension(
 
       return patchbay();
     })
+    .with('puredata', async () => {
+      const { pureData } = await import('$objects/pd/pd.codemirror');
+
+      return pureData();
+    })
     .with('ruby', async () => {
       const [{ StreamLanguage }, { ruby }] = await Promise.all([
         import('@codemirror/language'),

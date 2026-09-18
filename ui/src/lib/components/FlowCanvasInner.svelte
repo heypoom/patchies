@@ -959,19 +959,37 @@
         if (!object) throw new Error(`VFS: Object no longer exists: ${file.objectId}`);
 
         const edit = editObjectCodeFile(object, file.filename, content);
+        if (edit.writePath) {
+          objectVfs.writeCodeFile(edit.writePath, content);
+          objectVfs.objectFiles.setRuntimeContent(
+            file.objectId,
+            file.filename,
+            edit.writePath,
+            content
+          );
+          objectVfs.objectFiles.sync(nodes);
+          return;
+        }
+
         const currentContent = object.data[edit.dataKey] as string;
-        const oldValue = options?.previousContent ?? currentContent;
+        const oldValue =
+          options && 'previousValue' in options
+            ? options.previousValue
+            : (options?.previousContent ?? currentContent);
 
-        if (currentContent !== content) updateNodeData(file.objectId, edit.updates);
+        if (currentContent !== content) updateNodeData(file.objectId, edit.updates!);
 
-        if (options?.recordHistory !== false && oldValue !== content)
-          handleCodeCommit({
-            type: 'codeCommit',
-            nodeId: file.objectId,
-            dataKey: file.dataKey,
-            oldValue,
-            newValue: content
-          });
+        if (options?.recordHistory !== false && oldValue !== content) {
+          historyManager.record(
+            new UpdateNodeDataCommand(
+              file.objectId,
+              file.dataKey,
+              oldValue,
+              content,
+              canvasAccessors
+            )
+          );
+        }
 
         objectVfs.objectFiles.sync(nodes);
       },

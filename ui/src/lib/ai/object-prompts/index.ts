@@ -82,11 +82,13 @@ import {
 } from '$objects/mediapipe/prompts';
 import { serialPrompt, serialTermPrompt, dmxPrompt } from '$objects/serial/prompts';
 import { ngeaPrompt } from '$objects/ngea/prompts';
+import { pdPrompt } from '$objects/pd/prompt';
 
 /**
  * Mapping of object types to their instruction prompts.
  */
 export const objectPrompts: Record<string, string> = {
+  pd: pdPrompt,
   'tone~': tonePrompt,
   'dsp~': dspPrompt,
   p5: p5Prompt,
