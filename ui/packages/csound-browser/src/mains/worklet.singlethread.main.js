@@ -1,23 +1,19 @@
 /*
     worklet.singlethread.js
 
-    Copyright (C) 2018 Steven Yi, Victor Lazzarini
+    Copyright (C) 2018 The Csound Developers
 
-    This file is part of Csound.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    The Csound Library is free software; you can redistribute it
-    and/or modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    Csound is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with Csound; if not, write to the Free Software
-    Foundation, Inc., 31 Milk Street, #960789, Boston, MA, 02196, USA
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 import * as Comlink from "../utils/comlink.js";
@@ -26,15 +22,22 @@ import { csoundApiRename, fetchPlugins, makeProxyCallback } from "../utils.js";
 import { messageEventHandler, IPCMessagePorts } from "./messages.main.js";
 import { api as API } from "../libcsound.js";
 import { PublicEventAPI } from "../events.js";
-import { enableAudioInput } from "./io.utils.js";
+import { enableAudioInput, releaseMicrophoneStream } from "./io.utils.js";
 import { requestMidi } from "../utils/request-midi.js";
 import { EventPromises } from "../utils/event-promises.js";
 import WorkletWorker from "../../dist/__compiled.worklet.singlethread.worker.inline.js";
 
+const registeredContexts = new WeakSet();
+
 const initializeModule = async (audioContext) => {
+  if (registeredContexts.has(audioContext)) {
+    log("Module already registered on this AudioContext, skipping addModule")();
+    return true;
+  }
   log("Initialize Module")();
   try {
     await audioContext.audioWorklet.addModule(WorkletWorker());
+    registeredContexts.add(audioContext);
   } catch (error) {
     console.error("Error calling audioWorklet.addModule", error);
     return false;
@@ -46,7 +49,12 @@ const initializeModule = async (audioContext) => {
  * @unrestricted
  */
 class SingleThreadAudioWorkletMainThread {
-  constructor({ audioContext, inputChannelCount = 1, outputChannelCount = 2 }) {
+  constructor({
+    audioContext,
+    audioContextIsProvided = false,
+    inputChannelCount = 1,
+    outputChannelCount = 2,
+  }) {
     /** @type {(WorkletSinglethreadProxy | undefined)} */
     this.workletProxy = undefined;
     this.node = undefined;
@@ -58,6 +66,7 @@ class SingleThreadAudioWorkletMainThread {
     this.eventPromises = new EventPromises();
 
     this.audioContext = audioContext;
+    this.audioContextIsProvided = audioContextIsProvided;
     this.inputChannelCount = inputChannelCount;
     this.outputChannelCount = outputChannelCount;
 
@@ -68,16 +77,24 @@ class SingleThreadAudioWorkletMainThread {
     this["handleMidiInput"] = this.handleMidiInput.bind(this);
     this.currentPlayState = undefined;
     this.midiPortStarted = false;
+    this.needsResetBeforeCompileCsd = false;
   }
 
   async terminateInstance() {
+    releaseMicrophoneStream(this);
+    if (this.workletProxy) {
+      try {
+        await this.workletProxy["terminate"]();
+      } catch {}
+    }
     if (this.node) {
       this.node.disconnect();
       delete this.node;
     }
-    // PATCHED: Don't close the AudioContext - it was passed in from outside
-    // and the caller is responsible for its lifecycle
     if (this.audioContext) {
+      if (!this.audioContextIsProvided && this.audioContext.state !== "closed") {
+        await this.audioContext.close();
+      }
       delete this.audioContext;
     }
     if (this.workletProxy) {
@@ -88,6 +105,22 @@ class SingleThreadAudioWorkletMainThread {
       this.publicEvents.terminateInstance();
       delete this.publicEvents;
     }
+  }
+
+  async beginFadeOut() {
+    if (!this.workletProxy) {
+      return 0;
+    }
+    return (await this.workletProxy["beginFadeOut"]()) || 0;
+  }
+
+  async waitForFadeOut(frameCount) {
+    if (!frameCount) {
+      return;
+    }
+    const sampleRate = this.audioContext && this.audioContext.sampleRate;
+    const fadeMs = (1000 * frameCount) / (sampleRate || 44100);
+    await new Promise((resolve) => setTimeout(resolve, fadeMs + 20));
   }
 
   async onPlayStateChange(newPlayState) {
@@ -108,6 +141,9 @@ class SingleThreadAudioWorkletMainThread {
       }
 
       case "realtimePerformanceEnded": {
+        const fadeFrames = await this.beginFadeOut();
+        await this.waitForFadeOut(fadeFrames);
+        releaseMicrophoneStream(this);
         this.midiPortStarted = false;
         this.currentPlayState = undefined;
         this.publicEvents && this.publicEvents.triggerRealtimePerformanceEnded();
@@ -135,6 +171,7 @@ class SingleThreadAudioWorkletMainThread {
         break;
       }
       case "renderEnded": {
+        this.currentPlayState = undefined;
         this.publicEvents.triggerRenderEnded();
         this.eventPromises &&
           this.eventPromises.isWaitingToStop() &&
@@ -228,7 +265,7 @@ class SingleThreadAudioWorkletMainThread {
     /** @suppress {checkTypes} */
     this.exportApi["getNode"] = async () => this.node;
     /** @suppress {checkTypes} */
-    this.exportApi["enableAudioInput"] = enableAudioInput;
+    this.exportApi["enableAudioInput"] = enableAudioInput.bind(this);
     this.exportApi["name"] = "Csound: Audio Worklet, Single-threaded";
     this.exportApi = this.publicEvents.decorateAPI(this.exportApi);
     // the default message listener
@@ -256,11 +293,15 @@ class SingleThreadAudioWorkletMainThread {
 
             if (isRequestingRealtimeOutput) {
               if (isRequestingInput) {
-                this.exportApi["enableAudioInput"]();
+                try {
+                  await this.exportApi["enableAudioInput"]();
+                } catch (error) {
+                  console.error(error);
+                }
               }
 
               const isRequestingMidi =
-                await this.exportApi["_isRequestingRtMidiInput"](csoundInstance);
+                await this.exportApi["isRequestingRtMidiInput"](csoundInstance);
 
               if (isRequestingMidi) {
                 requestMidi({
@@ -271,12 +312,16 @@ class SingleThreadAudioWorkletMainThread {
               const startResult = await proxyCallback({ csound: csoundInstance });
               this.publicEvents.triggerOnAudioNodeCreated(this.node);
               await this.eventPromises.waitForStart();
+              if (startResult === 0) {
+                this.needsResetBeforeCompileCsd = true;
+              }
               return startResult;
             } else {
               // because worklet worker can't return while rendering
               proxyCallback({ csound: csoundInstance });
               this.publicEvents.triggerOnAudioNodeCreated(this.node);
               await this.eventPromises.waitForStart();
+              this.needsResetBeforeCompileCsd = true;
               return 0;
             }
           };
@@ -302,6 +347,34 @@ class SingleThreadAudioWorkletMainThread {
           break;
         }
 
+        case "csoundCompileCSD": {
+          const csoundCompileCSD = async (...arguments_) => {
+            // Starting a new CSD after any previous run must reset engine state first.
+            if (
+              this.needsResetBeforeCompileCsd &&
+              (this.currentPlayState === undefined || this.currentPlayState === "renderEnded")
+            ) {
+              await this.workletProxy["csoundReset"](csoundInstance);
+              this.needsResetBeforeCompileCsd = false;
+            }
+            return proxyCallback(...arguments_);
+          };
+          csoundCompileCSD["toString"] = () => reference["toString"]();
+          this.exportApi[csoundApiRename(apiK)] = csoundCompileCSD.bind(this);
+          break;
+        }
+
+        case "csoundReset": {
+          const csoundReset = async (...arguments_) => {
+            const resetResult = await proxyCallback(...arguments_);
+            this.needsResetBeforeCompileCsd = false;
+            return resetResult;
+          };
+          csoundReset["toString"] = () => reference["toString"]();
+          this.exportApi[csoundApiRename(apiK)] = csoundReset.bind(this);
+          break;
+        }
+
         case "fs": {
           this.exportApi["fs"] = {};
           Object.keys(reference).forEach((method) => {
@@ -324,6 +397,11 @@ class SingleThreadAudioWorkletMainThread {
         }
       }
     }
+
+    this.exportApi["enableDebugCallback"] = async () => {
+      const fn = this.exportApi["setDebugCallbackWasi"];
+      return typeof fn === "function" ? await fn() : -1;
+    };
 
     return this.exportApi;
   }

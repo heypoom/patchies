@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { freeStringPtr, string2ptr } from "../utils/string-pointers.js";
 
 /*
@@ -71,7 +86,10 @@ csoundEvalCode["toString"] = () => "csoundEvalCode = async (orchestra) => Number
  * Prepares Csound for performance
  * @function
  */
-export const csoundStart = (wasm) => (csound) => wasm.exports["csoundStartWasi"](csound);
+export const csoundStart = (wasm) => (csound) => {
+  const result = wasm.exports["csoundStartWasi"](csound);
+  return result;
+};
 
 csoundStart["toString"] = () => "start = async () => Number;";
 
@@ -97,16 +115,22 @@ csoundCompileCSD["toString"] = () => "compileCSD = async (csoundDocument) => Num
  * Performs(plays) 1 ksmps worth of sample(s)
  * @function
  */
-export const csoundPerformKsmps = (wasm) => (csound) =>
-  wasm.exports["csoundPerformKsmpsWasi"](csound);
+export const csoundPerformKsmps = (wasm) => (csound) => wasm.exports["csoundPerformKsmps"](csound);
 
 csoundPerformKsmps["toString"] = () => "performKsmps = async (csound) => Number;";
+
+export const csoundSetDebugCallbackWasi = (wasm) => (csound) =>
+  wasm.exports["csoundSetDebugCallbackWasi"](csound);
+
+csoundSetDebugCallbackWasi["toString"] = () => "setDebugCallbackWasi = async (csound) => Number;";
 
 /**
  * Dummy function to enable stop mechanism
  * @function
  */
-export const csoundStop = (wasm) => (csound) => {};
+const stop = () => {};
+
+export const csoundStop = () => stop;
 
 csoundStop["toString"] = () => "stop = async () => undefined;";
 

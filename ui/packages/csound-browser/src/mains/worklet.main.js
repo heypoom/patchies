@@ -1,11 +1,29 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import * as Comlink from "../utils/comlink.js";
 import { logWorkletMain as log } from "../logger";
 import { WebkitAudioContext } from "../utils";
+import { getGlobalScope } from "../utils/global-scope.js";
 import { requestMidi } from "../utils/request-midi";
+import { releaseMicrophoneStream, requestMicrophoneStream } from "./io.utils.js";
 import { messageEventHandler } from "./messages.main";
 import WorkletWorker from "../../dist/__compiled.worklet.worker.inline.js";
 
 let UID = 0;
+const registeredContexts = new WeakSet();
 
 /**
  * @unrestricted
@@ -14,6 +32,7 @@ class AudioWorkletMainThread {
   constructor({ audioContext, audioContextIsProvided, autoConnect }) {
     this.autoConnect = autoConnect;
     this.audioContextIsProvided = audioContextIsProvided;
+    this.audioContextOwnedByInstance = !audioContextIsProvided;
     /** @type {({ mainMessagePortAudio: EventTarget } | undefined)} */
     this.ipcMessagePorts = undefined;
     this.audioContext = audioContext;
@@ -23,6 +42,10 @@ class AudioWorkletMainThread {
     this.csoundWorkerMain = undefined;
     this.workletWorkerUrl = undefined;
     this.workletProxy = undefined;
+    this.microphoneInput = undefined;
+    this.microphonePromise = undefined;
+    this.microphoneStream = undefined;
+    this.performanceGeneration = undefined;
     this["isRequestingMidi"] = false;
     this.isRequestingInput = false;
 
@@ -39,16 +62,23 @@ class AudioWorkletMainThread {
     this.onPlayStateChange = this.onPlayStateChange.bind(this);
     this.terminateInstance = this.terminateInstance.bind(this);
     this.createWorkletNode = this.createWorkletNode.bind(this);
+    this["requestMicrophoneInput"] = requestMicrophoneStream.bind(this);
     log("AudioWorkletMainThread was constructed")();
   }
 
   async terminateInstance() {
+    releaseMicrophoneStream(this);
+    if (this.workletProxy) {
+      try {
+        await this.workletProxy["terminate"]();
+      } catch {}
+    }
     if (this.audioWorkletNode) {
       this.audioWorkletNode.disconnect();
       delete this.audioWorkletNode;
     }
     if (this.audioContext) {
-      if (this.audioContext.state !== "closed") {
+      if (this.audioContextOwnedByInstance && this.audioContext.state !== "closed") {
         try {
           await this.audioContext.close();
         } catch {}
@@ -61,6 +91,22 @@ class AudioWorkletMainThread {
     }
   }
 
+  async beginFadeOut() {
+    if (!this.workletProxy) {
+      return 0;
+    }
+    return (await this.workletProxy["beginFadeOut"]()) || 0;
+  }
+
+  async waitForFadeOut(frameCount) {
+    if (!frameCount) {
+      return;
+    }
+    const sampleRate = this.audioContext && this.audioContext.sampleRate;
+    const fadeMs = (1000 * frameCount) / (sampleRate || 44100);
+    await new Promise((resolve) => setTimeout(resolve, fadeMs + 20));
+  }
+
   createWorkletNode(audioContext, inputsCount, contextUid) {
     const processorOptions = {};
 
@@ -69,6 +115,7 @@ class AudioWorkletMainThread {
     processorOptions["inputsCount"] = inputsCount;
     processorOptions["outputsCount"] = this.outputsCount;
     processorOptions["ksmps"] = this.ksmps;
+    processorOptions["performanceGeneration"] = this.performanceGeneration;
     processorOptions["maybeSharedArrayBuffer"] =
       this.csoundWorkerMain.hasSharedArrayBuffer && this.csoundWorkerMain.audioStatePointer;
     processorOptions["maybeSharedArrayBufferAudioIn"] =
@@ -85,7 +132,19 @@ class AudioWorkletMainThread {
     return audioNode;
   }
 
-  async onPlayStateChange(newPlayState) {
+  async onPlayStateChange(newPlayState, performanceGeneration) {
+    // Old AudioWorklet processors can still post on the shared message port
+    // after a replacement node starts. Only the current SAB run may act here.
+    if (
+      this.csoundWorkerMain &&
+      this.csoundWorkerMain.hasSharedArrayBuffer &&
+      performanceGeneration !== this.csoundWorkerMain.performanceGeneration
+    ) {
+      return;
+    }
+    if (newPlayState === "realtimePerformanceStarted") {
+      this.performanceGeneration = performanceGeneration;
+    }
     this.currentPlayState = newPlayState;
 
     switch (newPlayState) {
@@ -102,13 +161,15 @@ class AudioWorkletMainThread {
         break;
       }
       case "realtimePerformanceEnded": {
+        const fadeFrames = await this.beginFadeOut();
+        await this.waitForFadeOut(fadeFrames);
         log(
           "event received: realtimePerformanceEnded" + !this.csoundWorkerMain.hasSharedArrayBuffer
             ? ` cleaning up ports`
             : "",
         )();
         if (
-          !this.audioContextIsProvided &&
+          this.audioContextOwnedByInstance &&
           this.autoConnect &&
           this.audioContext &&
           this.audioContext.state !== "closed"
@@ -122,13 +183,16 @@ class AudioWorkletMainThread {
           this.audioWorkletNode.disconnect();
           delete this.audioWorkletNode;
         }
+        releaseMicrophoneStream(this);
         if (this.workletProxy) {
           this.workletProxy[Comlink.releaseProxy]();
           delete this.workletProxy;
         }
 
         if (this.workletWorkerUrl) {
-          (window.URL || window.webkitURL).revokeObjectURL(this.workletWorkerUrl);
+          const globalScope = getGlobalScope();
+          const urlApi = globalScope && (globalScope.URL || globalScope.webkitURL);
+          urlApi && urlApi.revokeObjectURL(this.workletWorkerUrl);
         }
 
         this.audioWorkletNode && delete this.audioWorkletNode;
@@ -171,6 +235,7 @@ class AudioWorkletMainThread {
         console.error(`fatal: the provided AudioContext was undefined`);
       }
       this.audioContext = new (WebkitAudioContext())({ sampleRate: this.sampleRate });
+      this.audioContextOwnedByInstance = true;
     }
 
     if (this.audioContext.state === "closed") {
@@ -178,10 +243,12 @@ class AudioWorkletMainThread {
         console.error(`fatal: the provided AudioContext was closed, falling back new AudioContext`);
       }
       this.audioContext = new (WebkitAudioContext())({ sampleRate: this.sampleRate });
+      this.audioContextOwnedByInstance = true;
     }
 
     if (this.sampleRate !== this.audioContext.sampleRate) {
       this.audioContext = new (WebkitAudioContext())({ sampleRate: this.sampleRate });
+      this.audioContextOwnedByInstance = true;
       // if this.audioContextIsProvided is true
       // it should already be picked
       if (this.audioContextIsProvided) {
@@ -190,10 +257,16 @@ class AudioWorkletMainThread {
     }
     this.workletWorkerUrl = WorkletWorker();
 
-    try {
-      await this.audioContext.audioWorklet.addModule(this.workletWorkerUrl);
-    } catch (error) {
-      console.error("Error calling audioWorklet.addModule", error);
+    if (registeredContexts.has(this.audioContext)) {
+      log("Module already registered on this AudioContext, skipping addModule")();
+    } else {
+      try {
+        await this.audioContext.audioWorklet.addModule(this.workletWorkerUrl);
+        registeredContexts.add(this.audioContext);
+      } catch (error) {
+        console.error("Error calling audioWorklet.addModule", error);
+        throw error;
+      }
     }
 
     log("WorkletWorker module added")();
@@ -213,61 +286,44 @@ class AudioWorkletMainThread {
       });
     }
 
-    let microphonePromise;
-
     if (this.isRequestingInput) {
-      let resolveMicrophonePromise;
-      microphonePromise = new Promise((resolve) => {
-        resolveMicrophonePromise = resolve;
-      });
-      const getUserMedia =
-        navigator.mediaDevices === undefined
-          ? navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia
-          : navigator.mediaDevices.getUserMedia;
-
-      const microphoneCallback = (stream) => {
-        if (stream) {
-          const liveInput = this.audioContext.createMediaStreamSource(stream);
-          this.inputsCount = liveInput.channelCount;
-          const newNode = this.createWorkletNode(
-            this.audioContext,
-            liveInput.channelCount,
-            contextUid,
-          );
-          this.audioWorkletNode = newNode;
-          if (this.autoConnect) {
-            liveInput.connect(newNode).connect(this.audioContext.destination);
-          }
-        } else {
-          // Continue as before if user cancels
-          this.inputsCount = 0;
-          const newNode = this.createWorkletNode(this.audioContext, 0, contextUid);
-          this.audioWorkletNode = newNode;
-          if (this.autoConnect) {
-            this.audioWorkletNode.connect(this.audioContext.destination);
-          }
+      let stream;
+      try {
+        stream = await this["requestMicrophoneInput"]();
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return;
         }
-        resolveMicrophonePromise && resolveMicrophonePromise();
-      };
+        console.error(error);
+      }
 
-      log("requesting microphone access")();
-      navigator.mediaDevices === undefined
-        ? getUserMedia.call(
-            navigator,
-            {
-              audio: {
-                optional: [{ echoCancellation: false, sampleSize: 32 }],
-              },
-            },
-            microphoneCallback,
-            console.error,
-          )
-        : getUserMedia
-            .call(navigator.mediaDevices, {
-              audio: { echoCancellation: false, sampleSize: 32 },
-            })
-            .then(microphoneCallback)
-            .catch(console.error);
+      if (stream && (this.microphoneStream !== stream || !this.audioContext)) {
+        return;
+      }
+
+      if (stream) {
+        const liveInput = this.audioContext.createMediaStreamSource(stream);
+        this.inputsCount = liveInput.channelCount;
+        const newNode = this.createWorkletNode(
+          this.audioContext,
+          liveInput.channelCount,
+          contextUid,
+        );
+        this.audioWorkletNode = newNode;
+        this.microphoneInput = liveInput;
+        liveInput.connect(newNode);
+        if (this.autoConnect) {
+          newNode.connect(this.audioContext.destination);
+        }
+      } else {
+        // Continue without input if the browser denies microphone access.
+        this.inputsCount = 0;
+        const newNode = this.createWorkletNode(this.audioContext, 0, contextUid);
+        this.audioWorkletNode = newNode;
+        if (this.autoConnect) {
+          this.audioWorkletNode.connect(this.audioContext.destination);
+        }
+      }
     } else {
       const newNode = this.createWorkletNode(this.audioContext, 0, contextUid);
       this.audioWorkletNode = newNode;
@@ -278,7 +334,6 @@ class AudioWorkletMainThread {
       }
     }
 
-    microphonePromise && (await microphonePromise);
     this.workletProxy = Comlink.wrap(this.audioWorkletNode.port, undefined);
 
     this.ipcMessagePorts.mainMessagePortAudio.addEventListener(

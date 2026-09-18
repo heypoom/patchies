@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import * as Comlink from "../utils/comlink.js";
 import MessagePortState from "../utils/message-port-state";
 import libcsoundFactory from "../libcsound.js";
@@ -25,6 +40,29 @@ const callUncloned = async (k, arguments_) => {
   return returnValue;
 };
 
+const applyUserProvidedAudioParams = ({ audioStateBuffer, csound, libraryCsound }) => {
+  if (!audioStateBuffer) {
+    return;
+  }
+  const audioStatePointer = new Int32Array(audioStateBuffer);
+  const userProvidedNchnls = Atomics.load(audioStatePointer, AUDIO_STATE.NCHNLS);
+  const userProvidedNchnlsIn = Atomics.load(audioStatePointer, AUDIO_STATE.NCHNLS_I);
+  const userProvidedSr = Atomics.load(audioStatePointer, AUDIO_STATE.SAMPLE_RATE);
+
+  if (userProvidedNchnls > -1) {
+    const result = libraryCsound.csoundSetOption(csound, "--nchnls=" + userProvidedNchnls);
+    result !== 0 && console.error("csoundSetOption nchnls failed:", result);
+  }
+  if (userProvidedNchnlsIn > -1) {
+    const result = libraryCsound.csoundSetOption(csound, "--nchnls_i=" + userProvidedNchnlsIn);
+    result !== 0 && console.error("csoundSetOption nchnls_i failed:", result);
+  }
+  if (userProvidedSr > -1) {
+    const result = libraryCsound.csoundSetOption(csound, "--sample-rate=" + userProvidedSr);
+    result !== 0 && console.error("csoundSetOption sample-rate failed:", result);
+  }
+};
+
 const sabCreateRealtimeAudioThread =
   ({
     libraryCsound,
@@ -42,39 +80,36 @@ const sabCreateRealtimeAudioThread =
     const audioStreamOut = argumentz["audioStreamOut"];
     const midiBuffer = argumentz["midiBuffer"];
     const csound = argumentz["csound"];
+    const performanceGeneration = argumentz["performanceGeneration"];
 
     const audioStatePointer = new Int32Array(audioStateBuffer);
+
+    // Preserve user-provided audio config across state reset.
+    const userProvidedNchnls = Atomics.load(audioStatePointer, AUDIO_STATE.NCHNLS);
+    const userProvidedNchnlsIn = Atomics.load(audioStatePointer, AUDIO_STATE.NCHNLS_I);
+    const userProvidedSr = Atomics.load(audioStatePointer, AUDIO_STATE.SAMPLE_RATE);
 
     // In case of multiple performances, let's reset the sab state
     initialSharedState.forEach((value, index) => {
       Atomics.store(audioStatePointer, index, value);
     });
+    if (userProvidedNchnls > -1) {
+      Atomics.store(audioStatePointer, AUDIO_STATE.NCHNLS, userProvidedNchnls);
+    }
+    if (userProvidedNchnlsIn > -1) {
+      Atomics.store(audioStatePointer, AUDIO_STATE.NCHNLS_I, userProvidedNchnlsIn);
+    }
+    if (userProvidedSr > -1) {
+      Atomics.store(audioStatePointer, AUDIO_STATE.SAMPLE_RATE, userProvidedSr);
+    }
 
     // Prompt for midi-input on demand
-    const isRequestingRtMidiInput = libraryCsound["_isRequestingRtMidiInput"](csound);
+    const isRequestingRtMidiInput = libraryCsound["isRequestingRtMidiInput"](csound);
 
     // Prompt for microphone only on demand!
     const isExpectingInput =
       Atomics.load(audioStatePointer, AUDIO_STATE.NCHNLS_I) === 0 &&
-      libraryCsound.csoundGetInputName(csound).includes("adc");
-
-    // Store Csound AudioParams for upcoming performance
-    const userProvidedNchnls = Atomics.load(audioStatePointer, AUDIO_STATE.NCHNLS);
-    const userProvidedNchnlsIn = Atomics.load(audioStatePointer, AUDIO_STATE.NCHNLS_I);
-    const userProvidedSr = Atomics.load(audioStatePointer, AUDIO_STATE.SAMPLE_RATE);
-
-    if (userProvidedNchnls > -1) {
-      const result = libraryCsound.csoundSetOption(csound, "--nchnls=" + userProvidedNchnls);
-      result !== 0 && console.error("csoundSetOption nchnls failed:", result);
-    }
-    if (userProvidedNchnlsIn > -1) {
-      const result = libraryCsound.csoundSetOption(csound, "--nchnls_i=" + userProvidedNchnlsIn);
-      result !== 0 && console.error("csoundSetOption nchnls_i failed:", result);
-    }
-    if (userProvidedSr > -1) {
-      const result = libraryCsound.csoundSetOption(csound, "--sample-rate=" + userProvidedSr);
-      result !== 0 && console.error("csoundSetOption sample-rate failed:", result);
-    }
+      libraryCsound.isRequestingRtAudioInput(csound);
 
     const nchnls = libraryCsound.csoundGetNchnls(csound);
 
@@ -111,7 +146,7 @@ const sabCreateRealtimeAudioThread =
       );
     }
 
-    workerMessagePort.broadcastPlayState("realtimePerformanceStarted");
+    workerMessagePort.broadcastPlayState("realtimePerformanceStarted", performanceGeneration);
     // Let's notify the audio-worker that performance has started
     Atomics.store(audioStatePointer, AUDIO_STATE.IS_PERFORMING, 1);
 
@@ -138,9 +173,9 @@ const sabCreateRealtimeAudioThread =
           libraryCsound.csoundPerformKsmps(csound);
         }
         log(`triggering realtimePerformanceEnded event`)();
-        workerMessagePort.broadcastPlayState("realtimePerformanceEnded");
+        workerMessagePort.broadcastPlayState("realtimePerformanceEnded", performanceGeneration);
         log(`End of realtimePerformance loop!`)();
-        releaseStop();
+        releaseStop(performanceGeneration);
         return true;
       } else {
         return false;
@@ -293,9 +328,12 @@ const sabCreateRealtimeAudioThread =
 const initMessagePort = ({ port }) => {
   const workerMessagePort = new MessagePortState();
   workerMessagePort.post = (messageLog) => port.postMessage({ log: messageLog });
-  workerMessagePort.broadcastPlayState = (playStateChange) => {
+  workerMessagePort.broadcastPlayState = (playStateChange, performanceGeneration) => {
     const payload = {};
     payload["playStateChange"] = playStateChange;
+    if (performanceGeneration !== undefined) {
+      payload["performanceGeneration"] = performanceGeneration;
+    }
     port.postMessage(payload);
   };
   workerMessagePort.broadcastSabUnlocked = () => port.postMessage({ sabWorker: "unlocked" });
@@ -350,6 +388,7 @@ const renderFunction =
   async (argumentz) => {
     const audioStateBuffer = argumentz["audioStateBuffer"];
     const csound = argumentz["csound"];
+    const performanceGeneration = argumentz["performanceGeneration"];
     const audioStatePointer = new Int32Array(audioStateBuffer);
     Atomics.store(audioStatePointer, AUDIO_STATE.IS_RENDERING, 1);
     workerMessagePort.broadcastSabUnlocked();
@@ -374,8 +413,8 @@ const renderFunction =
       }
     }
     Atomics.store(audioStatePointer, AUDIO_STATE.IS_RENDERING, 0);
-    workerMessagePort.broadcastPlayState("renderEnded");
-    releaseStop();
+    workerMessagePort.broadcastPlayState("renderEnded", performanceGeneration);
+    releaseStop(performanceGeneration);
   };
 
 /** @export */
@@ -388,7 +427,12 @@ const initialize = async (payload) => {
   log(`initializing SABWorker and WASM`)();
   const workerMessagePort = initMessagePort({ port: messagePort });
   const callbacksRequest = () => callbackPort.postMessage("poll");
-  const releaseStop = () => callbackPort.postMessage("releaseStop");
+  const releaseStop = (performanceGeneration) => {
+    const payload = {};
+    payload["type"] = "releaseStop";
+    payload["performanceGeneration"] = performanceGeneration;
+    callbackPort.postMessage(payload);
+  };
   const releasePause = () => callbackPort.postMessage("releasePause");
   const releaseResumed = () => callbackPort.postMessage("releaseResumed");
 
@@ -404,8 +448,14 @@ const initialize = async (payload) => {
 
   const libraryCsound = libcsoundFactory(wasm);
 
-  const startHandler = (_, arguments_) =>
-    handleCsoundStart(
+  const startHandler = (_, arguments_) => {
+    applyUserProvidedAudioParams({
+      audioStateBuffer: arguments_ && arguments_["audioStateBuffer"],
+      csound: arguments_ && arguments_["csound"],
+      libraryCsound,
+    });
+
+    return handleCsoundStart(
       workerMessagePort,
       libraryCsound,
       wasi,
@@ -428,6 +478,7 @@ const initialize = async (payload) => {
         releaseResumed,
       }),
     )(arguments_);
+  };
 
   const allAPI = { ...libraryCsound, csoundStart: startHandler, wasm };
   combined = new Map(Object.entries(allAPI));

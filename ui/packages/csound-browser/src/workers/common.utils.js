@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) The Csound Developers
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { logCommonUtils as log } from "../logger.js";
 
 export const handleCsoundStart =
@@ -27,15 +42,19 @@ export const handleCsoundStart =
     }
 
     setTimeout(() => {
-      const isRequestingRtMidiInput = libraryCsound["_isRequestingRtMidiInput"](csound);
-      const isExpectingRealtimeOutput =
-        shouldDemonize || isRequestingRtMidiInput || outputName.includes("dac");
+      const isRequestingRtMidiInput = libraryCsound["isRequestingRtMidiInput"](csound);
+      const isRequestingRtAudioInput = libraryCsound["isRequestingRtAudioInput"](csound);
+      const isExpectingRealtimePerformance =
+        shouldDemonize ||
+        isRequestingRtMidiInput ||
+        isRequestingRtAudioInput ||
+        outputName.includes("dac");
 
-      if (isExpectingRealtimeOutput) {
+      if (isExpectingRealtimePerformance) {
         createRealtimeAudioThread(arguments_);
       } else {
         // Do rendering
-        workerMessagePort.broadcastPlayState("renderStarted");
+        workerMessagePort.broadcastPlayState("renderStarted", arguments_["performanceGeneration"]);
         if (renderFunction) {
           renderFunction(arguments_);
         } else {
@@ -74,5 +93,5 @@ export const renderFunction =
       }
     }
 
-    workerMessagePort.broadcastPlayState("renderEnded");
+    workerMessagePort.broadcastPlayState("renderEnded", payload["performanceGeneration"]);
   };
