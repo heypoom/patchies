@@ -1,6 +1,7 @@
 import { get, writable } from 'svelte/store';
 import { aiSettings } from '../../stores/ai-settings.store';
 import Fuse from 'fuse.js';
+import { toast } from 'svelte-sonner';
 
 export type GoogleVoice = {
   languageCodes: string[];
@@ -48,7 +49,11 @@ export async function fetchGoogleTtsVoices(): Promise<void> {
     const response = await fetch(`https://texttospeech.googleapis.com/v1/voices?key=${apiKey}`);
 
     if (!response.ok) {
-      throw new Error(`Failed to load voices: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData.error?.message || `Request failed: ${response.statusText || response.status}`
+      );
     }
 
     const data = await response.json();
@@ -67,11 +72,15 @@ export async function fetchGoogleTtsVoices(): Promise<void> {
       error: null
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
     googleTtsVoicesStore.update((s) => ({
       ...s,
       loading: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: message
     }));
+
+    toast.error('ai.tts: Failed to load voices', { description: message });
   }
 }
 
