@@ -14,7 +14,11 @@ Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keybo
 - setCanvasSize(w, h) - Resize canvas and renderer
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noBorder() - Hide Patchies border and selected glow
+- onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - setVideoOutput(enabled) - Enable or disable video output. It is disabled by default; call setVideoOutput(true) when the scene feeds another video node.
+
+When using noBorder() for a custom widget, use onSelectionChange() to keep a visible selection indicator that matches its theme and geometry, including rounded or inset borders. Store selected in a variable and use it in draw() or redraw the scene from the callback, including for paused or static widgets. Register after any drawing resources used by the callback exist, because the initial callback runs immediately.
+
 - setHidePorts(bool) - Toggle port visibility
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)
 - onKeyUp(event => {}) - Keyboard up events

@@ -496,6 +496,7 @@ export class P5Manager {
         noWheel: config.messageContext?.noWheel,
         noInteract: config.messageContext?.noInteract,
         noBorder: config.messageContext?.noBorder,
+        onSelectionChange: config.messageContext?.onSelectionChange,
         setVideoOutput: config.messageContext?.setVideoOutput,
         setHidePorts: config.setHidePorts,
         settings: config.settings,

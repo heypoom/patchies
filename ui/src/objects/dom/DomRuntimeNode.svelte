@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import {
     NodeResizer,
     NodeResizeControl,
@@ -140,6 +141,12 @@
   const eventBus = PatchiesEventBus.getInstance();
   const jsRunner = JSRunner.getInstance();
   const customConsole = $derived.by(() => createCustomConsole(nodeId));
+
+  const selection = useSelectionChange({
+    getSelected: () => !!selected,
+    onError: (error) => handleCodeError(error, data.code, nodeId, customConsole, errorOffset)
+  });
+
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
 
   let rootContainer = $state<HTMLDivElement | undefined>();
@@ -333,6 +340,8 @@
     wheelEnabled = true;
     fluidCanvas.reset();
 
+    selection.reset();
+
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     const resetSize = shouldResetDomSize(data.code);
@@ -407,6 +416,7 @@
             panEnabled = false;
             wheelEnabled = false;
           },
+          onSelectionChange: selection.onSelectionChange,
           noBorder: () => {
             updateNodeData(nodeId, { noBorder: true });
           },

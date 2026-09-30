@@ -130,6 +130,16 @@ All [Patchies JavaScript Runner](/docs/javascript-runner) functions are availabl
 - `noBorder()` - hides Patchies' border and selected glow until the call is removed and the node runs again
 - `fft()` - audio analysis with low latency
 
+
+## Custom Selection Styling
+
+Use `onSelectionChange(callback)` with `noBorder()` to draw a selection indicator
+that matches your widget's colors and rounded corners. The callback receives the
+current selection immediately, then runs when selection changes.
+
+See [Custom Selection Styling](/docs/js-integrations)
+for an example and the shared API.
+
 ## Presets
 
 - `particle.canvas` - particle system reacting to mouse

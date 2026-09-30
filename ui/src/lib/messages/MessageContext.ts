@@ -1,3 +1,4 @@
+import type { SelectionChangeCallback } from '$lib/canvas/SelectionChangeController';
 import type { AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { logger } from '$lib/utils/logger';
@@ -59,8 +60,11 @@ export interface UserFnRunContext {
   /** Disables all interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel. */
   noInteract: () => void;
 
-  /** Hides Patchies border, selected glow, and floating preview controls for this node. */
+  /** Hides Patchies preview border and selected glow. */
   noBorder?: () => void;
+
+  /** Immediately receives canvas selection, then changes; returns an unsubscribe function. */
+  onSelectionChange?: (callback: SelectionChangeCallback) => () => void;
 
   /** Enables or disables the video output port in visual JavaScript nodes. */
   setVideoOutput?: (enabled: boolean) => void;

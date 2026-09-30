@@ -16,6 +16,16 @@ Call `noBorder()` when the DOM UI should blend into the patch without
 showing Patchies' border or selected glow. Remove
 the call and run the node again to restore the border.
 
+
+## Custom Selection Styling
+
+Use `onSelectionChange(callback)` with `noBorder()` to draw a selection indicator
+that matches your widget's colors and rounded corners. The callback receives the
+current selection immediately, then runs when selection changes.
+
+See [Custom Selection Styling](/docs/js-integrations)
+for an example and the shared API.
+
 ## Expand
 
 Choose **Expand** from the overflow menu or right-click menu to focus the live

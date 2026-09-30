@@ -133,6 +133,39 @@ clock.every('1:0:0', () => {
 
 See [Clock API](/docs/clock-api) for the full scheduling API.
 
+## Custom Selection Styling
+
+> Available only in `dom`, `vue`, `p5`, `canvas.dom`, `three.dom`, and `pixi.dom`
+
+Use `onSelectionChange(callback)` to style your widget when its node is selected.
+This follows canvas selection, including multi-selection, rather than keyboard
+focus inside the widget.
+
+Combine it with `noBorder()` to replace Patchies' border and glow with your own
+selection indicator. This `dom` example keeps the widget's rounded corners:
+
+```js
+noBorder();
+
+root.innerHTML = '<div>Calculator</div>';
+
+const widget = root.firstElementChild;
+
+Object.assign(widget.style, {
+  border: '2px solid',
+  borderRadius: '16px',
+  padding: '4px 16px'
+});
+
+const unsubscribe = onSelectionChange((selected) => {
+  widget.style.borderColor = selected ? '#a78bfa' : '#27272a';
+});
+```
+
+For Vue, update a `ref` and bind your widget's styles to it. For canvas objects,
+retain the boolean for your next frame or redraw from the callback so static and
+paused widgets also show changes.
+
 ## AI
 
 Call the configured AI provider from a patch:

@@ -279,6 +279,20 @@ describe('patchies completions', () => {
     expect(canvasCompletion?.detail).toContain('initialSize');
   });
 
+  it.each(['dom', 'vue', 'p5', 'canvas.dom', 'three.dom', 'pixi.dom'])(
+    'offers selection subscriptions for %s',
+    (nodeType) => {
+      expect(getCompletionLabels(nodeType, 'onS')).toContain('onSelectionChange');
+    }
+  );
+
+  it.each(['js', 'hydra', 'canvas', 'three', 'pixi'])(
+    'omits selection subscriptions for %s',
+    (nodeType) => {
+      expect(getCompletionLabels(nodeType, 'onS')).not.toContain('onSelectionChange');
+    }
+  );
+
   it('shows noBorder completions only for native UI nodes', () => {
     expect(getCompletionLabels('dom', 'noB')).toContain('noBorder');
     expect(getCompletionLabels('vue', 'noB')).toContain('noBorder');

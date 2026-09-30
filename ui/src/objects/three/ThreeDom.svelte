@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -73,6 +74,12 @@
 
   // Create custom console for routing output to VirtualConsole
   const customConsole = createCustomConsole(initialNodeId());
+
+  const selection = useSelectionChange({
+    getSelected: () => !!selected,
+    onError: (error) =>
+      handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET)
+  });
 
   let glSystem = GLSystem.getInstance();
   let canvas = $state<HTMLCanvasElement | undefined>();
@@ -324,6 +331,8 @@
     wheelEnabled = true;
     videoOutputEnabled = false;
 
+    selection.reset();
+
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     keyboard.reset();
@@ -396,6 +405,7 @@
             panEnabled = false;
             wheelEnabled = false;
           },
+          onSelectionChange: selection.onSelectionChange,
           noBorder: () => {
             updateNodeData(nodeId, { noBorder: true });
           }

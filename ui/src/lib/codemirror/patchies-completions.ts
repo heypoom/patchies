@@ -170,10 +170,17 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
     apply: "onGraphChange({\n  tags: ['foo/*']\n}, (graph) => {\n  \n})"
   },
   {
+    label: 'onSelectionChange',
+    type: 'function',
+    detail: '(callback: (selected: boolean) => void) => () => void',
+    info: 'Receive current canvas selection immediately, then changes. Returns an unsubscribe function.',
+    apply: 'onSelectionChange((selected) => {\n  \n})'
+  },
+  {
     label: 'noBorder',
     type: 'function',
     detail: '() => void',
-    info: 'Hide Patchies border, selected glow, and floating preview controls for this node',
+    info: 'Hide Patchies preview border and selected glow',
     apply: 'noBorder()'
   },
   {
@@ -546,6 +553,7 @@ const TOP_LEVEL_ONLY_FUNCTIONS = new Set([
   'noPan',
   'noWheel',
   'noBorder',
+  'onSelectionChange',
   'onCleanup',
   'onKeyDown',
   'onKeyUp',
@@ -690,6 +698,7 @@ const NODE_SPECIFIC_FUNCTIONS: Record<string, string[]> = {
   collapseSurface: P5_SURFACE_JS_NODES,
   hideExitButton: P5_SURFACE_JS_NODES,
   noBorder: ['dom', 'vue', 'p5', 'canvas.dom', 'three.dom', 'pixi.dom'],
+  onSelectionChange: ['dom', 'vue', 'p5', 'canvas.dom', 'three.dom', 'pixi.dom'],
   setAudioPortCount: ['dsp~'],
   showAudioInput: ['tone~', 'sonic~', 'elem~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom'],

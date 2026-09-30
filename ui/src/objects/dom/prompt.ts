@@ -16,7 +16,10 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 - setHidePorts(hide): Hide/show ports
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control (whole node)
 - noBorder(): Hide Patchies border and selected glow
+- onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
+
+When using noBorder() for a custom widget, use onSelectionChange() to keep a visible selection indicator that matches its theme and geometry, including rounded or inset borders. Update the widget DOM border or outline in the callback.
 
 **Responsive sizing and layout:**
 - Default to fluid-sized components: call setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }) unless fixed sizing is explicitly requested or required by the component. Do not combine setFluidSize() with setSize().

@@ -44,7 +44,10 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - kv: persistent key-value storage scoped to this node.
 - noDrag(), noPan(), noWheel(), noInteract(): disable node drag, canvas pan, wheel zoom, or all three when Pixi pointer interaction needs them.
 - noBorder(): hide Patchies' preview border and selected glow until the call is removed and the node runs again.
+- onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - onKeyDown(event => {}) / onKeyUp(event => {}): receive keyboard events while the Pixi canvas is focused. Events do not leak to the Patchies editor.
+
+When using noBorder() for a custom widget, use onSelectionChange() to keep a visible selection indicator that matches its theme and geometry, including rounded or inset borders. Store selected in a variable and use it in draw() or redraw the scene from the callback, including for paused or static widgets. Register after any drawing resources used by the callback exist, because the initial callback runs immediately.
 
 **Rules:**
 - Graphics is available by default.

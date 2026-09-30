@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import { onDestroy, onMount } from 'svelte';
 
   import type { Container } from 'pixi.js';
@@ -98,6 +99,11 @@
   }
 
   const customConsole = createCustomConsole(initialNodeId());
+
+  const selection = useSelectionChange({
+    getSelected: () => !!selected,
+    onError: (error) => reportRuntimeError(error)
+  });
 
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
   let fluidCanvas = $state.raw<ReturnType<typeof useFluidCanvas>>(undefined!);
@@ -256,6 +262,8 @@
 
     setVideoOutputEnabled(false);
     fluidCanvas.reset();
+    selection.reset();
+
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     setCanvasDimensions({
@@ -332,6 +340,7 @@ return {
             panEnabled = false;
             wheelEnabled = false;
           },
+          onSelectionChange: selection.onSelectionChange,
           noBorder: () => updateNodeData(nodeId, { noBorder: true })
         }
       });

@@ -19,7 +19,11 @@ ${esmInstructions}
 - noWheel() - Disable XYFlow canvas wheel zoom when interacting
 - noInteract() - Disable all XYFlow canvas interactions (drag, pan, wheel)
 - noBorder() - Hide Patchies border and selected glow
+- onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - setVideoOutput(enabled) - Enable or disable the video output port. It is disabled by default; call setVideoOutput(true) only when the sketch feeds another video node.
+
+When using noBorder() for a custom widget, use onSelectionChange() to keep a visible selection indicator that matches its theme and geometry, including rounded or inset borders. Store selected in a variable and use it in draw() or redraw the scene from the callback, including for paused or static widgets. Register after any drawing resources used by the callback exist, because the initial callback runs immediately.
+
 - setFluidSize({ showResizer?, resize?, keepAspectRatio? }) - Make the canvas follow a user-resized node. createCanvas() supplies the initial size; do not pass initialSize.
 - createSurfaceCanvas(renderer?) - Create a transparent renderer-output-sized canvas and enable Expand so the p5 sketch can run as a fullscreen surface overlay. Do NOT also call createCanvas() when using this.
 - expandSurface() / collapseSurface() - In p5 surface mode, enter or exit fullscreen surface mode from code.

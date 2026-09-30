@@ -167,6 +167,16 @@ stage.addChild(badge)
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()`: see [Canvas Interaction](/docs/canvas-interaction)
 - `noBorder()`: hides Patchies' border and selected glow until the call is removed and the node runs again
 
+
+## Custom Selection Styling
+
+Use `onSelectionChange(callback)` with `noBorder()` to draw a selection indicator
+that matches your widget's colors and rounded corners. The callback receives the
+current selection immediately, then runs when selection changes.
+
+See [Custom Selection Styling](/docs/js-integrations)
+for an example and the shared API.
+
 ## See Also
 
 - [pixi](/docs/objects/pixi) — worker-side Pixi.js

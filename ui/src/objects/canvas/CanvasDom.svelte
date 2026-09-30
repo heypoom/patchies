@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import {
     NodeResizer,
     NodeResizeControl,
@@ -91,6 +92,12 @@
 
   // Create custom console for routing output to VirtualConsole
   const customConsole = createCustomConsole(initialNodeId());
+
+  const selection = useSelectionChange({
+    getSelected: () => !!selected,
+    onError: (error) =>
+      handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET)
+  });
 
   const jsRunner = JSRunner.getInstance();
   let glSystem = GLSystem.getInstance();
@@ -423,6 +430,8 @@
     videoOutputEnabled = false;
     fluidCanvas.reset();
 
+    selection.reset();
+
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
     const resetSize = resetCanvasSize(canvas, DEFAULT_OUTPUT_SIZE);
@@ -483,6 +492,7 @@
             panEnabled = false;
             wheelEnabled = false;
           },
+          onSelectionChange: selection.onSelectionChange,
           noBorder: () => {
             updateNodeData(nodeId, { noBorder: true });
           },

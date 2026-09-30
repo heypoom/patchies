@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SelectionChangeController } from '$lib/canvas/SelectionChangeController';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { installInlinePointerCoordinateNormalization, P5Manager } from './P5Manager';
 
@@ -27,6 +28,35 @@ describe('P5Manager', () => {
   afterEach(() => {
     executeJavaScript.mockReset();
     vi.unstubAllGlobals();
+  });
+
+  it('lets p5 user code subscribe to selection through its runtime context', async () => {
+    vi.stubGlobal('window', {});
+
+    const controller = new SelectionChangeController({
+      getSelected: () => false,
+      onError: vi.fn()
+    });
+    const callback = vi.fn();
+
+    executeJavaScript.mockImplementationOnce((_nodeId, _code, options) => {
+      options.extraContext.onSelectionChange(callback);
+      return {};
+    });
+
+    const manager = new P5Manager('p5-node', {} as HTMLElement);
+
+    await manager['executeUserCode'](
+      {} as never,
+      {
+        code: '',
+        messageContext: { onSelectionChange: controller.onSelectionChange } as never
+      },
+      {}
+    );
+    controller.update(true);
+
+    expect(callback.mock.calls).toEqual([[false], [true]]);
   });
 
   it('exposes setPrimaryButton to p5 user code', async () => {

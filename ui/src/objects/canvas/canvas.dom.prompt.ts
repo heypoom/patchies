@@ -26,7 +26,11 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - width, height, mouse: {x, y, down, buttons}
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noBorder() - Hide Patchies border and selected glow
+- onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - setVideoOutput(enabled) - Enable or disable video output. Disabled by default; call setVideoOutput(true) when the sketch feeds another video node.
+
+When using noBorder() for a custom widget, use onSelectionChange() to keep a visible selection indicator that matches its theme and geometry, including rounded or inset borders. Store selected in a variable and use it in draw() or redraw the scene from the callback, including for paused or static widgets. Register after any drawing resources used by the callback exist, because the initial callback runs immediately.
+
 - setCanvasSize(width, height) - Use a fixed logical canvas size
 - setFluidSize({ showResizer?, resize?, keepAspectRatio?, initialSize? }) - Use a resizable canvas. resize is 'horizontal', 'vertical', or 'both' (default); keepAspectRatio preserves the initial ratio; initialSize sets the initial logical canvas size, e.g. { width: 800, height: 600 }. Users can enable or disable resizing from the overflow menu.
 - onCanvasResize(({ width, height }) => {}) - Redraw a non-animated fluid widget after a resize; it runs at most once per animation frame

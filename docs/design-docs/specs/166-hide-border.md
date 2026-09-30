@@ -28,3 +28,56 @@ running the node restores the default border/chrome.
 - Thread the persisted flag through `DomRuntimeNode`, `P5CanvasNode`, and `CanvasPreviewLayout`.
 - Add `noBorder()` to the relevant runtime contexts and CodeMirror completions.
 - Document the helper in the object docs.
+
+## Custom Selection Styling
+
+Expose `onSelectionChange(callback)` in the same six JavaScript contexts.
+The callback receives a boolean indicating whether the node is selected in the
+patch canvas, including multi-selection. This is separate from keyboard focus
+inside the widget.
+
+- Invoke the callback immediately on registration with the current selection.
+- Invoke it again only when selection changes, including deselection.
+- Return an unsubscribe function; allow multiple independent subscriptions.
+- Clear subscriptions when code runs again or the node is destroyed.
+- Report synchronous callback errors and rejected promises through the node's
+  existing runtime error reporting, without preventing other subscribers.
+- Keep subscriptions working with or without `noBorder()`.
+- Do not persist callbacks or selection in node data.
+
+Use `noBorder()` with `onSelectionChange()` when user code owns selection styling.
+This lets rounded widgets, inset borders, and canvas drawings match their own
+geometry and theme without Patchies prescribing border colors or radius.
+
+```js
+noBorder();
+
+root.innerHTML = '<div class="calculator">Calculator</div>';
+
+const calculator = root.querySelector(".calculator");
+
+Object.assign(calculator.style, {
+  border: "2px solid",
+  borderRadius: "16px",
+  padding: "4px 16px",
+});
+
+onSelectionChange((selected) => {
+  calculator.style.borderColor = selected ? "#a78bfa" : "#27272a";
+});
+```
+
+Add CodeMirror completions, object documentation, and prompt guidance across all
+six objects. Prompts should recommend a visible themed selection indicator when
+using `noBorder()`, and tell canvas objects to retain the boolean for their next
+frame or redraw.
+
+
+### Selection Composable
+
+Use `useSelectionChange({ getSelected, onError })` in the preview components.
+The composable owns the selection effect, untracked callback execution, and
+subscription cleanup on destruction. It returns `onSelectionChange` for the
+JavaScript context and `reset` for clearing subscriptions before each run.
+Keep subscription behavior in `SelectionChangeController` so it can be tested
+independently of Svelte.
