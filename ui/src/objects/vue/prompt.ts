@@ -19,7 +19,8 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 **Responsive sizing and layout:**
-- Default to fluid-sized components: call setFluidSize({ initialSize: { width: 400, height: 300 } }) unless fixed sizing is explicitly requested or required by the component. Do not combine setFluidSize() with setSize().
+- Default to fluid-sized components: call setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }) unless fixed sizing is explicitly requested or required by the component. Do not combine setFluidSize() with setSize().
+- Pass showResizer: false by default; use showResizer: true only when visible resize handles are explicitly requested. Users can enable resizing from the node overflow menu.
 - Fill the outer container using full width and height. Set outer padding and margins to zero unless explicitly requested.
 - Scale text, controls, hit areas, and spacing with the current container dimensions, not just their positions. Use container-relative CSS units (with a size-query container) or update CSS variables/font size in onResize(). Initialize the layout once too.
 - Use LARGE, readable fonts: at least 18px for labels and 24–32px for primary text at the initial size, growing with the UI scale. Avoid tiny fixed pixel sizes or fixed Tailwind text classes that stop text from scaling.
@@ -50,7 +51,7 @@ Example - Simple reactive counter with Tailwind:
 {
   "type": "vue",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); createApp({ template: '<div class=\\"w-full h-full p-0 m-0 flex flex-col items-center justify-center text-center\\"><h2 class=\\"text-green-400 text-[1.5em] m-0\\">{{ count }}</h2><button @click=\\"increment\\" class=\\"mt-[0.5em] px-[0.75em] py-[0.25em] text-[1em] bg-green-400 text-black rounded cursor-pointer\\">+1</button></div>', setup() { const count = ref(0); const increment = () => count.value++; return { count, increment } } }).mount(root)"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); createApp({ template: '<div class=\\"w-full h-full p-0 m-0 flex flex-col items-center justify-center text-center\\"><h2 class=\\"text-green-400 text-[1.5em] m-0\\">{{ count }}</h2><button @click=\\"increment\\" class=\\"mt-[0.5em] px-[0.75em] py-[0.25em] text-[1em] bg-green-400 text-black rounded cursor-pointer\\">+1</button></div>', setup() { const count = ref(0); const increment = () => count.value++; return { count, increment } } }).mount(root)"
   }
 }
 \`\`\`
@@ -60,7 +61,7 @@ Example - Reactive list with messages:
 {
   "type": "vue",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); const items = reactive([]); recv(msg => items.push(msg)); createApp({ template: '<ul class=\\"w-full h-full list-none p-0 m-0 overflow-auto\\"><li v-for=\\"item in items\\" class=\\"py-[0.25em] text-zinc-400\\">{{ item }}</li></ul>', setup() { return { items } } }).mount(root)"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); const items = reactive([]); recv(msg => items.push(msg)); createApp({ template: '<ul class=\\"w-full h-full list-none p-0 m-0 overflow-auto\\"><li v-for=\\"item in items\\" class=\\"py-[0.25em] text-zinc-400\\">{{ item }}</li></ul>', setup() { return { items } } }).mount(root)"
   }
 }
 \`\`\`
@@ -70,7 +71,7 @@ Example - Two-way binding form:
 {
   "type": "vue",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); const text = ref(''); const submit = () => send(text.value); createApp({ template: '<div class=\\"w-full h-full p-0 m-0\\"><input v-model=\\"text\\" class=\\"w-full p-[0.5em] mb-[0.5em] text-[1em] bg-zinc-800 border border-zinc-600 text-white rounded\\"><button @click=\\"submit\\" class=\\"w-full p-[0.5em] text-[1em] bg-green-400 text-black rounded cursor-pointer\\">Send</button></div>', setup() { return { text, submit } } }).mount(root)"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); const text = ref(''); const submit = () => send(text.value); createApp({ template: '<div class=\\"w-full h-full p-0 m-0\\"><input v-model=\\"text\\" class=\\"w-full p-[0.5em] mb-[0.5em] text-[1em] bg-zinc-800 border border-zinc-600 text-white rounded\\"><button @click=\\"submit\\" class=\\"w-full p-[0.5em] text-[1em] bg-green-400 text-black rounded cursor-pointer\\">Send</button></div>', setup() { return { text, submit } } }).mount(root)"
   }
 }
 \`\`\``;

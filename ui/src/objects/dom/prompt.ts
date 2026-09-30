@@ -19,7 +19,8 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 **Responsive sizing and layout:**
-- Default to fluid-sized components: call setFluidSize({ initialSize: { width: 400, height: 300 } }) unless fixed sizing is explicitly requested or required by the component. Do not combine setFluidSize() with setSize().
+- Default to fluid-sized components: call setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }) unless fixed sizing is explicitly requested or required by the component. Do not combine setFluidSize() with setSize().
+- Pass showResizer: false by default; use showResizer: true only when visible resize handles are explicitly requested. Users can enable resizing from the node overflow menu.
 - Fill the outer container using full width and height. Set outer padding and margins to zero unless explicitly requested.
 - Scale text, controls, hit areas, and spacing with the current container dimensions, not just their positions. Use container-relative CSS units (with a size-query container) or update CSS variables/font size in onResize(). Initialize the layout once too.
 - Use LARGE, readable fonts: at least 18px for labels and 24–32px for primary text at the initial size, growing with the UI scale. Avoid tiny fixed pixel sizes or fixed Tailwind text classes that stop text from scaling.
@@ -43,7 +44,7 @@ Example - Simple HTML with Tailwind:
 {
   "type": "dom",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); root.innerHTML = '<h1 class=\\"text-green-400 text-[1.5em] font-bold m-0\\">Hello!</h1><p class=\\"text-zinc-400 m-0\\">This is DOM manipulation</p>'"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); root.innerHTML = '<h1 class=\\"text-green-400 text-[1.5em] font-bold m-0\\">Hello!</h1><p class=\\"text-zinc-400 m-0\\">This is DOM manipulation</p>'"
   }
 }
 \`\`\`
@@ -53,7 +54,7 @@ Example - Interactive button:
 {
   "type": "dom",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); root.innerHTML = '<button class=\\"px-[1em] py-[0.5em] text-[1em] bg-green-400 text-black rounded cursor-pointer hover:bg-green-300\\">Click me</button>'; root.querySelector('button').onclick = () => send('clicked');"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); root.innerHTML = '<button class=\\"px-[1em] py-[0.5em] text-[1em] bg-green-400 text-black rounded cursor-pointer hover:bg-green-300\\">Click me</button>'; root.querySelector('button').onclick = () => send('clicked');"
   }
 }
 \`\`\`
@@ -63,7 +64,7 @@ Example - Dynamic list with messages:
 {
   "type": "dom",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); root.innerHTML = '<ul class=\\"w-full h-full list-none p-0 m-0 overflow-auto\\"></ul>'; const ul = root.querySelector('ul'); recv(msg => { const li = document.createElement('li'); li.textContent = msg; li.className = 'py-[0.25em] text-zinc-400'; ul.appendChild(li); });"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); root.innerHTML = '<ul class=\\"w-full h-full list-none p-0 m-0 overflow-auto\\"></ul>'; const ul = root.querySelector('ul'); recv(msg => { const li = document.createElement('li'); li.textContent = msg; li.className = 'py-[0.25em] text-zinc-400'; ul.appendChild(li); });"
   }
 }
 \`\`\`
@@ -73,7 +74,7 @@ Example - Fluid-sized form:
 {
   "type": "dom",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); root.innerHTML = '<input type=\\"text\\" id=\\"inp\\" class=\\"w-full p-[0.5em] mb-[0.5em] text-[1em] bg-zinc-800 border border-zinc-600 text-white rounded\\"><button class=\\"w-full p-[0.5em] text-[1em] bg-green-400 text-black rounded cursor-pointer\\">Submit</button>'; root.querySelector('button').onclick = () => send(root.querySelector('#inp').value);"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }); Object.assign(root.style, { width: '100%', height: '100%', padding: '0', margin: '0' }); const resizeUI = ({ width, height }) => root.style.fontSize = Math.max(18, 24 * Math.min(width / 400, height / 300)) + 'px'; onResize(resizeUI); resizeUI({ width: Number(width), height: Number(height) }); noDrag(); root.innerHTML = '<input type=\\"text\\" id=\\"inp\\" class=\\"w-full p-[0.5em] mb-[0.5em] text-[1em] bg-zinc-800 border border-zinc-600 text-white rounded\\"><button class=\\"w-full p-[0.5em] text-[1em] bg-green-400 text-black rounded cursor-pointer\\">Submit</button>'; root.querySelector('button').onclick = () => send(root.querySelector('#inp').value);"
   }
 }
 \`\`\``;

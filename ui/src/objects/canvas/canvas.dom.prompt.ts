@@ -6,7 +6,8 @@ export const canvasDomPrompt = `## canvas.dom Object Instructions
 Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 
 **Canvas sizing and layout:**
-- Default to fluid-sized components: call setFluidSize({ initialSize: { width: 800, height: 600 } }) unless fixed sizing is explicitly requested or required by the sketch.
+- Default to fluid-sized components: call setFluidSize({ showResizer: false, initialSize: { width: 800, height: 600 } }) unless fixed sizing is explicitly requested or required by the sketch.
+- Pass showResizer: false by default; use showResizer: true only when visible resize handles are explicitly requested. Users can enable resizing from the node overflow menu.
 - Fill the outer container edge to edge. Do not add outer padding or margins unless explicitly requested.
 - IMPORTANT: Scale text, controls, hit areas, shapes, and line widths with the current width and height on every resize, not just their positions. Derive a UI scale from the current dimensions relative to the initial size.
 - Use LARGE, readable fonts: at least 18px for labels and 24–32px for primary text at the initial size, growing with the UI scale. Do not leave text or controls at tiny fixed pixel sizes when the widget grows.
@@ -14,7 +15,7 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - Choose one sizing mode; do not call setCanvasSize() with setFluidSize().
 - For a fixed widget, call setCanvasSize(width, height) with an appropriate size.
   - IMPORTANT: Minimum is (800, 800), Maximum is (2000, 2000). DO NOT GO BELOW MINIMUM SIZE!
-- For a resizable widget, call setFluidSize({ initialSize: { width: 800, height: 600 } }) instead.
+- For a resizable widget, call setFluidSize({ showResizer: false, initialSize: { width: 800, height: 600 } }) instead.
   - Use keepAspectRatio: true for square widgets.
   - Use resize: 'horizontal' for faders, resize: 'vertical' for meters
 - Fluid widgets always read their current logical size from width and height.
@@ -48,7 +49,7 @@ Example - XY pad:
 {
   "type": "canvas.dom",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 800, height: 800 }, keepAspectRatio: true }); noDrag(); function draw() { ctx.fillStyle = '#080809'; ctx.fillRect(0, 0, width, height); ctx.fillStyle = mouse.down ? '#4ade80' : '#71717a'; ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 12 * Math.min(width / 800, height / 800), 0, Math.PI * 2); ctx.fill(); if (mouse.down) send([mouse.x / width, mouse.y / height]); requestAnimationFrame(draw); } draw();"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 800, height: 800 }, keepAspectRatio: true }); noDrag(); function draw() { ctx.fillStyle = '#080809'; ctx.fillRect(0, 0, width, height); ctx.fillStyle = mouse.down ? '#4ade80' : '#71717a'; ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 12 * Math.min(width / 800, height / 800), 0, Math.PI * 2); ctx.fill(); if (mouse.down) send([mouse.x / width, mouse.y / height]); requestAnimationFrame(draw); } draw();"
   }
 }
 \`\`\`
@@ -58,7 +59,7 @@ Example - Keyboard control:
 {
   "type": "canvas.dom",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 800, height: 600 } }); let x = 0.5; onKeyDown(e => { if (e.key === 'ArrowLeft') x = Math.max(0, x - 0.02); if (e.key === 'ArrowRight') x = Math.min(1, x + 0.02); if (e.key === ' ') send('bang'); }); function draw() { ctx.fillStyle = '#080809'; ctx.fillRect(0, 0, width, height); ctx.fillStyle = '#4ade80'; ctx.beginPath(); ctx.arc(x * width, height / 2, 20 * Math.min(width / 800, height / 600), 0, Math.PI * 2); ctx.fill(); requestAnimationFrame(draw); } draw();"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 800, height: 600 } }); let x = 0.5; onKeyDown(e => { if (e.key === 'ArrowLeft') x = Math.max(0, x - 0.02); if (e.key === 'ArrowRight') x = Math.min(1, x + 0.02); if (e.key === ' ') send('bang'); }); function draw() { ctx.fillStyle = '#080809'; ctx.fillRect(0, 0, width, height); ctx.fillStyle = '#4ade80'; ctx.beginPath(); ctx.arc(x * width, height / 2, 20 * Math.min(width / 800, height / 600), 0, Math.PI * 2); ctx.fill(); requestAnimationFrame(draw); } draw();"
   }
 }
 \`\`\``;

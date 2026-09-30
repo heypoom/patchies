@@ -35,6 +35,10 @@ AI prompts for `canvas.dom`, inline `p5`, `pixi.dom`, `dom`, and `vue` default t
 sizing. Fixed sizing is used when explicitly requested or required by the
 sketch; p5 fullscreen surface mode keeps its separate sizing API.
 
+Generated code passes `showResizer: false` to `setFluidSize()` by default,
+unless visible resize handles are explicitly requested. Users can enable
+resizing from the node overflow menu.
+
 Generated widgets fill the outer container without outer padding by default.
 On resize, layout, typography, controls, and hit areas scale with the live
 canvas dimensions. Text stays large and readable: at least 18px for labels

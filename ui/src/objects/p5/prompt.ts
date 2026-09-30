@@ -30,7 +30,8 @@ ${esmInstructions}
 **Default behaviors to apply unless there's a reason not to:**
 - Call setVideoOutput(true) only when the sketch is explicitly meant to output video to another node.
 - For fullscreen transparent overlays over Hydra/GLSL/video output, call createSurfaceCanvas() in setup() instead of createCanvas(), and use clear() in draw() so visuals underneath show through.
-- Default to fluid sizing for inline sketches: call setFluidSize() and createCanvas(width, height) in setup(). Do not combine setFluidSize() with createSurfaceCanvas().
+- Default to fluid sizing for inline sketches: call setFluidSize({ showResizer: false }) and createCanvas(width, height) in setup(). Do not combine setFluidSize() with createSurfaceCanvas().
+- Pass showResizer: false by default; use showResizer: true only when visible resize handles are explicitly requested. Users can enable resizing from the node overflow menu.
 - In p5 surface mode, use setMouseForwarding() when only some render nodes should receive mouse/wheel interaction, and setMouseForwarding({ enabled: false }) when p5 should consume interaction without driving Hydra/GLSL/Three.
 - Call noDrag() if the sketch uses mousePressed, mouseDragged, mouseX/mouseY interaction.
 - Call noWheel() if the sketch uses scroll or mouseWheel interaction.
@@ -67,7 +68,7 @@ Example:
 {
   "type": "p5",
   "data": {
-    "code": "function setup() { setFluidSize(); createCanvas(252, 164); }\\nfunction draw() { background(220); textSize(24 * min(width / 252, height / 164)); textAlign(CENTER, CENTER); text('hello', width / 2, height / 2); }"
+    "code": "function setup() { setFluidSize({ showResizer: false }); createCanvas(252, 164); }\\nfunction draw() { background(220); textSize(24 * min(width / 252, height / 164)); textAlign(CENTER, CENTER); text('hello', width / 2, height / 2); }"
   }
 }
 \`\`\``;

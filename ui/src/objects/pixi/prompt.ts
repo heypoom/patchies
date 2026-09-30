@@ -52,7 +52,8 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - Define draw(time) for animation. Do not use requestAnimationFrame.
 - Call setVideoOutput(true) only when the scene explicitly outputs video to another node.
 - For fluid-sized or resizable objects, always use onCanvasResize to update layout. Do not rely on initial width and height values.
-- Default to fluid-sized components: call setFluidSize({ initialSize: { width: 400, height: 300 } }) unless fixed sizing is explicitly requested or required by the scene. Do not combine setFluidSize() with setCanvasSize().
+- Default to fluid-sized components: call setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } }) unless fixed sizing is explicitly requested or required by the scene. Do not combine setFluidSize() with setCanvasSize().
+- Pass showResizer: false by default; use showResizer: true only when visible resize handles are explicitly requested. Users can enable resizing from the node overflow menu.
 - Fill the outer container edge to edge. Do not add outer padding or margins unless explicitly requested.
 - In onCanvasResize(), scale text, controls, hit areas, shapes, and line widths from the live width and height relative to the initial dimensions, not just their positions. Run the layout function once initially too.
 - Use LARGE, readable fonts: at least 18px for labels and 24–32px for primary text at the initial size, growing with the UI scale. Do not leave text or controls at tiny fixed pixel sizes when the widget grows.
@@ -62,7 +63,7 @@ Example:
 {
   "type": "pixi.dom",
   "data": {
-    "code": "setFluidSize({ initialSize: { width: 400, height: 300 } })\n\nconst { Graphics } = PIXI\n\nconst button = new Graphics().circle(0, 0, 72).fill(0x66ccff)\nbutton.eventMode = 'static'\nbutton.cursor = 'pointer'\nbutton.on('pointertap', () => button.tint = Math.random() * 0xffffff)\nstage.addChild(button)\n\nfunction layout() {\n  button.position.set(width / 2, height / 2)\n  button.scale.set(Math.min(width / 400, height / 300))\n}\n\nonCanvasResize(layout)\nlayout()"
+    "code": "setFluidSize({ showResizer: false, initialSize: { width: 400, height: 300 } })\n\nconst { Graphics } = PIXI\n\nconst button = new Graphics().circle(0, 0, 72).fill(0x66ccff)\nbutton.eventMode = 'static'\nbutton.cursor = 'pointer'\nbutton.on('pointertap', () => button.tint = Math.random() * 0xffffff)\nstage.addChild(button)\n\nfunction layout() {\n  button.position.set(width / 2, height / 2)\n  button.scale.set(Math.min(width / 400, height / 300))\n}\n\nonCanvasResize(layout)\nlayout()"
   }
 }
 \`\`\``;
