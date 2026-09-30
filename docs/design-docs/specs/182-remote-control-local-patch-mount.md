@@ -1,6 +1,8 @@
 # 182. Remote Control Local Patch Mount
 
-**Status:** Core file sync implemented. Delivery and diagnostic extensions are deferred.
+**Status:** Core file sync implemented. Resumable mounts and graph control are
+proposed below; they are not implemented. Delivery and diagnostic extensions
+remain deferred.
 
 ## Goal and scope
 
@@ -230,3 +232,218 @@ Deferred: CLI/MCP catalogs and coarse capability discovery, structured
 cross-platform CLI releases and checksum-verifying installers. Whole-tree
 filesystem transactions and persistent unsynced-state recovery are not current
 guarantees.
+
+## Proposed extension: resumable mounts and graph control
+
+Recorded 2026-10-01. Poom confirmed that resume must preserve and replay offline
+file edits, and that older CLI builds and mount layouts do not need backward
+compatibility. The preceding sections describe the current implementation;
+this section describes the proposed replacement contracts.
+
+### Recovery contract
+
+Distinguish a temporary transport interruption, CLI process termination, and
+browser reload. None should require a new mount directory or connection string
+while the same relay session still exists. Explicit revocation and relay server
+termination remain terminal; server-session persistence is outside this scope.
+
+The running mount retries transport failures. Browser reload reclaims the same
+patch-bound session with a fresh browser generation and publishes a ready
+snapshot before accepting mutations. A transient reclaim or snapshot failure
+must retain reclaim credentials and retry; only a definitive invalid/revoked
+session clears them. Restore must wait for patch hydration and VFS readiness.
+The existing same-tab session storage is sufficient for page reload; restoring
+after closing the tab or restarting the browser is a separate feature.
+
+Add explicit `patchies mount --resume --path <existing-mount>` with credentials
+provided through the existing token input options. Do not save the connection
+secret into mount metadata. Fresh mounts still reject arbitrary populated
+directories. Resume requires valid metadata bound to the instance, session ID,
+and patch ID, and refuses a second live mount process for the same directory.
+
+Persist private mount state under `.patchies/`, excluded from file sync:
+
+- Mount format, instance/session/patch identity, and last canonical baseline.
+- Pending and rejected file contents, with their operation IDs and outcomes.
+- Unresolved submitted commands and enough information to reconcile results.
+
+Write state atomically with restrictive permissions. Persist intent before
+submission and preserve local contents before applying an incoming projection.
+A failed state write must stop mutation/projection before it can lose an edit.
+Record the baseline even when pending content overlays the corresponding file;
+the visible local file is not itself the canonical baseline.
+
+On resume, scan tracked files against that saved baseline **before** applying
+the fresh browser snapshot. Queue offline changes, then reconcile and restore
+pending contents over the projection. If both sides edited an existing code
+file, local pending content wins, matching current live-save behavior.
+Unchanged local files refresh from the browser. An offline edit whose node or
+file has disappeared is retained as an unsynced recovery item and reported;
+it must not recreate a deleted node or disappear during snapshot pruning.
+Unknown local files remain outside the import contract.
+
+Operation-result recovery is required alongside reconnect. The current relay
+clears its operation records on browser reclaim, and current CLI retries can
+allocate new operation IDs. This is insufficient for structural mutations:
+an acknowledged-or-not node creation must never be blindly repeated.
+Keep queryable terminal outcomes across browser generations with bounded
+retention, and pin unresolved requests until reconciliation. Expired outcomes
+must be reported as unknown rather than interpreted as never submitted.
+Reusing an operation ID with a different payload must fail. Reject
+old-generation writes.
+
+For an operation applied before a browser reload but without a published
+terminal result, reconcile against the ready graph and stable created node IDs.
+If the outcome cannot be proved, return `outcome_unknown` and preserve the
+request for inspection rather than replaying it. This does not promise
+exactly-once execution across arbitrary browser crashes or server termination.
+Unsubmitted code-file intent can be rebased to the fresh generation; ambiguous
+submitted graph commands require outcome reconciliation first.
+
+### One mount process, one local command endpoint
+
+The long-running `mount` process owns the filesystem watcher, durable state,
+relay attachment, and operation queue. It exposes a private Unix-domain socket
+for short-lived CLI commands. Those commands use the existing mutating client;
+they must not attach a second client to the relay.
+
+Place a socket locator under `.patchies/`; use a private runtime directory for
+the actual socket when the mount path exceeds Unix socket path limits. Limit
+socket access to the current user. Use a mount lock to distinguish a live owner
+from a stale socket left after a crash. Unix support matches the current CLI;
+Windows IPC remains separate delivery work.
+
+Proposed command surface (syntax is a design proposal):
+
+```sh
+patchies graph --path ./my-patch --json
+patchies node inspect glsl-5 --path ./my-patch --json
+patchies node create glsl --path ./my-patch --position 100,200 --json
+patchies node delete glsl-5 --path ./my-patch --json
+patchies wire connect glsl-5:video-out-out glsl-8:video-in-0-source-sampler2D --path ./my-patch --json
+patchies wire disconnect glsl-5:video-out-out glsl-8:video-in-0-source-sampler2D --path ./my-patch --json
+```
+
+Creation uses the existing node factory, default data, and object-name
+resolution. Generic text/audio expressions need an explicit expression option,
+and optional initial data must be validated through the same creation path.
+Return the created node ID, source-file paths, and current handle readiness.
+An omitted position uses the browser's existing insertion placement policy.
+
+Graph queries return every node, including nodes without source files, and
+every edge. Node entries include ID, type/object expression, position, source
+paths, exact inlet/outlet IDs, and port kind. Edge entries include edge ID and
+all four endpoint fields. Return browser generation and revision with queries.
+Include connection state and freshness; cached data while disconnected must be
+explicitly marked stale. Do not present a cached query as a live browser result.
+
+Mutation commands wait for a browser terminal result and canonical projection,
+then print structured results to stdout; diagnostics go to stderr. A timeout
+returns its operation ID and an unresolved outcome, not a claim of rollback.
+While the browser is unavailable, fail new structural commands clearly;
+continue retaining file edits for later replay. Do not silently queue destructive
+commands based on stale graph data.
+
+### Files for discovery and wiring
+
+Keep `objects/` and `patch/` as VFS projections. Add mount-only companions,
+alongside the existing `references/`:
+
+```text
+graph.json                 # read-only canonical nodes, ports, edges, revision
+connections.txt            # editable wire declarations
+.patchies/                 # private state, lock, socket locator
+```
+
+`connections.txt` uses Poom's endpoint DSL, one connection per line:
+
+```text
+glsl-5:video-out-out -> glsl-8:video-in-0-source-sampler2D
+```
+
+This is a small line DSL, not YAML. Allow blank lines and full-line `#` comments.
+Require both endpoint IDs, with JSON-quoted identifiers when an ID contains
+whitespace, delimiters, or other reserved syntax. Reject malformed lines with
+line-numbered errors. Treat repeated endpoint tuples as a single declaration.
+The serializer and parser must round-trip arbitrary supported node/handle IDs.
+Use bare `@default` for existing null-handle endpoints; a literal handle named
+`@default` must be JSON-quoted. Preserve null endpoints in unchanged edges.
+For new connections, accept `@default` only when the browser resolves an actual
+default port unambiguously; otherwise require the discovered concrete handle.
+Never infer a concrete port from an omitted or mistyped ID.
+
+A settled save describes an edge-set change relative to the last canonical
+connections baseline. Lines added locally request connections; lines removed
+locally request disconnections of those exact four-field tuples. Preserve
+browser-only additions that were absent from the local baseline. An empty file
+disconnects the baseline's wires, not unseen concurrent browser additions.
+Deleting the file itself restores it, matching tracked-file deletion semantics.
+
+Preserve IDs and metadata of unchanged browser edges. Removing a tuple removes
+all edges with that exact tuple; adding an already-present tuple is a no-op.
+Sort canonical serialization deterministically. CLI wire commands and file
+saves share the same validation and mutation service. Concurrent file edits
+and command submissions must be serialized with their captured baselines;
+a command must not overwrite a pending connections-file edit.
+
+Validate the complete requested delta before mutating anything. Invalid syntax,
+missing nodes/ports, incompatible port kinds, or a browser connection-policy
+violation rejects the whole save. Preserve rejected text as unsynced and report
+the offending line/endpoint. Browser edits and undo/redo refresh both companions
+without echoing into new remote operations.
+
+### Browser graph authority and history
+
+Add a graph service at the canvas boundary and inject it into the Remote
+Control coordinator. Reuse the node factory, canvas state accessors, history
+commands, and connection policy. Do not introduce a separate graph owned by
+the CLI, mutate arrays directly in the relay, or route through AI chat approval
+actions to execute commands.
+
+Node creation/deletion, wire connection/disconnection, and one connections-file
+save each produce one normal undoable action. Node deletion includes attached
+edges so undo restores both. A connections save groups additions and deletions
+in one history command after complete validation. No-op requests add no history.
+Undo/redo participates in canonical graph/file commits and revision tracking,
+including changes to nodes with no code-file projection.
+
+Discover actual current handles through the canvas/runtime integration, reusing
+schema metadata for labels and type constraints. Existing AI handle-pattern
+validation is insufficient: it can accept indexed ports that do not exist.
+Validate outlet/inlet direction, actual existence, compatible port kind, and
+the same policy used by canvas wiring, including AudioParam and acceptsFloat
+exceptions. Dynamic ports must report readiness after initialization/code run;
+queries must not invent handles from type patterns. Culling must not make ports
+disappear from graph discovery. Reject a mutation with `ports_not_ready` when
+the browser cannot yet validate it.
+
+Extend the operation envelope with typed graph query/mutation payloads and
+structured terminal results. Keep file and graph operations in the same
+browser-authoritative queue. A graph mutation's result and its graph/source-file
+projection belong to the same canonical revision. Update the mounted agent
+skill to teach selective graph/port discovery, commands, connection-file saves,
+and recovery once those features exist; reuse existing object references.
+
+### Verification required before declaring the extension implemented
+
+- Repeat browser → disk → browser edits through transport loss, CLI restart,
+  page reload, and a pending operation; exercise offline saves and both-side
+  edits without dropping the newer local intent.
+- Reload while reclaim/snapshot requests fail transiently, then recover with
+  the same session. Check patch hydration before the ready snapshot.
+- Kill the CLI before submission, after submission, and after browser commit
+  but before local acknowledgement. Verify outcome lookup and stable node IDs
+  prevent duplicate creation. Exercise `outcome_unknown` explicitly.
+- Query code and non-code nodes with fixed/dynamic ports; connect invalid or
+  nonexistent handles, wrong-direction ports, incompatible types, and supported
+  AudioParam/acceptsFloat exceptions. Include culled/uninitialized nodes.
+- Create/delete nodes and connect/disconnect wires, then undo and redo in the
+  browser. Verify restored incident edges and both filesystem companions.
+- Test connection parsing/quoting, duplicates, null handles, invalid whole-file
+  rejection, empty-file saves, concurrent browser additions, and concurrent
+  commands plus pending file edits.
+- Exercise socket lifecycle, stale-owner recovery, second-process rejection,
+  wrong patch/session resume, corrupt/private state, state I/O failure, and
+  revocation. Diagnostics must not disclose credentials.
+- Run a combined browser/server/CLI recovery loop; existing isolated unit
+  tests alone do not establish end-to-end reconnection behavior.
