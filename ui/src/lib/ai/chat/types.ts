@@ -29,6 +29,8 @@ export interface ThreadMessage {
   role: 'user' | 'model';
   content: string;
   thinking?: string;
+  /** Elapsed time from submission to the last response token, including tool rounds. */
+  turnDurationMs?: number;
   actions?: ThreadActionRef[];
   toolCalls?: ThreadToolCall[];
   images?: StagedImage[];

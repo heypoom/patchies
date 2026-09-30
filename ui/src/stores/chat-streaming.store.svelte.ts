@@ -221,6 +221,8 @@ export const chatStreamStore = {
   },
 
   async startStream(sessionId: string, params: StartStreamParams): Promise<void> {
+    const startedAt = performance.now();
+    let lastResponseTokenAt: number | undefined;
     const session = getOrCreateSession(sessionId);
 
     if (params.isFirstMessage && params.onRename && params.userContent) {
@@ -244,6 +246,8 @@ export const chatStreamStore = {
         params.nodeContext,
         (chunk) => {
           session.streamingText += chunk;
+
+          if (chunk) lastResponseTokenAt = performance.now();
         },
         abortSignal,
         (thought) => {
@@ -293,6 +297,8 @@ export const chatStreamStore = {
         }
       );
 
+      const turnDurationMs = (lastResponseTokenAt ?? performance.now()) - startedAt;
+
       const completedActions: ThreadActionRef[] = session.pendingActions.map((id) => {
         const action = session.actions.get(id);
 
@@ -339,6 +345,7 @@ export const chatStreamStore = {
           role: 'model',
           content: fullText,
           thinking: session.thinkingText || undefined,
+          turnDurationMs,
           actions: completedActions.length > 0 ? completedActions : undefined,
           toolCalls: session.streamingToolCalls.length > 0 ? session.streamingToolCalls : undefined
         }

@@ -436,7 +436,9 @@
               class="mb-1 flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
             >
               <div class="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
-              Thinking
+              {message.turnDurationMs !== undefined
+                ? `Worked for ${(message.turnDurationMs / 1000).toFixed(1)}s`
+                : 'Worked'}
             </summary>
 
             <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-600">

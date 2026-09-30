@@ -206,3 +206,7 @@ Steps 1–3 can be done in parallel with steps 4–5.
 The provider retains reasoning text and structured reasoning details in the opaque model-turn state. Tool continuations replay structured blocks in their original order, including signatures and encrypted data, or plaintext reasoning when structured blocks are absent. Display text and encrypted-reasoning notices are separate from replay state.
 
 SSE error events reject the generation even after HTTP 200 and partial output. No tools or generated edits from a failed turn are applied. JSON parsing catches only malformed JSON; consumer callback exceptions propagate. Both text generation and tool turns use the same stream reader.
+
+## Completed turn duration
+
+The in-flight reasoning header reads “Thinking”. Completed assistant messages with reasoning read “Worked for <x>s”, showing elapsed time from starting the submitted chat request to receiving its last non-empty response text chunk. This includes reasoning, tool rounds, and response generation, but excludes trailing stream metadata and persistence. Use a monotonic clock and store the duration with the assistant message. If a successful turn has no response text chunks, measure through stream completion. Messages without a recorded duration use “Worked”.
