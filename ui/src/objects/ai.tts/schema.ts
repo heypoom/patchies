@@ -9,9 +9,7 @@ const Speak = msg('speak', { text: Type.String() });
 const Load = msg('load', { text: Type.String() });
 const Play = sym('play');
 const SetVoice = msg('setVoice', { value: Type.String() });
-const SetRate = msg('setRate', { value: Type.Number() });
-const SetPitch = msg('setPitch', { value: Type.Number() });
-const SetVolume = msg('setVolume', { value: Type.Number() });
+const SetStyle = msg('setStyle', { value: Type.String() });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const aiTtsMessages = {
@@ -20,9 +18,7 @@ export const aiTtsMessages = {
   load: schema(Load),
   play: schema(Play),
   setVoice: schema(SetVoice),
-  setRate: schema(SetRate),
-  setPitch: schema(SetPitch),
-  setVolume: schema(SetVolume),
+  setStyle: schema(SetStyle),
   string: schema(Type.String())
 };
 
@@ -32,7 +28,7 @@ export const aiTtsMessages = {
 export const aiTtsSchema: ObjectSchema = {
   type: 'ai.tts',
   category: 'ai',
-  description: 'Convert text to speech using Google Cloud Text-to-Speech AI',
+  description: 'Convert text to speech using Gemini TTS',
   inlets: [
     {
       id: 'message',
@@ -45,10 +41,8 @@ export const aiTtsSchema: ObjectSchema = {
         { schema: Play, description: 'Play cached audio' },
         { schema: Bang, description: 'Play cached audio' },
         { schema: Stop, description: 'Stop playback' },
-        { schema: SetVoice, description: 'Set voice (e.g., "en-US-Chirp3-HD-Achernar")' },
-        { schema: SetRate, description: 'Set speaking rate (0.25-4)' },
-        { schema: SetPitch, description: 'Set pitch (-20 to 20)' },
-        { schema: SetVolume, description: 'Set volume gain in dB (-96 to 16)' }
+        { schema: SetVoice, description: 'Set Gemini voice (e.g., "Kore" or "Puck")' },
+        { schema: SetStyle, description: 'Set speaking style (e.g., "cheerful and friendly")' }
       ]
     }
   ],

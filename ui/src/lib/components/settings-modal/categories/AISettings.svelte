@@ -113,6 +113,20 @@
     />
   </SettingRow>
 
+  <SettingRow
+    title="Gemini speech model"
+    description="Default model for ai.tts. Uses your Gemini API key."
+  >
+    <input
+      type="text"
+      value={$aiSettings.geminiSpeechModel}
+      oninput={(event) =>
+        aiSettings.updateSettings({ geminiSpeechModel: event.currentTarget.value })}
+      aria-label="Gemini speech model"
+      class="w-48 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none hover:border-white/20 focus:border-orange-500/40"
+    />
+  </SettingRow>
+
   <SettingRow title="Expand thinking" description="Show AI reasoning steps in chat">
     <SettingToggle
       checked={$chatSettingsStore.expandThinking}

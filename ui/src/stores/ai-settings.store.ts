@@ -4,6 +4,7 @@ export type AIProviderType = 'gemini' | 'openrouter';
 
 export const DEFAULT_GEMINI_TEXT_MODEL = 'gemini-3.8-flash';
 export const DEFAULT_GEMINI_IMAGE_MODEL = 'gemini-3.1-flash-lite-image';
+export const DEFAULT_GEMINI_SPEECH_MODEL = 'gemini-3.8-flash-tts';
 
 export const DEFAULT_OPENROUTER_TEXT_MODEL = 'google/gemini-3.8-flash';
 export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'google/gemini-3.1-flash-image-preview';
@@ -13,6 +14,7 @@ export interface AISettings {
   geminiApiKey: string;
   geminiTextModel: string;
   geminiImageModel: string;
+  geminiSpeechModel: string;
   openRouterApiKey: string;
   openRouterTextModel: string;
   openRouterImageModel: string;
@@ -26,6 +28,7 @@ const DEFAULT_SETTINGS: AISettings = {
   geminiApiKey: '',
   geminiTextModel: DEFAULT_GEMINI_TEXT_MODEL,
   geminiImageModel: DEFAULT_GEMINI_IMAGE_MODEL,
+  geminiSpeechModel: DEFAULT_GEMINI_SPEECH_MODEL,
   openRouterApiKey: '',
   openRouterTextModel: DEFAULT_OPENROUTER_TEXT_MODEL,
   openRouterImageModel: DEFAULT_OPENROUTER_IMAGE_MODEL
@@ -67,6 +70,10 @@ function saveAISettings(settings: AISettings) {
 
   if (toSave.geminiImageModel === DEFAULT_GEMINI_IMAGE_MODEL) {
     delete toSave.geminiImageModel;
+  }
+
+  if (toSave.geminiSpeechModel === DEFAULT_GEMINI_SPEECH_MODEL) {
+    delete toSave.geminiSpeechModel;
   }
 
   if (toSave.openRouterTextModel === DEFAULT_OPENROUTER_TEXT_MODEL) {
