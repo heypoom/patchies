@@ -18,10 +18,8 @@ Expression objects, such as [filter](/docs/objects/filter), [map](/docs/objects/
 2. Enter this code in the editor:
 
 ```javascript
-// Receive a message and send back its double
-recv((data) => {
-  send(data * 2);
-});
+// Receive a value and send back its double
+recv(value => send(value * 2));
 ```
 
 Connect a `slider` to the inlet. Connect a `peek` to the outlet. Drag the slider to show the doubled value in `peek`.
@@ -172,6 +170,7 @@ Change the label that Patchies shows on an object:
 setTitle("counter: 0");
 
 let count = 0;
+
 setInterval(() => {
   count++;
   setTitle(`counter: ${count}`);

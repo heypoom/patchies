@@ -42,6 +42,7 @@ export class SelectionChangeController {
   private notify(callback: SelectionChangeCallback, selected: boolean) {
     try {
       const result = callback(selected);
+
       if (result) {
         Promise.resolve(result).catch(this.options.onError);
       }
