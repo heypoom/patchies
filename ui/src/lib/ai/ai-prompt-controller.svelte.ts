@@ -8,6 +8,7 @@
  * apply results without the component needing to handle dispatch.
  */
 
+import { AiResponseError } from './parse-object-response';
 import { appendThinking } from './thinking-log';
 import type { ThinkingCallback } from './providers/types';
 import { toast } from 'svelte-sonner';
@@ -45,6 +46,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
   let promptText = $state('');
   let isLoading = $state(false);
   let errorMessage = $state<string | null>(null);
+  let failedResponse = $state<string | null>(null);
   let resolvedObjectType = $state<string | null>(null);
   let isGeneratingConfig = $state(false);
   let thinkingText = $state<string | null>(null);
@@ -61,6 +63,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
     resolvedObjectType = null;
     isGeneratingConfig = false;
     errorMessage = null;
+    failedResponse = null;
   }
 
   const onThinking: ThinkingCallback = (thought, event) => {
@@ -155,6 +158,9 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
     get errorMessage() {
       return errorMessage;
     },
+    get failedResponse() {
+      return failedResponse;
+    },
     get resolvedObjectType() {
       return resolvedObjectType;
     },
@@ -180,7 +186,9 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
       mode = newMode;
       context = newContext ?? {};
       promptText = '';
+
       errorMessage = null;
+      failedResponse = null;
     },
 
     async submit() {
@@ -192,6 +200,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
 
       isLoading = true;
       resetLoadingState();
+
       const current = new AbortController();
       abortController = current;
 
@@ -209,10 +218,12 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
         return true; // signal success to component (so it can close)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error occurred';
+
         if (message !== 'Request cancelled') {
           errorMessage = message;
-          toast.error(message);
+          failedResponse = error instanceof AiResponseError ? error.responseText : null;
         }
+
         return false;
       } finally {
         if (abortController === current) {
@@ -229,6 +240,8 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
     reset() {
       promptText = '';
       errorMessage = null;
+      failedResponse = null;
+
       resetLoadingState();
     }
   };

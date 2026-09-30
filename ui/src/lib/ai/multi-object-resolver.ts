@@ -10,7 +10,7 @@
 import { OBJECT_TYPE_LIST } from './object-descriptions';
 import { buildMultiObjectInstructionParts } from './object-prompts/build-generator-instructions';
 import { generateHandleDocs } from './generate-handle-docs';
-import { extractJson } from './extract-json';
+import { AiResponseError, parseObjectResponse } from './parse-object-response';
 import { getTextProvider } from './providers';
 import type { LLMProvider } from './providers';
 
@@ -133,8 +133,7 @@ async function routeToMultiObjectPlan(
   }
 
   try {
-    const jsonText = extractJson(responseText.trim());
-    const result = JSON.parse(jsonText);
+    const result = parseObjectResponse(responseText);
 
     if (!result.objectTypes || !Array.isArray(result.objectTypes)) {
       throw new Error('Response missing required "objectTypes" array');
@@ -151,7 +150,11 @@ async function routeToMultiObjectPlan(
   } catch (error) {
     logger.error('[Router] Failed to parse response', error);
     logger.log('Raw response text', responseText);
-    throw new Error('Failed to parse routing response as JSON');
+
+    throw new AiResponseError(
+      error instanceof Error ? error.message : 'Failed to parse routing response as JSON',
+      responseText
+    );
   }
 }
 
@@ -180,8 +183,7 @@ async function generateMultiObjectConfig(
   }
 
   try {
-    const jsonText = extractJson(responseText.trim());
-    const result = JSON.parse(jsonText);
+    const result = parseObjectResponse(responseText);
 
     if (!result.nodes || !Array.isArray(result.nodes)) {
       throw new Error('Response missing required "nodes" array');
@@ -203,7 +205,10 @@ async function generateMultiObjectConfig(
   } catch (error) {
     logger.error('[Generator] Failed to parse response', error);
     logger.log('Raw response text', responseText);
-    throw new Error('Failed to parse generation response as JSON');
+    throw new AiResponseError(
+      error instanceof Error ? error.message : 'Failed to parse generation response as JSON',
+      responseText
+    );
   }
 }
 

@@ -6,7 +6,7 @@
 
 import { logger } from '$lib/utils/logger';
 import { OBJECT_TYPE_LIST } from './object-descriptions';
-import { extractJson } from './extract-json';
+import { AiResponseError, parseObjectResponse } from './parse-object-response';
 import { buildObjectTypeInstructions } from './object-prompts/build-generator-instructions';
 import { getTextProvider } from './providers';
 import type { LLMProvider } from './providers';
@@ -113,8 +113,7 @@ export async function generateObjectConfigForType(
   if (!responseText.trim()) return null;
 
   try {
-    const jsonText = extractJson(responseText.trim());
-    const result = JSON.parse(jsonText);
+    const result = parseObjectResponse(responseText);
 
     if (!result.type) {
       throw new Error('Response missing required "type" field');
@@ -124,8 +123,12 @@ export async function generateObjectConfigForType(
   } catch (error) {
     logger.error('Failed to parse AI response:', error);
 
+    if (error instanceof AiResponseError) {
+      throw error;
+    }
+
     const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to parse AI response: ${reason}`);
+    throw new AiResponseError(`Failed to parse AI response: ${reason}`, responseText);
   }
 }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick, untrack } from 'svelte';
   import { Loader, Minus, ChevronDown, ChevronUp } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
@@ -53,7 +54,7 @@
   } = $props();
 
   // ── Controller ────────────────────────────────────────────────────────────
-  const ctrl = createAiPromptController({
+  const controller = createAiPromptController({
     onInsertObject: (...args) => onInsertObject(...args),
     onInsertMultipleObjects: (...args) => onInsertMultipleObjects?.(...args),
     onEditObject: (...args) => onEditObject?.(...args),
@@ -77,7 +78,7 @@
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const descriptor = $derived(ctrl.descriptor);
+  const descriptor = $derived(controller.descriptor);
 
   const colorClasses = $derived(
     match(descriptor.color)
@@ -124,16 +125,16 @@
       .exhaustive()
   );
 
-  const availableModes = $derived(getAvailableModesForContext(ctrl.context));
+  const availableModes = $derived(getAvailableModesForContext(controller.context));
 
   const fixErrorMessages = $derived(
-    ctrl.mode === 'fix-error' && ctrl.context.selectedNode
-      ? getNodeErrors(ctrl.context.selectedNode.id)
+    controller.mode === 'fix-error' && controller.context.selectedNode
+      ? getNodeErrors(controller.context.selectedNode.id)
       : []
   );
 
   const submitLabel = $derived(
-    match(ctrl.mode)
+    match(controller.mode)
       .with('edit', () => 'Edit')
       .with('turn-into', () => 'Replace')
       .with('fix-error', () => 'Fix')
@@ -143,34 +144,39 @@
   // ── Sync ctrl with incoming props when opening ────────────────────────────
   $effect(() => {
     if (open) {
-      ctrl.open(initialMode, Object.keys(initialContext).length > 0 ? initialContext : undefined);
+      untrack(() => {
+        controller.open(
+          initialMode,
+          Object.keys(initialContext).length > 0 ? initialContext : undefined
+        );
 
-      dialogPosition = $isMobile
-        ? { x: position.x, y: position.y }
-        : {
-            x: Math.max(16, (window.innerWidth - ($isSidebarOpen ? $sidebarWidth : 0) - 384) / 2),
-            y: Math.max(16, window.innerHeight / 3)
-          };
+        dialogPosition = $isMobile
+          ? { x: position.x, y: position.y }
+          : {
+              x: Math.max(16, (window.innerWidth - ($isSidebarOpen ? $sidebarWidth : 0) - 384) / 2),
+              y: Math.max(16, window.innerHeight / 3)
+            };
 
-      setTimeout(() => promptInput?.focus(), 0);
+        setTimeout(() => promptInput?.focus(), 0);
+      });
     }
   });
 
   // ── Sync store for toolbar button styling ─────────────────────────────────
   $effect(() => {
     if (open) {
-      aiPromptStore.open(ctrl.mode);
+      aiPromptStore.open(controller.mode);
     } else {
       aiPromptStore.close();
     }
   });
 
   $effect(() => {
-    aiPromptStore.setLoading(ctrl.isLoading);
+    aiPromptStore.setLoading(controller.isLoading);
   });
 
   $effect(() => {
-    if (open) aiPromptStore.setMode(ctrl.mode);
+    if (open) aiPromptStore.setMode(controller.mode);
   });
 
   // ── Drag handlers ─────────────────────────────────────────────────────────
@@ -207,11 +213,11 @@
 
   // ── Sync bindable props with controller state ─────────────────────────────
   $effect(() => {
-    isLoading = ctrl.isLoading;
-    thinkingText = ctrl.thinkingText ?? '';
-    isGeneratingConfig = ctrl.isGeneratingConfig;
-    resolvedObjectType = ctrl.resolvedObjectType;
-    initialMode = ctrl.mode;
+    isLoading = controller.isLoading;
+    thinkingText = controller.thinkingText ?? '';
+    isGeneratingConfig = controller.isGeneratingConfig;
+    resolvedObjectType = controller.resolvedObjectType;
+    initialMode = controller.mode;
   });
 
   // Detect external restore (tray sets isMinimized=false) → reset position + focus
@@ -235,18 +241,19 @@
   }
 
   function handleClose() {
-    if (ctrl.isLoading) return;
+    if (controller.isLoading) return;
+
     open = false;
-    ctrl.reset();
+    controller.reset();
     isMinimized = false;
   }
 
   function handleCancel() {
-    ctrl.cancel();
+    controller.cancel();
   }
 
   function handleClickOutside(event: MouseEvent) {
-    if (ctrl.isLoading || isDragging) return;
+    if (controller.isLoading || isDragging) return;
 
     const target = event.target as HTMLElement;
 
@@ -260,11 +267,21 @@
 
   // ── Submit / Keyboard ─────────────────────────────────────────────────────
   async function handleSubmit() {
+    const missingPrompt = !controller.descriptor.promptOptional && !controller.promptText.trim();
+    if (controller.isLoading || missingPrompt) return;
+
     isPromptExpanded = false;
     handleMinimize();
-    const success = await ctrl.submit();
+
+    const success = await controller.submit();
     isMinimized = false;
-    if (success) handleClose();
+
+    if (success) {
+      handleClose();
+    } else {
+      await tick();
+      promptInput?.focus();
+    }
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -273,7 +290,8 @@
       handleSubmit();
     } else if (isDismissKey(event)) {
       event.preventDefault();
-      if (ctrl.isLoading) {
+
+      if (controller.isLoading) {
         handleMinimize();
       } else {
         handleClose();
@@ -285,15 +303,15 @@
     if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
 
-      if (!ctrl.isLoading) {
+      if (!controller.isLoading) {
         const modes = availableModes;
-        const currentIdx = modes.indexOf(ctrl.mode);
+        const currentIdx = modes.indexOf(controller.mode);
 
         const nextIdx = event.shiftKey
           ? (currentIdx - 1 + modes.length) % modes.length
           : (currentIdx + 1) % modes.length;
 
-        ctrl.setMode(modes[nextIdx]);
+        controller.setMode(modes[nextIdx]);
 
         modeDropdownOpen = false;
       }
@@ -312,6 +330,7 @@
 
       return () => {
         clearTimeout(timeoutId);
+
         document.removeEventListener('click', handleClickOutside);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
@@ -325,9 +344,9 @@
   <div
     class="ai-prompt-dialog {$isMobile
       ? 'absolute'
-      : 'fixed'} z-50 w-96 rounded-lg border {ctrl.isLoading
+      : 'fixed'} z-50 w-96 rounded-lg border {controller.isLoading
       ? colorClasses.border
-      : 'border-zinc-600'} bg-zinc-900/95 shadow-2xl backdrop-blur-xl {ctrl.isLoading
+      : 'border-zinc-600'} bg-zinc-900/95 shadow-2xl backdrop-blur-xl {controller.isLoading
       ? colorClasses.ring
       : ''} {isDragging ? 'cursor-grabbing' : ''} {isMinimized ? 'hidden' : ''}"
     style={$isMobile
@@ -347,7 +366,7 @@
 
       <div class="flex-1">
         <div class="font-mono text-sm font-medium text-zinc-100">{descriptor.label}</div>
-        <div class="text-xs text-zinc-400">{descriptor.description(ctrl.context)}</div>
+        <div class="text-xs text-zinc-400">{descriptor.description(controller.context)}</div>
       </div>
 
       <!-- Mode selector dropdown (when multiple modes are available) -->
@@ -355,10 +374,11 @@
         <div class="ai-mode-dropdown relative">
           <button
             onclick={() => (modeDropdownOpen = !modeDropdownOpen)}
-            disabled={ctrl.isLoading}
+            disabled={controller.isLoading}
             class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-2 py-1 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {descriptor.shortLabel}
+
             <ChevronDown class="h-3 w-3 opacity-60" />
           </button>
 
@@ -374,10 +394,10 @@
 
                 <button
                   onclick={() => {
-                    ctrl.setMode(modeId);
+                    controller.setMode(modeId);
                     modeDropdownOpen = false;
                   }}
-                  class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-700 {ctrl.mode ===
+                  class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-700 {controller.mode ===
                   modeId
                     ? 'font-medium text-white'
                     : 'text-zinc-400'}"
@@ -404,7 +424,7 @@
 
     <!-- Input Area -->
     <div class="p-4">
-      {#if ctrl.isLoading}
+      {#if controller.isLoading}
         <!-- Collapsible prompt during loading -->
         <button
           onclick={() => (isPromptExpanded = !isPromptExpanded)}
@@ -415,6 +435,7 @@
           {:else}
             <ChevronDown class="h-3 w-3" />
           {/if}
+
           <span class="flex-1 truncate font-mono">User Prompt</span>
         </button>
 
@@ -422,18 +443,18 @@
           <div
             class="mt-2 rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-sm text-zinc-300"
           >
-            {ctrl.promptText}
+            {controller.promptText}
           </div>
         {/if}
 
         <!-- Thinking log -->
-        {#if ctrl.thinkingLog.length > 0}
+        {#if controller.thinkingLog.length > 0}
           <div
             class="mt-3 flex max-h-48 flex-col gap-2 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300"
           >
-            {#each ctrl.thinkingLog as thought, index (index)}
+            {#each controller.thinkingLog as thought, index (index)}
               <div
-                class="border-l-2 border-zinc-600 pl-2 {index === ctrl.thinkingLog.length - 1
+                class="border-l-2 border-zinc-600 pl-2 {index === controller.thinkingLog.length - 1
                   ? 'opacity-100'
                   : 'opacity-50'}"
               >
@@ -454,19 +475,20 @@
         <!-- Textarea -->
         <textarea
           bind:this={promptInput}
-          bind:value={ctrl.promptText}
+          bind:value={controller.promptText}
           onkeydown={handleKeydown}
-          placeholder={descriptor.placeholder(ctrl.context)}
+          placeholder={descriptor.placeholder(controller.context)}
           class="nodrag w-full resize-y rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {focusBorderClass}"
           rows="3"
         ></textarea>
 
         <!-- fix-error: show error context being sent -->
-        {#if ctrl.mode === 'fix-error' && fixErrorMessages.length > 0}
+        {#if controller.mode === 'fix-error' && fixErrorMessages.length > 0}
           <div class="mt-2 rounded border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs">
             <div class="mb-1 font-medium text-red-400">
               {fixErrorMessages.length} error{fixErrorMessages.length === 1 ? '' : 's'} will be sent:
             </div>
+
             <ul class="space-y-0.5 font-mono text-red-300/80">
               {#each fixErrorMessages as msg, index (index)}
                 <li class="truncate">{msg}</li>
@@ -476,33 +498,51 @@
         {/if}
       {/if}
 
-      {#if ctrl.errorMessage}
-        <div class="mt-2 rounded bg-red-900/20 px-3 py-2 font-mono text-xs text-red-300">
-          {ctrl.errorMessage}
+      {#if controller.errorMessage}
+        <div
+          role="alert"
+          class="mt-2 rounded border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs text-red-300"
+        >
+          <div class="font-medium">AI request failed</div>
+
+          <p class="mt-1 break-words">{controller.errorMessage}</p>
+          <p class="mt-2 text-zinc-400">Your prompt is saved above. Edit it and try again.</p>
         </div>
+
+        {#if controller.failedResponse}
+          <div class="mt-2 rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs">
+            <div class="mb-2 font-medium text-zinc-300">Model response</div>
+
+            <pre
+              class="max-h-48 overflow-y-auto font-mono break-words whitespace-pre-wrap text-zinc-300">{controller.failedResponse}</pre>
+          </div>
+        {/if}
       {/if}
     </div>
 
     <!-- Footer -->
     <div class="flex items-center justify-between border-t border-zinc-700 px-4 py-3">
       <div class="flex min-w-0 items-center gap-1.5 text-xs text-zinc-600">
-        {#if ctrl.isLoading}
+        {#if controller.isLoading}
           <Loader class="h-3 w-3 shrink-0 animate-spin" />
+
           <span>
-            {ctrl.isGeneratingConfig
-              ? `${descriptor.generatingLabel(ctrl.resolvedObjectType ?? '')}...`
+            {controller.isGeneratingConfig
+              ? `${descriptor.generatingLabel(controller.resolvedObjectType ?? '')}...`
               : `${descriptor.loadingLabel}...`}
           </span>
         {:else}
-          {#if ctrl.context.selectedNode}
-            {@const d = ctrl.context.selectedNode.data as Record<string, unknown>}
+          {#if controller.context.selectedNode}
+            {@const d = controller.context.selectedNode.data as Record<string, unknown>}
+
             {@const name =
-              (d?.name as string) || (d?.title as string) || ctrl.context.selectedNode.type}
+              (d?.name as string) || (d?.title as string) || controller.context.selectedNode.type}
             {#if name}
               <span class="max-w-32 truncate font-mono text-zinc-400">{name}</span>
               <span class="shrink-0 text-zinc-700">·</span>
             {/if}
           {/if}
+
           <span class="shrink-0"
             >{availableModes.length > 1
               ? `Ctrl+I mode · ${getDismissShortcutLabel($isNativeFullscreen)} exit`
@@ -512,7 +552,7 @@
       </div>
 
       <div class="flex gap-2">
-        {#if ctrl.isLoading}
+        {#if controller.isLoading}
           <button
             onclick={handleCancel}
             class="cursor-pointer rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
@@ -523,8 +563,8 @@
           <button
             onclick={handleSubmit}
             disabled={descriptor.promptOptional
-              ? ctrl.isLoading
-              : !ctrl.promptText.trim() || ctrl.isLoading}
+              ? controller.isLoading
+              : !controller.promptText.trim() || controller.isLoading}
             class="cursor-pointer rounded {colorClasses.button} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             title={`Enter to ${submitLabel.toLowerCase()}`}
           >

@@ -1,4 +1,8 @@
 import { expect, test, vi } from 'vitest';
+import { toast } from 'svelte-sonner';
+
+import { AiResponseError } from './parse-object-response';
+
 import type { AiPromptCallbacks } from './ai-prompt-controller.svelte';
 import type { ThinkingCallback } from './providers/types';
 
@@ -6,6 +10,7 @@ const { runModeResolver } = vi.hoisted(() => ({ runModeResolver: vi.fn() }));
 
 vi.mock('./modes/run-resolver', () => ({ runModeResolver }));
 vi.mock('./modes/descriptors', () => ({ getModeDescriptor: () => ({ promptOptional: false }) }));
+
 vi.mock('svelte-sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { createAiPromptController } from './ai-prompt-controller.svelte';
@@ -24,6 +29,7 @@ const callbacks: AiPromptCallbacks = {
 test('AI Edit keeps reasoning fragments in a single block per generation', async () => {
   const controller = createAiPromptController(callbacks);
   controller.promptText = 'Route and generate';
+
   runModeResolver.mockImplementationOnce(
     async (_mode, _prompt, _context, _signal, onThinking: ThinkingCallback) => {
       onThinking('', { newGeneration: true });
@@ -42,6 +48,7 @@ test('AI Edit keeps reasoning fragments in a single block per generation', async
         'The user wants routing.',
         'Generate configuration.'
       ]);
+
       expect(controller.thinkingText).toBe('Generate configuration.');
 
       return { kind: 'single', type: 'js', data: {} };
@@ -54,8 +61,10 @@ test('AI Edit keeps reasoning fragments in a single block per generation', async
 test('AI Edit does not apply results from a failed generation', async () => {
   const onEditObject = vi.fn();
   const controller = createAiPromptController({ ...callbacks, onEditObject });
+
   controller.setMode('edit', {});
   controller.promptText = 'Edit';
+
   runModeResolver.mockRejectedValueOnce(
     new Error('OpenRouter stream error: Provider disconnected')
   );
@@ -65,4 +74,39 @@ test('AI Edit does not apply results from a failed generation', async () => {
   expect(controller.errorMessage).toBe('OpenRouter stream error: Provider disconnected');
   expect(onEditObject).not.toHaveBeenCalled();
   expect(controller.isLoading).toBe(false);
+});
+
+test('AI Edit keeps a failed prompt editable and clears the failure on retry', async () => {
+  const onEditObject = vi.fn();
+  const controller = createAiPromptController({ ...callbacks, onEditObject });
+
+  const prompt = 'Draw stars\nUse blue and violet, and animate their brightness.';
+  const responseText = 'Which background color would you like?';
+
+  controller.open('edit');
+  controller.promptText = prompt;
+
+  runModeResolver.mockRejectedValueOnce(new AiResponseError('Expected JSON', responseText));
+
+  await expect(controller.submit()).resolves.toBe(false);
+
+  expect(controller.promptText).toBe(prompt);
+  expect(controller.errorMessage).toBe('Expected JSON');
+  expect(controller.failedResponse).toBe(responseText);
+  expect(toast.error).not.toHaveBeenCalled();
+  expect(onEditObject).not.toHaveBeenCalled();
+
+  controller.promptText = `${prompt}\nUse a black background.`;
+
+  runModeResolver.mockImplementationOnce(async (_mode, submittedPrompt) => {
+    expect(submittedPrompt).toBe(`${prompt}\nUse a black background.`);
+    expect(controller.errorMessage).toBeNull();
+    expect(controller.failedResponse).toBeNull();
+
+    return { kind: 'edit', nodeId: 'stars', data: { code: 'drawStars();' } };
+  });
+
+  await expect(controller.submit()).resolves.toBe(true);
+
+  expect(onEditObject).toHaveBeenCalledWith('stars', { code: 'drawStars();' });
 });
