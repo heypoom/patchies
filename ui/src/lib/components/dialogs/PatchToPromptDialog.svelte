@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { appendThinking } from '$lib/ai/thinking-log';
   import { isDismissKey } from '$lib/keyboard/dismiss';
   import * as Popover from '$lib/components/ui/popover';
   import {
@@ -52,6 +53,7 @@
   let isRefined = $state(false);
   let isGenerating = $state(false);
   let thinkingLog = $state<string[]>([]);
+  const visibleThinkingLog = $derived(thinkingLog.filter(Boolean));
   let isPromptCollapsed = $state(false);
   let isThinkingCollapsed = $state(false);
   let refineFirst = $state(false);
@@ -189,8 +191,8 @@
       const refined = await refineSpec(cleanedPatch, {
         patchName,
         steeringPrompt,
-        onThinking: (thought) => {
-          thinkingLog = [...thinkingLog, thought];
+        onThinking: (thought, event) => {
+          thinkingLog = appendThinking(thinkingLog, thought, event);
         }
       });
 
@@ -225,8 +227,8 @@
 
     try {
       const html = await generateCode(generatedPrompt, {
-        onThinking: (thought) => {
-          thinkingLog = [...thinkingLog, thought];
+        onThinking: (thought, event) => {
+          thinkingLog = appendThinking(thinkingLog, thought, event);
         }
       });
 
@@ -478,7 +480,7 @@
       </div>
 
       <!-- Thinking logs (shown during AI processing, collapsible) -->
-      {#if isProcessing || thinkingLog.length > 0}
+      {#if isProcessing || visibleThinkingLog.length > 0}
         <div class="space-y-2">
           <!-- Header with collapse toggle -->
           <button
@@ -505,20 +507,20 @@
             {/if}
 
             <span class="text-xs text-zinc-500">
-              ({thinkingLog.length}
-              {thinkingLog.length === 1 ? 'thought' : 'thoughts'})
+              ({visibleThinkingLog.length}
+              {visibleThinkingLog.length === 1 ? 'thought' : 'thoughts'})
             </span>
           </button>
 
           <!-- Collapsible content -->
           {#if !isThinkingCollapsed}
-            {#if thinkingLog.length > 0}
+            {#if visibleThinkingLog.length > 0}
               <div
                 class="flex max-h-40 flex-col gap-2 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300"
               >
-                {#each thinkingLog as thought, i}
+                {#each visibleThinkingLog as thought, i (i)}
                   <div
-                    class="border-l-2 border-zinc-600 pl-2 {i === thinkingLog.length - 1
+                    class="border-l-2 border-zinc-600 pl-2 {i === visibleThinkingLog.length - 1
                       ? 'text-zinc-200'
                       : 'text-zinc-500'}"
                   >

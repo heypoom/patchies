@@ -52,6 +52,8 @@ export class GeminiProvider implements LLMProvider {
       config
     });
 
+    onThinking?.('', { newGeneration: true });
+
     let responseText = '';
 
     for await (const chunk of response) {
@@ -169,6 +171,8 @@ export class GeminiProvider implements LLMProvider {
     }
 
     const stream = await ai.models.generateContentStream({ model: this.model, contents, config });
+
+    onThinking?.('', { newGeneration: true });
 
     const turnParts: Record<string, unknown>[] = [];
     let text = '';

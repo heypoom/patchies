@@ -200,3 +200,9 @@ Prerequisite: spec 94 mode resolver architecture is in place.
 7. **Update chat context** — include node graph summary in system prompt
 
 Steps 1–3 can be done in parallel with steps 4–5.
+
+## OpenRouter reasoning and stream failures
+
+The provider retains reasoning text and structured reasoning details in the opaque model-turn state. Tool continuations replay structured blocks in their original order, including signatures and encrypted data, or plaintext reasoning when structured blocks are absent. Display text and encrypted-reasoning notices are separate from replay state.
+
+SSE error events reject the generation even after HTTP 200 and partial output. No tools or generated edits from a failed turn are applied. JSON parsing catches only malformed JSON; consumer callback exceptions propagate. Both text generation and tool turns use the same stream reader.

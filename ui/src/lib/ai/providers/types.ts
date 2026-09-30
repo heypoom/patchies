@@ -1,3 +1,5 @@
+export type ThinkingCallback = (text: string, event?: { newGeneration: true }) => void;
+
 export interface LLMMessage {
   role: 'user' | 'model';
   content: string;
@@ -10,8 +12,8 @@ export interface LLMStreamOptions {
   /** Optional system prompt (prepended before user messages). */
   systemPrompt?: string;
 
-  /** Called with thinking/reasoning text as it streams (provider-dependent). */
-  onThinking?: (thought: string) => void;
+  /** Called with reasoning deltas; an empty newGeneration event starts a new block. */
+  onThinking?: ThinkingCallback;
 
   /** Called with each text token as it streams. */
   onToken?: (token: string) => void;
@@ -75,7 +77,7 @@ export interface StreamTurnOptions {
   tools?: ToolDeclaration[];
   signal?: AbortSignal;
   onChunk?: (text: string) => void;
-  onThinking?: (thought: string) => void;
+  onThinking?: ThinkingCallback;
 }
 
 export interface StreamTurnResult {

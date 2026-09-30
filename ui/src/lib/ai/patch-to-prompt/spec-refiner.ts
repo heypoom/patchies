@@ -1,3 +1,4 @@
+import type { ThinkingCallback } from '../providers/types';
 /**
  * AI-powered spec refinement using Gemini.
  *
@@ -14,7 +15,7 @@ export interface RefineOptions {
   patchName?: string;
   steeringPrompt?: string;
   signal?: AbortSignal;
-  onThinking?: (thought: string) => void;
+  onThinking?: ThinkingCallback;
 }
 
 /**

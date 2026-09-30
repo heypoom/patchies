@@ -1,3 +1,4 @@
+import type { ThinkingCallback } from '../providers/types';
 /**
  * AI-powered code generation using the configured AI provider.
  *
@@ -7,12 +8,12 @@
 
 export interface GenerateOptions {
   signal?: AbortSignal;
-  onThinking?: (thought: string) => void;
+  onThinking?: ThinkingCallback;
 }
 
 export interface EditOptions {
   signal?: AbortSignal;
-  onThinking?: (thought: string) => void;
+  onThinking?: ThinkingCallback;
 }
 
 /**

@@ -177,3 +177,9 @@ Suggested entries:
 ### Step 8 — "Fix with AI" trigger on error badge
 
 Add a button on the node error badge (or virtual console panel) that opens the AI prompt in `fix-error` mode with the node's current console errors pre-loaded into `context.consoleErrors`.
+
+## Streaming reasoning display
+
+Reasoning callbacks deliver text deltas. AI Edit, Preview Edit, and Patch to Prompt concatenate them without adding whitespace, rendering one block per provider generation. Providers announce generation boundaries so routing and configuration generation remain separate blocks. Compact previews show the accumulated current block.
+
+OpenRouter displays readable text and summary reasoning, using only one representation when plaintext and structured fields overlap. Encrypted reasoning stays hidden. Only encrypted-only generations show “Reasoning is encrypted and cannot be displayed.” Emit this notice after the stream finishes so readable reasoning arriving later suppresses it.

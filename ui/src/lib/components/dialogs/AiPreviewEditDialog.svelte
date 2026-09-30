@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { appendThinking } from '$lib/ai/thinking-log';
   import { isDismissKey } from '$lib/keyboard/dismiss';
   import {
     Loader2,
@@ -28,6 +29,7 @@
   let editPrompt = $state('');
   let isEditing = $state(false);
   let thinkingLog = $state<string[]>([]);
+  const visibleThinkingLog = $derived(thinkingLog.filter(Boolean));
   let isPromptExpanded = $state(false);
   let abortController: AbortController | null = $state(null);
   let isMinimized = $state(false);
@@ -67,8 +69,8 @@
     try {
       const newHtml = await editCode(currentHtml, editPrompt, {
         signal: abortController.signal,
-        onThinking: (thought) => {
-          thinkingLog = [...thinkingLog, thought];
+        onThinking: (thought, event) => {
+          thinkingLog = appendThinking(thinkingLog, thought, event);
         }
       });
 
@@ -226,13 +228,13 @@
         {/if}
 
         <!-- Thinking logs -->
-        {#if thinkingLog.length > 0}
+        {#if visibleThinkingLog.length > 0}
           <div
             class="flex max-h-48 flex-col gap-2 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300"
           >
-            {#each thinkingLog as thought, i}
+            {#each visibleThinkingLog as thought, i (i)}
               <div
-                class="border-l-2 border-zinc-600 pl-2 {i === thinkingLog.length - 1
+                class="border-l-2 border-zinc-600 pl-2 {i === visibleThinkingLog.length - 1
                   ? 'text-zinc-200'
                   : 'text-zinc-500'}"
               >
