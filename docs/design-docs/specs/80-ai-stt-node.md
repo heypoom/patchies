@@ -31,7 +31,7 @@
 
 ## API
 
-- Model: `gemini-3.5-flash`
+- Model: `gemini-3.8-flash`
 - Auth: same `gemini-api-key` from localStorage
 - MIME: `audio/webm;codecs=opus` preferred, fallback `audio/ogg;codecs=opus`
 
