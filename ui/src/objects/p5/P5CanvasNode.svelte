@@ -117,6 +117,12 @@
 
     p5.resizeCanvas(nextWidth, nextHeight);
 
+    if (surfaceMode.isExpanded) {
+      const canvas = (p5 as unknown as { canvas: HTMLCanvasElement }).canvas;
+
+      surfaceMode.styleCanvas(canvas, { width: nextWidth, height: nextHeight });
+    }
+
     preloadCanvasWidth = nextWidth;
     preloadCanvasHeight = nextHeight;
 

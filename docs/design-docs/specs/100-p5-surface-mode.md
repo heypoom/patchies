@@ -60,6 +60,7 @@ node size.
 - When `createSurfaceCanvas()` has run, the node menu shows **Expand**.
 - Expanding activates `SurfaceOverlay`, hides the editor, and re-runs the sketch with the p5 canvas mounted into the overlay layer.
 - Collapsing restores the sketch to the inline preview.
+- Expanded p5 canvases always fill the viewport height, remain horizontally centered, and preserve the canvas aspect ratio. Inline node resizing must not determine the expanded display size. The display follows viewport resizing without changing the sketch resolution.
 - Surface-mode p5 output is transparent by default when user code uses `clear()` or draws alpha; `background()` remains available when the sketch intentionally covers the scene.
 
 ## Rendering Contract

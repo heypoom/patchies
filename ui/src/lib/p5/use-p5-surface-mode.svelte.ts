@@ -48,17 +48,13 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
     { width, height }: { width: number; height: number }
   ) {
     if (isExpanded) {
-      const scale = Math.min(window.innerWidth / width, window.innerHeight / height);
-      const displayWidth = width * scale;
-      const displayHeight = height * scale;
-
       Object.assign(canvas.style, {
         display: 'block',
         position: 'absolute',
-        left: `${(window.innerWidth - displayWidth) / 2}px`,
-        top: `${(window.innerHeight - displayHeight) / 2}px`,
-        width: `${displayWidth}px`,
-        height: `${displayHeight}px`,
+        left: `calc((100vw - ${100 * (width / height)}vh) / 2)`,
+        top: '0',
+        width: `${100 * (width / height)}vh`,
+        height: '100vh',
         margin: '0',
         objectFit: 'fill',
         pointerEvents: 'auto'
