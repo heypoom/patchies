@@ -29,6 +29,24 @@ The `dom` and `vue` objects share the same `setFluidSize` options and editor
 controls. Their resize callback is named `onResize`, because it applies to an
 HTML container rather than a canvas bitmap.
 
+## Generated widget defaults
+
+AI prompts for `canvas.dom`, inline `p5`, `pixi.dom`, `dom`, and `vue` default to fluid
+sizing. Fixed sizing is used when explicitly requested or required by the
+sketch; p5 fullscreen surface mode keeps its separate sizing API.
+
+Generated widgets fill the outer container without outer padding by default.
+On resize, layout, typography, controls, and hit areas scale with the live
+canvas dimensions. Text stays large and readable: at least 18px for labels
+and 24–32px for primary text at the initial size, growing with larger widgets.
+Repositioning elements alone does not satisfy responsive sizing.
+
+`canvas.dom` recomputes sizes in its draw loop or resize callback. Inline p5
+uses current `width` and `height` in `draw()`. `pixi.dom` updates layout and
+UI scale in `onCanvasResize()` and runs that layout once initially. DOM and
+Vue widgets use container-relative CSS or `onResize()` to update typography
+and control sizes, with controls inheriting the responsive font size.
+
 ## Implementation boundary
 
 `useFluidCanvas.svelte.ts` owns fluid-mode state, the generated-code API,
