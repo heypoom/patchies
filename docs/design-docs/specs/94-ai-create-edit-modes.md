@@ -193,3 +193,10 @@ OpenRouter displays readable text and summary reasoning, using only one represen
 - Recover literal control characters inside JSON strings by escaping them without changing their decoded content. Continue rejecting other malformed JSON; do not guess missing code or fields.
 - Initialize controller state only when the dialog opens. Mode changes and layout updates must not erase a draft or failure.
 - Keep successful application and cancellation behavior unchanged.
+
+### Explanations after JSON
+
+- For responses starting with a JSON object (plain or fenced), find the matching closing brace while respecting nested containers, quoted strings, and escaped quotes. Parse only that JSON segment.
+- Keep trailing text separate from object data and carry it through mode results to the prompt controller. Multi-object results include explanations from both routing and generation.
+- After applying a successful result with an explanation, restore the dialog and show the explanation as Markdown in a bounded scroll area. Keep the prompt editable and offer a Done button to dismiss the result. Success without an explanation continues to close the dialog.
+- Incomplete or malformed JSON still shows the original response as a failure; never search past a malformed leading object for another usable object.

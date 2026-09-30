@@ -35,6 +35,7 @@ export const replaceResolver: ModeResolver = async (
     kind: 'replace',
     nodeId: selectedNode.id,
     newType: result.type,
+    explanation: result.explanation,
     newData: result.data as Record<string, unknown>
   };
 };

@@ -276,7 +276,7 @@
     const success = await controller.submit();
     isMinimized = false;
 
-    if (success) {
+    if (success && !controller.explanation) {
       handleClose();
     } else {
       await tick();
@@ -498,6 +498,19 @@
         {/if}
       {/if}
 
+      {#if controller.explanation}
+        <div class="mt-3 rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2">
+          <div class="mb-2 text-xs font-medium text-zinc-300">AI explanation</div>
+
+          <div class="max-h-48 overflow-y-auto">
+            <MarkdownContent
+              markdown={controller.explanation}
+              class="prose-markdown-chat prose-markdown-object-prompt"
+            />
+          </div>
+        </div>
+      {/if}
+
       {#if controller.errorMessage}
         <div
           role="alert"
@@ -560,6 +573,13 @@
             Cancel
           </button>
         {:else}
+          {#if controller.explanation}
+            <button
+              onclick={handleClose}
+              class="cursor-pointer rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+              >Done</button
+            >
+          {/if}
           <button
             onclick={handleSubmit}
             disabled={descriptor.promptOptional

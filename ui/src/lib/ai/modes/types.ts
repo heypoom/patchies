@@ -56,7 +56,7 @@ export interface AiModeDescriptor {
   generatingLabel: (resolvedType: string) => string;
 }
 
-export type AiModeResult =
+export type AiModeResult = { explanation?: string } & (
   | {
       kind: 'single';
       type: string;
@@ -77,7 +77,8 @@ export type AiModeResult =
   | {
       kind: 'move-objects';
       positions: Array<{ nodeId: string; position: { x: number; y: number } }>;
-    };
+    }
+);
 
 export type ModeResolver = (
   prompt: string,

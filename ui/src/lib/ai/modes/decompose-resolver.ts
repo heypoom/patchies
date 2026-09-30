@@ -40,6 +40,7 @@ How to split: ${prompt || 'Break it into logical, focused parts'}`;
   return {
     kind: 'multi',
     nodes: result.nodes,
+    explanation: result.explanation,
     edges: result.edges
   };
 };

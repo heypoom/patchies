@@ -27,6 +27,7 @@ export async function resolveObjectFromPrompt(
   onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
+  explanation?: string;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
@@ -98,6 +99,7 @@ export async function generateObjectConfigForType(
   onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
+  explanation?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
 } | null> {
@@ -113,13 +115,13 @@ export async function generateObjectConfigForType(
   if (!responseText.trim()) return null;
 
   try {
-    const result = parseObjectResponse(responseText);
+    const { value: result, explanation } = parseObjectResponse(responseText);
 
     if (!result.type) {
       throw new Error('Response missing required "type" field');
     }
 
-    return { type: result.type, data: result.data || {} };
+    return { type: result.type, data: result.data || {}, explanation };
   } catch (error) {
     logger.error('Failed to parse AI response:', error);
 

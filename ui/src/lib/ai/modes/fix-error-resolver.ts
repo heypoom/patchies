@@ -38,6 +38,7 @@ export const fixErrorResolver: ModeResolver = async (
   return {
     kind: 'edit',
     nodeId: selectedNode.id,
+    explanation: result.explanation,
     data: result.data as Record<string, unknown>
   };
 };

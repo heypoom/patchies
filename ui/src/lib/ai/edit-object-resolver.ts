@@ -20,6 +20,7 @@ export async function editObjectFromPrompt(
   onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
+  explanation?: string;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
@@ -47,6 +48,7 @@ async function generateObjectConfig(
   onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
+  explanation?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
 } | null> {
@@ -66,11 +68,11 @@ async function generateObjectConfig(
   }
 
   try {
-    const result = parseObjectResponse(responseText);
+    const { value: result, explanation } = parseObjectResponse(responseText);
 
     if (!result.type) throw new Error('Response missing required "type" field');
 
-    return { type: result.type, data: result.data || {} };
+    return { type: result.type, data: result.data || {}, explanation };
   } catch (error) {
     console.error('Failed to parse AI response:', error);
 

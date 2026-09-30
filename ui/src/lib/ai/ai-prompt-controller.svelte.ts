@@ -47,6 +47,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
   let isLoading = $state(false);
   let errorMessage = $state<string | null>(null);
   let failedResponse = $state<string | null>(null);
+  let explanation = $state<string | null>(null);
   let resolvedObjectType = $state<string | null>(null);
   let isGeneratingConfig = $state(false);
   let thinkingText = $state<string | null>(null);
@@ -64,6 +65,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
     isGeneratingConfig = false;
     errorMessage = null;
     failedResponse = null;
+    explanation = null;
   }
 
   const onThinking: ThinkingCallback = (thought, event) => {
@@ -158,6 +160,9 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
     get errorMessage() {
       return errorMessage;
     },
+    get explanation() {
+      return explanation;
+    },
     get failedResponse() {
       return failedResponse;
     },
@@ -189,6 +194,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
 
       errorMessage = null;
       failedResponse = null;
+      explanation = null;
     },
 
     async submit() {
@@ -215,6 +221,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
         );
 
         applyResult(result);
+        explanation = result.explanation ?? null;
         return true; // signal success to component (so it can close)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -241,6 +248,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
       promptText = '';
       errorMessage = null;
       failedResponse = null;
+      explanation = null;
 
       resetLoadingState();
     }

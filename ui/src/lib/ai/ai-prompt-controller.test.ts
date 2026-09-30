@@ -110,3 +110,38 @@ test('AI Edit keeps a failed prompt editable and clears the failure on retry', a
 
   expect(onEditObject).toHaveBeenCalledWith('stars', { code: 'drawStars();' });
 });
+
+test('AI Edit exposes successful explanations and clears them before the next request', async () => {
+  const onEditObject = vi.fn();
+
+  const controller = createAiPromptController({ ...callbacks, onEditObject });
+  controller.open('edit');
+  controller.promptText = 'Gray circular knob';
+
+  runModeResolver.mockResolvedValueOnce({
+    kind: 'edit',
+    nodeId: 'knob',
+    data: { code: 'drawKnob();' },
+    explanation: '**Controls**\n- Drag to change the value.'
+  });
+
+  await expect(controller.submit()).resolves.toBe(true);
+
+  expect(onEditObject).toHaveBeenCalledWith('knob', { code: 'drawKnob();' });
+  expect(controller.explanation).toBe('**Controls**\n- Drag to change the value.');
+  expect(controller.promptText).toBe('Gray circular knob');
+  expect(controller.errorMessage).toBeNull();
+
+  controller.promptText = 'Make it blue';
+
+  runModeResolver.mockImplementationOnce(async () => {
+    expect(controller.explanation).toBeNull();
+
+    throw new Error('Provider disconnected');
+  });
+
+  await expect(controller.submit()).resolves.toBe(false);
+
+  expect(controller.explanation).toBeNull();
+  expect(controller.promptText).toBe('Make it blue');
+});

@@ -39,6 +39,7 @@ export async function runModeResolver(
       return {
         kind: 'single' as const,
         type: result.type,
+        explanation: result.explanation,
         data: result.data as Record<string, unknown>
       };
     })
@@ -54,7 +55,12 @@ export async function runModeResolver(
         throw new Error('Could not resolve objects from prompt');
       }
 
-      return { kind: 'multi' as const, nodes: result.nodes, edges: result.edges };
+      return {
+        kind: 'multi' as const,
+        nodes: result.nodes,
+        explanation: result.explanation,
+        edges: result.edges
+      };
     })
     .with('edit', async () => {
       const { selectedNode } = context;
@@ -76,6 +82,7 @@ export async function runModeResolver(
       return {
         kind: 'edit' as const,
         nodeId: selectedNode.id,
+        explanation: result.explanation,
         data: result.data as Record<string, unknown>
       };
     })

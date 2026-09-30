@@ -36,6 +36,7 @@ export const forkResolver: ModeResolver = async (
   return {
     kind: 'single',
     type: result.type,
+    explanation: result.explanation,
     data: result.data as Record<string, unknown>
   };
 };

@@ -26,6 +26,7 @@ export interface SimplifiedEdge {
  * Result from multi-object AI resolution.
  */
 export interface MultiObjectResult {
+  explanation?: string;
   nodes: AiObjectNode[];
   edges: SimplifiedEdge[];
 }

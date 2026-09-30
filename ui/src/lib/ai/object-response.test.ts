@@ -10,6 +10,7 @@ vi.mock('./object-prompts/build-generator-instructions', () => ({
 
 vi.mock('./generate-handle-docs', () => ({ generateHandleDocs: () => '' }));
 
+import { runModeResolver } from './modes/run-resolver';
 import { resolveMultipleObjectsFromPrompt } from './multi-object-resolver';
 import { editObjectFromPrompt } from './edit-object-resolver';
 import { generateObjectConfigForType } from './single-object-resolver';
@@ -61,3 +62,58 @@ for (const stage of ['router', 'generator'] as const) {
     });
   });
 }
+
+test('AI edit applies the leading object and preserves the trailing explanation', async () => {
+  const data = {
+    code: 'const label = "a } brace and a \\"quote\\"";\nconst settings = { value: 1 };'
+  };
+  const explanation =
+    'The knob is a gray brushed-metal dial.\n\n**Controls**\n- Drag to change the value.';
+  generateText.mockResolvedValueOnce(
+    `${JSON.stringify({ type: 'three.dom', data })}\n\n${explanation}`
+  );
+
+  await expect(editObjectFromPrompt('3D gray circular knob', 'three.dom')).resolves.toEqual({
+    type: 'three.dom',
+    data,
+    explanation
+  });
+});
+
+for (const mode of ['edit', 'insert'] as const) {
+  test(`${mode} carries the explanation through the mode resolver`, async () => {
+    if (mode === 'insert') generateText.mockResolvedValueOnce('three.dom');
+
+    generateText.mockResolvedValueOnce(
+      '{"type":"three.dom","data":{"code":"drawKnob();"}}\n\nDrag to change the value.'
+    );
+
+    const result = await runModeResolver(
+      mode,
+      'Gray circular knob',
+      { selectedNode: { id: 'knob', type: 'three.dom', data: {}, position: { x: 0, y: 0 } } },
+      new AbortController().signal,
+      () => {}
+    );
+
+    expect(result).toMatchObject({
+      kind: mode === 'edit' ? 'edit' : 'single',
+      data: { code: 'drawKnob();' },
+      explanation: 'Drag to change the value.'
+    });
+  });
+}
+
+test('multi combines explanations from routing and generation', async () => {
+  generateText.mockResolvedValueOnce(
+    '{"objectTypes":["js"],"structure":"a single object"}\n\nOne object is enough.'
+  );
+  generateText.mockResolvedValueOnce(
+    '{"nodes":[{"type":"js","data":{}}],"edges":[]}\n\nSend a bang to start.'
+  );
+
+  await expect(resolveMultipleObjectsFromPrompt('Draw stars')).resolves.toMatchObject({
+    nodes: [{ type: 'js', data: {} }],
+    explanation: 'One object is enough.\n\nSend a bang to start.'
+  });
+});
