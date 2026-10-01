@@ -26,7 +26,14 @@ function addShapes(p5, fn, lifecycles) {
 	};
 
 	fn.bezierVertex = function (...args) {
+		// p5 v2's renderer calls this API with one point at a time inside bezier().
+		// Preserve its active order rather than forcing these calls into v1's cubic API.
+		if (args.length === 2 || args.length === 3) {
+			return oldBezierVertex.apply(this, args);
+		}
+
 		this.bezierOrder(3);
+
 		if (args.length === 6) {
 			const [x1, y1, x2, y2, x3, y3] = args;
 			oldBezierVertex.call(this, x1, y1);
@@ -39,7 +46,7 @@ function addShapes(p5, fn, lifecycles) {
 			oldBezierVertex.call(this, x3, y3, z3);
 		} else {
 			throw new Error(
-				`bezierVertex() was expecting either 6 or 9 arguments, but it was called with ${args.length}.`
+				`bezierVertex() was expecting 2, 3, 6 or 9 arguments, but it was called with ${args.length}.`
 			);
 		}
 	};
