@@ -187,6 +187,9 @@ export function guessMimeType(filename: string): string | undefined {
     // ChucK
     '.ck': 'text/x-chuck',
 
+    // Pure Data
+    '.pd': 'text/x-puredata',
+
     // UXN ROM
     '.rom': 'application/x-uxn-rom'
   };

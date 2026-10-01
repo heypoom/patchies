@@ -72,7 +72,8 @@ export default defineConfig(() => ({
     SvelteKitPWA({
       outDir: '.svelte-kit/output/client',
       workbox: {
-        maximumFileSizeToCacheInBytes: MAX_PRECACHE_FILE_SIZE_BYTES
+        maximumFileSizeToCacheInBytes: MAX_PRECACHE_FILE_SIZE_BYTES,
+        globIgnores: ['**/*libpd-worklet-full*']
       },
       manifest: {
         name: 'Patchies',
