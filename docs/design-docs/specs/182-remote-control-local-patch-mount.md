@@ -467,3 +467,14 @@ full browser reload, arbitrary crash boundaries, and simultaneous external write
 during the final atomic rename still need broader verification. Filesystem
 projection is not a whole-tree transaction. Relay process termination loses the
 session; opening a new browser tab does not restore same-tab credentials.
+
+### Mounted patch-editing skill
+
+Mount `.agents/skills/editing-patchies-patch/SKILL.md` beside
+`writing-patchies-object-code`. The patch-editing skill covers mount recovery,
+graph/node/wire commands, read-only graph discovery, connection-file edits, and
+shared code under `patch/`. It requires reading `graph.json` before every wiring
+edit and using discovered current handles, including dynamic GLSL ports. Object
+source edits delegate to the sibling object-code skill. Both generated skill
+folders are read-only mount companions; refresh/pruning preserves unrelated
+agent files and skills.

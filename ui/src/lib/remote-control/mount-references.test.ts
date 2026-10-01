@@ -37,30 +37,33 @@ describe('mount-only references', () => {
       expect(files.get(`references/prompts/${objectTypeToSlug(type)}.md`)).toBe(content);
     }
 
-    expect(files.size).toBe(Object.keys(docs).length + Object.keys(objectPrompts).length + 2);
+    expect(files.size).toBe(Object.keys(docs).length + Object.keys(objectPrompts).length + 3);
     expect(mountReferences).toContainEqual({ path: 'references/docs/topics', kind: 'directory' });
   });
 
   it('rejects reference paths as VFS write targets', () => {
     expect(() => mountPathToVfs('references/docs/objects/glsl.md')).toThrow('Invalid mount path');
-    expect(() => mountPathToVfs('.agents/skills/writing-patchies-object-code/SKILL.md')).toThrow(
-      'Invalid mount path'
-    );
-  });
-
-  it('ships a discoverable skill whose relative links resolve inside the mount', () => {
-    const path = '.agents/skills/writing-patchies-object-code/SKILL.md';
-    const entries = new Map(mountReferences.map((entry) => [entry.path, entry]));
-    const skill = entries.get(path)!;
-
-    expect(skill.kind).toBe('file');
-    const links = [...skill.content!.matchAll(/\]\(([^)]+)\)/g)];
-    expect(links.length).toBeGreaterThan(0);
-
-    const mountedPaths = new Set([...entries.keys(), 'objects', 'patch']);
-    for (const [, link] of links) {
-      const resolved = posix.normalize(posix.join(posix.dirname(path), link)).replace(/\/$/, '');
-      expect(mountedPaths.has(resolved), `Broken mounted skill link: ${link}`).toBe(true);
+    for (const name of ['writing-patchies-object-code', 'editing-patchies-patch']) {
+      expect(() => mountPathToVfs(`.agents/skills/${name}/SKILL.md`)).toThrow('Invalid mount path');
     }
   });
+
+  it.each(['writing-patchies-object-code', 'editing-patchies-patch'])(
+    'ships %s with relative links that resolve inside the mount',
+    (name) => {
+      const path = `.agents/skills/${name}/SKILL.md`;
+      const entries = new Map(mountReferences.map((entry) => [entry.path, entry]));
+      const skill = entries.get(path)!;
+
+      expect(skill.kind).toBe('file');
+      const links = [...skill.content!.matchAll(/\]\(([^)]+)\)/g)];
+      expect(links.length).toBeGreaterThan(0);
+
+      const mountedPaths = new Set([...entries.keys(), 'objects', 'patch']);
+      for (const [, link] of links) {
+        const resolved = posix.normalize(posix.join(posix.dirname(path), link)).replace(/\/$/, '');
+        expect(mountedPaths.has(resolved), `Broken mounted skill link: ${link}`).toBe(true);
+      }
+    }
+  );
 });

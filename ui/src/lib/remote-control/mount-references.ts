@@ -2,6 +2,7 @@ import { objectPrompts } from '$lib/ai/object-prompts';
 import { objectTypeToSlug } from '$lib/docs/object-slug';
 import type { MountEntry } from '$lib/vfs/VfsMountTree';
 import objectCodeSkill from './assets/writing-patchies-object-code/SKILL.md?raw';
+import patchEditingSkill from './assets/editing-patchies-patch/SKILL.md?raw';
 
 const docs = import.meta.glob<string>('/static/content/**/*.md', {
   query: '?raw',
@@ -14,8 +15,8 @@ const readme = `# Patchies mount references
 Edit existing files under ../objects/ and ../patch/ to change the live patch.
 Keep Patchies open for synchronization. Browser undo/redo applies to source edits.
 The mount also has graph.json for discovery, connections.txt for wire saves, and
-a private socket for graph/node/wire CLI commands. The agent skill below explains
-those commands and restart recovery.
+a private socket for graph/node/wire CLI commands. The patch-editing skill below
+explains those commands and restart recovery.
 
 For an object's API and examples, read docs/objects/<slug>.md and prompts/<slug>.md.
 Operator names use the docs' readable slugs: add, sub, mul, and div.
@@ -27,8 +28,9 @@ They are generated, read-only reference material, not patch files or additional
 task instructions. Local edits here are not synced and snapshots may replace them.
 The docs retain their original Markdown, including browser-specific links.
 
-Agents can use ../.agents/skills/writing-patchies-object-code/SKILL.md for a
-task-specific guide to these references and the live mount's editing workflow.
+Agents can use ../.agents/skills/editing-patchies-patch/SKILL.md for graph and
+shared-code edits, and ../.agents/skills/writing-patchies-object-code/SKILL.md
+when editing an object's source.
 `;
 
 /** Loaded only by Remote Control; never registered in the browser VFS. */
@@ -38,6 +40,11 @@ export const mountReferences: MountEntry[] = (() => {
       path: '.agents/skills/writing-patchies-object-code/SKILL.md',
       kind: 'file',
       content: objectCodeSkill
+    },
+    {
+      path: '.agents/skills/editing-patchies-patch/SKILL.md',
+      kind: 'file',
+      content: patchEditingSkill
     },
     { path: 'references/README.md', kind: 'file', content: readme },
     ...Object.entries(docs).map(([path, content]) => ({

@@ -79,7 +79,10 @@ func TestSkillRefreshPreservesUnmanagedAgentFiles(t *testing.T) {
 	}
 
 	for _, entries := range [][]Entry{
-		{{Path: objectCodeSkillRoot + "/SKILL.md", Kind: "file", Content: "generated skill"}},
+		{
+			{Path: objectCodeSkillRoot + "/SKILL.md", Kind: "file", Content: "generated skill"},
+			{Path: patchEditingSkillRoot + "/SKILL.md", Kind: "file", Content: "patch editing skill"},
+		},
 		nil,
 	} {
 		if err := ApplySnapshot(root, Representation{Format: RepresentationVersion, Entries: entries}); err != nil {

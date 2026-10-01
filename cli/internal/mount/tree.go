@@ -10,6 +10,7 @@ import (
 const RepresentationVersion = "patchies.vfs-mount.v1"
 
 const objectCodeSkillRoot = ".agents/skills/writing-patchies-object-code"
+const patchEditingSkillRoot = ".agents/skills/editing-patchies-patch"
 
 type Representation struct {
 	Format  string  `json:"format"`
@@ -23,10 +24,10 @@ type Entry struct {
 	Content string `json:"content,omitempty"`
 }
 
-// Own only the generated skill, not the user's other agent configuration.
+// Own only the generated skills, not the user's other agent configuration.
 func safePath(root, path string) (string, error) {
 	parts := strings.Split(path, "/")
-	managedAgentPath := path == ".agents" || path == ".agents/skills" || path == objectCodeSkillRoot || strings.HasPrefix(path, objectCodeSkillRoot+"/")
+	managedAgentPath := path == ".agents" || path == ".agents/skills" || path == objectCodeSkillRoot || strings.HasPrefix(path, objectCodeSkillRoot+"/") || path == patchEditingSkillRoot || strings.HasPrefix(path, patchEditingSkillRoot+"/")
 	if parts[0] != "objects" && parts[0] != "patch" && parts[0] != "references" && !managedAgentPath && path != "graph.json" && path != "connections.txt" {
 		return "", fmt.Errorf("invalid mount namespace: %q", path)
 	}
@@ -56,7 +57,7 @@ func validateEntry(root string, entry Entry) error {
 	if entry.Kind != "file" && entry.Kind != "directory" {
 		return fmt.Errorf("invalid entry kind: %q", entry.Kind)
 	}
-	if ((!strings.Contains(entry.Path, "/") && entry.Path != "graph.json" && entry.Path != "connections.txt") || entry.Path == ".agents/skills" || entry.Path == objectCodeSkillRoot) && entry.Kind != "directory" {
+	if ((!strings.Contains(entry.Path, "/") && entry.Path != "graph.json" && entry.Path != "connections.txt") || entry.Path == ".agents/skills" || entry.Path == objectCodeSkillRoot || entry.Path == patchEditingSkillRoot) && entry.Kind != "directory" {
 		return fmt.Errorf("namespace root must be a directory")
 	}
 	return nil
@@ -70,7 +71,7 @@ func applySnapshot(root string, tree Representation, apply func(Entry) error) er
 	if tree.Format != RepresentationVersion {
 		return fmt.Errorf("unsupported mount format %q", tree.Format)
 	}
-	expected := map[string]bool{"objects": true, "patch": true, "references": true, objectCodeSkillRoot: true}
+	expected := map[string]bool{"objects": true, "patch": true, "references": true, objectCodeSkillRoot: true, patchEditingSkillRoot: true}
 	for _, entry := range tree.Entries {
 		if err := validateEntry(root, entry); err != nil {
 			return err
@@ -81,7 +82,7 @@ func applySnapshot(root string, tree Representation, apply func(Entry) error) er
 		}
 	}
 
-	for _, namespace := range []string{"objects", "patch", "references", objectCodeSkillRoot} {
+	for _, namespace := range []string{"objects", "patch", "references", objectCodeSkillRoot, patchEditingSkillRoot} {
 		path, err := safePath(root, namespace)
 		if err != nil {
 			return err
@@ -153,7 +154,7 @@ func isReadOnlyPath(path string) bool {
 }
 
 func RemoveEntry(root, path string) error {
-	if !strings.Contains(path, "/") || path == ".agents/skills" || path == objectCodeSkillRoot {
+	if !strings.Contains(path, "/") || path == ".agents/skills" || path == objectCodeSkillRoot || path == patchEditingSkillRoot {
 		return fmt.Errorf("cannot remove mount namespace: %q", path)
 	}
 	target, err := safePath(root, path)

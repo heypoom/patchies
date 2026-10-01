@@ -46,7 +46,7 @@ func TestWatcherReportsFullChangeQueueWithoutAcceptingContent(t *testing.T) {
 }
 
 func TestReferencesAreReadonlyAndNeverBecomeLocalOperations(t *testing.T) {
-	for _, path := range []string{"references/docs/objects/glsl.md", objectCodeSkillRoot + "/SKILL.md"} {
+	for _, path := range []string{"references/docs/objects/glsl.md", objectCodeSkillRoot + "/SKILL.md", patchEditingSkillRoot + "/SKILL.md"} {
 		t.Run(path, func(t *testing.T) { testReadonlyCompanion(t, path) })
 	}
 }
