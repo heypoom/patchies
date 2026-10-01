@@ -260,7 +260,7 @@ export class RemoteControlSyncCoordinator {
       if (operation.command) {
         if (!this.options.graph) throw new Error('Graph control is unavailable');
 
-        result = await this.options.graph.execute(operation.command, operation.operationId);
+        result = await this.options.graph.execute(operation.command);
       } else if (operation.path === 'connections.txt') {
         if (!this.options.graph || typeof operation.baseline !== 'string')
           throw new Error('Connections require a canonical baseline');

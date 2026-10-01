@@ -203,7 +203,7 @@
       accessors: canvasAccessors,
       history: historyManager,
       ports: (node) => getRemotePorts(node),
-      create: (command, id) => {
+      create: (command) => {
         const name = command.name;
         const objectName = name.trim().split(' ')[0];
         if (
@@ -223,7 +223,6 @@
           throw new Error('Internal node data cannot be set remotely');
 
         return nodeOps.createNodeFromName(name, command.position ?? getViewportSummary().center, {
-          id,
           data: command.data
         });
       },

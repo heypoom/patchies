@@ -47,7 +47,7 @@ interface GraphServiceOptions {
   accessors: CanvasStateAccessors;
   history: HistoryManager;
   ports: (node: Node) => GraphPorts;
-  create: (command: Extract<GraphCommand, { kind: 'node.create' }>, id: string) => string;
+  create: (command: Extract<GraphCommand, { kind: 'node.create' }>) => string;
   settle: () => Promise<void>;
 }
 
@@ -98,7 +98,7 @@ export class RemoteControlGraphService {
     ];
   }
 
-  async execute(command: GraphCommand, operationId: string): Promise<unknown> {
+  async execute(command: GraphCommand): Promise<unknown> {
     if (!command || typeof command.kind !== 'string') throw new Error('Invalid graph command');
 
     const { accessors, history } = this.options;
@@ -125,11 +125,7 @@ export class RemoteControlGraphService {
         if (command.data && (typeof command.data !== 'object' || Array.isArray(command.data)))
           throw new Error('Node data must be an object');
 
-        const id = `remote-${operationId}`;
-        if (accessors.getNodes().some((node) => node.id === id))
-          throw new Error('outcome_unknown: created node already exists; inspect the graph');
-
-        nodeId = this.options.create(command, id);
+        nodeId = this.options.create(command);
         break;
       }
       case 'node.delete': {

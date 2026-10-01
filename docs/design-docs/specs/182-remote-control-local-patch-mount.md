@@ -293,8 +293,10 @@ old-generation writes.
 
 For an operation applied before reload without a published terminal result,
 return `outcome_unknown` and preserve the request for inspection rather than
-replaying it. Node creation uses stable `remote-<operationId>` IDs to make
-inspection possible. The CLI consults retained outcomes and writes recovered
+replaying it. Node creation uses the existing canvas allocator and the normal
+`<objectType>-<incrementalId>` IDs. The operation ID remains a separate request
+identity; retained command results record the allocated node ID. Publication
+retries reuse the cached result instead of allocating another object. The CLI consults retained outcomes and writes recovered
 results to `.patchies/last-command.json` after the fresh projection. This does not promise
 exactly-once execution across arbitrary browser crashes or server termination.
 Unsubmitted code-file intent can be rebased to the fresh generation; ambiguous

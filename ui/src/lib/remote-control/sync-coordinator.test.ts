@@ -299,7 +299,8 @@ describe('Remote Control VFS synchronization', () => {
       getEdges: () => [],
       setEdges: () => {}
     };
-    const create = vi.fn((command, id) => {
+    const create = vi.fn((command) => {
+      const id = `${command.name}-${nodes.length + 1}`;
       history.execute(
         new AddNodeCommand(
           { id, type: command.name, position: { x: 0, y: 0 }, data: {} },
@@ -337,7 +338,7 @@ describe('Remote Control VFS synchronization', () => {
     await settle();
 
     expect(create).toHaveBeenCalledTimes(1);
-    expect(nodes.map((node) => node.id)).toEqual(['remote-create-once']);
+    expect(nodes.map((node) => node.id)).toEqual(['button-1']);
     expect(commits().at(-1)?.body.applied).toBe(true);
   });
 });
