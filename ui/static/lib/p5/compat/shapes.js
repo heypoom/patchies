@@ -9,13 +9,16 @@ function addShapes(p5, fn, lifecycles) {
 	};
 
 	fn.quadraticVertex = function (...args) {
-		this.bezierOrder(2);
+    this.bezierOrder(2);
+
 		if (args.length === 4) {
-			const [x1, y1, x2, y2] = args;
+      const [x1, y1, x2, y2] = args;
+
 			oldBezierVertex.call(this, x1, y1);
 			oldBezierVertex.call(this, x2, y2);
 		} else if (args.length === 6) {
-			const [x1, y1, z1, x2, y2, z2] = args;
+      const [x1, y1, z1, x2, y2, z2] = args;
+
 			oldBezierVertex.call(this, x1, y1, z1);
 			oldBezierVertex.call(this, x2, y2, z2);
 		} else {
@@ -35,12 +38,14 @@ function addShapes(p5, fn, lifecycles) {
 		this.bezierOrder(3);
 
 		if (args.length === 6) {
-			const [x1, y1, x2, y2, x3, y3] = args;
+      const [x1, y1, x2, y2, x3, y3] = args;
+
 			oldBezierVertex.call(this, x1, y1);
 			oldBezierVertex.call(this, x2, y2);
 			oldBezierVertex.call(this, x3, y3);
 		} else if (args.length === 9) {
-			const [x1, y1, z1, x2, y2, z2, x3, y3, z3] = args;
+      const [x1, y1, z1, x2, y2, z2, x3, y3, z3] = args;
+
 			oldBezierVertex.call(this, x1, y1, z1);
 			oldBezierVertex.call(this, x2, y2, z2);
 			oldBezierVertex.call(this, x3, y3, z3);
@@ -64,10 +69,12 @@ function addShapes(p5, fn, lifecycles) {
 	};
 
 	fn.endShape = function (mode) {
-		const shape = this._renderer._currentShape?.at?.(-1, -1);
+    const shape = this._renderer._currentShape?.at?.(-1, -1);
+
 		if (shape) {
 			shape.handlesClose = () => false;
-		}
+    }
+
 		oldEndShape.call(this, mode);
 	};
 
@@ -77,7 +84,8 @@ function addShapes(p5, fn, lifecycles) {
 
 	fn.beginGeometry = function (...args) {
 		return this._renderer.beginGeometry(...args);
-	};
+  };
+
 	fn.endGeometry = function (...args) {
 		return this._renderer.endGeometry(...args);
 	};
@@ -88,9 +96,11 @@ function addShapes(p5, fn, lifecycles) {
 			// The only way to do a true conversion would involve updating the value dynamically based
 			// on the length of the curve. Since this would be complex to do as an addon, we do
 			// the calculation based on an approximate average curve length.
-			const avgLength = Math.hypot(this.width, this.height) / 3;
+      const avgLength = Math.hypot(this.width, this.height) / 3;
+
 			if (numPoints) {
-				const density = numPoints / avgLength;
+        const density = numPoints / avgLength;
+
 				return oldCurveDetail.call(this, density);
 			} else {
 				return oldCurveDetail.call(this) * avgLength;
@@ -100,7 +110,8 @@ function addShapes(p5, fn, lifecycles) {
 
 	fn.curvePoint = function (...args) {
 		return this.splinePoint(...args);
-	};
+  };
+
 	fn.curveTangent = function (...args) {
 		return this.splineTangent(...args);
 	};
