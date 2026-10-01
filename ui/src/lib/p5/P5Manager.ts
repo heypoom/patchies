@@ -1,4 +1,5 @@
 import type Sketch from 'p5';
+import { registerCompatibilityLibraries } from './compat';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { UserFnRunContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -181,7 +182,7 @@ export class P5Manager {
 
     // Load P5.js v2 compatibility libraries (only once)
     if (!P5Manager.compatLibsLoaded) {
-      await this.loadCompatibilityLibraries(P5);
+      registerCompatibilityLibraries(P5);
       P5Manager.compatLibsLoaded = true;
     }
 
@@ -515,38 +516,6 @@ export class P5Manager {
         }
       }
     });
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async loadCompatibilityLibraries(P5: any) {
-    // Load P5.js v1 compatibility add-ons for P5.js v2
-    // These preserve v1 APIs: preload(), bezierVertex(), curveVertex(), data structures, etc.
-    const compatLibs = [
-      { path: '/lib/p5/compat/preload.js', fn: 'addPreloadCompat' },
-      { path: '/lib/p5/compat/shapes.js', fn: 'addShapesCompat' },
-      { path: '/lib/p5/compat/data.js', fn: 'addDataCompat' }
-    ];
-
-    for (const lib of compatLibs) {
-      // Load the script
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = lib.path;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Failed to load ${lib.path}`));
-        document.head.appendChild(script);
-      });
-
-      // Call the compatibility function with P5 constructor
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const compatFn = (window as any)[lib.fn];
-      if (compatFn) {
-        compatFn(P5);
-        // Clean up the global function
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (window as any)[lib.fn];
-      }
-    }
   }
 
   destroy() {

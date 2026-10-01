@@ -18,12 +18,7 @@ const LOCAL_RESOURCES = [
   '/assets/pyodide.asm.js',
   '/assets/pyodide.asm.wasm',
   '/assets/python_stdlib.zip',
-  '/assets/pyodide-lock.json',
-
-  // P5 compatibility layer
-  '/lib/p5/compat/preload.js',
-  '/lib/p5/compat/shapes.js',
-  '/lib/p5/compat/data.js'
+  '/assets/pyodide-lock.json'
 ];
 
 // CDN-hosted resources
@@ -56,6 +51,7 @@ function discoverAppScripts(): string[] {
   // Get all script tags with src
   document.querySelectorAll('script[src]').forEach((script) => {
     const src = script.getAttribute('src');
+
     if (src) {
       scripts.add(src);
     }
@@ -64,6 +60,7 @@ function discoverAppScripts(): string[] {
   // Get all modulepreload links (SvelteKit preloads chunks this way)
   document.querySelectorAll('link[rel="modulepreload"]').forEach((link) => {
     const href = link.getAttribute('href');
+
     if (href) {
       scripts.add(href);
     }
@@ -72,6 +69,7 @@ function discoverAppScripts(): string[] {
   // Get stylesheets too
   document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
     const href = link.getAttribute('href');
+
     if (href) {
       scripts.add(href);
     }

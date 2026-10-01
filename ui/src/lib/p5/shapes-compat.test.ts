@@ -1,29 +1,40 @@
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type ShapesAddon = (p5: unknown, fn: unknown, lifecycles: unknown) => void;
-
-const addonContext = { module: { exports: {} as ShapesAddon } };
-
-runInNewContext(
-  readFileSync(new URL('../../../static/lib/p5/compat/shapes.js', import.meta.url), 'utf8'),
-  addonContext
-);
+import { addShapes, type ShapesSketch } from './compat/shapes';
 
 const nativeBezierVertex = vi.fn();
 const bezierOrder = vi.fn();
 
-const sketch = {
+const sketch: ShapesSketch & { beginShape: () => void } = {
+  width: 100,
+  height: 100,
+  CLOSE: 'close',
+  EXCLUDE: 'exclude',
+  quadraticVertex: vi.fn(),
+  splineVertex: vi.fn(),
+  splineProperty: vi.fn(),
+  spline: vi.fn(),
+  splinePoint: vi.fn(),
+  splineTangent: vi.fn(),
+  curveVertex: vi.fn(),
+  curveTightness: vi.fn(),
+  endContour: vi.fn(),
+  curve: vi.fn(),
+  beginGeometry: vi.fn(),
+  endGeometry: vi.fn(),
+  curveDetail: vi.fn(),
+  bezierDetail: vi.fn(),
+  curvePoint: vi.fn(),
+  curveTangent: vi.fn(),
   bezierVertex: nativeBezierVertex,
   bezierOrder,
   beginShape: vi.fn(),
   endShape: vi.fn(),
-  _renderer: {}
+  _renderer: { beginGeometry: vi.fn(), endGeometry: vi.fn() }
 };
 
 // Apply the same addon entry point that p5.registerAddon calls.
-addonContext.module.exports({}, sketch, {});
+addShapes({}, sketch, {});
 
 describe('p5 shape compatibility', () => {
   beforeEach(() => {

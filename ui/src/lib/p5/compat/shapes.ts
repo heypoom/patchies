@@ -1,0 +1,158 @@
+export interface ShapesSketch {
+  width: number;
+  height: number;
+
+  CLOSE: string;
+  EXCLUDE: string;
+
+  _renderer: {
+    _currentShape?: {
+      at?: (row: number, column: number) => { handlesClose: () => boolean } | undefined;
+    };
+    beginGeometry: (...args: unknown[]) => unknown;
+    endGeometry: (...args: unknown[]) => unknown;
+  };
+
+  bezierOrder: (order: number) => void;
+  bezierVertex: (...args: number[]) => unknown;
+  quadraticVertex: (...args: number[]) => void;
+  splineVertex: (...args: number[]) => unknown;
+  splineProperty: (property: string, value: string | number) => unknown;
+  spline: (...args: number[]) => unknown;
+  splinePoint: (...args: number[]) => number;
+  splineTangent: (...args: number[]) => number;
+  curveVertex: (...args: number[]) => unknown;
+  curveTightness: (value: number) => unknown;
+  endContour: (mode?: string, count?: number) => void;
+  endShape: (mode?: string) => void;
+  curve: (...args: number[]) => unknown;
+  beginGeometry: (...args: unknown[]) => unknown;
+  endGeometry: (...args: unknown[]) => unknown;
+  curveDetail: (numPoints?: number) => number;
+  bezierDetail: (numPoints?: number) => number;
+  curvePoint: (...args: number[]) => number;
+  curveTangent: (...args: number[]) => number;
+}
+
+export function addShapes(
+  _p5: unknown,
+  fn: ShapesSketch,
+  lifecycles: { predraw?: (this: ShapesSketch) => void }
+) {
+  const oldBezierVertex = fn.bezierVertex;
+  const oldEndContour = fn.endContour;
+  const oldEndShape = fn.endShape;
+  const oldCurveDetail = fn.curveDetail;
+
+  lifecycles.predraw = function () {
+    this.splineProperty('ends', this.EXCLUDE);
+  };
+
+  fn.quadraticVertex = function (...args) {
+    this.bezierOrder(2);
+
+    if (args.length === 4) {
+      const [x1, y1, x2, y2] = args;
+
+      oldBezierVertex.call(this, x1, y1);
+      oldBezierVertex.call(this, x2, y2);
+    } else if (args.length === 6) {
+      const [x1, y1, z1, x2, y2, z2] = args;
+
+      oldBezierVertex.call(this, x1, y1, z1);
+      oldBezierVertex.call(this, x2, y2, z2);
+    } else {
+      throw new Error(
+        `quadraticVertex() was expecting either 4 or 6 arguments, but it was called with ${args.length}.`
+      );
+    }
+  };
+
+  fn.bezierVertex = function (...args) {
+    // p5 v2's renderer calls this API with one point at a time inside bezier().
+    // Preserve its active order rather than forcing these calls into v1's cubic API.
+    if (args.length === 2 || args.length === 3) {
+      return oldBezierVertex.apply(this, args);
+    }
+
+    this.bezierOrder(3);
+
+    if (args.length === 6) {
+      const [x1, y1, x2, y2, x3, y3] = args;
+
+      oldBezierVertex.call(this, x1, y1);
+      oldBezierVertex.call(this, x2, y2);
+      oldBezierVertex.call(this, x3, y3);
+    } else if (args.length === 9) {
+      const [x1, y1, z1, x2, y2, z2, x3, y3, z3] = args;
+
+      oldBezierVertex.call(this, x1, y1, z1);
+      oldBezierVertex.call(this, x2, y2, z2);
+      oldBezierVertex.call(this, x3, y3, z3);
+    } else {
+      throw new Error(
+        `bezierVertex() was expecting 2, 3, 6 or 9 arguments, but it was called with ${args.length}.`
+      );
+    }
+  };
+
+  fn.curveVertex = function (...args) {
+    return this.splineVertex(...args);
+  };
+
+  fn.curveTightness = function (value) {
+    return this.splineProperty('tightness', value);
+  };
+
+  fn.endContour = function (this: ShapesSketch, mode = this.CLOSE, count) {
+    oldEndContour.call(this, mode, count);
+  };
+
+  fn.endShape = function (mode) {
+    const shape = this._renderer._currentShape?.at?.(-1, -1);
+
+    if (shape) {
+      shape.handlesClose = () => false;
+    }
+
+    oldEndShape.call(this, mode);
+  };
+
+  fn.curve = function (...args) {
+    return this.spline(...args);
+  };
+
+  fn.beginGeometry = function (...args) {
+    return this._renderer.beginGeometry(...args);
+  };
+
+  fn.endGeometry = function (...args) {
+    return this._renderer.endGeometry(...args);
+  };
+
+  for (const key of ['curveDetail', 'bezierDetail'] as const) {
+    fn[key] = function (numPoints) {
+      // p5 2.0's curveDetail defined *density* while 1.x's defined *absolute number of points.*
+      // The only way to do a true conversion would involve updating the value dynamically based
+      // on the length of the curve. Since this would be complex to do as an addon, we do
+      // the calculation based on an approximate average curve length.
+      const avgLength = Math.hypot(this.width, this.height) / 3;
+
+      if (numPoints) {
+        const density = numPoints / avgLength;
+
+        return oldCurveDetail.call(this, density);
+      } else {
+        return oldCurveDetail.call(this) * avgLength;
+      }
+    };
+  }
+
+  fn.curvePoint = function (...args) {
+    return this.splinePoint(...args);
+  };
+
+  fn.curveTangent = function (...args) {
+    return this.splineTangent(...args);
+  };
+}
