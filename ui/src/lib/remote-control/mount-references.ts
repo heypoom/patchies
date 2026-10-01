@@ -13,6 +13,9 @@ const readme = `# Patchies mount references
 
 Edit existing files under ../objects/ and ../patch/ to change the live patch.
 Keep Patchies open for synchronization. Browser undo/redo applies to source edits.
+The mount also has graph.json for discovery, connections.txt for wire saves, and
+a private socket for graph/node/wire CLI commands. The agent skill below explains
+those commands and restart recovery.
 
 For an object's API and examples, read docs/objects/<slug>.md and prompts/<slug>.md.
 Operator names use the docs' readable slugs: add, sub, mul, and div.

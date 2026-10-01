@@ -2,6 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
 import { RemoteControlSyncCoordinator } from './sync-coordinator';
 import type { CanonicalCommit } from './remote-control-types';
+import { HistoryManager, AddNodeCommand } from '$lib/history';
+import { RemoteControlGraphService } from './graph-service';
+import type { Node } from '@xyflow/svelte';
 import type { MountEntry } from '$lib/vfs/VfsMountTree';
 
 type RelayBody = Partial<CanonicalCommit> & {
@@ -18,9 +21,18 @@ describe('Remote Control VFS synchronization', () => {
   let run: ReturnType<typeof vi.fn>;
   let snapshotStatus: number;
   let failWrite: boolean;
+  let commitFailures: number;
 
   beforeEach(() => {
     vi.useFakeTimers();
+    const storage = new Map<string, string>();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+      clear: () => storage.clear()
+    });
+    commitFailures = 0;
     VirtualFilesystem.resetInstance();
     vfs = VirtualFilesystem.getInstance();
     patchId = 'patch-1';
@@ -62,6 +74,9 @@ describe('Remote Control VFS synchronization', () => {
             })
           );
         }
+        if (path.endsWith('/reclaim')) return Response.json({ patchRevision: 0 });
+        if (path.endsWith('/commits') && commitFailures-- > 0)
+          return new Response(null, { status: 503 });
         if (path.endsWith('/snapshot')) return new Response(null, { status: snapshotStatus });
         if (path.endsWith('/commits'))
           return Response.json({
@@ -196,7 +211,7 @@ describe('Remote Control VFS synchronization', () => {
     failWrite = true;
     await save('objects/glsl-24/shader.glsl', 'rejected', 2);
     expect(commits()[0].body.applied).toBe(false);
-    expect(commits()[0].body.error).toContain('could not apply or run');
+    expect(commits()[0].body.error).toContain('history rejected write');
 
     failWrite = false;
     await save('objects/glsl-24/shader.glsl', 'accepted', 3);
@@ -248,5 +263,81 @@ describe('Remote Control VFS synchronization', () => {
     expect(revoke).toBeGreaterThan(-1);
     expect(snapshot).toBeGreaterThan(revoke);
     expect(requests[snapshot].body.representation!.patchId).toBe('patch-2');
+  });
+  it('retains reload credentials and retries a transient snapshot failure', async () => {
+    await coordinator.enable();
+    coordinator.dispose();
+    const saved = sessionStorage.getItem('patchies.remote-control.patch-1');
+    coordinator = new RemoteControlSyncCoordinator({
+      patchId: () => patchId,
+      filesystem: vfs,
+      instanceURL: 'http://patchies.test'
+    });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    snapshotStatus = 503;
+    const restored = coordinator.restore();
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(sessionStorage.getItem('patchies.remote-control.patch-1')).toBe(saved);
+    expect(coordinator.isEnabled).toBe(true);
+
+    snapshotStatus = 204;
+    await vi.advanceTimersByTimeAsync(600);
+    expect(await restored).toBe(true);
+    expect(coordinator.mountCommand).toContain('patchies://v2/');
+  });
+
+  it('retries a failed commit publication without creating the node twice', async () => {
+    coordinator.dispose();
+    let nodes: Node[] = [];
+    const history = new HistoryManager();
+    const accessors = {
+      getNodes: () => nodes,
+      setNodes: (value: Node[]) => {
+        nodes = value;
+      },
+      getEdges: () => [],
+      setEdges: () => {}
+    };
+    const create = vi.fn((command, id) => {
+      history.execute(
+        new AddNodeCommand(
+          { id, type: command.name, position: { x: 0, y: 0 }, data: {} },
+          accessors
+        )
+      );
+      return id;
+    });
+    const graph = new RemoteControlGraphService({
+      accessors,
+      history,
+      ports: () => ({ ready: true, inlets: [], outlets: [] }),
+      create,
+      settle: async () => {}
+    });
+    coordinator = new RemoteControlSyncCoordinator({
+      patchId: () => patchId,
+      filesystem: vfs,
+      graph,
+      instanceURL: 'http://patchies.test'
+    });
+    await coordinator.enable();
+    const snapshot = requests.find((request) => request.path.endsWith('/snapshot'))!;
+    const operation = JSON.stringify({
+      operationId: 'create-once',
+      browserGeneration: snapshot.body.browserGeneration,
+      baseRevision: 0,
+      command: { kind: 'node.create', name: 'button' }
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    commitFailures = 3;
+    emit('operation.submitted', operation, 1);
+    await vi.advanceTimersByTimeAsync(2500);
+    emit('operation.submitted', operation, 1);
+    await settle();
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(nodes.map((node) => node.id)).toEqual(['remote-create-once']);
+    expect(commits().at(-1)?.body.applied).toBe(true);
   });
 });

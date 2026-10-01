@@ -362,7 +362,7 @@ func TestRelayReplaysAnUnresolvedOperationOnAFreshBrowserStream(t *testing.T) {
 	}
 }
 
-func TestRelayReclaimDropsOldGenerationOperations(t *testing.T) {
+func TestRelayReclaimMarksUnresolvedOperationsUnknown(t *testing.T) {
 	relay, credentials := createTestSession(t)
 	client := attachTestClient(t, relay, credentials)
 
@@ -381,7 +381,7 @@ func TestRelayReclaimDropsOldGenerationOperations(t *testing.T) {
 		t.Fatalf("reclaim session: %v", err)
 	}
 
-	if _, err := relay.PublishCommit(credentials.SessionID, credentials.Secret, CommitRequest{
+	if result, err := relay.PublishCommit(credentials.SessionID, credentials.Secret, CommitRequest{
 		CommitID:          "old-commit",
 		OperationID:       "old-operation",
 		BrowserGeneration: "browser-2",
@@ -391,8 +391,8 @@ func TestRelayReclaimDropsOldGenerationOperations(t *testing.T) {
 			Path:  "glsl-24",
 			Entry: json.RawMessage(`{"id":"glsl-24"}`),
 		}},
-	}); !errors.Is(err, ErrOperationNotFound) {
-		t.Fatalf("old operation commit error = %v, want ErrOperationNotFound", err)
+	}); err != nil || result.Error == "" || result.Applied {
+		t.Fatalf("old operation outcome = %#v, %v", result, err)
 	}
 }
 
@@ -433,5 +433,52 @@ func receiveEvent(t *testing.T, events <-chan Event) Event {
 		t.Fatal("timed out waiting for relay event")
 
 		return Event{}
+	}
+}
+
+func TestCompletedOutcomeSurvivesReclaimAndRejectsPayloadReuse(t *testing.T) {
+	relay, credentials := createTestSession(t)
+	attached := attachTestClient(t, relay, credentials)
+	request := OperationRequest{OperationID: "create", BrowserGeneration: "browser-1", Path: "patch/a.js", Content: "code"}
+	if _, err := relay.SubmitOperation(credentials.SessionID, credentials.Secret, attached.ClientID, request); err != nil {
+		t.Fatal(err)
+	}
+	commit, err := relay.PublishCommit(credentials.SessionID, credentials.Secret, CommitRequest{CommitID: "commit", OperationID: "create", BrowserGeneration: "browser-1", Result: json.RawMessage(`{"id":"created"}`)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := relay.Reclaim(credentials.SessionID, credentials.Secret, "patch-1", "browser-2", 0); err != nil {
+		t.Fatal(err)
+	}
+	outcome, err := relay.GetOperation(credentials.SessionID, credentials.Secret, "create")
+	if err != nil || !outcome.Terminal || outcome.Commit.CommitID != commit.CommitID || string(outcome.Commit.Result) != `{"id":"created"}` {
+		t.Fatalf("lost outcome: %#v %v", outcome, err)
+	}
+
+	attached = attachTestClient(t, relay, credentials)
+	request.Content = "different"
+	if _, err := relay.SubmitOperation(credentials.SessionID, credentials.Secret, attached.ClientID, request); !errors.Is(err, ErrOperationMismatch) {
+		t.Fatalf("payload reuse: %v", err)
+	}
+}
+
+func TestGraphCommandsRequireReadyListeningBrowser(t *testing.T) {
+	relay, credentials := createTestSession(t)
+	attached := attachTestClient(t, relay, credentials)
+	request := OperationRequest{OperationID: "graph", BrowserGeneration: "browser-1", Command: json.RawMessage(`{"kind":"graph.query"}`)}
+	if _, err := relay.SubmitOperation(credentials.SessionID, credentials.Secret, attached.ClientID, request); !errors.Is(err, ErrBrowserUnavailable) {
+		t.Fatalf("offline graph accepted: %v", err)
+	}
+
+	_, unsubscribe, err := relay.SubscribeBrowser(credentials.SessionID, credentials.Secret, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer unsubscribe()
+	if err := relay.PublishSnapshot(credentials.SessionID, credentials.Secret, SnapshotRequest{BrowserGeneration: "browser-1", Representation: json.RawMessage(`{}`)}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := relay.SubmitOperation(credentials.SessionID, credentials.Secret, attached.ClientID, request); err != nil {
+		t.Fatal(err)
 	}
 }

@@ -1,8 +1,7 @@
 # 182. Remote Control Local Patch Mount
 
-**Status:** Core file sync implemented. Resumable mounts and graph control are
-proposed below; they are not implemented. Delivery and diagnostic extensions
-remain deferred.
+**Status:** File sync, resumable mounts, graph discovery, and undoable graph
+control implemented. Delivery and diagnostic extensions remain deferred.
 
 ## Goal and scope
 
@@ -13,8 +12,8 @@ in `patchies-server`, using Echo inside PocketBase.
 
 The browser must remain open for live synchronization. Reloads reclaim the
 session automatically; closing the page does not revoke the token. There is
-one mutating client per session. This release supports existing-file saves,
-not CLI/MCP graph operations or background patch execution.
+one mutating client per session. This release supports existing-file saves and CLI graph operations. Background
+patch execution and an MCP command catalog remain outside this scope.
 
 ## Artist workflow
 
@@ -118,9 +117,10 @@ shows a toast. Component disposal closes its connection without revoking.
 Changing the loaded patch revokes the prior session and creates a new one
 rather than retargeting the token.
 
-The handshake checks `patchies.remote-control.v2`; it has no capability catalog.
+The handshake checks `patchies.remote-control.v3`; it has no capability catalog.
 Operations carry unique `operationId`, `browserGeneration`, `baseRevision`,
-`path`, and `content`. The relay validates generation and rejects future
+`path`, and `content`, or a typed `command`; connection saves also carry their
+captured `baseline`. The relay validates generation and rejects future
 revisions. Older revisions within a generation are allowed so local saves can
 apply over newer browser content. The CLI checks snapshot patch IDs.
 There is no backward-compatibility protocol adapter.
@@ -194,9 +194,9 @@ transactional lock against concurrent editor writes.
 
 Failed saves print an `unsynced` warning and retain local content across browser
 updates and reconnects. Editing and saving again retries. An unchanged save
-without an error resolves normally. Pending/rejected state is in memory only;
-it is not restored after CLI termination. Files remain on disk after exit,
-but a new mount invocation still requires a new or empty directory.
+without an error resolves normally. Pending/rejected state and canonical
+baselines persist privately under `.patchies/`. Resume scans offline edits
+before projecting a fresh snapshot; fresh mounts require an empty directory.
 
 Remote writes use `VirtualFilesystem.writeCodeFile` and provider history.
 Objects use the connected VFS run hook. There is no separate
@@ -218,8 +218,10 @@ same VFS change tracker and do not echo into new local operations.
 Go tests cover relay ownership, ordering, replay, and CLI projection/recovery.
 Browser unit tests cover coordinator events and VFS/history behavior. CLI tests
 exercise alternating edits through a fake HTTP/SSE relay and temporary watched
-directories; filesystem assertions use bounded polling. These are not a single
-real browser/server/CLI end-to-end harness.
+directories; filesystem assertions use bounded polling. The combined harness
+runs the production browser coordinator, VFS/history, Go relay, and CLI through
+five recovery repetitions. It uses a headless port provider; it does not render
+Svelte or prove runtime handle measurement in a real browser.
 
 `cli/` and `server/` are independent Go modules sharing the JSON protocol,
 not implementation imports. `just cli-build` builds the CLI and
@@ -228,17 +230,16 @@ not implementation imports. `just cli-build` builds the CLI and
 APIs; Windows delivery is not complete.
 
 Deferred: CLI/MCP catalogs and coarse capability discovery, structured
-`--json` output and Session Trace UI, a combined browser/server/CLI harness,
-cross-platform CLI releases and checksum-verifying installers. Whole-tree
-filesystem transactions and persistent unsynced-state recovery are not current
-guarantees.
+Session Trace UI, rendered-browser integration coverage, cross-platform CLI
+releases and checksum-verifying installers. Graph commands already emit
+structured JSON. Whole-tree filesystem transactions are not a guarantee.
 
-## Proposed extension: resumable mounts and graph control
+## Resumable mounts and graph control
 
 Recorded 2026-10-01. Poom confirmed that resume must preserve and replay offline
 file edits, and that older CLI builds and mount layouts do not need backward
-compatibility. The preceding sections describe the current implementation;
-this section describes the proposed replacement contracts.
+compatibility. These contracts replace the earlier ephemeral mount state and file-only
+command surface.
 
 ### Recovery contract
 
@@ -255,7 +256,7 @@ session clears them. Restore must wait for patch hydration and VFS readiness.
 The existing same-tab session storage is sufficient for page reload; restoring
 after closing the tab or restarting the browser is a separate feature.
 
-Add explicit `patchies mount --resume --path <existing-mount>` with credentials
+Use explicit `patchies mount --resume --path <existing-mount>` with credentials
 provided through the existing token input options. Do not save the connection
 secret into mount metadata. Fresh mounts still reject arbitrary populated
 directories. Resume requires valid metadata bound to the instance, session ID,
@@ -282,20 +283,19 @@ file has disappeared is retained as an unsynced recovery item and reported;
 it must not recreate a deleted node or disappear during snapshot pruning.
 Unknown local files remain outside the import contract.
 
-Operation-result recovery is required alongside reconnect. The current relay
-clears its operation records on browser reclaim, and current CLI retries can
-allocate new operation IDs. This is insufficient for structural mutations:
-an acknowledged-or-not node creation must never be blindly repeated.
-Keep queryable terminal outcomes across browser generations with bounded
-retention, and pin unresolved requests until reconciliation. Expired outcomes
+Operation-result recovery is required alongside reconnect. The relay retains queryable terminal outcomes across browser generations with
+bounded retention and pins unresolved requests. On reclaim, unresolved requests
+become terminal `outcome_unknown` results. An acknowledged-or-not node creation
+is never blindly repeated. Expired outcomes
 must be reported as unknown rather than interpreted as never submitted.
 Reusing an operation ID with a different payload must fail. Reject
 old-generation writes.
 
-For an operation applied before a browser reload but without a published
-terminal result, reconcile against the ready graph and stable created node IDs.
-If the outcome cannot be proved, return `outcome_unknown` and preserve the
-request for inspection rather than replaying it. This does not promise
+For an operation applied before reload without a published terminal result,
+return `outcome_unknown` and preserve the request for inspection rather than
+replaying it. Node creation uses stable `remote-<operationId>` IDs to make
+inspection possible. The CLI consults retained outcomes and writes recovered
+results to `.patchies/last-command.json` after the fresh projection. This does not promise
 exactly-once execution across arbitrary browser crashes or server termination.
 Unsubmitted code-file intent can be rebased to the fresh generation; ambiguous
 submitted graph commands require outcome reconciliation first.
@@ -307,13 +307,13 @@ relay attachment, and operation queue. It exposes a private Unix-domain socket
 for short-lived CLI commands. Those commands use the existing mutating client;
 they must not attach a second client to the relay.
 
-Place a socket locator under `.patchies/`; use a private runtime directory for
-the actual socket when the mount path exceeds Unix socket path limits. Limit
+Place a socket locator at `.patchies/socket.json`; always use a private runtime
+directory under `/tmp` for the actual socket to avoid Unix socket path limits. Limit
 socket access to the current user. Use a mount lock to distinguish a live owner
 from a stale socket left after a crash. Unix support matches the current CLI;
 Windows IPC remains separate delivery work.
 
-Proposed command surface (syntax is a design proposal):
+Command surface (JSON output is always enabled):
 
 ```sh
 patchies graph --path ./my-patch --json
@@ -325,8 +325,9 @@ patchies wire disconnect glsl-5:video-out-out glsl-8:video-in-0-source-sampler2D
 ```
 
 Creation uses the existing node factory, default data, and object-name
-resolution. Generic text/audio expressions need an explicit expression option,
-and optional initial data must be validated through the same creation path.
+resolution. Generic text/audio expressions use a quoted name argument, such as
+`node create "osc~ 440"`; `--data` accepts an initial JSON object through the same
+creation path and rejects internal runtime keys.
 Return the created node ID, source-file paths, and current handle readiness.
 An omitted position uses the browser's existing insertion placement policy.
 
@@ -334,8 +335,9 @@ Graph queries return every node, including nodes without source files, and
 every edge. Node entries include ID, type/object expression, position, source
 paths, exact inlet/outlet IDs, and port kind. Edge entries include edge ID and
 all four endpoint fields. Return browser generation and revision with queries.
-Include connection state and freshness; cached data while disconnected must be
-explicitly marked stale. Do not present a cached query as a live browser result.
+Command responses include `fresh`, browser generation, and canonical revision.
+Queries require the browser. The read-only `graph.json` file is a cached
+projection and can become stale during disconnection; it is not a live query.
 
 Mutation commands wait for a browser terminal result and canonical projection,
 then print structured results to stdout; diagnostics go to stderr. A timeout
@@ -350,7 +352,7 @@ Keep `objects/` and `patch/` as VFS projections. Add mount-only companions,
 alongside the existing `references/`:
 
 ```text
-graph.json                 # read-only canonical nodes, ports, edges, revision
+graph.json                 # read-only canonical nodes, ports, edges
 connections.txt            # editable wire declarations
 .patchies/                 # private state, lock, socket locator
 ```
@@ -424,7 +426,7 @@ projection belong to the same canonical revision. Update the mounted agent
 skill to teach selective graph/port discovery, commands, connection-file saves,
 and recovery once those features exist; reuse existing object references.
 
-### Verification required before declaring the extension implemented
+### Verification and remaining coverage
 
 - Repeat browser → disk → browser edits through transport loss, CLI restart,
   page reload, and a pending operation; exercise offline saves and both-side
@@ -447,3 +449,21 @@ and recovery once those features exist; reuse existing object references.
   revocation. Diagnostics must not disclose credentials.
 - Run a combined browser/server/CLI recovery loop; existing isolated unit
   tests alone do not establish end-to-end reconnection behavior.
+
+The implemented checks cover connection parsing/deltas and atomic validation,
+normal graph history commands, publication retries without duplicate execution,
+transient browser restoration, relay outcome retention, private state/socket
+lifecycle, and CLI restart recovery. `ui/scripts/test-remote-control.sh` exercises
+five combined loops: initial local save, browser edit, create/connect/file
+unlink/undo/delete/undo, CLI SIGKILL, conflicting offline edits and resume, then
+browser coordinator replacement and an immediate local save followed by another
+browser edit. A watcher regression test checks saves made after an earlier scan,
+including empty contents. Projection checks each writable file again before
+replacement and preserves newly discovered intent.
+
+The list above remains a coverage checklist, not a claim that every timing and
+rendered-runtime scenario is automated. Real Svelte port initialization/culling,
+full browser reload, arbitrary crash boundaries, and simultaneous external writes
+during the final atomic rename still need broader verification. Filesystem
+projection is not a whole-tree transaction. Relay process termination loses the
+session; opening a new browser tab does not restore same-tab credentials.

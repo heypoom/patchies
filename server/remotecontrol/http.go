@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-const ProtocolVersion = "patchies.remote-control.v2"
+const ProtocolVersion = "patchies.remote-control.v3"
 const maxProtocolPayload = 64 << 20
 
 type HTTPHandler struct {
@@ -131,6 +131,17 @@ func NewHTTPHandler(relay *Relay) *HTTPHandler {
 		handler.clientEvents(c.Response(), c.Request(), c.Param("sessionId"))
 		return nil
 	})
+	sessions.GET("/:sessionId/operations/:operationId", func(c *echo.Context) error {
+		result, err := handler.relay.GetOperation(c.Param("sessionId"), bearerToken(c.Request()), c.Param("operationId"))
+		if err != nil {
+			handler.writeRelayError(c.Response(), err)
+			return nil
+		}
+
+		handler.writeJSON(c.Response(), http.StatusOK, result)
+		return nil
+	})
+
 	sessions.POST("/:sessionId/operations", func(c *echo.Context) error {
 		var body submitOperationRequest
 		if !handler.bindJSON(c, &body) {
@@ -335,6 +346,10 @@ func (h *HTTPHandler) bindJSON(c *echo.Context, target any) bool {
 
 func (h *HTTPHandler) writeRelayError(response http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, ErrBrowserUnavailable):
+		h.writeError(response, http.StatusConflict, "browser_unavailable", err.Error())
+	case errors.Is(err, ErrOperationMismatch):
+		h.writeError(response, http.StatusConflict, "operation_mismatch", err.Error())
 	case errors.Is(err, ErrSessionNotFound):
 		h.writeError(response, http.StatusNotFound, "session_not_found", err.Error())
 	case errors.Is(err, ErrInvalidSecret):

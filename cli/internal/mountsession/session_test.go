@@ -157,6 +157,7 @@ func testAlternatingEdits(t *testing.T, path string) {
 		switch {
 		case request.Method == http.MethodPost && request.URL.Path == "/api/remote-control/sessions/session-1/client":
 			writeTestJSON(response, client.SessionSnapshot{
+				ProtocolVersion:   "patchies.remote-control.v3",
 				SessionID:         "session-1",
 				PatchID:           "patch-1",
 				BrowserGeneration: "browser-1",

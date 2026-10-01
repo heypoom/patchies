@@ -1,3 +1,4 @@
+import type { RemoteControlGraphService } from './graph-service';
 import type { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
 import { MOUNT_FORMAT, readMountTree, writeMountFile } from '$lib/vfs/VfsMountTree';
 import { BrowserEventStream, type BrowserEvent } from './browser-event-stream';
@@ -12,7 +13,7 @@ import {
   type SessionCredentials
 } from './remote-control-types';
 
-const protocolVersion = 'patchies.remote-control.v2';
+const protocolVersion = 'patchies.remote-control.v3';
 const patchSyncDelay = 150;
 const reconnectDelay = 500;
 const maxCommitAttempts = 3;
@@ -20,12 +21,15 @@ const maxCommitAttempts = 3;
 interface SyncCoordinatorOptions {
   patchId: () => string;
   filesystem: VirtualFilesystem;
+  graph?: RemoteControlGraphService;
   onEnabledChange?: (enabled: boolean) => void;
   instanceURL?: string;
 }
 
 export class RemoteControlSyncCoordinator {
   private browserGeneration = '';
+  private disposed = false;
+  private readonly operationCommits = new Map<string, Omit<CanonicalCommit, 'patchRevision'>>();
   private readonly changeTracker = new VfsChangeTracker();
   private credentials: SessionCredentials | null = null;
   private readonly eventStream: BrowserEventStream;
@@ -67,6 +71,8 @@ export class RemoteControlSyncCoordinator {
   async enable(): Promise<void> {
     if (this.credentials) return;
 
+    this.disposed = false;
+
     const persisted = this.readPersistedSession();
     if (persisted) {
       await this.reclaim(persisted);
@@ -88,6 +94,8 @@ export class RemoteControlSyncCoordinator {
     this.sessionPatchId = patchId;
 
     try {
+      this.options.onEnabledChange?.(true);
+      await this.options.graph?.settle();
       await this.publishSnapshot();
 
       this.watchFiles();
@@ -106,9 +114,10 @@ export class RemoteControlSyncCoordinator {
     const persisted = this.readPersistedSession();
     if (!persisted) return false;
 
+    this.disposed = false;
     await this.reclaim(persisted);
 
-    return true;
+    return !this.disposed;
   }
 
   disable(): void {
@@ -124,6 +133,7 @@ export class RemoteControlSyncCoordinator {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.eventStream.stop();
     this.unsubscribeFiles?.();
     this.unsubscribeFiles = null;
@@ -183,9 +193,13 @@ export class RemoteControlSyncCoordinator {
     this.options.onEnabledChange?.(false);
   }
 
+  private readEntries() {
+    return [...readMountTree(this.options.filesystem), ...(this.options.graph?.entries() ?? [])];
+  }
+
   private async publishSnapshot(): Promise<void> {
     const { mountReferences } = await import('./mount-references');
-    const entries = readMountTree(this.options.filesystem);
+    const entries = this.readEntries();
     await this.request(
       `/api/remote-control/sessions/${this.requireCredentials().sessionId}/snapshot`,
       {
@@ -223,6 +237,7 @@ export class RemoteControlSyncCoordinator {
         await this.enqueue(() => this.resolveOperation(operation));
       } catch (error) {
         console.error(`Remote Control could not resolve operation ${operation.operationId}`, error);
+        throw error;
       }
     }
   }
@@ -232,20 +247,39 @@ export class RemoteControlSyncCoordinator {
 
     if (this.options.patchId() !== this.sessionPatchId) return;
 
+    const existing = this.operationCommits.get(operation.operationId);
+    if (existing) {
+      await this.publishCommit(existing);
+      return;
+    }
+
     let rejection: string | undefined;
+    let result: unknown;
 
     try {
-      await writeMountFile(this.options.filesystem, operation.path, operation.content);
+      if (operation.command) {
+        if (!this.options.graph) throw new Error('Graph control is unavailable');
+
+        result = await this.options.graph.execute(operation.command, operation.operationId);
+      } else if (operation.path === 'connections.txt') {
+        if (!this.options.graph || typeof operation.baseline !== 'string')
+          throw new Error('Connections require a canonical baseline');
+
+        await this.options.graph.writeConnections(operation.content, operation.baseline);
+      } else {
+        await writeMountFile(this.options.filesystem, operation.path, operation.content);
+      }
     } catch (error) {
-      rejection = 'Browser could not apply or run this save; check the browser console.';
+      rejection = error instanceof Error ? error.message : 'Browser could not apply the operation';
       console.error(`Remote Control could not resolve operation ${operation.operationId}`, error);
     }
 
     if (this.options.patchId() !== this.sessionPatchId) return;
 
-    const changes = this.changeTracker.changes(readMountTree(this.options.filesystem));
+    const changes = this.changeTracker.changes(this.readEntries());
 
-    await this.publishCommit({
+    const commit = {
+      result,
       commitId: crypto.randomUUID(),
       operationId: operation.operationId,
       browserGeneration: this.browserGeneration,
@@ -253,7 +287,12 @@ export class RemoteControlSyncCoordinator {
       applied: changes.length > 0,
       ...(rejection ? { error: rejection } : {}),
       changes
-    });
+    };
+    this.operationCommits.set(operation.operationId, commit);
+    if (this.operationCommits.size > 512)
+      this.operationCommits.delete(this.operationCommits.keys().next().value!);
+
+    await this.publishCommit(commit);
   }
 
   private async publishPatchChanges(): Promise<void> {
@@ -261,7 +300,7 @@ export class RemoteControlSyncCoordinator {
 
     if (this.options.patchId() !== this.sessionPatchId) return;
 
-    const changes = this.changeTracker.changes(readMountTree(this.options.filesystem));
+    const changes = this.changeTracker.changes(this.readEntries());
     if (changes.length === 0) return;
 
     await this.publishCommit({
@@ -343,30 +382,41 @@ export class RemoteControlSyncCoordinator {
     this.browserGeneration = crypto.randomUUID();
     this.sessionPatchId = patchId;
 
-    try {
-      const snapshot = await this.request<{ patchRevision: number }>(
-        `/api/remote-control/sessions/${this.credentials.sessionId}/reclaim`,
-        {
-          method: 'POST',
-          body: {
-            patchId,
-            browserGeneration: this.browserGeneration,
-            patchRevision: this.patchRevision
+    while (!this.disposed && this.credentials) {
+      try {
+        const snapshot = await this.request<{ patchRevision: number }>(
+          `/api/remote-control/sessions/${this.credentials.sessionId}/reclaim`,
+          {
+            method: 'POST',
+            body: {
+              patchId,
+              browserGeneration: this.browserGeneration,
+              patchRevision: this.patchRevision
+            }
           }
+        );
+        if (this.disposed) return;
+
+        this.patchRevision = snapshot.patchRevision;
+        this.options.onEnabledChange?.(true);
+        await this.options.graph?.settle();
+        await this.publishSnapshot();
+        if (this.disposed) return;
+
+        this.watchFiles();
+        this.persistSession();
+        this.eventStream.start();
+        this.options.onEnabledChange?.(true);
+        return;
+      } catch (error) {
+        if (error instanceof RemoteControlRequestError && error.status < 500) {
+          this.clearLocalSession();
+          throw error;
         }
-      );
 
-      this.patchRevision = snapshot.patchRevision;
-
-      await this.publishSnapshot();
-
-      this.watchFiles();
-      this.persistSession();
-      this.eventStream.start();
-      this.options.onEnabledChange?.(true);
-    } catch (error) {
-      this.clearLocalSession();
-      throw error;
+        console.warn('Remote Control restore interrupted; retrying', error);
+        await wait(reconnectDelay);
+      }
     }
   }
 

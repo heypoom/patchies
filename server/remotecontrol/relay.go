@@ -20,16 +20,18 @@ const (
 )
 
 var (
-	ErrSessionNotFound   = errors.New("remote control session not found")
-	ErrInvalidSecret     = errors.New("remote control secret is invalid")
-	ErrClientAttached    = errors.New("a mutating client is already attached")
-	ErrClientNotAttached = errors.New("mutating client is not attached")
-	ErrGenerationStale   = errors.New("browser generation is stale")
-	ErrPatchMismatch     = errors.New("patch does not match remote control session")
-	ErrRevisionConflict  = errors.New("patch revision is stale")
-	ErrOperationNotFound = errors.New("remote control operation not found")
-	ErrReplayUnavailable = errors.New("remote control event replay is unavailable")
-	ErrSessionLimit      = errors.New("remote control session limit reached")
+	ErrSessionNotFound    = errors.New("remote control session not found")
+	ErrInvalidSecret      = errors.New("remote control secret is invalid")
+	ErrClientAttached     = errors.New("a mutating client is already attached")
+	ErrClientNotAttached  = errors.New("mutating client is not attached")
+	ErrGenerationStale    = errors.New("browser generation is stale")
+	ErrPatchMismatch      = errors.New("patch does not match remote control session")
+	ErrRevisionConflict   = errors.New("patch revision is stale")
+	ErrOperationNotFound  = errors.New("remote control operation not found")
+	ErrReplayUnavailable  = errors.New("remote control event replay is unavailable")
+	ErrBrowserUnavailable = errors.New("browser is unavailable")
+	ErrOperationMismatch  = errors.New("operation ID has a different payload")
+	ErrSessionLimit       = errors.New("remote control session limit reached")
 )
 
 type SessionCredentials struct {
@@ -38,6 +40,7 @@ type SessionCredentials struct {
 }
 
 type SessionSnapshot struct {
+	ProtocolVersion   string `json:"protocolVersion"`
 	SessionID         string `json:"sessionId"`
 	PatchID           string `json:"patchId"`
 	BrowserGeneration string `json:"browserGeneration"`
@@ -46,11 +49,13 @@ type SessionSnapshot struct {
 }
 
 type OperationRequest struct {
-	OperationID       string `json:"operationId"`
-	BrowserGeneration string `json:"browserGeneration"`
-	BaseRevision      int64  `json:"baseRevision"`
-	Path              string `json:"path"`
-	Content           string `json:"content"`
+	OperationID       string          `json:"operationId"`
+	BrowserGeneration string          `json:"browserGeneration"`
+	BaseRevision      int64           `json:"baseRevision"`
+	Path              string          `json:"path"`
+	Content           string          `json:"content"`
+	Baseline          string          `json:"baseline,omitempty"`
+	Command           json.RawMessage `json:"command,omitempty"`
 }
 
 type OperationResult struct {
@@ -65,24 +70,26 @@ type EntryChange struct {
 }
 
 type CommitRequest struct {
-	Error             string        `json:"error,omitempty"`
-	CommitID          string        `json:"commitId"`
-	OperationID       string        `json:"operationId,omitempty"`
-	BrowserGeneration string        `json:"browserGeneration"`
-	BaseRevision      int64         `json:"baseRevision"`
-	Applied           bool          `json:"applied"`
-	Changes           []EntryChange `json:"changes"`
+	Result            json.RawMessage `json:"result,omitempty"`
+	Error             string          `json:"error,omitempty"`
+	CommitID          string          `json:"commitId"`
+	OperationID       string          `json:"operationId,omitempty"`
+	BrowserGeneration string          `json:"browserGeneration"`
+	BaseRevision      int64           `json:"baseRevision"`
+	Applied           bool            `json:"applied"`
+	Changes           []EntryChange   `json:"changes"`
 }
 
 type CanonicalCommit struct {
-	Error             string        `json:"error,omitempty"`
-	CommitID          string        `json:"commitId"`
-	OperationID       string        `json:"operationId,omitempty"`
-	BrowserGeneration string        `json:"browserGeneration"`
-	BaseRevision      int64         `json:"baseRevision"`
-	PatchRevision     int64         `json:"patchRevision"`
-	Applied           bool          `json:"applied"`
-	Changes           []EntryChange `json:"changes"`
+	Result            json.RawMessage `json:"result,omitempty"`
+	Error             string          `json:"error,omitempty"`
+	CommitID          string          `json:"commitId"`
+	OperationID       string          `json:"operationId,omitempty"`
+	BrowserGeneration string          `json:"browserGeneration"`
+	BaseRevision      int64           `json:"baseRevision"`
+	PatchRevision     int64           `json:"patchRevision"`
+	Applied           bool            `json:"applied"`
+	Changes           []EntryChange   `json:"changes"`
 }
 
 type SnapshotRequest struct {
@@ -123,6 +130,8 @@ type session struct {
 	patchRevision     int64
 	clientID          string
 	clientAttachedAt  time.Time
+	ready             bool
+	requests          map[string]OperationRequest
 	operations        map[string]OperationResult
 	operationOrder    []string
 	commits           map[string]CanonicalCommit
@@ -163,6 +172,7 @@ func (r *Relay) CreateSession(patchID, browserGeneration string) (SessionCredent
 		secretHash:        sha256.Sum256([]byte(secret)),
 		patchID:           patchID,
 		browserGeneration: browserGeneration,
+		requests:          make(map[string]OperationRequest),
 		operations:        make(map[string]OperationResult),
 		commits:           make(map[string]CanonicalCommit),
 		browserListeners:  make(map[chan Event]struct{}),
@@ -251,11 +261,14 @@ func (r *Relay) Reclaim(sessionID, secret, patchID, browserGeneration string, pa
 	if session.patchID != patchID {
 		return SessionSnapshot{}, ErrPatchMismatch
 	}
-	if browserGeneration == "" || browserGeneration == session.browserGeneration {
+	if browserGeneration == "" {
 		return SessionSnapshot{}, ErrGenerationStale
 	}
 	if patchRevision < 0 {
 		return SessionSnapshot{}, ErrRevisionConflict
+	}
+	if browserGeneration == session.browserGeneration {
+		return snapshot(session), nil
 	}
 	for listener := range session.browserListeners {
 		close(listener)
@@ -263,11 +276,18 @@ func (r *Relay) Reclaim(sessionID, secret, patchID, browserGeneration string, pa
 	session.browserListeners = make(map[chan Event]struct{})
 
 	session.browserGeneration = browserGeneration
-	session.patchRevision = patchRevision
+	if patchRevision > session.patchRevision {
+		session.patchRevision = patchRevision
+	}
 	session.clientID = ""
 	session.clientAttachedAt = time.Time{}
-	session.operations = make(map[string]OperationResult)
-	session.operationOrder = nil
+	session.ready = false
+	for id, result := range session.operations {
+		if !result.Terminal {
+			commit := CanonicalCommit{OperationID: id, Error: "outcome_unknown: browser reloaded before reporting the result", BrowserGeneration: session.browserGeneration, PatchRevision: session.patchRevision}
+			session.operations[id] = OperationResult{OperationID: id, Terminal: true, Commit: &commit}
+		}
+	}
 	session.commits = make(map[string]CanonicalCommit)
 	session.commitOrder = nil
 	session.eventLog = nil
@@ -287,6 +307,10 @@ func (r *Relay) SubmitOperation(sessionID, secret, clientID string, request Oper
 		return OperationResult{}, ErrClientNotAttached
 	}
 	if result, ok := session.operations[request.OperationID]; ok {
+		original := session.requests[request.OperationID]
+		if original.Path != request.Path || original.Content != request.Content || original.Baseline != request.Baseline || string(original.Command) != string(request.Command) {
+			return OperationResult{}, ErrOperationMismatch
+		}
 		return result, nil
 	}
 	if request.BrowserGeneration != session.browserGeneration {
@@ -295,12 +319,44 @@ func (r *Relay) SubmitOperation(sessionID, secret, clientID string, request Oper
 	if request.BaseRevision < 0 || request.BaseRevision > session.patchRevision {
 		return OperationResult{}, ErrRevisionConflict
 	}
-	if request.OperationID == "" || request.Path == "" {
+	if request.OperationID == "" || (request.Path == "" && len(request.Command) == 0) || (len(request.Command) > 0 && !json.Valid(request.Command)) {
 		return OperationResult{}, errors.New("operation ID and path are required")
 	}
+	if len(request.Command) > 0 && (!session.ready || len(session.browserListeners) == 0) {
+		return OperationResult{}, ErrBrowserUnavailable
+	}
+	if len(session.operations) >= idempotencyWindow {
+		for _, id := range session.operationOrder {
+			if session.operations[id].Terminal {
+				delete(session.operations, id)
+				delete(session.requests, id)
+				break
+			}
+		}
+		if len(session.operations) >= idempotencyWindow {
+			return OperationResult{}, errors.New("too many unresolved operations")
+		}
+	}
+	session.requests[request.OperationID] = request
 	result := OperationResult{OperationID: request.OperationID}
 	storeOperation(session, request.OperationID, result)
 	r.emit(session, audienceBrowser, "operation.submitted", request)
+
+	return result, nil
+}
+
+func (r *Relay) GetOperation(sessionID, secret, operationID string) (OperationResult, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	session, err := r.authenticate(sessionID, secret)
+	if err != nil {
+		return OperationResult{}, err
+	}
+	result, ok := session.operations[operationID]
+	if !ok {
+		return OperationResult{}, ErrOperationNotFound
+	}
 
 	return result, nil
 }
@@ -343,6 +399,7 @@ func (r *Relay) PublishCommit(sessionID, secret string, request CommitRequest) (
 	}
 
 	commit := CanonicalCommit{
+		Result:            append(json.RawMessage(nil), request.Result...),
 		Error:             request.Error,
 		CommitID:          request.CommitID,
 		OperationID:       request.OperationID,
@@ -352,7 +409,9 @@ func (r *Relay) PublishCommit(sessionID, secret string, request CommitRequest) (
 		Applied:           request.Applied,
 		Changes:           cloneChanges(request.Changes),
 	}
-	session.patchRevision = patchRevision
+	if patchRevision > session.patchRevision {
+		session.patchRevision = patchRevision
+	}
 	storeCommit(session, commit)
 	if request.OperationID != "" {
 		commitCopy := commit
@@ -383,6 +442,7 @@ func (r *Relay) PublishSnapshot(sessionID, secret string, request SnapshotReques
 	if !json.Valid(request.Representation) {
 		return errors.New("representation must be valid JSON")
 	}
+	session.ready = true
 	r.emit(session, audienceClient, "snapshot.published", request)
 
 	return nil
@@ -432,11 +492,22 @@ func (r *Relay) subscribe(sessionID, secret, clientID string, audience eventAudi
 
 func (r *Relay) addListener(session *session, audience eventAudience, afterEventID int64) chan Event {
 	listener := make(chan Event, eventLogLimit)
+	replayed := make(map[string]bool)
 	for _, record := range session.eventLog {
 		resumeEvent := afterEventID > 0 && record.Event.ID > afterEventID
 		unresolvedInitialOperation := afterEventID == 0 && audience == audienceBrowser && record.Event.Type == "operation.submitted"
 		if record.Audience == audience && (resumeEvent || unresolvedInitialOperation) && !isResolvedOperation(session, record) {
 			listener <- record.Event
+			if request, ok := record.Event.Data.(OperationRequest); ok {
+				replayed[request.OperationID] = true
+			}
+		}
+	}
+	if audience == audienceBrowser && afterEventID == 0 {
+		for _, id := range session.operationOrder {
+			if result, exists := session.operations[id]; exists && !result.Terminal && !replayed[id] {
+				listener <- Event{ID: session.nextEventID, Type: "operation.submitted", Data: session.requests[id]}
+			}
 		}
 	}
 	listeners := session.browserListeners
@@ -556,8 +627,12 @@ func storeOperation(session *session, operationID string, result OperationResult
 		return
 	}
 
-	delete(session.operations, session.operationOrder[0])
-	session.operationOrder = session.operationOrder[1:]
+	for i, id := range session.operationOrder {
+		if _, exists := session.operations[id]; !exists {
+			session.operationOrder = append(session.operationOrder[:i], session.operationOrder[i+1:]...)
+			return
+		}
+	}
 }
 
 func storeCommit(session *session, commit CanonicalCommit) {
@@ -577,6 +652,7 @@ func replayUnavailable(session *session, afterEventID int64) bool {
 
 func snapshot(session *session) SessionSnapshot {
 	return SessionSnapshot{
+		ProtocolVersion:   ProtocolVersion,
 		SessionID:         session.id,
 		PatchID:           session.patchID,
 		BrowserGeneration: session.browserGeneration,

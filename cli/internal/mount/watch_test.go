@@ -1,6 +1,7 @@
 package mount
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -134,5 +135,49 @@ func TestWatcherTracksNewNestedFilesAndRemovesDirectoryWatches(t *testing.T) {
 		if strings.Contains(path, "/patch/new") {
 			t.Fatalf("stale watch: %s", path)
 		}
+	}
+}
+
+func TestProjectionPreservesSaveAfterEarlierScan(t *testing.T) {
+	for _, snapshot := range []bool{false, true} {
+		t.Run(fmt.Sprintf("snapshot=%t", snapshot), func(t *testing.T) {
+			root := t.TempDir()
+			watcher, err := NewWatcher(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer watcher.Close()
+			path := "objects/js-1/code.js"
+			entry := Entry{Path: path, Kind: "file", Content: "browser"}
+			if err := watcher.ApplyEntry(entry); err != nil {
+				t.Fatal(err)
+			}
+			watcher.PendingChanges()
+
+			if err := os.WriteFile(filepath.Join(root, path), []byte(""), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			entry.Content = "remote update"
+			if snapshot {
+				err = watcher.ApplySnapshot(Representation{Format: RepresentationVersion, Entries: []Entry{entry}})
+			} else {
+				err = watcher.ApplyEntry(entry)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := watcher.PreserveLocal(path, "older pending edit"); err != nil {
+				t.Fatal(err)
+			}
+
+			content, err := os.ReadFile(filepath.Join(root, path))
+			if err != nil || string(content) != "" {
+				t.Fatalf("new save overwritten: %q %v", content, err)
+			}
+			changes := watcher.PendingChanges()
+			if len(changes) != 1 || changes[0].Path != path || changes[0].Content != "" {
+				t.Fatalf("save not captured: %#v", changes)
+			}
+		})
 	}
 }

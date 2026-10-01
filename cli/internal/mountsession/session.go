@@ -28,31 +28,47 @@ type remoteClient interface {
 }
 
 type Session struct {
-	path   string
-	remote remoteClient
+	path       string
+	connection protocol.Connection
+	resume     bool
+	commands   chan *localRequest
+	remote     remoteClient
 }
 
 type pendingOperation struct {
 	content     string
 	operationID string
 	path        string
+	baseline    string
+	command     json.RawMessage
+	generation  string
+	reply       chan localResponse
+	recovered   *client.CanonicalCommit
 }
 
 type submitResult struct {
 	err         error
 	operationID string
+	fatal       bool
 }
 
 type sessionRunState struct {
-	cursor   int64
-	inFlight *pendingOperation
-	pending  map[string]string
-	unsynced map[string]string
+	patchID     string
+	baseline    map[string]string
+	projection  map[string]string
+	pendingBase map[string]string
+	queue       []*localRequest
+	cursor      int64
+	inFlight    *pendingOperation
+	pending     map[string]string
+	unsynced    map[string]string
 }
 
 func New(connection protocol.Connection, path string) *Session {
-	return &Session{path: path, remote: client.New(connection)}
+	return &Session{path: path, connection: connection, remote: client.New(connection), commands: make(chan *localRequest)}
 }
+
+func (s *Session) Resume() *Session { s.resume = true; return s }
 
 func (s *Session) Run(ctx context.Context) error {
 	absolute, err := filepath.Abs(s.path)
@@ -68,7 +84,7 @@ func (s *Session) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if len(entries) != 0 {
+		if len(entries) != 0 && !s.resume {
 			return errors.New("mount directory must be empty")
 		}
 	} else if !os.IsNotExist(err) {
@@ -77,6 +93,20 @@ func (s *Session) Run(ctx context.Context) error {
 
 	if err := os.MkdirAll(s.path, 0o755); err != nil {
 		return fmt.Errorf("create mount directory: %w", err)
+	}
+
+	unlock, err := lockMount(s.path)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
+	state := newRunState()
+	if s.resume {
+		state, err = s.loadState()
+		if err != nil {
+			return err
+		}
 	}
 
 	watcher, err := mount.NewWatcher(s.path)
@@ -89,13 +119,63 @@ func (s *Session) Run(ctx context.Context) error {
 		}
 	}()
 
-	fmt.Fprintf(os.Stderr, "patchies: mounted %s; waiting for browser snapshot\n", s.path)
+	if s.resume {
+		if err := s.seedResume(watcher, state); err != nil {
+			return err
+		}
+		state.collectLocal(watcher)
+	}
+	if err := s.saveState(state); err != nil {
+		return err
+	}
+	if s.commands != nil {
+		closeSocket, err := s.serveSocket(ctx)
+		if err != nil {
+			return err
+		}
+		defer closeSocket()
+	}
 
-	state := &sessionRunState{pending: make(map[string]string), unsynced: make(map[string]string)}
+	fmt.Fprintf(os.Stderr, "patchies: mounted %s; waiting for browser snapshot\n", s.path)
 
 	for ctx.Err() == nil {
 		snapshot, err := s.attach(ctx)
 		if err != nil {
+			return err
+		}
+
+		if state.patchID != "" && state.patchID != snapshot.PatchID {
+			return errors.New("resume snapshot belongs to a different patch")
+		}
+		state.patchID = snapshot.PatchID
+		if op := state.inFlight; op != nil && len(op.command) > 0 {
+			if remote, ok := s.remote.(interface {
+				GetOperation(context.Context, string) (client.OperationResult, error)
+			}); ok {
+				var outcome client.OperationResult
+				var lookupErr error
+				for {
+					outcome, lookupErr = remote.GetOperation(ctx, op.operationID)
+					var httpError *client.HTTPError
+					if lookupErr == nil || (errors.As(lookupErr, &httpError) && httpError.Status < 500) {
+						break
+					}
+					if err := wait(ctx, reconnectDelay); err != nil {
+						return nil
+					}
+				}
+				if lookupErr == nil && outcome.Terminal && outcome.Commit != nil {
+					op.recovered = outcome.Commit
+				} else if lookupErr != nil || op.generation != snapshot.BrowserGeneration {
+					op.recovered = &client.CanonicalCommit{Error: "outcome_unknown: inspect the graph before repeating the command"}
+				}
+
+			}
+		}
+		if state.inFlight != nil && len(state.inFlight.command) == 0 {
+			state.requeue()
+		}
+		if err := s.saveState(state); err != nil {
 			return err
 		}
 
@@ -137,7 +217,14 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 	}()
 
 	submitNext := func() {
-		if !active || state.inFlight != nil || len(state.pending) == 0 {
+		if !active || state.inFlight != nil || (len(state.pending) == 0 && len(state.queue) == 0) {
+			return
+		}
+
+		for len(state.queue) > 0 && state.queue[0].ctx != nil && state.queue[0].ctx.Err() != nil {
+			state.queue = state.queue[1:]
+		}
+		if len(state.queue) == 0 && len(state.pending) == 0 {
 			return
 		}
 
@@ -156,10 +243,24 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 			return
 		}
 
-		path := paths[0]
-		operation := &pendingOperation{content: state.pending[path], operationID: operationID, path: path}
-		delete(state.pending, path)
+		operation := &pendingOperation{operationID: operationID, generation: generation}
+		if len(state.queue) > 0 {
+			local := state.queue[0]
+			state.queue = state.queue[1:]
+			operation.operationID = local.id
+			operationID = local.id
+			operation.command = local.command
+			operation.reply = local.reply
+		} else {
+			path := paths[0]
+			operation.content, operation.path, operation.baseline = state.pending[path], path, state.pendingBase[path]
+			delete(state.pending, path)
+		}
 		state.inFlight = operation
+		if err := s.saveState(state); err != nil {
+			submitResults <- submitResult{operationID: operationID, err: err, fatal: true}
+			return
+		}
 
 		request := client.OperationRequest{
 			OperationID:       operationID,
@@ -167,6 +268,8 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 			BaseRevision:      revision,
 			Path:              operation.path,
 			Content:           operation.content,
+			Baseline:          operation.baseline,
+			Command:           operation.command,
 		}
 		go func() {
 			err := s.remote.SubmitOperation(streamContext, snapshot.ClientID, request)
@@ -178,36 +281,82 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 	}
 
 	for {
+		if err := s.saveState(state); err != nil {
+			return false, err
+		}
 		select {
+		case local := <-s.commands:
+			state.collectLocal(watcher)
+			if !active {
+				local.reply <- localResponse{Error: "browser_unavailable: waiting for a ready snapshot"}
+				continue
+			}
+			if len(state.queue) >= 32 {
+				local.reply <- localResponse{Error: "mount command queue is full"}
+				continue
+			}
+			state.queue = append(state.queue, local)
+			submitNext()
 		case <-ctx.Done():
+			state.collectLocal(watcher)
+			if err := s.saveState(state); err != nil {
+				return false, err
+			}
 			return false, nil
 		case change := <-watcher.Changes():
+			if _, exists := state.pendingBase[change.Path]; !exists {
+				state.pendingBase[change.Path] = state.baseline[change.Path]
+			}
 			state.pending[change.Path] = change.Content
 			delete(state.unsynced, change.Path)
 			submitNext()
 		case watcherError := <-watcher.Errors():
 			fmt.Fprintln(os.Stderr, "patchies: filesystem watcher:", watcherError)
 		case result := <-submitResults:
+			if result.fatal {
+				return false, result.err
+			}
 			if state.inFlight == nil || state.inFlight.operationID != result.operationID {
 				continue
 			}
+
 			if result.err == nil {
 				continue
 			}
 
+			if len(state.inFlight.command) > 0 {
+				var httpError *client.HTTPError
+				if errors.As(result.err, &httpError) && httpError.Status < 500 {
+					if err := s.finishCommand(state.inFlight, &client.CanonicalCommit{Error: result.err.Error()}); err != nil {
+						return false, err
+					}
+					state.inFlight = nil
+					submitNext()
+					continue
+				}
+			}
 			state.collectLocal(watcher)
 			state.requeue()
+			if err := s.saveState(state); err != nil {
+				return false, err
+			}
 			fmt.Fprintln(os.Stderr, "patchies: submit local change:", result.err)
 
 			return true, nil
 		case event := <-events:
 			state.collectLocal(watcher)
+			if err := s.saveState(state); err != nil {
+				return false, err
+			}
 			if event.ID > state.cursor {
 				state.cursor = event.ID
 			}
 
 			if event.Type == "session.reclaimed" {
 				state.requeue()
+				if err := s.saveState(state); err != nil {
+					return false, err
+				}
 
 				return true, nil
 			}
@@ -218,16 +367,40 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 				if representation.PatchID != snapshot.PatchID {
 					return false, errors.New("snapshot belongs to a different patch")
 				}
-				discardDeletedPendingWrites(state.pending, representation)
-				discardDeletedPendingWrites(state.unsynced, representation)
+				files := map[string]string{}
+				for _, entry := range representation.Entries {
+					if entry.Kind == "file" && mount.ValidateWritablePath(s.path, entry.Path) == nil {
+						files[entry.Path] = entry.Content
+					}
+				}
+				for path, content := range state.pending {
+					if _, exists := files[path]; !exists {
+						state.unsynced[path] = content
+						delete(state.pending, path)
+						fmt.Fprintf(os.Stderr, "patchies: unsynced %s: removed in browser; retained in .patchies/state.json\n", path)
+					}
+				}
+				state.projection = files
+				if err := s.saveState(state); err != nil {
+					return false, err
+				}
 				if err := watcher.ApplySnapshot(representation); err != nil {
 					return false, err
 				}
+				state.baseline = files
+				state.projection = nil
+				state.collectLocal(watcher)
 				generation, revision = eventState(event, generation, revision)
 				if err := state.preserveLocal(watcher); err != nil {
 					return false, err
 				}
 				active = true
+				if op := state.inFlight; op != nil && op.recovered != nil {
+					if err := s.finishCommand(op, op.recovered); err != nil {
+						return false, err
+					}
+					state.inFlight = nil
+				}
 				submitNext()
 				fmt.Fprintf(os.Stderr, "patchies: synchronized patch revision from %s\n", event.Type)
 
@@ -241,34 +414,66 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 			if !ok || commit.BrowserGeneration != generation {
 				continue
 			}
+			nextBaseline := make(map[string]string, len(state.baseline))
+			for path, content := range state.baseline {
+				nextBaseline[path] = content
+			}
+			for _, change := range commit.Changes {
+				if bytes.Equal(bytes.TrimSpace(change.Entry), []byte("null")) {
+					for path := range nextBaseline {
+						if path == change.Path || strings.HasPrefix(path, change.Path+"/") {
+							delete(nextBaseline, path)
+						}
+					}
+				} else {
+					var entry mount.Entry
+					if err := json.Unmarshal(change.Entry, &entry); err != nil {
+						return false, err
+					}
+					if entry.Kind == "file" && mount.ValidateWritablePath(s.path, entry.Path) == nil {
+						nextBaseline[entry.Path] = entry.Content
+					}
+				}
+			}
+			state.projection = nextBaseline
+			if err := s.saveState(state); err != nil {
+				return false, err
+			}
 			if err := applyCommit(watcher, commit); err != nil {
 				return false, err
 			}
+			state.collectLocal(watcher)
+			state.baseline = nextBaseline
+			state.projection = nil
 			for _, change := range commit.Changes {
 				if !bytes.Equal(bytes.TrimSpace(change.Entry), []byte("null")) {
 					continue
 				}
 				for path := range state.pending {
 					if path == change.Path || strings.HasPrefix(path, change.Path+"/") {
+						state.unsynced[path] = state.pending[path]
 						delete(state.pending, path)
 					}
 				}
-				for path := range state.unsynced {
-					if path == change.Path || strings.HasPrefix(path, change.Path+"/") {
-						delete(state.unsynced, path)
-					}
-				}
+
 				if state.inFlight != nil && (state.inFlight.path == change.Path || strings.HasPrefix(state.inFlight.path, change.Path+"/")) {
+					state.unsynced[state.inFlight.path] = state.inFlight.content
 					state.inFlight = nil
 				}
 			}
 			revision = commit.PatchRevision
 			if state.inFlight != nil && commit.OperationID == state.inFlight.operationID {
-				if commit.Error != "" {
+				if err := s.finishCommand(state.inFlight, &commit); err != nil {
+					return false, err
+				}
+				if len(state.inFlight.command) == 0 && commit.Error != "" {
 					state.unsynced[state.inFlight.path] = state.inFlight.content
 					fmt.Fprintf(os.Stderr, "patchies: unsynced %s: %s; edit and save to retry\n", state.inFlight.path, commit.Error)
 				} else {
 					delete(state.unsynced, state.inFlight.path)
+				}
+				if _, pending := state.pending[state.inFlight.path]; !pending {
+					delete(state.pendingBase, state.inFlight.path)
 				}
 				state.inFlight = nil
 			}
@@ -290,6 +495,9 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 			}
 			state.collectLocal(watcher)
 			state.requeue()
+			if err := s.saveState(state); err != nil {
+				return false, err
+			}
 
 			return true, nil
 		}
@@ -298,13 +506,16 @@ func (s *Session) runAttached(ctx context.Context, watcher *mount.Watcher, snaps
 
 func (state *sessionRunState) collectLocal(watcher *mount.Watcher) {
 	for _, change := range watcher.PendingChanges() {
+		if _, exists := state.pendingBase[change.Path]; !exists {
+			state.pendingBase[change.Path] = state.baseline[change.Path]
+		}
 		state.pending[change.Path] = change.Content
 		delete(state.unsynced, change.Path)
 	}
 }
 
 func (state *sessionRunState) requeue() {
-	if state.inFlight == nil {
+	if state.inFlight == nil || len(state.inFlight.command) > 0 {
 		return
 	}
 	if _, newer := state.pending[state.inFlight.path]; !newer {

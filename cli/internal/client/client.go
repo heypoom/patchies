@@ -24,6 +24,7 @@ type Client struct {
 }
 
 type SessionSnapshot struct {
+	ProtocolVersion   string `json:"protocolVersion"`
 	SessionID         string `json:"sessionId"`
 	PatchID           string `json:"patchId"`
 	BrowserGeneration string `json:"browserGeneration"`
@@ -32,11 +33,25 @@ type SessionSnapshot struct {
 }
 
 type OperationRequest struct {
-	OperationID       string `json:"operationId"`
-	BrowserGeneration string `json:"browserGeneration"`
-	BaseRevision      int64  `json:"baseRevision"`
-	Path              string `json:"path"`
-	Content           string `json:"content"`
+	OperationID       string          `json:"operationId"`
+	BrowserGeneration string          `json:"browserGeneration"`
+	BaseRevision      int64           `json:"baseRevision"`
+	Path              string          `json:"path"`
+	Content           string          `json:"content"`
+	Baseline          string          `json:"baseline,omitempty"`
+	Command           json.RawMessage `json:"command,omitempty"`
+}
+
+type OperationResult struct {
+	OperationID string           `json:"operationId"`
+	Terminal    bool             `json:"terminal"`
+	Commit      *CanonicalCommit `json:"commit,omitempty"`
+}
+
+func (c *Client) GetOperation(ctx context.Context, operationID string) (OperationResult, error) {
+	var result OperationResult
+	err := c.requestJSON(ctx, http.MethodGet, "/api/remote-control/sessions/"+c.connection.SessionID+"/operations/"+url.PathEscape(operationID), nil, &result)
+	return result, err
 }
 
 type EntryChange struct {
@@ -45,14 +60,15 @@ type EntryChange struct {
 }
 
 type CanonicalCommit struct {
-	Error             string        `json:"error,omitempty"`
-	CommitID          string        `json:"commitId"`
-	OperationID       string        `json:"operationId,omitempty"`
-	BrowserGeneration string        `json:"browserGeneration"`
-	BaseRevision      int64         `json:"baseRevision"`
-	PatchRevision     int64         `json:"patchRevision"`
-	Applied           bool          `json:"applied"`
-	Changes           []EntryChange `json:"changes"`
+	Result            json.RawMessage `json:"result,omitempty"`
+	Error             string          `json:"error,omitempty"`
+	CommitID          string          `json:"commitId"`
+	OperationID       string          `json:"operationId,omitempty"`
+	BrowserGeneration string          `json:"browserGeneration"`
+	BaseRevision      int64           `json:"baseRevision"`
+	PatchRevision     int64           `json:"patchRevision"`
+	Applied           bool            `json:"applied"`
+	Changes           []EntryChange   `json:"changes"`
 }
 
 type Event struct {
@@ -88,6 +104,9 @@ func (c *Client) Attach(ctx context.Context) (SessionSnapshot, error) {
 		return SessionSnapshot{}, err
 	}
 
+	if snapshot.ProtocolVersion != "patchies.remote-control.v3" {
+		return SessionSnapshot{}, &HTTPError{Status: 409, Code: "protocol_mismatch", Message: "update the Remote Control server and reload the browser; this CLI requires protocol v3"}
+	}
 	return snapshot, nil
 }
 

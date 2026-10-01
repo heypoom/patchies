@@ -24,11 +24,23 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) == 0 || args[0] != "mount" {
-		return errors.New("usage: patchies mount [--token <connection-string> | --token-fd <file-descriptor>] [--path <directory>]")
+	if len(args) > 0 && args[0] != "mount" {
+		return graphCommand(args, os.Stdout)
+	}
+	if len(args) == 0 {
+		return errors.New("usage: patchies mount [--resume] [--token <connection-string> | --token-fd <file-descriptor>] [--path <directory>]; patchies graph|node|wire --path <running-mount>")
 	}
 
-	token, path, err := readMountOptions(args[1:], os.Stdin, os.Stderr)
+	resume := false
+	options := []string{}
+	for _, arg := range args[1:] {
+		if arg == "--resume" {
+			resume = true
+		} else {
+			options = append(options, arg)
+		}
+	}
+	token, path, err := readMountOptions(options, os.Stdin, os.Stderr)
 	if err != nil {
 		return err
 	}
@@ -41,7 +53,11 @@ func run(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	return mountsession.New(connection, path).Run(ctx)
+	session := mountsession.New(connection, path)
+	if resume {
+		session.Resume()
+	}
+	return session.Run(ctx)
 }
 
 func readMountOptions(args []string, input io.Reader, output io.Writer) (string, string, error) {
@@ -49,7 +65,8 @@ func readMountOptions(args []string, input io.Reader, output io.Writer) (string,
 	flags.SetOutput(output)
 	token := flags.String("token", "", "Remote Control connection string")
 	tokenFD := flags.Int("token-fd", -1, "file descriptor containing the Remote Control connection string")
-	path := flags.String("path", "", "empty or new mount directory")
+	path := flags.String("path", "", "mount directory (empty/new, or existing with --resume)")
+	_ = flags.Bool("resume", false, "resume this session and replay offline edits")
 	if err := flags.Parse(args); err != nil {
 		return "", "", err
 	}

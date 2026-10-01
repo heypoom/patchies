@@ -1,3 +1,4 @@
+import type { GraphCommand } from './graph-service';
 import type { MountEntry } from '../vfs/VfsMountTree';
 
 export interface SessionCredentials {
@@ -15,6 +16,8 @@ export interface OperationRequest {
   baseRevision: number;
   path: string;
   content: string;
+  baseline?: string;
+  command?: GraphCommand;
 }
 
 export interface EntryChange {
@@ -23,6 +26,7 @@ export interface EntryChange {
 }
 
 export interface CanonicalCommit {
+  result?: unknown;
   error?: string;
   commitId: string;
   operationId?: string;

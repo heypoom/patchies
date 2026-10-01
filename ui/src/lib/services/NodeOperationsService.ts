@@ -19,6 +19,8 @@ import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events
 
 export interface CreateNodeOptions {
   skipHistory?: boolean;
+  id?: string;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -42,14 +44,18 @@ export class NodeOperationsService {
     customData?: unknown,
     options?: CreateNodeOptions
   ): string {
-    const id = this.ctx.nextNodeId(type);
+    const id = options?.id ?? this.ctx.nextNodeId(type);
+    if (this.ctx.nodes.some((node) => node.id === id)) throw new Error(`Node ${id} already exists`);
 
     const newNode: Node = {
       id,
       type,
       position,
       ...getDefaultNodeDimensions(type),
-      data: (customData as Record<string, unknown>) ?? getDefaultNodeData(type)
+      data: {
+        ...((customData as Record<string, unknown>) ?? getDefaultNodeData(type)),
+        ...options?.data
+      }
     };
 
     if (options?.skipHistory) {
@@ -91,13 +97,15 @@ export class NodeOperationsService {
     const audioRegistry = AudioRegistry.getInstance();
     const objectRegistry = ObjectRegistry.getInstance();
 
-    if (audioRegistry.isDefined(name) || objectRegistry.isDefined(name)) {
+    const [objectName, ...rawParams] = name.trim().split(' ');
+
+    if (audioRegistry.isDefined(objectName) || objectRegistry.isDefined(objectName)) {
       // Create an 'object' node with the textual object name and default params
-      const defaultParams = parseObjectParamFromString(name, []);
+      const defaultParams = parseObjectParamFromString(objectName, rawParams);
       return this.createNode(
         'object',
         position,
-        { expr: name, name: name, params: defaultParams },
+        { expr: name, name: objectName, params: defaultParams },
         options
       );
     }

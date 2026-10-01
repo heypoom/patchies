@@ -27,7 +27,7 @@ type Entry struct {
 func safePath(root, path string) (string, error) {
 	parts := strings.Split(path, "/")
 	managedAgentPath := path == ".agents" || path == ".agents/skills" || path == objectCodeSkillRoot || strings.HasPrefix(path, objectCodeSkillRoot+"/")
-	if parts[0] != "objects" && parts[0] != "patch" && parts[0] != "references" && !managedAgentPath {
+	if parts[0] != "objects" && parts[0] != "patch" && parts[0] != "references" && !managedAgentPath && path != "graph.json" && path != "connections.txt" {
 		return "", fmt.Errorf("invalid mount namespace: %q", path)
 	}
 
@@ -56,13 +56,17 @@ func validateEntry(root string, entry Entry) error {
 	if entry.Kind != "file" && entry.Kind != "directory" {
 		return fmt.Errorf("invalid entry kind: %q", entry.Kind)
 	}
-	if (!strings.Contains(entry.Path, "/") || entry.Path == ".agents/skills" || entry.Path == objectCodeSkillRoot) && entry.Kind != "directory" {
+	if ((!strings.Contains(entry.Path, "/") && entry.Path != "graph.json" && entry.Path != "connections.txt") || entry.Path == ".agents/skills" || entry.Path == objectCodeSkillRoot) && entry.Kind != "directory" {
 		return fmt.Errorf("namespace root must be a directory")
 	}
 	return nil
 }
 
 func ApplySnapshot(root string, tree Representation) error {
+	return applySnapshot(root, tree, func(entry Entry) error { return ApplyEntry(root, entry) })
+}
+
+func applySnapshot(root string, tree Representation, apply func(Entry) error) error {
 	if tree.Format != RepresentationVersion {
 		return fmt.Errorf("unsupported mount format %q", tree.Format)
 	}
@@ -109,7 +113,7 @@ func ApplySnapshot(root string, tree Representation) error {
 		}
 	}
 	for _, entry := range tree.Entries {
-		if err := ApplyEntry(root, entry); err != nil {
+		if err := apply(entry); err != nil {
 			return err
 		}
 	}
@@ -145,7 +149,7 @@ func ApplyEntry(root string, entry Entry) error {
 }
 
 func isReadOnlyPath(path string) bool {
-	return path == "references" || strings.HasPrefix(path, "references/") || path == ".agents" || strings.HasPrefix(path, ".agents/")
+	return path == "graph.json" || path == "references" || strings.HasPrefix(path, "references/") || path == ".agents" || strings.HasPrefix(path, ".agents/")
 }
 
 func RemoveEntry(root, path string) error {
@@ -179,4 +183,12 @@ func writeFile(root, name string, content []byte) error {
 		return err
 	}
 	return os.Rename(temporaryPath, target)
+}
+
+func ValidateWritablePath(root, path string) error {
+	if path != "connections.txt" && !strings.HasPrefix(path, "objects/") && !strings.HasPrefix(path, "patch/") {
+		return fmt.Errorf("not a writable mount path: %s", path)
+	}
+	_, err := safePath(root, path)
+	return err
 }

@@ -53,7 +53,6 @@
     requestFitView
   } from '../../stores/ui.store';
 
-  import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
   import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
@@ -110,6 +109,16 @@
   import { logger } from '$lib/utils/logger';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
   import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
+  import {
+    RemoteControlGraphService,
+    type GraphPort,
+    type GraphPorts
+  } from '$lib/remote-control/graph-service';
+  import { nodeTypes } from '$lib/nodes/node-types';
+  import { AudioRegistry } from '$lib/registry/AudioRegistry';
+  import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+  import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
+  import { PRESETS } from '$lib/presets/presets';
   import { RemoteControlSyncCoordinator } from '$lib/remote-control/sync-coordinator';
 
   import { toast } from 'svelte-sonner';
@@ -190,10 +199,45 @@
   const remoteControl = new RemoteControlSyncCoordinator({
     patchId: () => $currentPatchId,
     filesystem: VirtualFilesystem.getInstance(),
+    graph: new RemoteControlGraphService({
+      accessors: canvasAccessors,
+      history: historyManager,
+      ports: (node) => getRemotePorts(node),
+      create: (command, id) => {
+        const name = command.name;
+        const objectName = name.trim().split(' ')[0];
+        if (
+          !nodeTypes[name as keyof typeof nodeTypes] &&
+          !PRESETS[name] &&
+          !AudioRegistry.getInstance().isDefined(objectName) &&
+          !ObjectRegistry.getInstance().isDefined(objectName) &&
+          !ObjectShorthandRegistry.getInstance().tryTransform(name)
+        )
+          throw new Error(`Unknown object ${name}`);
+        if (
+          command.data &&
+          Object.keys(command.data).some(
+            (key) => key.startsWith('__') || ['executeCode', 'initialized'].includes(key)
+          )
+        )
+          throw new Error('Internal node data cannot be set remotely');
+
+        return nodeOps.createNodeFromName(name, command.position ?? getViewportSummary().center, {
+          id,
+          data: command.data
+        });
+      },
+      settle: async () => {
+        await tick();
+        VirtualFilesystem.getInstance().objectFiles.sync(nodes);
+      }
+    }),
     onEnabledChange: (enabled) => (isRemoteControlEnabled = enabled)
   });
 
   $effect(() => {
+    for (const node of nodes) getRemotePorts(node);
+    void edges;
     remoteControl.notifyPatchChanged($currentPatchId);
   });
 
@@ -342,7 +386,8 @@
   let showPatchToPromptDialog = $state(false);
 
   // Get flow utilities for coordinate transformation
-  const { screenToFlowPosition, fitView, getViewport, getNode, updateNodeData } = useSvelteFlow();
+  const { screenToFlowPosition, fitView, getViewport, getNode, getInternalNode, updateNodeData } =
+    useSvelteFlow();
 
   const runtime = createPatchRuntime({
     services: runtimeServices,
@@ -857,19 +902,6 @@
   };
 
   onMount(() => {
-    void remoteControl
-      .restore()
-      .then((reconnected) => {
-        if (!reconnected) return;
-
-        toast.success('Remote Control reconnected', {
-          description: 'Your local mount can continue syncing with this patch.'
-        });
-      })
-      .catch((error: unknown) => {
-        console.error('Failed to reclaim Remote Control session', error);
-      });
-
     flowContainer?.focus();
 
     // Initialize VFS with providers
@@ -885,7 +917,21 @@
     Transport.setBpm(bpm);
     Transport.setTimeSignature(timeSignature[0], timeSignature[1]);
 
-    loadPatch();
+    void loadPatch().then(async () => {
+      await tick();
+      void remoteControl
+        .restore()
+        .then((reconnected) => {
+          if (!reconnected) return;
+
+          toast.success('Remote Control reconnected', {
+            description: 'Your local mount can continue syncing with this patch.'
+          });
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to reclaim Remote Control session', error);
+        });
+    });
 
     // Check if the user wants to see the startup modal on launch
     // Don't show if loading from a URL patch parameter.
@@ -1321,6 +1367,30 @@
     $isObjectBrowserOpen = true;
   }
 
+  function getRemotePorts(node: Node): GraphPorts {
+    const bounds = getInternalNode(node.id)?.internals.handleBounds;
+    const name = node.type === 'object' ? (node.data.name as string) : undefined;
+    const port = (id: string | null, inlet: boolean): GraphPort => ({
+      id,
+      kind: id?.startsWith('audio-')
+        ? 'audio'
+        : id?.startsWith('video-')
+          ? 'video'
+          : id?.startsWith('analysis-')
+            ? 'analysis'
+            : 'message',
+      ...(inlet
+        ? { isAudioParam: isAudioParamInlet(name, id), acceptsFloat: isAcceptsFloatInlet(name, id) }
+        : {})
+    });
+
+    return {
+      ready: !!bounds,
+      inlets: (bounds?.target ?? []).map((handle) => port(handle.id ?? null, true)),
+      outlets: (bounds?.source ?? []).map((handle) => port(handle.id ?? null, false))
+    };
+  }
+
   const isValidConnection: IsValidConnection = (connection) => {
     const targetNode = getNode(connection.target);
 
@@ -1691,7 +1761,7 @@
         class="bg-zinc-900"
         snapGrid={$snapGridSize > 0 ? [$snapGridSize, $snapGridSize] : undefined}
         proOptions={{ hideAttribution: true }}
-        onlyRenderVisibleElements={$cullObjects}
+        onlyRenderVisibleElements={$cullObjects && !isRemoteControlEnabled}
         clickConnect={$isConnectionMode}
         {isValidConnection}
         onnodedragstart={() => {

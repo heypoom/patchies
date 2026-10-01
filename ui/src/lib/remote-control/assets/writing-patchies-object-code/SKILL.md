@@ -1,6 +1,6 @@
 ---
 name: writing-patchies-object-code
-description: Write or debug Patchies object code in a Remote Control mount, including JavaScript, visual shaders, audio code, and shared patch modules. Use when editing files under objects/ or patch/ for a live Patchies patch.
+description: Write or debug Patchies object code in a Remote Control mount, or change its graph through a Remote Control mount. Use for code edits, node creation/deletion, and handle-aware wiring in a live Patchies patch.
 ---
 
 # Writing Patchies Object Code
@@ -21,12 +21,60 @@ relative to this file, not the terminal's current directory.
   this running version of Patchies. Search filenames, then read the relevant
   files rather than loading the whole directory.
 
-This mount syncs saves to existing files only. Ask the user to create missing
-objects, connections, or Patch files in the browser first. Local creation,
-deletion, and rename do not perform those operations on the patch. `user://`
-assets and the graph's wiring are not exposed by this mount. When connections
-or runtime errors matter, request that context unless a separately available
-tool can inspect it. Questions and explanations alone do not require edits.
+Use `patchies graph --path <mount-root> --json` to query all nodes and edges,
+including objects without source files. The read-only `graph.json` is the last
+projected graph and may be stale while disconnected. For exact current handles,
+use `patchies node inspect <id> --path <mount-root> --json`; wait for
+`ports.ready` before wiring dynamic nodes.
+
+## Create nodes and change wires
+
+Run commands against the running mount's private local socket:
+
+```sh
+patchies node create glsl --path <mount-root> --position 100,200 --json
+patchies node create 'osc~ 440' --path <mount-root> --json
+patchies node delete <node-id> --path <mount-root> --json
+patchies wire connect <source-id>:<outlet-id> <target-id>:<inlet-id> --path <mount-root> --json
+patchies wire disconnect <source-id>:<outlet-id> <target-id>:<inlet-id> --path <mount-root> --json
+```
+
+Read the creation result for the assigned ID and source paths, then edit the
+created object's source. Use the exact handle IDs returned by inspection.
+Optional `--data '<JSON object>'` supplies initial node data. Commands and wire
+saves use normal browser undo history; deleting a node also removes its wires.
+A successful result confirms the browser applied the operation, not that code
+produced the intended audio or visuals.
+
+Alternatively, edit `connections.txt` at the mount root, one declaration per
+line: `source-id:source-handle-id -> target-id:target-handle-id`. Added lines
+connect; removed lines disconnect those exact endpoints from the last synced
+baseline. Browser-only additions survive concurrent saves. Blank lines and
+full-line `#` comments are allowed. JSON-quote IDs containing whitespace or
+colons. Bare `@default` represents a null/default handle; prefer discovered
+concrete handles for new wires. One invalid declaration rejects the whole save
+and leaves the text unsynced for correction.
+
+Code sync still edits existing files only. Create nodes through the CLI;
+create missing Patch files in the browser. Local file creation, removal and
+rename do not perform those operations on the patch. `user://` assets are
+outside this mount. Read existing mounted references for object APIs rather
+than treating embedded chat tool names as CLI commands.
+
+## Recover a disconnected mount
+
+Keep the browser open for live work. Transport interruptions reconnect
+automatically. Reloading the same page reclaims its session. Restart the CLI
+with `patchies mount --resume --path <mount-root>` and provide the connection
+string when prompted. Offline edits are scanned before browser refresh and
+replayed; rejected or orphaned edits remain in private `.patchies/state.json`.
+New structural commands require a connected browser.
+
+If a command times out or returns `outcome_unknown`, inspect the live graph and
+`.patchies/last-command.json` before repeating it. Its operation ID identifies
+the unresolved request; the CLI does not blindly repeat node creation. A server
+restart or explicit revocation ends the session and requires a fresh mount.
+Keep connection strings private; they are not stored in mount metadata.
 
 ## Read the object's contract, then edit
 

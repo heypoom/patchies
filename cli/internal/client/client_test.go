@@ -74,3 +74,15 @@ func TestParseEventStreamKeepsEventDataAndJoinsMultipleLines(t *testing.T) {
 		t.Fatalf("event data = %#v", events)
 	}
 }
+
+func TestAttachReportsAnOldServerBeforeProjectingFiles(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		response.Header().Set("Content-Type", "application/json")
+		_, _ = response.Write([]byte(`{"protocolVersion":"patchies.remote-control.v2","sessionId":"session"}`))
+	}))
+	defer server.Close()
+	_, err := New(protocol.Connection{InstanceURL: server.URL, SessionID: "session", Secret: "secret"}).Attach(t.Context())
+	if err == nil || !strings.Contains(err.Error(), "update the Remote Control server") {
+		t.Fatalf("old server error: %v", err)
+	}
+}

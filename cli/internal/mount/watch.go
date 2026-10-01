@@ -21,6 +21,7 @@ type Watcher struct {
 	changes  chan FileChange
 	errors   chan error
 	expected map[string]string
+	captured map[string]string
 	mu       sync.Mutex
 	root     string
 	watcher  *fsnotify.Watcher
@@ -40,6 +41,7 @@ func NewWatcher(root string) (*Watcher, error) {
 		changes:  make(chan FileChange, 32),
 		errors:   make(chan error, 1),
 		expected: make(map[string]string),
+		captured: make(map[string]string),
 		root:     root,
 		watcher:  watcher,
 	}
@@ -59,15 +61,19 @@ func (w *Watcher) Close() error {
 func (w *Watcher) ApplySnapshot(representation Representation) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if err := ApplySnapshot(w.root, representation); err != nil {
+	nextExpected := make(map[string]string)
+	if err := applySnapshot(w.root, representation, func(entry Entry) error {
+		if err := w.applyEntryLocked(entry); err != nil {
+			return err
+		}
+		if entry.Kind == "file" && !isReadOnlyPath(entry.Path) {
+			nextExpected[entry.Path] = w.expected[entry.Path]
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
-	w.expected = make(map[string]string)
-	for _, entry := range representation.Entries {
-		if entry.Kind == "file" && !isReadOnlyPath(entry.Path) {
-			w.expected[entry.Path] = entry.Content
-		}
-	}
+	w.expected = nextExpected
 
 	return w.refreshWatches()
 }
@@ -76,14 +82,11 @@ func (w *Watcher) ApplyEntry(entry Entry) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if err := ApplyEntry(w.root, entry); err != nil {
+	if err := w.applyEntryLocked(entry); err != nil {
 		return err
 	}
 	if isReadOnlyPath(entry.Path) {
 		return nil
-	}
-	if entry.Kind == "file" {
-		w.expected[entry.Path] = entry.Content
 	}
 	path := filepath.Join(w.root, filepath.FromSlash(entry.Path))
 	if entry.Kind == "file" {
@@ -96,6 +99,50 @@ func (w *Watcher) ApplyEntry(entry Entry) error {
 		path = filepath.Dir(path)
 	}
 	return nil
+}
+
+// Check each writable file immediately before projection. A save can arrive
+// after the session's earlier scan while other snapshot entries are written.
+func (w *Watcher) applyEntryLocked(entry Entry) error {
+	if entry.Kind == "file" && !isReadOnlyPath(entry.Path) {
+		_, captured := w.captured[entry.Path]
+		if w.captureLatestLocked(entry.Path) || captured {
+			return nil
+		}
+		if expected, exists := w.expected[entry.Path]; exists && expected == entry.Content {
+			target, err := safePath(w.root, entry.Path)
+			if err == nil {
+				if info, err := os.Stat(target); err == nil && info.Mode().IsRegular() {
+					return nil
+				}
+			}
+		}
+	}
+	if err := ApplyEntry(w.root, entry); err != nil {
+		return err
+	}
+	if entry.Kind == "file" && !isReadOnlyPath(entry.Path) {
+		w.expected[entry.Path] = entry.Content
+	}
+	return nil
+}
+
+func (w *Watcher) captureLatestLocked(path string) bool {
+	expected, exists := w.expected[path]
+	if !exists {
+		return false
+	}
+	target, err := safePath(w.root, path)
+	if err != nil {
+		return false
+	}
+	content, err := os.ReadFile(target)
+	if err != nil || string(content) == expected {
+		return false
+	}
+	w.captured[path] = string(content)
+	w.expected[path] = string(content)
+	return true
 }
 
 func (w *Watcher) RemoveEntry(removed string) error {
@@ -131,6 +178,9 @@ func (w *Watcher) refreshWatches() error {
 		}
 	}
 	for _, namespace := range []string{"objects", "patch"} {
+		if _, err := os.Stat(filepath.Join(w.root, namespace)); os.IsNotExist(err) {
+			continue
+		}
 		if err := filepath.WalkDir(filepath.Join(w.root, namespace), func(path string, entry os.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -222,6 +272,11 @@ func (w *Watcher) capture(path string) {
 	}
 
 	next := string(content)
+	if _, captured := w.captured[path]; captured {
+		w.captured[path] = next
+		w.expected[path] = next
+		return
+	}
 
 	select {
 	case w.changes <- FileChange{Path: path, Content: next}:
@@ -248,6 +303,10 @@ func (w *Watcher) PendingChanges() []FileChange {
 		}
 	}
 drained:
+	for path, content := range w.captured {
+		latest[path] = content
+	}
+	w.captured = make(map[string]string)
 	for path, expected := range w.expected {
 		target, err := safePath(w.root, path)
 		if err != nil {
@@ -270,6 +329,12 @@ drained:
 func (w *Watcher) PreserveLocal(path, content string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if w.captureLatestLocked(path) {
+		return nil
+	}
+	if _, captured := w.captured[path]; captured {
+		return nil
+	}
 	if expected, exists := w.expected[path]; !exists || expected == content {
 		return nil
 	}
@@ -278,4 +343,19 @@ func (w *Watcher) PreserveLocal(path, content string) error {
 	}
 	w.expected[path] = content
 	return nil
+}
+
+// Seed tracked canonical content without touching files, so offline edits are
+// captured before the first browser snapshot overwrites the directory.
+func (w *Watcher) Seed(files map[string]string) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	for path, content := range files {
+		if err := ValidateWritablePath(w.root, path); err != nil {
+			return err
+		}
+		w.expected[path] = content
+	}
+	return w.refreshWatches()
 }
