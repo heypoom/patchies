@@ -24,6 +24,16 @@ build binary="patchies-server":
     cd server && go run ./cmd/pack-static -source static -destination static.zip
     cd server && go build -o "../{{binary}}" .
 
+cli-build binary="patchies":
+    cd cli && go build -o "../{{binary}}" ./cmd/patchies
+
+cli-install: cli-build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p "$HOME/.local/bin"
+    install -m 755 "{{project_root}}/patchies" "$HOME/.local/bin/patchies"
+    echo "Installed patchies to $HOME/.local/bin/patchies"
+
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
