@@ -68,6 +68,7 @@ import { scopePrompt } from '$objects/scope~/prompt';
 import { tapTildePrompt } from '$objects/tap~/prompt';
 import { textmodeDomPrompt, textmodePrompt } from '$objects/textmode/prompt';
 import { sequencerPrompt } from '$objects/sequencer/prompt';
+import { joyconPrompt } from '$objects/joycon/prompt';
 import { stackPrompt } from '$objects/stack/prompt';
 import { queuePrompt } from '$objects/queue/prompt';
 import { packPrompt } from '$objects/pack/prompt';
@@ -162,6 +163,7 @@ export const objectPrompts: Record<string, string> = {
   'bytebeat~': bytebeatPrompt,
   'samplerate~': sampleratePrompt,
   sequencer: sequencerPrompt,
+  joycon: joyconPrompt,
   stack: stackPrompt,
   queue: queuePrompt,
   pack: packPrompt,
