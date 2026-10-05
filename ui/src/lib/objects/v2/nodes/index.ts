@@ -58,6 +58,7 @@ import { SwitchObject } from '$objects/switch/SwitchObject';
 import { ToggleSwitchObject } from '$objects/toggleswitch/ToggleSwitchObject';
 import { TextboxObject } from '$objects/textbox/TextboxObject';
 import { JSObject } from '$objects/js/JSObject';
+import { JoyconObject } from '$objects/joycon/JoyconObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
@@ -116,6 +117,7 @@ export const VISUAL_OBJECTS = [
   TitleObject,
   ToggleObject,
   SequencerObject,
+  JoyconObject,
   ToggleSwitchObject,
   TextboxObject,
   JSObject
