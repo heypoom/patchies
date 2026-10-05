@@ -125,6 +125,7 @@ const SCHEMA_DERIVABLE_TYPES = [
   'serial',
   'serial.term',
   'serial.dmx',
+  'joycon',
 
   // Vision / MediaPipe
   'vision.hand',
