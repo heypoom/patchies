@@ -1,5 +1,7 @@
 import { useEdges, useNodes } from '@xyflow/svelte';
 import { SvelteSet } from 'svelte/reactivity';
+import { getEdgeInsertionObjectName } from '$lib/canvas/edge-insertion-adapters';
+import { logger } from '$lib/utils/logger';
 import { getQuickInsertEdge, retireEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
 import {
   getObjectAutocompleteQuery,
@@ -116,8 +118,16 @@ export function useObjectSuggestions({
     return !!explicitItem && !compatibleSuggestionNames.has(explicitItem.name);
   };
 
-  const prepareConfirmation = () =>
+  const prepareConfirmation = () => {
+    const expression = getExpr();
+    const name = expression.trim().toLowerCase();
+    const pipeName = insertionEdge ? getEdgeInsertionObjectName(name) : name;
+    const resolvedExpression = pipeName === name ? expression : pipeName;
+
     edgesHelper.update((edges) => retireEdgeInsertionPreview(edges, getNodeId()));
+
+    return resolvedExpression;
+  };
 
   return {
     get filteredSuggestions() {

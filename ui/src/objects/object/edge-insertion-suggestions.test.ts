@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { Edge, Node } from '@xyflow/svelte';
+import { PRESETS as BUILTIN_PRESETS } from '$lib/presets/presets';
 import { buildObjectPresetSearchIndex } from '$lib/search/object-preset-search';
 import { canInsertSuggestionIntoEdge } from './edge-insertion-suggestions';
 
@@ -13,6 +14,12 @@ vi.mock('$lib/registry/ObjectShorthandRegistry', () => ({
 }));
 
 const PRESETS = [
+  {
+    path: ['builtin', 'js>'],
+    libraryId: 'builtin',
+    libraryName: 'Built-in',
+    preset: { ...BUILTIN_PRESETS['js>']!, name: 'js>' }
+  },
   {
     path: ['user', 'video processor'],
     libraryId: 'user',
@@ -28,10 +35,10 @@ const PRESETS = [
 
 const index = buildObjectPresetSearchIndex({
   presets: PRESETS,
-  objectNames: ['glsl', 'osc~', 'gain~', 'out~', 'map', 'button'],
+  objectNames: ['js', 'glsl', 'osc~', 'gain~', 'out~', 'map', 'button'],
   shorthands: [],
-  enabledObjectNames: new Set(['glsl', 'osc~', 'gain~', 'out~', 'map', 'button']),
-  enabledPresetNames: new Set(),
+  enabledObjectNames: new Set(['js', 'glsl', 'osc~', 'gain~', 'out~', 'map', 'button']),
+  enabledPresetNames: new Set(['js>']),
   patchObjectTypeNames: new Set(),
   aiFeaturesVisible: true
 });
@@ -47,6 +54,10 @@ describe('edge insertion suggestions', () => {
     ['video', 'glsl', true],
     ['video', 'video processor', true],
     ['video', 'gain~', false],
+    ['message', 'js', true],
+    ['message', 'js>', true],
+    ['audio', 'js', false],
+    ['video', 'js>', false],
     ['message', 'map', true],
     ['message', 'button', true]
   ])('%s edge permits %s: %s', (type, name, expected) => {

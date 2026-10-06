@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type { Edge, Node } from '@xyflow/svelte';
 import type { ObjectSchemaRegistry } from '$lib/objects/schemas';
+import { jsSchema } from '$objects/js/schema';
 import { glslSchema } from '$objects/glsl/schema';
 import { preset as glslPipePreset } from '$presets/glsl/passthru';
 import { PRESETS } from '$lib/presets/presets';
@@ -345,5 +346,33 @@ describe('createEdgeInsertionPreview', () => {
         previews.map((preview) => preview.id)
       )
     ).toEqual([unrelated, edge]);
+  });
+
+  test.each(['js', 'js>'])('wires %s through the JS pipe preset message handles', (name) => {
+    const preset = PRESETS['js>']!;
+
+    const node = applyEdgeInsertionPipePreset(
+      {
+        ...inserted,
+        type: preset.type,
+        data: name === 'js' ? {} : (preset.data as Record<string, unknown>)
+      },
+      name
+    );
+
+    expect(planEdgeInsertion(edge, node, target, { js: jsSchema }, (node) => node.type)).toEqual({
+      sourceHandle: 'message-out',
+      insertedInletHandle: 'in-0',
+      insertedOutletHandle: 'out-0',
+      targetHandle: 'message-in'
+    });
+
+    expect(node.data).toEqual(preset.data);
+  });
+
+  test.each(['inletCount', 'outletCount'])('does not wire JS with zero %s', (countKey) => {
+    const node = { ...inserted, type: 'js', data: { [countKey]: 0 } };
+
+    expect(planEdgeInsertion(edge, node, target, { js: jsSchema }, (node) => node.type)).toBeNull();
   });
 });

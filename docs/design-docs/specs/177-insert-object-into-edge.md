@@ -51,6 +51,12 @@ When an object has a companion `name>` pipe preset, inserting its base object na
 edge creates that pipe preset instead. This includes `js>`, `hydra>`, `glsl>`, `regl>`, `swgl>`,
 `three>`, and `tone>`. This applies equally to Object Browser cards and typed Quick Insert names.
 
+On message edges, both `js` and `js>` insert the `js>` message pass-through preset. Compatibility
+uses its dynamic message port counts (one inlet and outlet by default), with `in-0` and `out-0`
+as the first handles. Explicit zero port counts remain incompatible. Resolve companion pipe presets
+before Quick Insert transforms the placeholder into a visual node. In particular, `js>` starts with
+its console collapsed on the first render, so midpoint positioning uses the collapsed node size.
+
 GLSL sampler uniforms are dynamic video inlets and are derived before edge compatibility is checked.
 The video pipe presets expose one video inlet and outlet when inserted into a video edge, including
 when their preset data omits the default port counts.

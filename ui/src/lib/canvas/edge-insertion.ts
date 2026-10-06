@@ -47,12 +47,37 @@ function getDynamicVideoHandles(
   );
 }
 
+function getDynamicMessageHandles(
+  node: Node,
+  port: 'inlet' | 'outlet',
+  template?: string
+): string[] {
+  const direction = port === 'inlet' ? 'in' : 'out';
+  if (template !== `${direction}-{index}`) return [];
+
+  const data = node.data as Record<string, unknown>;
+  const count = data[`${port}Count`] ?? 1;
+  const offset = data[port === 'inlet' ? 'videoInletCount' : 'videoOutletCount'] ?? 0;
+
+  if (typeof count !== 'number' || count <= 0 || typeof offset !== 'number') {
+    return [];
+  }
+
+  return Array.from({ length: Math.floor(count) }, (_, index) =>
+    template.replace('{index}', (index + offset).toString())
+  );
+}
+
 function getInletCandidates(
   node: Node,
   schemaInlets: InletSchema[],
-  dynamicVideoInletTemplate?: string
+  dynamicVideoInletTemplate?: string,
+  dynamicMessageInletTemplate?: string
 ): InletCandidate[] {
   const staticInlets = getStaticInletCandidates(schemaInlets);
+  const messageInlets = getDynamicMessageHandles(node, 'inlet', dynamicMessageInletTemplate).map(
+    (handle) => ({ handle })
+  );
   const uniformDefs = (node.data as { glUniformDefs?: unknown } | undefined)?.glUniformDefs;
 
   const patternInlets = getDynamicVideoHandles(
@@ -61,7 +86,7 @@ function getInletCandidates(
     'videoInletCount'
   ).map((handle) => ({ handle }));
 
-  if (!Array.isArray(uniformDefs)) return [...staticInlets, ...patternInlets];
+  if (!Array.isArray(uniformDefs)) return [...staticInlets, ...messageInlets, ...patternInlets];
 
   const dynamicInlets = uniformDefs.flatMap((uniform, index) => {
     const withoutInlets =
@@ -88,7 +113,7 @@ function getInletCandidates(
     ];
   });
 
-  return [...staticInlets, ...patternInlets, ...dynamicInlets];
+  return [...staticInlets, ...messageInlets, ...patternInlets, ...dynamicInlets];
 }
 
 export interface EdgeInsertionPlan {
@@ -206,7 +231,8 @@ export function planEdgeInsertion(
     schema.inlets,
     schema.handlePatterns?.inlet?.handleType === 'video'
       ? schema.handlePatterns.inlet.template
-      : undefined
+      : undefined,
+    schema.handlePatterns?.inlet?.template
   ).find((candidate) => {
     return isValidConnectionBetweenHandles(edge.sourceHandle, candidate.handle, {
       isTargetAudioParam:
@@ -227,6 +253,7 @@ export function planEdgeInsertion(
         })
       ];
     }),
+    ...getDynamicMessageHandles(insertedNode, 'outlet', schema.handlePatterns?.outlet?.template),
     ...getDynamicVideoHandles(
       insertedNode,
       schema.handlePatterns?.outlet?.handleType === 'video'
