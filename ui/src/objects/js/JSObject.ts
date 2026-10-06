@@ -10,6 +10,7 @@ import { match } from 'ts-pattern';
 import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import type { RuntimeObject } from '$lib/objects/v2/interfaces/text-objects';
+import type { PrimaryButton } from '$lib/eventbus/events';
 
 type JSObjectData = {
   code?: string;
@@ -145,6 +146,12 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     try {
       const processedCode = await runner.preprocessCode(code, { nodeId: this.nodeId });
 
+      const setPrimaryButton = (primaryButton: PrimaryButton) =>
+        this.context.setData(
+          { primaryButton: primaryButton === 'run' ? 'code' : primaryButton },
+          { notifyUI: true }
+        );
+
       await runner.executeJavaScript(this.nodeId, processedCode, {
         customConsole,
         messageContext,
@@ -195,7 +202,10 @@ export class JSObject implements RuntimeObject<JSObjectData> {
           };
         },
 
-        extraContext: { settings: createSettingsAPI(this.settingsManager) }
+        extraContext: {
+          settings: createSettingsAPI(this.settingsManager),
+          setPrimaryButton
+        }
       });
     } catch (error) {
       handleCodeError(error, code, this.nodeId, customConsole);

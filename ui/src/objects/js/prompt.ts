@@ -13,6 +13,8 @@ JavaScript execution block for general-purpose logic and utilities.
 ${esmInstructions}
 ${runOnMountInstructions}
 
+- setPrimaryButton('code' | 'settings'): choose the node's primary action. 'settings' requires visible settings fields;
+
 ${fftInstructions}
 
 ${patcherLibraryInstructions}

@@ -369,4 +369,27 @@ describe('JSObject', () => {
     object.destroy();
     context.destroy();
   });
+
+  it.each([
+    ['settings', 'settings'],
+    ['code', 'code'],
+    ['run', 'code']
+  ])('sets the primary button to %s without mounting its view', async (requested, expected) => {
+    const messageContext = new MessageContext(compilerId);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: `setPrimaryButton('${requested}')`,
+      runOnMount: true,
+      primaryButton: requested === 'settings' ? 'code' : 'settings'
+    });
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(context.getData()).toMatchObject({ primaryButton: expected });
+    expect(logger.getNodeLogs(compilerId)).toEqual([]);
+
+    object.destroy();
+    context.destroy();
+  });
 });

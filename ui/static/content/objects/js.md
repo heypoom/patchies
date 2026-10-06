@@ -6,6 +6,7 @@ These methods are exclusive to the `js` object:
 
 - **`setRunOnMount(true)`** - run the code automatically when the object is created. By default, code only runs when you hit the "Play" button.
 - **`flash()`** - briefly flash the node's border, useful for visual feedback when processing messages.
+- **`setPrimaryButton('settings' | 'code')`** - set the node's primary button to open the settings panel or code editor (default). The choice is saved with the node.
 
 ## OpenCV
 
