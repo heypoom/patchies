@@ -1,5 +1,14 @@
 import type regl from 'regl';
 
+export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
+  alpha: true,
+  antialias: false,
+  stencil: true,
+
+  // The final shader premultiplies RGB. bitmap presentation must not do it again.
+  premultipliedAlpha: true
+};
+
 type FinalOutputPresentationProps = {
   texture: regl.Texture2D;
   sourceUvRect: [number, number, number, number];

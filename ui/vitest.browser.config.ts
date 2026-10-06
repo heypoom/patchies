@@ -5,12 +5,13 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   server: { preTransformRequests: false },
+  optimizeDeps: { include: ['regl'] },
   plugins: [svelte()],
   resolve: {
     alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) }
   },
   test: {
-    include: ['src/**/*.svelte.test.ts'],
+    include: ['src/**/*.svelte.test.ts', 'src/**/*.browser.test.ts'],
     browser: {
       enabled: true,
       provider: 'playwright',

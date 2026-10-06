@@ -11,7 +11,9 @@ The worker WebGL context used browser defaults, including `premultipliedAlpha: t
 Create the worker WebGL context with explicit alpha settings:
 
 - `alpha: true` so the drawing buffer has an alpha channel.
-- `premultipliedAlpha: false` because Patchies FBO content is straight alpha.
+- `premultipliedAlpha: true` because the final presentation shader writes
+  premultiplied pixels to the drawing buffer. This setting describes the canvas
+  presentation boundary, not the internal FBO textures.
 
 The final presentation pass converts internal straight-alpha node output into
 premultiplied-alpha pixels for the browser-visible `ImageBitmap`:
@@ -25,14 +27,26 @@ This keeps alpha transparent while preventing hidden RGB in fully transparent
 pixels from leaking through `bitmaprenderer` presentation. Internal FBOs and
 node-to-node video textures remain straight-alpha.
 
+The canvas and final shader must agree: a premultiplying shader paired with
+`premultipliedAlpha: false` applies alpha twice during bitmap presentation,
+darkening partially transparent output relative to node previews. For example,
+RGB `(200, 100, 50)` with alpha `0.5` should display as `(100, 50, 25)` over black,
+not `(50, 25, 13)`.
+
+Keep the context attributes beside the final presentation command so this
+contract is shared by the renderer and browser regression tests. Tests exercise
+`transferToImageBitmap()` and alpha-capable `bitmaprenderer` presentation, checking
+preview parity over black and colored backgrounds, transparent hidden RGB, and
+the transparent exterior and feathered edge of Circle-style output.
+
 ## Files affected
 
-| File                                                        | Change                                      |
-| ----------------------------------------------------------- | ------------------------------------------- |
-| `ui/src/workers/rendering/fboRenderer.ts`                   | Use explicit straight-alpha WebGL settings. |
-| `ui/src/workers/rendering/finalOutputPresentation.ts`       | Premultiply final output pixels for presentation. |
-| `ui/src/lib/components/BackgroundOutputCanvas.svelte`       | Request an alpha-capable background bitmap renderer. |
-| `ui/src/routes/output/+page.svelte`                         | Request alpha-capable output-window bitmap renderers. |
+| File                                                  | Change                                                     |
+| ----------------------------------------------------- | ---------------------------------------------------------- |
+| `ui/src/workers/rendering/fboRenderer.ts`             | Use the shared presentation context settings.              |
+| `ui/src/workers/rendering/finalOutputPresentation.ts` | Pair premultiplication with premultiplied canvas settings. |
+| `ui/src/lib/components/BackgroundOutputCanvas.svelte` | Request an alpha-capable background bitmap renderer.       |
+| `ui/src/routes/output/+page.svelte`                   | Request alpha-capable output-window bitmap renderers.      |
 
 ## What does NOT change
 
