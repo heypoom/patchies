@@ -1,6 +1,12 @@
-A DAW-style step sequencer with up to 8 tracks. By default, all tracks send
-MIDI messages through one outlet on every active step. Can run locked to the global
-[transport](/docs/transport-control) or advance one step per incoming bang.
+By default, all tracks send MIDI messages through one outlet on every active step.
+
+It is synced to the [global transport](/docs/transport-control) by default, but it can also be advance one step each incoming bang with the _manual clock_ option.
+
+## MIDI Quickstart
+
+Lay some beats on the sequencer. Connect the MIDI outlet to [drums~](/docs/objects/drums~) or [pads~](/docs/objects/pads~) to sequence MIDI and trigger those objects.
+
+`pads~` let you load your own drum samples, while `drums~` provide built-in kits such as TR-808 and Roland CR-8000.
 
 ## Tracks
 
@@ -13,15 +19,10 @@ Click any step button to toggle it on or off.
 
 Choose 4, 8, 12, 16, 24, or 32 steps from the settings panel. Every step
 lasts one tempo beat, so changing the number of steps changes the pattern
-length, not its speed. In a 5/4 transport, an 8-step pattern continues across
+length, not its speed.
+
+In a 5/4 transport, an 8-step pattern continues across
 the bar boundary instead of squeezing all eight steps into five beats.
-
-## Resize
-
-Enable **Resizable** under **Display** in the settings panel, then select the
-sequencer and drag a resize handle to scale it. The node keeps its original
-proportions, so the step grid grows evenly in both directions instead of
-stretching its cells wider.
 
 ## Clock Modes
 
@@ -31,9 +32,9 @@ Set via **Clock** in the settings panel:
   Swing and BPM apply normally.
 - **manual** — a clock inlet appears on the node. Each bang received advances
   the sequencer by one step, completely independent of the transport. Send
-  `{type: "reset"}` on the same inlet to jump back to step 1.
+  `{ type: "reset" }` on the same inlet to jump back to step 1.
 
-In manual mode you can use `metro` for a free-running clock at any rate.
+In manual mode, you can use `metro` for a free-running clock at any rate.
 Swing has no effect in manual mode.
 
 ## Output Modes
@@ -82,6 +83,7 @@ next even step — classic shuffle feel.
 
 ## See Also
 
+- [pads~](/docs/objects/pads~) - 8-pad drum machine with velocity and swing
 - [metro](/docs/objects/metro) - Millisecond-interval metronome
 - [sampler~](/docs/objects/sampler~) - Sample playback, triggered by bang
 - [trigger](/docs/objects/trigger) - Route and split bang/value messages
