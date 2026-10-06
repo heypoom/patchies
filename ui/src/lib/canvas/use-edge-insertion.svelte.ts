@@ -5,12 +5,15 @@ import type { Edge, Node } from '@xyflow/svelte';
 import { AddEdgesCommand, AddNodeCommand, BatchCommand, DeleteEdgesCommand } from '$lib/history';
 import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
 import { objectSchemas } from '$lib/objects/schemas';
+import { logger } from '$lib/utils/logger';
 
 import {
   createEdgeInsertionPreview,
   getCenteredNodeInsertionPosition,
   getEdgeInsertionPosition,
-  planEdgeInsertion
+  planEdgeInsertion,
+  showEdgeInsertionPreview,
+  restoreEdgeInsertionPreview
 } from '$lib/canvas/edge-insertion';
 
 import {
@@ -88,10 +91,11 @@ export function useEdgeInsertion(canvasContext: CanvasContext, nodeOps: NodeOper
 
     if (!pending) return;
 
-    canvasContext.edges = [
-      ...canvasContext.edges.filter((edge) => !pending.previewEdgeIds.includes(edge.id)),
-      ...(canvasContext.edges.some((edge) => edge.id === pending.edge.id) ? [] : [pending.edge])
-    ];
+    canvasContext.edges = restoreEdgeInsertionPreview(
+      canvasContext.edges,
+      pending.edge,
+      pending.previewEdgeIds
+    );
   }
 
   function createQuickInsertNode(position: { x: number; y: number }, edge?: Edge) {
@@ -109,10 +113,9 @@ export function useEdgeInsertion(canvasContext: CanvasContext, nodeOps: NodeOper
       node.id === nodeId ? { ...node, zIndex: INSERTED_NODE_Z_INDEX } : node
     );
 
-    canvasContext.edges = [
-      ...canvasContext.edges.filter((candidate) => candidate.id !== edge.id),
-      ...previewEdges
-    ];
+    canvasContext.edges = showEdgeInsertionPreview(canvasContext.edges, edge, previewEdges);
+
+    logger.debug('Quick Insert preview preserves live connection', { nodeId, edgeId: edge.id });
 
     centerQuickInsertPreview(nodeId, edge);
   }
@@ -177,18 +180,16 @@ export function useEdgeInsertion(canvasContext: CanvasContext, nodeOps: NodeOper
     );
 
     if (!plan) {
-      if (!canvasContext.edges.some((candidate) => candidate.id === edge.id)) {
-        canvasContext.edges = [
-          ...canvasContext.edges.filter(
-            (candidate) => !pending.previewEdgeIds.includes(candidate.id)
-          ),
-          edge
-        ];
-      } else if (pending.previewEdgeIds.length > 0) {
-        canvasContext.edges = canvasContext.edges.filter(
-          (candidate) => !pending.previewEdgeIds.includes(candidate.id)
-        );
-      }
+      canvasContext.edges = restoreEdgeInsertionPreview(
+        canvasContext.edges,
+        edge,
+        pending.previewEdgeIds
+      );
+
+      logger.debug('Quick Insert places incompatible object without rewiring', {
+        nodeId,
+        edgeId: edge.id
+      });
 
       const command = new AddNodeCommand({ ...node }, canvasContext.canvasAccessors);
       canvasContext.historyManager.record(command);

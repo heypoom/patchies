@@ -30,10 +30,6 @@
   import { Search } from '@lucide/svelte/icons';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import { objectPresetSearchIndex } from '../../stores/object-preset-search.store';
-  import {
-    getObjectAutocompleteQuery,
-    shouldSuppressObjectAutocomplete
-  } from '$lib/search/object-autocomplete-query';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import DisabledObjectSuggestionInline from '$objects/object/DisabledObjectSuggestionInline.svelte';
   import ObjectSuggestionDropdown from '$objects/object/ObjectSuggestionDropdown.svelte';
@@ -48,6 +44,7 @@
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import type { ObjectNodeData } from './types';
   import { useObjectParameterDrag } from '$objects/object/useObjectParameterDrag.svelte';
+  import { useObjectSuggestions } from './useObjectSuggestions.svelte';
 
   let {
     id: nodeId,
@@ -185,43 +182,16 @@
     });
   });
 
-  const filteredSuggestions = $derived.by(() => {
-    if (!isEditing) return [];
-    if (isEditingObjectArguments) return [];
-
-    const query = getObjectAutocompleteQuery(expr);
-
-    if (!query) {
-      return $objectPresetSearchIndex.getDefaultObjectSuggestions();
-    }
-
-    return $objectPresetSearchIndex.searchObjectSuggestions(query);
+  const objectSuggestions = useObjectSuggestions({
+    getNodeId: () => nodeId,
+    getExpr: () => expr,
+    getIsEditing: () => isEditing,
+    getSearchIndex: () => $objectPresetSearchIndex,
+    searchDisabledObject
   });
 
-  // Find matching disabled objects when autocomplete has no results
-  // Requires at least 3 characters to avoid noisy suggestions
-  const suggestedDisabledObject = $derived.by(() => {
-    if (!isEditing) return null;
-    if (isEditingObjectArguments) return null;
-
-    const query = getObjectAutocompleteQuery(expr);
-    if (!query) return null;
-
-    // Allow short signal operators like +~, *~, etc. but require 3 chars for general queries
-    if (query.length < 3 && !query.endsWith('~')) return null;
-
-    if (filteredSuggestions.length > 0) return null;
-
-    return searchDisabledObject(query);
-  });
-
-  const isEditingObjectArguments = $derived.by(() => {
-    const objectNames = $objectPresetSearchIndex.allSearchableItems
-      .filter((item) => item.type === 'object')
-      .map((item) => item.name);
-
-    return shouldSuppressObjectAutocomplete(expr, objectNames);
-  });
+  const filteredSuggestions = $derived(objectSuggestions.filteredSuggestions);
+  const suggestedDisabledObject = $derived(objectSuggestions.suggestedDisabledObject);
 
   function enablePackFromSuggestion(packId: string, objectName: string) {
     togglePack(packId);
@@ -508,6 +478,12 @@
     if (isDismissKey(event)) {
       event.preventDefault();
       exitEditingMode(false);
+      return;
+    }
+
+    if (event.key === 'Enter' && objectSuggestions.shouldConfirmExplicitExpression()) {
+      event.preventDefault();
+      exitEditingMode(true);
       return;
     }
 

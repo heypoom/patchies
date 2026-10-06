@@ -112,7 +112,7 @@ export class PatchManager {
       helpMode ||
       isReadOnlyMode ||
       this._isSharedPatchSession ||
-      // A Quick Insert preview temporarily replaces an edge until the object is confirmed.
+      // Quick Insert previews and their hidden live edge are transient editor state.
       this.ctx.edges.some(isEdgeInsertionPreview)
     ) {
       return false;

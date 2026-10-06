@@ -14,6 +14,14 @@ description: Use when editing Patchies Svelte components, UI state, styling, but
 - Prefer shared named functions when the same logic appears in multiple places, such as a message handler and context menu item.
 - Prefer existing files and local patterns over new abstractions.
 
+## Component Size and Svelte Composables
+
+- Aim for at most 500 lines per `.svelte` component. Check the full file's line count before extending it.
+- When a component already exceeds 500 lines, aggressively extract state, derived values, effects, and event-handling logic into focused `use*.svelte.ts` composables. Put new behavior in composables and keep component changes to minimal wiring; do not grow the component further. Extract existing logic as needed so the component's final line count does not increase.
+- If a change would push a component above 500 lines, extract logic as part of that change instead of crossing the threshold.
+- Keep each composable focused on one responsibility, colocated with its owning object or feature. Accept reactive getters and callbacks, expose a small interface, and preserve lifecycle cleanup. Keep pure decision logic in ordinary TypeScript helpers when it needs no Svelte reactivity.
+- Extract cohesive markup into child components when markup drives the file size. Keep the parent focused on rendering and composing behavior; preserve readable formatting rather than compressing lines to meet the limit.
+
 ## `ts-pattern`
 
 Use `ts-pattern` when it improves clarity:

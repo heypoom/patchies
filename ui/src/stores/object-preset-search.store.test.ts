@@ -33,10 +33,36 @@ function createFlatPreset({
 }
 
 describe('object preset search index', () => {
+  test('filters incompatible suggestions before applying the result limit', () => {
+    const index = buildObjectPresetSearchIndex({
+      presets: [],
+      objectNames: ['target-a', 'target-b', 'target-c'],
+      shorthands: [],
+      enabledObjectNames: new Set(['target-a', 'target-b', 'target-c']),
+      enabledPresetNames: new Set(),
+      patchObjectTypeNames: new Set(),
+      aiFeaturesVisible: true
+    });
+
+    const options = {
+      limit: 1,
+      filter: (item: { name: string }) => item.name === 'target-c'
+    };
+
+    expect(index.getDefaultObjectSuggestions(options).map((item) => item.name)).toEqual([
+      'target-c'
+    ]);
+
+    expect(index.searchObjectSuggestions('target', options).map((item) => item.name)).toEqual([
+      'target-c'
+    ]);
+  });
+
   test('caps default and fuzzy object suggestions at 100 results', () => {
     const presets = Array.from({ length: DEFAULT_OBJECT_SUGGESTION_LIMIT + 30 }, (_, index) =>
       createFlatPreset({ name: `target-${index.toString().padStart(3, '0')}` })
     );
+
     const index = buildObjectPresetSearchIndex({
       presets,
       objectNames: ['glsl'],
@@ -57,6 +83,7 @@ describe('object preset search index', () => {
       libraryId: 'built-in',
       libraryName: 'Built-in'
     });
+
     const hiddenIndex = buildObjectPresetSearchIndex({
       presets: [builtinPreset],
       objectNames: ['glsl'],
@@ -66,6 +93,7 @@ describe('object preset search index', () => {
       patchObjectTypeNames: new Set(),
       aiFeaturesVisible: true
     });
+
     const visibleIndex = buildObjectPresetSearchIndex({
       presets: [builtinPreset],
       objectNames: ['glsl'],
@@ -77,6 +105,7 @@ describe('object preset search index', () => {
     });
 
     expect(hiddenIndex.searchObjectSuggestions('Built In Texture')).toEqual([]);
+
     expect(visibleIndex.searchObjectSuggestions('Built In Texture')).toMatchObject([
       { name: 'Built In Texture', type: 'preset' }
     ]);
@@ -88,11 +117,13 @@ describe('object preset search index', () => {
       libraryId: 'built-in',
       libraryName: 'Built-in'
     });
+
     const userPreset = createFlatPreset({
       name: 'Duplicate Texture',
       libraryId: 'user',
       libraryName: 'User'
     });
+
     const index = buildObjectPresetSearchIndex({
       presets: [builtinPreset, userPreset],
       objectNames: ['glsl'],
@@ -104,6 +135,7 @@ describe('object preset search index', () => {
     });
 
     expect(index.getPresetByName('Duplicate Texture')).toBe(userPreset);
+
     expect(index.searchObjectSuggestions('Duplicate Texture')).toMatchObject([
       { name: 'Duplicate Texture', type: 'preset', libraryName: 'User' }
     ]);

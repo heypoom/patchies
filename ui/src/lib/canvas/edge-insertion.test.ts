@@ -18,7 +18,10 @@ import {
   getCenteredNodeInsertionPosition,
   getEdgeInsertionPosition,
   isEdgeInsertionPreview,
-  planEdgeInsertion
+  planEdgeInsertion,
+  showEdgeInsertionPreview,
+  restoreEdgeInsertionPreview,
+  getQuickInsertEdge
 } from './edge-insertion';
 
 const schema = {
@@ -249,7 +252,7 @@ describe('createEdgeInsertionPreview', () => {
         target: 'quick-add',
         targetHandle: 'message-in',
         zIndex: 0,
-        data: { edgeInsertionPreview: true }
+        data: { edgeInsertionPreview: true, edgeInsertionOriginalEdgeId: edge.id }
       },
       {
         id: 'preview-right',
@@ -258,7 +261,7 @@ describe('createEdgeInsertionPreview', () => {
         target: 'right',
         targetHandle: 'message-in',
         zIndex: 0,
-        data: { edgeInsertionPreview: true }
+        data: { edgeInsertionPreview: true, edgeInsertionOriginalEdgeId: edge.id }
       }
     ]);
   });
@@ -268,5 +271,30 @@ describe('createEdgeInsertionPreview', () => {
       isEdgeInsertionPreview(createEdgeInsertionPreview(edge, 'quick-add', ['left', 'right'])[0]!)
     ).toBe(true);
     expect(isEdgeInsertionPreview(edge)).toBe(false);
+  });
+
+  test('keeps the live route during editing and restores it on cancellation', () => {
+    const unrelated: Edge = { ...edge, id: 'unrelated' };
+
+    const previews = createEdgeInsertionPreview(edge, 'quick-add', [
+      'preview-left',
+      'preview-right'
+    ]);
+
+    const editingEdges = showEdgeInsertionPreview([edge, unrelated], edge, previews);
+    expect(getQuickInsertEdge(editingEdges, 'quick-add')).toEqual({ ...edge, hidden: true });
+
+    expect(editingEdges.filter((candidate) => !isEdgeInsertionPreview(candidate))).toEqual([
+      { ...edge, hidden: true },
+      unrelated
+    ]);
+
+    expect(
+      restoreEdgeInsertionPreview(
+        editingEdges,
+        edge,
+        previews.map((preview) => preview.id)
+      )
+    ).toEqual([unrelated, edge]);
   });
 });
