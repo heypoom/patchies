@@ -266,7 +266,7 @@
         const objectName = getNameAndParams().name;
 
         if (isQuickAdd) {
-          objectSuggestions.prepareConfirmation();
+          expr = objectSuggestions.prepareConfirmation();
         }
 
         handleNameChange();

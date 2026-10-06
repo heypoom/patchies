@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { Edge } from '@xyflow/svelte';
 import { createEdgeInsertionPreview, showEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
+import { PRESETS } from '$lib/presets/presets';
 import { buildObjectPresetSearchIndex } from '$lib/search/object-preset-search';
 import { useObjectSuggestions } from './useObjectSuggestions.svelte';
 
@@ -87,9 +88,48 @@ describe('ObjectNode suggestions', () => {
     );
 
     expect(createSuggestions('').filteredSuggestions.map((item) => item.name)).toEqual(['gain~']);
-
     expect(createSuggestions('out~').shouldConfirmExplicitExpression()).toBe(true);
     expect(createSuggestions('gain~').shouldConfirmExplicitExpression()).toBe(false);
+  });
+
+  test.each(['js', 'js>'])('resolves %s to the collapsed pipe preset before mounting', (expr) => {
+    const edge: Edge = {
+      id: 'live',
+      source: 'left',
+      sourceHandle: 'message-out',
+      target: 'right',
+      targetHandle: 'message-in'
+    };
+
+    flow.edges = showEdgeInsertionPreview(
+      [edge],
+      edge,
+      createEdgeInsertionPreview(edge, 'quick-add', ['preview-left', 'preview-right'])
+    );
+
+    const expression = createSuggestions(expr).prepareConfirmation();
+    expect(expression).toBe('js>');
+    expect(PRESETS[expression]?.data).toMatchObject({ showConsole: false });
+  });
+
+  test('preserves custom preset names and object arguments during edge confirmation', () => {
+    const edge: Edge = {
+      id: 'live',
+      source: 'left',
+      sourceHandle: 'message-out',
+      target: 'right',
+      targetHandle: 'message-in'
+    };
+
+    for (const expression of ['My Processor', 'map 0 1']) {
+      flow.edges = showEdgeInsertionPreview(
+        [edge],
+        edge,
+        createEdgeInsertionPreview(edge, 'quick-add', ['preview-left', 'preview-right'])
+      );
+
+      expect(createSuggestions(expression).prepareConfirmation()).toBe(expression);
+    }
   });
 
   test('keeps ordinary quick insert suggestions unrestricted', () => {
@@ -102,5 +142,6 @@ describe('ObjectNode suggestions', () => {
     ]);
 
     expect(createSuggestions('out~').shouldConfirmExplicitExpression()).toBe(false);
+    expect(createSuggestions('js').prepareConfirmation()).toBe('js');
   });
 });
