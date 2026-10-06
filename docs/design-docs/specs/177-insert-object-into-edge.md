@@ -23,6 +23,12 @@ When exactly one edge is selected, insertion is contextual:
 - Provisional Quick Insert edges are editor-only: they are never autosaved. The original edge stays
   active for audio, video, and messages while its editor rendering is hidden by the preview.
   Cancelling restores its rendering; only confirmation can replace the live route.
+- Before confirming a Quick Insert object, retire its provisional edges by hiding them and routing
+  their editor endpoints back to the original edge. This removes references to generic placeholder
+  handles before the node changes type. Keep the preview markers until final rewiring so routing
+  ignores them and autosave remains paused throughout confirmation.
+- Unconfirmed ObjectNodes retain their generic inlet and outlet while typing; runtime metadata
+  must not replace those handles until the expression is committed.
 - Quick Insert autocomplete shows only objects and presets with compatible ports on both ends,
   including companion pipe presets and dynamic ports. Filtering happens before the result limit.
 - Enter on an explicitly typed incompatible object or preset overrides autocomplete and places it

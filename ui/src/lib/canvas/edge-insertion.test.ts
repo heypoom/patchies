@@ -21,7 +21,8 @@ import {
   planEdgeInsertion,
   showEdgeInsertionPreview,
   restoreEdgeInsertionPreview,
-  getQuickInsertEdge
+  getQuickInsertEdge,
+  retireEdgeInsertionPreview
 } from './edge-insertion';
 
 const schema = {
@@ -241,6 +242,53 @@ describe('getEdgeInsertionPosition', () => {
 });
 
 describe('createEdgeInsertionPreview', () => {
+  test('retires placeholder handles before confirmation without exposing previews to routing', () => {
+    const audioEdge: Edge = {
+      ...edge,
+      sourceHandle: 'audio-out-0',
+      targetHandle: 'audio-in-0'
+    };
+
+    const unrelated: Edge = {
+      ...audioEdge,
+      id: 'unrelated'
+    };
+
+    const previews = createEdgeInsertionPreview(audioEdge, 'quick-add', [
+      'preview-left',
+      'preview-right'
+    ]);
+
+    const editingEdges = showEdgeInsertionPreview([audioEdge, unrelated], audioEdge, previews);
+    const retiringEdges = retireEdgeInsertionPreview(editingEdges, 'quick-add');
+
+    expect(retiringEdges.filter(isEdgeInsertionPreview)).toEqual(
+      previews.map((preview) => ({
+        ...preview,
+        source: audioEdge.source,
+        sourceHandle: audioEdge.sourceHandle,
+        target: audioEdge.target,
+        targetHandle: audioEdge.targetHandle,
+        hidden: true
+      }))
+    );
+
+    expect(retiringEdges.filter((candidate) => !isEdgeInsertionPreview(candidate))).toEqual([
+      { ...audioEdge, hidden: true },
+      unrelated
+    ]);
+
+    expect(
+      restoreEdgeInsertionPreview(
+        retiringEdges,
+        audioEdge,
+        previews.map((preview) => preview.id)
+      )
+    ).toEqual([unrelated, audioEdge]);
+
+    expect(retireEdgeInsertionPreview(retiringEdges, 'quick-add')).toBe(retiringEdges);
+  });
+
   test('temporarily routes both ends of the selected edge through generic object handles', () => {
     expect(
       createEdgeInsertionPreview(edge, 'quick-add', ['preview-left', 'preview-right'])
@@ -270,6 +318,7 @@ describe('createEdgeInsertionPreview', () => {
     expect(
       isEdgeInsertionPreview(createEdgeInsertionPreview(edge, 'quick-add', ['left', 'right'])[0]!)
     ).toBe(true);
+
     expect(isEdgeInsertionPreview(edge)).toBe(false);
   });
 

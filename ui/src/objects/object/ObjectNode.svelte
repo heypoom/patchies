@@ -74,13 +74,12 @@
 
     return data.expr || '';
   };
-  const getInitialExpr = () => getDataExpr();
   const hasInitialExpr = () => !!data.expr;
-  let expr = $state(getInitialExpr());
+  let expr = $state(getDataExpr());
   let isEditing = $state(!hasInitialExpr()); // Start in editing mode if no name;
   let showAutocomplete = $state(false);
   let selectedSuggestion = $state(0);
-  let originalName = getInitialExpr(); // Store original name for escape functionality
+  let originalName = getDataExpr(); // Store original name for escape functionality
   const isQuickAdd = !hasInitialExpr(); // True if created via Quick Add (no initial name)
   let finalNodeId = (() => nodeId)(); // Tracks the final node ID after potential transformation
 
@@ -120,8 +119,8 @@
     () => $isAiFeaturesVisible
   );
 
-  // Get object definition for current name (if it exists)
   const objectMeta = $derived.by(() => {
+    if (isQuickAdd && !data.expr) return null;
     if (!expr || expr.trim() === '') return null;
 
     const objectName = getObjectNameFromExpr(expr);
@@ -265,10 +264,13 @@
     if (save) {
       if (expr.trim()) {
         const objectName = getNameAndParams().name;
+
+        if (isQuickAdd) {
+          objectSuggestions.prepareConfirmation();
+        }
+
         handleNameChange();
 
-        // For Quick Add nodes, emit event so FlowCanvasInner can record to history
-        // We use setTimeout to ensure the node transformation (if any) is complete
         if (isQuickAdd) {
           setTimeout(() => {
             eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId, objectName });

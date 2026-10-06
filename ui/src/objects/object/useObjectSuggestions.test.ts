@@ -13,6 +13,9 @@ vi.mock('@xyflow/svelte', () => ({
   useEdges: () => ({
     get current() {
       return flow.edges;
+    },
+    update(updateFn: (edges: Edge[]) => Edge[]) {
+      flow.edges = updateFn(flow.edges);
     }
   })
 }));
@@ -41,6 +44,33 @@ const createSuggestions = (expr: string) =>
   });
 
 describe('ObjectNode suggestions', () => {
+  test('retires the preview synchronously before the selected object replaces its handles', () => {
+    const edge: Edge = {
+      id: 'live',
+      source: 'left',
+      sourceHandle: 'audio-out-0',
+      target: 'right',
+      targetHandle: 'audio-in-0'
+    };
+
+    flow.edges = showEdgeInsertionPreview(
+      [edge],
+      edge,
+      createEdgeInsertionPreview(edge, 'quick-add', ['preview-left', 'preview-right'])
+    );
+
+    const suggestions = createSuggestions('gain~');
+    suggestions.prepareConfirmation();
+
+    expect(
+      flow.edges.map((candidate) => [candidate.source, candidate.target, candidate.hidden])
+    ).toEqual([
+      ['left', 'right', true],
+      ['left', 'right', true],
+      ['left', 'right', true]
+    ]);
+  });
+
   test('filters autocomplete and lets explicitly incompatible names override it', () => {
     const edge: Edge = {
       id: 'live',

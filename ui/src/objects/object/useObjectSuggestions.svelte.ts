@@ -1,6 +1,6 @@
 import { useEdges, useNodes } from '@xyflow/svelte';
 import { SvelteSet } from 'svelte/reactivity';
-import { getQuickInsertEdge } from '$lib/canvas/edge-insertion';
+import { getQuickInsertEdge, retireEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
 import {
   getObjectAutocompleteQuery,
   shouldSuppressObjectAutocomplete
@@ -116,6 +116,9 @@ export function useObjectSuggestions({
     return !!explicitItem && !compatibleSuggestionNames.has(explicitItem.name);
   };
 
+  const prepareConfirmation = () =>
+    edgesHelper.update((edges) => retireEdgeInsertionPreview(edges, getNodeId()));
+
   return {
     get filteredSuggestions() {
       return filteredSuggestions;
@@ -123,6 +126,7 @@ export function useObjectSuggestions({
     get suggestedDisabledObject() {
       return suggestedDisabledObject;
     },
-    shouldConfirmExplicitExpression
+    shouldConfirmExplicitExpression,
+    prepareConfirmation
   };
 }

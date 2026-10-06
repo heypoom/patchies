@@ -110,6 +110,28 @@ export function getQuickInsertEdge(edges: Edge[], nodeId: string): Edge | undefi
   return edges.find((edge) => edge.id === originalEdgeId);
 }
 
+/** Retires generic handles before the placeholder transforms into its selected object. */
+export function retireEdgeInsertionPreview(edges: Edge[], nodeId: string): Edge[] {
+  const original = getQuickInsertEdge(edges, nodeId);
+  if (!original) return edges;
+
+  return edges.map((edge) => {
+    if (!isEdgeInsertionPreview(edge) || (edge.source !== nodeId && edge.target !== nodeId)) {
+      return edge;
+    }
+
+    // XYFlow still lays out hidden edges, so their endpoints must remain valid.
+    return {
+      ...edge,
+      source: original.source,
+      sourceHandle: original.sourceHandle,
+      target: original.target,
+      targetHandle: original.targetHandle,
+      hidden: true
+    };
+  });
+}
+
 /** Keeps the original route active while displaying the editor-only splice. */
 export const showEdgeInsertionPreview = (edges: Edge[], edge: Edge, previews: Edge[]): Edge[] => [
   ...edges.map((candidate) =>
