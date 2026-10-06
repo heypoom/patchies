@@ -32,7 +32,10 @@ import { CookStateManager } from './CookStateManager';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
-import { createFinalOutputPresentationCommand } from './finalOutputPresentation';
+import {
+  createFinalOutputPresentationCommand,
+  FBO_RENDERER_CONTEXT_ATTRIBUTES
+} from './finalOutputPresentation';
 import { isPassthroughNodeType } from './videoGraph';
 import { FboResources } from './FboResources';
 import { drawToFinalOutput } from './drawToFinalOutput';
@@ -52,13 +55,6 @@ interface ViewportCookCache {
   effectiveOutputNodeId: string | null;
   requiredNodeIds: Set<string> | null;
 }
-
-export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
-  alpha: true,
-  antialias: false,
-  premultipliedAlpha: false,
-  stencil: true
-};
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;

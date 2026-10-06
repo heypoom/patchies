@@ -235,6 +235,12 @@ export default defineConfig(() => ({
     // Default configuration runs server (unit) tests only
     environment: 'node',
     include: ['src/**/*.{test,spec}.{js,ts}'],
-    exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'e2e/**', '**/node_modules/**', '**/dist/**']
+    exclude: [
+      'src/**/*.svelte.{test,spec}.{js,ts}',
+      'src/**/*.browser.{test,spec}.{js,ts}',
+      'e2e/**',
+      '**/node_modules/**',
+      '**/dist/**'
+    ]
   }
 }));
