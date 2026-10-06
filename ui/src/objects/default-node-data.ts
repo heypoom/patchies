@@ -344,7 +344,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       steps: 8,
       tracks: DEFAULT_TRACKS,
       swing: 0,
-      outputMode: 'bang',
+      outletMode: 'single',
+      outputMode: 'midi',
       showVelocity: false,
       showInTimeline: true,
       resizable: false

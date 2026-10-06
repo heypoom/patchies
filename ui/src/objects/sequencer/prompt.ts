@@ -8,8 +8,8 @@ CRITICAL RULES:
 3. Steps always fill exactly one bar
 
 OUTLET MODES:
-- \`outletMode: "multi"\` (default): One outlet per track. outlet 0 = track 0, outlet 1 = track 1, etc.
-- \`outletMode: "single"\`: One merged outlet. All tracks fire on outlet 0.
+- \`outletMode: "multi"\`: One outlet per track. outlet 0 = track 0, outlet 1 = track 1, etc.
+- \`outletMode: "single"\` (default): One merged outlet. All tracks fire on outlet 0.
 
 OUTPUT MODES (multi outlet):
 - \`"bang"\` (default): sends \`{type:"bang"}\`
@@ -17,8 +17,8 @@ OUTPUT MODES (multi outlet):
 - With \`audioRate: true\`, bang sends \`{type:"bang", time}\` and value sends \`{type:"bang", time, value}\` for Web Audio scheduling
 
 OUTPUT MODES (single outlet):
-- \`"index"\` (default): sends track index as number (0–N)
-- \`"midi"\`: sends \`{type:"noteOn", note, index, velocity}\` — note uses GM drum mapping (36=kick), velocity is MIDI 0–127
+- \`"index"\`: sends track index as number (0–N)
+- \`"midi"\` (default for new nodes): sends \`{type:"noteOn", note, index, velocity}\` — note uses GM drum mapping (36=kick), velocity is MIDI 0–127
 - With \`audioRate: true\`, index sends \`{type:"bang", index, value, time}\` and midi sends \`{type:"noteOn", note, index, velocity, time}\` for Web Audio scheduling
 
 Use single outlet + midi mode to connect directly to pads~ with one wire. Enable \`audioRate\` when scheduled audio time is needed.
@@ -34,8 +34,8 @@ Node data shape:
     { "name": "OHH",   "color": "#b39ddb", "stepOn": [...16 booleans], "stepValues": [...16 floats] }
   ],
   "swing": 0,
-  "outletMode": "multi",
-  "outputMode": "bang",
+  "outletMode": "single",
+  "outputMode": "midi",
   "audioRate": false,
   "showVelocity": false
 }

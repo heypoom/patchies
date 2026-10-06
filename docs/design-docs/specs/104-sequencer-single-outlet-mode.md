@@ -2,7 +2,7 @@
 
 ## Summary
 
-Add an `outletMode` setting to the sequencer node: **multi** (default, current behavior — one outlet per track) or **single** (one outlet, structured messages).
+The sequencer supports **multi** (one outlet per track) or **single** (one outlet, structured messages). New sequencers default to **Single outlet = true** and **MIDI output = true** (`outletMode: 'single'`, `outputMode: 'midi'`).
 
 ## Motivation
 
@@ -13,17 +13,17 @@ Connecting a sequencer to `pads~` currently requires N wires (one per track). A 
 ### New node data field
 
 ```ts
-outletMode?: 'multi' | 'single';  // default: 'multi'
+outletMode?: 'multi' | 'single';  // new node default: 'single'
 ```
 
 ### Output modes per outlet mode
 
-**Multi outlet** (`outletMode: 'multi'`, default): one outlet per track.
+**Multi outlet** (`outletMode: 'multi'`): one outlet per track.
 
 - bang: `{type: 'bang'}`
 - value: velocity number (0–1)
 
-**Single outlet** (`outletMode: 'single'`): new output format, one outlet.
+**Single outlet** (`outletMode: 'single'`, new node default): one outlet, with MIDI output enabled by default.
 
 - **index**: sends track index as a number (0–N)
 - **midi**: sends `{type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: 0–127}`

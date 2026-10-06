@@ -1,11 +1,11 @@
-A DAW-style step sequencer with up to 8 tracks. Each track has its own outlet
-and fires on every active step. Can run locked to the global
+A DAW-style step sequencer with up to 8 tracks. By default, all tracks send
+MIDI messages through one outlet on every active step. Can run locked to the global
 [transport](/docs/transport-control) or advance one step per incoming bang.
 
 ## Tracks
 
 Add up to 8 tracks via the settings panel (gear icon). Each track has a name,
-color, and its own outlet numbered from 0 (top track) to 7 (bottom track).
+color, and an index numbered from 0 (top track) to 7 (bottom track).
 
 Click any step button to toggle it on or off.
 
@@ -40,7 +40,11 @@ Swing has no effect in manual mode.
 
 Set via **Output** in the settings panel:
 
-- **bang** (default) — sends `{type: "bang"}` on each active step. Works with
+- **Single outlet** and **MIDI output** are enabled by default. Each active
+  track sends `{type: "noteOn", note, index, velocity}` through outlet 0.
+  Disable **MIDI output** to send track indices instead.
+- Disable **Single outlet** for one outlet per track. In this mode,
+  **bang** sends `{type: "bang"}` on each active step. Works with
   `sampler~`, `trigger`, and most nodes that expect a trigger signal.
 - **value** — sends the step's velocity as a number from `0.0` to `1.0`.
 
