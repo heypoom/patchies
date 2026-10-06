@@ -205,12 +205,10 @@ export class WorkerNodeSystem {
         });
       })
       .with({ type: 'setPrimaryButton' }, (event) => {
-        // 'run' is meaningless on worker nodes — the whole body is already a Run/Stop button
-        const primaryButton = event.primaryButton === 'run' ? 'code' : event.primaryButton;
         this.eventBus.dispatch({
           type: 'nodePrimaryButtonUpdate',
           nodeId,
-          primaryButton
+          primaryButton: event.primaryButton
         });
       })
       .with({ type: 'setRunOnMount' }, (event) => {

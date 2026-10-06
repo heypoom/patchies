@@ -13,7 +13,7 @@ JavaScript execution block for general-purpose logic and utilities.
 ${esmInstructions}
 ${runOnMountInstructions}
 
-- setPrimaryButton('run' | 'code' | 'settings'): in compact layout, choose the large body action (default: run); code/settings move Run/Pause to the floating button. With the console visible, execution stays in the console and the floating button is Edit code, or Settings for 'settings'. Settings requires visible fields.
+- setPrimaryButton('run' | 'code' | 'settings'): choose the main action - run the script (default), edit code, or adjust defined settings.
 
 ${fftInstructions}
 

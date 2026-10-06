@@ -8,7 +8,7 @@ export function getPrimaryButtonLayout(
 ): { body: PrimaryButton; floating: PrimaryButton; codeInMenu: boolean } {
   const mode = primaryButton === 'settings' && !hasSettings ? undefined : primaryButton;
 
-  if (nodeType !== 'js') {
+  if (nodeType !== 'js' && nodeType !== 'worker') {
     const floating = mode === 'settings' ? 'settings' : 'code';
 
     return { body: 'run', floating, codeInMenu: floating !== 'code' };

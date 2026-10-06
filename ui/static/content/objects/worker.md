@@ -9,9 +9,9 @@ and import shared code from Patch JavaScript files.
 
 - **`setRunOnMount(true)`** - run the code automatically when created
 - **`flash()`** - briefly flash the node's border for visual feedback
+- **`setPrimaryButton('run' | 'settings' | 'code')`** - choose the main action for the current layout
 
-Patch JavaScript files can be imported in
-`worker` nodes.
+Patch JavaScript files can be imported in `worker` nodes.
 
 ## OpenCV
 

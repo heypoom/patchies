@@ -34,30 +34,50 @@
   const busy = $derived(
     action === 'run' && showRunningIndicator && isRunning && !isLongRunningTaskActive
   );
-  const label = $derived(
-    action === 'code'
-      ? 'Edit code'
-      : action === 'settings'
-        ? 'Settings'
-        : isLongRunningTaskActive
-          ? 'Pause'
-          : 'Run code'
-  );
-  const Icon = $derived(
-    action === 'code'
-      ? Code
-      : action === 'settings'
-        ? Settings
-        : isLongRunningTaskActive
-          ? Pause
-          : busy
-            ? Loader
-            : Play
-  );
+
+  const label = $derived.by(() => {
+    if (action === 'code') return 'Edit code';
+    if (action === 'settings') return 'Settings';
+    if (isLongRunningTaskActive) return 'Pause';
+
+    return 'Run code';
+  });
+
+  const Icon = $derived.by(() => {
+    if (action === 'code') return Code;
+    if (action === 'settings') return Settings;
+    if (isLongRunningTaskActive) return Pause;
+    if (busy) return Loader;
+
+    return Play;
+  });
+
+  const backgroundClass = $derived.by(() => {
+    if (isFlashing) return 'bg-zinc-500';
+    if (selected) return 'shadow-glow-md bg-zinc-800';
+
+    return 'hover:shadow-glow-sm bg-zinc-900';
+  });
+
+  const hint = $derived.by(() => {
+    if (action !== 'run') return label;
+    if (isLongRunningTaskActive) return 'click to pause';
+
+    return 'click to run';
+  });
+
   const onclick = (event: MouseEvent) => {
-    if (action === 'code') onCode(event);
-    else if (action === 'settings') onSettings(event);
-    else if (!busy) onRun();
+    if (action === 'code') {
+      return onCode(event);
+    }
+
+    if (action === 'settings') {
+      return onSettings(event);
+    }
+
+    if (!busy) {
+      onRun();
+    }
   };
 </script>
 
@@ -69,12 +89,7 @@
         ? 'flex w-full justify-center rounded-md border py-3 hover:bg-zinc-700'
         : 'rounded p-1 hover:bg-zinc-700',
       large && borderColor,
-      large &&
-        (isFlashing
-          ? 'bg-zinc-500'
-          : selected
-            ? 'shadow-glow-md bg-zinc-800'
-            : 'hover:shadow-glow-sm bg-zinc-900')
+      large && backgroundClass
     ]}
     style:min-width={large ? `${minWidth}px` : undefined}
     {onclick}
@@ -93,7 +108,7 @@
       !selected && 'group-hover:opacity-100'
     ]}
   >
-    {action === 'run' ? (isLongRunningTaskActive ? 'click to pause' : 'click to run') : label}
+    {hint}
   </div>
 {:else}
   <Tooltip.Root>

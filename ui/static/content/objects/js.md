@@ -6,33 +6,7 @@ These methods are exclusive to the `js` object:
 
 - **`setRunOnMount(true)`** - run the code automatically when the object is created. By default, code only runs when you hit the "Play" button.
 - **`flash()`** - briefly flash the node's border, useful for visual feedback when processing messages.
-- **`setPrimaryButton('run' | 'settings' | 'code')`** - choose the main action for the current layout. See [Primary Button](#primary-button) below.
-
-## Primary Button
-
-Use `setPrimaryButton()` to choose the action you reach for most. Without the
-virtual console, the default large button runs or pauses your script and the
-floating button opens Edit code.
-
-```js
-await settings.define([
-  { key: 'gain', label: 'Gain', type: 'number', default: 0.75 }
-]);
-setPrimaryButton('settings');
-```
-
-In compact layout, `'settings'` makes the large button open Settings and moves
-Run / Pause to the floating button. Edit code is in the overflow menu.
-`'code'` makes the large button open Edit code, puts Run / Pause in the floating
-button, and keeps Settings in the overflow menu. Use `'run'` to restore the
-default layout.
-
-With the virtual console visible, Run / Pause stays in the console. The floating
-button opens Settings in `'settings'` mode and Edit code in every other mode.
-
-The choice is saved with the node and preserved when you show or hide the
-console. Without visible settings fields, `'settings'` uses the default layout
-until your script defines controls.
+- **`setPrimaryButton('run' | 'settings' | 'code')`** - choose the main action for the current layout.
 
 ## OpenCV
 

@@ -127,6 +127,7 @@
   let isFlashing = $state(false);
 
   const primaryButton = $derived(data.primaryButton);
+
   const buttonLayout = $derived(
     getPrimaryButtonLayout(
       nodeType,
