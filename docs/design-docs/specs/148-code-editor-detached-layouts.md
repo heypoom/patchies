@@ -84,6 +84,10 @@ nodeType, title, mode }` in a shared store.
   `bytebeat~` can keep their "run on edit" behavior in fullscreen.
 - Blur commits still emit the existing `codeCommit` event so undo/redo records a
   single focused editing session.
+- Each mounted overlay editor retains its target through teardown. Clearing the
+  active target or switching to another node or data field must commit the old
+  editing session against its original node and field without reading a cleared
+  target or assigning the edit to the new target.
 - `Shift-Enter` should run the same node action as the inline editor where the
   node provides one.
 - Deleting the target node closes detached mode.

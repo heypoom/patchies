@@ -18,8 +18,7 @@
   import { onDestroy, onMount, tick } from 'svelte';
 
   import CommandPalette from './CommandPalette.svelte';
-  import CodeEditor from './CodeEditor.svelte';
-  import DetachedCodeEditorOverlay from './DetachedCodeEditorOverlay.svelte';
+  import DetachedCodeEditorHost from './DetachedCodeEditorHost.svelte';
   import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
   import SettingsModal from './settings-modal/SettingsModal.svelte';
   import BottomToolbar from './BottomToolbar.svelte';
@@ -1452,38 +1451,14 @@
     <BackgroundOutputCanvas />
   </div>
 
-  {#if $activeCodeEditorTarget?.mode === 'overlay' && detachedCodeEditor.node}
-    {#snippet detachedCodeEditorSnippet()}
-      <CodeEditor
-        value={detachedCodeEditor.value}
-        onchange={detachedCodeEditor.updateValue}
-        language={$activeCodeEditorTarget.language}
-        nodeType={$activeCodeEditorTarget.nodeType}
-        placeholder={$activeCodeEditorTarget.placeholder ?? ''}
-        class="nodrag nopan nowheel h-full w-full resize-none"
-        onrun={$activeCodeEditorTarget.onrun}
-        nodeId={$activeCodeEditorTarget.nodeId}
-        dataKey={$activeCodeEditorTarget.dataKey}
-        lineErrors={$activeCodeEditorTarget.lineErrors}
-        inlineDecorations={$activeCodeEditorTarget.inlineDecorations}
-        extraExtensions={$activeCodeEditorTarget.extraExtensions}
-        onaltdecorationclick={$activeCodeEditorTarget.onAltDecorationClick}
-        lineWrap={$activeCodeEditorTarget.lineWrap}
-        fontSize={`${$editorFullscreenFontSize}px`}
-      />
-    {/snippet}
-
-    <DetachedCodeEditorOverlay
-      onClose={closeCodeEditorOverlay}
-      onrun={$activeCodeEditorTarget.onrun}
-      nodeId={$activeCodeEditorTarget.nodeId}
-      settings={$activeCodeEditorTarget.settings}
-      console={$activeCodeEditorTarget.console}
-      customActions={$activeCodeEditorTarget.customActions}
-      customSettings={$activeCodeEditorTarget.customSettings}
-      codeEditor={detachedCodeEditorSnippet}
-    />
-  {/if}
+  <DetachedCodeEditorHost
+    target={$activeCodeEditorTarget}
+    hasNode={Boolean(detachedCodeEditor.node)}
+    value={detachedCodeEditor.value}
+    onchange={detachedCodeEditor.updateValue}
+    onClose={closeCodeEditorOverlay}
+    fontSize={$editorFullscreenFontSize}
+  />
 
   <!-- Sidebar (Files / Presets) -->
   <SidebarPanel
