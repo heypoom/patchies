@@ -8,6 +8,8 @@ JavaScript execution in a dedicated Web Worker thread for CPU-intensive computat
 ${esmInstructions}
 ${runOnMountInstructions}
 
+- setPrimaryButton('run' | 'code' | 'settings'): choose the main action - run the script (default), edit code, or adjust defined settings.
+
 **Worker-specific gotchas:**
 - requestAnimationFrame uses 60fps setInterval fallback (no DOM in workers)
 - fft() is NOT available (no main-thread audio access)

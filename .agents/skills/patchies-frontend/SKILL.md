@@ -13,6 +13,7 @@ description: Use when editing Patchies Svelte components, UI state, styling, but
 - Separate UI from business logic with manager/system objects when behavior is non-trivial.
 - Prefer shared named functions when the same logic appears in multiple places, such as a message handler and context menu item.
 - Prefer existing files and local patterns over new abstractions.
+- Use `if` branches with early returns for multi-way decisions. Keep ternaries to simple two-way expressions; avoid nested ternaries. In Svelte derived state, use `$derived.by(() => { ... })` with `if`/return branches for these decisions, including icon, label, and class selection.
 
 ## Component Size and Svelte Composables
 

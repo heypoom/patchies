@@ -11,6 +11,7 @@
     onConsoleToggle,
     onSettingsToggle,
     onCodeToggle,
+    showSettingsAction = true,
     settingsSchema
   }: {
     showConsole: boolean;
@@ -19,7 +20,8 @@
     onSettingsToggle: (event?: MouseEvent) => void;
     /** Provided when code editor is NOT the primary button — adds an "Edit code" entry. */
     onCodeToggle?: (event: MouseEvent) => void;
-    settingsSchema: SettingsSchema;
+    showSettingsAction?: boolean;
+    settingsSchema?: SettingsSchema;
   } = $props();
 </script>
 
@@ -36,7 +38,7 @@
   </Tooltip.Root>
 
   <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
-    {#if hasVisibleSettingsFields(settingsSchema)}
+    {#if showSettingsAction && settingsSchema && hasVisibleSettingsFields(settingsSchema)}
       <Popover.Close class="contents">
         <button
           class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"

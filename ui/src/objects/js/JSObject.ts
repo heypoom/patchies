@@ -147,10 +147,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
       const processedCode = await runner.preprocessCode(code, { nodeId: this.nodeId });
 
       const setPrimaryButton = (primaryButton: PrimaryButton) =>
-        this.context.setData(
-          { primaryButton: primaryButton === 'run' ? 'code' : primaryButton },
-          { notifyUI: true }
-        );
+        this.context.setData({ primaryButton }, { notifyUI: true });
 
       await runner.executeJavaScript(this.nodeId, processedCode, {
         customConsole,
