@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getEdgeTypes } from '$lib/utils/get-edge-types';
-  import { getBezierPath, BaseEdge, type EdgeProps, useNodesData } from '@xyflow/svelte';
+  import { getBezierPath, BaseEdge, type EdgeProps, useNodes, useSvelteFlow } from '@xyflow/svelte';
   import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
   import { isCablesVisible } from '../../../stores/ui.store';
   import { feedbackEdgeIds } from '../../../stores/renderer.store';
@@ -23,10 +23,19 @@
     selected
   }: EdgeProps = $props();
 
-  const type = $derived.by(() => {
-    const [sourceData, targetData] = nodesData.current;
+  const nodes = useNodes();
+  const { getNode } = useSvelteFlow();
 
-    return getEdgeTypes(sourceData, targetData, sourceHandleId ?? null, targetHandleId ?? null);
+  const type = $derived.by(() => {
+    // Track node replacements while resolving the current endpoints by ID.
+    void nodes.current;
+
+    return getEdgeTypes(
+      getNode(source),
+      getNode(target),
+      sourceHandleId ?? null,
+      targetHandleId ?? null
+    );
   });
 
   const isFeedback = $derived($feedbackEdgeIds.has(id));
@@ -38,12 +47,6 @@
       isBackgroundOutputCanvasEnabled: $isBackgroundOutputCanvasEnabled
     });
   });
-
-  function getInitialEdgeNodeIds() {
-    return [source, target];
-  }
-
-  const nodesData = useNodesData(getInitialEdgeNodeIds());
 
   let [edgePath] = $derived(
     getBezierPath({

@@ -75,13 +75,29 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 };
 
 export function getEdgeTypes(
-  source: MinimalNode,
-  target: MinimalNode,
+  source: MinimalNode | null | undefined,
+  target: MinimalNode | null | undefined,
   sourceHandle: string | null,
   targetHandle: string | null
 ): PsEdgeType {
-  const sh = sourceHandle?.split('-')[0];
-  const th = targetHandle?.split('-')[0];
+  const sourceHandleType = sourceHandle?.split('-')[0];
+  const targetHandleType = targetHandle?.split('-')[0];
+
+  if (!source || !target) {
+    if (
+      sourceHandleType === 'video' ||
+      targetHandleType === 'video' ||
+      sourceHandleType === 'glsl'
+    ) {
+      return 'video';
+    }
+
+    if (sourceHandleType === 'audio' || targetHandleType === 'audio') {
+      return 'audio';
+    }
+
+    return 'message';
+  }
 
   if (
     isAudioObject(source) &&
@@ -92,7 +108,7 @@ export function getEdgeTypes(
     return 'audio';
   }
 
-  if (sh === 'video' || th === 'video' || sh === 'glsl') {
+  if (sourceHandleType === 'video' || targetHandleType === 'video' || sourceHandleType === 'glsl') {
     return 'video';
   }
 

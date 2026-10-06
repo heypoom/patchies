@@ -28,6 +28,9 @@ When exactly one edge is selected, insertion is contextual:
 - Enter on an explicitly typed incompatible object or preset overrides autocomplete and places it
   without connections, preserving the original edge.
 - Edge midpoint calculations use canvas positions, including endpoints nested in visual groups.
+- Edge styling resolves current endpoint IDs and tolerates missing nodes during insertion or history
+  updates. Missing endpoints use audio/video handle prefixes for color, falling back to message
+  styling when the handles provide no signal type.
 
 Normal insertion behavior remains unchanged when zero or multiple edges are selected.
 
