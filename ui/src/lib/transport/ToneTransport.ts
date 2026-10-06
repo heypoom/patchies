@@ -63,7 +63,10 @@ export class ToneTransport implements ITransport {
   }
 
   async play(): Promise<void> {
-    await this.tone.start();
+    if (this.tone.getContext().state !== 'running') {
+      await this.tone.start();
+    }
+
     this.tone.getTransport().start();
   }
 

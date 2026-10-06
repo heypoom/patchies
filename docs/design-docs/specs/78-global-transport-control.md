@@ -63,6 +63,14 @@ export interface ITransport {
 }
 ```
 
+#### Live Tone.js Upgrade
+
+- Audio node creation upgrades the transport using AudioService's shared AudioContext.
+- The global transport and every `tone~` node reuse one Tone.Context for that AudioContext. Adding, removing, rerunning, or restoring a node through undo/redo must not replace it.
+- Preserve playback state, position, BPM, and time signature through the upgrade. A playing performance continues; a paused or stopped transport stays inactive.
+- Concurrent audio node creation shares one pending upgrade. Capture transport state after audio startup, so controls used while startup is pending remain effective.
+- Keep the Firefox AudioListener polyfill in shared Tone initialization, before creating the Tone.Context.
+
 #### Stub Transport (Default)
 
 The stub transport is the default implementation. It uses `performance.now()` for timing and doesn't require Tone.js:

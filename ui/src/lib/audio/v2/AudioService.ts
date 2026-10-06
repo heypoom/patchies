@@ -338,7 +338,7 @@ export class AudioService {
 
     const audioContext = this.getAudioContext();
     hasSomeAudioNode.set(true);
-    Transport.ensureToneUpgraded();
+    Transport.ensureToneUpgraded(audioContext);
 
     const node = new NodeClass(nodeId, audioContext);
     this.nodesById.set(node.nodeId, node);

@@ -13,6 +13,8 @@ import { extractToneVarNames, injectAutoDispose } from '$objects/tone~/tone-auto
 import { createSettingsAPI } from '$lib/settings/create-settings-api';
 import { hasAudioInputUsage } from '$lib/audio/visible-audio-inputs';
 import { RuntimeAudioCodeState } from '$objects/audio-code/RuntimeAudioCodeState';
+import { loadTone } from '$lib/audio/load-tone';
+import { Transport } from '$lib/transport/Transport';
 import { isRunMessage } from '$objects/audio-code/runtime-audio-code-messages';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
@@ -113,63 +115,13 @@ export class ToneNode implements AudioNodeV2 {
     }
   }
 
-  private toneContext: InstanceType<typeof import('tone').Context> | null = null;
-
-  /**
-   * Firefox doesn't implement AudioListener.forwardX/Y/Z etc. as AudioParams.
-   * Tone.js expects these to exist, so we polyfill them before initialization.
-   * We use real AudioParam instances from ConstantSourceNodes to pass instanceof checks.
-   */
-  private polyfillAudioListenerForFirefox() {
-    const listener = this.audioContext.listener;
-
-    // Check if polyfill is needed (Firefox lacks these as AudioParams)
-    if (listener.forwardX !== undefined) return;
-
-    // Create a real AudioParam by using a ConstantSourceNode
-    // This passes the `instanceof AudioParam` check that Tone.js uses
-    const createRealAudioParam = (defaultValue: number): AudioParam => {
-      const node = this.audioContext.createConstantSource();
-      node.offset.value = defaultValue;
-
-      return node.offset;
-    };
-
-    // Polyfill the missing properties with real AudioParams
-    Object.defineProperties(listener, {
-      positionX: { value: createRealAudioParam(0), configurable: true },
-      positionY: { value: createRealAudioParam(0), configurable: true },
-      positionZ: { value: createRealAudioParam(0), configurable: true },
-      forwardX: { value: createRealAudioParam(0), configurable: true },
-      forwardY: { value: createRealAudioParam(0), configurable: true },
-      forwardZ: { value: createRealAudioParam(-1), configurable: true },
-      upX: { value: createRealAudioParam(0), configurable: true },
-      upY: { value: createRealAudioParam(1), configurable: true },
-      upZ: { value: createRealAudioParam(0), configurable: true }
-    });
-  }
-
-  private async ensureTone() {
-    const Tone = await import('tone');
-
-    if (!this.toneContext) {
-      // Polyfill AudioListener for Firefox before Tone.js initializes
-      this.polyfillAudioListenerForFirefox();
-
-      this.toneContext = new Tone.Context(this.audioContext);
-      Tone.setContext(this.toneContext);
-    }
-
-    await Tone.start();
-
-    return Tone;
-  }
-
   private async setCode(code: string): Promise<void> {
     this.runtimeState.setCode(code);
     this.runtimeState.publish({ showAudioInput: hasAudioInputUsage('tone~', code) });
     this.resetMessagePorts();
-    const Tone = await this.ensureTone();
+    const Tone = await loadTone(this.audioContext);
+    await Transport.ensureToneUpgraded(this.audioContext);
+    await Tone.start();
 
     if (!code || code.trim() === '') {
       this.cleanup();

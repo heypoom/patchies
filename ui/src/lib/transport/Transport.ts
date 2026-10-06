@@ -1,3 +1,4 @@
+import { loadTone } from '$lib/audio/load-tone';
 import { DefaultTransport } from './DefaultTransport';
 import type { ITransport, TransportState } from './types';
 
@@ -13,6 +14,7 @@ class TransportManager implements ITransport {
   private unsubscribeStore: (() => void) | null = null;
 
   private toneUpgraded = false;
+  private toneUpgrade: Promise<void> | null = null;
   private toneUpgradeDisabled = false;
 
   constructor() {
@@ -150,10 +152,16 @@ class TransportManager implements ITransport {
    * Called by AudioService when an audio node is created,
    * so the upgrade happens immediately even if already playing.
    */
-  async ensureToneUpgraded(): Promise<void> {
+  async ensureToneUpgraded(audioContext: AudioContext): Promise<void> {
     if (this.toneUpgraded || this.toneUpgradeDisabled) return;
 
-    await this.upgradeToTone();
+    this.toneUpgrade ??= this.upgradeToTone(audioContext);
+
+    try {
+      await this.toneUpgrade;
+    } finally {
+      this.toneUpgrade = null;
+    }
   }
 
   /**
@@ -171,8 +179,8 @@ class TransportManager implements ITransport {
     return this.toneUpgraded;
   }
 
-  private async upgradeToTone(): Promise<void> {
-    const Tone = await import('tone');
+  private async upgradeToTone(audioContext: AudioContext): Promise<void> {
+    const Tone = await loadTone(audioContext);
     const { ToneTransport } = await import('./ToneTransport');
 
     // Wait for AudioContext to be running before swapping.
@@ -188,15 +196,17 @@ class TransportManager implements ITransport {
     const currentDenominator = this.context.denominator;
     const currentSeconds = this.context.seconds;
 
-    this.context = new ToneTransport(Tone);
-    this.context.setBpm(currentBpm);
-    this.context.setTimeSignature(currentBeatsPerBar, currentDenominator);
-    this.context.seek(currentSeconds);
-    this.toneUpgraded = true;
+    const toneTransport = new ToneTransport(Tone);
+    toneTransport.setBpm(currentBpm);
+    toneTransport.setTimeSignature(currentBeatsPerBar, currentDenominator);
+    toneTransport.seek(currentSeconds);
 
     if (wasPlaying) {
-      await this.context.play();
+      await toneTransport.play();
     }
+
+    this.context = toneTransport;
+    this.toneUpgraded = true;
 
     console.log('[transport] upgraded to Tone.js transport');
   }

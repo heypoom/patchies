@@ -15,6 +15,7 @@
     "lint": "prettier --check . && eslint .",
     "test": "vitest",
     "test:unit": "vitest --run",
+    "test:browser": "vitest --run --config vitest.browser.config.ts",
     "test:e2e": "playwright test",
     "generate:schemas": "bun scripts/run-generate-schemas.ts",
     "vasm:build": "cd ../modules/vasm && wasm-pack build",
