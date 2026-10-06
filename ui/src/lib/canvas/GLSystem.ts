@@ -964,7 +964,10 @@ export class GLSystem {
 
   // TODO: optimize this!
   hasFlowGraphChanged(nodes: RNode[], edges: REdge[]) {
-    return this.hasHashChanged('nodes', nodes) || this.hasHashChanged('edges', edges);
+    const nodesChanged = this.hasHashChanged('nodes', nodes);
+    const edgesChanged = this.hasHashChanged('edges', edges);
+
+    return nodesChanged || edgesChanged;
   }
 
   private isSameRenderNode(

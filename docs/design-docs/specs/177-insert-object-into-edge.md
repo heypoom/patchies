@@ -52,6 +52,9 @@ when their preset data omits the default port counts.
   replaced by two message edges.
 - Insert an incompatible audio-only node into that edge and verify the original edge remains.
 - Verify undo restores the original edge and removes the inserted node; redo restores the insertion.
+- Verify repeated undo/redo restores the GLSL sampler input and rendered output without a reload.
+  Render graph change detection must update both node and edge hashes on each check, including
+  when a newly mounted shader forces a renderer rebuild.
 - Verify Enter Quick Insert and object-browser object and preset cards have the same behavior.
 
 ## Implementation Boundary
