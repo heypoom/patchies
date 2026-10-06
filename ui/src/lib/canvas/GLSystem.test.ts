@@ -212,4 +212,62 @@ describe('GLSystem', () => {
       ])
     );
   });
+
+  it.each(['node-first', 'edge-first'])(
+    'restores the renderer inlet after undoing an edge insertion (%s)',
+    (order) => {
+      const glSystem = new GLSystem();
+
+      const worker = glSystem.renderWorker as unknown as {
+        postMessage: ReturnType<typeof vi.fn>;
+      };
+
+      const data = {
+        code: 'uniform sampler2D image;',
+        glUniformDefs: [{ name: 'image', type: 'sampler2D' }]
+      };
+
+      const edge = {
+        id: 'original',
+        source: 'source',
+        target: 'target',
+        sourceHandle: 'video-out-out',
+        targetHandle: 'video-in-0-image-sampler2D'
+      };
+
+      glSystem.upsertNode('source', 'glsl', { code: '', glUniformDefs: [] });
+      glSystem.upsertNode('target', 'glsl', data);
+      glSystem.updateEdges([edge]);
+
+      for (let cycle = 0; cycle < 3; cycle++) {
+        glSystem.upsertNode('inserted', 'glsl', data, { force: true });
+
+        glSystem.updateEdges([
+          { ...edge, id: 'left', target: 'inserted' },
+          { ...edge, id: 'right', source: 'inserted' }
+        ]);
+
+        worker.postMessage.mockClear();
+
+        if (order === 'node-first') {
+          glSystem.removeNode('inserted');
+          glSystem.updateEdges([edge]);
+        } else {
+          glSystem.updateEdges([edge]);
+          glSystem.removeNode('inserted');
+        }
+
+        const graphs = worker.postMessage.mock.calls
+          .map(([message]) => message)
+          .filter((message) => message.type === 'buildRenderGraph');
+
+        const graph = graphs.at(-1).graph;
+        expect(graph.nodes.map((node: { id: string }) => node.id)).toEqual(['source', 'target']);
+
+        expect(
+          graph.nodes.find((node: { id: string }) => node.id === 'target').inletMap.get(0)
+        ).toEqual({ sourceNodeId: 'source', outletIndex: 0 });
+      }
+    }
+  );
 });

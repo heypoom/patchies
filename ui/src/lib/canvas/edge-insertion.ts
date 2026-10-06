@@ -102,6 +102,31 @@ export interface EdgeInsertionPlan {
 export const isEdgeInsertionPreview = (edge: Edge): boolean =>
   (edge.data as { edgeInsertionPreview?: unknown } | undefined)?.edgeInsertionPreview === true;
 
+/** Returns the live edge behind a node's temporary insertion preview. */
+export function getQuickInsertEdge(edges: Edge[], nodeId: string): Edge | undefined {
+  const preview = edges.find((edge) => edge.target === nodeId && isEdgeInsertionPreview(edge));
+  const originalEdgeId = preview?.data?.edgeInsertionOriginalEdgeId;
+
+  return edges.find((edge) => edge.id === originalEdgeId);
+}
+
+/** Keeps the original route active while displaying the editor-only splice. */
+export const showEdgeInsertionPreview = (edges: Edge[], edge: Edge, previews: Edge[]): Edge[] => [
+  ...edges.map((candidate) =>
+    candidate.id === edge.id ? { ...candidate, hidden: true } : candidate
+  ),
+  ...previews
+];
+
+export const restoreEdgeInsertionPreview = (
+  edges: Edge[],
+  edge: Edge,
+  previewIds: string[]
+): Edge[] => [
+  ...edges.filter((candidate) => candidate.id !== edge.id && !previewIds.includes(candidate.id)),
+  edge
+];
+
 /**
  * Creates the temporary pair of edges shown while a Quick Insert object is
  * still being named. They are intentionally marked as preview-only so the
@@ -120,7 +145,7 @@ export function createEdgeInsertionPreview(
       target: insertedNodeId,
       targetHandle: 'message-in',
       zIndex: 0,
-      data: { edgeInsertionPreview: true }
+      data: { edgeInsertionPreview: true, edgeInsertionOriginalEdgeId: edge.id }
     },
     {
       id: edgeIds[1],
@@ -129,7 +154,7 @@ export function createEdgeInsertionPreview(
       target: edge.target,
       targetHandle: edge.targetHandle,
       zIndex: 0,
-      data: { edgeInsertionPreview: true }
+      data: { edgeInsertionPreview: true, edgeInsertionOriginalEdgeId: edge.id }
     }
   ];
 }

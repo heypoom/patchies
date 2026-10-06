@@ -20,8 +20,13 @@ When exactly one edge is selected, insertion is contextual:
   without connections.
 - The insertion and any edge replacement are one undoable action.
 - The inserted node renders above its replacement edges.
-- Provisional Quick Insert edges are editor-only: they are never autosaved, and cancelling restores
-  the selected edge.
+- Provisional Quick Insert edges are editor-only: they are never autosaved. The original edge stays
+  active for audio, video, and messages while its editor rendering is hidden by the preview.
+  Cancelling restores its rendering; only confirmation can replace the live route.
+- Quick Insert autocomplete shows only objects and presets with compatible ports on both ends,
+  including companion pipe presets and dynamic ports. Filtering happens before the result limit.
+- Enter on an explicitly typed incompatible object or preset overrides autocomplete and places it
+  without connections, preserving the original edge.
 - Edge midpoint calculations use canvas positions, including endpoints nested in visual groups.
 
 Normal insertion behavior remains unchanged when zero or multiple edges are selected.
@@ -47,6 +52,9 @@ when their preset data omits the default port counts.
   replaced by two message edges.
 - Insert an incompatible audio-only node into that edge and verify the original edge remains.
 - Verify undo restores the original edge and removes the inserted node; redo restores the insertion.
+- Verify repeated undo/redo restores the GLSL sampler input and rendered output without a reload.
+  Render graph change detection must update both node and edge hashes on each check, including
+  when a newly mounted shader forces a renderer rebuild.
 - Verify Enter Quick Insert and object-browser object and preset cards have the same behavior.
 
 ## Implementation Boundary
@@ -54,3 +62,7 @@ when their preset data omits the default port counts.
 `use-edge-insertion.svelte.ts` owns the provisional splice state, preset preparation, final
 compatibility rewiring, and insertion history. `FlowCanvasInner.svelte` only supplies user events,
 selected-edge IDs, and fallback positions.
+
+`useObjectSuggestions.svelte.ts` owns reactive autocomplete, contextual compatibility filtering,
+disabled-object suggestions, and the explicit Enter override. `ObjectNode.svelte` supplies reactive
+getters and renders the results. Pure candidate preparation stays in `edge-insertion-suggestions.ts`.

@@ -29,6 +29,7 @@ export type ObjectPresetSearchIndex = {
 
 export type SearchOptions = {
   limit?: number;
+  filter?: (item: ObjectPresetSearchItem) => boolean;
 };
 
 // Common objects that should appear first in autocomplete.
@@ -178,17 +179,21 @@ export function buildObjectPresetSearchIndex({
     const objects = allSearchableItems.filter((item) => item.type === 'object');
     const presetsOnly = allSearchableItems.filter((item) => item.type === 'preset');
 
-    return [...sortSuggestions(objects), ...sortSuggestions(presetsOnly)].slice(
-      0,
-      getLimit(options)
-    );
+    return [...sortSuggestions(objects), ...sortSuggestions(presetsOnly)]
+      .filter((item) => options?.filter?.(item) ?? true)
+      .slice(0, getLimit(options));
   }
 
   function searchObjectSuggestions(
     query: string,
     options?: SearchOptions
   ): ObjectPresetSearchItem[] {
-    const results = fuse.search(query, { limit: getLimit(options) });
+    const results = options?.filter
+      ? fuse
+          .search(query)
+          .filter((result) => options.filter!(result.item))
+          .slice(0, getLimit(options))
+      : fuse.search(query, { limit: getLimit(options) });
 
     return sortFuseResultsWithPrefixPriority(
       results,
