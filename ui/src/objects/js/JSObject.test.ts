@@ -373,7 +373,7 @@ describe('JSObject', () => {
   it.each([
     ['settings', 'settings'],
     ['code', 'code'],
-    ['run', 'code']
+    ['run', 'run']
   ])('sets the primary button to %s without mounting its view', async (requested, expected) => {
     const messageContext = new MessageContext(compilerId);
 

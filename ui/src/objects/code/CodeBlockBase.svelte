@@ -1,15 +1,8 @@
 <script lang="ts">
-  import {
-    Code,
-    Loader,
-    Pause,
-    Play,
-    Expand,
-    Settings as SettingsIcon,
-    Terminal,
-    X
-  } from '@lucide/svelte/icons';
-  import CodeBlockOverflowMenu from '$objects/code/CodeBlockOverflowMenu.svelte';
+  import { Loader, Pause, Play, Expand, X } from '@lucide/svelte/icons';
+  import CodeBlockHeaderControls from './CodeBlockHeaderControls.svelte';
+  import CodeBlockActionButton from './CodeBlockActionButton.svelte';
+  import { getPrimaryButtonLayout } from './primary-button-layout';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -133,30 +126,17 @@
   let contentWidth = $state(100);
   let isFlashing = $state(false);
 
-  // Which button is rendered as the primary (rightmost) action.
-  // Source of truth is node.data.primaryButton — derived reactively so undo/redo
-  // and external mutations of node data flow through automatically.
-  // Set via setPrimaryButton('settings'|'code') from user code. 'run' is not
-  // a valid mode here because the entire body is already a giant Run/Stop button.
-  let primaryButton = $derived.by<PrimaryButton>(() => {
-    const v = data.primaryButton;
-    if (v === 'settings' || v === 'run' || v === 'code') return v;
-    return 'code';
-  });
+  const primaryButton = $derived(data.primaryButton);
+  const buttonLayout = $derived(
+    getPrimaryButtonLayout(
+      nodeType,
+      primaryButton,
+      data.showConsole ?? false,
+      !!settingsSchema && hasVisibleSettingsFields(settingsSchema)
+    )
+  );
 
-  // Resolved primary — falls back to 'code' if 'settings' is requested but no
-  // schema exists, or if 'run' is requested (not supported in CodeBlockBase).
-  let resolvedPrimary = $derived.by<'code' | 'settings'>(() => {
-    if (
-      primaryButton === 'settings' &&
-      settingsSchema &&
-      hasVisibleSettingsFields(settingsSchema)
-    ) {
-      return 'settings';
-    }
-
-    return 'code';
-  });
+  const getPortIndices = (count: number) => Array.from({ length: count }, (_value, index) => index);
 
   const code = $derived(data.code || '');
   let previousExecuteCode = $state<number | undefined>(undefined);
@@ -262,7 +242,6 @@
 
     return Play;
   });
-  const PlayOrStopIcon = $derived(playOrStopIcon);
 
   onMount(() => {
     // Listen for console output events to capture lineErrors
@@ -375,10 +354,6 @@
     }
   }
 
-  function handleRunButtonClick() {
-    runOrStop();
-  }
-
   export function flash() {
     isFlashing = true;
     setTimeout(() => {
@@ -445,10 +420,6 @@
       Math.max(Math.max(totalInlets, 2), Math.max(outletCount + videoOutletCount, 2)) * inletWidth
     );
   });
-
-  const toggleCode = (event?: MouseEvent) => {
-    handleCodeOpen(event);
-  };
 </script>
 
 {#snippet detachedConsole()}
@@ -490,68 +461,26 @@
           </div>
         </div>
 
-        <div class="node-floating-controls flex items-center sm:group-hover/header:opacity-100">
-          {#if settingsSchema && hasVisibleSettingsFields(settingsSchema)}
-            <CodeBlockOverflowMenu
-              showConsole={data.showConsole ?? false}
-              {showSettings}
-              {settingsSchema}
-              onConsoleToggle={handleConsoleToggle}
-              onSettingsToggle={settingsSidebarTarget.toggle}
-              onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
-            />
-          {:else}
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                  onclick={handleConsoleToggle}
-                  aria-label="Console"
-                >
-                  <Terminal class="h-4 w-4 text-zinc-300" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>Console</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-
-          {#if resolvedPrimary === 'settings'}
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                  onclick={settingsSidebarTarget.toggle}
-                  aria-label="Settings"
-                >
-                  <SettingsIcon class="h-4 w-4 text-zinc-300" />
-                </button>
-              </Tooltip.Trigger>
-
-              <Tooltip.Content>
-                {showSettings ? 'Hide settings' : 'Settings'}
-              </Tooltip.Content>
-            </Tooltip.Root>
-          {:else}
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                  onclick={handleCodeOpen}
-                  aria-label="Edit code"
-                >
-                  <Code class="h-4 w-4 text-zinc-300" />
-                </button>
-              </Tooltip.Trigger>
-
-              <Tooltip.Content>Edit code</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-        </div>
+        <CodeBlockHeaderControls
+          layout={buttonLayout}
+          showConsole={data.showConsole ?? false}
+          {showSettings}
+          settingsSchema={settingsSchema && hasVisibleSettingsFields(settingsSchema)
+            ? settingsSchema
+            : undefined}
+          {isRunning}
+          {showRunningIndicator}
+          {isLongRunningTaskActive}
+          onConsoleToggle={handleConsoleToggle}
+          onSettingsToggle={settingsSidebarTarget.toggle}
+          onCodeToggle={handleCodeOpen}
+          onRun={runOrStop}
+        />
       </div>
 
       <div class="relative">
         <div>
-          {#each Array.from({ length: videoInletCount }) as _, index (index)}
+          {#each getPortIndices(videoInletCount) as index (index)}
             <TypedHandle
               port="inlet"
               spec={{ handleType: 'video', handleId: index }}
@@ -563,7 +492,7 @@
             />
           {/each}
 
-          {#each Array.from({ length: inletCount }) as _, index (index)}
+          {#each getPortIndices(inletCount) as index (index)}
             <TypedHandle
               port="inlet"
               spec={{ handleId: index + videoInletCount }}
@@ -599,47 +528,24 @@
             onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
           />
         {:else}
-          <button
-            class={[
-              'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
-              showRunningIndicator && isRunning && !isLongRunningTaskActive
-                ? 'cursor-not-allowed'
-                : 'cursor-pointer',
-              borderColor,
-              isFlashing
-                ? 'bg-zinc-500'
-                : selected
-                  ? 'shadow-glow-md bg-zinc-800'
-                  : 'hover:shadow-glow-sm bg-zinc-900'
-            ]}
-            style={`min-width: ${minContainerWidth}px`}
-            onclick={handleRunButtonClick}
-            aria-disabled={showRunningIndicator && isRunning && !isLongRunningTaskActive}
-            aria-label={isLongRunningTaskActive ? 'Stop' : 'Run code'}
-          >
-            <div
-              class={[
-                showRunningIndicator && isRunning && !isLongRunningTaskActive
-                  ? 'animate-spin opacity-30'
-                  : ''
-              ]}
-            >
-              <PlayOrStopIcon size="16px" />
-            </div>
-          </button>
-
-          <div
-            class={[
-              'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
-              selected ? '' : 'group-hover:opacity-100'
-            ]}
-          >
-            <div>click to run</div>
-          </div>
+          <CodeBlockActionButton
+            action={buttonLayout.body}
+            large
+            {selected}
+            {isFlashing}
+            {borderColor}
+            minWidth={minContainerWidth}
+            {isRunning}
+            {showRunningIndicator}
+            {isLongRunningTaskActive}
+            onRun={runOrStop}
+            onCode={handleCodeOpen}
+            onSettings={settingsSidebarTarget.toggle}
+          />
         {/if}
 
         <div>
-          {#each Array.from({ length: videoOutletCount }) as _, index (index)}
+          {#each getPortIndices(videoOutletCount) as index (index)}
             <TypedHandle
               port="outlet"
               spec={{ handleType: 'video', handleId: index }}
@@ -651,7 +557,7 @@
             />
           {/each}
 
-          {#each Array.from({ length: outletCount }) as _, index (index)}
+          {#each getPortIndices(outletCount) as index (index)}
             <TypedHandle
               port="outlet"
               spec={{ handleId: index + videoOutletCount }}
