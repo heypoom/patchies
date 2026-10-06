@@ -154,4 +154,176 @@ describe('SequencerScheduler', () => {
     expect(onFire).toHaveBeenCalledTimes(1);
     expect(onFire).toHaveBeenCalledWith(0, 0);
   });
+
+  it.each([false, true])(
+    'does not replay completed steps on resume (audioRate=%s)',
+    (audioRate) => {
+      vi.useFakeTimers();
+      transportState.isPlaying = true;
+
+      const onFire = vi.fn();
+
+      const scheduler = new SequencerScheduler(
+        'seq-resume',
+        () => ({ clockMode: 'auto', audioRate, steps: 4, swing: 0 }),
+        onFire
+      );
+
+      scheduler.start();
+      vi.advanceTimersByTime(25);
+
+      transportState.seconds = 0.75;
+      vi.advanceTimersByTime(25);
+
+      expect(onFire.mock.calls).toEqual([
+        [0, 0],
+        [1, 0.5]
+      ]);
+
+      for (let i = 0; i < 3; i++) {
+        transportState.isPlaying = false;
+        vi.advanceTimersByTime(25);
+
+        transportState.isPlaying = true;
+        vi.advanceTimersByTime(25);
+
+        expect(onFire.mock.calls).toEqual([
+          [0, 0],
+          [1, 0.5]
+        ]);
+      }
+
+      transportState.seconds = 1;
+      vi.advanceTimersByTime(25);
+
+      expect(onFire.mock.calls).toEqual([
+        [0, 0],
+        [1, 0.5],
+        [2, 1]
+      ]);
+
+      transportState.isPlaying = false;
+      transportState.seconds = 0;
+      vi.advanceTimersByTime(25);
+
+      transportState.isPlaying = true;
+      vi.advanceTimersByTime(25);
+      scheduler.dispose();
+
+      expect(onFire.mock.calls).toEqual([
+        [0, 0],
+        [1, 0.5],
+        [2, 1],
+        [0, 0]
+      ]);
+    }
+  );
+
+  it('does not re-emit a step already sent through audio lookahead', () => {
+    vi.useFakeTimers();
+    transportState.isPlaying = true;
+
+    const onFire = vi.fn();
+    const scheduler = new SequencerScheduler(
+      'seq-lookahead-resume',
+      () => ({ clockMode: 'auto', audioRate: true, steps: 4, swing: 0 }),
+      onFire
+    );
+
+    scheduler.start();
+    vi.advanceTimersByTime(25);
+
+    transportState.seconds = 0.425;
+    vi.advanceTimersByTime(25);
+
+    expect(onFire.mock.calls).toEqual([
+      [0, 0],
+      [1, 0.5]
+    ]);
+
+    transportState.isPlaying = false;
+    vi.advanceTimersByTime(25);
+
+    transportState.isPlaying = true;
+    vi.advanceTimersByTime(25);
+
+    expect(onFire.mock.calls).toEqual([
+      [0, 0],
+      [1, 0.5]
+    ]);
+
+    transportState.seconds = 0.925;
+    vi.advanceTimersByTime(25);
+    scheduler.dispose();
+
+    expect(onFire.mock.calls).toEqual([
+      [0, 0],
+      [1, 0.5],
+      [2, 1]
+    ]);
+  });
+
+  it('does not emit pending lookahead steps while paused', () => {
+    vi.useFakeTimers();
+    transportState.isPlaying = true;
+
+    const onFire = vi.fn();
+    const scheduler = new SequencerScheduler(
+      'seq-paused',
+      () => ({ clockMode: 'auto', audioRate: true, steps: 4, swing: 0 }),
+      onFire
+    );
+
+    scheduler.start();
+    vi.advanceTimersByTime(25);
+
+    transportState.seconds = 0.425;
+    transportState.isPlaying = false;
+    vi.advanceTimersByTime(100);
+
+    expect(onFire.mock.calls).toEqual([[0, 0]]);
+
+    transportState.isPlaying = true;
+    vi.advanceTimersByTime(25);
+    scheduler.dispose();
+
+    expect(onFire.mock.calls).toEqual([
+      [0, 0],
+      [1, 0.5]
+    ]);
+  });
+
+  it('keeps a swung step pending when resuming before its trigger time', () => {
+    vi.useFakeTimers();
+    transportState.isPlaying = true;
+
+    const onFire = vi.fn();
+
+    const scheduler = new SequencerScheduler(
+      'seq-swing-resume',
+      () => ({ clockMode: 'auto', audioRate: false, steps: 4, swing: 100 }),
+      onFire
+    );
+
+    scheduler.start();
+    vi.advanceTimersByTime(25);
+
+    transportState.seconds = 0.6;
+    transportState.isPlaying = false;
+    vi.advanceTimersByTime(25);
+
+    transportState.isPlaying = true;
+    vi.advanceTimersByTime(25);
+
+    expect(onFire.mock.calls).toEqual([[0, 0]]);
+
+    transportState.seconds = 0.75;
+    vi.advanceTimersByTime(25);
+    scheduler.dispose();
+
+    expect(onFire.mock.calls).toEqual([
+      [0, 0],
+      [1, 0.75]
+    ]);
+  });
 });

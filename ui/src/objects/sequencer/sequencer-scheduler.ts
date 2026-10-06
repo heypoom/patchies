@@ -31,6 +31,7 @@ export class SequencerScheduler {
   private playStateSubId: string | null = null;
   private stepScheduleIds: string[] = [];
   private stepMarkerIds: string[] = [];
+  private lastFiredStepTime: number | null = null;
 
   constructor(
     private nodeId: string,
@@ -54,7 +55,7 @@ export class SequencerScheduler {
     this.scheduler.setTimelineStyle({ visible: false });
   }
 
-  private schedulePattern(patternTime: number): void {
+  private schedulePattern(patternTime: number, earliestStepTime = patternTime): void {
     const { steps, swing, audioRate } = this.getConfig();
 
     if (this.patternSubId) {
@@ -77,9 +78,21 @@ export class SequencerScheduler {
       const swingOffset = isSwung ? (swing / 100) * 0.5 * stepInterval : 0;
       const stepTime = patternTime + i * stepInterval + swingOffset;
 
-      const id = this.scheduler.schedule(stepTime, (t) => this.onFire(i, t), {
-        audio: audioRate
-      });
+      if (
+        stepTime < earliestStepTime ||
+        (this.lastFiredStepTime !== null && stepTime <= this.lastFiredStepTime)
+      ) {
+        continue;
+      }
+
+      const id = this.scheduler.schedule(
+        stepTime,
+        (t) => {
+          this.lastFiredStepTime = t;
+          this.onFire(i, t);
+        },
+        { audio: audioRate }
+      );
 
       this.stepScheduleIds.push(id);
 
@@ -89,6 +102,7 @@ export class SequencerScheduler {
     }
 
     const patternDuration = stepInterval * steps;
+
     this.patternSubId = this.scheduler.schedule(
       patternTime + patternDuration,
       (nextPatternTime) => this.schedulePattern(nextPatternTime),
@@ -97,36 +111,50 @@ export class SequencerScheduler {
   }
 
   private scheduleCurrentPattern(): void {
-    const patternDuration = (60 / Transport.bpm) * this.getConfig().steps;
+    const stepInterval = 60 / Transport.bpm;
+    const patternDuration = stepInterval * this.getConfig().steps;
     const patternTime = Math.floor(Transport.seconds / patternDuration) * patternDuration;
 
-    this.schedulePattern(patternTime);
+    const earliestStepTime =
+      this.lastFiredStepTime === null && Transport.seconds < stepInterval ? 0 : Transport.seconds;
+
+    this.schedulePattern(patternTime, earliestStepTime);
   }
 
-  /** Re-subscribe to the pattern clock, respecting current clockMode. */
-  setup(): void {
-    const { clockMode, audioRate } = this.getConfig();
-
+  private clearSchedules(): void {
     if (this.patternSubId) {
       this.scheduler.cancel(this.patternSubId);
       this.patternSubId = null;
-    }
-
-    if (this.playStateSubId) {
-      this.scheduler.cancel(this.playStateSubId);
-      this.playStateSubId = null;
     }
 
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
     this.stepScheduleIds = [];
 
     this.clearMarkers();
+  }
+
+  /** Re-subscribe to the pattern clock, respecting current clockMode. */
+  setup(): void {
+    const { clockMode } = this.getConfig();
+
+    this.clearSchedules();
+
+    if (this.playStateSubId) {
+      this.scheduler.cancel(this.playStateSubId);
+      this.playStateSubId = null;
+    }
 
     if (clockMode === 'manual') return;
 
     this.playStateSubId = this.scheduler.onPlayStateChange((state) => {
       if (state === 'playing') {
         this.scheduleCurrentPattern();
+      } else {
+        this.clearSchedules();
+
+        if (state === 'stopped') {
+          this.lastFiredStepTime = null;
+        }
       }
     });
 
