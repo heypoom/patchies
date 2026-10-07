@@ -13,8 +13,8 @@ export async function generateLLMTurn({
   options?: LLMOptions;
   preparedTools?: ReturnType<typeof prepareLLMTools>;
 }): Promise<LLMConversationTurn> {
-  const { declarations, handlers } = preparedTools ?? prepareLLMTools(options.tools);
   const maxToolCalls = options.maxToolCalls ?? 8;
+  const { declarations, handlers } = preparedTools ?? prepareLLMTools(options.tools);
 
   if (!Number.isInteger(maxToolCalls) || maxToolCalls < 1) {
     throw new Error('llm: maxToolCalls must be a positive integer');
@@ -95,7 +95,8 @@ export async function generateLLMTurn({
         throw new Error('Request cancelled');
       }
 
-      const result = await awaitLLMOperation(handlers.get(call.name)!(call), options.abortSignal);
+      const handler = handlers.get(call.name)!;
+      const result = await awaitLLMOperation(handler(call), options.abortSignal);
 
       toolResults.push({ callId: call.id, name: call.name, result });
       toolCalls++;

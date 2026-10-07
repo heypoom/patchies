@@ -27,6 +27,7 @@ interface LLMProxyRequest {
  */
 export class WorkerLLMProxy {
   private nextToolId = 0;
+
   private toolResults = new Map<string, PendingToolResult>();
   private abortControllers = new Map<string, AbortController>(); // requestId -> controller
   private requestsByNode = new Map<string, Set<string>>(); // nodeId -> Set<requestId>
@@ -71,15 +72,17 @@ export class WorkerLLMProxy {
                 this.toolResults.set(callId, { nodeId, requestId, resolve, reject, cleanup });
                 abortController.signal.addEventListener('abort', abort, { once: true });
 
+                const toolCall = {
+                  type: 'llmToolCall',
+                  nodeId,
+                  requestId,
+                  callId,
+                  name,
+                  args
+                } satisfies WorkerMessage;
+
                 try {
-                  worker.postMessage({
-                    type: 'llmToolCall',
-                    nodeId,
-                    requestId,
-                    callId,
-                    name,
-                    args
-                  } satisfies WorkerMessage);
+                  worker.postMessage(toolCall);
                 } catch (error) {
                   this.toolResults.delete(callId);
                   cleanup();
@@ -100,21 +103,25 @@ export class WorkerLLMProxy {
 
       const result = returnTurn ? await llm.turn(input, context) : await llm(input, context);
 
-      worker.postMessage({
+      const config = {
         type: 'llmConfig',
         nodeId,
         requestId,
         ...(typeof result === 'string' ? { text: result } : { turn: result })
-      } satisfies WorkerMessage);
+      } satisfies WorkerMessage;
+
+      worker.postMessage(config);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      worker.postMessage({
+      const config = {
         type: 'llmConfig',
         nodeId,
         requestId,
         error: errorMessage
-      } satisfies WorkerMessage);
+      } satisfies WorkerMessage;
+
+      worker.postMessage(config);
     } finally {
       this.abortControllers.delete(requestId);
 

@@ -6,7 +6,7 @@
 import { match } from 'ts-pattern';
 
 import { AsyncActivityTracker } from '$lib/js-runner/AsyncActivityTracker';
-import { WorkerLLMClient } from '$lib/js-runner/llm-js/worker-llm-client';
+import { WorkerLLMClient } from '$lib/js-runner/llm-worker/worker-llm-client';
 import type { LLMConversationTurn } from '$lib/ai/llm-js/llm-input';
 
 import type {

@@ -69,8 +69,10 @@ test('aborts every request for a node and suppresses its late tool results', asy
 test('sends history and options, returns state intact, and removes abort listeners on completion', async () => {
   const send = vi.fn();
   const client = new WorkerLLMClient(send);
+
   const llm = client.createFunction('worker-1', new AsyncActivityTracker(() => {}));
   const controller = new AbortController();
+
   const input = [{ role: 'user' as const, content: 'First' }];
 
   const pending = llm.turn(input, {
@@ -122,14 +124,13 @@ test('sends history and options, returns state intact, and removes abort listene
 test('cancels the main-thread request and ignores a late response', async () => {
   const send = vi.fn();
   const client = new WorkerLLMClient(send);
+
   const controller = new AbortController();
   const llm = client.createFunction('worker-1', new AsyncActivityTracker(() => {}));
 
-  const pending = llm('First', {
-    abortSignal: controller.signal
-  });
-
+  const pending = llm('First', { abortSignal: controller.signal });
   const rejected = expect(pending).rejects.toThrow('aborted');
+
   controller.abort();
   await rejected;
 
