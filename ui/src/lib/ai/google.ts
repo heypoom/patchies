@@ -1,3 +1,4 @@
+import { streamLLMResponse } from './llm-js/llm-stream';
 import { prepareLLMTools } from './llm-js/llm-tools';
 import { generateLLMTurn } from './llm-js/llm-tool-loop';
 import { GLSystem } from '$lib/canvas/GLSystem';
@@ -218,7 +219,10 @@ export function createLLMFunction() {
       return returnTurn ? turn : turn.content;
     }
 
-    return provider.generateText(messages, options);
+    return streamLLMResponse(
+      (onToken) => provider.generateText(messages, { ...options, ...(onToken ? { onToken } : {}) }),
+      context ?? {}
+    );
   };
 
   const llm = async (input: LLMInput, options?: LLMOptions): Promise<string> =>

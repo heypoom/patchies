@@ -17,6 +17,7 @@ interface LLMPendingSession {
   reject: (error: Error) => void;
   cleanup: () => void;
   returnTurn: boolean;
+  onChunk?: LLMOptions['onChunk'];
   nodeId: string;
   handlers: Map<string, (call: ToolCall) => Promise<unknown>>;
 }
@@ -56,7 +57,11 @@ export class WorkerLLMClient {
   ) {
     normalizeLLMInput(input);
 
-    const { abortSignal, tools, ...wireOptions } = options;
+    const { abortSignal, tools, onChunk, ...wireOptions } = options;
+    if (onChunk !== undefined && typeof onChunk !== 'function') {
+      throw new Error('llm: onChunk must be a function');
+    }
+
     const { handlers } = prepareLLMTools(tools);
 
     const definitions: LLMToolDefinitions = Object.fromEntries(
@@ -86,7 +91,15 @@ export class WorkerLLMClient {
 
       const cleanup = () => abortSignal?.removeEventListener('abort', abort);
 
-      this.pending.set(requestId, { resolve, reject, cleanup, returnTurn, nodeId, handlers });
+      this.pending.set(requestId, {
+        resolve,
+        reject,
+        cleanup,
+        returnTurn,
+        nodeId,
+        handlers,
+        onChunk
+      });
       abortSignal?.addEventListener('abort', abort, { once: true });
 
       try {
@@ -96,7 +109,8 @@ export class WorkerLLMClient {
           requestId,
           input: snapshot,
           options: { ...wireOptions, ...(tools ? { tools: definitions } : {}) },
-          returnTurn
+          returnTurn,
+          ...(onChunk ? { stream: true } : {})
         });
       } catch (error) {
         this.pending.delete(requestId);
@@ -144,6 +158,20 @@ export class WorkerLLMClient {
       callId: message.callId,
       ...response
     });
+  }
+
+  handleChunk(message: { requestId: string; delta: string; text: string }): void {
+    const pending = this.pending.get(message.requestId);
+    if (!pending?.onChunk) return;
+
+    try {
+      pending.onChunk(message.delta, message.text);
+    } catch (error) {
+      this.pending.delete(message.requestId);
+      pending.cleanup();
+      this.postMessage({ type: 'llmAbort', nodeId: pending.nodeId, requestId: message.requestId });
+      pending.reject(error instanceof Error ? error : new Error(String(error)));
+    }
   }
 
   handleResponse(response: LLMResponse): void {

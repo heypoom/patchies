@@ -96,6 +96,35 @@ console.log(turn.content);
 - The `imageNodeId` option captures the current frame for the
   last user turn. Chat history does not retain earlier frame captures.
 
+## Streaming
+
+Update a chat draft as text arrives with `onChunk(delta, text)`.
+
+`delta` is the new fragment and `text` is the accumulated response for the
+current model generation. Both `llm()` and `llm.turn()` accept this option.
+
+```javascript
+const history = [{ role: "user", content: "Tell me a short story about the ocean." }];
+
+const turn = await llm.turn(history, {
+  onChunk: (delta, text) => {
+    send({ type: "chatDraft", text });
+  },
+});
+
+history.push(turn);
+send({ type: "chatReply", text: turn.content });
+```
+
+Each generation starts with `onChunk("", "")` to clear the draft. With tools,
+this happens again after tool execution. Replace your draft with `text` to avoid
+joining intermediate text onto the final answer. Append the completed turn to
+history after awaiting it, preserving its reasoning state.
+
+Callbacks run synchronously in your node. Throwing rejects the request. Cancelling
+with `abortSignal` stops chunk delivery. The final awaited result stays the same, so
+you can use it to commit the completed reply.
+
 ## Tools
 
 Give the model tools to read or change your patch.

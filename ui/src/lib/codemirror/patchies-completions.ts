@@ -38,7 +38,7 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
     label: 'llm',
     type: 'function',
     detail: '(text | conversation, options?) => Promise<string>',
-    info: 'Generate a reply from text or user/assistant turns.',
+    info: 'Generate a reply from text or user/assistant turns; options.onChunk(delta, text) streams a draft.',
     apply: 'llm()'
   },
 

@@ -249,3 +249,56 @@ test('sends a plain snapshot of reactive conversation history', async () => {
 
   await expect(pending).resolves.toEqual(turn);
 });
+
+test('keeps streaming callbacks local, routes chunks by request, and ignores settled requests', async () => {
+  const send = vi.fn((message) => structuredClone(message));
+  const changed = vi.fn();
+  const client = new WorkerLLMClient(send);
+  const llm = client.createFunction('worker-1', new AsyncActivityTracker(changed));
+  const onChunk = vi.fn();
+  const pending = llm.turn('First', { onChunk });
+  const second = llm('Second');
+
+  expect(send.mock.calls[0][0]).toMatchObject({ stream: true, options: {} });
+  expect(send.mock.calls[0][0].options.onChunk).toBeUndefined();
+
+  client.handleChunk({ requestId: 'llm-worker-1-2', delta: 'other', text: 'other' });
+  client.handleChunk({ requestId: 'llm-worker-1-1', delta: 'A', text: 'A' });
+
+  expect(onChunk).toHaveBeenCalledExactlyOnceWith('A', 'A');
+  expect(changed.mock.calls).toEqual([[true]]);
+
+  const turn = { role: 'assistant' as const, content: 'Answer' };
+  client.handleResponse({ requestId: 'llm-worker-1-1', turn });
+  await expect(pending).resolves.toEqual(turn);
+  client.handleChunk({ requestId: 'llm-worker-1-1', delta: 'late', text: 'late' });
+  client.handleResponse({ requestId: 'llm-worker-1-2', text: 'Other' });
+  await second;
+
+  expect(onChunk).toHaveBeenCalledTimes(1);
+  expect(changed.mock.calls).toEqual([[true], [false]]);
+});
+
+test.each(['abort', 'callback error'])('ignores worker chunks after %s', async (failure) => {
+  const send = vi.fn();
+  const controller = new AbortController();
+  const client = new WorkerLLMClient(send);
+  const onChunk = vi.fn(() => {
+    throw new Error('UI failed');
+  });
+  const pending = client.createFunction('worker-1', new AsyncActivityTracker(() => {}))('Hello', {
+    onChunk,
+    abortSignal: controller.signal
+  });
+  const rejected = expect(pending).rejects.toThrow(failure === 'abort' ? 'aborted' : 'UI failed');
+
+  if (failure === 'abort') controller.abort();
+  else client.handleChunk({ requestId: 'llm-worker-1-1', delta: 'A', text: 'A' });
+
+  await rejected;
+  const count = onChunk.mock.calls.length;
+  client.handleChunk({ requestId: 'llm-worker-1-1', delta: 'late', text: 'late' });
+
+  expect(onChunk).toHaveBeenCalledTimes(count);
+  expect(send.mock.calls.at(-1)?.[0]).toMatchObject({ type: 'llmAbort' });
+});

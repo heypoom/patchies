@@ -1,3 +1,4 @@
+import { streamLLMResponse } from './llm-stream';
 import type { LLMConversationTurn, LLMOptions, LLMReasoningState } from './llm-input';
 import type { ChatTurnMessage, LLMProvider } from '../providers/types';
 import { awaitLLMOperation, prepareLLMTools } from './llm-tools';
@@ -45,15 +46,18 @@ export async function generateLLMTurn({
       throw new Error('Request cancelled');
     }
 
-    const turn = provider.streamTurn(history, {
-      tools: declarations,
-      signal: options.abortSignal,
-      systemPrompt: options.systemPrompt,
-      temperature: options.temperature,
-      topK: options.topK
-    });
-
-    const result = await awaitLLMOperation(turn, options.abortSignal);
+    const result = await streamLLMResponse(
+      (onChunk) =>
+        provider.streamTurn(history, {
+          tools: declarations,
+          signal: options.abortSignal,
+          systemPrompt: options.systemPrompt,
+          temperature: options.temperature,
+          topK: options.topK,
+          ...(onChunk ? { onChunk } : {})
+        }),
+      options
+    );
 
     const modelTurn: ChatTurnMessage = {
       role: 'model',

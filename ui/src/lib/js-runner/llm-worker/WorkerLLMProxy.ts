@@ -16,8 +16,9 @@ interface LLMProxyRequest {
   worker: Worker;
   requestId: string;
   input: LLMInput;
-  options?: Omit<LLMOptions, 'abortSignal' | 'tools'> & { tools?: LLMToolDefinitions };
+  options?: Omit<LLMOptions, 'abortSignal' | 'tools' | 'onChunk'> & { tools?: LLMToolDefinitions };
   returnTurn?: boolean;
+  stream?: boolean;
 }
 
 /**
@@ -38,7 +39,8 @@ export class WorkerLLMProxy {
     requestId,
     input,
     options,
-    returnTurn = false
+    returnTurn = false,
+    stream = false
   }: LLMProxyRequest): Promise<void> {
     const abortController = new AbortController();
 
@@ -98,7 +100,22 @@ export class WorkerLLMProxy {
       const context = {
         ...otherOptions,
         ...(definitions ? { tools } : {}),
-        abortSignal: abortController.signal
+        abortSignal: abortController.signal,
+        ...(stream
+          ? {
+              onChunk: (delta: string, text: string) => {
+                if (abortController.signal.aborted) return;
+
+                worker.postMessage({
+                  type: 'llmChunk',
+                  nodeId,
+                  requestId,
+                  delta,
+                  text
+                } satisfies WorkerMessage);
+              }
+            }
+          : {})
       };
 
       const result = returnTurn ? await llm.turn(input, context) : await llm(input, context);

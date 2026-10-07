@@ -277,7 +277,8 @@ export class WorkerNodeSystem {
           requestId: event.requestId,
           input: event.input,
           options: event.options,
-          returnTurn: event.returnTurn
+          returnTurn: event.returnTurn,
+          stream: event.stream
         });
       })
       .with({ type: 'llmToolResult' }, (event) => {

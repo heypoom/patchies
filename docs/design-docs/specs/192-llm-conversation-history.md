@@ -88,3 +88,17 @@ from frontend frameworks without importing a framework-specific unwrapping API.
 Materialize arrays and plain objects before cloning; retain complete reasoning
 state and tool traces. Snapshot synchronously before lazy imports, frame capture,
 or worker messaging so later caller mutations do not affect the request.
+
+## Streaming callbacks
+
+Both helpers accept synchronous `onChunk(delta, text)` callbacks. `delta` is the
+new text fragment; `text` is accumulated text for the current model generation.
+Each generation starts with `onChunk('', '')`, including generations after tool
+execution. Final string/assistant-turn return values and retained state stay the
+same. Callback exceptions reject the request. No callbacks run after cancellation,
+completion, or failure. Running activity lasts until the final request settles.
+
+Worker callbacks stay local. Request messages carry a streaming flag and no
+functions; the main-thread proxy sends ordered request-scoped chunk messages.
+Ignore messages for settled requests. A worker callback exception aborts the
+provider request and rejects the local promise.

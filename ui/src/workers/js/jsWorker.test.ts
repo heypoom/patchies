@@ -50,8 +50,8 @@ test('worker emits running and stopped activity for delay and LLM calls', async 
   await dispatch({
     type: 'executeCode',
     nodeId: 'worker-test',
-    code: "await llm('Hello')",
-    processedCode: "await llm('Hello')"
+    code: "await llm('Hello', { onChunk: (delta, text) => send({ delta, text }) })",
+    processedCode: "await llm('Hello', { onChunk: (delta, text) => send({ delta, text }) })"
   });
 
   const request = sent.find((message) => message.type === 'llmRequest');
@@ -63,6 +63,20 @@ test('worker emits running and stopped activity for delay and LLM calls', async 
   }
 
   expect(activity().at(-1)).toMatchObject({ callbackType: 'async', active: true });
+
+  await dispatch({
+    type: 'llmChunk',
+    nodeId: 'worker-test',
+    requestId: request.requestId,
+    delta: 'A',
+    text: 'A'
+  });
+
+  expect(sent.find((message) => message.type === 'sendMessage')).toMatchObject({
+    data: { delta: 'A', text: 'A' }
+  });
+
+  expect(activity().at(-1)).toMatchObject({ active: true });
 
   await dispatch({
     type: 'llmConfig',

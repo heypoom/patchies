@@ -409,3 +409,119 @@ test('validates nested schemas and executes multiple tools in model order', asyn
   expect(await createLLMFunction()('First', { tools })).toBe('Done');
   expect(order).toEqual(['colors', 'read']);
 });
+
+test('streams string replies before resolving and stops delivering late chunks', async () => {
+  const onChunk = vi.fn();
+
+  let emit!: (delta: string) => void;
+  let finish!: (text: string) => void;
+
+  provider.generateText.mockImplementationOnce((_messages, options) => {
+    emit = options.onToken;
+
+    return new Promise<string>((resolve) => {
+      finish = resolve;
+    });
+  });
+
+  const pending = createLLMFunction()('Hello', { onChunk });
+  await vi.waitFor(() => expect(emit).toBeTypeOf('function'));
+
+  emit('Hel');
+  emit('lo');
+
+  expect(onChunk.mock.calls).toEqual([
+    ['', ''],
+    ['Hel', 'Hel'],
+    ['lo', 'Hello']
+  ]);
+
+  finish('Hello');
+  await expect(pending).resolves.toBe('Hello');
+  emit('late');
+
+  expect(onChunk).toHaveBeenCalledTimes(3);
+});
+
+test('resets streamed text after tools and retains the final assistant state', async () => {
+  const onChunk = vi.fn();
+
+  provider.streamTurn.mockImplementationOnce(async (_messages, options) => {
+    options.onChunk('Checking');
+
+    return {
+      text: 'Checking',
+      toolCalls: [{ id: 'read-1', name: 'read', args: {} }],
+      _rawModelTurn: {}
+    };
+  });
+
+  provider.streamTurn.mockImplementationOnce(async (_messages, options) => {
+    options.onChunk('120');
+    options.onChunk(' BPM');
+
+    return { text: '120 BPM', toolCalls: [], _rawModelTurn: { signed: true } };
+  });
+
+  const turn = await createLLMFunction().turn('Read tempo', {
+    onChunk,
+    tools: { read: { description: 'Read tempo', run: () => ({ bpm: 120 }) } }
+  });
+
+  expect(onChunk.mock.calls).toEqual([
+    ['', ''],
+    ['Checking', 'Checking'],
+    ['', ''],
+    ['120', '120'],
+    [' BPM', '120 BPM']
+  ]);
+
+  expect(turn.content).toBe('120 BPM');
+  expect(turn.state?.raw).toEqual({ signed: true });
+  expect(turn.state?.steps).toHaveLength(2);
+});
+
+test.each(['abort', 'callback error', 'provider error'])(
+  'stops chunk delivery after %s',
+  async (failure) => {
+    const controller = new AbortController();
+
+    const onChunk = vi.fn((delta: string) => {
+      if (delta && failure === 'callback error') {
+        throw new Error('UI failed');
+      }
+    });
+
+    let emit!: (delta: string) => void;
+    let reject!: (error: Error) => void;
+
+    provider.streamTurn.mockImplementationOnce((_messages, options) => {
+      emit = options.onChunk;
+      return new Promise((_resolve, fail) => {
+        reject = fail;
+      });
+    });
+
+    const pending = createLLMFunction().turn('Hello', { onChunk, abortSignal: controller.signal });
+    const failed = expect(pending).rejects.toThrow(failure === 'abort' ? 'cancelled' : 'failed');
+    await vi.waitFor(() => expect(emit).toBeTypeOf('function'));
+
+    if (failure === 'abort') {
+      controller.abort();
+    } else if (failure === 'callback error') {
+      try {
+        emit('chunk');
+      } catch (error) {
+        reject(error as Error);
+      }
+    } else {
+      reject(new Error('Provider failed'));
+    }
+
+    await failed;
+    const count = onChunk.mock.calls.length;
+    emit('late');
+
+    expect(onChunk).toHaveBeenCalledTimes(count);
+  }
+);

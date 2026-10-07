@@ -54,6 +54,7 @@ export type WorkerMessage = { nodeId: string } & (
       turn?: LLMConversationTurn;
       error?: string;
     }
+  | { type: 'llmChunk'; requestId: string; delta: string; text: string }
   | {
       type: 'llmToolCall';
       requestId: string;
@@ -114,8 +115,11 @@ export type WorkerResponse = { nodeId: string } & (
       type: 'llmRequest';
       requestId: string;
       input: LLMInput;
-      options?: Omit<LLMOptions, 'abortSignal' | 'tools'> & { tools?: LLMToolDefinitions };
+      options?: Omit<LLMOptions, 'abortSignal' | 'tools' | 'onChunk'> & {
+        tools?: LLMToolDefinitions;
+      };
       returnTurn?: boolean;
+      stream?: boolean;
     }
   | {
       type: 'llmToolResult';

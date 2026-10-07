@@ -29,6 +29,9 @@ export interface LLMOptions {
   systemPrompt?: string;
   tools?: LLMTools;
   maxToolCalls?: number;
+
+  /** New text and accumulated text; an empty pair starts each model generation. */
+  onChunk?: (delta: string, text: string) => void;
 }
 
 export const snapshotLLMInput = (input: LLMInput): LLMInput => snapshotData(input);

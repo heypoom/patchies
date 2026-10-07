@@ -20,6 +20,8 @@ test('keeps callbacks in the worker and transfers only definitions, arguments, a
     postMessage: (message: WorkerMessage) => {
       structuredClone(message);
 
+      if (message.type === 'llmChunk') client.handleChunk(message);
+
       if (message.type === 'llmToolCall') {
         void client.handleToolCall(message);
       }
@@ -40,7 +42,8 @@ test('keeps callbacks in the worker and transfers only definitions, arguments, a
         requestId: message.requestId,
         input: message.input,
         options: message.options,
-        returnTurn: message.returnTurn
+        returnTurn: message.returnTurn,
+        stream: message.stream
       });
     }
 
@@ -53,6 +56,7 @@ test('keeps callbacks in the worker and transfers only definitions, arguments, a
     }
   });
 
+  const onChunk = vi.fn();
   const run = vi.fn().mockResolvedValue({ bpm: 120 });
 
   provider.streamTurn.mockResolvedValueOnce({
@@ -61,14 +65,25 @@ test('keeps callbacks in the worker and transfers only definitions, arguments, a
     _rawModelTurn: { signed: true }
   });
 
-  provider.streamTurn.mockResolvedValue({ text: '120 BPM', toolCalls: [], _rawModelTurn: {} });
+  provider.streamTurn.mockImplementation(async (_messages, options) => {
+    options.onChunk('120');
+    options.onChunk(' BPM');
+
+    return { text: '120 BPM', toolCalls: [], _rawModelTurn: {} };
+  });
 
   const turn = await client
     .createFunction('worker-1', new AsyncActivityTracker(() => {}))
-    .turn('Read tempo', { tools: { readTempo: { description: 'Read tempo', run } } });
+    .turn('Read tempo', { onChunk, tools: { readTempo: { description: 'Read tempo', run } } });
 
   expect(run).toHaveBeenCalledWith({});
   expect(turn.content).toBe('120 BPM');
+  expect(onChunk.mock.calls).toEqual([
+    ['', ''],
+    ['', ''],
+    ['120', '120'],
+    [' BPM', '120 BPM']
+  ]);
 
   expect(turn.state?.steps?.[1].toolResults).toEqual([
     { callId: 'call-1', name: 'readTempo', result: { bpm: 120 } }

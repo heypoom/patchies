@@ -821,6 +821,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     .with({ type: 'llmToolCall' }, (data) => {
       void llmClient.handleToolCall(data);
     })
+    .with({ type: 'llmChunk' }, (data) => {
+      llmClient.handleChunk(data);
+    })
     .with({ type: 'llmConfig' }, (data) => {
       handleLLMConfig(
         data as {
