@@ -14,8 +14,12 @@ Reduce initial patcher downloads by keeping optional payloads behind the user ac
 - Import Lucide icons individually so development dependency optimization does not include the whole catalogue through the two package barrels.
 - Import MediaBunny's decoder library on the first video file or URL load, in both main-thread and worker uses. Keep player creation synchronous so subsequent playback messages still find their player. Ignore a pending decoder import if its player is destroyed or its source is replaced before the import completes.
 
+- Load Spectrum color controls only when a settings picker or inline color widget is opened. Share the loader, show pending/error states, and allow failed downloads to be retried.
+- Load the browser Tailwind compiler and its CSS sources only when a DOM/Vue shadow container enables Tailwind. Preserve synchronous container creation and shared compilation. Disabling Tailwind while loading must prevent stale styles and observers from being installed.
+
 ## Verification
 
+- Exercise color-picker input and download retry, shadow utility updates, and disabling/re-enabling Tailwind during initialization.
 - Exercise enabled-pack loading, concurrent demand, payload publication, and retry after failure.
 - Build production and inspect the page's static import graph: Greggman and Butterchurn payloads must be absent, and app bootstrap must depend only on neutral preload helpers rather than CodeMirror.
 - Compare the initial JavaScript graph against the October 7 reports. Record remaining eager dependencies separately from improvements.
