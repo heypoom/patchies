@@ -14,13 +14,15 @@ export class GeminiProvider implements LLMProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model: string
+    readonly model: string
   ) {}
 
   async generateText(messages: LLMMessage[], options: LLMStreamOptions = {}): Promise<string> {
     const { signal, onThinking, onToken, systemPrompt, temperature, topK } = options;
 
-    if (signal?.aborted) throw new Error('Request cancelled');
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
 
     const { GoogleGenAI } = await import('@google/genai');
 
@@ -42,9 +44,17 @@ export class GeminiProvider implements LLMProvider {
       abortSignal: signal
     };
 
-    if (systemPrompt) config.systemInstruction = systemPrompt;
-    if (temperature !== undefined) config.temperature = temperature;
-    if (topK !== undefined) config.topK = topK;
+    if (systemPrompt) {
+      config.systemInstruction = systemPrompt;
+    }
+
+    if (temperature !== undefined) {
+      config.temperature = temperature;
+    }
+
+    if (topK !== undefined) {
+      config.topK = topK;
+    }
 
     const response = await ai.models.generateContentStream({
       model: this.model,
@@ -77,9 +87,11 @@ export class GeminiProvider implements LLMProvider {
     messages: ChatTurnMessage[],
     options: StreamTurnOptions
   ): Promise<StreamTurnResult> {
-    const { systemPrompt, tools = [], signal, onChunk, onThinking } = options;
+    const { systemPrompt, tools = [], signal, onChunk, onThinking, temperature, topK } = options;
 
-    if (signal?.aborted) throw new Error('Request cancelled');
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
 
     const { GoogleGenAI } = await import('@google/genai');
 
@@ -119,15 +131,21 @@ export class GeminiProvider implements LLMProvider {
       if (msg.role === 'user' && msg.toolResults?.length) {
         return {
           role: 'user',
-          parts: msg.toolResults.map((toolResult) => ({
-            functionResponse: {
-              name: toolResult.name,
-              response:
-                toolResult.result !== null && typeof toolResult.result === 'object'
+          parts: msg.toolResults.map((toolResult) => {
+            const hasToolResultObject =
+              toolResult.result !== null &&
+              typeof toolResult.result === 'object' &&
+              !Array.isArray(toolResult.result);
+
+            return {
+              functionResponse: {
+                name: toolResult.name,
+                response: hasToolResultObject
                   ? (toolResult.result as Record<string, unknown>)
                   : { value: toolResult.result }
-            }
-          }))
+              }
+            };
+          })
         };
       }
 
@@ -158,31 +176,43 @@ export class GeminiProvider implements LLMProvider {
       config.systemInstruction = systemPrompt;
     }
 
+    if (temperature !== undefined) {
+      config.temperature = temperature;
+    }
+
+    if (topK !== undefined) {
+      config.topK = topK;
+    }
+
     if (tools.length > 0) {
       config.tools = [
         {
           functionDeclarations: tools.map((t) => ({
             name: t.name,
             description: t.description,
-            parameters: t.parametersJsonSchema
+            parametersJsonSchema: t.parametersJsonSchema
           }))
         }
       ];
     }
 
     const stream = await ai.models.generateContentStream({ model: this.model, contents, config });
-
     onThinking?.('', { newGeneration: true });
 
     const turnParts: Record<string, unknown>[] = [];
     let text = '';
 
+    let rejectAbort: (() => void) | undefined;
+
     const abortPromise = signal
       ? new Promise<never>((_, reject) => {
-          if (signal.aborted) reject(new Error('Request cancelled'));
-          signal.addEventListener('abort', () => reject(new Error('Request cancelled')), {
-            once: true
-          });
+          rejectAbort = () => reject(new Error('Request cancelled'));
+
+          if (signal.aborted) {
+            rejectAbort();
+          } else {
+            signal.addEventListener('abort', rejectAbort, { once: true });
+          }
         })
       : null;
 
@@ -193,25 +223,28 @@ export class GeminiProvider implements LLMProvider {
         }
 
         for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-          if (part.thought) {
-            if (part.text && onThinking) {
-              onThinking(part.text);
-            }
+          // Preserve every original part, including signatures delivered without visible text.
+          turnParts.push(part as Record<string, unknown>);
 
-            turnParts.push(part as Record<string, unknown>);
-          } else if (part.functionCall) {
-            turnParts.push(part as Record<string, unknown>);
-          } else if (part.text) {
+          if (part.thought) {
+            if (part.text) {
+              onThinking?.(part.text);
+            }
+          } else if (part.text && !part.functionCall) {
             text += part.text;
 
             onChunk?.(part.text);
-            turnParts.push({ text: part.text });
           }
         }
       }
     };
 
-    await (abortPromise ? Promise.race([consumeStream(), abortPromise]) : consumeStream());
+    try {
+      const task = abortPromise ? Promise.race([consumeStream(), abortPromise]) : consumeStream();
+      await task;
+    } finally {
+      if (rejectAbort) signal?.removeEventListener('abort', rejectAbort);
+    }
 
     const toolCalls: ToolCall[] = turnParts
       .filter((part) => 'functionCall' in part)

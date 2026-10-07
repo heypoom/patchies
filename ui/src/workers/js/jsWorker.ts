@@ -5,6 +5,10 @@
 
 import { match } from 'ts-pattern';
 
+import { AsyncActivityTracker } from '$lib/js-runner/AsyncActivityTracker';
+import { WorkerLLMClient } from '$lib/js-runner/llm-js/worker-llm-client';
+import type { LLMConversationTurn } from '$lib/ai/llm-js/llm-input';
+
 import type {
   CapturedVideoFrame,
   VideoFrameConfig,
@@ -57,6 +61,7 @@ interface NodeState {
   /** Named channel callbacks for recv(callback, { channel }) */
   channelCallbacks: Map<string, (data: unknown, meta: Omit<Message, 'data'>) => void>;
 
+  asyncActivity: AsyncActivityTracker;
   pendingDelays: Map<number, { timeoutId: number; reject: (err: Error) => void }>;
   delayIdCounter: number;
 
@@ -97,6 +102,11 @@ function createNodeState(nodeId: string): NodeState {
     cleanupCallbacks: [],
     messageCallbacks: [],
     channelCallbacks: new Map(),
+
+    asyncActivity: new AsyncActivityTracker((active) =>
+      postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'async', active })
+    ),
+
     pendingDelays: new Map(),
     delayIdCounter: 0,
     isFFTEnabled: false,
@@ -147,15 +157,7 @@ function getNodeState(nodeId: string): NodeState {
   return nodeStates.get(nodeId)!;
 }
 
-// LLM config proxying (get credentials from main thread, make HTTP call in worker)
-type PendingLLMConfig = {
-  prompt: string;
-  resolve: (result: string) => void;
-  reject: (error: Error) => void;
-};
-
-const pendingLLMConfigs = new Map<string, PendingLLMConfig>();
-let llmRequestIdCounter = 0;
+const llmClient = new WorkerLLMClient((message) => self.postMessage(message));
 
 // SuperSonic OscChannel requests
 type PendingSuperSonicRequest = {
@@ -254,17 +256,20 @@ function createWorkerContext(nodeId: string) {
     return id;
   };
 
-  const delay = (ms: number): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const delayId = state.delayIdCounter++;
-      const timeoutId = self.setTimeout(() => {
-        state.pendingDelays.delete(delayId);
-        resolve();
-      }, ms);
-      state.pendingDelays.set(delayId, { timeoutId, reject });
-      postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'timeout' });
-    });
-  };
+  const delay = (ms: number): Promise<void> =>
+    state.asyncActivity.run(
+      () =>
+        new Promise((resolve, reject) => {
+          const delayId = state.delayIdCounter++;
+
+          const timeoutId = self.setTimeout(() => {
+            state.pendingDelays.delete(delayId);
+            resolve();
+          }, ms);
+
+          state.pendingDelays.set(delayId, { timeoutId, reject });
+        })
+    );
 
   const onCleanup = (callback: () => void) => {
     state.cleanupCallbacks.push(callback);
@@ -322,34 +327,7 @@ function createWorkerContext(nodeId: string) {
     return new FFTAnalysis(bins, format, 44100, type);
   };
 
-  // LLM function - proxied through main thread using the active provider
-  const llm = async (
-    prompt: string,
-    context?: { imageNodeId?: string; abortSignal?: AbortSignal; model?: string }
-  ): Promise<string> => {
-    const requestId = `llm-${nodeId}-${++llmRequestIdCounter}`;
-
-    return new Promise((resolve, reject) => {
-      pendingLLMConfigs.set(requestId, { prompt, resolve, reject });
-
-      self.postMessage({
-        type: 'llmRequest',
-        requestId,
-        nodeId,
-        prompt,
-        imageNodeId: context?.imageNodeId,
-        model: context?.model
-      });
-
-      // Handle abort signal
-      if (context?.abortSignal) {
-        context.abortSignal.addEventListener('abort', () => {
-          pendingLLMConfigs.delete(requestId);
-          reject(new Error('LLM request aborted'));
-        });
-      }
-    });
-  };
+  const llm = llmClient.createFunction(nodeId, state.asyncActivity);
 
   const vfs = createWorkerVfs(nodeId);
 
@@ -482,6 +460,9 @@ function cleanupNode(nodeId: string) {
     self.clearTimeout(id);
   }
   state.timeouts = [];
+
+  state.asyncActivity.reset();
+  llmClient.abortNode(nodeId);
 
   // Clear pending delays and reject them
   for (const { timeoutId, reject } of state.pendingDelays.values()) {
@@ -684,19 +665,10 @@ function handleLLMConfig(data: {
   requestId: string;
   nodeId: string;
   text?: string;
+  turn?: LLMConversationTurn;
   error?: string;
 }) {
-  const pending = pendingLLMConfigs.get(data.requestId);
-  if (!pending) return;
-
-  pendingLLMConfigs.delete(data.requestId);
-
-  if (data.error) {
-    pending.reject(new Error(data.error));
-    return;
-  }
-
-  pending.resolve(data.text ?? '');
+  llmClient.handleResponse(data);
 }
 
 // Handle SuperSonic OscChannel response from main thread
@@ -845,6 +817,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'vfsPathsResolved' }, (data) => {
       handleVfsPathsResolved(data);
+    })
+    .with({ type: 'llmToolCall' }, (data) => {
+      void llmClient.handleToolCall(data);
     })
     .with({ type: 'llmConfig' }, (data) => {
       handleLLMConfig(

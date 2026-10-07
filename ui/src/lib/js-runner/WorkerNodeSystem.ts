@@ -17,7 +17,7 @@ import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
 import { AudioService } from '$lib/audio/v2/AudioService';
 
 import { JSRunner } from './JSRunner';
-import { WorkerLLMProxy } from './WorkerLLMProxy';
+import { WorkerLLMProxy } from './llm-js/WorkerLLMProxy';
 import type {
   CapturedVideoFrame,
   VideoFrameConfig,
@@ -222,7 +222,8 @@ export class WorkerNodeSystem {
         this.eventBus.dispatch({
           type: 'workerCallbackRegistered',
           nodeId,
-          callbackType: event.callbackType
+          callbackType: event.callbackType,
+          active: event.active
         });
       })
       .with({ type: 'flash' }, () => {
@@ -269,14 +270,20 @@ export class WorkerNodeSystem {
       })
       // LLM proxy messages
       .with({ type: 'llmRequest' }, (event) => {
-        this.llmProxy.handle(
+        this.llmProxy.handle({
           nodeId,
           worker,
-          event.requestId,
-          event.prompt,
-          event.imageNodeId,
-          event.model
-        );
+          requestId: event.requestId,
+          input: event.input,
+          options: event.options,
+          returnTurn: event.returnTurn
+        });
+      })
+      .with({ type: 'llmToolResult' }, (event) => {
+        this.llmProxy.handleToolResult(nodeId, event);
+      })
+      .with({ type: 'llmAbort' }, (event) => {
+        this.llmProxy.abortRequest(nodeId, event.requestId);
       })
       // Video frame APIs
       .with({ type: 'setVideoCount' }, (event) => {

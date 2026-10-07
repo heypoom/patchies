@@ -27,6 +27,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'javascript-runner': 'JavaScript',
   'js-integrations': 'JS Integrations',
   'js-modules': 'JS Modules',
+  'llm-js': 'LLM API',
   'manage-collections': 'Collections',
   'manage-files': 'Files',
   'manage-presets': 'Presets',

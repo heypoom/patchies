@@ -281,7 +281,8 @@ export interface WorkerSendMessageEvent {
 export interface WorkerCallbackRegisteredEvent {
   type: 'workerCallbackRegistered';
   nodeId: string;
-  callbackType: 'message' | 'interval' | 'timeout';
+  callbackType: 'message' | 'interval' | 'timeout' | 'async';
+  active?: boolean;
 }
 
 export interface WorkerFlashEvent {

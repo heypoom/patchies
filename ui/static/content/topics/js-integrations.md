@@ -173,26 +173,9 @@ Call the configured AI provider from a patch:
 ```javascript
 const result = await llm("Generate a JSON list of 5 colors");
 console.log(result);
-
-// Include a visual object's current frame as context
-const description = await llm("What's in this frame?", {
-  imageNodeId: "canvas-1",
-});
-
-// Override the model for a specific call
-const haiku = await llm("Write a haiku about recursion", {
-  model: "anthropic/claude-haiku-4-5",
-});
-
-// Choose which LLM provider to use
-// Must be configured in AI provider settings
-const haiku = await llm("Write a haiku about recursion", {
-  provider: "openrouter"
-  // you can also specify the model for the provider here
-});
 ```
 
-An API key is required. Configure the provider with `Ctrl/Cmd + K > AI Provider Settings`.
+See [LLM API](/docs/llm-js) for setup, conversations, visual context, and tools.
 
 ## Presentation
 

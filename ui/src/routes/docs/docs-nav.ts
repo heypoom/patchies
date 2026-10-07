@@ -42,5 +42,5 @@ export const topicOrder: Record<string, string[]> = {
   Sidebar: ['manage-files', 'manage-presets', 'manage-saves', 'in-app-help', 'browse-samples'],
   'Timing & Sync': ['audio-reactivity', 'transport-control', 'clock-api', 'parameter-automation'],
   Other: ['sharing-links', 'offline-usage', 'rendering-pipeline', 'supporting-open-source'],
-  AI: ['enabling-ai', 'ai-edits', 'ai-chat', 'ai-patch-to-app']
+  AI: ['enabling-ai', 'ai-edits', 'ai-chat', 'llm-js', 'ai-patch-to-app']
 };

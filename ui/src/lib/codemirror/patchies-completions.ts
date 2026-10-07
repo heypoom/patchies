@@ -34,6 +34,14 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
     apply: 'onMessage((data, meta) => {\n  \n})'
   },
 
+  {
+    label: 'llm',
+    type: 'function',
+    detail: '(text | conversation, options?) => Promise<string>',
+    info: 'Generate a reply from text or user/assistant turns.',
+    apply: 'llm()'
+  },
+
   // Port Configuration
   {
     label: 'setPortCount',
@@ -683,6 +691,27 @@ const NODE_SPECIFIC_FUNCTIONS: Record<string, string[]> = {
     'elem~',
     'sonic~'
   ],
+  llm: [
+    'js',
+    'worker',
+    'p5',
+    'hydra',
+    'canvas',
+    'canvas.dom',
+    'swgl',
+    'regl',
+    'textmode',
+    'textmode.dom',
+    'three',
+    'three.dom',
+    'pixi.dom',
+    'tone~',
+    'dom',
+    'vue',
+    'surface',
+    'elem~',
+    'sonic~'
+  ],
   fft: [
     'js',
     'worker',
@@ -876,6 +905,15 @@ const NODE_SPECIFIC_FUNCTIONS: Record<string, string[]> = {
  * Member completions for Patchies APIs (shown after `obj.` or `fft().`)
  */
 const memberCompletions: Record<string, Completion[]> = {
+  llm: [
+    {
+      label: 'turn',
+      type: 'function',
+      detail: '(text | conversation, options?) => Promise<AssistantTurn>',
+      info: 'Return an assistant turn with opaque reasoning and tool history. Append it unchanged and reuse the same provider and model.',
+      apply: 'turn()'
+    }
+  ],
   fft: [
     {
       label: 'a',

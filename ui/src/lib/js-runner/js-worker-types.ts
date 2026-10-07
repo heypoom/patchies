@@ -1,3 +1,5 @@
+import type { LLMToolDefinitions } from '$lib/ai/llm-js/llm-tools';
+import type { LLMInput, LLMOptions, LLMConversationTurn } from '$lib/ai/llm-js/llm-input';
 import type { AudioAnalysisFormat, AudioAnalysisType } from '$lib/audio/AudioAnalysisSystem';
 import type { PrimaryButton } from '$lib/eventbus/events';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
@@ -45,7 +47,20 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
   | { type: 'vfsPathsResolved'; requestId: string; entries: VFSListEntry[]; error?: never }
   | { type: 'vfsPathsResolved'; requestId: string; error: string; entries?: never }
-  | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
+  | {
+      type: 'llmConfig';
+      requestId: string;
+      text?: string;
+      turn?: LLMConversationTurn;
+      error?: string;
+    }
+  | {
+      type: 'llmToolCall';
+      requestId: string;
+      callId: string;
+      name: string;
+      args: Record<string, unknown>;
+    }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   | {
       type: 'videoFramesReady';
@@ -84,14 +99,32 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'setTitle'; title: string }
   | { type: 'setPrimaryButton'; primaryButton: PrimaryButton }
   | { type: 'setRunOnMount'; runOnMount: boolean }
-  | { type: 'callbackRegistered'; callbackType: 'message' | 'interval' | 'timeout' }
+  | {
+      type: 'callbackRegistered';
+      callbackType: 'message' | 'interval' | 'timeout' | 'async';
+      active?: boolean;
+    }
   | { type: 'flash' }
   | { type: 'fftEnabled'; enabled: boolean }
   | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
   | { type: 'listVfs'; requestId: string; path: string }
   | { type: 'searchVfs'; requestId: string; query: string; path: string }
-  | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
+  | {
+      type: 'llmRequest';
+      requestId: string;
+      input: LLMInput;
+      options?: Omit<LLMOptions, 'abortSignal' | 'tools'> & { tools?: LLMToolDefinitions };
+      returnTurn?: boolean;
+    }
+  | {
+      type: 'llmToolResult';
+      requestId: string;
+      callId: string;
+      result?: unknown;
+      error?: string;
+    }
+  | { type: 'llmAbort'; requestId: string }
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
   | { type: 'setVideoFrame'; frame: WorkerVideoFrame }
   | { type: 'videoFrameCallbackRegistered'; config?: VideoFrameConfig }

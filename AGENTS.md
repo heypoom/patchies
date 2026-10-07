@@ -20,35 +20,16 @@ Patchies is a visual programming environment for audio-visual patches.
 
 ## Code style
 
-- Use blank lines to separate distinct steps in a function: declarations, guards, control-flow blocks, and returns.
-- Keep declarations that form one setup step together; add a blank line before the next operation or branch, including a conditional that follows an operation inside a loop.
-- Separate assertion blocks that verify distinct behavior with blank lines.
-- If a function only returns a value without interim computation, use an arrow function with inline returns: `const foo = () => bar()`, don't use a block body with `return` or `function` keyword.
+- Use blank lines to separate logical steps: setup, configuration, control flow, side effects, and final returns after computation.
+- Keep short, closely related statements together. A lookup and its trivial early return, a task declaration and its `await`, or a mock rejection and its assertion can form one step.
+- Give multiline declarations, calls, and assertions breathing room: separate them from neighboring statements with a blank line. Keep related one-line calls/assertions together; separate groups that verify different behavior.
+- Prefer braced, multiline `if`/`else` and loop bodies, especially for throws and side effects. A trivial early return such as `if (!pending) return;` can stay compact.
+- Reduce line density with named conditions, intermediate values for nested calls, and named interfaces for large inline object types.
+- Expand configuration and payload objects across lines when their fields deserve individual attention, even when they fit on one line.
+- Follow `ui/.prettierrc` for mechanical formatting. Its print width is a wrapping guideline, not a target to fill; choose readable structure and blank lines that survive Prettier.
+- If a function only returns a value without interim computation, use an arrow function with an expression body: `const foo = () => bar()`.
 
-One-line calls/assertions on the same category stays together, this is correct:
-
-```ts
-expect(getCompletionLabels(nodeType, "onKeyD")).toContain("onKeyDown");
-expect(getCompletionLabels(nodeType, "onKeyU")).toContain("onKeyUp");
-```
-
-If the calls/assertions are NOT one-line, they should be separated by blank lines, this is correct:
-
-```ts
-expect(
-  foo({
-    bar,
-    baz,
-  }),
-).toContain("baz");
-
-expect(
-  baz({
-    quuz,
-    baz,
-  }),
-).toContain("bar");
-```
+See [patchies-workflow formatting](.agents/skills/patchies-workflow/SKILL.md#formatting) for examples and the Prettier workflow.
 
 ## How to run
 

@@ -64,6 +64,7 @@
 
   let isRunning = $state(false);
   let isMessageCallbackActive = $state(false);
+  let isAsyncTaskActive = $state(false);
   let isTimerCallbackActive = $state(false);
 
   const code = $derived(data.code || '');
@@ -108,7 +109,9 @@
   function handleCallbackRegistered(event: WorkerCallbackRegisteredEvent) {
     if (event.nodeId !== nodeId) return;
 
-    if (event.callbackType === 'message') {
+    if (event.callbackType === 'async') {
+      isAsyncTaskActive = event.active === true;
+    } else if (event.callbackType === 'message') {
       isMessageCallbackActive = true;
     } else if (event.callbackType === 'interval' || event.callbackType === 'timeout') {
       isTimerCallbackActive = true;
@@ -170,6 +173,7 @@
     workerSystem.cleanup(nodeId);
     isMessageCallbackActive = false;
     isTimerCallbackActive = false;
+    isAsyncTaskActive = false;
   }
 
   let isPaused = $state(false);
@@ -194,6 +198,7 @@
     isRunning = true;
     isMessageCallbackActive = false;
     isTimerCallbackActive = false;
+    isAsyncTaskActive = false;
 
     // Clear console in the base component
     baseRef?.clearConsole();
@@ -217,7 +222,7 @@
   onCleanup={cleanupRunningTasks}
   {isRunning}
   {isMessageCallbackActive}
-  {isTimerCallbackActive}
+  isTimerCallbackActive={isTimerCallbackActive || isAsyncTaskActive}
   nodeLabel="worker"
   language="javascript"
   editorPlaceholder="Write your JavaScript code here..."

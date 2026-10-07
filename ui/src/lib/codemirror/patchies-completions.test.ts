@@ -544,3 +544,11 @@ describe('patchies completions', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(l')).toContain('log2');
   });
 });
+
+it.each(['js', 'worker', 'p5', 'canvas', 'dom', 'surface'])(
+  'offers llm and llm.turn in %s nodes',
+  (nodeType) => {
+    expect(getCompletionLabels(nodeType, 'await llm')).toContain('llm');
+    expect(getCompletionLabels(nodeType, 'await llm.')).toContain('turn');
+  }
+);

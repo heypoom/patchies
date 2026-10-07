@@ -1,6 +1,6 @@
 ---
 name: patchies-workflow
-description: Use when working in Patchies on tests, specs, reflections, verification scope, or commits, especially before changing product behavior or when the user explicitly asks to commit.
+description: Use when working in Patchies on formatting, tests, specs, reflections, verification scope, or commits, especially before changing product behavior or when the user explicitly asks to commit.
 ---
 
 # Patchies Workflow
@@ -27,8 +27,57 @@ description: Use when working in Patchies on tests, specs, reflections, verifica
 
 ## Formatting
 
-- In multiline code, use blank lines to separate setup, configuration, side effects, and return values.
-- Format chained calls one method per line when that makes the setup easier to scan.
+Apply the [AGENTS.md code style](../../../AGENTS.md#code-style) when writing or reviewing code. Choose logical grouping and readable expression structure, then use `ui/.prettierrc` for mechanical formatting.
+
+### Whitespace and grouping
+
+- Separate independent multiline declarations, mock configurations, calls, and assertions with one blank line, including before and after a multiline statement beside short statements.
+- Keep short statements together when they form one step. Setup/action/assertion labels alone do not require a blank line between every statement: setting a mock rejection and immediately asserting that rejection can stay together.
+- Separate distinct phases and assertion groups, even if each statement is short. Apply the same grouping inside loops and callbacks.
+- Prefer braced, multiline branches and loops for throws, assignments, callbacks, and yields. Separate consecutive independent `if` blocks with blank lines; keep `else` attached to its `if`. Trivial early returns can remain one-line guards next to their lookup.
+
+```ts
+const pending = this.pending.get(message.requestId);
+if (!pending) return;
+
+const handler = pending.handlers.get(message.name);
+
+if (!handler) {
+  throw new Error(`llm: unknown tool "${message.name}"`);
+}
+```
+
+### Line density and Prettier
+
+- Prefer fewer concepts and characters per line when it improves scanning, even below the configured print width. This is a structural preference, not a request to lower the formatter's width.
+- Name a long compound condition before its `if`, using a meaningful name such as `hasInvalidToolDefinition`, and separate the declaration from the branch.
+- Extract nested operations into meaningful intermediate values. Keep a simple task declaration next to its `await`; separate a multiline request construction from the operation that consumes it.
+- Use a named interface when an inline object type makes a generic or signature difficult to read, as with `Map<string, LLMPendingSession>`.
+- Expand configuration and payload objects with one property per line when that makes the fields easier to scan. Small, cohesive records can remain inline.
+- Format chained calls one method per line when that makes the setup easier to scan and Prettier retains the layout.
+
+```ts
+const turn = provider.streamTurn(history, {
+  tools: declarations,
+  signal: options.abortSignal,
+  systemPrompt: options.systemPrompt
+});
+
+const result = await awaitLLMOperation(turn, options.abortSignal);
+
+expect(result.text).toBe('Done');
+expect(result.toolCalls).toHaveLength(0);
+
+expect(provider.streamTurn).toHaveBeenCalledWith(history, {
+  tools: declarations,
+  signal: options.abortSignal,
+  systemPrompt: options.systemPrompt
+});
+```
+
+Prettier preserves these statement-grouping blank lines and expanded object literals, but does not infer the logical boundaries, add braces, or extract meaningful names. A formatter check alone does not establish this style. Review grouping after formatting, and prefer structural simplification when Prettier collapses an arbitrary manual line break.
+
+Run the local Prettier check on touched code from `ui/` (for example, `bun run prettier --check src/lib/ai/llm-js/llm-tools.ts`). Keep formatting scoped to the files being changed.
 
 ## Commits
 

@@ -23,7 +23,7 @@ export class OpenRouterProvider implements LLMProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model: string
+    readonly model: string
   ) {}
 
   private get authHeaders() {
@@ -94,7 +94,7 @@ export class OpenRouterProvider implements LLMProvider {
     messages: ChatTurnMessage[],
     options: StreamTurnOptions
   ): Promise<StreamTurnResult> {
-    const { systemPrompt, tools = [], signal, onChunk, onThinking } = options;
+    const { systemPrompt, tools = [], signal, onChunk, onThinking, temperature, topK } = options;
 
     type OAIMessage =
       | { role: 'system'; content: string }
@@ -166,6 +166,14 @@ export class OpenRouterProvider implements LLMProvider {
       stream: true,
       reasoning: {}
     };
+
+    if (temperature !== undefined) {
+      body.temperature = temperature;
+    }
+
+    if (topK !== undefined) {
+      body.top_k = topK;
+    }
 
     if (tools.length > 0) {
       body.tools = tools.map((tool) => ({
