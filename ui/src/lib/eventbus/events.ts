@@ -128,7 +128,7 @@ export interface NodeHidePortsUpdateEvent {
   hidePorts: boolean;
 }
 
-export type NodeInteractionMode = 'drag' | 'pan' | 'wheel' | 'interact';
+export type NodeInteractionMode = 'drag' | 'pan' | 'wheel' | 'arrowKeyMove' | 'interact';
 
 export interface NodeInteractionUpdateEvent {
   type: 'nodeInteractionUpdate';

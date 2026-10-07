@@ -14,7 +14,8 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 - htmlCanvas.canvasLayer(callback): Experimental API that locally post-processes the live DOM interface with a 2D canvas and Chromium's experimental HTML-in-Canvas flag without adding video output; callback receives (ctx, { width, height, displayWidth, displayHeight, pixelRatio, time, delta }); call htmlCanvas.canvasLayer(false) to disable; mutually exclusive with videoOutput and glslLayer
 - htmlCanvas.glslLayer(fragmentShader): Experimental API that locally post-processes the live DOM interface with a WebGL2 GLSL ES 3 fragment shader and source sampler; use texture(source, uv), mainImage(out vec4 fragColor, in vec2 fragCoord), source, iResolution, iTime, iTimeDelta, and iFrame; supports #include directives; mutually exclusive with videoOutput and canvasLayer
 - setHidePorts(hide): Hide/show ports
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control (whole node)
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - Interaction control (whole node)
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 - noBorder(): Hide Patchies border and selected glow
 - onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)

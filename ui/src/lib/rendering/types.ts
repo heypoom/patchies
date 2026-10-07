@@ -1,6 +1,6 @@
 import type regl from 'regl';
 import type { ProfilerCategory, RenderFrameStats, TimingStats } from '$lib/profiler/types';
-import type { PrimaryButton } from '$lib/eventbus/events';
+import type { NodeInteractionMode, PrimaryButton } from '$lib/eventbus/events';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import type { BackgroundOutputRenderNode } from '$objects/bg.out/render-types';
 import type { CanvasRenderNode } from '$objects/canvas/render-types';
@@ -278,7 +278,7 @@ export type RenderWorkerMessage =
   | {
       type: 'setInteraction';
       nodeId: string;
-      mode: 'drag' | 'pan' | 'wheel' | 'interact';
+      mode: NodeInteractionMode;
       enabled: boolean;
     }
   | {

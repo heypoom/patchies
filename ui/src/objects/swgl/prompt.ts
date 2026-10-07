@@ -15,6 +15,8 @@ function render({ t }) {
 
 ## Parameters
 
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() control editor interactions. noArrowKeyMove() disables arrow-key node movement; noInteract() includes it.
+
 **Shaders:**
 - \`VP\`: Vertex shader (shorthand \`x,y,z,w\` or multiline with \`VPos = vec4(...)\`)
 - \`FP\`: Fragment shader (shorthand \`r,g,b,a\` or multiline with \`FOut = vec4(...)\`)

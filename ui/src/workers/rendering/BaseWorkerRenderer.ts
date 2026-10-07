@@ -1,7 +1,7 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
-import type { PrimaryButton } from '$lib/eventbus/events';
+import type { NodeInteractionMode, PrimaryButton } from '$lib/eventbus/events';
 import type { Message } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
@@ -178,7 +178,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     });
   }
 
-  setInteraction(mode: 'drag' | 'pan' | 'wheel' | 'interact', enabled: boolean) {
+  setInteraction(mode: NodeInteractionMode, enabled: boolean) {
     self.postMessage({
       type: 'setInteraction',
       nodeId: this.config.nodeId,
@@ -288,6 +288,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       noDrag: () => this.setInteraction('drag', false),
       noPan: () => this.setInteraction('pan', false),
       noWheel: () => this.setInteraction('wheel', false),
+      noArrowKeyMove: () => this.setInteraction('arrowKeyMove', false),
       noInteract: () => this.setInteraction('interact', false),
 
       clock,

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -43,6 +44,8 @@
   function initialNodeId() {
     return nodeId;
   }
+
+  const interactions = useNodeInteractions(() => nodeId);
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 
@@ -237,6 +240,9 @@
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}
+  nodrag={!interactions.state.dragEnabled}
+  nopan={!interactions.state.panEnabled}
+  nowheel={!interactions.state.wheelEnabled}
   bind:previewCanvas
   settingsSchema={data.settingsSchema}
   settingsValues={data.settings ?? {}}

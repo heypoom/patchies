@@ -1,6 +1,6 @@
 # Canvas Interaction
 
-Visual objects provide methods that control mouse and touch interaction inside the node. By default, these interactions pass to the canvas for panning and dragging.
+Visual objects provide methods that control mouse, touch, and arrow-key interaction with the node. By default, these interactions pass to the canvas for panning and dragging.
 
 Use these methods when an object needs its own controls.
 
@@ -8,8 +8,8 @@ Use these methods when an object needs its own controls.
 
 These objects support the interaction methods:
 
-- `p5`, `canvas`, `canvas.dom`, `textmode`, and `textmode.dom`
-- `three`, `three.dom`, `vue`, and `dom`
+- `hydra`, `swgl`, `pixi`, `p5`, `canvas`, `canvas.dom`, `textmode`, and `textmode.dom`
+- `three`, `three.dom`, `pixi.dom`, `regl`, `vue`, `dom`, and `surface`
 
 ## Methods
 
@@ -25,9 +25,20 @@ Call `noPan()` to stop canvas panning when you drag inside the object. Use it fo
 
 Call `noWheel()` to stop wheel zoom inside the object. Use it for scrollable content or wheel controls.
 
+### `noArrowKeyMove()`
+
+Call `noArrowKeyMove()` to stop arrow keys from moving this object, including Shift + arrow keys. Use it when your object handles arrow keys for its own controls. Mouse dragging and keyboard callbacks still work.
+
+```javascript
+// Keep the node in place while arrow keys control the sketch.
+noArrowKeyMove();
+```
+
+When multiple objects are selected, arrow keys move only objects that allow arrow-key movement. The setting resets when you run the code again.
+
 ### `noInteract()`
 
-Call `noInteract()` to disable all three default canvas interactions. Use it for fully interactive objects.
+Call `noInteract()` to disable dragging, panning, wheel zoom, and arrow-key node movement. Use it for fully interactive objects.
 
 ## Usage
 
@@ -36,7 +47,7 @@ Call these methods in setup code. In P5.js, call them in `setup()`:
 ```javascript
 function setup() {
   createCanvas(400, 400);
-  noInteract(); // Enable full mouse interactivity
+  noInteract(); // Reserve mouse and arrow-key interaction for the sketch
 }
 
 function draw() {

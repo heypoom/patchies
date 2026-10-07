@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import {
     NodeResizer,
@@ -84,9 +85,7 @@
   let p5Manager: P5Manager | null = null;
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
-  let enableDrag = $state(true);
-  let enablePan = $state(true);
-  let enableWheel = $state(true);
+  const interactions = useNodeInteractions(() => nodeId);
   let videoOutputEnabled = $state(false);
   let errorMessage = $state<string | null>(null);
   let editorReady = $state(false);
@@ -336,10 +335,8 @@
     const nextCode = typeof input === 'string' ? input : code;
     const onMount = typeof input === 'string' ? false : (input.onMount ?? false);
 
-    // re-enable interactions on update. noDrag()/noPan()/noWheel() must be called on setup().
-    enableDrag = true;
-    enablePan = true;
-    enableWheel = true;
+    // Reset interaction controls before running setup again.
+    interactions.reset();
 
     fluidCanvas.reset();
 
@@ -373,20 +370,7 @@
           code: nextCode,
           messageContext: {
             ...messageContext.getContext(),
-            noDrag: () => {
-              enableDrag = false;
-            },
-            noPan: () => {
-              enablePan = false;
-            },
-            noWheel: () => {
-              enableWheel = false;
-            },
-            noInteract: () => {
-              enableDrag = false;
-              enablePan = false;
-              enableWheel = false;
-            },
+            ...interactions.api,
             setVideoOutput: (enabled: boolean) => {
               nextVideoOutputEnabled = enabled;
               setVideoOutputEnabled(enabled);
@@ -579,13 +563,15 @@
           class={[
             'rounded-md border bg-transparent',
             'relative overflow-hidden',
-            enableDrag && enablePan && enableWheel
+            interactions.state.dragEnabled &&
+            interactions.state.panEnabled &&
+            interactions.state.wheelEnabled
               ? 'cursor-grab'
               : [
                   'cursor-default',
-                  !enableDrag && 'nodrag',
-                  !enablePan && 'nopan',
-                  !enableWheel && 'nowheel'
+                  !interactions.state.dragEnabled && 'nodrag',
+                  !interactions.state.panEnabled && 'nopan',
+                  !interactions.state.wheelEnabled && 'nowheel'
                 ],
             getBorderChromeClass({
               hasError: Boolean(errorMessage),

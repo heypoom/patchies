@@ -17,7 +17,8 @@ ${esmInstructions}
 - noDrag() - Disable XYFlow node dragging for interactive sketches
 - noPan() - Disable XYFlow canvas panning when interacting
 - noWheel() - Disable XYFlow canvas wheel zoom when interacting
-- noInteract() - Disable all XYFlow canvas interactions (drag, pan, wheel)
+- noArrowKeyMove() - Disable arrow-key node movement while keeping keyboard input available
+- noInteract() - Disable XYFlow drag, pan, wheel zoom, and arrow-key node movement
 - noBorder() - Hide Patchies border and selected glow
 - onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - setVideoOutput(enabled) - Enable or disable the video output port. It is disabled by default; call setVideoOutput(true) only when the sketch feeds another video node.

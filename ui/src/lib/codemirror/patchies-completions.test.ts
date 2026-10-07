@@ -231,6 +231,12 @@ describe('patchies completions', () => {
     expect(labels).not.toContain('deactivate');
   });
 
+  it('shows interaction completions inside p5 setup', () => {
+    expect(getCompletionLabels('p5', 'function setup() { noArrow')).toContain('noArrowKeyMove');
+    expect(getCompletionLabels('p5', 'function setup() { noI')).toContain('noInteract');
+    expect(getCompletionLabels('p5', 'function setup() { noD')).toContain('noDrag');
+  });
+
   it('shows p5 surface mode helper completions inside setup', () => {
     expect(getCompletionLabels('p5', 'function setup() { setM')).toContain('setMouseForwarding');
     expect(getCompletionLabels('p5', 'function setup() { hide')).toContain('hideExitButton');
@@ -307,6 +313,31 @@ describe('patchies completions', () => {
   it('shows setTitle completions for Pixi nodes', () => {
     expect(getCompletionLabels('pixi', 'setT')).toContain('setTitle');
     expect(getCompletionLabels('pixi.dom', 'setT')).toContain('setTitle');
+  });
+
+  it.each([
+    'hydra',
+    'swgl',
+    'pixi',
+    'p5',
+    'canvas',
+    'canvas.dom',
+    'textmode',
+    'textmode.dom',
+    'three',
+    'three.dom',
+    'pixi.dom',
+    'regl',
+    'vue',
+    'dom',
+    'surface'
+  ])('shows arrow-key movement completion for %s', (nodeType) => {
+    expect(getCompletionLabels(nodeType, 'noArrow')).toContain('noArrowKeyMove');
+  });
+
+  it('omits arrow-key movement completion in unsupported runtimes', () => {
+    expect(getCompletionLabels('js', 'noArrow')).not.toContain('noArrowKeyMove');
+    expect(getCompletionLabels('glsl', 'noArrow')).not.toContain('noArrowKeyMove');
   });
 
   it('shows canvas interaction completions for pixi.dom nodes', () => {

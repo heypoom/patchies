@@ -495,6 +495,7 @@ export class P5Manager {
         noDrag: config.messageContext?.noDrag,
         noPan: config.messageContext?.noPan,
         noWheel: config.messageContext?.noWheel,
+        noArrowKeyMove: config.messageContext?.noArrowKeyMove,
         noInteract: config.messageContext?.noInteract,
         noBorder: config.messageContext?.noBorder,
         onSelectionChange: config.messageContext?.onSelectionChange,

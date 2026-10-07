@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -22,7 +23,6 @@
     NodePortCountUpdateEvent,
     NodeTitleUpdateEvent,
     NodeHidePortsUpdateEvent,
-    NodeInteractionUpdateEvent,
     NodeVideoOutputEnabledUpdateEvent,
     ConsoleOutputEvent
   } from '$lib/eventbus/events';
@@ -87,9 +87,7 @@
   let messageContext: MessageContext;
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
-  let dragEnabled = $state(true);
-  let panEnabled = $state(true);
-  let wheelEnabled = $state(true);
+  const interactions = useNodeInteractions(() => nodeId);
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
 
@@ -138,19 +136,6 @@
     updateNodeData(nodeId, { hidePorts: e.hidePorts });
   }
 
-  function handleInteractionUpdate(e: NodeInteractionUpdateEvent) {
-    if (e.nodeId !== nodeId) return;
-
-    if (e.mode === 'drag') dragEnabled = e.enabled;
-    else if (e.mode === 'pan') panEnabled = e.enabled;
-    else if (e.mode === 'wheel') wheelEnabled = e.enabled;
-    else if (e.mode === 'interact') {
-      dragEnabled = e.enabled;
-      panEnabled = e.enabled;
-      wheelEnabled = e.enabled;
-    }
-  }
-
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
     if (e.nodeId !== nodeId) return;
 
@@ -191,7 +176,6 @@
     glEventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
     glEventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
     glEventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
-    glEventBus.addEventListener('nodeInteractionUpdate', handleInteractionUpdate);
     glEventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
 
     // Listen for console output events to capture lineErrors
@@ -230,7 +214,6 @@
       glEventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
       glEventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
       glEventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
-      glEventBus.removeEventListener('nodeInteractionUpdate', handleInteractionUpdate);
       glEventBus.removeEventListener(
         'nodeVideoOutputEnabledUpdate',
         handleVideoOutputEnabledUpdate
@@ -290,9 +273,9 @@
   paused={data.paused}
   showPauseButton={true}
   bind:previewCanvas
-  nodrag={!dragEnabled}
-  nopan={!panEnabled}
-  nowheel={!wheelEnabled}
+  nodrag={!interactions.state.dragEnabled}
+  nopan={!interactions.state.panEnabled}
+  nowheel={!interactions.state.wheelEnabled}
   width={$outputWidth}
   height={$outputHeight}
   style={`width: ${$previewWidth}px; height: ${$previewHeight}px;`}

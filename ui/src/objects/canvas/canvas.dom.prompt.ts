@@ -24,7 +24,8 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 **Canvas.dom-specific methods:**
 - ctx: 2D canvas context
 - width, height, mouse: {x, y, down, buttons}
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - Interaction control
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 - noBorder() - Hide Patchies border and selected glow
 - onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - setVideoOutput(enabled) - Enable or disable video output. Disabled by default; call setVideoOutput(true) when the sketch feeds another video node.

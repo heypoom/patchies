@@ -27,6 +27,7 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 - Use setMouseForwarding() when only some mouse-aware render nodes should receive forwarded pointer/wheel events.
 - Use setMouseForwarding({ enabled: false }) or setMouseForwarding({ only: [] }) to disable mouse forwarding entirely.
 - Do NOT call setCanvasSize — the surface always fills the window.
+- noArrowKeyMove() disables arrow-key node movement. noInteract() disables drag, pan, wheel zoom, and arrow-key node movement.
 - Usually avoid noDrag/noPan/noWheel; use them only when preview interactions fight editor drag/pan/wheel.
 
 **draw() function — how the render loop works:**

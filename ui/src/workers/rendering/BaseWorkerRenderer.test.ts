@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type regl from 'regl';
 
 import { BaseWorkerRenderer } from './BaseWorkerRenderer';
@@ -33,6 +33,31 @@ class TestRenderer extends BaseWorkerRenderer {
 }
 
 describe('BaseWorkerRenderer', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('sends arrow-key movement and bundled interaction updates from user APIs', () => {
+    const postMessage = vi.fn();
+    vi.stubGlobal('self', { postMessage });
+    const context = new TestRenderer(false).getExtraContext();
+
+    (context.noArrowKeyMove as () => void)();
+    (context.noInteract as () => void)();
+
+    expect(postMessage).toHaveBeenNthCalledWith(1, {
+      type: 'setInteraction',
+      nodeId: 'test-node',
+      mode: 'arrowKeyMove',
+      enabled: false
+    });
+
+    expect(postMessage).toHaveBeenNthCalledWith(2, {
+      type: 'setInteraction',
+      nodeId: 'test-node',
+      mode: 'interact',
+      enabled: false
+    });
+  });
+
   it('omits setVideoOutput when video ports are controlled by setVideoCount', () => {
     const renderer = new TestRenderer(true);
 
