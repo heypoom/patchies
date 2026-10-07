@@ -48,6 +48,13 @@ export const jsRunnerInstructions = `
   * await llm.turn(input, options?) returns an assistant turn with opaque state to append unchanged. Reuse the same provider/model.
   * Tools: { [name]: { description: string, parameters?: { [arg]: 'string' | 'number' | 'boolean' | JSONSchema }, run: async (args) => JSONValue } }. All declared parameters required. Handlers run locally; helper loops automatically, up to 8 tool calls by default. llm.turn retains the tool trace.
   * Options: { provider?, model?, systemPrompt?, temperature?, topK?, abortSignal?, imageNodeId?, tools?, maxToolCalls? }. imageNodeId attaches the current frame to the last user turn.
+  * Multi-turn tool chat: keep history/options outside recv(); serialize requests. On failure, remove the unanswered user turn. Example (text is the incoming message):
+    const history = [], options = { tools: { setTempo: { description: 'Set tempo in BPM', parameters: { bpm: 'number' }, run: ({ bpm }) => { clock.setBpm(bpm); return { bpm }; } } } };
+    // Inside the serialized message handler:
+    history.push({ role: 'user', content: text });
+    const turn = await llm.turn(history, options);
+    history.push(turn);
+    send(turn.content);
 
 **Message Passing (wired ports):**
 - send(data, {to: outletIndex}?) - Send to outlet (omit {to} to send to all outlets)
