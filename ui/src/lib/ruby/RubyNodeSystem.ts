@@ -1,3 +1,4 @@
+import { snapshotData } from '$lib/utils/snapshot-data';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -57,15 +58,20 @@ export class RubyNodeSystem {
       // Skip control messages handled by component
       if (typeof data === 'object' && data !== null && 'type' in data) {
         const controlTypes = ['set', 'run', 'stop'];
-        if (controlTypes.includes((data as { type: string }).type)) return;
+
+        if (controlTypes.includes((data as { type: string }).type)) {
+          return;
+        }
       }
 
-      worker.postMessage({
+      const message = {
         type: 'incomingMessage',
         nodeId,
         data,
         meta
-      } satisfies RubyWorkerMessage);
+      } satisfies RubyWorkerMessage;
+
+      worker.postMessage(snapshotData(message));
     };
 
     // Register with MessageSystem to receive messages

@@ -1,3 +1,4 @@
+import { snapshotData } from '$lib/utils/snapshot-data';
 import { PatchStorageService } from './PatchStorageService';
 
 /**
@@ -26,7 +27,7 @@ export class KVStore {
    * Supports any structured-cloneable value including Blob, ArrayBuffer, Uint8Array.
    */
   async set(key: string, value: unknown): Promise<void> {
-    return this.storage.kvSet(this.storeName, key, value);
+    return this.storage.kvSet(this.storeName, key, snapshotData(value));
   }
 
   /**

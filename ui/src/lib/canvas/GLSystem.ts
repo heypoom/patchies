@@ -1,3 +1,4 @@
+import { snapshotData } from '$lib/utils/snapshot-data';
 import {
   buildRenderGraph,
   normalizeRenderEdges,
@@ -1169,7 +1170,7 @@ export class GLSystem {
   }
 
   sendMessageToNode(nodeId: string, message: Message) {
-    this.send('sendMessageToNode', { nodeId, message });
+    this.send('sendMessageToNode', { nodeId, message: snapshotData(message) });
   }
 
   updateProjectionMap(nodeId: string, surfaces: ProjMapSurface[]) {

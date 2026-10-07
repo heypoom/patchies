@@ -1,3 +1,4 @@
+import { snapshotData } from '$lib/utils/snapshot-data';
 import { match } from 'ts-pattern';
 import { get } from 'svelte/store';
 
@@ -689,12 +690,14 @@ export class WorkerNodeSystem {
 
     // Create message callback to forward messages to worker
     const messageCallback: MessageCallbackFn = (data, meta) => {
-      worker.postMessage({
+      const message = {
         type: 'incomingMessage',
         nodeId,
         data,
         meta
-      } satisfies WorkerMessage);
+      } satisfies WorkerMessage;
+
+      worker.postMessage(snapshotData(message));
     };
 
     // Register with MessageSystem to receive messages

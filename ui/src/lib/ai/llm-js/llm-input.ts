@@ -1,3 +1,4 @@
+import { snapshotData } from '$lib/utils/snapshot-data';
 import type { LLMTools } from './llm-tools';
 import type { AIProviderType } from '../../../stores/ai-settings.store';
 import type { ChatTurnMessage } from '../providers/types';
@@ -87,37 +88,4 @@ export function normalizeLLMInput(input: LLMInput): ChatTurnMessage[] {
   }
 
   return messages;
-}
-
-/** Materialize reactive arrays/plain objects before structured cloning. */
-function snapshotData<T>(value: T, seen = new WeakMap<object, unknown>()): T {
-  if (!value || typeof value !== 'object') {
-    return structuredClone(value);
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-  const isPlainObject = prototype === Object.prototype || prototype === null;
-
-  if (!Array.isArray(value) && !isPlainObject) {
-    return structuredClone(value);
-  }
-
-  if (seen.has(value)) return seen.get(value) as T;
-
-  const copy = Array.isArray(value)
-    ? Array.from({ length: value.length })
-    : Object.create(prototype);
-
-  seen.set(value, copy);
-
-  for (const [key, item] of Object.entries(value)) {
-    Object.defineProperty(copy, key, {
-      value: snapshotData(item, seen),
-      enumerable: true,
-      writable: true,
-      configurable: true
-    });
-  }
-
-  return copy;
 }

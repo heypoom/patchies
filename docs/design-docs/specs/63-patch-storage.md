@@ -425,3 +425,15 @@ send({ count: count + 1, history: recent.slice(-10) });
 - Max `dict` object: JSON-like nested structures, named sharing
 - IndexedDB API: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
 - idb library: https://github.com/jakearchibald/idb
+
+## Reactive payload snapshots
+
+`kv.set()` synchronously snapshots its value before asynchronous storage work.
+Shared snapshotting materializes reactive arrays, plain objects, maps and sets,
+then uses structured cloning to preserve native values and reject unsupported
+payloads. Nested data, cycles and shared references remain intact.
+
+Messages forwarded into JS, Ruby, or render workers use the same snapshot helper before posting.
+This covers wired and named-channel messages through the worker's message queue.
+Main-thread message delivery keeps its existing behavior. LLM history uses this
+shared helper too; Vue users do not need to unwrap these payloads manually.
