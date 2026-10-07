@@ -12,6 +12,7 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
   // Message API
   {
     label: 'send',
+    boost: 99,
     type: 'function',
     detail: '(message, options?) => void',
     info: 'Send a message to connected nodes. Options: {to: outletIndex}',
@@ -19,6 +20,7 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
   },
   {
     label: 'recv',
+    boost: 99,
     type: 'function',
     detail: '(callback) => void',
     info: 'Register a callback to receive messages from inlets. Callback receives (data, meta)',
@@ -447,6 +449,7 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
   // Console
   {
     label: 'console.log',
+    boost: 99,
     type: 'function',
     detail: '(...data) => void',
     info: 'Log messages to the virtual console (not browser console)',

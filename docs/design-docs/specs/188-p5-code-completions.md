@@ -21,6 +21,8 @@ helpers such as `send`, `recv`, `fft`, and `createSurfaceCanvas`.
   against https://p5js.org/reference/. Do not import the browser runtime or fetch
   documentation during editor use. Exclude newer-release APIs and uninstalled addons.
 - Preserve shared Patchies completions and editor feature toggles.
+- Rank frequently used Patchies helpers `console.log`, `send`, and `recv` above
+  matching P5 API entries, using completion boosts across JavaScript nodes.
 
 ## Verification
 
