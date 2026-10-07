@@ -1,25 +1,23 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import {
-    ChevronRight,
-    ChevronDown,
-    Library,
-    LibraryBig,
-    Folder,
-    FolderOpen,
-    FolderPlus,
-    Blocks,
-    Lock,
-    Trash2,
-    Pencil,
-    Download,
-    Upload,
-    RotateCcw,
-    Plus,
-    FolderInput,
-    Ellipsis,
-    Bookmark
-  } from '@lucide/svelte/icons';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import Library from '@lucide/svelte/icons/library';
+  import LibraryBig from '@lucide/svelte/icons/library-big';
+  import Folder from '@lucide/svelte/icons/folder';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import FolderPlus from '@lucide/svelte/icons/folder-plus';
+  import Blocks from '@lucide/svelte/icons/blocks';
+  import Lock from '@lucide/svelte/icons/lock';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import Download from '@lucide/svelte/icons/download';
+  import Upload from '@lucide/svelte/icons/upload';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import Plus from '@lucide/svelte/icons/plus';
+  import FolderInput from '@lucide/svelte/icons/folder-input';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Bookmark from '@lucide/svelte/icons/bookmark';
   import SearchBar from './SearchBar.svelte';
   import PresetSearchResult from './PresetSearchResult.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';

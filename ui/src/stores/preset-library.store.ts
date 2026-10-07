@@ -17,6 +17,7 @@ import {
 } from '$lib/presets/preset-utils';
 import { buildBuiltInPresetPackFolders } from '$lib/presets/preset-pack-index';
 import { PRESETS } from '$lib/presets/presets';
+import { createPresetPackLoader } from '$lib/presets/lazy-preset-packs';
 
 const STORAGE_KEY = 'patchies:preset-libraries';
 const BUILTIN_LIBRARY_ID = 'built-in';
@@ -115,6 +116,16 @@ function createPresetLibraryStore() {
 
   return {
     subscribe,
+
+    addBuiltInPresets(folders: PresetFolder): void {
+      update((libraries) =>
+        libraries.map((library) =>
+          library.id === BUILTIN_LIBRARY_ID
+            ? { ...library, presets: { ...library.presets, ...folders } }
+            : library
+        )
+      );
+    },
 
     /**
      * Add a new library
@@ -415,11 +426,34 @@ function createPresetLibraryStore() {
 
 export const presetLibraryStore = createPresetLibraryStore();
 
+export const loadEnabledPresetPacks = createPresetPackLoader({
+  loaders: {
+    'greggman-bytebeat': async () =>
+      (await import('$presets/bytebeat/greggman')).GREGGMAN_BYTEBEAT_PRESETS
+  },
+  publish: (presets) => {
+    const folders = buildBuiltInPresetPackFolders(presets);
+
+    // Built-in payloads are session data and are never persisted to localStorage.
+    presetLibraryStore.addBuiltInPresets(folders);
+  }
+});
+
 /**
  * Derived store: all presets flattened for search
  */
 export const flattenedPresets = derived(presetLibraryStore, ($libraries) =>
   flattenPresets($libraries)
+);
+
+export const builtInPresetDescriptions = derived(
+  flattenedPresets,
+  (presets) =>
+    new Map(
+      presets
+        .filter((entry) => entry.libraryId === BUILTIN_LIBRARY_ID)
+        .map((entry) => [entry.preset.name, entry.preset.description])
+    )
 );
 
 /**

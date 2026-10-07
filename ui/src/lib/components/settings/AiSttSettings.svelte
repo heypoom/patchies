@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { X, Info } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
+  import Info from '@lucide/svelte/icons/info';
   import type { ContinuousTracker } from '$lib/history';
 
   type Props = {

@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { BookOpen, Github, Instagram, MessageCircle } from '@lucide/svelte/icons';
+  import BookOpen from '@lucide/svelte/icons/book-open';
+  import Github from '@lucide/svelte/icons/github';
+  import Instagram from '@lucide/svelte/icons/instagram';
+  import MessageCircle from '@lucide/svelte/icons/message-circle';
 
   import { showStartupModalOnLoad } from '../../../stores/startup-modal.store';
 

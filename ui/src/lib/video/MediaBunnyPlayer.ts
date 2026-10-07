@@ -7,8 +7,9 @@
  * - Automatic seeking to keyframes
  */
 
-import { Input, BlobSource, UrlSource, VideoSampleSink, ALL_FORMATS } from 'mediabunny';
-import type { Input as InputType, InputVideoTrack, Source } from 'mediabunny';
+import type { Input as InputType, InputVideoTrack, Source, VideoSampleSink } from 'mediabunny';
+
+type MediaBunnyModule = typeof import('mediabunny');
 
 export interface VideoMetadata {
   duration: number; // seconds
@@ -71,6 +72,7 @@ export class MediaBunnyPlayer {
   private input: InputType<Source> | null = null;
   private videoTrack: InputVideoTrack | null = null;
   private sink: VideoSampleSink | null = null;
+  private sourceLoadVersion = 0;
 
   private _metadata: VideoMetadata | null = null;
   private _currentTime = 0;
@@ -120,7 +122,7 @@ export class MediaBunnyPlayer {
    * Load a video file for playback (streams lazily via BlobSource).
    */
   async loadFile(file: File): Promise<void> {
-    await this.loadSource(new BlobSource(file));
+    await this.loadSource(({ BlobSource }) => new BlobSource(file));
   }
 
   /**
@@ -128,17 +130,24 @@ export class MediaBunnyPlayer {
    * This is much more efficient than fetching the whole file first.
    */
   async loadUrl(url: string): Promise<void> {
-    await this.loadSource(new UrlSource(url));
+    await this.loadSource(({ UrlSource }) => new UrlSource(url));
   }
 
   /**
    * Common initialization logic for all source types.
    * Both BlobSource and UrlSource stream lazily - only fetching bytes as needed.
    */
-  private async loadSource(source: Source): Promise<void> {
+  private async loadSource(createSource: (module: MediaBunnyModule) => Source): Promise<void> {
+    this.cleanup();
+
+    const loadVersion = this.sourceLoadVersion;
+
     try {
-      // Clean up previous state
-      this.cleanup();
+      const mediaBunny = await import('mediabunny');
+      if (loadVersion !== this.sourceLoadVersion) return;
+
+      const { Input, VideoSampleSink, ALL_FORMATS } = mediaBunny;
+      const source = createSource(mediaBunny);
 
       // Create MediaBunny input with the provided source
       this.input = new Input({
@@ -189,6 +198,8 @@ export class MediaBunnyPlayer {
       // Get first frame as preview
       await this.showPreviewFrame(0);
     } catch (error) {
+      if (loadVersion !== this.sourceLoadVersion) return;
+
       // Reset all state to avoid stale values from a partial load
       this.input?.dispose();
       this.input = null;
@@ -812,6 +823,8 @@ export class MediaBunnyPlayer {
    * Clean up internal resources.
    */
   private cleanup(): void {
+    this.sourceLoadVersion++;
+
     this.seekGeneration += 1;
     this.pendingSeekTime = null;
     this.activeSeekPromise = null;

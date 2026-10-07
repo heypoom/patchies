@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { X, Video, MessageSquare } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
+  import Video from '@lucide/svelte/icons/video';
+  import MessageSquare from '@lucide/svelte/icons/message-square';
 
   interface UiuaSettingsData {
     enableMessageOutlet?: boolean;

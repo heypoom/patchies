@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { ArrowLeft, Copy, Ellipsis, File, Pencil, Save, Trash2 } from '@lucide/svelte/icons';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import File from '@lucide/svelte/icons/file';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import Save from '@lucide/svelte/icons/save';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
 
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import * as Popover from '$lib/components/ui/popover';

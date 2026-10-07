@@ -27,8 +27,8 @@
     objectBrowserMode
   } from '../../stores/ui.store';
   import { enabledPackIds, togglePack } from '../../stores/extensions.store';
-  import { Search } from '@lucide/svelte/icons';
   import { getPresetDimensions } from '$lib/presets/preset-node';
+  import Search from '@lucide/svelte/icons/search';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import { objectPresetSearchIndex } from '../../stores/object-preset-search.store';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';

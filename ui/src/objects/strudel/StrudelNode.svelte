@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Play, Settings, Square } from '@lucide/svelte/icons';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Square from '@lucide/svelte/icons/square';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import MusicCodeContainer from '$lib/music-code-layout/MusicCodeContainer.svelte';

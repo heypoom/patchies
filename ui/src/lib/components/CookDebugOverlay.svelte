@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Activity } from '@lucide/svelte/icons';
+  import Activity from '@lucide/svelte/icons/activity';
   import * as Tooltip from './ui/tooltip';
   import type { RenderCookStatus } from '$lib/rendering/types';
 

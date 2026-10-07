@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowLeft, Loader } from '@lucide/svelte/icons';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import Loader from '@lucide/svelte/icons/loader';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import type { ThreadToolCall } from '$lib/ai/chat/types';
 

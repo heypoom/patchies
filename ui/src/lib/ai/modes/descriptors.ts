@@ -1,18 +1,16 @@
-import {
-  Sparkles,
-  Network,
-  PenLine,
-  Replace,
-  Wrench,
-  ArrowRight,
-  ArrowLeft,
-  Scissors,
-  GitFork,
-  Cable,
-  Unplug,
-  Trash2,
-  Move
-} from '@lucide/svelte/icons';
+import Sparkles from '@lucide/svelte/icons/sparkles';
+import Network from '@lucide/svelte/icons/network';
+import PenLine from '@lucide/svelte/icons/pen-line';
+import Replace from '@lucide/svelte/icons/replace';
+import Wrench from '@lucide/svelte/icons/wrench';
+import ArrowRight from '@lucide/svelte/icons/arrow-right';
+import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+import Scissors from '@lucide/svelte/icons/scissors';
+import GitFork from '@lucide/svelte/icons/git-fork';
+import Cable from '@lucide/svelte/icons/cable';
+import Unplug from '@lucide/svelte/icons/unplug';
+import Trash2 from '@lucide/svelte/icons/trash-2';
+import Move from '@lucide/svelte/icons/move';
 import { match } from 'ts-pattern';
 import type { AiModeDescriptor, AiModeContext, AiPromptMode, AiPromptColor } from './types';
 

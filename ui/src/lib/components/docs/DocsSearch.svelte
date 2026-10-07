@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Fuse from 'fuse.js';
-  import { BookOpen, Box, Search } from '@lucide/svelte/icons';
+  import BookOpen from '@lucide/svelte/icons/book-open';
+  import Box from '@lucide/svelte/icons/box';
+  import Search from '@lucide/svelte/icons/search';
   import * as Command from '$lib/components/ui/command';
 
   interface TopicItem {

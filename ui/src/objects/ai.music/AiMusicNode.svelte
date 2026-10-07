@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Loader2, Pause, Play, X } from '@lucide/svelte/icons';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import X from '@lucide/svelte/icons/x';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { LiveMusicManager, type Prompt } from '$lib/music/LiveMusicManager';

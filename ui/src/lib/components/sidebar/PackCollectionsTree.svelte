@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { Check, ChevronDown, ChevronRight, Lock, Package } from '@lucide/svelte/icons';
+  import Check from '@lucide/svelte/icons/check';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import Lock from '@lucide/svelte/icons/lock';
+  import Package from '@lucide/svelte/icons/package';
 
-  import { BUILTIN_PRESETS } from '$presets';
+  import { builtInPresetDescriptions } from '../../../stores/preset-library.store';
 
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import { getPresetPackPresetNames } from '$lib/presets/preset-pack-index';
@@ -94,7 +98,7 @@
   }
 
   function getItemDescription(entry: PackEntry, item: string): string | undefined {
-    if (entry.kind === 'preset') return BUILTIN_PRESETS[item]?.description;
+    if (entry.kind === 'preset') return $builtInPresetDescriptions.get(item);
 
     return getObjectDescription(item);
   }

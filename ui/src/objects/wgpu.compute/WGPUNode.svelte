@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Code, Loader, RefreshCw, Settings, Terminal, X } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Loader from '@lucide/svelte/icons/loader';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Terminal from '@lucide/svelte/icons/terminal';
+  import X from '@lucide/svelte/icons/x';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

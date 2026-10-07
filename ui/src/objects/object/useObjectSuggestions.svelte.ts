@@ -10,6 +10,7 @@ import {
 import type { ObjectPresetSearchIndex } from '$lib/search/object-preset-search';
 import type { DisabledObjectInfo } from '$lib/composables/useDisabledObjectSuggestion.svelte';
 import { canInsertSuggestionIntoEdge } from './edge-insertion-suggestions';
+import { useEnabledPresetPacks } from '$lib/presets/use-enabled-preset-packs.svelte';
 
 /** Owns autocomplete and explicit confirmation during contextual edge insertion. */
 export function useObjectSuggestions({
@@ -27,6 +28,8 @@ export function useObjectSuggestions({
 }) {
   const edgesHelper = useEdges();
   const nodesHelper = useNodes();
+
+  useEnabledPresetPacks(getIsEditing);
 
   const insertionEdge = $derived(getQuickInsertEdge(edgesHelper.current, getNodeId()));
 

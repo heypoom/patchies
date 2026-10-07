@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sparkles } from '@lucide/svelte/icons';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
   import { SvelteSet } from 'svelte/reactivity';
   import MoodGrid from '$routes/sparks/MoodGrid.svelte';
   import OutputGrid from '$routes/sparks/OutputGrid.svelte';

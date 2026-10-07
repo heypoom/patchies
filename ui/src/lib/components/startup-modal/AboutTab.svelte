@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { ArrowRight, Command, Diamond } from '@lucide/svelte/icons';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import Command from '@lucide/svelte/icons/command';
+  import Diamond from '@lucide/svelte/icons/diamond';
 
   import QuickTips from './QuickTips.svelte';
   import type { Tab } from './types';

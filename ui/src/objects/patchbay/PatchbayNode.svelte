@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Expand, Play, Settings, X } from '@lucide/svelte/icons';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onDestroy, onMount } from 'svelte';
 

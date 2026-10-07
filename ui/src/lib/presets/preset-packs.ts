@@ -1,5 +1,5 @@
 import type { PresetPack } from '../../stores/extensions.store';
-import { GREGGMAN_BYTEBEAT_PRESET_FOLDERS } from '$presets/bytebeat/greggman';
+import { GREGGMAN_BYTEBEAT_PRESET_FOLDERS } from '$presets/bytebeat/greggman-metadata';
 import { CHUCK_DEMO_PRESET_KEYS } from '$presets/chuck';
 import { HYDRA_DEMO_PRESET_KEYS } from '$presets/hydra';
 import { PAPER_SHADER_PRESET_NAMES } from '$presets/glsl/paper-shaders';

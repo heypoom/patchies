@@ -1,18 +1,16 @@
-import {
-  Bookmark,
-  CircleHelp,
-  Code,
-  Eye,
-  EyeOff,
-  Expand,
-  Monitor,
-  MonitorOff,
-  Pin,
-  PinOff,
-  Play,
-  Settings,
-  Shrink
-} from '@lucide/svelte/icons';
+import Bookmark from '@lucide/svelte/icons/bookmark';
+import CircleHelp from '@lucide/svelte/icons/circle-help';
+import Code from '@lucide/svelte/icons/code';
+import Eye from '@lucide/svelte/icons/eye';
+import EyeOff from '@lucide/svelte/icons/eye-off';
+import Expand from '@lucide/svelte/icons/expand';
+import Monitor from '@lucide/svelte/icons/monitor';
+import MonitorOff from '@lucide/svelte/icons/monitor-off';
+import Pin from '@lucide/svelte/icons/pin';
+import PinOff from '@lucide/svelte/icons/pin-off';
+import Play from '@lucide/svelte/icons/play';
+import Settings from '@lucide/svelte/icons/settings';
+import Shrink from '@lucide/svelte/icons/shrink';
 import type { SettingsSchema } from '$lib/settings';
 import { hasVisibleSettingsFields } from '$lib/settings';
 import type { Component } from 'svelte';

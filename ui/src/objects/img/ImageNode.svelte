@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Image as ImageIcon, Upload } from '@lucide/svelte/icons';
+  import ImageIcon from '@lucide/svelte/icons/image';
+  import Upload from '@lucide/svelte/icons/upload';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

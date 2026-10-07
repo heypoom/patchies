@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { ChevronUp, Edit, Lock, LockOpen } from '@lucide/svelte/icons';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import Edit from '@lucide/svelte/icons/edit';
+  import Lock from '@lucide/svelte/icons/lock';
+  import LockOpen from '@lucide/svelte/icons/lock-open';
   import { useSvelteFlow, useStore } from '@xyflow/svelte';
 
   import hljs from 'highlight.js/lib/core';

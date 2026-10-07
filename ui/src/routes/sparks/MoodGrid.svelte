@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { ArrowRight, Check, X } from '@lucide/svelte/icons';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import Check from '@lucide/svelte/icons/check';
+  import X from '@lucide/svelte/icons/x';
   import type { Mood } from './types';
 
   interface Props {

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { AlertCircle, Check } from '@lucide/svelte/icons';
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import Check from '@lucide/svelte/icons/check';
   import { getModeDescriptor, getActionColorClass } from '$lib/ai/modes/descriptors';
   import type { ThreadActionRef } from '$lib/ai/chat/types';
 

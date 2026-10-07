@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { AlertCircle, Settings, Usb, Unplug } from '@lucide/svelte/icons';
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Usb from '@lucide/svelte/icons/usb';
+  import Unplug from '@lucide/svelte/icons/unplug';
   import { useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';

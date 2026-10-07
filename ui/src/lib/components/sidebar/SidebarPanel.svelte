@@ -1,19 +1,17 @@
 <script lang="ts">
-  import {
-    X,
-    Folder,
-    Bookmark,
-    Package,
-    Save,
-    CircleQuestionMark,
-    AppWindow,
-    Ellipsis,
-    Music,
-    MessageSquare,
-    Activity,
-    Code,
-    Settings
-  } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
+  import Folder from '@lucide/svelte/icons/folder';
+  import Bookmark from '@lucide/svelte/icons/bookmark';
+  import Package from '@lucide/svelte/icons/package';
+  import Save from '@lucide/svelte/icons/save';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+  import AppWindow from '@lucide/svelte/icons/app-window';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Music from '@lucide/svelte/icons/music';
+  import MessageSquare from '@lucide/svelte/icons/message-square';
+  import Activity from '@lucide/svelte/icons/activity';
+  import Code from '@lucide/svelte/icons/code';
+  import Settings from '@lucide/svelte/icons/settings';
 
   import FileTreeView from './FileTreeView.svelte';
   import PresetTreeView from './PresetTreeView.svelte';

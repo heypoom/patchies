@@ -1,6 +1,7 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { X, Youtube } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
+  import Youtube from '@lucide/svelte/icons/youtube';
   import { toast } from 'svelte-sonner';
   import type { StagedImage } from '$lib/ai/chat/types';
   import { getYouTubeLabel } from './youtube-utils';

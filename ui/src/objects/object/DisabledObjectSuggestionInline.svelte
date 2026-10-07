@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Package } from '@lucide/svelte/icons';
+  import Package from '@lucide/svelte/icons/package';
   import { getPackIcon } from '$lib/extensions/pack-icons';
 
   let {
