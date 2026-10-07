@@ -74,6 +74,13 @@ provider execution requests handler invocations through the existing worker brid
 
 ## Runtime activity
 
+Both LLM helpers inherit the current JSRunner execution's cancellation signal.
+Pausing/stopping, rerunning, or destroying a node aborts pending requests without
+an explicit `abortSignal`. A caller-provided signal is combined with the execution
+signal, so either can cancel the request. Each execution gets a fresh signal;
+callbacks retained from an older execution cannot start new LLM work after cleanup.
+Worker requests retain their existing cleanup-driven cancellation.
+
 Both `js` and `worker` show running activity while `delay()`, `llm()`, or
 `llm.turn()` is pending, including frontend tool execution. Finite work clears
 its activity on success or failure. Concurrent calls keep the node active until

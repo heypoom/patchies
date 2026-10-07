@@ -161,4 +161,85 @@ describe('JSRunner', () => {
 
     expect(onSchedulerCallbackRegistered).toHaveBeenCalledTimes(4);
   });
+
+  describe.each(['llm', 'llm.turn'])('%s cancellation', (method) => {
+    it.each(['cleanup', 'rerun', 'destroy', 'explicit'])(
+      'aborts pending requests on %s',
+      async (action) => {
+        const mock = method === 'llm' ? llmMock : llmMock.turn;
+
+        const started = Promise.withResolvers<AbortSignal>();
+        const controller = new AbortController();
+
+        const failed = vi.fn();
+        const completed = vi.fn();
+
+        mock.mockImplementationOnce((_input, options) => {
+          started.resolve(options.abortSignal);
+
+          return new Promise((_resolve, reject) => {
+            options.abortSignal.addEventListener('abort', () => reject(new Error('cancelled')));
+          });
+        });
+
+        const execution = runner.executeJavaScript(
+          nodeId,
+          `try { completed(await ${method}('Hello', { abortSignal: signal })); }
+           catch (error) { failed(error.message); }`,
+          {
+            extraContext: {
+              signal: action === 'explicit' ? controller.signal : undefined,
+              failed,
+              completed
+            }
+          }
+        );
+
+        const signal = await started.promise;
+        expect(signal.aborted).toBe(false);
+
+        if (action === 'cleanup') {
+          runner.getMessageContext(nodeId).runCleanupCallbacks();
+        } else if (action === 'rerun') {
+          await runner.executeJavaScript(nodeId, '');
+        } else if (action === 'destroy') {
+          runner.destroy(nodeId);
+        } else {
+          controller.abort();
+        }
+
+        await execution;
+
+        expect(signal.aborted).toBe(true);
+        expect(failed).toHaveBeenCalledWith('cancelled');
+        expect(completed).not.toHaveBeenCalled();
+      }
+    );
+
+    it('uses a fresh signal on rerun without a message context', async () => {
+      const mock = method === 'llm' ? llmMock : llmMock.turn;
+      const signals: AbortSignal[] = [];
+
+      mock.mockImplementation(async (_input, options) => {
+        signals.push(options.abortSignal);
+        return 'Answer';
+      });
+
+      await runner.executeJavaScript(nodeId, `await ${method}('First')`, {
+        skipMessageContext: true
+      });
+
+      await runner.executeJavaScript(nodeId, `await ${method}('Second')`, {
+        skipMessageContext: true
+      });
+
+      expect(signals[0].aborted).toBe(true);
+      expect(signals[1].aborted).toBe(false);
+
+      runner.destroy(nodeId);
+      expect(signals[1].aborted).toBe(true);
+
+      mock.mockReset();
+    });
+  });
 });

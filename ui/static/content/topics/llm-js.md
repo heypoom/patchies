@@ -95,6 +95,8 @@ console.log(turn.content);
   `imageNodeId`, and `abortSignal`.
 - The `imageNodeId` option captures the current frame for the
   last user turn. Chat history does not retain earlier frame captures.
+- Pausing or stopping a node, re-running its code, or deleting it will cancel pending `llm()`
+  and `llm.turn()` calls. You can still pass `abortSignal` to cancel them manually.
 
 ## Streaming
 
