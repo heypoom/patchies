@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Settings, X } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

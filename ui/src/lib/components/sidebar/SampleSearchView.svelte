@@ -1,18 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
-  import {
-    Play,
-    Square,
-    Music,
-    SlidersHorizontal,
-    Volume2,
-    Headphones,
-    Tag,
-    Plus,
-    Copy,
-    Ellipsis
-  } from '@lucide/svelte/icons';
+  import Play from '@lucide/svelte/icons/play';
+  import Square from '@lucide/svelte/icons/square';
+  import Music from '@lucide/svelte/icons/music';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
+  import Headphones from '@lucide/svelte/icons/headphones';
+  import Tag from '@lucide/svelte/icons/tag';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as ContextMenu from '$lib/components/ui/context-menu';

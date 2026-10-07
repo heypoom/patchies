@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Moon, CircleQuestionMark, Expand, X } from '@lucide/svelte/icons';
+  import Moon from '@lucide/svelte/icons/moon';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+  import Expand from '@lucide/svelte/icons/expand';
+  import X from '@lucide/svelte/icons/x';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';

@@ -4,10 +4,17 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import ConsoleMessageLine from './ConsoleMessageLine.svelte';
-  import { Copy, Loader, Pause, Play, RefreshCcw, Trash2 } from '@lucide/svelte/icons';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
   import { toast } from 'svelte-sonner';
   import { VList } from 'virtua/svelte';
-  import { GripVertical, GripHorizontal, Grip } from '@lucide/svelte/icons';
+  import GripVertical from '@lucide/svelte/icons/grip-vertical';
+  import GripHorizontal from '@lucide/svelte/icons/grip-horizontal';
+  import Grip from '@lucide/svelte/icons/grip';
   import { logger } from '$lib/utils/logger';
 
   let {

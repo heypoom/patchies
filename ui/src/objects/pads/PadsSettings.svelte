@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
   import { useNodeDataTracker } from '$lib/history';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import type { NoteOffMode, PadCount } from './constants';

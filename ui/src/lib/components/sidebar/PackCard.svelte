@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { ChevronDown, ChevronRight, Check, Lock } from '@lucide/svelte/icons';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import Check from '@lucide/svelte/icons/check';
+  import Lock from '@lucide/svelte/icons/lock';
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import type { Snippet } from 'svelte';

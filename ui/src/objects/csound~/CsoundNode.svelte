@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Expand, Pause, Play, Settings } from '@lucide/svelte/icons';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

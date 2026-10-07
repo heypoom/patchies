@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Code, Play, Terminal, X } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Play from '@lucide/svelte/icons/play';
+  import Terminal from '@lucide/svelte/icons/terminal';
+  import X from '@lucide/svelte/icons/x';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';

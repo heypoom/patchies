@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Loader, Maximize2, Minus } from '@lucide/svelte/icons';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Maximize2 from '@lucide/svelte/icons/maximize-2';
+  import Minus from '@lucide/svelte/icons/minus';
   import { match } from 'ts-pattern';
   import { getModeDescriptor } from '$lib/ai/modes/descriptors';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';

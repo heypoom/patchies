@@ -1,15 +1,13 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import {
-    Activity,
-    ChevronDown,
-    ChevronRight,
-    ChevronUp,
-    Crosshair,
-    Play,
-    Settings,
-    Square
-  } from '@lucide/svelte/icons';
+  import Activity from '@lucide/svelte/icons/activity';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import Crosshair from '@lucide/svelte/icons/crosshair';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Square from '@lucide/svelte/icons/square';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
     profilerEnabled,

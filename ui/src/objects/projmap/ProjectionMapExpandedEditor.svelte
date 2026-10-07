@@ -1,7 +1,11 @@
 <script lang="ts">
   import { getDismissShortcutLabel, isDismissKey, isNativeFullscreen } from '$lib/keyboard/dismiss';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Plus, Trash2, Shrink, Pen, MousePointer2 } from '@lucide/svelte/icons';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Shrink from '@lucide/svelte/icons/shrink';
+  import Pen from '@lucide/svelte/icons/pen';
+  import MousePointer2 from '@lucide/svelte/icons/mouse-pointer-2';
   import type { ProjMapSurface } from '$lib/projmap/types';
   import { WARP_CORNER_LABELS } from './constants';
   import { surfaceColor, polyPoints, toDisplay } from './utils';

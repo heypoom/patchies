@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Play, Settings, Terminal, X } from '@lucide/svelte/icons';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Terminal from '@lucide/svelte/icons/terminal';
+  import X from '@lucide/svelte/icons/x';
   import { onDestroy, onMount } from 'svelte';
   import type { Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';

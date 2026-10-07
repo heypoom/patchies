@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Binary, FileText, Hash, Settings, Trash, X } from '@lucide/svelte/icons';
+  import Binary from '@lucide/svelte/icons/binary';
+  import FileText from '@lucide/svelte/icons/file-text';
+  import Hash from '@lucide/svelte/icons/hash';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Trash from '@lucide/svelte/icons/trash';
+  import X from '@lucide/svelte/icons/x';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';

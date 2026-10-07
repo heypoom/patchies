@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Settings, Unplug, Lightbulb } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Unplug from '@lucide/svelte/icons/unplug';
+  import Lightbulb from '@lucide/svelte/icons/lightbulb';
   import { useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';

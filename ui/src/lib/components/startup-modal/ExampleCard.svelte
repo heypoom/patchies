@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { ArrowUpRight, AudioWaveform, Braces, Eye, Network, Wrench } from '@lucide/svelte/icons';
+  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+  import AudioWaveform from '@lucide/svelte/icons/audio-waveform';
+  import Braces from '@lucide/svelte/icons/braces';
+  import Eye from '@lucide/svelte/icons/eye';
+  import Network from '@lucide/svelte/icons/network';
+  import Wrench from '@lucide/svelte/icons/wrench';
   import DemoSignal from './DemoSignal.svelte';
   import type { ExamplePatch } from './types';
 

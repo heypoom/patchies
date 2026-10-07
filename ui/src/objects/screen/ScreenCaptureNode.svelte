@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Monitor, Square } from '@lucide/svelte/icons';
+  import Monitor from '@lucide/svelte/icons/monitor';
+  import Square from '@lucide/svelte/icons/square';
   import { onMount, onDestroy } from 'svelte';
   import { get } from 'svelte/store';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

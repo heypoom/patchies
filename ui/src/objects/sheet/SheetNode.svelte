@@ -9,7 +9,11 @@
     type OnResizeStart
   } from '@xyflow/svelte';
   import { match, P } from 'ts-pattern';
-  import { Expand, Play, Plus, Settings, X } from '@lucide/svelte/icons';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Play from '@lucide/svelte/icons/play';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';

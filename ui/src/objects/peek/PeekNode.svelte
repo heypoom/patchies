@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Code, ChevronUp } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { peekSchema } from '$objects/peek/schema';

@@ -1,6 +1,10 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { AudioWaveform, Settings, Loader2, Circle, Square } from '@lucide/svelte/icons';
+  import AudioWaveform from '@lucide/svelte/icons/audio-waveform';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import Circle from '@lucide/svelte/icons/circle';
+  import Square from '@lucide/svelte/icons/square';
   import AiSttSettings from '$lib/components/settings/AiSttSettings.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

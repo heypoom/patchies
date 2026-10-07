@@ -16,7 +16,9 @@
   import { SequencerObject, type SequencerData } from '$objects/sequencer/SequencerObject';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
-  import { Settings, VolumeX, X } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import VolumeX from '@lucide/svelte/icons/volume-x';
+  import X from '@lucide/svelte/icons/x';
   import { useSettingsSidebarTarget } from '$lib/settings/use-settings-sidebar-target.svelte';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
 

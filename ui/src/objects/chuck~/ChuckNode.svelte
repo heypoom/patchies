@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { CirclePlus, Delete, Expand, Replace, Settings } from '@lucide/svelte/icons';
+  import CirclePlus from '@lucide/svelte/icons/circle-plus';
+  import Delete from '@lucide/svelte/icons/delete';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Replace from '@lucide/svelte/icons/replace';
+  import Settings from '@lucide/svelte/icons/settings';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

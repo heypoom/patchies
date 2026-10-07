@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { RotateCcw } from '@lucide/svelte/icons';
+import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 import { getObjectPreviewMenuGroups } from './object-preview-menu-actions';
 
 describe('object preview menu actions', () => {

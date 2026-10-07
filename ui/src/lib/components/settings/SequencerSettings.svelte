@@ -3,7 +3,9 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
-  import { ChevronDown, Plus, Trash2 } from '@lucide/svelte/icons';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
   import type { TrackData } from '$lib/nodes/sequencer-constants';
   import { useFloatingSettingsScroll } from './use-floating-settings-scroll.svelte';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Transport } from '$lib/transport';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Metronome } from '@lucide/svelte/icons';
+  import Metronome from '@lucide/svelte/icons/metronome';
   import { onMount } from 'svelte';
 
   let { bpm }: { bpm: number } = $props();

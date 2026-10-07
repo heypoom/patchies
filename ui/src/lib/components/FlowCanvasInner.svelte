@@ -4,7 +4,8 @@
   import { codeSidebarTargets } from '../../stores/code-sidebar.store';
   import { editObjectCodeFile } from '$lib/objects/object-code-files';
   import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
-  import { Volume2, Cable } from '@lucide/svelte/icons';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
+  import Cable from '@lucide/svelte/icons/cable';
   import {
     SvelteFlow,
     Controls,

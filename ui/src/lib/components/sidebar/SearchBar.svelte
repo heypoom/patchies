@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Search, X } from '@lucide/svelte';
+  import Search from '@lucide/svelte/icons/search';
+  import X from '@lucide/svelte/icons/x';
 
   interface Props {
     value: string;

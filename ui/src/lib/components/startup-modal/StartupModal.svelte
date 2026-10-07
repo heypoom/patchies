@@ -7,7 +7,7 @@
   import ShortcutsTab from './ShortcutsTab.svelte';
   import SparksTab from './SparksTab.svelte';
   import type { Tab } from './types';
-  import { X } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
   import { onMount } from 'svelte';
   import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
   import { sparksMoodTheme, DEFAULT_THEME } from '../../../stores/sparks.store';

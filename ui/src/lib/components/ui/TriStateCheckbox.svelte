@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Check, Minus, X } from '@lucide/svelte/icons';
+  import Check from '@lucide/svelte/icons/check';
+  import Minus from '@lucide/svelte/icons/minus';
+  import X from '@lucide/svelte/icons/x';
   import { match } from 'ts-pattern';
 
   /**

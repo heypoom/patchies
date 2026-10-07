@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight } from '@lucide/svelte/icons';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
 

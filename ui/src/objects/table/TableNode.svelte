@@ -22,7 +22,11 @@
   import { schema } from '$lib/objects/schemas/types';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Eye, EyeOff, Unlink, Trash2, ArrowUpDown } from '@lucide/svelte/icons';
+  import Eye from '@lucide/svelte/icons/eye';
+  import EyeOff from '@lucide/svelte/icons/eye-off';
+  import Unlink from '@lucide/svelte/icons/unlink';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';

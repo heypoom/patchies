@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
+  import Lock from '@lucide/svelte/icons/lock';
+  import LockOpen from '@lucide/svelte/icons/lock-open';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import { NodeResizer, useSvelteFlow, useStore } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import { useNodeDataTracker } from '$lib/history';

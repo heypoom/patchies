@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
   import { onDestroy, onMount } from 'svelte';
   import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';

@@ -1,13 +1,10 @@
 <script lang="ts">
-  import {
-    Image as ImageIcon,
-    Loader,
-    CircleAlert,
-    Bot,
-    SlidersHorizontal,
-    ChevronDown,
-    Scaling
-  } from '@lucide/svelte/icons';
+  import ImageIcon from '@lucide/svelte/icons/image';
+  import Loader from '@lucide/svelte/icons/loader';
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import Bot from '@lucide/svelte/icons/bot';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import { NodeResizer, useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { useNodeDataTracker } from '$lib/history';
   import { onMount, onDestroy, tick } from 'svelte';

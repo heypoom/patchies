@@ -1,6 +1,7 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Play, X } from '@lucide/svelte/icons';
+  import Play from '@lucide/svelte/icons/play';
+  import X from '@lucide/svelte/icons/x';
   import { onMount, onDestroy, tick } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';

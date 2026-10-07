@@ -1,19 +1,17 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import {
-    BotMessageSquare,
-    ImagePlus,
-    LoaderCircle,
-    MessageSquare,
-    Mic,
-    Send,
-    Settings,
-    Square,
-    Trash2,
-    X,
-    Youtube,
-    Zap
-  } from '@lucide/svelte/icons';
+  import BotMessageSquare from '@lucide/svelte/icons/bot-message-square';
+  import ImagePlus from '@lucide/svelte/icons/image-plus';
+  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+  import MessageSquare from '@lucide/svelte/icons/message-square';
+  import Mic from '@lucide/svelte/icons/mic';
+  import Send from '@lucide/svelte/icons/send';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Square from '@lucide/svelte/icons/square';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import X from '@lucide/svelte/icons/x';
+  import Youtube from '@lucide/svelte/icons/youtube';
+  import Zap from '@lucide/svelte/icons/zap';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Popover from '$lib/components/ui/popover';
   import { compressImageFile } from '$lib/ai/google';

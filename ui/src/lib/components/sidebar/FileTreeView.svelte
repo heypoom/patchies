@@ -1,32 +1,30 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import {
-    ChevronRight,
-    ChevronDown,
-    File,
-    FileCode,
-    FileText,
-    FilePlay,
-    Folder,
-    FolderOpen,
-    FolderPlus,
-    FolderSymlink,
-    Image,
-    Music,
-    Package,
-    User,
-    Box,
-    Upload,
-    Link,
-    RefreshCw,
-    Trash2,
-    Pencil,
-    Copy,
-    Plus,
-    FolderInput,
-    Ellipsis
-  } from '@lucide/svelte/icons';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import File from '@lucide/svelte/icons/file';
+  import FileCode from '@lucide/svelte/icons/file-code';
+  import FileText from '@lucide/svelte/icons/file-text';
+  import FilePlay from '@lucide/svelte/icons/file-play';
+  import Folder from '@lucide/svelte/icons/folder';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import FolderPlus from '@lucide/svelte/icons/folder-plus';
+  import FolderSymlink from '@lucide/svelte/icons/folder-symlink';
+  import Image from '@lucide/svelte/icons/image';
+  import Music from '@lucide/svelte/icons/music';
+  import Package from '@lucide/svelte/icons/package';
+  import User from '@lucide/svelte/icons/user';
+  import Box from '@lucide/svelte/icons/box';
+  import Upload from '@lucide/svelte/icons/upload';
+  import Link from '@lucide/svelte/icons/link';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Plus from '@lucide/svelte/icons/plus';
+  import FolderInput from '@lucide/svelte/icons/folder-input';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
   import SearchBar from './SearchBar.svelte';
   import {
     PATCH_TEXT_FILE_ACCEPT,

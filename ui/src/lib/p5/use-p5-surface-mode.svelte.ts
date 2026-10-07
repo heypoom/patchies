@@ -1,5 +1,6 @@
 import type { Node } from '@xyflow/svelte';
-import { Expand, Shrink } from '@lucide/svelte/icons';
+import Expand from '@lucide/svelte/icons/expand';
+import Shrink from '@lucide/svelte/icons/shrink';
 import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
 import { SurfaceMouseForwarder } from '$lib/canvas/SurfaceMouseForwarder';

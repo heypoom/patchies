@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Wrench } from '@lucide/svelte/icons';
+  import Wrench from '@lucide/svelte/icons/wrench';
   import type { ThreadToolCall } from '$lib/ai/chat/types';
   import SubagentThinkingCard from './SubagentThinkingCard.svelte';
 

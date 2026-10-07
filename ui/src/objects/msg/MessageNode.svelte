@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ChevronUp, SquarePen } from '@lucide/svelte/icons';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import SquarePen from '@lucide/svelte/icons/square-pen';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';

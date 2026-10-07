@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Copy, Loader, Bot, SlidersHorizontal, ChevronDown } from '@lucide/svelte/icons';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Bot from '@lucide/svelte/icons/bot';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
