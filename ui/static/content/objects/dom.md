@@ -26,6 +26,26 @@ current selection immediately, then runs when selection changes.
 See [Custom Selection Styling](/docs/js-integrations)
 for an example and the shared API.
 
+## Keyboard Input
+
+Use `onKeyDown()` and `onKeyUp()` while the preview or one of its controls is
+focused. Click the preview or press Tab to focus it. Registered callbacks receive
+native keyboard events and stop them from reaching editor shortcuts.
+
+They do not prevent the control's default behavior - call `event.preventDefault()` when needed.
+Callbacks clear when you run the code again. Registering another callback of the
+same kind replaces the previous one.
+
+```js
+onKeyDown((event) => {
+  console.log('Pressed:', event.key);
+});
+
+onKeyUp((event) => {
+  console.log('Released:', event.key);
+});
+```
+
 ## Expand
 
 Choose **Expand** from the overflow menu or right-click menu to focus the live

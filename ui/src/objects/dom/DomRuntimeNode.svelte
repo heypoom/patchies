@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useDomPreviewKeyboard } from '$objects/dom/useDomPreviewKeyboard.svelte';
   import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import {
@@ -152,6 +153,13 @@
 
   let rootContainer = $state<HTMLDivElement | undefined>();
   let previewContainer = $state<HTMLDivElement | undefined>();
+
+  const keyboard = useDomPreviewKeyboard({
+    getRoot: () => rootContainer,
+    getPreview: () => previewContainer,
+    onError: (error) => handleCodeError(error, data.code, nodeId, customConsole, errorOffset)
+  });
+
   let transientSize = $state<DomSize | null>(null);
   const interactions = useNodeInteractions(() => nodeId);
   let editorReady = $state(false);
@@ -283,17 +291,6 @@
     return width > 0 && height > 0 ? { width, height } : null;
   }
 
-  function focusPreview() {
-    const selector =
-      'input, button, select, textarea, a[href], [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
-
-    const container =
-      rootContainer?.shadowRoot?.querySelector<HTMLElement>(selector) ??
-      previewContainer?.querySelector<HTMLElement>(selector);
-
-    container?.focus();
-  }
-
   function toggleExpandedPreview() {
     if (!expandController) return;
 
@@ -338,6 +335,7 @@
     fluidCanvas.reset();
 
     selection.reset();
+    keyboard.reset();
 
     updateNodeData(nodeId, getBorderResetDataForRun(data));
 
@@ -401,6 +399,8 @@
           onResize: fluidCanvas.onCanvasResize,
           ...interactions.api,
           onSelectionChange: selection.onSelectionChange,
+          onKeyDown: keyboard.onKeyDown,
+          onKeyUp: keyboard.onKeyUp,
           noBorder: () => {
             updateNodeData(nodeId, { noBorder: true });
           },
@@ -442,7 +442,7 @@
           expandedPreviewSize = null;
         }
       },
-      focusPreview
+      focusPreview: keyboard.focusPreview
     });
 
     setTimeout(() => {
@@ -539,6 +539,7 @@
       >
         <div
           bind:this={previewContainer}
+          {...keyboard.previewAttributes}
           class={[
             'overflow-hidden',
             !isExpanded && 'rounded-md',

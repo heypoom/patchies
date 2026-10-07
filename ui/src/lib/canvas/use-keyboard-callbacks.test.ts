@@ -45,4 +45,40 @@ describe('useKeyboardCallbacks', () => {
 
     expect(onError).toHaveBeenCalledOnce();
   });
+
+  it('replaces callbacks and stops propagation only for registered events', () => {
+    const target = new EventTarget();
+    const keyboard = useKeyboardCallbacks();
+    const firstCallback = vi.fn();
+    const replacement = vi.fn();
+
+    keyboard.attach(target as unknown as HTMLElement);
+
+    const unhandled = new Event('keydown', { bubbles: true });
+    const stopUnhandled = vi.spyOn(unhandled, 'stopPropagation');
+    target.dispatchEvent(unhandled);
+
+    expect(stopUnhandled).not.toHaveBeenCalled();
+
+    keyboard.onKeyDown(firstCallback);
+    keyboard.onKeyDown(replacement);
+
+    const handled = new Event('keydown', { bubbles: true, cancelable: true });
+    const stopPropagation = vi.spyOn(handled, 'stopPropagation');
+    target.dispatchEvent(handled);
+
+    expect(firstCallback).not.toHaveBeenCalled();
+    expect(replacement).toHaveBeenCalledWith(handled);
+    expect(stopPropagation).toHaveBeenCalledOnce();
+    expect(handled.defaultPrevented).toBe(false);
+
+    keyboard.reset();
+
+    const afterReset = new Event('keydown', { bubbles: true });
+    const stopAfterReset = vi.spyOn(afterReset, 'stopPropagation');
+    target.dispatchEvent(afterReset);
+
+    expect(replacement).toHaveBeenCalledOnce();
+    expect(stopAfterReset).not.toHaveBeenCalled();
+  });
 });

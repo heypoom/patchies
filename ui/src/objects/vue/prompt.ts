@@ -18,6 +18,7 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 - noBorder(): Hide Patchies border and selected glow
 - onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
+- onKeyDown(callback), onKeyUp(callback): Receive native KeyboardEvents while the preview or a control inside it is focused. Registered callbacks stop propagation to editor shortcuts, clear on rerun, and replace previous callbacks of the same kind.
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 When using noBorder() for a custom widget, use onSelectionChange() to keep a visible selection indicator that matches its theme and geometry, including rounded or inset borders. Store selected in a Vue ref and bind the widget border or outline to that ref.

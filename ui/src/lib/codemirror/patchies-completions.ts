@@ -638,7 +638,16 @@ const INTERACTION_JS_NODES = [
 
 const KV_JS_NODES = ['js', 'worker', 'p5', 'canvas.dom', 'pixi.dom'];
 
-const KEYBOARD_JS_NODES = ['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'];
+const KEYBOARD_JS_NODES = [
+  'canvas.dom',
+  'textmode.dom',
+  'three.dom',
+  'pixi.dom',
+  'surface',
+  'dom',
+  'vue'
+];
+
 const SURFACE_JS_NODES = ['surface'];
 const P5_SURFACE_JS_NODES = ['surface', 'p5'];
 const DOM_RUNTIME_JS_NODES = ['dom', 'vue'];

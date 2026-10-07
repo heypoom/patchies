@@ -206,7 +206,7 @@ describe('patchies completions', () => {
     expect(labels).not.toContain('deactivate');
   });
 
-  it.each(['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface'])(
+  it.each(['canvas.dom', 'textmode.dom', 'three.dom', 'pixi.dom', 'surface', 'dom', 'vue'])(
     'shows keyboard callback completions for %s',
     (nodeType) => {
       expect(getCompletionLabels(nodeType, 'onKeyD')).toContain('onKeyDown');
