@@ -20,7 +20,7 @@ export const aiImgMessages = {
 export const aiImgSchema: ObjectSchema = {
   type: 'ai.img',
   category: 'ai',
-  description: 'Generate images from text prompts using AI (Gemini)',
+  description: 'Generate images from text prompts',
   inlets: [
     {
       id: 'video',

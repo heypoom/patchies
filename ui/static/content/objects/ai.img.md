@@ -1,5 +1,4 @@
-Generate images from text prompts with Gemini or OpenRouter. Connect the video
-output to other visual objects to use the generated image as a texture.
+Generate images from text prompts with Gemini or OpenRouter.
 
 ## Setup
 
@@ -7,11 +6,8 @@ Choose your provider and set its API key in AI settings. The node uses that
 provider's default image model. Open **model settings** in the prompt editor to
 set a model for this node.
 
-Send a text prompt to generate an image, or send a `bang` to generate from the
-current prompt. A `{type: 'set', value: 'your prompt'}` message updates the prompt
-without generating. The message outlet sends a `bang` when generation completes.
-
-Gemini also accepts a connected image on the video inlet for image editing.
+- Connect the video output to other visual objects to use the generated image as a texture.
+- Gemini also accepts a connected image on the video inlet for image editing.
 
 ## Preview Size
 
