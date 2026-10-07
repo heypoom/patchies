@@ -14,7 +14,6 @@
   import { requireGeminiApiKey } from '$lib/ai/providers';
   import { get } from 'svelte/store';
   import { aiSettings } from '../../stores/ai-settings.store';
-  import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { GLSystem } from '$lib/canvas/GLSystem';
@@ -307,7 +306,7 @@
         class="nodrag w-full resize-none"
         onrun={generateImage}
         onready={() => (editorReady = true)}
-        extraExtensions={[EditorView.lineWrapping]}
+        lineWrap
         {nodeId}
         dataKey="prompt"
       />

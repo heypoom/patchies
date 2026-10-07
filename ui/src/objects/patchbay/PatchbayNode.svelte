@@ -27,9 +27,8 @@
     getPatchbayVirtualExpressionAssignmentRanges,
     getPatchbayVirtualExpressionKeywordRanges,
     getPatchbayVirtualExpressionNameRanges,
-    getPatchbayVirtualExpressionOperatorRanges,
-    patchbayContextualCompletionSource
-  } from '$lib/codemirror/patchbay/patchbay.codemirror';
+    getPatchbayVirtualExpressionOperatorRanges
+  } from '$lib/codemirror/patchbay/patchbay-editor-model';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
   import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
   import { PatchbayObject } from '$objects/patchbay/PatchbayObject';
@@ -62,25 +61,30 @@
   const channelRegistry = MessageChannelRegistry.getInstance();
   const audioChannelRegistry = AudioChannelRegistry.getInstance();
   const videoChannelRegistry = VideoChannelRegistry.getInstance();
-  const patchbayCompletionExtensions = [
-    patchbayContextualCompletionSource(() => ({
-      channels: {
-        message: {
-          senders: new Set(channelRegistry.getSenderChannelNames()),
-          receivers: new Set(channelRegistry.getReceiverChannelNames())
+  const loadPatchbayExtensions = async () => {
+    const { patchbayContextualCompletionSource } =
+      await import('$lib/codemirror/patchbay/patchbay.codemirror');
+
+    return [
+      patchbayContextualCompletionSource(() => ({
+        channels: {
+          message: {
+            senders: new Set(channelRegistry.getSenderChannelNames()),
+            receivers: new Set(channelRegistry.getReceiverChannelNames())
+          },
+          audio: {
+            senders: new Set(audioChannelRegistry.getSenderChannelNames()),
+            receivers: new Set(audioChannelRegistry.getReceiverChannelNames())
+          },
+          video: {
+            senders: new Set(videoChannelRegistry.getSenderChannelNames()),
+            receivers: new Set(videoChannelRegistry.getReceiverChannelNames())
+          }
         },
-        audio: {
-          senders: new Set(audioChannelRegistry.getSenderChannelNames()),
-          receivers: new Set(audioChannelRegistry.getReceiverChannelNames())
-        },
-        video: {
-          senders: new Set(videoChannelRegistry.getSenderChannelNames()),
-          receivers: new Set(videoChannelRegistry.getReceiverChannelNames())
-        }
-      },
-      objects: getPatchbayObjectPorts(getNodes())
-    }))
-  ];
+        objects: getPatchbayObjectPorts(getNodes())
+      }))
+    ];
+  };
 
   let patchbay: PatchbayObject | null = null;
   let unsubscribeRegistryChange: (() => void) | null = null;
@@ -194,7 +198,7 @@
     onrun: applyPatchbayCode,
     lineErrors,
     inlineDecorations,
-    extraExtensions: patchbayCompletionExtensions,
+    loadExtensions: loadPatchbayExtensions,
     onAltDecorationClick: focusPatchbayReference,
     lineWrap: true
   }));
@@ -223,7 +227,7 @@
       onrun: applyPatchbayCode,
       lineErrors,
       inlineDecorations,
-      extraExtensions: patchbayCompletionExtensions,
+      loadExtensions: loadPatchbayExtensions,
       onAltDecorationClick: focusPatchbayReference,
       lineWrap: true
     });
@@ -403,7 +407,7 @@
         dataKey="code"
         {lineErrors}
         {inlineDecorations}
-        extraExtensions={patchbayCompletionExtensions}
+        loadExtensions={loadPatchbayExtensions}
         onrun={applyPatchbayCode}
         onaltdecorationclick={focusPatchbayReference}
         lineWrap

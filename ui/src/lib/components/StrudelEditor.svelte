@@ -1,7 +1,5 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { Prec, StateEffect } from '@codemirror/state';
-  import { keymap, EditorView } from '@codemirror/view';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
   import { logger } from '$lib/utils/logger';
@@ -42,6 +40,7 @@
     [key: string]: unknown;
   } = $props();
 
+  let destroyed = false;
   let containerElement: HTMLElement;
   let editor: any | null = null;
   let audioService = AudioService.getInstance();
@@ -54,8 +53,17 @@
   onMount(async () => {
     audioService.createNode(nodeId, 'gain~', [, 1]);
 
+    const [{ Prec, StateEffect }, { keymap, EditorView }] = await Promise.all([
+      import('@codemirror/state'),
+      import('@codemirror/view')
+    ]);
+
+    if (destroyed) return;
+
     const superdough = // @ts-expect-error -- no typedef
       await import('superdough');
+
+    if (destroyed) return;
 
     const logToConsole = (msg: string) => {
       if (customConsole) {
@@ -85,6 +93,8 @@
         import('@strudel/codemirror')
       ]);
 
+    if (destroyed) return;
+
     const { silence, evalScope } = strudelCore;
     const { getDrawContext } = strudelDraw;
     const { transpiler } = strudelTranspiler;
@@ -93,6 +103,8 @@
 
     // Dynamically import and create prebake function
     const { prebake } = await import('$lib/strudel/prebake');
+
+    if (destroyed) return;
 
     for (const key in themeSettings) {
       themeSettings[key].background = 'transparent';
@@ -233,6 +245,7 @@
   });
 
   onDestroy(() => {
+    destroyed = true;
     editor?.stop();
   });
 

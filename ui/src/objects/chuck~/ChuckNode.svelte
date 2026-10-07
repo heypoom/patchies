@@ -14,7 +14,6 @@
   import { chuckMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import CommonExprLayout from '$objects/expression/CommonExprLayout.svelte';
-  import { keymap } from '@codemirror/view';
   import type { ChuckShred, ChuckNode } from '$objects/chuck~/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$objects/chuck~/ChuckSettings.svelte';
@@ -102,18 +101,22 @@
   let shreds = $state<ChuckShred[]>([]);
 
   // Custom keybinds for ChucK operations
-  const chuckKeymaps = [
-    keymap.of([
-      {
-        // Cmd + \ = add new shred
-        key: 'Cmd-\\',
-        run: () => {
-          handleAddShred();
-          return true;
+  const loadChuckKeymaps = async () => {
+    const { keymap } = await import('@codemirror/view');
+
+    return [
+      keymap.of([
+        {
+          // Cmd + \ = add new shred
+          key: 'Cmd-\\',
+          run: () => {
+            handleAddShred();
+            return true;
+          }
         }
-      }
-    ])
-  ];
+      ])
+    ];
+  };
 
   const handleExpressionChange = (newExpr: string) => {
     updateNodeData(nodeId, { expr: newExpr });
@@ -391,7 +394,7 @@
           editorClass="chuck-node-code-editor"
           previewContainerClass="chuck-node-preview-container"
           onExpressionChange={handleExpressionChange}
-          extraExtensions={chuckKeymaps}
+          loadExtensions={loadChuckKeymaps}
           exitOnRun={false}
           onRun={handleReplace}
           nodeType="chuck~"

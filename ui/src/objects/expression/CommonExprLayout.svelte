@@ -4,8 +4,6 @@
   import hljs from 'highlight.js/lib/core';
   import javascript from 'highlight.js/lib/languages/javascript';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
-  import { keymap } from '@codemirror/view';
-  import { EditorView } from 'codemirror';
   import { highlightUiua } from '$lib/uiua/uiua-highlight';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import {
@@ -64,6 +62,7 @@
     exitOnRun = true,
     runOnExit = false,
     extraExtensions = [],
+    loadExtensions,
     hasError = false,
     allowEmptyExpr = false,
     dataKey = 'expr',
@@ -98,6 +97,7 @@
     exitOnRun?: boolean;
     runOnExit?: boolean;
     extraExtensions?: any[];
+    loadExtensions?: () => Promise<import('@codemirror/state').Extension[]>;
     hasError?: boolean;
     allowEmptyExpr?: boolean;
     children?: any;
@@ -316,6 +316,7 @@
             >
               <CodeEditor
                 bind:this={codeEditorRef}
+                onready={focusEditor}
                 value={expr}
                 onchange={handleExpressionUpdate}
                 onrun={() => {
@@ -333,32 +334,18 @@
                 class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}
                 {placeholder}
                 nodeType="expr"
-                extraExtensions={[
-                  keymap.of([
-                    {
-                      key: 'Escape',
-                      run: () => {
-                        exitEditingMode(false);
-                        return true;
-                      }
-                    },
-                    {
-                      key: 'Mod-.',
-                      run: () => {
-                        exitEditingMode(false);
-                        return true;
-                      }
-                    }
-                  ]),
-                  EditorView.focusChangeEffect.of((_, focusing) => {
-                    if (!focusing) {
-                      // Delay to allow other events to process first
-                      setTimeout(() => exitEditingMode(true), 100);
-                    }
-                    return null;
-                  }),
-                  ...extraExtensions
-                ]}
+                loadExtensions={async () => {
+                  const [{ createExprEditorExtensions }, loadedExtensions] = await Promise.all([
+                    import('./expr-editor-extensions'),
+                    loadExtensions?.() ?? []
+                  ]);
+
+                  return createExprEditorExtensions(
+                    () => exitEditingMode(false),
+                    () => setTimeout(() => exitEditingMode(true), 100),
+                    [...extraExtensions, ...loadedExtensions]
+                  );
+                }}
                 {nodeId}
                 {dataKey}
                 {fontSize}

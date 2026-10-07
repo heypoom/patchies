@@ -22,12 +22,20 @@ This reduced the static page graph from 7,808,276 to 6,916,930 bytes, another 89
 
 Five focused Chrome browser tests cover desktop/mobile picker edits, failed-download retry, shadow-style updates, and disabling/re-enabling during initialization. Production Firefox again verified no Spectrum, Tailwind, Greggman, or Butterchurn requests at startup, correct enabled archive loading, and no uncaught runtime errors. Build, type checking, formatting, and Svelte autofixer checks passed. Targeted ESLint reported only the existing unused `findInlineValueWidgets` import.
 
+The editor batch moved shared CodeMirror setup behind a lightweight CodeEditor entry. It preserves reactive props, cursor insertion, readiness callbacks, and undo commits, and cancels delayed language/Vim initialization after destruction. Assembly uses a lazy editor implementation; Strudel loads CodeMirror APIs inside its existing async editor lifecycle. Expression and ChucK keymaps load only with the editor. Patchbay range analysis/tokenization now lives in a pure module, with completion extensions loaded on demand in inline, sidebar, and detached editors. AI text/image editors use the existing line-wrap option instead of importing EditorView.
+
+This reduced the static graph from 6,916,930 to 6,385,469 bytes, another 531,461 bytes (7.7%). The combined reduction from the original graph is 41.0%, and the largest page chunk is 4,832,560 bytes. CodeMirror's view implementation, shared editor implementation, and Assembly editor implementation are outside the static startup graph.
+
+Ten Chrome component tests and 29 focused unit tests passed, covering cursor insertion, external values, deferred extension keymaps/retry, editor cancellation, Assembly callbacks, detached undo commits, and Patchbay completion/range behavior. The production Chrome check verified empty and restored slider/expression patches request no editor implementation at startup. Opening the expression loads the editor once, focuses it, restores the original expression on Escape, and persists changes on Shift+Enter, with no uncaught errors. Build, type checking, and touched-source formatting passed. New/extracted implementation files pass ESLint; the tracked-file comparison found 19 existing errors and no added diagnostics.
+
+A full visual-node registry split needs further runtime work. Several components still register message callbacks during mounting, while headless nodes can emit startup messages before a lazy interface finishes downloading. Keep those node mounts synchronous until component loading and runtime activation are coordinated. This avoids trading download savings for lost startup messages.
+
 ## What Could Be Better
 
-The largest remaining page chunk is 5.36 MB. The static node registry still imports all node components, which bring editor implementations and settings panels. Individual icon imports remove the development barrels, but development download sizes have not been remeasured.
+The largest remaining page chunk is 4.83 MB. The static node registry still imports all node components, which bring their view implementations and settings panels. Individual icon imports remove the development barrels, but development download sizes have not been remeasured.
 
 ## Action Items
 
-- Introduce component loading boundaries for node implementations and editors without delaying handle metadata or changing node lifecycle behavior.
+- Coordinate component readiness with runtime activation before splitting the node registry, including initial messages, patch restoration, paste, and viewport culling.
 - Defer help rendering and its Markdown/KaTeX dependencies until help or rendered chat content is needed.
 - Repeat the cold-start throttled browser report after the next batch, including worker resources separately.
