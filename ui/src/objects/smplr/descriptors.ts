@@ -85,7 +85,7 @@ const commonSettings: SettingsSchema = [
     default: 100
   },
   { key: 'pan', label: 'Pan', type: 'slider', min: -1, max: 1, step: 0.01, default: 0 },
-  { key: 'defaultNote', label: 'Default Note', type: 'string', default: '60' },
+  { key: 'defaultNote', label: 'Default Note', type: 'number', step: 1, default: 60 },
   { key: 'detune', label: 'Detune', type: 'number', step: 1, default: 0 },
   { key: 'reverse', label: 'Reverse', type: 'boolean', default: false }
 ];
