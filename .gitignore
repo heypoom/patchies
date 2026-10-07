@@ -6,3 +6,5 @@
 node_modules
 patchies
 pb_data
+patchies-server
+server/static.zip
