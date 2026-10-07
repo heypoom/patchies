@@ -3,57 +3,18 @@
  * Adapted from @tailwindcss/browser to work with shadow DOM isolation.
  */
 
-import * as tailwindcss from 'tailwindcss';
-import indexCss from 'tailwindcss/index.css?raw';
-import preflightCss from 'tailwindcss/preflight.css?raw';
-import themeCss from 'tailwindcss/theme.css?raw';
-import utilitiesCss from 'tailwindcss/utilities.css?raw';
+import { logger } from './logger';
 
-const css = {
-  index: indexCss,
-  preflight: preflightCss,
-  theme: themeCss,
-  utilities: utilitiesCss
-};
+type TailwindCompiler = Awaited<ReturnType<typeof import('./tailwindCompiler').compileTailwind>>;
+let compilerPromise: Promise<TailwindCompiler> | null = null;
 
-// Shared compiler instance (reused across all shadow DOMs)
-let compiler: Awaited<ReturnType<typeof tailwindcss.compile>> | null = null;
-let compilerPromise: Promise<void> | null = null;
-
-async function loadStylesheet(id: string, base: string) {
-  if (id === 'tailwindcss') {
-    return { path: 'virtual:tailwindcss/index.css', base, content: css.index };
-  } else if (
-    id === 'tailwindcss/preflight' ||
-    id === 'tailwindcss/preflight.css' ||
-    id === './preflight.css'
-  ) {
-    return { path: 'virtual:tailwindcss/preflight.css', base, content: css.preflight };
-  } else if (id === 'tailwindcss/theme' || id === 'tailwindcss/theme.css' || id === './theme.css') {
-    return { path: 'virtual:tailwindcss/theme.css', base, content: css.theme };
-  } else if (
-    id === 'tailwindcss/utilities' ||
-    id === 'tailwindcss/utilities.css' ||
-    id === './utilities.css'
-  ) {
-    return { path: 'virtual:tailwindcss/utilities.css', base, content: css.utilities };
-  }
-  throw new Error(`Unsupported @import "${id}"`);
-}
-
-async function ensureCompiler() {
-  if (compiler) return;
-  if (compilerPromise) return compilerPromise;
-
-  compilerPromise = (async () => {
-    compiler = await tailwindcss.compile('@import "tailwindcss";', {
-      base: '/',
-      loadStylesheet,
-      loadModule: async () => {
-        throw new Error('Plugins/config not supported');
-      }
+function ensureCompiler() {
+  compilerPromise ??= import('./tailwindCompiler')
+    .then(({ compileTailwind }) => compileTailwind())
+    .catch((error) => {
+      compilerPromise = null;
+      throw error;
     });
-  })();
 
   return compilerPromise;
 }
@@ -62,6 +23,7 @@ async function ensureCompiler() {
  * Manages Tailwind CSS for a single shadow DOM instance
  */
 class ShadowTailwind {
+  private compiler: TailwindCompiler | null = null;
   private shadow: ShadowRoot;
   private sheet: HTMLStyleElement;
   private classes = new Set<string>();
@@ -83,7 +45,7 @@ class ShadowTailwind {
 
   private build() {
     this.buildQueued = false;
-    if (!compiler || this.destroyed) return;
+    if (!this.compiler || this.destroyed) return;
 
     // Collect new classes from this shadow DOM
     const newClasses: string[] = [];
@@ -99,11 +61,19 @@ class ShadowTailwind {
     if (newClasses.length === 0 && this.sheet.textContent) return;
 
     // Build CSS for all known classes
-    this.sheet.textContent = compiler.build(Array.from(this.classes));
+    this.sheet.textContent = this.compiler.build(Array.from(this.classes));
   }
 
   async init() {
-    await ensureCompiler();
+    try {
+      this.compiler = await ensureCompiler();
+    } catch (error) {
+      if (!this.destroyed) logger.error('Failed to load browser Tailwind compiler', error);
+      return;
+    }
+
+    if (this.destroyed) return;
+
     this.build();
 
     // Start observing class changes within this shadow DOM
@@ -120,8 +90,8 @@ class ShadowTailwind {
     this.destroyed = true;
     this.observer?.disconnect();
     this.observer = null;
-    // Clear the stylesheet content
-    this.sheet.textContent = '';
+    // Remove the stylesheet
+    this.sheet.remove();
   }
 }
 
