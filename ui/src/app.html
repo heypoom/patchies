@@ -12,117 +12,71 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#080809" />
     <link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
+    <!-- patchies:startup-styles -->
+
+    <!-- patchies:startup-script -->
     %sveltekit.head%
-    <style>
-      body {
-        background: #080809;
-        width: 100%;
-        min-height: 100vh;
-        margin: 0;
-        padding: 0;
-      }
-
-      /* Loading indicator - shows immediately */
-      #patchies-loader {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #080809;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-        color: #a1a1aa;
-      }
-
-      #patchies-loader .spinner {
-        width: 48px;
-        height: 48px;
-        border: 3px solid #27272a;
-        border-top-color: #71717a;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 16px;
-      }
-
-      #patchies-loader .text {
-        font-size: 14px;
-        letter-spacing: 0.05em;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* Hide loader once app loads */
-      body.app-loaded #patchies-loader {
-        display: none;
-      }
-
-      /* Docs pages don't need loader */
-      html.no-loader #patchies-loader {
-        display: none;
-      }
-    </style>
-
-    <script>
-      // Runs synchronously before body is parsed - no loader flash for docs
-      if (location.pathname.startsWith('/docs/') || location.pathname === '/output') {
-        document.documentElement.classList.add('no-loader');
-      }
-    </script>
   </head>
   <body data-sveltekit-preload-data="hover">
-    <!-- Immediate loading indicator -->
+    <!-- Independent of the application bundles, including error reporting. -->
     <div id="patchies-loader">
-      <div class="spinner"></div>
-      <div class="text">Loading Patchies...</div>
+      <div class="loading">
+        <div class="spinner" aria-hidden="true">
+          <svg
+            class="error-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <path d="M12 7v6" />
+            <path d="M12 17h.01" />
+          </svg>
+        </div>
+        <div class="text">Loading Patchies…</div>
+        <div class="network"></div>
+        <p class="slow" hidden>
+          Taking longer than usual. Open loading details for more information.
+        </p>
+        <noscript>Patchies needs JavaScript. Enable it and reload this page.</noscript>
+      </div>
+
+      <details class="diagnostics">
+        <summary>
+          <span class="summary-label">Loading details</span>
+          <span class="summary-meta"
+            ><span class="activity"></span
+            ><span class="summary-size" aria-label="Known downloaded size">0.0kB</span
+            ><span class="meta-separator">·</span><span class="summary-time timing">0s</span></span
+          >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </summary>
+        <div class="diagnostic-content" tabindex="0" role="region" aria-label="Startup diagnostics">
+          <div class="status" role="status">
+            <span class="phase">Waiting for application bundles</span> ·
+            <span class="status-size" aria-label="Known downloaded size">0.0kB</span> ·
+            <span class="status-time timing">0s</span>
+          </div>
+          <pre class="errors" role="alert"></pre>
+          <div class="resources"></div>
+          <p>Downloaded does not mean executed; imports include dependencies.</p>
+        </div>
+        <div class="actions">
+          <button id="patchies-copy" type="button">Copy diagnostics</button>
+          <button id="patchies-reload" type="button">Reload</button>
+        </div>
+      </details>
     </div>
 
     <div style="display: contents">%sveltekit.body%</div>
-
-    <script>
-      // Hide loader once the actual patcher UI is loaded
-      function hideLoader() {
-        document.body.classList.add('app-loaded');
-      }
-
-      // Wait for window load (all resources including JS bundles)
-      window.addEventListener('load', () => {
-        // Poll for actual patcher content to ensure route is loaded
-        const checkAppMounted = () => {
-          // Check for the flow-container - this is the main patcher UI container
-          // that only exists when FlowCanvasInner has actually rendered
-          const flowContainer =
-            // patcher - svelte flow
-            document.querySelector('.svelte-flow') ||
-            // secondary output screen
-            document.querySelector('canvas#output') ||
-            // documentation (/docs/)
-            document.querySelector('.patchies-docs') ||
-            // debug pages (/debug/)
-            document.querySelector('.debug-page');
-
-          if (flowContainer) {
-            // Patcher UI is mounted, hide loader after brief delay
-            setTimeout(hideLoader, 200);
-          } else {
-            // Not yet mounted, check again soon
-            setTimeout(checkAppMounted, 100);
-          }
-        };
-
-        checkAppMounted();
-      });
-
-      // Fallback: hide after 20 seconds even if checks fail
-      setTimeout(hideLoader, 20_000);
-    </script>
   </body>
 </html>

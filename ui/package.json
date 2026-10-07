@@ -17,6 +17,7 @@
     "test:unit": "vitest --run",
     "test:browser": "vitest --run --config vitest.browser.config.ts",
     "test:e2e": "playwright test",
+    "test:startup": "playwright test --config playwright.startup.config.ts",
     "generate:schemas": "bun scripts/run-generate-schemas.ts",
     "vasm:build": "cd ../modules/vasm && wasm-pack build",
     "vasm:sync": "bun run vasm:build && cp -r ../modules/vasm/pkg/ src/assets/vasm && rm src/assets/vasm/.gitignore"
