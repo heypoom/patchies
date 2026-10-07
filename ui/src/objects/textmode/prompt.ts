@@ -51,7 +51,8 @@ Textmode.js ASCII and text-mode graphics in the web-worker render pipeline. Use 
 **textmode-specific methods:**
 - setVideoOutput(enabled) - enable or disable video output; enabled by default
 - setHidePorts(enabled) - hide or show ports
-- noDrag(), noPan(), noWheel(), noInteract() - interaction control
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - interaction control
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 
 **Plugins:**
 - textmode.filters.js and textmode.synth.js are loaded automatically.
@@ -88,7 +89,8 @@ Textmode.js ASCII and text-mode graphics on the main thread. Use it when the ske
 - setCanvasSize(width, height) - set the canvas dimensions; use sizes from 800 to 2000 in each dimension
 - setVideoOutput(enabled) - enable or disable video output; disabled by default, so enable it only when feeding another video node
 - setHidePorts(enabled) - hide or show ports
-- noDrag(), noPan(), noWheel(), noInteract() - interaction control
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - interaction control
+- noArrowKeyMove() disables arrow-key node movement. noInteract() includes this control.
 - onKeyDown(callback), onKeyUp(callback) - receive focused keyboard events
 
 **Plugins:**

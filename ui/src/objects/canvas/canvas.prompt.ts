@@ -9,7 +9,8 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 **Canvas-specific methods:**
 - ctx: 2D canvas context (ctx.fillRect, ctx.arc, etc.)
 - width, height: canvas dimensions
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - Interaction control
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 - setVideoOutput(enabled) - Enable or disable video output (enabled by default)
 - setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
 

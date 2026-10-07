@@ -21,7 +21,8 @@ const material = new THREE.ShaderMaterial({
 - getTexture(index) - Get Three.js Texture from video inlet (0-based index)
 - onPointerDrag(callback) - Receive raw drag events with {x, y, dx, dy, buttons, down}
 - onWheel(callback) - Receive raw wheel events with {x, y, deltaX, deltaY, deltaMode}
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - Interaction control
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 - setHidePorts(bool) - Toggle port visibility
 
 **Three-specific gotchas:**

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSvelteFlow, useUpdateNodeInternals, type NodeProps } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -46,6 +47,8 @@
   function initialNodeId() {
     return nodeId;
   }
+
+  const interactions = useNodeInteractions(() => nodeId);
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -310,11 +313,11 @@
   onPlaybackToggle={togglePause}
   paused={isPaused}
   showPauseButton={true}
-  nodrag={usesMouseVariable}
-  nopan={usesMouseVariable}
-  nowheel={usesMouseVariable}
   {selected}
   {editorReady}
+  nodrag={usesMouseVariable || !interactions.state.dragEnabled}
+  nopan={usesMouseVariable || !interactions.state.panEnabled}
+  nowheel={usesMouseVariable || !interactions.state.wheelEnabled}
   bind:previewCanvas
   hasError={errorLines !== undefined && errorLines.length > 0}
   settingsSchema={data.settingsSchema}

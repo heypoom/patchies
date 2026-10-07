@@ -292,10 +292,17 @@ const PATCHIES_API_COMPLETIONS: Completion[] = [
     apply: 'noWheel()'
   },
   {
+    label: 'noArrowKeyMove',
+    type: 'function',
+    detail: '() => void',
+    info: 'Disable moving this node with arrow keys, including Shift + arrow keys',
+    apply: 'noArrowKeyMove()'
+  },
+  {
     label: 'noInteract',
     type: 'function',
     detail: '() => void',
-    info: 'Disable all canvas interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel',
+    info: 'Disable dragging, panning, wheel zoom, and arrow-key node movement',
     apply: 'noInteract()'
   },
   {
@@ -550,6 +557,7 @@ const P5_FLUID_SIZE_COMPLETION: Completion = {
 // Setup functions that should only appear at top-level (not in function bodies)
 const TOP_LEVEL_ONLY_FUNCTIONS = new Set([
   'noDrag',
+  'noArrowKeyMove',
   'showAudioInput',
   'noInteract',
   'setVideoOutput',
@@ -591,7 +599,12 @@ const TOP_LEVEL_ONLY_FUNCTIONS = new Set([
   'setVideoCount'
 ]);
 
-const P5_FUNCTION_BODY_SURFACE_FUNCTIONS = new Set([
+const P5_FUNCTION_BODY_SETUP_FUNCTIONS = new Set([
+  'noDrag',
+  'noPan',
+  'noWheel',
+  'noArrowKeyMove',
+  'noInteract',
   'hideExitButton',
   'setMouseForwarding',
   'setFluidSize'
@@ -601,11 +614,15 @@ function isAllowedInFunctionBody(completion: Completion, patchiesContext?: Patch
   if (!TOP_LEVEL_ONLY_FUNCTIONS.has(completion.label)) return true;
 
   return (
-    patchiesContext?.nodeType === 'p5' && P5_FUNCTION_BODY_SURFACE_FUNCTIONS.has(completion.label)
+    patchiesContext?.nodeType === 'p5' && P5_FUNCTION_BODY_SETUP_FUNCTIONS.has(completion.label)
   );
 }
 
-const MOUSE_INTERACTION_JS_NODES = [
+const INTERACTION_JS_NODES = [
+  'hydra',
+  'swgl',
+  'pixi',
+  'regl',
   'p5',
   'canvas',
   'canvas.dom',
@@ -675,10 +692,11 @@ const NODE_SPECIFIC_FUNCTIONS: Record<string, string[]> = {
   ],
   opencv: ['js', 'worker', 'canvas', 'canvas.dom'],
   loadExtensions: ['pixi', 'pixi.dom'],
-  noDrag: MOUSE_INTERACTION_JS_NODES,
-  noPan: MOUSE_INTERACTION_JS_NODES,
-  noWheel: MOUSE_INTERACTION_JS_NODES,
-  noInteract: MOUSE_INTERACTION_JS_NODES,
+  noDrag: INTERACTION_JS_NODES,
+  noArrowKeyMove: INTERACTION_JS_NODES,
+  noPan: INTERACTION_JS_NODES,
+  noWheel: INTERACTION_JS_NODES,
+  noInteract: INTERACTION_JS_NODES,
   createSurfaceCanvas: ['p5'],
   setMouseForwarding: ['surface', 'p5'],
   setVideoOutput: [

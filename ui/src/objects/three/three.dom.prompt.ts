@@ -12,7 +12,8 @@ Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keybo
 
 **Three.dom-specific methods:**
 - setCanvasSize(w, h) - Resize canvas and renderer
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - Interaction control
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 - noBorder() - Hide Patchies border and selected glow
 - onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - setVideoOutput(enabled) - Enable or disable video output. It is disabled by default; call setVideoOutput(true) when the scene feeds another video node.

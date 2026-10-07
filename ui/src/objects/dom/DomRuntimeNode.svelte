@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import {
     NodeResizer,
@@ -152,9 +153,7 @@
   let rootContainer = $state<HTMLDivElement | undefined>();
   let previewContainer = $state<HTMLDivElement | undefined>();
   let transientSize = $state<DomSize | null>(null);
-  let dragEnabled = $state(true);
-  let panEnabled = $state(true);
-  let wheelEnabled = $state(true);
+  const interactions = useNodeInteractions(() => nodeId);
   let editorReady = $state(false);
   let runRevision = 0;
   let isExpanded = $state(false);
@@ -335,9 +334,7 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
-    dragEnabled = true;
-    panEnabled = true;
-    wheelEnabled = true;
+    interactions.reset();
     fluidCanvas.reset();
 
     selection.reset();
@@ -402,20 +399,7 @@
           setSize,
           setFluidSize: fluidCanvas.setFluidSize,
           onResize: fluidCanvas.onCanvasResize,
-          noDrag: () => {
-            dragEnabled = false;
-          },
-          noPan: () => {
-            panEnabled = false;
-          },
-          noWheel: () => {
-            wheelEnabled = false;
-          },
-          noInteract: () => {
-            dragEnabled = false;
-            panEnabled = false;
-            wheelEnabled = false;
-          },
+          ...interactions.api,
           onSelectionChange: selection.onSelectionChange,
           noBorder: () => {
             updateNodeData(nodeId, { noBorder: true });
@@ -569,9 +553,9 @@
                 idleClass: 'hover:shadow-glow-sm',
                 borderlessClass: 'shadow-none ring-0'
               }),
-            !dragEnabled && 'nodrag',
-            !panEnabled && 'nopan',
-            !wheelEnabled && 'nowheel'
+            !interactions.state.dragEnabled && 'nodrag',
+            !interactions.state.panEnabled && 'nopan',
+            !interactions.state.wheelEnabled && 'nowheel'
           ]}
           style={previewStyle}
         >

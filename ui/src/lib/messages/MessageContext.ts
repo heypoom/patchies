@@ -57,7 +57,10 @@ export interface UserFnRunContext {
   /** Disables wheel zoom when interacting with the node. */
   noWheel: () => void;
 
-  /** Disables all interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel. */
+  /** Disables moving this node with arrow keys, including Shift + arrow keys. */
+  noArrowKeyMove: () => void;
+
+  /** Disables drag, pan, wheel zoom, and arrow-key node movement. */
   noInteract: () => void;
 
   /** Hides Patchies preview border and selected glow. */
@@ -336,6 +339,7 @@ export class MessageContext {
       noDrag: () => {},
       noPan: () => {},
       noWheel: () => {},
+      noArrowKeyMove: () => {},
       noInteract: () => {},
       ...(fft && { fft })
     };

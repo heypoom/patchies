@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ArrowKeyMoveGuard from './ArrowKeyMoveGuard.svelte';
   import { get } from 'svelte/store';
   import { codeSidebarTargets } from '../../stores/code-sidebar.store';
   import { editObjectCodeFile } from '$lib/objects/object-code-files';
@@ -1610,7 +1611,6 @@
       </div>
     {/if}
 
-    <!-- Main flow area -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1720,12 +1720,12 @@
           return true; // Allow the deletion to proceed
         }}
       >
+        <ArrowKeyMoveGuard />
         <BackgroundPattern />
 
         <Controls class={$isBottomBarVisible && !$isMobile ? '' : '!hidden'} />
       </SvelteFlow>
 
-      <!-- Command Palette -->
       {#if showCommandPalette}
         <CommandPalette
           position={commandPalettePosition}

@@ -15,7 +15,8 @@ Sits between the high-level glsl node (fragment shader only) and building a full
 **regl-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video inlets/outlets (default 1, 1)
 - getTexture(index) - Get regl Texture2D from video inlet (0-based index, returns null if not connected)
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - Interaction control
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 
 **Multi-Render Target (MRT) — multiple video outlets:**
 - Call \`setVideoCount(inlets, N)\` for N outlets, then use \`layout(location = N) out vec4\` in frag

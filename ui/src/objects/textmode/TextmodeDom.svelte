@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -76,9 +77,7 @@
   const jsRunner = JSRunner.getInstance();
   let glSystem = GLSystem.getInstance();
   let canvas = $state<HTMLCanvasElement | undefined>();
-  let dragEnabled = $state(true);
-  let panEnabled = $state(true);
-  let wheelEnabled = $state(true);
+  const interactions = useNodeInteractions(() => nodeId);
   let videoOutputEnabled = $state(false);
   let editorReady = $state(false);
   let bitmapLoopId: number | null = null;
@@ -250,9 +249,7 @@
     settingsManager.clearCallbacks();
 
     // Reset interaction state and video output state
-    dragEnabled = true;
-    panEnabled = true;
-    wheelEnabled = true;
+    interactions.reset();
     videoOutputEnabled = false;
 
     // Stop bitmap loop on re-run
@@ -361,20 +358,7 @@
               voronoi,
               width: outputWidth,
               height: outputHeight,
-              noDrag: () => {
-                dragEnabled = false;
-              },
-              noPan: () => {
-                panEnabled = false;
-              },
-              noWheel: () => {
-                wheelEnabled = false;
-              },
-              noInteract: () => {
-                dragEnabled = false;
-                panEnabled = false;
-                wheelEnabled = false;
-              },
+              ...interactions.api,
               setVideoOutput: (enabled: boolean) => {
                 videoOutputEnabled = enabled;
                 updateNodeInternals(nodeId);
@@ -468,9 +452,9 @@
   paused={data.paused}
   showPauseButton={true}
   bind:previewCanvas={canvas}
-  nodrag={!dragEnabled}
-  nopan={!panEnabled}
-  nowheel={!wheelEnabled}
+  nodrag={!interactions.state.dragEnabled}
+  nopan={!interactions.state.panEnabled}
+  nowheel={!interactions.state.wheelEnabled}
   tabindex={0}
   width={outputWidth}
   height={outputHeight}

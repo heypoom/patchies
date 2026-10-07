@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -85,9 +86,7 @@
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewCtx: CanvasRenderingContext2D | null = null;
 
-  let dragEnabled = $state(false);
-  let panEnabled = $state(true);
-  let wheelEnabled = $state(true);
+  const interactions = useNodeInteractions(() => nodeId, { dragEnabled: false });
   let videoOutputEnabled = $derived(data.videoOutput ?? false);
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
@@ -499,9 +498,7 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
-    dragEnabled = false;
-    panEnabled = true;
-    wheelEnabled = true;
+    interactions.reset();
 
     updateNodeData(nodeId, { videoOutput: false });
 
@@ -578,20 +575,7 @@
           onKeyUp: keyboard.onKeyUp,
 
           // Interaction flags (for the node itself)
-          noDrag: () => {
-            dragEnabled = false;
-          },
-          noPan: () => {
-            panEnabled = false;
-          },
-          noWheel: () => {
-            wheelEnabled = false;
-          },
-          noInteract: () => {
-            dragEnabled = false;
-            panEnabled = false;
-            wheelEnabled = false;
-          },
+          ...interactions.api,
           setVideoOutput: (enabled: boolean) => {
             updateNodeData(nodeId, { videoOutput: enabled });
             updateNodeInternals(nodeId);
@@ -715,9 +699,9 @@
   showBgOutputOption={false}
   showExpandOption={false}
   bind:previewCanvas
-  nodrag={!dragEnabled}
-  nopan={!panEnabled}
-  nowheel={!wheelEnabled}
+  nodrag={!interactions.state.dragEnabled}
+  nopan={!interactions.state.panEnabled}
+  nowheel={!interactions.state.wheelEnabled}
   tabindex={0}
   width={outputWidth}
   height={outputHeight}

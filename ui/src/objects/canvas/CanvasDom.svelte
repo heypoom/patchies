@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import {
     NodeResizer,
@@ -103,9 +104,7 @@
   let glSystem = GLSystem.getInstance();
   let canvas = $state<HTMLCanvasElement | undefined>();
   let ctx: CanvasRenderingContext2D | null = null;
-  let dragEnabled = $state(true);
-  let panEnabled = $state(true);
-  let wheelEnabled = $state(true);
+  const interactions = useNodeInteractions(() => nodeId);
   let videoOutputEnabled = $state(false);
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
@@ -424,9 +423,7 @@
     lineErrors = undefined;
 
     // Reset interaction state and video output state
-    dragEnabled = true;
-    panEnabled = true;
-    wheelEnabled = true;
+    interactions.reset();
     videoOutputEnabled = false;
     fluidCanvas.reset();
 
@@ -478,20 +475,7 @@
           width: dimensions.width,
           height: dimensions.height,
           mouse,
-          noDrag: () => {
-            dragEnabled = false;
-          },
-          noPan: () => {
-            panEnabled = false;
-          },
-          noWheel: () => {
-            wheelEnabled = false;
-          },
-          noInteract: () => {
-            dragEnabled = false;
-            panEnabled = false;
-            wheelEnabled = false;
-          },
+          ...interactions.api,
           onSelectionChange: selection.onSelectionChange,
           noBorder: () => {
             updateNodeData(nodeId, { noBorder: true });
@@ -654,9 +638,9 @@
     paused={data.paused}
     showPauseButton={true}
     bind:previewCanvas={canvas}
-    nodrag={!dragEnabled}
-    nopan={!panEnabled}
-    nowheel={!wheelEnabled}
+    nodrag={!interactions.state.dragEnabled}
+    nopan={!interactions.state.panEnabled}
+    nowheel={!interactions.state.wheelEnabled}
     tabindex={0}
     style={canvasDisplayStyle}
     onCustomExpandToggle={toggleExpandedCanvas}

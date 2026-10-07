@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
@@ -39,6 +40,8 @@
     };
     selected?: boolean;
   } = $props();
+
+  const interactions = useNodeInteractions(() => nodeId);
 
   const { updateNodeData } = useSvelteFlow();
   const glSystem = GLSystem.getInstance();
@@ -149,6 +152,9 @@
   onPlaybackToggle={togglePause}
   paused={isPaused}
   showPauseButton={true}
+  nodrag={!interactions.state.dragEnabled}
+  nopan={!interactions.state.panEnabled}
+  nowheel={!interactions.state.wheelEnabled}
   bind:previewCanvas
   width={$outputWidth}
   height={$outputHeight}

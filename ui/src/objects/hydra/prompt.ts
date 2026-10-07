@@ -3,6 +3,8 @@ export const hydraPrompt = `## hydra Object Instructions
 
 Live coding video synthesis with chainable Hydra functions.
 
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() control editor interactions. noArrowKeyMove() disables arrow-key node movement; noInteract() includes it.
+
 **Hydra-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video ports (default 1, 1); max 8 each
 - src(s0), src(s1), etc. - Access video inputs from setVideoCount

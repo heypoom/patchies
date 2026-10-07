@@ -2,6 +2,8 @@ export const pixiPrompt = `## pixi Object Instructions
 
 Pixi.js 8 runs in the web-worker render pipeline. Use it for 2D graphics that chain efficiently into other video objects.
 
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() control editor interactions. noArrowKeyMove() disables arrow-key node movement; noInteract() includes it.
+
 **Globals:**
 - PIXI: Pixi.js namespace
 - stage: root Container; add display objects here
@@ -42,7 +44,8 @@ Pixi.js 8 on the main thread. Use it for interactive 2D graphics with native poi
 - setHidePorts(true | false): hide or show the video output handle.
 - setTags(tags): replace user-defined tags for this node.
 - kv: persistent key-value storage scoped to this node.
-- noDrag(), noPan(), noWheel(), noInteract(): disable node drag, canvas pan, wheel zoom, or all three when Pixi pointer interaction needs them.
+- noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract(): disable node drag, canvas pan, wheel zoom, arrow-key node movement, or all four when Pixi interaction needs them.
+- noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
 - noBorder(): hide Patchies' preview border and selected glow until the call is removed and the node runs again.
 - onSelectionChange(callback): Calls callback(selected) immediately with current canvas selection, then only when it changes. Returns an unsubscribe function; subscriptions clear on rerun or destruction. Selection is separate from keyboard focus.
 - onKeyDown(event => {}) / onKeyUp(event => {}): receive keyboard events while the Pixi canvas is focused. Events do not leak to the Patchies editor.

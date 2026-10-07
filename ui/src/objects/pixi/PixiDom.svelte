@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSelectionChange } from '$lib/canvas/use-selection-change.svelte';
   import { onDestroy, onMount } from 'svelte';
 
@@ -120,9 +121,7 @@
 
   const keyboard = useKeyboardCallbacks({ onError: reportRuntimeError });
 
-  let dragEnabled = $state(true);
-  let panEnabled = $state(true);
-  let wheelEnabled = $state(true);
+  const interactions = useNodeInteractions(() => nodeId);
 
   let editorReady = $state(false);
   let videoOutputEnabled = $state(false);
@@ -256,9 +255,7 @@
     settingsManager.clearCallbacks();
     keyboard.reset();
 
-    dragEnabled = true;
-    panEnabled = true;
-    wheelEnabled = true;
+    interactions.reset();
 
     setVideoOutputEnabled(false);
     fluidCanvas.reset();
@@ -326,20 +323,7 @@ return {
               primaryButton
             });
           },
-          noDrag: () => {
-            dragEnabled = false;
-          },
-          noPan: () => {
-            panEnabled = false;
-          },
-          noWheel: () => {
-            wheelEnabled = false;
-          },
-          noInteract: () => {
-            dragEnabled = false;
-            panEnabled = false;
-            wheelEnabled = false;
-          },
+          ...interactions.api,
           onSelectionChange: selection.onSelectionChange,
           noBorder: () => updateNodeData(nodeId, { noBorder: true })
         }
@@ -506,9 +490,9 @@ return {
     paused={data.paused}
     showPauseButton={true}
     bind:previewCanvas={canvas}
-    nodrag={!dragEnabled}
-    nopan={!panEnabled}
-    nowheel={!wheelEnabled}
+    nodrag={!interactions.state.dragEnabled}
+    nopan={!interactions.state.panEnabled}
+    nowheel={!interactions.state.wheelEnabled}
     tabindex={0}
     style={canvasDisplayStyle}
     onCustomExpandToggle={toggleExpandedCanvas}
