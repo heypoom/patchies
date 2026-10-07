@@ -136,6 +136,8 @@
           onchange={target.onchange ?? (() => {})}
           language={target.language}
           nodeType={target.nodeType}
+          extraExtensions={target.extraExtensions}
+          loadExtensions={target.loadExtensions}
           placeholder={target.placeholder ?? ''}
           class="nodrag nopan nowheel h-full w-full resize-none"
           onrun={target.onrun}

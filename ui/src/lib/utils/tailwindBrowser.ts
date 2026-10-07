@@ -26,6 +26,7 @@ class ShadowTailwind {
   private compiler: TailwindCompiler | null = null;
   private shadow: ShadowRoot;
   private sheet: HTMLStyleElement;
+  private loadingSheet: HTMLStyleElement;
   private classes = new Set<string>();
   private observer: MutationObserver | null = null;
   private buildQueued = false;
@@ -35,6 +36,12 @@ class ShadowTailwind {
     this.shadow = shadow;
     this.sheet = document.createElement('style');
     shadow.appendChild(this.sheet);
+
+    // Hide the whole preview without changing layout or user-authored styles.
+    this.loadingSheet = document.createElement('style');
+    this.loadingSheet.textContent =
+      ':host { opacity: 0 !important; pointer-events: none !important; }';
+    shadow.appendChild(this.loadingSheet);
   }
 
   private queueBuild() {
@@ -75,6 +82,7 @@ class ShadowTailwind {
     if (this.destroyed) return;
 
     this.build();
+    this.loadingSheet.remove();
 
     // Start observing class changes within this shadow DOM
     this.observer = new MutationObserver(() => this.queueBuild());
@@ -92,6 +100,7 @@ class ShadowTailwind {
     this.observer = null;
     // Remove the stylesheet
     this.sheet.remove();
+    this.loadingSheet.remove();
   }
 }
 

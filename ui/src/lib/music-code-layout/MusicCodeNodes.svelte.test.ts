@@ -308,6 +308,50 @@ it('keeps ChucK actions visible and restores the inline editor after fullscreen'
   ).toBe(240);
 });
 
+it.each(['inline', 'sidebar', 'expanded'] as const)(
+  'preserves deferred ChucK add/remove shortcuts in the %s editor',
+  async (layout) => {
+    data.set({ expr: 'initial', code: 'initial', editorCollapsed: layout === 'sidebar' });
+
+    component = mount(MusicNodeHarness, {
+      target: document.body,
+      props: {
+        kind: 'chuck~',
+        renderSidebar: layout === 'sidebar',
+        renderOverlay: layout === 'expanded',
+        get data() {
+          return dataSource.current;
+        }
+      }
+    });
+
+    if (layout === 'expanded') {
+      await page.getByRole('button', { name: 'Editor options', exact: true }).click();
+      await page.getByRole('button', { name: 'Expand Editor', exact: true }).click();
+    }
+
+    const selector =
+      layout === 'expanded' ? '.detached-code-editor-overlay .cm-content' : '.cm-content';
+
+    await vi.waitFor(() => expect(document.querySelector(selector)).not.toBeNull());
+
+    const content = document.querySelector<HTMLElement>(selector)!;
+    const modifier = /Mac/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true };
+
+    content.focus();
+    content.dispatchEvent(new KeyboardEvent('keydown', { key: '\\', bubbles: true, ...modifier }));
+
+    expect(send).toHaveBeenLastCalledWith('music-1', 'add', 'initial');
+
+    content.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, ...modifier })
+    );
+
+    expect(send).toHaveBeenLastCalledWith('music-1', 'remove', null);
+    expect(content.textContent).toBe('initial');
+  }
+);
+
 it('keeps Strudel mounted through compact mode and its fullscreen portal', async () => {
   component = mount(MusicNodeHarness, {
     target: document.body,

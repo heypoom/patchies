@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Blocks, Pencil, Trash2 } from '@lucide/svelte/icons';
+  import Blocks from '@lucide/svelte/icons/blocks';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import type { PresetSearchRecord } from '$lib/presets/preset-utils';
 

@@ -35,6 +35,7 @@
     detachedActions,
     detachedSettings,
     extraExtensions = [],
+    loadExtensions,
     onchange,
     onrun
   }: {
@@ -55,6 +56,7 @@
     detachedActions?: Snippet;
     detachedSettings?: Snippet;
     extraExtensions?: Extension[];
+    loadExtensions?: () => Promise<Extension[]>;
     onchange: (value: string) => void;
     onrun: (code?: string) => void;
   } = $props();
@@ -76,6 +78,7 @@
     onchange,
     onrun,
     extraExtensions,
+    loadExtensions,
     customActions: detachedActions,
     customSettings: detachedSettings,
     getAppearance: appearance ? () => appearance : undefined
@@ -121,6 +124,7 @@
       {onrun}
       {placeholder}
       {extraExtensions}
+      {loadExtensions}
       {nodeId}
       dataKey="expr"
       language="javascript"

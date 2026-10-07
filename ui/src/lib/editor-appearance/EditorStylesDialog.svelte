@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { css } from '@codemirror/lang-css';
   import * as Dialog from '$lib/components/ui/dialog';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
 
@@ -17,7 +16,11 @@
     oncommit: (oldValue: Record<string, string>, newValue: Record<string, string>) => void;
   } = $props();
 
-  const extensions = [css()];
+  const loadExtensions = async () => {
+    const { css } = await import('@codemirror/lang-css');
+
+    return [css()];
+  };
 </script>
 
 <Dialog.Root bind:open>
@@ -36,7 +39,7 @@
       <CodeEditor
         value={styles.container ?? ''}
         language="plain"
-        extraExtensions={extensions}
+        {loadExtensions}
         placeholder="background: rgba(0, 0, 0, 0.6);"
         onchange={(container) => onchange({ ...styles, container })}
         oncommit={({ oldValue, newValue }) =>

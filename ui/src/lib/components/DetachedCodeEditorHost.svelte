@@ -42,6 +42,7 @@
       lineErrors={editorTarget.lineErrors}
       inlineDecorations={editorTarget.inlineDecorations}
       extraExtensions={editorTarget.extraExtensions}
+      loadExtensions={editorTarget.loadExtensions}
       onaltdecorationclick={editorTarget.onAltDecorationClick}
       lineWrap={editorTarget.lineWrap}
       fontSize={`${fontSizes?.expanded ?? fontSize}px`}

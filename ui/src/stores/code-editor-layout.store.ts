@@ -34,6 +34,7 @@ export interface CodeEditorTarget {
   lineErrors?: Record<number, string[]>;
   inlineDecorations?: InlineDecoration[];
   extraExtensions?: Extension[];
+  loadExtensions?: () => Promise<Extension[]>;
   onAltDecorationClick?: (data: string) => void;
   lineWrap?: boolean;
   settings?: CodeEditorTargetSettings;
