@@ -1,5 +1,9 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { startupTemplatePath, writeStartupTemplate } from './scripts/startup-template.js';
+
+// SvelteKit validates and reads its app template before the Vite build starts.
+writeStartupTemplate();
 
 function isGeneratedSvelteKitRootStateWarning(warning) {
   return (
@@ -20,6 +24,7 @@ const config = {
     defaultHandler(warning);
   },
   kit: {
+    files: { appTemplate: startupTemplatePath },
     adapter: adapter({ strict: false }),
     prerender: {
       handleHttpError: ({ path, message }) => {

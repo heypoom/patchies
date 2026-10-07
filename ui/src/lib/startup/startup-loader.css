@@ -1,0 +1,278 @@
+body {
+  background: #080809;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Loading indicator - shows immediately */
+#patchies-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 24px;
+  overflow-y: auto;
+  background: #080809;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  color: #a1a1aa;
+}
+
+#patchies-loader .spinner {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 3px solid #27272a;
+  border-top-color: #71717a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+#patchies-loader .error-icon {
+  display: none;
+  width: 24px;
+  height: 24px;
+}
+
+#patchies-loader .text {
+  font-size: 0.9375rem;
+  letter-spacing: 0.05em;
+}
+
+#patchies-loader .loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  max-width: 360px;
+  text-align: center;
+}
+
+#patchies-loader .network,
+#patchies-loader .slow,
+#patchies-loader noscript {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+
+#patchies-loader .network:empty {
+  display: none;
+}
+
+#patchies-loader .diagnostics {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+#patchies-loader .diagnostics[open] {
+  width: min(460px, calc(100% - 32px));
+  background: #09090b;
+  border-color: #27272a;
+}
+
+#patchies-loader summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+}
+
+#patchies-loader summary::-webkit-details-marker {
+  display: none;
+}
+
+#patchies-loader .summary-label {
+  flex-shrink: 0;
+}
+
+#patchies-loader .summary-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#patchies-loader .activity {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#patchies-loader .summary-size,
+#patchies-loader .summary-time,
+#patchies-loader .meta-separator {
+  flex-shrink: 0;
+}
+
+#patchies-loader summary svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+#patchies-loader details[open] summary svg {
+  transform: rotate(180deg);
+}
+
+#patchies-loader .diagnostic-content {
+  padding: 4px 12px 12px;
+  max-height: min(40vh, 360px);
+  overflow: auto;
+  white-space: nowrap;
+}
+
+#patchies-loader .status {
+  color: #e4e4e7;
+  margin-bottom: 12px;
+}
+
+#patchies-loader .diagnostic-content p {
+  margin: 12px 0 0;
+}
+
+#patchies-loader pre,
+#patchies-loader .diagnostic-row {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  white-space: pre;
+  line-height: 1.6;
+  margin: 0;
+}
+
+#patchies-loader .timing {
+  color: color-mix(in srgb, #2563eb 45%, #e4e4e7);
+  font-variant-numeric: tabular-nums;
+}
+
+#patchies-loader .pending-state {
+  color: color-mix(in srgb, #f97316 50%, #e4e4e7);
+}
+
+#patchies-loader .metric-yellow {
+  color: #fde047;
+}
+
+#patchies-loader .metric-red {
+  color: #fca5a5;
+}
+
+#patchies-loader .complete-state {
+  color: color-mix(in srgb, #22c55e 45%, #e4e4e7);
+}
+
+#patchies-loader .failed-state {
+  color: #fca5a5;
+}
+
+#patchies-loader .errors {
+  color: #fca5a5;
+  margin-bottom: 12px;
+}
+
+#patchies-loader .errors:empty {
+  display: none;
+}
+
+#patchies-loader.has-errors .spinner {
+  animation: none;
+  border-color: #fca5a5;
+  color: #fca5a5;
+}
+
+#patchies-loader.has-errors .error-icon {
+  display: block;
+}
+
+#patchies-loader.has-errors .summary-label {
+  color: #fca5a5;
+}
+
+#patchies-loader .actions {
+  display: flex;
+  gap: 16px;
+  padding: 0 12px 8px;
+}
+
+#patchies-loader button {
+  font: inherit;
+  background: transparent;
+  color: #a1a1aa;
+  border: 0;
+  padding: 6px 0;
+  min-height: 32px;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+
+#patchies-loader button:hover,
+#patchies-loader summary:hover {
+  color: #e4e4e7;
+}
+
+#patchies-loader button:hover {
+  text-decoration: underline;
+}
+
+#patchies-loader button:focus-visible,
+#patchies-loader summary:focus-visible {
+  outline: 2px solid #a1a1aa;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (max-width: 600px) {
+  #patchies-loader .diagnostic-content {
+    max-height: 28vh;
+  }
+
+  #patchies-loader:has(.diagnostics[open]) .loading {
+    transform: translateY(-12vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #patchies-loader .spinner {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hide loader once app loads */
+body.app-loaded #patchies-loader {
+  display: none;
+}
+
+/* Docs pages don't need loader */
+html.no-loader #patchies-loader {
+  display: none;
+}

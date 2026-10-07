@@ -18,6 +18,8 @@ import { topicTitlesManifest } from './vite-plugin-topic-titles-manifest';
 import { objectSchemasPlugin } from './vite-plugin-object-schemas';
 import { glslModulesDev, glslModulesCopy } from './vite-plugin-glsl-modules';
 import { minifyExceptShaderParkCore } from './vite-plugin-minify-except-shader-park';
+import { startupDiagnostics } from './vite-plugin-startup-diagnostics';
+import { startupTemplate } from './vite-plugin-startup-template';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 const MAX_PRECACHE_FILE_SIZE_BYTES = 12 * 1024 * 1024;
@@ -42,6 +44,7 @@ const topLevelAwait: typeof topLevelAwaitType =
 
 export default defineConfig(() => ({
   plugins: [
+    startupTemplate(),
     // Cross-origin isolation headers (enables SharedArrayBuffer for BufferBridge).
     // Must be a Vite middleware plugin so headers are set before SvelteKit handles the request.
     {
@@ -65,6 +68,7 @@ export default defineConfig(() => ({
     bundleAudioWorkletPlugin(),
     tailwindcss(),
     sveltekit(),
+    startupDiagnostics(),
     devtoolsJson(),
     viteStaticCopyPyodide(),
     glslModulesCopy(),

@@ -1,9 +1,22 @@
 /// <reference types="audioworklet" />
 /// <reference types="w3c-web-serial" />
 
+import type { StartupDiagnosticsSnapshot } from '$lib/startup/startup-diagnostics';
+
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
+  interface Window {
+    __patchiesStartupDiagnostics?: StartupDiagnosticsSnapshot;
+    __patchiesStartup?: {
+      phase: (message: string) => void;
+      error: (error: unknown) => void;
+      errorPageMounted: () => void;
+      evaluated: (url: string) => void;
+      trackImport: <T>(name: string, promise: Promise<T>) => Promise<T>;
+    };
+  }
+
   namespace App {
     // interface Error {}
     // interface Locals {}
