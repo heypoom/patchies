@@ -5,11 +5,12 @@
     CircleAlert,
     Bot,
     SlidersHorizontal,
-    ChevronDown
+    ChevronDown,
+    Scaling
   } from '@lucide/svelte/icons';
-  import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
+  import { NodeResizer, useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { useNodeDataTracker } from '$lib/history';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { generateImageWithGemini, generateImageWithOpenRouter } from '$lib/ai/google';
@@ -25,7 +26,28 @@
   import { aiImgMessages } from '$lib/objects/schemas';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
-  let { id: nodeId, data }: { id: string; data: { prompt: string; model?: string } } = $props();
+  import ImageGenerationSettings from '$objects/ai.img/ImageGenerationSettings.svelte';
+  import type { ImageGenerationOptions } from '$lib/ai/image-generation-options';
+
+  let {
+    id: nodeId,
+    data,
+    selected,
+    width: nodeWidth,
+    height: nodeHeight
+  }: {
+    id: string;
+    data: {
+      prompt: string;
+      model?: string;
+      resizable?: boolean;
+      geminiOptions?: ImageGenerationOptions;
+      openRouterOptions?: ImageGenerationOptions;
+    };
+    selected?: boolean;
+    width?: number;
+    height?: number;
+  } = $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -52,12 +74,27 @@
       : $aiSettings.geminiImageModel
   );
 
-  const [width, height] = [800 * 1.2, 600 * 1.2];
+  const isResizable = $derived(data.resizable ?? true);
+  const previewWidth = $derived(nodeWidth ?? 960 / PREVIEW_SCALE_FACTOR);
+  const previewHeight = $derived(nodeHeight ?? 720 / PREVIEW_SCALE_FACTOR);
+  let imageWidth = $state(960);
+  let imageHeight = $state(720);
 
-  const [previewWidth, previewHeight] = [
-    width / PREVIEW_SCALE_FACTOR,
-    height / PREVIEW_SCALE_FACTOR
-  ];
+  function toggleResizable() {
+    const previous = isResizable;
+    const next = !previous;
+
+    updateNodeData(nodeId, { resizable: next });
+    tracker.commit('resizable', previous, next);
+  }
+
+  const displayExtraMenuItems = $derived([
+    {
+      label: isResizable ? 'Disable resizing' : 'Enable resizing',
+      icon: Scaling,
+      onclick: toggleResizable
+    }
+  ]);
 
   let messageContext: MessageContext;
 
@@ -129,7 +166,8 @@
         image = await generateImageWithOpenRouter(prompt, {
           apiKey: settings.openRouterApiKey,
           model: nodeModel ?? settings.openRouterImageModel,
-          abortSignal: abortController.signal
+          abortSignal: abortController.signal,
+          options: data.openRouterOptions
         });
       } else {
         const apiKey = requireGeminiApiKey();
@@ -138,29 +176,19 @@
           apiKey,
           model: nodeModel ?? settings.geminiImageModel,
           abortSignal: abortController.signal,
-          inputImageNodeId: imageNodeId
+          inputImageNodeId: imageNodeId,
+          options: data.geminiOptions
         });
       }
 
-      const previewBitmap = await createImageBitmap(image);
-      const flippedBitmap = await createImageBitmap(image);
+      imageWidth = image.width;
+      imageHeight = image.height;
 
-      glSystem.setBitmap(nodeId, flippedBitmap);
+      // Changing the backing dimensions clears the canvas; wait for Svelte to apply them.
+      await tick();
 
-      // draw the preview image to the canvas
-      canvasElement
-        .getContext('2d')
-        ?.drawImage(
-          previewBitmap,
-          0,
-          0,
-          previewBitmap.width,
-          previewBitmap.height,
-          0,
-          0,
-          canvasElement.width,
-          canvasElement.height
-        );
+      canvasElement.getContext('2d')?.drawImage(image, 0, 0);
+      glSystem.setBitmap(nodeId, image);
 
       hasImage = true;
 
@@ -175,7 +203,22 @@
   }
 </script>
 
-<ObjectPreviewLayout title="ai.img" objectType="ai.img" onrun={generateImage} {editorReady}>
+{#if isResizable}
+  <NodeResizer class="z-1" isVisible={selected} minWidth={120} minHeight={90} />
+{/if}
+
+<ObjectPreviewLayout
+  title="ai.img"
+  objectType="ai.img"
+  {nodeId}
+  {previewWidth}
+  {displayExtraMenuItems}
+  onrun={generateImage}
+  {editorReady}
+  codeDataKey="prompt"
+  codeLanguage="plain"
+  onCodeChange={setPrompt}
+>
   {#snippet topHandle()}
     <TypedHandle
       port="inlet"
@@ -197,7 +240,11 @@
   {/snippet}
 
   {#snippet preview()}
-    <div class={['relative', !!errorMessage && 'nowheel']}>
+    <div
+      class={['relative', !!errorMessage && 'nowheel']}
+      style:width={`${previewWidth}px`}
+      style:height={`${previewHeight}px`}
+    >
       {#if !hasImage || isLoading}
         <div
           class={[
@@ -229,10 +276,9 @@
 
       <canvas
         bind:this={canvasElement}
-        {width}
-        {height}
-        style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
-        class="rounded-md bg-zinc-900"
+        width={imageWidth}
+        height={imageHeight}
+        class="h-full w-full rounded-md bg-zinc-900 object-contain"
       ></canvas>
     </div>
   {/snippet}
@@ -273,7 +319,16 @@
         {nodeId}
         dataKey="prompt"
       />
+      <ImageGenerationSettings
+        {nodeId}
+        provider={$aiSettings.provider === 'openrouter' ? 'openrouter' : 'gemini'}
+        model={data.model?.trim() || defaultModelPlaceholder}
+        options={$aiSettings.provider === 'openrouter'
+          ? data.openRouterOptions
+          : data.geminiOptions}
+      />
       <button
+        aria-expanded={showModelSettings}
         class="nodrag flex w-full cursor-pointer items-center justify-between border-t border-zinc-700/50 px-2 py-1.5 text-zinc-600 transition-colors hover:text-zinc-400"
         onclick={() => (showModelSettings = !showModelSettings)}
       >

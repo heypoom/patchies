@@ -1,17 +1,47 @@
-Generate images from text prompts using AI.
+Generate images from text prompts with Gemini or OpenRouter. Connect the video
+output to other visual objects to use the generated image as a texture.
 
-Create visual content programmatically. Supports video chaining as texture
-source.
+## Setup
 
-Uses the `imagen-3.0-generate-002` model.
+Choose your provider and set its API key in AI settings. The node uses that
+provider's default image model. Open **model settings** in the prompt editor to
+set a model for this node.
 
-## API Key
+Send a text prompt to generate an image, or send a `bang` to generate from the
+current prompt. A `{type: 'set', value: 'your prompt'}` message updates the prompt
+without generating. The message outlet sends a `bang` when generation completes.
 
-Use "CMD + K > Set Gemini API Key" to configure. Get your key from
-[Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+Gemini also accepts a connected image on the video inlet for image editing.
 
-> **Caution**: API keys are stored in localStorage. Create separate keys with
-> limited quota for use in Patchies.
+## Preview Size
+
+Select the node and drag its resize handles to change the preview size.
+Right-click and choose **Disable resizing** to lock it, or **Enable
+resizing** to unlock it. The preview fits the image without stretching. Resizing
+does not change the generated image's dimensions.
+
+## Generation Settings
+
+Open **generation settings** above **model settings** in the prompt editor.
+Empty fields use the provider's defaults. Settings are saved separately for each
+provider and support undo/redo.
+
+| Provider | Controls |
+| -------- | -------- |
+| Gemini | Aspect ratio, resolution, temperature, top P, top K, seed |
+| OpenRouter | Aspect ratio, resolution, pixel dimensions, quality, format, background, compression, seed |
+
+Support varies by model. Gemini resolution choices depend on the model: 2.5
+Flash Image has a fixed resolution, Flash Lite Image supports 1K, and 3.1 Flash
+Image also supports 512. Other Gemini 3 image models offer 1K, 2K, and 4K.
+
+For OpenRouter, pixel dimensions such as `1536x1024` override aspect ratio and
+resolution. Compression applies to JPEG and WebP; transparent backgrounds require
+PNG or WebP. The dedicated image endpoint does not expose temperature.
+
+See [Gemini image generation](https://ai.google.dev/gemini-api/docs/generate-content/image-generation)
+and [OpenRouter image generation](https://openrouter.ai/docs/guides/overview/multimodal/image-generation)
+for model capabilities.
 
 ## See Also
 

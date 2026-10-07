@@ -1,3 +1,8 @@
+import {
+  getGeminiImageConfig,
+  getOpenRouterImageOptions,
+  type ImageGenerationOptions
+} from './image-generation-options';
 import { streamLLMResponse } from './llm-js/llm-stream';
 import { prepareLLMTools } from './llm-js/llm-tools';
 import { generateLLMTurn } from './llm-js/llm-tool-loop';
@@ -17,6 +22,7 @@ type ImageGenerationContext = {
   model?: string;
   abortSignal?: AbortSignal;
   inputImageNodeId?: string;
+  options?: ImageGenerationOptions;
 };
 
 export async function generateImageWithGemini(
@@ -25,7 +31,8 @@ export async function generateImageWithGemini(
     apiKey,
     model = DEFAULT_GEMINI_IMAGE_MODEL,
     abortSignal,
-    inputImageNodeId
+    inputImageNodeId,
+    options
   }: ImageGenerationContext
 ): Promise<ImageBitmap> {
   const { GoogleGenAI } = await import('@google/genai');
@@ -65,7 +72,7 @@ export async function generateImageWithGemini(
   const response = await ai.models.generateContent({
     model,
     contents,
-    config: { abortSignal }
+    config: { ...getGeminiImageConfig(options, model), abortSignal }
   });
 
   // Check all candidates for an image
@@ -112,11 +119,13 @@ export async function generateImageWithOpenRouter(
   {
     apiKey,
     model,
-    abortSignal
+    abortSignal,
+    options
   }: {
     apiKey: string;
     model: string;
     abortSignal?: AbortSignal;
+    options?: ImageGenerationOptions;
   }
 ): Promise<ImageBitmap> {
   const response = await fetch('https://openrouter.ai/api/v1/images', {
@@ -129,7 +138,8 @@ export async function generateImageWithOpenRouter(
     },
     body: JSON.stringify({
       model,
-      prompt
+      prompt,
+      ...getOpenRouterImageOptions(options)
     }),
     signal: abortSignal
   });

@@ -6,8 +6,8 @@ export const DEFAULT_GEMINI_TEXT_MODEL = 'gemini-3.8-flash';
 export const DEFAULT_GEMINI_IMAGE_MODEL = 'gemini-3.1-flash-lite-image';
 export const DEFAULT_GEMINI_SPEECH_MODEL = 'gemini-3.8-flash-tts';
 
-export const DEFAULT_OPENROUTER_TEXT_MODEL = 'google/gemini-3.8-flash';
-export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'google/gemini-3.1-flash-image-preview';
+export const DEFAULT_OPENROUTER_TEXT_MODEL = 'anthropic/claude-sonnet-5.5';
+export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'black-forest-labs/flux-3-image';
 
 export interface AISettings {
   provider: AIProviderType;
