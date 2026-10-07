@@ -17,7 +17,7 @@ import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
 import { AudioService } from '$lib/audio/v2/AudioService';
 
 import { JSRunner } from './JSRunner';
-import { WorkerLLMProxy } from './llm-js/WorkerLLMProxy';
+import { WorkerLLMProxy } from './llm-worker/WorkerLLMProxy';
 import type {
   CapturedVideoFrame,
   VideoFrameConfig,
