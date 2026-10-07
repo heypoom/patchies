@@ -3,9 +3,6 @@ export const domSharedPrompt = `
 - setSize(w, h): Set fixed container dimensions
 - setFluidSize({ showResizer?, resize?, keepAspectRatio?, initialSize? }): Use a user-resizable container. resize is 'horizontal', 'vertical', or 'both'.
 - onResize(({ width, height }) => {}): Run after a fluid container resize.
-- htmlCanvas.videoOutput(options): Experimental API that exposes the DOM node as a video source using Chromium's experimental HTML-in-Canvas flag; call htmlCanvas.videoOutput() to match the render output size, htmlCanvas.videoOutput(false) to disable, or htmlCanvas.videoOutput({ size: "free" }) to let the DOM content choose its own source size before Patchies fits it into the render output; mutually exclusive with canvasLayer and glslLayer
-- htmlCanvas.canvasLayer(callback): Experimental API that locally post-processes the live DOM interface with a 2D canvas and Chromium's experimental HTML-in-Canvas flag without adding video output; callback receives (ctx, { width, height, displayWidth, displayHeight, pixelRatio, time, delta }); call htmlCanvas.canvasLayer(false) to disable; mutually exclusive with videoOutput and glslLayer
-- htmlCanvas.glslLayer(fragmentShader): Experimental API that locally post-processes the live DOM interface with a WebGL2 GLSL ES 3 fragment shader and source sampler; use texture(source, uv), mainImage(out vec4 fragColor, in vec2 fragCoord), source, iResolution, iTime, iTimeDelta, and iFrame; supports #include directives; mutually exclusive with videoOutput and canvasLayer
 - setHidePorts(hide): Hide/show ports
 - noDrag(), noPan(), noWheel(), noArrowKeyMove(), noInteract() - Interaction control (whole node)
 - noArrowKeyMove() disables moving the node with arrow keys, including Shift + arrow keys. noInteract() includes this control.
@@ -27,4 +24,10 @@ Apply these classes to individual elements to block canvas interactions only for
 - "nodrag" — prevent node drag when the user interacts with this element
 - "nopan" — prevent canvas pan when the user interacts with this element
 - "nowheel" — prevent canvas zoom when scrolling over this element
+
+**Experimental HTML-in-Canvas**
+Only use these when user explicitly asks for "HTML in Canvas"
+- htmlCanvas.videoOutput(options): exposes the DOM node as a video source; call htmlCanvas.videoOutput() to match the render output size, htmlCanvas.videoOutput(false) to disable, or htmlCanvas.videoOutput({ size: "free" }) to let the DOM content choose its own source size before Patchies fits it into the render output; mutually exclusive with canvasLayer and glslLayer
+- htmlCanvas.canvasLayer(callback): locally post-processes the live DOM interface with a 2D canvas without adding video output; callback receives (ctx, { width, height, displayWidth, displayHeight, pixelRatio, time, delta }); call htmlCanvas.canvasLayer(false) to disable; mutually exclusive with videoOutput and glslLayer
+- htmlCanvas.glslLayer(fragmentShader): locally post-processes the live DOM interface with a WebGL2 GLSL ES 3 fragment shader and source sampler; use texture(source, uv), mainImage(out vec4 fragColor, in vec2 fragCoord), source, iResolution, iTime, iTimeDelta, and iFrame; supports #include directives; mutually exclusive with videoOutput and canvasLayer
 `.trim();
