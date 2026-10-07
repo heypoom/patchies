@@ -2,11 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { MessageContext, MessageSystem } from '$lib/messages';
 import { JSRunner } from '$lib/js-runner/JSRunner';
-import { ObjectContext } from '$lib/objects';
+import { ObjectContext } from '$lib/objects/v2/ObjectContext';
 import { logger } from '$lib/utils/logger';
 import type { GraphChangeCallback } from '$lib/runtime';
 
 import { JSObject } from './JSObject';
+
+const llmMock = vi.hoisted(() => Object.assign(vi.fn(), { turn: vi.fn() }));
+
+vi.mock('$lib/ai/google', () => ({ createLLMFunction: () => llmMock }));
 
 describe('JSObject', () => {
   const messageSystem = MessageSystem.getInstance();
@@ -15,12 +19,106 @@ describe('JSObject', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
 
     messageSystem.unregisterNode(compilerId);
     messageSystem.unregisterNode(targetId);
     messageSystem.updateEdges([]);
 
     logger.clearNodeLogs(compilerId);
+  });
+
+  it('returns to stopped after a one-shot delay finishes', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('window', { setTimeout, clearTimeout });
+
+    const messageContext = new MessageContext(compilerId);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: 'await delay(1000)',
+      runOnMount: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    const executing = object.create();
+
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: true });
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await executing;
+
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: false });
+
+    object.destroy();
+    context.destroy();
+  });
+
+  it.each(['llm', 'llm.turn'])('tracks %s until it settles', async (method) => {
+    let finish!: (value: string) => void;
+
+    const response = new Promise<string>((resolve) => {
+      finish = resolve;
+    });
+
+    const called = new Promise<void>((resolve) => {
+      const mock = method === 'llm' ? llmMock : llmMock.turn;
+
+      mock.mockImplementationOnce(() => {
+        resolve();
+
+        return response;
+      });
+    });
+
+    const messageContext = new MessageContext(compilerId);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: `await ${method}('Hello')`,
+      runOnMount: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    const executing = object.create();
+
+    await called;
+
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: true });
+
+    finish('Answer');
+    await executing;
+
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: false });
+
+    object.destroy();
+    context.destroy();
+  });
+
+  it('keeps registered timers active after an LLM call finishes', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('window', { setTimeout, clearTimeout });
+    llmMock.mockResolvedValueOnce('Answer');
+
+    const messageContext = new MessageContext(compilerId);
+
+    const context = new ObjectContext(compilerId, messageContext, [], {
+      code: "setTimeout(() => {}, 10000); await llm('Hello')",
+      runOnMount: true
+    });
+
+    const object = new JSObject(compilerId, context);
+    await object.create();
+
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: true });
+
+    object.onMessage({ type: 'stop' });
+
+    expect(context.getData()).toMatchObject({ isTimerCallbackActive: false });
+
+    object.destroy();
+    context.destroy();
   });
 
   it('sends output from a graph callback without mounting its view', async () => {
@@ -118,7 +216,6 @@ describe('JSObject', () => {
   it('routes graph callback errors to the node virtual console', async () => {
     let graphCallback: GraphChangeCallback | undefined;
     const messageContext = new MessageContext(compilerId);
-
     const context = new ObjectContext(
       compilerId,
       messageContext,
@@ -191,7 +288,6 @@ describe('JSObject', () => {
     const unsubscribe = vi.fn();
 
     const messageContext = new MessageContext(compilerId);
-
     const context = new ObjectContext(
       compilerId,
       messageContext,

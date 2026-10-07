@@ -1,16 +1,15 @@
+import { prepareLLMTools } from './llm-js/llm-tools';
+import { generateLLMTurn } from './llm-js/llm-tool-loop';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { GLPreviewFrameCapturedEvent } from '$lib/eventbus/events';
 import { DEFAULT_GEMINI_IMAGE_MODEL } from '../../stores/ai-settings.store';
-import type { AIProviderType } from './providers';
 
-type LLMFunctionContext = {
-  imageNodeId?: string;
-  abortSignal?: AbortSignal;
-  model?: string;
-  temperature?: number;
-  topK?: number;
-  provider?: AIProviderType;
-};
+import {
+  normalizeLLMInput,
+  type LLMInput,
+  type LLMOptions,
+  type LLMConversationTurn
+} from './llm-js/llm-input';
 
 type ImageGenerationContext = {
   apiKey: string;
@@ -172,7 +171,14 @@ export async function generateImageWithOpenRouter(
 }
 
 export function createLLMFunction() {
-  return async (prompt: string, context?: LLMFunctionContext) => {
+  const execute = async (input: LLMInput, context?: LLMOptions, returnTurn = false) => {
+    const messages = normalizeLLMInput(input);
+    const preparedTools = prepareLLMTools(context?.tools);
+
+    if (context?.abortSignal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
     const { getTextProvider } = await import('./providers');
     const provider = getTextProvider(context?.model, context?.provider);
 
@@ -191,12 +197,37 @@ export function createLLMFunction() {
       }
     }
 
-    return provider.generateText([{ role: 'user', content: prompt, images }], {
+    if (images.length) {
+      messages[messages.length - 1].images = images;
+    }
+
+    if (context?.abortSignal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    const options = {
       signal: context?.abortSignal,
       temperature: context?.temperature,
-      topK: context?.topK
-    });
+      topK: context?.topK,
+      systemPrompt: context?.systemPrompt
+    };
+
+    if (returnTurn || context?.tools || messages.some((message) => message._raw !== undefined)) {
+      const turn = await generateLLMTurn({ provider, messages, options: context, preparedTools });
+
+      return returnTurn ? turn : turn.content;
+    }
+
+    return provider.generateText(messages, options);
   };
+
+  const llm = async (input: LLMInput, options?: LLMOptions): Promise<string> =>
+    (await execute(input, options)) as string;
+
+  llm.turn = async (input: LLMInput, options?: LLMOptions): Promise<LLMConversationTurn> =>
+    (await execute(input, options, true)) as LLMConversationTurn;
+
+  return llm;
 }
 
 export function bitmapToBase64Image({
@@ -237,6 +268,7 @@ export async function compressImageFile(
 
   const mimeType = 'image/jpeg';
   const data = canvas.toDataURL(mimeType, quality).replace(`data:${mimeType};base64,`, '');
+
   return { mimeType, data };
 }
 

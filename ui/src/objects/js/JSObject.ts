@@ -37,6 +37,9 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     { name: 'message', type: 'any', handle: { handleType: 'message' } }
   ];
 
+  private hasTimerCallbacks = false;
+  private isAsyncActive = false;
+
   private subscriptions = new Set<() => void>();
   private lastExecuteCode: number | undefined;
   private settingsManager: SettingsManager;
@@ -55,7 +58,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     );
 
     this.settingsManager.onChangeCallbackRegistered = () => {
-      this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true });
+      this.registerTimerCallback();
     };
   }
 
@@ -127,14 +130,16 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     messageContext.onMessageCallbackRegistered = () =>
       this.context.setData({ isMessageCallbackActive: true }, { notifyUI: true });
 
-    messageContext.onIntervalCallbackRegistered = () =>
-      this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true });
+    messageContext.onIntervalCallbackRegistered = () => this.registerTimerCallback();
 
-    messageContext.onTimeoutCallbackRegistered = () =>
-      this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true });
+    messageContext.onTimeoutCallbackRegistered = () => this.registerTimerCallback();
 
-    messageContext.onAnimationFrameCallbackRegistered = () =>
-      this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true });
+    messageContext.onAnimationFrameCallbackRegistered = () => this.registerTimerCallback();
+
+    messageContext.onAsyncActivityChange = (active) => {
+      this.isAsyncActive = active;
+      this.updateTimerActivity();
+    };
 
     this.resetRuntimeIndicators();
 
@@ -153,8 +158,7 @@ export class JSObject implements RuntimeObject<JSObjectData> {
         customConsole,
         messageContext,
 
-        onSchedulerCallbackRegistered: () =>
-          this.context.setData({ isTimerCallbackActive: true }, { notifyUI: true }),
+        onSchedulerCallbackRegistered: () => this.registerTimerCallback(),
 
         setPortCount: (inletCount = 1, outletCount = 1) =>
           this.context.setData({ inletCount, outletCount }, { notifyUI: true }),
@@ -218,7 +222,22 @@ export class JSObject implements RuntimeObject<JSObjectData> {
     this.context.setData({ isGraphSubscriptionActive: false }, { notifyUI: true });
   }
 
+  private registerTimerCallback(): void {
+    this.hasTimerCallbacks = true;
+    this.updateTimerActivity();
+  }
+
+  private updateTimerActivity(): void {
+    this.context.setData(
+      { isTimerCallbackActive: this.hasTimerCallbacks || this.isAsyncActive },
+      { notifyUI: true }
+    );
+  }
+
   private resetRuntimeIndicators(): void {
+    this.hasTimerCallbacks = false;
+    this.isAsyncActive = false;
+
     this.context.setData(
       {
         isGraphSubscriptionActive: false,
@@ -240,12 +259,6 @@ export class JSObject implements RuntimeObject<JSObjectData> {
 
     JSRunner.getInstance().clearSchedulerCallbacks(this.nodeId);
 
-    const updates = {
-      isGraphSubscriptionActive: false,
-      isMessageCallbackActive: false,
-      isTimerCallbackActive: false
-    };
-
-    this.context.setData(updates, { notifyUI: true });
+    this.resetRuntimeIndicators();
   }
 }

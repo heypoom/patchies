@@ -521,14 +521,36 @@ export class JSRunner {
 
     let llmFn: LLMFunction | undefined;
 
-    async function llm(...args: Parameters<LLMFunction>) {
-      if (!llmFn) {
-        const { createLLMFunction } = await import('$lib/ai/google');
-        llmFn = createLLMFunction();
-      }
+    const trackAsync = <T>(operation: () => Promise<T>): Promise<T> =>
+      skipMessageContext
+        ? operation()
+        : (messageContext ?? this.getMessageContext(nodeId)).trackAsync(operation);
 
-      return llmFn(...args);
-    }
+    const llm = (...args: Parameters<LLMFunction>) =>
+      trackAsync(async () => {
+        const input = structuredClone(args[0]);
+
+        if (!llmFn) {
+          const { createLLMFunction } = await import('$lib/ai/google');
+
+          llmFn = createLLMFunction();
+        }
+
+        return llmFn(input, args[1]);
+      });
+
+    llm.turn = (...args: Parameters<LLMFunction['turn']>) =>
+      trackAsync(async () => {
+        const input = structuredClone(args[0]);
+
+        if (!llmFn) {
+          const { createLLMFunction } = await import('$lib/ai/google');
+
+          llmFn = createLLMFunction();
+        }
+
+        return llmFn.turn(input, args[1]);
+      });
 
     const functionArgs = [
       customConsole,

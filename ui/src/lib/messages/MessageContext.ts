@@ -1,3 +1,4 @@
+import { AsyncActivityTracker } from '$lib/js-runner/AsyncActivityTracker';
 import type { SelectionChangeCallback } from '$lib/canvas/SelectionChangeController';
 import type { AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
@@ -42,7 +43,7 @@ export interface UserFnRunContext {
   /** Schedules setTimeout with cleanup. */
   setTimeout: (callback: () => void, ms: number) => number;
 
-  /** Abortable delay that resolves immediately when timers are cleared. */
+  /** Abortable delay that rejects when timers are cleared. */
   delay: (ms: number) => Promise<void>;
 
   /** Schedules requestAnimationFrame with cleanup. */
@@ -102,6 +103,11 @@ export class MessageContext {
   /** Named channel subscriptions for recv({ channel }) */
   private channelSubscriptions: Set<string> = new Set();
   private channelRegistry = MessageChannelRegistry.getInstance();
+
+  public onAsyncActivityChange: (active: boolean) => void = () => {};
+  private asyncActivity = new AsyncActivityTracker((active) => this.onAsyncActivityChange(active));
+
+  trackAsync = <T>(operation: () => Promise<T>): Promise<T> => this.asyncActivity.run(operation);
 
   public onSend: UserFnRunContext['send'] = () => {};
   public onMessageCallbackRegistered = () => {};
@@ -287,19 +293,20 @@ export class MessageContext {
 
   // Create an abortable delay function for this node
   createDelayFunction() {
-    return (ms: number): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        const delayId = this.delayIdCounter++;
+    return (ms: number): Promise<void> =>
+      this.trackAsync(
+        () =>
+          new Promise((resolve, reject) => {
+            const delayId = this.delayIdCounter++;
 
-        const timeoutId = window.setTimeout(() => {
-          this.pendingDelays.delete(delayId);
-          resolve();
-        }, ms);
+            const timeoutId = window.setTimeout(() => {
+              this.pendingDelays.delete(delayId);
+              resolve();
+            }, ms);
 
-        this.pendingDelays.set(delayId, { timeoutId, reject });
-        this.onTimeoutCallbackRegistered();
-      });
-    };
+            this.pendingDelays.set(delayId, { timeoutId, reject });
+          })
+      );
   }
 
   // Create an fft function that automatically infers connected FFT nodes
@@ -347,6 +354,8 @@ export class MessageContext {
 
   // Clear all timers (intervals, timeouts, delays, and animation frames) for code re-execution
   clearTimers() {
+    this.asyncActivity.reset();
+
     // Clear all intervals created by this node
     for (const intervalId of this.intervals) {
       this.messageSystem.clearInterval(intervalId);

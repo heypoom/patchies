@@ -43,8 +43,11 @@ export const jsRunnerInstructions = `
 - await vfs.getUrl(path) - Resolve a virtual filesystem file to a browser URL. Relative paths use the \`user://\` namespace (e.g. \`await vfs.getUrl('./photo.jpg')\`).
 - await vfs.list(path?) - List a folder's direct entries as {path, name, kind}. Relative paths use the \`user://\` namespace (e.g. \`await vfs.list('./samples')\`).
 - await vfs.search(query, path?) - Search matching entries as {path, name, kind}. Relative paths use the \`user://\` namespace (e.g. \`await vfs.search('kick', './samples')\`).
-- await llm(prompt, options?) - Call the configured AI provider (requires API key in settings)
-  * Options: { model?: string, abortSignal?: AbortSignal, imageNodeId?: string }
+- await llm(textOrConversation, options?) - Call the configured AI provider (requires API key in settings)
+  * Conversation: alternating { role: 'user' | 'assistant', content: string } turns, starting and ending with user. Caller maintains history; returns a string.
+  * await llm.turn(input, options?) returns an assistant turn with opaque state to append unchanged. Reuse the same provider/model.
+  * Tools: { [name]: { description: string, parameters?: { [arg]: 'string' | 'number' | 'boolean' | JSONSchema }, run: async (args) => JSONValue } }. All declared parameters required. Handlers run locally; helper loops automatically, up to 8 tool calls by default. llm.turn retains the tool trace.
+  * Options: { provider?, model?, systemPrompt?, temperature?, topK?, abortSignal?, imageNodeId?, tools?, maxToolCalls? }. imageNodeId attaches the current frame to the last user turn.
 
 **Message Passing (wired ports):**
 - send(data, {to: outletIndex}?) - Send to outlet (omit {to} to send to all outlets)

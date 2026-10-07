@@ -73,6 +73,8 @@ export interface ChatTurnMessage {
 }
 
 export interface StreamTurnOptions {
+  temperature?: number;
+  topK?: number;
   systemPrompt?: string;
   tools?: ToolDeclaration[];
   signal?: AbortSignal;
@@ -97,6 +99,7 @@ export interface StreamTurnResult {
 export interface LLMProvider {
   readonly id: string;
   readonly name: string;
+  readonly model: string;
 
   /**
    * Generate text from a list of messages.
