@@ -297,6 +297,12 @@ Settings listed in `reloadsOnSettings` recreate/reload the smplr instrument.
 Live settings such as volume, detune, reverse, and pan should update the current
 instance where smplr supports mutation without refetching samples.
 
+Editor reconciliation must retain the audio node and forward persisted settings
+to its settings inlet, including undo/redo. All smplr nodes, including `gm~`,
+opt into parameter updates through audio-node metadata. Instrument descriptors
+decide which settings require sample reloads. Live edits during an in-flight
+load must not restart it; the completed instrument receives the latest settings.
+
 Any new node option added to component-owned node data must use
 `useNodeDataTracker` for undo/redo when it is edited from node UI. SettingsPanel
 changes use the existing settings persistence/update flow.

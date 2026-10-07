@@ -26,6 +26,7 @@ interface AudioAdapterOptions {
 }
 
 interface RuntimeAudioObjectEntry {
+  type: string;
   messageContext: MessageContext;
   params: unknown[];
 }
@@ -72,12 +73,29 @@ export class AudioAdapter {
   }
 
   upsertAudioObject(object: RuntimeObjectSpec<RuntimeAudioObjectData>): void {
+    const nodeClass = AudioRegistry.getInstance().get(object.type);
+    const existing = this.audioObjects.get(object.id);
+
+    if (
+      existing?.type === object.type &&
+      this.audioService.getNodeById(object.id) &&
+      nodeClass?.getParamsSettingsUpdate
+    ) {
+      const updates = nodeClass.getParamsSettingsUpdate(object.data.params);
+      existing.params = [...object.data.params];
+
+      for (const [key, value] of Object.entries(updates)) {
+        this.audioService.send(object.id, key, value);
+      }
+
+      return;
+    }
+
     // cleanup existing nodes
     this.removeAudioObjectMessageContext(object.id, false);
     this.audioService.removeNodeById(object.id);
 
     // insert new nodes
-    const nodeClass = AudioRegistry.getInstance().get(object.type);
     const onBeforeAudioNodeCreate = nodeClass?.hasRuntimeData
       ? (node: AudioNodeV2) => {
           if (!isRuntimeDataAwareAudioNode(node)) return;
@@ -116,6 +134,7 @@ export class AudioAdapter {
     const messageContext = this.createAudioObjectMessageContext(object.id, object.type);
 
     this.audioObjects.set(object.id, {
+      type: object.type,
       messageContext,
       params: [...object.data.params]
     });

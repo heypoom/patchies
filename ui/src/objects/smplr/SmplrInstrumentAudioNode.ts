@@ -18,6 +18,10 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   static runtimeManaged = true;
   static description = 'Shared smplr sampled-instrument runtime';
 
+  static getParamsSettingsUpdate = (params: unknown[]) => ({
+    settings: params.length === 1 ? params[0] : params[1]
+  });
+
   static inlets: ObjectInlet[] = [
     { name: 'message', type: 'message', description: 'MIDI and trigger messages' },
     {
@@ -42,6 +46,7 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   onSettingsPatch?: (patch: Record<string, unknown>) => void;
 
   private loadToken = 0;
+  private isLoading = false;
   private settings: Record<string, unknown> = {};
 
   private sustainPedal = new SustainPedal<{ stopId?: number | string; time?: number }>();
@@ -80,6 +85,9 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
   }
 
   destroy(): void {
+    this.loadToken += 1;
+    this.isLoading = false;
+
     this.disposeInstrument(this.instrument);
     this.instrument = null;
     this.audioNode.disconnect();
@@ -92,7 +100,7 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
 
     this.settings = { ...nextSettings };
 
-    if (shouldReload || !this.instrument) {
+    if (shouldReload || (!this.instrument && !this.isLoading)) {
       await this.reload(this.settings);
       return;
     }
@@ -102,6 +110,7 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
 
   private async reload(settings: Record<string, unknown>): Promise<void> {
     const token = ++this.loadToken;
+    this.isLoading = true;
 
     this.settings = { ...settings };
     this.onStatusChange?.({ state: 'loading', loaded: 0, total: 0 });
@@ -129,12 +138,12 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
       this.instrument = instrument;
 
       this.sustainPedal.clear();
-      this.applyLiveSettings(settings);
+      this.applyLiveSettings(this.settings);
       this.applySustainPedalState();
 
       this.onStatusChange?.({
         state: 'ready',
-        instrumentName: this.descriptor.getDisplayName(settings),
+        instrumentName: this.descriptor.getDisplayName(this.settings),
         instrumentNames: instrument.instrumentNames
       });
     } catch (error) {
@@ -144,6 +153,10 @@ export class SmplrInstrumentAudioNode implements AudioNodeV2 {
         state: 'error',
         message: error instanceof Error ? error.message : String(error)
       });
+    } finally {
+      if (token === this.loadToken) {
+        this.isLoading = false;
+      }
     }
   }
 

@@ -85,6 +85,10 @@ export class GmAudioNode implements AudioNodeV2 {
   static runtimeManaged = true;
   static description = 'Multi-channel General MIDI sampled instrument';
 
+  static getParamsSettingsUpdate = (params: unknown[]) => ({
+    settings: params.length === 1 ? params[0] : params[1]
+  });
+
   static inlets: ObjectInlet[] = [
     { name: 'message', type: 'message', description: 'Channel-aware MIDI messages' },
     {

@@ -11,7 +11,7 @@ import { ScopeAudioNode } from '$objects/scope~/ScopeAudioNode';
 import { TapNode } from '$objects/tap~/native-dsp/nodes/tap.node';
 import { BytebeatNode } from '$objects/bytebeat~/BytebeatNode';
 import { SamplerNode } from '$objects/sampler~/SamplerNode';
-import { PianoAudioNode } from '$objects/smplr/audio-nodes';
+import { PianoAudioNode, SMPLR_AUDIO_NODES } from '$objects/smplr/audio-nodes';
 import { AudioOutputNode } from '$objects/out~/AudioOutputNode';
 import { MicNode } from '$objects/mic~/MicNode';
 import { MergeNode } from '$objects/audio-channel/MergeNode';
@@ -1351,6 +1351,54 @@ describe('EditorRuntimeReconciler', () => {
       [null, { velocity: 88, volume: 72 }],
       undefined
     );
+
+    runtime.destroy();
+  });
+
+  it.each(SMPLR_AUDIO_NODES)('keeps $type when persisted settings change', async (NodeClass) => {
+    const nodeId = 'piano-live-settings-test';
+    const audioService = createFakeAudioService();
+    const runtime = createTestPatchRuntime({
+      objectService: createFakeObjectService(),
+      audioService,
+      isAudioObject: (type) => type === NodeClass.type
+    });
+
+    AudioRegistry.getInstance().register(NodeClass);
+
+    const settings = { velocity: 88, volume: 72 };
+    const syncSettings = (settings: Record<string, unknown>) =>
+      setRuntimeGraphFromEditorGraph(runtime, [
+        {
+          id: nodeId,
+          type: NodeClass.type,
+          position: { x: 0, y: 0 },
+          data: { settings }
+        }
+      ]);
+
+    await syncSettings(settings);
+    audioService.removeNodeById.mockClear();
+
+    const nextSettings: Record<string, unknown> = { ...settings };
+
+    for (const [key, value] of Object.entries({
+      volume: 71,
+      velocity: 90,
+      pan: 0.5,
+      defaultNote: '64',
+      detune: 20,
+      reverse: true,
+      instrument: 'organ'
+    })) {
+      nextSettings[key] = value;
+      await syncSettings({ ...nextSettings });
+    }
+
+    expect(audioService.createNode).toHaveBeenCalledTimes(1);
+    expect(audioService.removeNodeById).not.toHaveBeenCalled();
+
+    expect(audioService.send).toHaveBeenLastCalledWith(nodeId, 'settings', nextSettings);
 
     runtime.destroy();
   });

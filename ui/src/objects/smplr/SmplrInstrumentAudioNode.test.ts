@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { SmplrInstrumentAudioNode } from './SmplrInstrumentAudioNode';
-import type { SmplrInstrument, SmplrInstrumentDescriptor } from './descriptors';
+import type { SmplrInstrument, SmplrInstrumentDescriptor, SmplrModule } from './descriptors';
 
 function createFakeGain() {
   return {
@@ -112,6 +112,48 @@ describe('SmplrInstrumentAudioNode', () => {
 
     expect(load).toHaveBeenCalledTimes(2);
     expect(first.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps an in-flight sample load and applies the latest live settings', async () => {
+    const instrument = createInstrument();
+    let resolveLoad!: (value: SmplrInstrument) => void;
+    const load = vi.fn(() => new Promise<SmplrInstrument>((resolve) => (resolveLoad = resolve)));
+    const node = new SmplrInstrumentAudioNode(
+      'smplr-1',
+      createFakeAudioContext(),
+      createDescriptor(load),
+      async () => ({}) as SmplrModule
+    );
+    const settings = { instrument: 'piano', volume: 100, velocity: 100, defaultNote: '60' };
+
+    const creation = node.create([settings]);
+    await Promise.resolve();
+
+    const nextSettings = {
+      ...settings,
+      volume: 70,
+      pan: 0.5,
+      velocity: 80,
+      defaultNote: '64',
+      detune: 20,
+      reverse: true
+    };
+
+    await node.send('settings', { ...nextSettings, volume: 71 });
+    await node.send('settings', nextSettings);
+    resolveLoad(instrument);
+    await creation;
+
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(instrument.dispose).not.toHaveBeenCalled();
+
+    expect(instrument.output).toEqual({ volume: 70, pan: 0.5 });
+    expect(instrument.setDetune).toHaveBeenLastCalledWith(20);
+    expect(instrument.setReverse).toHaveBeenLastCalledWith(true);
+
+    await node.send('message', { type: 'bang' });
+
+    expect(instrument.start).toHaveBeenLastCalledWith({ note: 64, velocity: 80 });
   });
 
   it('holds piano note-offs until a released sustain pedal', async () => {
