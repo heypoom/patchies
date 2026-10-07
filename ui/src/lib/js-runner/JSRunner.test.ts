@@ -1,8 +1,12 @@
+import { reactive } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { JSRunner, lowerExternalImports } from './JSRunner';
 import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
 import type { EmbeddedVFSEntry } from '$lib/vfs/types';
+
+const llmMock = vi.hoisted(() => Object.assign(vi.fn(), { turn: vi.fn() }));
+vi.mock('$lib/ai/google', () => ({ createLLMFunction: () => llmMock }));
 
 describe('JSRunner', () => {
   const runner = new JSRunner();
@@ -10,6 +14,50 @@ describe('JSRunner', () => {
 
   afterEach(() => {
     runner.destroy(nodeId);
+  });
+
+  it.each(['llm', 'llm.turn'])('snapshots reactive history for %s', async (method) => {
+    const history = reactive([
+      { role: 'user', content: 'First' },
+      {
+        role: 'assistant',
+        content: 'Answer',
+        state: {
+          provider: 'gemini',
+          model: 'test-model',
+          content: 'Answer',
+          raw: { parts: [{ text: 'Answer', thoughtSignature: 'signature' }] }
+        }
+      },
+      { role: 'user', content: 'Next' }
+    ]);
+    const mock = method === 'llm' ? llmMock : llmMock.turn;
+    mock.mockImplementationOnce(async (input) => {
+      history[0].content = 'Changed';
+      return input;
+    });
+    const result = vi.fn();
+
+    await runner.executeJavaScript(nodeId, `result(await ${method}(history))`, {
+      skipMessageContext: true,
+      extraContext: { history, result }
+    });
+
+    expect(result).toHaveBeenCalledWith([
+      { role: 'user', content: 'First' },
+      {
+        role: 'assistant',
+        content: 'Answer',
+        state: {
+          provider: 'gemini',
+          model: 'test-model',
+          content: 'Answer',
+          raw: { parts: [{ text: 'Answer', thoughtSignature: 'signature' }] }
+        }
+      },
+      { role: 'user', content: 'Next' }
+    ]);
+    expect(() => structuredClone(result.mock.calls[0][0])).not.toThrow();
   });
 
   it('exposes setTags to user code', async () => {

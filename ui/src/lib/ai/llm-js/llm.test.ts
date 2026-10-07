@@ -1,3 +1,4 @@
+import { reactive } from 'vue';
 import { beforeEach, afterEach, expect, test, vi } from 'vitest';
 import { createLLMFunction } from '../google';
 import type { LLMConversationTurn, LLMInput } from './llm-input';
@@ -92,7 +93,7 @@ test.each([
   expect(getTextProvider).not.toHaveBeenCalled();
 });
 
-test('returns and replays opaque state through either helper, snapshotting caller data', async () => {
+test.each([false, true])('replays and snapshots opaque state (reactive=%s)', async (isReactive) => {
   const llm = createLLMFunction();
   const turn = await llm.turn('First');
 
@@ -102,7 +103,7 @@ test('returns and replays opaque state through either helper, snapshotting calle
     { role: 'user', content: 'Next' }
   ];
 
-  const pending = llm(convo);
+  const pending = llm(isReactive ? reactive(convo) : convo);
   (turn.state!.raw as { parts: { text: string }[] }).parts[0].text = 'Edited later';
 
   expect(await pending).toBe('Reply');

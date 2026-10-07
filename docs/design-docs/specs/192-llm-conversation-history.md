@@ -80,3 +80,11 @@ its activity on success or failure. Concurrent calls keep the node active until
 all calls settle. Persistent callbacks keep their existing activity independently.
 Stopping or rerunning resets activity; late completions from an earlier run must
 not clear activity from a newer run.
+
+## Reactive history
+
+Conversation snapshots accept reactive arrays and nested reactive turn/state objects
+from frontend frameworks without importing a framework-specific unwrapping API.
+Materialize arrays and plain objects before cloning; retain complete reasoning
+state and tool traces. Snapshot synchronously before lazy imports, frame capture,
+or worker messaging so later caller mutations do not affect the request.

@@ -2,7 +2,7 @@ import type { AsyncActivityTracker } from '../AsyncActivityTracker';
 import { prepareLLMTools, type LLMToolDefinitions } from '$lib/ai/llm-js/llm-tools';
 import type { ToolCall } from '$lib/ai/providers/types';
 import type { LLMConversationTurn, LLMInput, LLMOptions } from '$lib/ai/llm-js/llm-input';
-import { normalizeLLMInput } from '$lib/ai/llm-js/llm-input';
+import { normalizeLLMInput, snapshotLLMInput } from '$lib/ai/llm-js/llm-input';
 import type { WorkerResponse } from '../js-worker-types';
 
 interface LLMResponse {
@@ -74,7 +74,7 @@ export class WorkerLLMClient {
     }
 
     const requestId = `llm-${nodeId}-${++this.nextId}`;
-    const snapshot = structuredClone(input);
+    const snapshot = snapshotLLMInput(input);
 
     return new Promise<string | LLMConversationTurn>((resolve, reject) => {
       const abort = () => {

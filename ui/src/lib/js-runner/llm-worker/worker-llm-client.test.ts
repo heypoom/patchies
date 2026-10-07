@@ -1,3 +1,4 @@
+import { reactive } from 'vue';
 import { expect, test, vi } from 'vitest';
 
 import { AsyncActivityTracker } from '../AsyncActivityTracker';
@@ -230,4 +231,21 @@ test('reports activity through overlapping text and turn requests until both set
   await failed;
 
   expect(changed.mock.calls).toEqual([[true], [false]]);
+});
+
+test('sends a plain snapshot of reactive conversation history', async () => {
+  const send = vi.fn();
+  const client = new WorkerLLMClient(send);
+  const llm = client.createFunction('worker-1', new AsyncActivityTracker(() => {}));
+  const conversations = reactive({ agent: [{ role: 'user' as const, content: 'Hello' }] });
+  const pending = llm.turn(conversations.agent);
+  conversations.agent[0].content = 'Changed';
+
+  const message = structuredClone(send.mock.calls[0][0]);
+  expect(message.input).toEqual([{ role: 'user', content: 'Hello' }]);
+
+  const turn = { role: 'assistant' as const, content: 'Answer' };
+  client.handleResponse({ requestId: message.requestId, turn });
+
+  await expect(pending).resolves.toEqual(turn);
 });

@@ -30,6 +30,8 @@ export interface LLMOptions {
   maxToolCalls?: number;
 }
 
+export const snapshotLLMInput = (input: LLMInput): LLMInput => snapshotData(input);
+
 export function normalizeLLMInput(input: LLMInput): ChatTurnMessage[] {
   if (typeof input === 'string') {
     return [{ role: 'user', content: input }];
@@ -76,7 +78,7 @@ export function normalizeLLMInput(input: LLMInput): ChatTurnMessage[] {
     messages.push({
       role: turn.role === 'assistant' ? 'model' : 'user',
       content: turn.content,
-      ...(turn.state ? { _raw: structuredClone(turn.state) } : {})
+      ...(turn.state ? { _raw: snapshotData(turn.state) } : {})
     });
   }
 
@@ -85,4 +87,37 @@ export function normalizeLLMInput(input: LLMInput): ChatTurnMessage[] {
   }
 
   return messages;
+}
+
+/** Materialize reactive arrays/plain objects before structured cloning. */
+function snapshotData<T>(value: T, seen = new WeakMap<object, unknown>()): T {
+  if (!value || typeof value !== 'object') {
+    return structuredClone(value);
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  const isPlainObject = prototype === Object.prototype || prototype === null;
+
+  if (!Array.isArray(value) && !isPlainObject) {
+    return structuredClone(value);
+  }
+
+  if (seen.has(value)) return seen.get(value) as T;
+
+  const copy = Array.isArray(value)
+    ? Array.from({ length: value.length })
+    : Object.create(prototype);
+
+  seen.set(value, copy);
+
+  for (const [key, item] of Object.entries(value)) {
+    Object.defineProperty(copy, key, {
+      value: snapshotData(item, seen),
+      enumerable: true,
+      writable: true,
+      configurable: true
+    });
+  }
+
+  return copy;
 }

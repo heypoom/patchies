@@ -24,6 +24,7 @@ When using noBorder() for a custom widget, use onSelectionChange() to keep a vis
 - defineComponent: Component definition
 
 **Caveats**
+- Reactive objects/arrays are proxies and cannot be structuredClone()'d. For JSON-compatible data passed to kv.set() or send() to workers, use JSON.parse(JSON.stringify(value)) to remove nested proxies; Vue.toRaw() only unwraps the outer proxy. llm()/llm.turn() accept reactive history directly.
 - If you use a border, you must use rounded-lg in the outer container, otherwise the border will be cut off.
 - Do NOT use gradient colors in Tailwind classes, like "bg-gradient-to-r from-amber-500 to-orange-400". They are not supported.
 

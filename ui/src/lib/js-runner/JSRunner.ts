@@ -1,3 +1,4 @@
+import { snapshotLLMInput } from '$lib/ai/llm-js/llm-input';
 import { getImportedModuleNames, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { opencv } from './opencv';
 import { MessageContext } from '$lib/messages/MessageContext';
@@ -528,7 +529,7 @@ export class JSRunner {
 
     const llm = (...args: Parameters<LLMFunction>) =>
       trackAsync(async () => {
-        const input = structuredClone(args[0]);
+        const input = snapshotLLMInput(args[0]);
 
         if (!llmFn) {
           const { createLLMFunction } = await import('$lib/ai/google');
@@ -541,7 +542,7 @@ export class JSRunner {
 
     llm.turn = (...args: Parameters<LLMFunction['turn']>) =>
       trackAsync(async () => {
-        const input = structuredClone(args[0]);
+        const input = snapshotLLMInput(args[0]);
 
         if (!llmFn) {
           const { createLLMFunction } = await import('$lib/ai/google');
