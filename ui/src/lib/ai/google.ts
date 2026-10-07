@@ -119,7 +119,7 @@ export async function generateImageWithOpenRouter(
     abortSignal?: AbortSignal;
   }
 ): Promise<ImageBitmap> {
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetch('https://openrouter.ai/api/v1/images', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -129,8 +129,7 @@ export async function generateImageWithOpenRouter(
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: 'user', content: prompt }],
-      modalities: ['image']
+      prompt
     }),
     signal: abortSignal
   });
@@ -143,32 +142,17 @@ export async function generateImageWithOpenRouter(
 
   const data = await response.json();
 
-  const images: { image_url?: { url?: string } }[] = data.choices?.[0]?.message?.images ?? [];
+  const images: { b64_json?: string; media_type?: string }[] = data.data ?? [];
 
   for (const img of images) {
-    const url = img.image_url?.url;
-    if (!url) continue;
+    if (!img.b64_json) continue;
 
-    const mimeMatch = url.match(/^data:([^;]+);base64,/);
-    const mime = mimeMatch?.[1] ?? 'image/png';
-    const base64 = url.replace(/^data:[^;]+;base64,/, '');
-    const blob = base64ToBlob(base64, mime);
+    const blob = base64ToBlob(img.b64_json, img.media_type ?? 'image/png');
 
     return createImageBitmap(blob);
   }
 
-  // Some models embed the image in content parts instead
-  const content = data.choices?.[0]?.message?.content;
-
-  if (typeof content === 'string' && content) {
-    throw new Error(
-      `Model did not generate an image. Try an image-capable model. Response: ${content}`
-    );
-  }
-
-  throw new Error(
-    'No image returned. Make sure your OpenRouter model supports image generation (e.g. google/gemini-3.8-flash).'
-  );
+  throw new Error(`OpenRouter returned no image for model "${model}".`);
 }
 
 export function createLLMFunction() {
