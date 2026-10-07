@@ -12,6 +12,7 @@ import {
   getPatchiesCompletionByLabel,
   type PatchiesContext
 } from '$lib/codemirror/patchies-completions';
+import { getP5CompletionByLabel } from '$lib/codemirror/p5-completions';
 import { getHydraCompletionByLabel } from '$lib/codemirror/hydra-completions';
 import { getShaderParkCompletionByLabel } from '$lib/codemirror/shaderpark-completions';
 import { getPeppermintCompletionByLabel } from '$lib/codemirror/peppermint.codemirror';
@@ -80,6 +81,20 @@ function getCompletionForWord(
 
       if (context.nodeType === 'shaderpark') {
         return getShaderParkCompletionByLabel(word);
+      }
+
+      if (context.nodeType === 'p5') {
+        const before = state.doc.sliceString(0, pos).replace(/[A-Za-z_$][\w$]*$/, '');
+
+        const namespace =
+          before.match(/\bp5\s*\.\s*(Vector\s*\.\s*)?$/)?.[0]?.replace(/\s/g, '') ?? '';
+
+        if (before.trimEnd().endsWith('.') && !namespace) return;
+
+        return (
+          getP5CompletionByLabel(`${namespace}${word}`) ??
+          getPatchiesCompletionByLabel(word, context)
+        );
       }
 
       if (context.nodeType === 'hydra') {

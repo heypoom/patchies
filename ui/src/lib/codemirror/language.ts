@@ -50,6 +50,7 @@ export async function loadLanguageExtension(
         { patchiesCompletions },
         { shaderParkCompletionsSource },
         { hydraCompletionsSource },
+        { p5CompletionsSource },
         { glslInJsCompletions },
         { javascriptMixedWrap },
         { completionHoverHints },
@@ -62,6 +63,7 @@ export async function loadLanguageExtension(
         import('$lib/codemirror/patchies-completions'),
         import('$lib/codemirror/shaderpark-completions'),
         import('$lib/codemirror/hydra-completions'),
+        import('$lib/codemirror/p5-completions'),
         import('$lib/codemirror/glsl-in-js'),
         import('$lib/codemirror/javascript-mixed'),
         import('$lib/codemirror/hover-hints'),
@@ -84,6 +86,7 @@ export async function loadLanguageExtension(
               glslInJsCompletions,
               shaderParkCompletionsSource(context),
               hydraCompletionsSource(context),
+              p5CompletionsSource(context),
               patchiesCompletions(context)
             ]
           })
