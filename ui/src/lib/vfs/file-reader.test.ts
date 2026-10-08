@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createVfsFileReader } from './file-reader';
 import { createVfsApi } from './user-api';
+import { VirtualFilesystem } from './VirtualFilesystem';
 
 describe('VFS file reader', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    VirtualFilesystem.resetInstance();
   });
 
   it('reads each supported response body representation', async () => {
@@ -30,14 +33,19 @@ describe('VFS file reader', () => {
   });
 
   it('exposes a lazy reader through the main-thread VFS API', async () => {
+    const vfs = VirtualFilesystem.getInstance();
+    vfs.registerProvider({ type: 'url', resolve: async () => new Blob(['main-thread file']) });
+    vfs.registerEntry('user://code.js', { provider: 'url', filename: 'code.js' });
+
     const fetchFile = vi.fn(async () => new Response('main-thread file'));
 
     vi.stubGlobal('fetch', fetchFile);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:file');
 
-    const file = createVfsApi(() => {}).get('https://example.com/file.txt');
+    const file = createVfsApi(() => {}).get('./code.js');
     expect(fetchFile).not.toHaveBeenCalled();
 
     await expect(file.text()).resolves.toBe('main-thread file');
-    expect(fetchFile).toHaveBeenCalledWith('https://example.com/file.txt');
+    expect(fetchFile).toHaveBeenCalledWith('blob:file');
   });
 });

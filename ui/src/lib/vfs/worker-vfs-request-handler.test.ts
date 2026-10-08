@@ -43,16 +43,26 @@ describe('worker VFS requests', () => {
     });
   });
 
-  it('keeps external URLs external and limits text requests to include namespaces', async () => {
+  it.each([
+    'objects://strudel-20/code.js',
+    'https://example.com/file.js',
+    '//cdn.example.com/file.png'
+  ])('rejects unsupported worker path %s', async (path) => {
+    const error = {
+      error: `Invalid VFS path: "${path}". Only user://, patch://, and obj:// protocols are supported.`
+    };
+
+    expect(await resolveVfsUrl('node-1', path)).toEqual(error);
+    expect(await listVfsEntries(path)).toEqual(error);
+    expect(await searchVfsEntries('code', path)).toEqual(error);
+  });
+
+  it('limits text requests to include namespaces', async () => {
     const vfs = VirtualFilesystem.getInstance();
     vfs.createEmbeddedFile(
       'patch://world.glsl',
       'float circle(vec2 point, float radius) { return length(point) - radius; }'
     );
-
-    expect(await resolveVfsUrl('node-1', '//cdn.example.com/file.png')).toEqual({
-      url: '//cdn.example.com/file.png'
-    });
 
     expect(await resolveVfsText('patch://world.glsl')).toEqual({
       text: 'float circle(vec2 point, float radius) { return length(point) - radius; }'

@@ -1,6 +1,6 @@
 import { VirtualFilesystem } from './VirtualFilesystem';
 import type { VFSListEntry } from './types';
-import { isExternalUrl, normalizeUserVfsPath } from './user-api-paths';
+import { normalizeUserVfsPath } from './user-api-paths';
 
 type VfsUrlResponse = { url: string } | { error: string };
 type VfsEntriesResponse = { entries: VFSListEntry[] } | { error: string };
@@ -21,8 +21,6 @@ function trackObjectUrl(nodeId: string, url: string): void {
 /** Resolve a worker VFS URL request on the main thread. */
 export async function resolveVfsUrl(nodeId: string, path: string): Promise<VfsUrlResponse> {
   try {
-    if (isExternalUrl(path)) return { url: path };
-
     const vfs = VirtualFilesystem.getInstance();
     const blob = await vfs.resolve(normalizeUserVfsPath(path));
 

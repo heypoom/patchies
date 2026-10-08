@@ -1,7 +1,7 @@
 import { VirtualFilesystem } from './VirtualFilesystem';
 import { createVfsFileReader, type VfsFileReader } from './file-reader';
 import type { VFSListEntry } from './types';
-import { isExternalUrl, normalizeUserVfsPath } from './user-api-paths';
+import { normalizeUserVfsPath } from './user-api-paths';
 
 export interface VfsApi {
   get(path: string): VfsFileReader;
@@ -15,10 +15,10 @@ export function createVfsApi(trackObjectUrl: (url: string) => void): VfsApi {
   const api: VfsApi = {
     get: (path) => createVfsFileReader(path, api.getUrl),
     async getUrl(path) {
-      if (typeof window === 'undefined' || isExternalUrl(path)) return path;
+      const vfsPath = normalizeUserVfsPath(path);
 
       const vfs = VirtualFilesystem.getInstance();
-      const blob = await vfs.resolve(normalizeUserVfsPath(path));
+      const blob = await vfs.resolve(vfsPath);
 
       const url = URL.createObjectURL(blob);
       trackObjectUrl(url);

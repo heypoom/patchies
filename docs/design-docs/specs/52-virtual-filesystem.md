@@ -363,7 +363,7 @@ await vfs.list("."); // direct entries of user:// as { path, name, kind }
 await vfs.search("foo", "./assets"); // recursively search entries under user://assets
 ```
 
-`vfs.get(path)` returns a lazy reader with `json()`, `text()`, `blob()`, and `arrayBuffer()` methods. Each method resolves and fetches the file, then returns the requested representation. Relative paths default to `user://`; absolute external URLs passed to `get` or `getUrl` remain external. `list` is non-recursive and returns entries with full VFS paths, names, and file or directory kinds. `search` is case-insensitive, recursive, and returns matching entries in the same shape. Both methods traverse linked local folders after permission has been granted.
+`vfs.get(path)` returns a lazy reader with `json()`, `text()`, `blob()`, and `arrayBuffer()` methods. Each method resolves and fetches the file, then returns the requested representation. Relative paths default to `user://`. All user-code VFS helpers accept only `user://`, `patch://`, and `obj://` protocols, or relative paths. Unsupported protocols (including `objects://` and HTTP URLs) and protocol-relative external URLs fail with an error listing the supported protocols before any fetch. This applies to both main-thread and worker APIs. `list` is non-recursive and returns entries with full VFS paths, names, and file or directory kinds. `search` is case-insensitive, recursive, and returns matching entries in the same shape. Both methods traverse linked local folders after permission has been granted.
 
 ## Patch-Local Text Files and Editing
 
