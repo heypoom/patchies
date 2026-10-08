@@ -117,14 +117,16 @@ export async function generateImageWithOpenRouter(
     ? await captureImageGenerationInput(inputImageNodeId, abortSignal)
     : undefined;
 
-  const inputReferences = [
-    {
-      type: 'image_url',
-      image_url: {
-        url: `data:${inputImage.mimeType};base64,${inputImage.data}`
-      }
-    }
-  ];
+  const inputReferences = inputImage
+    ? [
+        {
+          type: 'image_url',
+          image_url: {
+            url: `data:${inputImage.mimeType};base64,${inputImage.data}`
+          }
+        }
+      ]
+    : undefined;
 
   const response = await fetch('https://openrouter.ai/api/v1/images', {
     method: 'POST',
@@ -138,7 +140,7 @@ export async function generateImageWithOpenRouter(
       model,
       prompt,
       ...getOpenRouterImageOptions(options),
-      ...(inputImage && { input_references: inputReferences })
+      ...(inputReferences && { input_references: inputReferences })
     }),
     signal: abortSignal
   });
