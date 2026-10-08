@@ -21,6 +21,12 @@ The installed Google SDK does not yet expose `imageConfig` in its serializer. Se
 
 The model override remains optional and uses the global provider-specific image model by default. Existing prompt and message generation triggers all use these settings.
 
+## Image inputs
+
+Both providers accept the video inlet as a reference image. Capture the connected source at the configured render output size and encode it as JPEG using the same capture path. Gemini receives inline image data; OpenRouter receives `input_references: [{ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,...' } }]` on `/api/v1/images`.
+
+Omit references when no video input is connected. If capture fails, show an error rather than generating without the requested reference. Release captured bitmaps after encoding. Check cancellation before capture and before sending the provider request. OpenRouter model support for references varies; surface provider errors through the existing node error display.
+
 ## Research
 
 Verified against official documentation on 2026-10-08:
@@ -31,4 +37,4 @@ Verified against official documentation on 2026-10-08:
 
 ## Verification
 
-Test provider request mapping, omission of unset and foreign parameters, preservation of zero-valued controls, explicit dimensions, and compression constraints. Run Svelte analysis, scoped formatting/lint, and project typecheck. Live image generation requires configured keys and incurs provider usage.
+Test provider request mapping, omission of unset and foreign parameters, preservation of zero-valued controls, explicit dimensions, and compression constraints. Run Svelte analysis, scoped formatting/lint, and project typecheck. Test reference-image requests for both providers, omission without an inlet, capture failure, cancellation, and bitmap cleanup. Live image generation requires configured keys and incurs provider usage.

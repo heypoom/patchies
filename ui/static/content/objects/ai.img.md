@@ -7,7 +7,9 @@ provider's default image model. Open **model settings** in the prompt editor to
 set a model for this node.
 
 - Connect the video output to other visual objects to use the generated image as a texture.
-- Gemini also accepts a connected image on the video inlet for image editing.
+- Connect an image or video source to the video inlet to guide generation or edit
+an image with either provider. Each generation captures the source's current
+frame. With OpenRouter, choose a model that supports reference images.
 
 ## Preview Size
 

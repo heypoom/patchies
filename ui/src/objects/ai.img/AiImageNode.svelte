@@ -157,16 +157,11 @@
           throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
         }
 
-        if (imageNodeId) {
-          console.warn(
-            `ai.img (${nodeId}): image input is not supported with OpenRouter — imageNodeId "${imageNodeId}" will be ignored.`
-          );
-        }
-
         image = await generateImageWithOpenRouter(prompt, {
           apiKey: settings.openRouterApiKey,
           model: nodeModel ?? settings.openRouterImageModel,
           abortSignal: abortController.signal,
+          inputImageNodeId: imageNodeId,
           options: data.openRouterOptions
         });
       } else {
