@@ -12,6 +12,7 @@
   import MusicCodeEditor from '$lib/music-code-layout/MusicCodeEditor.svelte';
   import type { MusicCodeLayoutData } from '$lib/music-code-layout/music-code-layout';
   import { keymap } from '@codemirror/view';
+  import { Prec } from '@codemirror/state';
   import type { ChuckShred, ChuckNode } from '$objects/chuck~/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$objects/chuck~/ChuckSettings.svelte';
@@ -95,23 +96,25 @@
 
   // Custom keybinds for ChucK operations
   const chuckKeymaps = [
-    keymap.of([
-      {
-        // Cmd + \ = add new shred
-        key: 'Mod-\\',
-        run: () => {
-          handleAddShred();
-          return true;
+    Prec.high(
+      keymap.of([
+        {
+          // Cmd + \ = add new shred
+          key: 'Mod-\\',
+          run: () => {
+            handleAddShred();
+            return true;
+          }
+        },
+        {
+          key: 'Mod-Backspace',
+          run: () => {
+            removeChuckCode();
+            return true;
+          }
         }
-      },
-      {
-        key: 'Mod-Backspace',
-        run: () => {
-          removeChuckCode();
-          return true;
-        }
-      }
-    ])
+      ])
+    )
   ];
 
   const handleExpressionChange = (newExpr: string) => {

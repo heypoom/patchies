@@ -17,8 +17,8 @@ Create expressive, dynamic music pieces and complex audio patterns.
 
 ## Editor Layout
 
-Code starts visible in a bounded editor. Select the object and drag its resize handles to change its size. Code scrolls inside the chosen size. Use **Disable Resizing**
-in the overflow menu to lock that size.
+Code starts visible in a bounded editor. Select the object and drag its resize handles to change its size. Code scrolls inside the chosen size. Clear **Resizing**
+in **Settings** to lock that size.
 
 Use **Hide Code** for a compact object that keeps running. The code button follows your preferred editor layout. Inline editing opens a
 temporary editor beside it. **Keep Editor in Patch** restores the inline editor.
@@ -55,8 +55,8 @@ Use `bang` or `run` messages to switch playback between them.
 
 ## Styling The Editor
 
-Open **Settings** beside the overflow menu to mute playback, toggle transport
-sync and resizing, or change the font size and family. **Custom Styles** opens a
+Open **Settings** beside the overflow menu to toggle transport sync and resizing,
+or change the font size and family. Use **Mute** in the overflow menu to mute playback. **Custom Styles** opens a
 small CSS editor for container declarations; changes apply live. Settings are
 also available in fullscreen. Settings and the console share space: opening
 one hides the other.
