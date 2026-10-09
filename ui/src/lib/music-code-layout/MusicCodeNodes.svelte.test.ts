@@ -524,6 +524,12 @@ it('exposes Strudel settings and overflow in fullscreen and dismisses panels bef
     expect(document.querySelector('input[aria-label="Expanded font size"]')).toBeNull()
   );
   expect(document.querySelector('.strudel-detached-editor')).not.toBeNull();
+  const menu = document.querySelector('[data-slot="popover-content"]')!;
+
+  expect(
+    Array.from(menu.querySelectorAll('button'), (button) => button.textContent?.trim())
+  ).toEqual(['Mute', 'Show Console']);
+
   await userEvent.keyboard('{Escape}');
   await page.getByRole('button', { name: 'Strudel settings', exact: true }).click();
 
@@ -550,10 +556,9 @@ it('exposes Strudel settings and overflow in fullscreen and dismisses panels bef
   await vi.waitFor(() => expect(document.querySelector('[data-slot="dialog-content"]')).toBeNull());
   expect(document.querySelector('.strudel-detached-editor')).not.toBeNull();
 
-  await page.getByRole('button', { name: 'Editor options', exact: true }).click();
-  await page.getByRole('button', { name: 'Hide Code', exact: true }).click();
+  await page.getByRole('button', { name: 'Close expanded Strudel editor', exact: true }).click();
   await vi.waitFor(() => expect(document.querySelector('.strudel-detached-editor')).toBeNull());
-  expect(dataSource.current.editorCollapsed).toBe(true);
+  expect(dataSource.current.editorCollapsed).not.toBe(true);
 });
 
 it('keeps normal and expanded Strudel font sizes separate and expanded text larger', async () => {

@@ -399,12 +399,15 @@
 
   <div
     use:portal={isDetached ? document.body : null}
-    class={isDetached ? 'fixed top-20 right-6 z-[70] w-80 max-w-[calc(100vw-3rem)]' : ''}
+    class={isDetached
+      ? 'fixed top-[calc(env(safe-area-inset-top,0px)+4.25rem)] right-6 z-[70] w-80 max-w-[calc(100vw-3rem)]'
+      : ''}
     class:hidden={!data.showConsole}
   >
     <VirtualConsole
       bind:this={consoleRef}
       {nodeId}
+      class="pt-1"
       onrun={evaluate}
       placeholder="Strudel logs and errors will appear here."
       shouldAutoShowConsoleOnError

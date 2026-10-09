@@ -326,24 +326,26 @@
     >
       <Terminal class="h-4 w-4" />{data.showConsole ? 'Hide Console' : 'Show Console'}
     </button>
-    <button
-      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-      onclick={() => {
-        menuOpen = false;
-        onExpand();
-      }}
-    >
-      <Expand class="h-4 w-4" />Expand Editor
-    </button>
-    <button
-      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-      onclick={() => {
-        menuOpen = false;
-        onLayoutChange(!data.editorCollapsed);
-      }}
-    >
-      <Code class="h-4 w-4" />{data.editorCollapsed ? 'Show Editor in Patch' : 'Hide Code'}
-    </button>
+    {#if !expanded}
+      <button
+        class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+        onclick={() => {
+          menuOpen = false;
+          onExpand();
+        }}
+      >
+        <Expand class="h-4 w-4" />Expand Editor
+      </button>
+      <button
+        class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+        onclick={() => {
+          menuOpen = false;
+          onLayoutChange(!data.editorCollapsed);
+        }}
+      >
+        <Code class="h-4 w-4" />{data.editorCollapsed ? 'Show Editor in Patch' : 'Hide Code'}
+      </button>
+    {/if}
     {#if compact}
       <button
         class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
