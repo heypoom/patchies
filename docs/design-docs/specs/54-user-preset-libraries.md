@@ -77,6 +77,10 @@ Presets are displayed in 3 places:
 - It should look similar to `FileTreeView.svelte`
 - The sidebar will no longer be for just files, its also for presets.
 - The user should be able to _drag out presets_ onto the canvas. This inserts the object.
+- Search results support the same Rename and Delete context menu actions as editable tree
+  entries. Rename edits the result inline; deletion uses the existing confirmation and updates
+  the results without clearing the search query. Read-only presets have no editing menu.
+- Delete and Backspace also delete selected editable presets in search results.
 
 ## Populating text object default parameters
 

@@ -21,6 +21,7 @@
     Bookmark
   } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
+  import PresetSearchResult from './PresetSearchResult.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Dialog from '$lib/components/ui/dialog';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -1213,8 +1214,9 @@
   <!-- Library contents -->
   {#if isExpanded}
     {@const sortedEntries = getSortedEntries(library.presets)}
+
     {#if sortedEntries.length > 0}
-      {#each sortedEntries as [name, entry]}
+      {#each sortedEntries as [name, entry], id (id)}
         {@render presetEntry(library.id, library, [name], name, entry, 1)}
       {/each}
     {:else}
@@ -1252,20 +1254,21 @@
           No presets matching "{searchQuery}"
         </div>
       {:else}
-        {#each searchResults as result}
+        {#each searchResults as result (getPresetKey(result.libraryId, getRelativePresetPath(result)))}
           {@const relativePath = getRelativePresetPath(result)}
-          {@const isSelected = selectedPresetKeys.has(getPresetKey(result.libraryId, relativePath))}
+          {@const fullPathStr = pathToString(result.path)}
 
-          {@const typeIcon = getPresetTypeIcon(result.preset.type)}
-
-          <button
-            class="flex w-full cursor-pointer items-center gap-1.5 py-1 pl-2 text-left text-xs {isSelected
-              ? 'bg-blue-900/40 hover:bg-blue-900/50'
-              : 'hover:bg-zinc-800'}"
-            draggable="true"
-            ondragstart={(e) =>
+          <PresetSearchResult
+            {result}
+            selected={selectedPresetKeys.has(getPresetKey(result.libraryId, relativePath))}
+            iconColor={getPresetTypeIcon(result.preset.type).color}
+            renaming={renamingPath === fullPathStr}
+            bind:renameInputValue
+            onclick={(event) =>
+              handlePresetClick(result.libraryId, relativePath, result.preset, event)}
+            ondragstart={(event) =>
               handleEntryDragStart(
-                e,
+                event,
                 result.libraryId,
                 relativePath,
                 result.preset,
@@ -1273,19 +1276,14 @@
                 !result.readonly
               )}
             ondragend={handleDragEnd}
-            onclick={(event) =>
-              handlePresetClick(result.libraryId, relativePath, result.preset, event)}
-          >
-            <Blocks class="h-3.5 w-3.5 shrink-0 {typeIcon.color}" />
-            <span class="truncate font-mono text-zinc-300">{result.name}</span>
-            <span class="ml-auto truncate pr-2 text-[10px] text-zinc-600">
-              {result.location}
-            </span>
-          </button>
+            onrename={() => startRename(fullPathStr, result.name)}
+            onrenamekeydown={(event) => handleRenameKeydown(event, result.libraryId, relativePath)}
+            ondelete={() => deleteEntry(result.libraryId, relativePath, false)}
+          />
         {/each}
       {/if}
     {:else}
-      {#each $presetLibraryStore as library}
+      {#each $presetLibraryStore as library (library.id)}
         {@render libraryNode(library)}
       {/each}
     {/if}
