@@ -5,7 +5,10 @@
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import { isMobile, isSidebarOpen, sidebarWidth } from '../../stores/ui.store';
   import { aiPromptStore } from '../../stores/ai-prompt.store';
-  import { createAiPromptController } from '$lib/ai/ai-prompt-controller.svelte';
+  import {
+    createAiPromptController,
+    type AiPromptCallbacks
+  } from '$lib/ai/ai-prompt-controller.svelte';
   import { getModeDescriptor, getAvailableModesForContext } from '$lib/ai/modes/descriptors';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
@@ -37,11 +40,7 @@
     mode?: AiPromptMode;
     context?: AiModeContext;
 
-    onInsertObject: (
-      type: string,
-      data: Record<string, unknown>,
-      position?: { x: number; y: number }
-    ) => void;
+    onInsertObject: AiPromptCallbacks['onInsertObject'];
 
     onInsertMultipleObjects?: (
       nodes: AiObjectNode[],

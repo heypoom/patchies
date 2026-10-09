@@ -164,6 +164,21 @@ describe('chat preset tools', () => {
     });
   });
 
+  test('inserts a resized user preset with its dimensions', () => {
+    const resizedPresets = presets.map((entry) => ({
+      ...entry,
+      preset: { ...entry.preset, width: 640, height: 360 }
+    }));
+
+    const action = resolveInsertPreset({ presetName: 'Noise' }, { presets: resizedPresets });
+
+    expect(action.result).toMatchObject({
+      kind: 'single',
+      type: 'p5',
+      dimensions: { width: 640, height: 360 }
+    });
+  });
+
   test('preserves optional position for insert_preset', () => {
     const action = resolveInsertPreset(
       { presetName: 'Blur', position: { x: 320, y: 160 } },

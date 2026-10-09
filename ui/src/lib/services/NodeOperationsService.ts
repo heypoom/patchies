@@ -19,6 +19,7 @@ import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events
 
 export interface CreateNodeOptions {
   skipHistory?: boolean;
+  dimensions?: Pick<Node, 'width' | 'height'>;
 }
 
 /**
@@ -49,6 +50,7 @@ export class NodeOperationsService {
       type,
       position,
       ...getDefaultNodeDimensions(type),
+      ...options?.dimensions,
       data: (customData as Record<string, unknown>) ?? getDefaultNodeData(type)
     };
 

@@ -19,6 +19,10 @@ export interface Preset {
 
   /** The node data to populate when creating from this preset */
   data: unknown;
+
+  /** Explicit node dimensions saved after resizing */
+  width?: number;
+  height?: number;
 }
 
 /**

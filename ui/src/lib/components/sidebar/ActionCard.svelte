@@ -199,7 +199,9 @@
   function apply() {
     if (!action.result) return;
     match(action.result)
-      .with({ kind: 'single' }, (r) => callbacks.onInsertObject(r.type, r.data, r.position))
+      .with({ kind: 'single' }, (r) =>
+        callbacks.onInsertObject(r.type, r.data, r.position, r.dimensions)
+      )
       .with({ kind: 'multi' }, (r) =>
         callbacks.onInsertMultipleObjects(r.nodes, r.edges, r.basePosition)
       )

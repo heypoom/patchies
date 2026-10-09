@@ -27,6 +27,8 @@ vi.mock('$lib/registry/ObjectShorthandRegistry', () => ({
 }));
 
 import { DEFAULT_GROUP_HEIGHT, DEFAULT_GROUP_WIDTH } from '$lib/nodes/defaultNodeDimensions';
+import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
+import { createNodePreset } from '$lib/presets/preset-node';
 import { NodeOperationsService } from './NodeOperationsService';
 
 function createContext() {
@@ -57,6 +59,56 @@ function createContext() {
 }
 
 describe('NodeOperationsService', () => {
+  test.each(['insert', 'drop'])('retains saved preset dimensions in history after %s', (method) => {
+    const { ctx } = createContext();
+
+    const service = new NodeOperationsService(
+      ctx as unknown as ConstructorParameters<typeof NodeOperationsService>[0]
+    );
+
+    const preset = createNodePreset(
+      {
+        id: 'original',
+        type: 'canvas.dom',
+        position: { x: 0, y: 0 },
+        data: { code: 'draw()' },
+        width: 640,
+        height: 360
+      },
+      'Wide canvas'
+    );
+
+    const manager = new CanvasDragDropManager({
+      screenToFlowPosition: (position) => position,
+      createNode: (...args) => service.createNode(...args),
+      createNodeFromName: vi.fn()
+    });
+
+    if (method === 'insert') {
+      manager.insertPreset(JSON.parse(JSON.stringify(preset)), { x: 10, y: 20 });
+    } else {
+      manager.onDrop({
+        clientX: 10,
+        clientY: 20,
+        preventDefault: vi.fn(),
+        target: { closest: () => null },
+        dataTransfer: {
+          getData: (type: string) =>
+            type === 'application/x-preset'
+              ? JSON.stringify({ path: ['user', preset.name], preset })
+              : ''
+        }
+      } as unknown as DragEvent);
+    }
+
+    expect(ctx.historyManager.execute.mock.calls[0][0].node).toMatchObject({
+      type: 'canvas.dom',
+      width: 640,
+      height: 360,
+      data: { code: 'draw()' }
+    });
+  });
+
   test('creates gm~ as a dedicated visual node type', () => {
     const { ctx } = createContext();
 

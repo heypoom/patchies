@@ -1,3 +1,4 @@
+import type { Node } from '@xyflow/svelte';
 /**
  * AiPromptController — reactive controller for all AI prompt modes.
  *
@@ -22,7 +23,8 @@ export interface AiPromptCallbacks {
   onInsertObject: (
     type: string,
     data: Record<string, unknown>,
-    position?: { x: number; y: number }
+    position?: { x: number; y: number },
+    dimensions?: Pick<Node, 'width' | 'height'>
   ) => void;
 
   onInsertMultipleObjects: (
@@ -81,7 +83,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
   function applyResult(result: AiModeResult) {
     switch (result.kind) {
       case 'single':
-        callbacks.onInsertObject(result.type, result.data, result.position);
+        callbacks.onInsertObject(result.type, result.data, result.position, result.dimensions);
         toast.success(`Created ${result.type}`);
         break;
       case 'multi':
