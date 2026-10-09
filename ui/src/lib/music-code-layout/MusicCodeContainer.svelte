@@ -128,6 +128,10 @@
   }
 
   function finishResize() {
+    if (oldSize?.width === data.editorSize?.width && oldSize?.height === data.editorSize?.height) {
+      return;
+    }
+
     tracker.commit('editorSize', oldSize, data.editorSize);
   }
 
