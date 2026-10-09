@@ -6,6 +6,7 @@
   import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
   import { logger } from '$lib/utils/logger';
   import type { CustomConsole } from '$lib/utils/createCustomConsole';
+  import { normalizeStrudelFontFamily } from '$lib/strudel/font-family';
 
   import {
     STRUDEL_EDITOR_DEFAULT_FONT_FAMILY,
@@ -162,7 +163,7 @@
     editor.updateSettings(settings);
     editor.setCode(code);
     editor.setTheme('strudelTheme');
-    editor.setFontFamily(fontFamily);
+    editor.setFontFamily(normalizeStrudelFontFamily(fontFamily));
     editor.setFontSize(fontSize);
 
     const keymaps = Prec.highest(
@@ -222,7 +223,7 @@
     const currentFontFamily = fontFamily;
     if (!editor) return;
 
-    editor.setFontFamily(currentFontFamily);
+    editor.setFontFamily(normalizeStrudelFontFamily(currentFontFamily));
   });
 
   $effect(() => {

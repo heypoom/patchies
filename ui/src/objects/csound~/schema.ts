@@ -10,7 +10,8 @@ import {
   Pause,
   Stop,
   Reset,
-  messages
+  messages,
+  SetCode
 } from '$lib/objects/schemas/common';
 
 // Csound-specific message schemas
@@ -56,6 +57,7 @@ export const csoundSchema: ObjectSchema = {
       description: 'Control messages',
       handle: { handleType: 'message', handleId: 1 },
       messages: [
+        { schema: SetCode, description: 'Set code without running it' },
         { schema: Bang, description: 'Resume or re-eval Csound code' },
         { schema: Play, description: 'Resume playback' },
         { schema: Resume, description: 'Resume playback' },

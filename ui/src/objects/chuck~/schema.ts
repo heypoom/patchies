@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from '$lib/objects/schemas/types';
 import { schema } from '$lib/objects/schemas/types';
 import { msg, sym } from '$lib/objects/schemas/helpers';
-import { Bang, Collapse, Expand, Stop, messages } from '$lib/objects/schemas/common';
+import { Bang, Collapse, Expand, Stop, SetCode, messages } from '$lib/objects/schemas/common';
 
 // ChucK-specific message schemas
 const Replace = sym('replace');
@@ -86,6 +86,7 @@ export const chuckSchema: ObjectSchema = {
       description: 'Control messages',
       handle: { handleType: 'message', handleId: 1 },
       messages: [
+        { schema: SetCode, description: 'Set code without running it' },
         { schema: Type.String(), description: 'Add string expression as new shred' },
         { schema: Bang, description: 'Replace most recent shred with current expression' },
         { schema: Replace, description: 'Replace most recent shred' },

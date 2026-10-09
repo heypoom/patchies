@@ -28,7 +28,28 @@ while (true) {
 - **Add Shred** (`Ctrl/Cmd + \`): adds a new shred
 - **Remove Shred** (`Ctrl/Cmd + Backspace`): removes the most recent shred
 - **Expand Editor**: opens the ChucK code in the detached overlay editor
-- **Gear button**: see running shreds, remove any with "x"
+- **Settings** in the overflow menu: see running shreds, remove any with "x"
+
+## Editor Layout
+
+The code editor is placed inlien into the patch.
+
+- Select the object and drag the resize handles to change the container size. Code scrolls inside its container.
+- Use **Disable Resizing** to lock that size.
+- Use **Hide Code** for a compact object that keeps running headlessly. Clicking
+  on the code button opens the code in the preferred editor (e.g. inline, sidebar)
+- **Keep Editor in Patch** restores the inline editor.
+- **Expand Editor** opens the editor in fullscreen.
+
+To update code while it is hidden, connect a `js` object to the message inlet:
+
+```javascript
+// Store new code without interrupting the running program.
+send({type: 'setCode', value: 'SinOsc osc => dac; 1::second => now;'})
+
+// Run the stored code when you are ready.
+send({type: 'bang'})
+```
 
 ## Console Output
 

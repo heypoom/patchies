@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { Ellipsis, Expand, Link, Play, Square, Terminal, VolumeX, X } from '@lucide/svelte/icons';
+  import { Play, Settings, Square } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import MusicCodeContainer from '$lib/music-code-layout/MusicCodeContainer.svelte';
+  import { resolveStrudelFontSizes, type StrudelNodeData } from './strudel-settings';
+  import StrudelControls from './StrudelControls.svelte';
+  import { portal } from '$lib/dom/portal';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { onMount, onDestroy } from 'svelte';
   import StrudelEditor from '$lib/components/StrudelEditor.svelte';
+  import StrudelEditorSurface from '$objects/strudel/StrudelEditorSurface.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -16,8 +20,6 @@
   import { StrudelTransportSync } from '$lib/strudel/StrudelTransportSync';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import * as Popover from '$lib/components/ui/popover';
-  import { portal } from '$lib/dom/portal';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { isSidebarOpen } from '../../stores/ui.store';
   import {
@@ -25,13 +27,13 @@
     closeDetachedStrudelEditor,
     openDetachedStrudelEditor
   } from '../../stores/detached-strudel-editor.store';
-  import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
   import {
     editorFontFamily,
     editorFontSize,
-    editorFullscreenTextBackgroundOpacity
+    editorFullscreenFontSize
   } from '../../stores/editor.store';
   import { useCodeSidebarTarget } from '$lib/code-editor/use-code-sidebar-target.svelte';
+  import { openCodeEditorSidebar } from '../../stores/code-editor-layout.store';
   import {
     getExpandedDismissShortcutLabel,
     isExpandedDismissKey,
@@ -41,18 +43,12 @@
   // Get node data from XY Flow - nodes receive their data as props
   let {
     id: nodeId,
-    data
+    data,
+    selected
   }: {
     id: string;
-    data: {
-      code: string;
-      fontFamily?: string;
-      fontSize?: number;
-      showConsole?: boolean;
-      syncTransport?: boolean;
-      muted?: boolean;
-      styles?: Record<string, any>;
-    };
+    selected: boolean;
+    data: StrudelNodeData;
   } = $props();
 
   function initialNodeId() {
@@ -61,9 +57,11 @@
 
   // Get flow utilities to update node data
   const { updateNodeData } = useSvelteFlow();
-  const updateData = useUpdateNodeData();
   const { warnIfNoAudioConnection } = useAudioOutletWarning(initialNodeId());
 
+  let container: MusicCodeContainer;
+  let controls: StrudelControls;
+  let settingsAnchor = $state<HTMLDivElement>();
   let strudelEditor: StrudelEditor | null = null;
   let messageContext: MessageContext | undefined = $state();
   let consoleRef: VirtualConsole | null = $state(null);
@@ -72,11 +70,14 @@
   let hasError = $state(false);
   let isPlaying = $state(false);
   let isInitialized = $state(false);
-  let menuOpen = $state(false);
 
+  const isDetached = $derived($activeDetachedStrudelNodeId === nodeId);
   const code = $derived(data.code || '');
   const fontFamily = $derived(data.fontFamily ?? $editorFontFamily);
-  const fontSize = $derived(data.fontSize ?? $editorFontSize);
+  const fontSizes = $derived(
+    resolveStrudelFontSizes(data, $editorFontSize, $editorFullscreenFontSize)
+  );
+  const fontSize = $derived(isDetached ? fontSizes.expanded : fontSizes.normal);
   const dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
   const customConsole = createCustomConsole(initialNodeId());
 
@@ -118,8 +119,10 @@
           updateNodeData(nodeId, { fontFamily: value });
         })
         .with(strudelMessages.setFontSize, ({ value }) => {
-          strudelEditor?.editor?.setFontSize(value);
           updateNodeData(nodeId, { fontSize: value });
+        })
+        .with(strudelMessages.setExpandedFontSize, ({ value }) => {
+          updateNodeData(nodeId, { expandedFontSize: value });
         })
         .with(strudelMessages.stop, stop)
         .with(strudelMessages.mute, () => setMuted(true))
@@ -227,48 +230,21 @@
     }
   }
 
-  function handleUpdateState(state: any) {
-    isPlaying = state.started;
+  function handleUpdateState(state: unknown) {
+    isPlaying =
+      typeof state === 'object' && state !== null && 'started' in state && state.started === true;
   }
 
-  // For absolute positioning of console
-  let editorContainer: HTMLDivElement | null = $state(null);
-  let editorContainerWidth = $state(0);
-  const consoleGap = 8;
-
-  // Watch for size changes to the editor container
-  $effect(() => {
-    if (!editorContainer) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      editorContainerWidth = editorContainer?.clientWidth ?? 0;
-    });
-
-    resizeObserver.observe(editorContainer);
-
-    return () => resizeObserver.disconnect();
-  });
-
-  const consoleLeftPos = $derived(editorContainerWidth + consoleGap);
   const syncTransport = $derived(data.syncTransport ?? false);
   const muted = $derived(data.muted ?? false);
-  const isDetached = $derived($activeDetachedStrudelNodeId === nodeId);
+  const runtimeStatus = $derived.by(() => {
+    if (muted) return 'muted';
+    if (isPlaying) return 'playing';
 
-  const detachedPortalTarget = $derived(
-    isDetached && typeof document !== 'undefined' ? document.body : null
-  );
+    return 'stopped';
+  });
 
-  const detachedBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
-  const detachedTextBackground = $derived(
-    `rgba(9, 9, 11, ${$editorFullscreenTextBackgroundOpacity / 100})`
-  );
   const tracker = useNodeDataTracker(initialNodeId());
-
-  function setSyncTransport(value: boolean) {
-    const oldValue = syncTransport;
-    updateNodeData(nodeId, { syncTransport: value });
-    tracker.commit('syncTransport', oldValue, value);
-  }
 
   function setMuted(value: boolean) {
     const oldValue = muted;
@@ -301,8 +277,18 @@
 
   function openExpandedEditor() {
     openDetachedStrudelEditor(nodeId);
+  }
 
-    menuOpen = false;
+  function openSidebarEditor() {
+    openCodeEditorSidebar({
+      nodeId,
+      dataKey: 'code',
+      language: 'plain',
+      nodeType: 'strudel',
+      title: 'strudel',
+      onchange: setCode,
+      onrun: evaluate
+    });
   }
 
   function closeExpandedEditor() {
@@ -316,7 +302,9 @@
     isFullscreenActive.set(true);
 
     const handleKeydown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       if (!isExpandedDismissKey(event)) return;
+      if (document.querySelector('[data-strudel-panel][data-state="open"]')) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -339,204 +327,81 @@
   });
 </script>
 
-<div class="relative">
-  <div class="group relative">
-    <div class="flex flex-col gap-2">
-      <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div class="node-title-drag-handle z-10 rounded-lg bg-zinc-900 px-2 py-1">
-          <div class="font-mono text-xs font-medium text-zinc-400">strudel</div>
-        </div>
+{#snippet strudelHandles()}
+  <TypedHandle
+    port="inlet"
+    spec={{ handleType: 'message', handleId: nodeId }}
+    total={1}
+    index={0}
+    {nodeId}
+  />
+{/snippet}
 
-        <div class="flex items-center gap-1">
-          <!-- Play/Stop button (hidden when synced to transport) -->
-          {#if isInitialized && !syncTransport}
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                {#if isPlaying}
-                  <button class="node-floating-button" onclick={stop}>
-                    <Square class="h-4 w-4 text-zinc-300" />
-                  </button>
-                {:else}
-                  <button class="node-floating-button" onclick={evaluate}>
-                    <Play class="h-4 w-4 text-zinc-300" />
-                  </button>
-                {/if}
-              </Tooltip.Trigger>
-              <Tooltip.Content>{isPlaying ? 'Stop' : 'Play'}</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
+{#snippet strudelOutlets()}
+  <TypedHandle port="outlet" spec={{ handleType: 'audio' }} total={1} index={0} {nodeId} />
+{/snippet}
 
-          <Popover.Root bind:open={menuOpen}>
-            <Popover.Trigger>
-              <button
-                class={[
-                  'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-                  !menuOpen && 'node-floating-controls'
-                ]}
-              >
-                <Ellipsis class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Popover.Trigger>
+{#snippet strudelActions()}
+  {#if isInitialized && !syncTransport}
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        onclick={isPlaying ? stop : evaluate}
+        aria-label={isPlaying ? 'Stop Strudel' : 'Play Strudel'}
+      >
+        {#if isPlaying}<Square class="h-4 w-4" />{:else}<Play class="h-4 w-4" />{/if}
+      </Tooltip.Trigger>
+      <Tooltip.Content>{isPlaying ? 'Stop' : 'Play'}</Tooltip.Content>
+    </Tooltip.Root>
+  {/if}
+{/snippet}
 
-            <Popover.Content
-              class="w-48 p-1"
-              side="right"
-              align="start"
-              sideOffset={10}
-              onCloseAutoFocus={(e) => e.preventDefault()}
-            >
-              <button
-                class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-                onclick={() => {
-                  updateData<{ showConsole?: boolean }>(nodeId, (data) => ({
-                    showConsole: !data.showConsole
-                  }));
-                  menuOpen = false;
-                }}
-              >
-                <Terminal class="h-4 w-4" />
-                {data.showConsole ? 'Hide Console' : 'Show Console'}
-              </button>
+{#snippet strudelControls(expanded: boolean)}
+  <StrudelControls
+    bind:this={controls}
+    {nodeId}
+    {data}
+    {expanded}
+    sidePanelTarget={settingsAnchor}
+    onCompactSettings={() => container.closeInspection()}
+    onExpand={openExpandedEditor}
+    onLayoutChange={(collapsed) => {
+      container.setEditorCollapsed(collapsed);
+      if (isDetached) closeExpandedEditor();
+    }}
+  />
+{/snippet}
 
-              <button
-                class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-                onclick={openExpandedEditor}
-              >
-                <Expand class="h-4 w-4" />
-                Expand Editor
-              </button>
+{#snippet inlineStrudelControls()}
+  {@render strudelControls(false)}
+{/snippet}
 
-              <button
-                class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-                onclick={() => {
-                  setSyncTransport(!syncTransport);
-                  menuOpen = false;
-                }}
-              >
-                <Link class={['h-4 w-4', syncTransport && 'text-blue-400']} />
-                {syncTransport ? 'Unsync Transport' : 'Sync to Transport'}
-              </button>
+{#snippet expandedStrudelControls()}
+  {@render strudelControls(true)}
+{/snippet}
 
-              <button
-                class={[
-                  'flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700',
-                  muted ? 'text-red-400' : 'text-zinc-300'
-                ]}
-                onclick={() => {
-                  setMuted(!muted);
-                  menuOpen = false;
-                }}
-              >
-                <VolumeX class="h-4 w-4" />
-                {muted ? 'Unmute' : 'Mute'}
-              </button>
-            </Popover.Content>
-          </Popover.Root>
-        </div>
-      </div>
+{#snippet strudelEditorControls()}
+  <Tooltip.Root>
+    <Tooltip.Trigger
+      class="cursor-pointer rounded p-1 text-zinc-300 hover:bg-zinc-700"
+      aria-label="Strudel settings"
+      onclick={(event) => controls.toggleSettings(event.currentTarget)}
+      ><Settings class="h-4 w-4" /></Tooltip.Trigger
+    >
+    <Tooltip.Content>Settings</Tooltip.Content>
+  </Tooltip.Root>
+{/snippet}
 
-      <div class="relative">
-        <TypedHandle
-          port="inlet"
-          spec={{ handleType: 'message', handleId: nodeId }}
-          total={1}
-          index={0}
-          {nodeId}
-        />
-
-        <div
-          bind:this={editorContainer}
-          use:portal={detachedPortalTarget}
-          class={[
-            'nodrag nopan transition-opacity',
-            isDetached
-              ? 'strudel-detached-editor fixed inset-0 z-[60] flex items-stretch justify-stretch'
-              : 'flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-2',
-            !isDetached && (hasError ? 'border-red-500' : 'border-transparent'),
-            muted ? 'opacity-40' : 'opacity-100'
-          ]}
-          style={isDetached
-            ? `${data.styles?.container ?? ''};background-color:${detachedBackground};`
-            : (data.styles?.container ?? '')}
-        >
-          {#if isDetached}
-            <div class="detached-editor-actions absolute z-10 flex gap-1">
-              {#if isInitialized && !syncTransport}
-                <Tooltip.Root>
-                  <Tooltip.Trigger>
-                    {#if isPlaying}
-                      <button
-                        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
-                        onclick={stop}
-                        aria-label="Stop Strudel"
-                      >
-                        <Square class="h-4 w-4" />
-                      </button>
-                    {:else}
-                      <button
-                        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
-                        onclick={evaluate}
-                        aria-label="Run Strudel"
-                      >
-                        <Play class="h-4 w-4" />
-                      </button>
-                    {/if}
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>{isPlaying ? 'Stop' : 'Run Strudel'}</Tooltip.Content>
-                </Tooltip.Root>
-              {/if}
-
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
-                    onclick={closeExpandedEditor}
-                    aria-label="Close expanded Strudel editor"
-                  >
-                    <X class="h-4 w-4" />
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content>Close Expanded Editor ({dismissShortcutLabel})</Tooltip.Content>
-              </Tooltip.Root>
-            </div>
-          {/if}
-
-          <div
-            class={[
-              'strudel-editor-shell nodrag nowheel overflow-auto',
-              isDetached ? 'h-full w-full' : 'max-h-[600px] max-w-[800px]'
-            ]}
-            style:--fullscreen-text-background={isDetached ? detachedTextBackground : undefined}
-          >
-            <StrudelEditor
-              {code}
-              {fontFamily}
-              {fontSize}
-              bind:this={strudelEditor}
-              onUpdateState={handleUpdateState}
-              onBeforeEvaluate={() => {
-                consoleRef?.clearConsole();
-                hasError = false;
-              }}
-              onchange={(newCode) => {
-                updateNodeData(nodeId, { code: newCode });
-              }}
-              class="w-full"
-              {nodeId}
-              {messageContext}
-              {customConsole}
-            />
-          </div>
-        </div>
-
-        <TypedHandle port="outlet" spec={{ handleType: 'audio' }} total={1} index={0} {nodeId} />
-      </div>
-    </div>
-  </div>
+{#snippet strudelSidePanel()}
+  <div bind:this={settingsAnchor}></div>
 
   <!-- Virtual Console (right side, absolutely positioned) -->
 
-  <div class="absolute top-0" style="left: {consoleLeftPos}px;" class:hidden={!data.showConsole}>
+  <div
+    use:portal={isDetached ? document.body : null}
+    class={isDetached ? 'fixed top-20 right-6 z-[70] w-80 max-w-[calc(100vw-3rem)]' : ''}
+    class:hidden={!data.showConsole}
+  >
     <VirtualConsole
       bind:this={consoleRef}
       {nodeId}
@@ -545,50 +410,60 @@
       shouldAutoShowConsoleOnError
     />
   </div>
+{/snippet}
+
+<div class="relative">
+  <MusicCodeContainer
+    bind:this={container}
+    {nodeId}
+    {data}
+    {selected}
+    {hasError}
+    label="strudel"
+    viewportStyle={data.styles?.container}
+    status={runtimeStatus}
+    expanded={isDetached}
+    onExpand={openExpandedEditor}
+    onOpenSidebar={openSidebarEditor}
+    onInspect={() => controls.hideSettings()}
+    actions={strudelActions}
+    controls={inlineStrudelControls}
+    editorControls={strudelEditorControls}
+    handles={strudelHandles}
+    outlets={strudelOutlets}
+    sidePanel={strudelSidePanel}
+  >
+    <StrudelEditorSurface
+      {isDetached}
+      {muted}
+      {isInitialized}
+      {syncTransport}
+      {isPlaying}
+      {dismissShortcutLabel}
+      {evaluate}
+      {stop}
+      {closeExpandedEditor}
+      controls={expandedStrudelControls}
+      containerStyle={data.styles?.container}
+    >
+      <StrudelEditor
+        {code}
+        {fontFamily}
+        {fontSize}
+        bind:this={strudelEditor}
+        onUpdateState={handleUpdateState}
+        onBeforeEvaluate={() => {
+          consoleRef?.clearConsole();
+          hasError = false;
+        }}
+        onchange={(newCode) => {
+          updateNodeData(nodeId, { code: newCode });
+        }}
+        class="h-full w-full"
+        {nodeId}
+        {messageContext}
+        {customConsole}
+      />
+    </StrudelEditorSurface>
+  </MusicCodeContainer>
 </div>
-
-<style>
-  :global(.strudel-editor-shell .cm-editor) {
-    height: 100%;
-  }
-
-  :global(.strudel-editor-shell .cm-content) {
-    max-width: none !important;
-  }
-
-  :global(.strudel-editor-shell .cm-gutters) {
-    display: none !important;
-  }
-
-  :global(.strudel-detached-editor .strudel-editor-shell .cm-editor) {
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    font-size: 28px !important;
-  }
-
-  :global(.strudel-detached-editor .strudel-editor-shell .cm-focused),
-  :global(.strudel-detached-editor .strudel-editor-shell *:focus) {
-    outline: none !important;
-  }
-
-  :global(.strudel-detached-editor .strudel-editor-shell .cm-content) {
-    padding: 48px !important;
-    line-height: 1.55 !important;
-  }
-
-  :global(.strudel-detached-editor .strudel-editor-shell .cm-line) {
-    width: fit-content;
-    padding: 0 8px !important;
-    background: var(--fullscreen-text-background);
-  }
-
-  :global(.strudel-detached-editor .strudel-editor-shell .cm-scroller) {
-    padding: 8px 0 !important;
-  }
-
-  .detached-editor-actions {
-    top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
-    right: calc(env(safe-area-inset-right, 0px) + 1.5rem);
-  }
-</style>

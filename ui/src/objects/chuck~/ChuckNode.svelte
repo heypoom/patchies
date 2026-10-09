@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CirclePlus, Delete, Expand, Replace, Settings } from '@lucide/svelte/icons';
+  import { CirclePlus, Delete, Replace, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -9,16 +9,15 @@
   import { match } from 'ts-pattern';
   import { chuckMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import CommonExprLayout from '$objects/expression/CommonExprLayout.svelte';
+  import MusicCodeEditor from '$lib/music-code-layout/MusicCodeEditor.svelte';
+  import type { MusicCodeLayoutData } from '$lib/music-code-layout/music-code-layout';
   import { keymap } from '@codemirror/view';
+  import { Prec } from '@codemirror/state';
   import type { ChuckShred, ChuckNode } from '$objects/chuck~/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$objects/chuck~/ChuckSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { hasChuckAdcReference } from '$lib/audio/visible-audio-inputs';
-
-  let contentContainer: HTMLDivElement | null = null;
-  let contentWidth = $state(100);
 
   let {
     id: nodeId,
@@ -26,7 +25,7 @@
     selected
   }: {
     id: string;
-    data: { expr: string };
+    data: MusicCodeLayoutData & { expr: string };
     selected: boolean;
   } = $props();
 
@@ -34,12 +33,7 @@
     return nodeId;
   }
 
-  function getInitialIsEditing() {
-    return !data.expr;
-  }
-
-  let isEditing = $state(getInitialIsEditing());
-  let layoutRef = $state<any>();
+  let layoutRef: MusicCodeEditor | undefined = $state();
   let showSettings = $state(false);
   let expressionInternalsTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -52,6 +46,9 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
+      .with(chuckMessages.setCode, ({ value }) => {
+        handleExpressionChange(value);
+      })
       .with(chuckMessages.string, async (nextExpr) => {
         updateNodeData(nodeId, { expr: nextExpr });
         await send('add', nextExpr);
@@ -99,16 +96,25 @@
 
   // Custom keybinds for ChucK operations
   const chuckKeymaps = [
-    keymap.of([
-      {
-        // Cmd + \ = add new shred
-        key: 'Cmd-\\',
-        run: () => {
-          handleAddShred();
-          return true;
+    Prec.high(
+      keymap.of([
+        {
+          // Cmd + \ = add new shred
+          key: 'Mod-\\',
+          run: () => {
+            handleAddShred();
+            return true;
+          }
+        },
+        {
+          key: 'Mod-Backspace',
+          run: () => {
+            removeChuckCode();
+            return true;
+          }
         }
-      }
-    ])
+      ])
+    )
   ];
 
   const handleExpressionChange = (newExpr: string) => {
@@ -148,35 +154,14 @@
     }
   }
 
-  function updateContentWidth() {
-    if (!contentContainer) return;
-    contentWidth = contentContainer.offsetWidth;
-  }
-
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
     audioService.createNode(nodeId, 'chuck~');
-    subscribeShredsStore();
+    const unsubscribeShreds = subscribeShredsStore();
 
-    if (isEditing) {
-      setTimeout(() => layoutRef?.focus(), 10);
-    }
-
-    updateContentWidth();
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateContentWidth();
-    });
-
-    if (contentContainer) {
-      resizeObserver.observe(contentContainer);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return () => unsubscribeShreds?.();
   });
 
   onDestroy(() => {
@@ -248,193 +233,119 @@
   />
 {/snippet}
 
-{#snippet detachedChuckActions()}
+{#snippet chuckButtons(detached: boolean)}
   <Tooltip.Root>
-    <Tooltip.Trigger>
-      <button
-        onclick={handleReplace}
-        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={isReplaceDisabled}
-        aria-label="Replace ChucK shred"
-      >
-        <Replace class="h-4 w-4" />
-      </button>
+    <Tooltip.Trigger
+      onclick={handleReplace}
+      class={[
+        'cursor-pointer rounded text-zinc-300 disabled:cursor-not-allowed disabled:opacity-50',
+        detached
+          ? 'bg-black/35 p-2 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100'
+          : 'p-1 hover:bg-zinc-700'
+      ]}
+      disabled={isReplaceDisabled}
+      aria-label="Replace ChucK shred"
+    >
+      <Replace class="h-4 w-4" />
     </Tooltip.Trigger>
     <Tooltip.Content>Replace (Cmd+Enter)</Tooltip.Content>
   </Tooltip.Root>
 
   <Tooltip.Root>
-    <Tooltip.Trigger>
-      <button
-        onclick={handleAddShred}
-        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={!data.expr.trim()}
-        aria-label="Add ChucK shred"
-      >
-        <CirclePlus class="h-4 w-4" />
-      </button>
+    <Tooltip.Trigger
+      onclick={handleAddShred}
+      class={[
+        'cursor-pointer rounded text-zinc-300 disabled:cursor-not-allowed disabled:opacity-50',
+        detached
+          ? 'bg-black/35 p-2 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100'
+          : 'p-1 hover:bg-zinc-700'
+      ]}
+      disabled={!data.expr.trim()}
+      aria-label="Add ChucK shred"
+    >
+      <CirclePlus class="h-4 w-4" />
     </Tooltip.Trigger>
     <Tooltip.Content>Add Shred (Cmd+\)</Tooltip.Content>
   </Tooltip.Root>
 
   <Tooltip.Root>
-    <Tooltip.Trigger>
-      <button
-        onclick={removeChuckCode}
-        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={shreds.length === 0}
-        aria-label="Remove ChucK shred"
-      >
-        <Delete class="h-4 w-4" />
-      </button>
+    <Tooltip.Trigger
+      onclick={removeChuckCode}
+      class={[
+        'cursor-pointer rounded text-zinc-300 disabled:cursor-not-allowed disabled:opacity-50',
+        detached
+          ? 'bg-black/35 p-2 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100'
+          : 'p-1 hover:bg-zinc-700'
+      ]}
+      disabled={shreds.length === 0}
+      aria-label="Remove ChucK shred"
+    >
+      <Delete class="h-4 w-4" />
     </Tooltip.Trigger>
     <Tooltip.Content>Remove (Cmd+Backspace)</Tooltip.Content>
   </Tooltip.Root>
 {/snippet}
 
-<div class="relative flex gap-x-3">
-  <div class="group relative">
-    <div class="flex flex-col gap-2" bind:this={contentContainer}>
-      <!-- Floating toolbar -->
-      <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div class="node-floating-controls flex gap-1">
-          <!-- Replace button -->
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={handleReplace}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isReplaceDisabled}
-              >
-                <Replace class="h-4 w-4" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Replace (Cmd+Enter)</Tooltip.Content>
-          </Tooltip.Root>
-
-          <!-- Add shred button -->
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={handleAddShred}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!data.expr.trim()}
-              >
-                <CirclePlus class="h-4 w-4" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Add Shred (Cmd+\)</Tooltip.Content>
-          </Tooltip.Root>
-
-          <!-- Remove button -->
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={removeChuckCode}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={shreds.length === 0}
-              >
-                <Delete class="h-4 w-4" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Remove (Cmd+Backspace)</Tooltip.Content>
-          </Tooltip.Root>
-        </div>
-
-        <div class="node-floating-controls flex gap-1">
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={() => layoutRef?.openExpandedEditor()}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!data.expr.trim()}
-                aria-label="Expand ChucK editor"
-              >
-                <Expand class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Expand Editor</Tooltip.Content>
-          </Tooltip.Root>
-
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                onclick={() => (showSettings = !showSettings)}
-                type="button"
-                aria-label={showSettings ? 'Close settings' : 'Open settings'}
-                aria-pressed={showSettings}
-              >
-                <Settings class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Settings</Tooltip.Content>
-          </Tooltip.Root>
-        </div>
-      </div>
-
-      <div class="chuck-node-container relative">
-        {@render chuckHandles()}
-
-        <CommonExprLayout
-          bind:this={layoutRef}
-          {nodeId}
-          {data}
-          {selected}
-          expr={data.expr}
-          bind:isEditing
-          placeholder="SinOsc osc => dac; 1::second => now;"
-          editorClass="chuck-node-code-editor"
-          previewContainerClass="chuck-node-preview-container"
-          onExpressionChange={handleExpressionChange}
-          extraExtensions={chuckKeymaps}
-          exitOnRun={false}
-          onRun={handleReplace}
-          nodeType="chuck~"
-          detachedEditorTitle="chuck~"
-          detachedActions={detachedChuckActions}
-          detachedSettings={detachedChuckSettings}
-        />
-
-        {@render chuckOutlets()}
-      </div>
-    </div>
-  </div>
-
-  {#if showSettings}
-    <div class="absolute" style="left: {contentWidth + 10}px">
-      <ChuckSettings
-        {shreds}
-        onRemoveShred={removeShred}
-        onStopAll={stopChuck}
-        onClose={() => (showSettings = false)}
-      />
-    </div>
+{#snippet chuckActions()}
+  {@render chuckButtons(false)}
+  {#if !data.editorCollapsed}
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        class="cursor-pointer rounded p-1 text-zinc-300 hover:bg-zinc-700"
+        aria-label="ChucK settings"
+        aria-expanded={showSettings}
+        onclick={() => (showSettings = !showSettings)}><Settings class="h-4 w-4" /></Tooltip.Trigger
+      >
+      <Tooltip.Content>Settings</Tooltip.Content>
+    </Tooltip.Root>
   {/if}
+{/snippet}
+
+{#snippet detachedChuckActions()}
+  {@render chuckButtons(true)}
+{/snippet}
+
+{#snippet chuckMenu()}
+  {#if data.editorCollapsed}
+    <button
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+      onclick={() => (showSettings = !showSettings)}
+    >
+      <Settings class="h-4 w-4" />Settings
+    </button>
+  {/if}
+{/snippet}
+
+{#snippet chuckSidePanel()}
+  {#if showSettings}
+    <ChuckSettings
+      {shreds}
+      onRemoveShred={removeShred}
+      onStopAll={stopChuck}
+      onClose={() => (showSettings = false)}
+    />
+  {/if}
+{/snippet}
+
+<div class="relative">
+  <MusicCodeEditor
+    bind:this={layoutRef}
+    {nodeId}
+    {data}
+    {selected}
+    sidePanel={chuckSidePanel}
+    value={data.expr}
+    label="chuck~"
+    status={`${shreds.length} ${shreds.length === 1 ? 'shred' : 'shreds'}`}
+    placeholder="SinOsc osc => dac; 1::second => now;"
+    onchange={handleExpressionChange}
+    onrun={handleReplace}
+    extraExtensions={chuckKeymaps}
+    actions={chuckActions}
+    menu={chuckMenu}
+    handles={chuckHandles}
+    outlets={chuckOutlets}
+    detachedActions={detachedChuckActions}
+    detachedSettings={detachedChuckSettings}
+  />
 </div>
-
-<style>
-  :global(.chuck-node-preview-container) {
-    --patchies-common-expr-padding-x: 0.75rem;
-    --patchies-common-expr-padding-y: 0.5rem;
-  }
-
-  :global(.chuck-node-code-editor) {
-    --patchies-common-expr-padding-x: 0.35rem;
-    --patchies-common-expr-padding-y: 0.45rem;
-  }
-
-  :global(.chuck-node-preview-container) {
-    width: fit-content;
-    max-height: 500px;
-    overflow-y: hidden;
-  }
-
-  :global(.chuck-node-code-editor .cm-content) {
-    padding: var(--patchies-common-expr-padding-y) var(--patchies-common-expr-padding-x) !important;
-  }
-
-  :global(.chuck-node-container .expr-preview) {
-    overflow-x: hidden;
-  }
-</style>

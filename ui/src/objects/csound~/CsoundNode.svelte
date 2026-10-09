@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Expand, Pause, Play, Settings } from '@lucide/svelte/icons';
+  import { Link, Pause, Play, RotateCw, Unlink } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -7,13 +7,14 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import CommonExprLayout from '$objects/expression/CommonExprLayout.svelte';
+  import MusicCodeEditor from '$lib/music-code-layout/MusicCodeEditor.svelte';
+  import type { MusicCodeLayoutData } from '$lib/music-code-layout/music-code-layout';
   import { match } from 'ts-pattern';
   import { csoundMessages } from '$lib/objects/schemas';
   import type { CsoundNode } from '$objects/csound~/CsoundNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import { useNodeDataTracker } from '$lib/history';
-  import TransportSyncSettings from '$lib/components/settings/TransportSyncSettings.svelte';
+  import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   let {
@@ -22,7 +23,7 @@
     selected
   }: {
     id: string;
-    data: { expr: string; syncTransport?: boolean };
+    data: MusicCodeLayoutData & { expr: string; syncTransport?: boolean };
     selected: boolean;
   } = $props();
 
@@ -30,16 +31,8 @@
     return nodeId;
   }
 
-  function getInitialIsEditing() {
-    return !data.expr;
-  }
-
-  let isEditing = $state(getInitialIsEditing());
-  let layoutRef = $state<any>();
+  let layoutRef: MusicCodeEditor | undefined = $state();
   let isPlaying = $state(false);
-  let showSettings = $state(false);
-  let contentContainer: HTMLDivElement | null = null;
-  let contentWidth = $state(100);
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
@@ -60,15 +53,14 @@
     csoundNode?.setSyncTransport(value);
   }
 
-  function updateContentWidth() {
-    if (!contentContainer) return;
-    contentWidth = contentContainer.offsetWidth;
-  }
-
   const getCsoundNode = () => audioService.getNodeById(nodeId) as CsoundNode | undefined;
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     const shouldForward = match(message)
+      .with(csoundMessages.setCode, ({ value }) => {
+        handleExpressionChange(value);
+        return false;
+      })
       .with(csoundMessages.expand, () => {
         layoutRef?.openExpandedEditor();
         return false;
@@ -78,15 +70,27 @@
         return false;
       })
       .with(csoundMessages.bang, () => {
-        isPlaying = true;
-        return true;
+        handleRun();
+        return false;
       })
       .with(csoundMessages.run, () => {
-        isPlaying = true;
-        return true;
+        handleRun();
+        return false;
       })
       .with(csoundMessages.resume, () => {
         isPlaying = true;
+        return true;
+      })
+      .with(csoundMessages.play, () => {
+        isPlaying = true;
+        return true;
+      })
+      .with(csoundMessages.pause, () => {
+        isPlaying = false;
+        return true;
+      })
+      .with(csoundMessages.stop, () => {
+        isPlaying = false;
         return true;
       })
       .otherwise(() => true);
@@ -113,7 +117,7 @@
 
   const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
 
-  const handleRun = () => runCsoundCode(data.expr);
+  const handleRun = (code?: string) => runCsoundCode(code ?? data.expr);
 
   async function handlePlayPause() {
     const csoundNode = getCsoundNode();
@@ -140,24 +144,6 @@
     if (syncTransport) {
       getCsoundNode()?.setSyncTransport(true);
     }
-
-    if (isEditing) {
-      setTimeout(() => layoutRef?.focus(), 10);
-    }
-
-    updateContentWidth();
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateContentWidth();
-    });
-
-    if (contentContainer) {
-      resizeObserver.observe(contentContainer);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
   });
 
   onDestroy(() => {
@@ -199,120 +185,56 @@
   />
 {/snippet}
 
-<div class="relative flex gap-x-3">
-  <div class="group relative">
-    <div class="flex flex-col gap-2" bind:this={contentContainer}>
-      <!-- Floating toolbar -->
-      <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div></div>
+{#snippet csoundActions()}
+  <Tooltip.Root>
+    <Tooltip.Trigger
+      onclick={() => handleRun()}
+      class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+      aria-label="Run Csound code"
+    >
+      <RotateCw class="h-4 w-4" />
+    </Tooltip.Trigger>
+    <Tooltip.Content>Run Code (Cmd+Enter)</Tooltip.Content>
+  </Tooltip.Root>
 
-        <div class="node-floating-controls flex gap-1">
-          <!-- Play/Pause button (hidden when synced to transport) -->
-          {#if !syncTransport}
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button
-                  onclick={handlePlayPause}
-                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                >
-                  <PlaybackIcon class="h-4 w-4" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-
-          <!-- Expand button -->
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={() => layoutRef?.openExpandedEditor()}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!data.expr.trim()}
-                aria-label="Expand Csound editor"
-              >
-                <Expand class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Expand Editor</Tooltip.Content>
-          </Tooltip.Root>
-
-          <!-- Settings button -->
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                onclick={() => (showSettings = !showSettings)}
-              >
-                <Settings class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Settings</Tooltip.Content>
-          </Tooltip.Root>
-        </div>
-      </div>
-
-      <div class="csound-node-container relative">
-        <CommonExprLayout
-          bind:this={layoutRef}
-          {nodeId}
-          {data}
-          {selected}
-          expr={data.expr}
-          bind:isEditing
-          editorClass="csound-node-code-editor"
-          previewContainerClass="csound-node-preview-container"
-          onExpressionChange={handleExpressionChange}
-          exitOnRun={false}
-          onRun={handleRun}
-          nodeType="csound~"
-          detachedEditorTitle="csound~"
-          handles={csoundInlets}
-          outlets={csoundOutlets}
-        />
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings Panel -->
-  {#if showSettings}
-    <div class="absolute" style="left: {contentWidth + 10}px">
-      <TransportSyncSettings
-        {syncTransport}
-        onSyncTransportChange={setSyncTransport}
-        onClose={() => (showSettings = false)}
-      />
-    </div>
+  {#if !syncTransport}
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        onclick={handlePlayPause}
+        class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        aria-label={isPlaying ? 'Pause Csound' : 'Play Csound'}
+      >
+        <PlaybackIcon class="h-4 w-4" />
+      </Tooltip.Trigger>
+      <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
+    </Tooltip.Root>
   {/if}
+{/snippet}
+
+{#snippet csoundMenu()}
+  <Popover.Close
+    class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+    onclick={() => setSyncTransport(!syncTransport)}
+  >
+    {#if syncTransport}<Unlink class="h-4 w-4" />{:else}<Link class="h-4 w-4" />{/if}
+    {syncTransport ? 'Unsync from transport' : 'Sync to transport'}
+  </Popover.Close>
+{/snippet}
+
+<div class="relative">
+  <MusicCodeEditor
+    bind:this={layoutRef}
+    {nodeId}
+    {data}
+    {selected}
+    value={data.expr}
+    label="csound~"
+    status={isPlaying ? 'playing' : 'paused'}
+    onchange={handleExpressionChange}
+    onrun={handleRun}
+    actions={csoundActions}
+    menu={csoundMenu}
+    handles={csoundInlets}
+    outlets={csoundOutlets}
+  />
 </div>
-
-<style>
-  :global(.csound-node-preview-container) {
-    --patchies-common-expr-padding-x: 0.75rem;
-    --patchies-common-expr-padding-y: 0.5rem;
-  }
-
-  :global(.csound-node-code-editor) {
-    --patchies-common-expr-padding-x: 0.35rem;
-    --patchies-common-expr-padding-y: 0.45rem;
-  }
-
-  :global(.csound-node-preview-container) {
-    width: fit-content;
-    max-height: 500px;
-    overflow-y: hidden;
-  }
-
-  :global(.csound-node-code-editor .cm-content) {
-    padding: var(--patchies-common-expr-padding-y) var(--patchies-common-expr-padding-x) !important;
-  }
-
-  :global(.csound-node-container .expr-preview) {
-    overflow-x: hidden;
-  }
-
-  :global(.csound-node-container .expr-display),
-  :global(.csound-node-container .expr-editor-container) {
-    max-width: 600px !important;
-  }
-</style>

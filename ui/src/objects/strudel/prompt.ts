@@ -23,6 +23,8 @@ Strudel live music coding based on TidalCycles.
 - Bang is {type: 'bang'}
 - Control messages MUST have a 'type' field (e.g. {type: 'bang'}, {type: 'play'})
 - Common control messages: bang (most common), clear, reset, start, stop, pause, play, run, toggle
+- {type: 'setFontSize', value: 16} sets the normal editor size.
+- {type: 'setExpandedFontSize', value: 32} sets the fullscreen size, which must exceed normal size.
 
 Example - Drum pattern:
 \`\`\`json

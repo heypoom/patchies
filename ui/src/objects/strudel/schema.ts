@@ -6,6 +6,7 @@ import { Bang, Collapse, Expand, Run, messages, SetCode } from '$lib/objects/sch
 
 // Strudel-specific message schemas
 const SetFontSize = msg('setFontSize', { value: Type.Number() });
+const SetExpandedFontSize = msg('setExpandedFontSize', { value: Type.Number() });
 const SetFontFamily = msg('setFontFamily', { value: Type.String() });
 const SetStyles = msg('setStyles', {
   value: Type.Object({ container: Type.Optional(Type.String()) })
@@ -18,6 +19,7 @@ export const strudelMessages = {
   ...messages,
   string: schema(Type.String()),
   setFontSize: schema(SetFontSize),
+  setExpandedFontSize: schema(SetExpandedFontSize),
   setFontFamily: schema(SetFontFamily),
   setStyles: schema(SetStyles),
   mute: schema(Mute),
@@ -43,7 +45,8 @@ export const strudelSchema: ObjectSchema = {
         { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Type.String(), description: 'Set the code in the editor' },
         { schema: SetCode, description: 'Set the code in the editor' },
-        { schema: SetFontSize, description: 'Set editor font size' },
+        { schema: SetFontSize, description: 'Set normal editor font size' },
+        { schema: SetExpandedFontSize, description: 'Set expanded editor font size' },
         { schema: SetFontFamily, description: 'Set editor font family' },
         { schema: SetStyles, description: 'Set custom styles for editor container' },
         { schema: Mute, description: 'Silence audio output' },

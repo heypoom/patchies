@@ -15,6 +15,27 @@ Create expressive, dynamic music pieces and complex audio patterns.
 - Use `Ctrl/Cmd + Enter` to re-evaluate the code
 - Connect the `out~` object to hear audio output
 
+## Editor Layout
+
+The code editor is placed inline in the patch.
+
+- Select the object and drag the resize handles to change the container size. Code scrolls inside its container.
+- Toggle **Resizing** to "off" in settings to lock that size.
+- Use **Hide Code** for a compact object that keeps running headlessly. Clicking
+  on the code button opens the code in the preferred editor (e.g. inline, sidebar).
+- **Keep Editor in Patch** restores the inline editor.
+- **Expand Editor** opens the editor in fullscreen.
+
+To update code while it is hidden, connect a `js` object to the message inlet:
+
+```javascript
+// Store new code without interrupting the running program.
+send({type: 'setCode', value: 's("bd sd")'})
+
+// Run the stored code when you are ready.
+send({type: 'bang'})
+```
+
 ## Runtime
 
 Strudel runs in a separate runtime and does NOT use the
@@ -26,7 +47,7 @@ Strudel runs in a separate runtime and does NOT use the
 
 ## Transport Sync
 
-Enable **Sync to transport** in the overflow menu to lock Strudel's playback to
+Enable **Sync to transport** in Settings to lock Strudel's playback to
 the global [transport](/docs/transport-control). When synced, play/pause and CPM
 is controlled by the transport bar instead of per-node controls.
 
@@ -35,16 +56,29 @@ is controlled by the transport bar instead of per-node controls.
 You can create multiple `strudel` objects, but only **one** plays at a time.
 Use `bang` or `run` messages to switch playback between them.
 
-## Styling The Editor
+## Font Sizes & Font Family
 
-Send style messages into a `strudel` object to tune its editor for live coding.
-This is useful when the editor is expanded over the background output.
+The settings panel lets you set font sizes and font families for the code editor.
+
+- Normal and expanded editors have separate font sizes.
+  - Settings edits **Font size** in the normal editor and **Expanded font size** in fullscreen. - Expanded text defaults to 28px and always stays larger than normal text.
+
+## Styling the Container
+
+The settings panel's **Custom Styles** button opens a small CSS editor that lets you style the outer container. Change borders, backgrounds, paddings, backdrop filters and more.
+
+You can also send messages into `strudel` to set font sizes, font families and CSS styles.
+Messages and settings edit the same values, so incoming changes appear in the
+panel and CSS editor too.
 
 Create a `js` object, connect it to `strudel`, and run:
 
 ```javascript
-// Font size
+// Normal editor font size
 send({type: 'setFontSize', value: 25})
+
+// Expanded editor font size (larger than the normal size)
+send({type: 'setExpandedFontSize', value: 40})
 
 // Font family. Use commas to fallback to multiple fonts.
 send({
