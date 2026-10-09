@@ -226,6 +226,11 @@
     background: var(--fullscreen-text-background);
   }
 
+  /* CodeMirror renders empty lines with a lone placeholder break. */
+  :global(.detached-code-editor-overlay .cm-line:has(> br:only-child)) {
+    background: transparent;
+  }
+
   :global(.detached-code-editor-overlay .cm-scroller) {
     padding: 8px 0 !important;
   }

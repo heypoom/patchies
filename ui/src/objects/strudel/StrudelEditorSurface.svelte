@@ -128,6 +128,11 @@
     background: var(--fullscreen-text-background);
   }
 
+  /* CodeMirror renders empty lines with a lone placeholder break. */
+  :global(.strudel-detached-editor .strudel-editor-shell .cm-line:has(> br:only-child)) {
+    background: transparent;
+  }
+
   :global(.strudel-detached-editor .strudel-editor-shell .cm-scroller) {
     padding: 8px 0 !important;
   }
