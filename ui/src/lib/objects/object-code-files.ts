@@ -14,6 +14,9 @@ export interface ObjectCodeFile {
   dataKey: string;
   language: SupportedLanguage;
   content: string;
+  runtimeSource?: string;
+  writePath?: string;
+  readOnly?: boolean;
 }
 
 type SourceDefinition = readonly [string, string, SupportedLanguage];
@@ -29,7 +32,8 @@ const definitions: Record<string, SourceDefinition> = {
   uxn: ['code', 'code.tal', 'assembly'],
   uiua: ['expr', 'code.ua', 'uiua'],
   'chuck~': ['expr', 'code.ck', 'javascript'],
-  'csound~': ['expr', 'code.csd', 'plain']
+  'csound~': ['expr', 'code.csd', 'plain'],
+  pd: ['sourceCode', 'patch.pd', 'puredata']
 };
 
 for (const type of [
@@ -84,6 +88,28 @@ export function getObjectCodeFiles(object: CodeObject): ObjectCodeFile[] {
 
   const [dataKey, filename, language] = definition;
   const content = object.data[dataKey];
+
+  if (nodeType === 'pd' && content == null) {
+    const vfsPath = typeof object.data.vfsPath === 'string' ? object.data.vfsPath : '';
+    const sourceUrl = typeof object.data.sourceUrl === 'string' ? object.data.sourceUrl : '';
+    const runtimeSource = vfsPath || sourceUrl;
+    const writePath = vfsPath.startsWith('patch://') ? vfsPath : undefined;
+
+    return [
+      {
+        objectId: object.id,
+        nodeType,
+        filename,
+        dataKey,
+        language,
+        content: '',
+        runtimeSource,
+        writePath,
+        readOnly: Boolean(runtimeSource && !writePath)
+      }
+    ];
+  }
+
   if (typeof content !== 'string') return [];
 
   return [{ objectId: object.id, nodeType, filename, dataKey, language, content }];
@@ -93,8 +119,13 @@ export function getObjectCodeFiles(object: CodeObject): ObjectCodeFile[] {
 export function editObjectCodeFile(object: CodeObject, filename: string, content: string) {
   const file = getObjectCodeFiles(object).find((file) => file.filename === filename);
   if (!file) throw new Error(`Object source not found: ${object.id}/${filename}`);
+  if (file.readOnly) throw new Error('Detach the mounted Pd source before editing it.');
 
-  return { ...file, content, updates: { [file.dataKey]: content } };
+  return {
+    ...file,
+    content,
+    updates: file.writePath ? null : { [file.dataKey]: content }
+  };
 }
 
 export const getObjectCodeLanguage = (filename: string): SupportedLanguage =>
