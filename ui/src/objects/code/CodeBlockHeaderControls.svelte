@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Terminal } from '@lucide/svelte/icons';
+  import Terminal from '@lucide/svelte/icons/terminal';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import CodeBlockActionButton from './CodeBlockActionButton.svelte';
   import CodeBlockOverflowMenu from './CodeBlockOverflowMenu.svelte';

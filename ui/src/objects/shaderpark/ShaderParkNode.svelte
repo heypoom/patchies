@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { Box } from '@lucide/svelte/icons';
+  import Box from '@lucide/svelte/icons/box';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import {

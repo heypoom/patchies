@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ExternalLink, FileText } from '@lucide/svelte/icons';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
+  import FileText from '@lucide/svelte/icons/file-text';
 
   import { dependenciesSection, portedCode, projectLicense } from '$lib/data/license-data';
 

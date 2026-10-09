@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ExternalLink } from '@lucide/svelte/icons';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
 
   import { specialPeople } from './thanks-tab-data';
   import { revealSection } from './thanks-tab-motion';

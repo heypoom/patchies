@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Check, ChevronDown, ChevronsUpDown, RotateCcw, X } from '@lucide/svelte/icons';
+  import Check from '@lucide/svelte/icons/check';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import X from '@lucide/svelte/icons/x';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
   import SliderValueEditor from '$lib/components/settings/SliderValueEditor.svelte';

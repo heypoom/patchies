@@ -164,7 +164,13 @@ export default defineConfig(() => ({
     minify: false,
     rollupOptions: {
       output: {
+        onlyExplicitManualChunks: true,
         manualChunks: (id: string) => {
+          // Shared helpers must not make optional library chunks startup dependencies.
+          if (id.includes('commonjsHelpers') || id.includes('vite/preload-helper')) {
+            return 'runtime-helpers';
+          }
+
           // Skip chunking for worker files
           if (id.includes('/workers/')) return;
 
@@ -179,10 +185,6 @@ export default defineConfig(() => ({
           // Heavy visual dependencies - chunk separately
           if (id.includes('p5/lib/p5.min')) return 'p5';
           if (id.includes('butterchurn')) return 'butterchurn';
-          if (id.includes('@strudel/')) return 'strudel';
-
-          // CodeMirror - chunk separately
-          if (id.includes('codemirror') || id.includes('@codemirror/')) return 'codemirror';
 
           // Other heavy dependencies
           if (id.includes('@google/generative-ai')) return 'google-ai';

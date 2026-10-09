@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { X, Usb } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
+  import Usb from '@lucide/svelte/icons/usb';
   import { serialPorts } from '../../stores/serial.store';
   import { SerialSystem } from './SerialSystem';
   import {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight } from '@lucide/svelte/icons';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import type { ThreadToolCall } from '$lib/ai/chat/types';
 
   let {

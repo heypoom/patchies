@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Loader, Pause, Play, Expand, X } from '@lucide/svelte/icons';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import Expand from '@lucide/svelte/icons/expand';
+  import X from '@lucide/svelte/icons/x';
   import CodeBlockHeaderControls from './CodeBlockHeaderControls.svelte';
   import CodeBlockActionButton from './CodeBlockActionButton.svelte';
   import { getPrimaryButtonLayout } from './primary-button-layout';

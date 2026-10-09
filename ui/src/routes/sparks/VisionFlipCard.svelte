@@ -1,7 +1,9 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { LayoutGrid, MessageSquare, Copy } from '@lucide/svelte';
+  import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+  import MessageSquare from '@lucide/svelte/icons/message-square';
+  import Copy from '@lucide/svelte/icons/copy';
   import type { Vision } from './types';
 
   const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];

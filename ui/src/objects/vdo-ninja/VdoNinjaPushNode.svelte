@@ -1,6 +1,11 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Settings, X, Video, Info, Dice5, ExternalLink } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
+  import Video from '@lucide/svelte/icons/video';
+  import Info from '@lucide/svelte/icons/info';
+  import Dice5 from '@lucide/svelte/icons/dice-5';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { onMount, onDestroy, untrack } from 'svelte';

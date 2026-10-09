@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { TriangleAlert } from '@lucide/svelte/icons';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import { SvelteMap } from 'svelte/reactivity';
   import { getPresetPackDisplayItems } from '$lib/presets/preset-pack-index';
   import type { PresetPack } from '../../../stores/extensions.store';

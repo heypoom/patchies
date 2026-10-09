@@ -1,18 +1,16 @@
 <script lang="ts">
-  import {
-    Bot,
-    Bug,
-    Check,
-    Code2,
-    Image,
-    MonitorUp,
-    Network,
-    Palette,
-    Settings2,
-    SlidersHorizontal,
-    Timer,
-    X
-  } from '@lucide/svelte/icons';
+  import Bot from '@lucide/svelte/icons/bot';
+  import Bug from '@lucide/svelte/icons/bug';
+  import Check from '@lucide/svelte/icons/check';
+  import Code2 from '@lucide/svelte/icons/code-2';
+  import Image from '@lucide/svelte/icons/image';
+  import MonitorUp from '@lucide/svelte/icons/monitor-up';
+  import Network from '@lucide/svelte/icons/network';
+  import Palette from '@lucide/svelte/icons/palette';
+  import Settings2 from '@lucide/svelte/icons/settings-2';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import Timer from '@lucide/svelte/icons/timer';
+  import X from '@lucide/svelte/icons/x';
   import { CATEGORY_INFO, type SettingsCategory } from './types';
   import GeneralSettings from './categories/GeneralSettings.svelte';
   import AppearanceSettings from './categories/AppearanceSettings.svelte';

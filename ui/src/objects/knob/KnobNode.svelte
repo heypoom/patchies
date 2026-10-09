@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { GripHorizontal, Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
+  import GripHorizontal from '@lucide/svelte/icons/grip-horizontal';
+  import Lock from '@lucide/svelte/icons/lock';
+  import LockOpen from '@lucide/svelte/icons/lock-open';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { getKnobData, KnobObject } from '$objects/knob/KnobObject';
   import KnobSettings from '$lib/components/settings/KnobSettings.svelte';

@@ -7,6 +7,10 @@ import { useObjectSuggestions } from './useObjectSuggestions.svelte';
 
 const flow = vi.hoisted(() => ({ edges: [] as Edge[] }));
 
+vi.mock('$lib/presets/use-enabled-preset-packs.svelte', () => ({
+  useEnabledPresetPacks: vi.fn()
+}));
+
 vi.mock('@xyflow/svelte', () => ({
   useNodes: () => ({
     current: [{ id: 'right', type: 'object', position: { x: 0, y: 0 }, data: { name: 'out~' } }]

@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { CirclePlus, Delete, Expand, Replace, Settings } from '@lucide/svelte/icons';
+  import CirclePlus from '@lucide/svelte/icons/circle-plus';
+  import Delete from '@lucide/svelte/icons/delete';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Replace from '@lucide/svelte/icons/replace';
+  import Settings from '@lucide/svelte/icons/settings';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -10,7 +14,6 @@
   import { chuckMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import CommonExprLayout from '$objects/expression/CommonExprLayout.svelte';
-  import { keymap } from '@codemirror/view';
   import type { ChuckShred, ChuckNode } from '$objects/chuck~/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$objects/chuck~/ChuckSettings.svelte';
@@ -98,18 +101,22 @@
   let shreds = $state<ChuckShred[]>([]);
 
   // Custom keybinds for ChucK operations
-  const chuckKeymaps = [
-    keymap.of([
-      {
-        // Cmd + \ = add new shred
-        key: 'Cmd-\\',
-        run: () => {
-          handleAddShred();
-          return true;
+  const loadChuckKeymaps = async () => {
+    const { keymap } = await import('@codemirror/view');
+
+    return [
+      keymap.of([
+        {
+          // Cmd + \ = add new shred
+          key: 'Cmd-\\',
+          run: () => {
+            handleAddShred();
+            return true;
+          }
         }
-      }
-    ])
-  ];
+      ])
+    ];
+  };
 
   const handleExpressionChange = (newExpr: string) => {
     updateNodeData(nodeId, { expr: newExpr });
@@ -387,7 +394,7 @@
           editorClass="chuck-node-code-editor"
           previewContainerClass="chuck-node-preview-container"
           onExpressionChange={handleExpressionChange}
-          extraExtensions={chuckKeymaps}
+          loadExtensions={loadChuckKeymaps}
           exitOnRun={false}
           onRun={handleReplace}
           nodeType="chuck~"

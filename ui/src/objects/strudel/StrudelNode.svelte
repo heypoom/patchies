@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Ellipsis, Expand, Link, Play, Square, Terminal, VolumeX, X } from '@lucide/svelte/icons';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Link from '@lucide/svelte/icons/link';
+  import Play from '@lucide/svelte/icons/play';
+  import Square from '@lucide/svelte/icons/square';
+  import Terminal from '@lucide/svelte/icons/terminal';
+  import VolumeX from '@lucide/svelte/icons/volume-x';
+  import X from '@lucide/svelte/icons/x';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

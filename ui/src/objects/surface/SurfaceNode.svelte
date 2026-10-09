@@ -36,7 +36,9 @@
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
-  import { Expand, Shrink, Eraser } from '@lucide/svelte/icons';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Shrink from '@lucide/svelte/icons/shrink';
+  import Eraser from '@lucide/svelte/icons/eraser';
   import { profiler } from '$lib/profiler';
 
   // Error reporting offset reuse (surface is structurally identical to canvas.dom)

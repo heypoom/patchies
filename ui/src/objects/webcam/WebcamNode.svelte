@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Camera, Pause, Play, Square, Settings, X } from '@lucide/svelte/icons';
+  import Camera from '@lucide/svelte/icons/camera';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import Square from '@lucide/svelte/icons/square';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

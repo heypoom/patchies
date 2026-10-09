@@ -8,7 +8,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { CircleQuestionMark } from '@lucide/svelte/icons';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
   import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../stores/ui.store';
   import {
     normalizeMessageType,

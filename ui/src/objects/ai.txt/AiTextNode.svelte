@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Copy, Loader, Bot, SlidersHorizontal, ChevronDown } from '@lucide/svelte/icons';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Bot from '@lucide/svelte/icons/bot';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
@@ -7,7 +11,6 @@
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { createLLMFunction } from '$lib/ai/google';
-  import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
@@ -202,7 +205,7 @@
         class="nodrag h-64 w-full max-w-[350px] resize-none"
         onrun={generateText}
         onready={() => (editorReady = true)}
-        extraExtensions={[EditorView.lineWrapping]}
+        lineWrap
         {nodeId}
         dataKey="prompt"
       />

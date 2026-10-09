@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Code, Loader, Pause, Play, Settings } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import type { PrimaryButton } from '$lib/eventbus/events';
 

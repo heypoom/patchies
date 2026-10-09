@@ -1,17 +1,15 @@
 <script lang="ts">
   import * as Popover from '$lib/components/ui/popover';
-  import {
-    Expand,
-    Plus,
-    Trash2,
-    EllipsisVertical,
-    Eye,
-    EyeOff,
-    Monitor,
-    MonitorOff,
-    Grid2x2,
-    Pentagon
-  } from '@lucide/svelte/icons';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import EllipsisVertical from '@lucide/svelte/icons/ellipsis-vertical';
+  import Eye from '@lucide/svelte/icons/eye';
+  import EyeOff from '@lucide/svelte/icons/eye-off';
+  import Monitor from '@lucide/svelte/icons/monitor';
+  import MonitorOff from '@lucide/svelte/icons/monitor-off';
+  import Grid2x2 from '@lucide/svelte/icons/grid-2x2';
+  import Pentagon from '@lucide/svelte/icons/pentagon';
   import type { ProjMapSurfaceMode } from '$lib/projmap/types';
 
   let {

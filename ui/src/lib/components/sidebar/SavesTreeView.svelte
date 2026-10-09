@@ -1,22 +1,20 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import {
-    FileJson,
-    Trash2,
-    Pencil,
-    Download,
-    Upload,
-    Play,
-    Link,
-    Save,
-    History,
-    Folder,
-    FolderOpen,
-    FolderPlus,
-    ChevronRight,
-    ChevronDown,
-    Move
-  } from '@lucide/svelte/icons';
+  import FileJson from '@lucide/svelte/icons/file-json';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import Download from '@lucide/svelte/icons/download';
+  import Upload from '@lucide/svelte/icons/upload';
+  import Play from '@lucide/svelte/icons/play';
+  import Link from '@lucide/svelte/icons/link';
+  import Save from '@lucide/svelte/icons/save';
+  import History from '@lucide/svelte/icons/history';
+  import Folder from '@lucide/svelte/icons/folder';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import FolderPlus from '@lucide/svelte/icons/folder-plus';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import Move from '@lucide/svelte/icons/move';
   import SearchBar from './SearchBar.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import LoadPatchDialog from '$lib/components/dialogs/LoadPatchDialog.svelte';

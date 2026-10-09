@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
+  import GripHorizontal from '@lucide/svelte/icons/grip-horizontal';
+  import Lock from '@lucide/svelte/icons/lock';
+  import LockOpen from '@lucide/svelte/icons/lock-open';
+  import Play from '@lucide/svelte/icons/play';
   import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';

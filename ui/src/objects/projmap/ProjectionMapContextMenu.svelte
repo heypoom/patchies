@@ -1,19 +1,17 @@
 <script lang="ts">
   import * as ContextMenu from '$lib/components/ui/context-menu';
-  import {
-    Expand,
-    Plus,
-    Trash2,
-    Monitor,
-    MonitorOff,
-    CircleQuestionMark,
-    Pen,
-    MousePointer2,
-    Eye,
-    EyeOff,
-    Grid2x2,
-    Pentagon
-  } from '@lucide/svelte/icons';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Monitor from '@lucide/svelte/icons/monitor';
+  import MonitorOff from '@lucide/svelte/icons/monitor-off';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+  import Pen from '@lucide/svelte/icons/pen';
+  import MousePointer2 from '@lucide/svelte/icons/mouse-pointer-2';
+  import Eye from '@lucide/svelte/icons/eye';
+  import EyeOff from '@lucide/svelte/icons/eye-off';
+  import Grid2x2 from '@lucide/svelte/icons/grid-2x2';
+  import Pentagon from '@lucide/svelte/icons/pentagon';
   import type { ProjMapSurface } from '$lib/projmap/types';
 
   let {

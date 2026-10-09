@@ -4,9 +4,12 @@ import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
 import { isPresetPackAvailableForObjects } from './preset-pack-availability';
 import { buildBuiltInPresetPackFolders, getPresetPackPresetNames } from './preset-pack-index';
 import { BUILT_IN_PRESET_PACKS, OBJECT_PIPE_PRESETS } from './preset-packs';
-import { BUILTIN_PRESETS } from '$presets';
-import type { PresetFolder } from '$lib/presets/types';
+import { BUILTIN_PRESETS as EAGER_PRESETS } from '$presets';
+import { GREGGMAN_BYTEBEAT_PRESETS } from '$presets/bytebeat/greggman';
+import type { LegacyPresetsRecord, PresetFolder } from '$lib/presets/types';
 import { isPreset } from '$lib/presets/preset-utils';
+
+const BUILTIN_PRESETS: LegacyPresetsRecord = { ...EAGER_PRESETS, ...GREGGMAN_BYTEBEAT_PRESETS };
 
 const getSamplerUniformNames = (code: string): string[] =>
   Array.from(code.matchAll(/uniform\s+sampler2D\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/g)).map(

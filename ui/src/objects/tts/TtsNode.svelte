@@ -1,14 +1,12 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import {
-    Settings,
-    X,
-    Volume2,
-    Check,
-    ChevronsUpDown,
-    Info,
-    RotateCcw
-  } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
+  import Check from '@lucide/svelte/icons/check';
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+  import Info from '@lucide/svelte/icons/info';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy, tick } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';

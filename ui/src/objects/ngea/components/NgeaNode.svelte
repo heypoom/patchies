@@ -7,7 +7,9 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { ngeaSchema } from '../schema';
   import type { NgeaTuning } from '$lib/ngea/data';
-  import { ChevronDown, Info, X } from '@lucide/svelte/icons';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import Info from '@lucide/svelte/icons/info';
+  import X from '@lucide/svelte/icons/x';
   import { SvelteMap } from 'svelte/reactivity';
   import { messages } from '$lib/objects/schemas';
 

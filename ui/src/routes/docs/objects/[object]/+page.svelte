@@ -1,6 +1,6 @@
 <script lang="ts">
   import { marked } from '$lib/objects/fetch-object-help';
-  import { ExternalLink } from '@lucide/svelte/icons';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
   import { TRIGGER_TYPE_SPECS } from '$lib/objects/trigger-type-specs';
   import PortCard from '$lib/components/docs/PortCard.svelte';
 

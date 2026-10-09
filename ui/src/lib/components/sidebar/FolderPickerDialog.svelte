@@ -12,7 +12,10 @@
 </script>
 
 <script lang="ts">
-  import { ChevronRight, ChevronDown, Folder, FolderOpen } from '@lucide/svelte/icons';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import Folder from '@lucide/svelte/icons/folder';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
   import * as Dialog from '$lib/components/ui/dialog';
 
   let {

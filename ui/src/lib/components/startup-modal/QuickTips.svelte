@@ -1,14 +1,12 @@
 <script lang="ts">
-  import {
-    Cable,
-    CirclePlus,
-    Command,
-    Move,
-    PanelLeftOpen,
-    Play,
-    Search,
-    ZoomIn
-  } from '@lucide/svelte/icons';
+  import Cable from '@lucide/svelte/icons/cable';
+  import CirclePlus from '@lucide/svelte/icons/circle-plus';
+  import Command from '@lucide/svelte/icons/command';
+  import Move from '@lucide/svelte/icons/move';
+  import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open';
+  import Play from '@lucide/svelte/icons/play';
+  import Search from '@lucide/svelte/icons/search';
+  import ZoomIn from '@lucide/svelte/icons/zoom-in';
 
   import { onMount } from 'svelte';
 

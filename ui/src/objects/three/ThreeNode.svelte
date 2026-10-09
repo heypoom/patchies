@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useNodeInteractions } from '$lib/canvas/use-node-interactions.svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { RotateCcw } from '@lucide/svelte/icons';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';

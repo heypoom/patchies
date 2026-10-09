@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Download } from '@lucide/svelte/icons';
+  import Download from '@lucide/svelte/icons/download';
   import * as Dialog from '$lib/components/ui/dialog';
   import type { Node, Edge } from '@xyflow/svelte';
   import { serializePatch } from '$lib/save-load/serialize-patch';

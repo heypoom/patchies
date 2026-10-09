@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { FileCode, Play } from '@lucide/svelte/icons';
+  import FileCode from '@lucide/svelte/icons/file-code';
+  import Play from '@lucide/svelte/icons/play';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { VirtualFilesystem } from '$lib/vfs';
   import { getPatchFileEditorSession } from '$lib/vfs/PatchFileEditorSession';

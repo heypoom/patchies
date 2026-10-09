@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Box, MousePointer, Play, Save } from '@lucide/svelte/icons';
+  import Box from '@lucide/svelte/icons/box';
+  import MousePointer from '@lucide/svelte/icons/mouse-pointer';
+  import Play from '@lucide/svelte/icons/play';
+  import Save from '@lucide/svelte/icons/save';
   import { onMount } from 'svelte';
 
   import { isAiFeaturesVisible } from '../../../stores/ui.store';

@@ -1,14 +1,12 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import {
-    ArrowLeft,
-    BookOpen,
-    Box,
-    ChevronDown,
-    ChevronRight,
-    PanelLeft,
-    X
-  } from '@lucide/svelte/icons';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import BookOpen from '@lucide/svelte/icons/book-open';
+  import Box from '@lucide/svelte/icons/box';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import PanelLeft from '@lucide/svelte/icons/panel-left';
+  import X from '@lucide/svelte/icons/x';
   import DocsSearch from './DocsSearch.svelte';
   import type { Topic, ObjectItem, TopicsByCategory } from './docs-sidebar-types';
 

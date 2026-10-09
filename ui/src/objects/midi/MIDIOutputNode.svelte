@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { CircleAlert, Settings, Volume2, VolumeX, X } from '@lucide/svelte/icons';
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
+  import VolumeX from '@lucide/svelte/icons/volume-x';
+  import X from '@lucide/svelte/icons/x';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { midiOutSchema } from '$objects/midi/midi-out.schema';

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowLeft, ArrowRight } from '@lucide/svelte/icons';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
   import MemoryViewer from '$objects/asm/MemoryViewer.svelte';
   import { memoryActions, getMemoryPage, getMemoryRange } from '$objects/asm/memoryStore';
   import { memoryRegionStore } from '$objects/asm/memoryRegionStore';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Lock } from '@lucide/svelte/icons';
+  import Lock from '@lucide/svelte/icons/lock';
   import * as Tooltip from '../../components/ui/tooltip';
 
   interface Props {

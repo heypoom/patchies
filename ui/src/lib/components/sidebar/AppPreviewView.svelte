@@ -1,15 +1,13 @@
 <script lang="ts">
-  import {
-    ExternalLink,
-    RefreshCw,
-    Download,
-    Sparkles,
-    Code,
-    FileText,
-    FileCode,
-    EllipsisVertical,
-    Maximize2
-  } from '@lucide/svelte/icons';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import Download from '@lucide/svelte/icons/download';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Code from '@lucide/svelte/icons/code';
+  import FileText from '@lucide/svelte/icons/file-text';
+  import FileCode from '@lucide/svelte/icons/file-code';
+  import EllipsisVertical from '@lucide/svelte/icons/ellipsis-vertical';
+  import Maximize2 from '@lucide/svelte/icons/maximize-2';
   import * as Popover from '$lib/components/ui/popover';
   import { appPreviewStore } from '../../../stores/app-preview.store';
   import { hasGeminiApiKey } from '$lib/ai/patch-to-prompt';

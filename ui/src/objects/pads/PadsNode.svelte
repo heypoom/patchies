@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
   import { onMount, onDestroy } from 'svelte';
   import { NodeResizer, useSvelteFlow, type NodeProps } from '@xyflow/svelte';
   import { match } from 'ts-pattern';

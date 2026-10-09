@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Check, ChevronsUpDown, Code2, Pin, PinOff, Play } from '@lucide/svelte/icons';
+  import Check from '@lucide/svelte/icons/check';
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+  import Code2 from '@lucide/svelte/icons/code-2';
+  import Pin from '@lucide/svelte/icons/pin';
+  import PinOff from '@lucide/svelte/icons/pin-off';
+  import Play from '@lucide/svelte/icons/play';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Command from '$lib/components/ui/command';
   import * as Popover from '$lib/components/ui/popover';
@@ -131,6 +136,8 @@
           onchange={target.onchange ?? (() => {})}
           language={target.language}
           nodeType={target.nodeType}
+          extraExtensions={target.extraExtensions}
+          loadExtensions={target.loadExtensions}
           placeholder={target.placeholder ?? ''}
           class="nodrag nopan nowheel h-full w-full resize-none"
           onrun={target.onrun}
