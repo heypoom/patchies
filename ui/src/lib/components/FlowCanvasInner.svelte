@@ -97,7 +97,8 @@
     NodeDataBatchCommitEvent,
     ObjectDataCommitEvent,
     VisualGroupResizeStartedEvent,
-    VisualGroupSyncRequestedEvent
+    VisualGroupSyncRequestedEvent,
+    InsertPresetToCanvasEvent
   } from '$lib/eventbus/events';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
@@ -745,10 +746,11 @@
   function handleAiObjectInsert(
     type: string,
     data: Record<string, unknown>,
-    position?: { x: number; y: number }
+    position?: { x: number; y: number },
+    dimensions?: Pick<Node, 'width' | 'height'>
   ) {
     const insertPosition = position ?? screenToFlowPosition(lastMousePosition);
-    aiOps.insertSingleObject(type, data, insertPosition);
+    aiOps.insertSingleObject(type, data, insertPosition, dimensions);
   }
 
   async function handleAiMultipleObjectsInsert(
@@ -1171,11 +1173,7 @@
   }
 
   // Handle insert preset event from mobile toolbar
-  function handleInsertPreset(event: {
-    type: 'insertPresetToCanvas';
-    path: string[];
-    preset: { type: string; name: string; data: unknown };
-  }) {
+  function handleInsertPreset(event: InsertPresetToCanvasEvent) {
     const position = getViewportCenter();
 
     getDragDropManager().insertPreset(event.preset, position);

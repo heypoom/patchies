@@ -28,6 +28,7 @@
   } from '../../stores/ui.store';
   import { enabledPackIds, togglePack } from '../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
+  import { getPresetDimensions } from '$lib/presets/preset-node';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import { objectPresetSearchIndex } from '../../stores/object-preset-search.store';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
@@ -408,17 +409,12 @@
   }
 
   function tryCreatePreset(): boolean {
-    if (!expr.trim()) return false;
-
-    // Check if the expression exactly matches a preset name
     const flatPreset = $objectPresetSearchIndex.getPresetByName(expr.trim());
 
-    if (!flatPreset) {
-      return false; // Not a preset
-    }
+    if (!flatPreset) return false;
 
-    // Transform to the preset's node type with its data
-    changeNode(flatPreset.preset.type, flatPreset.preset.data as Record<string, unknown>);
+    const { type, data } = flatPreset.preset;
+    changeNode(type, data as Record<string, unknown>, getPresetDimensions(flatPreset.preset));
 
     return true;
   }
@@ -434,11 +430,15 @@
     return true;
   }
 
-  const changeNode = (type: string, data: Record<string, unknown>) => {
+  const changeNode = (
+    type: string,
+    data: Record<string, unknown>,
+    dimensions: ReturnType<typeof getPresetDimensions> = {}
+  ) => {
     const nodeNumber = parseInt(nodeId.replace('object-', ''));
     const nextId = `${type}-${nodeNumber}`;
 
-    updateNode(nodeId, { id: nextId, type, data });
+    updateNode(nodeId, { id: nextId, type, data, ...dimensions });
 
     edgesHelper.update((edges) =>
       edges.map((edge) => {

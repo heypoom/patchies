@@ -186,11 +186,7 @@
     eventBus.dispatch({
       type: 'insertPresetToCanvas',
       path: [selectedPresetPath.libraryId, ...selectedPresetPath.path],
-      preset: {
-        type: selectedPresetPath.preset.type,
-        name: selectedPresetPath.preset.name,
-        data: selectedPresetPath.preset.data
-      }
+      preset: selectedPresetPath.preset
     });
     clearPresetSelection();
     $isSidebarOpen = false;

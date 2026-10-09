@@ -1,3 +1,4 @@
+import { getPresetDimensions } from '$lib/presets/preset-node';
 import type { Preset, PresetPath } from '$lib/presets/types';
 
 import type { ChatAction } from './resolver';
@@ -191,7 +192,7 @@ export function resolveInsertPreset(
     throw new Error(`Preset "${presetName}" not found. Call search_presets first.`);
   }
 
-  return resolveInsertObject(
+  const action = resolveInsertObject(
     {
       type: match.preset.type,
       data: match.preset.data,
@@ -199,4 +200,12 @@ export function resolveInsertPreset(
     },
     { viewportSummary: deps.viewportSummary }
   );
+
+  const hasDimensions = match.preset.width !== undefined || match.preset.height !== undefined;
+
+  if (hasDimensions && action.result?.kind === 'single') {
+    action.result.dimensions = getPresetDimensions(match.preset);
+  }
+
+  return action;
 }

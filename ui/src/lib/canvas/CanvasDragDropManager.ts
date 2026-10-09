@@ -1,3 +1,6 @@
+import type { Preset } from '$lib/presets/types';
+import { getPresetDimensions } from '$lib/presets/preset-node';
+import type { CreateNodeOptions } from '$lib/services/NodeOperationsService';
 import { match } from 'ts-pattern';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { VirtualFilesystem, VFS_FOLDERS } from '$lib/vfs';
@@ -38,7 +41,8 @@ function generateNodeIdBase(): number {
 export type CreateNodeCallback = (
   type: string,
   position: { x: number; y: number },
-  customData?: unknown
+  customData?: unknown,
+  options?: CreateNodeOptions
 ) => void;
 
 /**
@@ -196,11 +200,11 @@ export class CanvasDragDropManager {
     try {
       const { preset } = JSON.parse(presetData) as {
         path: string[];
-        preset: { type: string; data: unknown; name: string };
+        preset: Preset;
       };
 
       // Create node with preset's type and data
-      this.createNode(preset.type, position, preset.data);
+      this.insertPreset(preset, position);
     } catch (error) {
       logger.warn('Failed to parse preset drag data:', error);
     }
@@ -276,11 +280,10 @@ export class CanvasDragDropManager {
   /**
    * Insert a preset at the specified position (public method for event-based insertion)
    */
-  insertPreset(
-    preset: { type: string; data: unknown; name: string },
-    position: { x: number; y: number }
-  ): void {
-    this.createNode(preset.type, position, preset.data);
+  insertPreset(preset: Preset, position: { x: number; y: number }): void {
+    this.createNode(preset.type, position, preset.data, {
+      dimensions: getPresetDimensions(preset)
+    });
   }
 
   /**

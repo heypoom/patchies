@@ -2,7 +2,8 @@
   import { ChevronRight, Folder, Library } from '@lucide/svelte/icons';
   import * as Dialog from '$lib/components/ui/dialog';
   import { presetLibraryStore, editableLibraries } from '../../../stores/preset-library.store';
-  import type { Preset, PresetFolder, PresetPath } from '$lib/presets/types';
+  import type { PresetFolder, PresetPath } from '$lib/presets/types';
+  import { createNodePreset } from '$lib/presets/preset-node';
   import type { Node } from '@xyflow/svelte';
   import { toast } from 'svelte-sonner';
   import { isPreset, getUniquePresetName } from '$lib/presets/preset-utils';
@@ -139,14 +140,7 @@
   function handleSave() {
     if (!node || !node.type || !actualSaveName) return;
 
-    const nodeData = node.data as Record<string, unknown>;
-
-    const preset: Preset = {
-      name: actualSaveName,
-      description: presetDescription.trim() || undefined,
-      type: node.type,
-      data: nodeData
-    };
+    const preset = createNodePreset(node, actualSaveName, presetDescription.trim() || undefined);
 
     const success = presetLibraryStore.addPreset(selectedLibraryId, selectedFolderPath, preset);
 

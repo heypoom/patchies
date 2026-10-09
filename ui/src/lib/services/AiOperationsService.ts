@@ -34,8 +34,13 @@ export class AiOperationsService {
   /**
    * Insert a single AI-generated object at the specified position.
    */
-  insertSingleObject(type: string, data: unknown, position: { x: number; y: number }): string {
-    return this.nodeOps.createNode(type, position, data);
+  insertSingleObject(
+    type: string,
+    data: unknown,
+    position: { x: number; y: number },
+    dimensions?: Pick<Node, 'width' | 'height'>
+  ): string {
+    return this.nodeOps.createNode(type, position, data, { dimensions });
   }
 
   /**

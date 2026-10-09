@@ -1,3 +1,4 @@
+import type { Preset } from '$lib/presets/types';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import type { RenderCookStatus } from '$lib/rendering/types';
 import type { VideoFrameFormat, WorkerVideoFrame } from '$lib/js-runner/js-worker-types';
@@ -244,11 +245,7 @@ export interface InsertPresetToCanvasEvent {
   path: string[];
 
   /** The preset data */
-  preset: {
-    type: string;
-    name: string;
-    data: unknown;
-  };
+  preset: Preset;
 }
 
 /**

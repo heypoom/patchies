@@ -59,6 +59,7 @@ export interface AiModeDescriptor {
 export type AiModeResult = { explanation?: string } & (
   | {
       kind: 'single';
+      dimensions?: Pick<Node, 'width' | 'height'>;
       type: string;
       data: Record<string, unknown>;
       position?: { x: number; y: number };
