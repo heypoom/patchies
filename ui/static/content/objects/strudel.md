@@ -15,6 +15,24 @@ Create expressive, dynamic music pieces and complex audio patterns.
 - Use `Ctrl/Cmd + Enter` to re-evaluate the code
 - Connect the `out~` object to hear audio output
 
+## Editor Layout
+
+Code starts visible in a bounded editor. Select the object and drag its resize handles to change its size. Code scrolls inside the chosen size. Use **Disable Resizing**
+in the overflow menu to lock that size.
+
+Use **Hide Code** for a compact object that keeps running. The code button follows your preferred editor layout. Inline editing opens a
+temporary editor beside it. **Keep Editor in Patch** restores the inline editor.
+**Expand Editor** opens fullscreen and returns to your previous layout when closed.
+
+To update code while it is hidden, connect a `js` object to the message inlet:
+
+```javascript
+// Store new code without interrupting the running program.
+send({type: 'setCode', value: 's("bd sd")'})
+// Run the stored code when you are ready.
+send({type: 'bang'})
+```
+
 ## Runtime
 
 Strudel runs in a separate runtime and does NOT use the
@@ -26,7 +44,7 @@ Strudel runs in a separate runtime and does NOT use the
 
 ## Transport Sync
 
-Enable **Sync to transport** in the overflow menu to lock Strudel's playback to
+Enable **Sync to transport** in Settings to lock Strudel's playback to
 the global [transport](/docs/transport-control). When synced, play/pause and CPM
 is controlled by the transport bar instead of per-node controls.
 
@@ -37,14 +55,32 @@ Use `bang` or `run` messages to switch playback between them.
 
 ## Styling The Editor
 
+Open **Settings** beside the overflow menu to mute playback, toggle transport
+sync and resizing, or change the font size and family. **Custom Styles** opens a
+small CSS editor for container declarations; changes apply live. Settings are
+also available in fullscreen. Settings and the console share space: opening
+one hides the other.
+
+In Compact mode, open Settings from the overflow menu. Fullscreen opens the
+settings panel on the right; use the Settings button to hide or show it.
+
+Normal and expanded editors have separate font sizes. Settings edits **Font
+size** in the normal editor and **Expanded font size** in fullscreen. Expanded
+text defaults to 28px and always stays larger than normal text.
+
 Send style messages into a `strudel` object to tune its editor for live coding.
-This is useful when the editor is expanded over the background output.
+Messages and Settings edit the same values, so incoming changes appear in the
+panel and CSS editor too. This is useful when the editor is expanded over the
+background output.
 
 Create a `js` object, connect it to `strudel`, and run:
 
 ```javascript
-// Font size
+// Normal editor font size
 send({type: 'setFontSize', value: 25})
+
+// Expanded editor font size (larger than the normal size)
+send({type: 'setExpandedFontSize', value: 40})
 
 // Font family. Use commas to fallback to multiple fonts.
 send({

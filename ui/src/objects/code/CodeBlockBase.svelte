@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Loader, Pause, Play, Expand, X } from '@lucide/svelte/icons';
   import CodeBlockHeaderControls from './CodeBlockHeaderControls.svelte';
-  import CodeBlockActionButton from './CodeBlockActionButton.svelte';
+  import CodeBlockActionButton from '$lib/components/CodeBlockActionButton.svelte';
   import { getPrimaryButtonLayout } from './primary-button-layout';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';

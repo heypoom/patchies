@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Terminal } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import CodeBlockActionButton from './CodeBlockActionButton.svelte';
+  import CodeBlockActionButton from '$lib/components/CodeBlockActionButton.svelte';
   import CodeBlockOverflowMenu from './CodeBlockOverflowMenu.svelte';
   import type { PrimaryButton } from '$lib/eventbus/events';
   import type { SettingsSchema } from '$lib/settings';
