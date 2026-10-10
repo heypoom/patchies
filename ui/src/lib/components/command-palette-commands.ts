@@ -216,5 +216,15 @@ export const createPaletteCommands = ({
     id: 'view-startup-diagnostics',
     name: 'View startup diagnostics',
     description: 'Inspect the slowest and largest downloads from this page load'
+  },
+  {
+    id: 'enable-remote-control',
+    name: 'Enable Remote Control',
+    description: 'Mount supported object code in a local folder.'
+  },
+  {
+    id: 'disable-remote-control',
+    name: 'Disable Remote Control',
+    description: 'Revoke the current local mount session.'
   }
 ];

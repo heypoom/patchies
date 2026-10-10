@@ -4,7 +4,11 @@
 *.tfstate
 *.tfstate.*
 node_modules
-patchies
+/patchies
+/patchies-server
+cli/patchies
 pb_data
 patchies-server
-server/static.zip
+/server/static.zip
+/output/pdf
+/server/server
