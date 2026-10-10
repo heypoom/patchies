@@ -44,6 +44,7 @@ import {
   DEFAULT_DMX_DATA
 } from '$objects/serial/constants';
 import { DEFAULT_SHEET_DATA } from '$objects/sheet/constants';
+import { DEFAULT_JOYCON_DATA } from '$objects/joycon/constants';
 import { DEFAULT_PIXI_CODE, DEFAULT_PIXI_DOM_CODE } from '$objects/pixi/constants';
 import { GM_DEFAULT_SETTINGS, GM_SETTINGS_SCHEMA } from '$objects/smplr/gm-settings';
 import { smplrDescriptors, type SmplrObjectType } from '$objects/smplr/descriptors';
@@ -355,6 +356,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('serial', () => DEFAULT_SERIAL_DATA)
     .with('serial.term', () => DEFAULT_SERIAL_TERMINAL_DATA)
     .with('serial.dmx', () => DEFAULT_DMX_DATA)
+    .with('joycon', () => ({ ...DEFAULT_JOYCON_DATA }))
     .with('projmap', () => ({ surfaces: [] }))
     .with('vision.hand', () => ({ numHands: 2, model: 'lite', delegate: 'GPU', skipFrames: 1 }))
     .with('vision.body', () => ({ numPoses: 1, model: 'lite', delegate: 'GPU', skipFrames: 1 }))
