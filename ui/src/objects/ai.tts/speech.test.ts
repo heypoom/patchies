@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getSpeechCacheKey, synthesizeSpeech } from './speech';
 
 const options = {
+  provider: 'gemini' as const,
   model: 'gemini-3.8-flash-lite-tts',
   text: 'Have a wonderful day!',
   voiceName: 'Puck',
@@ -132,5 +133,112 @@ describe('Gemini speech synthesis', () => {
     for (const field of ['model', 'text', 'voiceName', 'style'] as const) {
       expect(getSpeechCacheKey({ ...options, [field]: 'changed' })).not.toBe(key);
     }
+  });
+});
+
+describe('Paxa speech synthesis', () => {
+  const paxaOptions = {
+    ...options,
+    provider: 'paxa' as const,
+    model: 'paxa-tts-flash-v1',
+    voiceName: 'khanomkrok'
+  };
+
+  it('uses the Paxa key and binary audio without Gemini style annotations', async () => {
+    const bytes = new Uint8Array([82, 73, 70, 70, 0, 255]);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(bytes, { headers: { 'Content-Type': 'audio/wav' } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const audio = await synthesizeSpeech(paxaOptions);
+    const [url, request] = fetchMock.mock.calls[0];
+
+    expect(url).toBe('https://api.paxalabs.com/v1/tts');
+    expect(request.method).toBe('POST');
+    expect(request.headers).toEqual({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer test-key'
+    });
+
+    expect(JSON.parse(request.body)).toEqual({
+      text: options.text,
+      model: 'paxa-tts-flash-v1',
+      voice: 'khanomkrok',
+      format: 'wav',
+      stream: false
+    });
+
+    expect(audio.type).toBe('audio/wav');
+    expect(new Uint8Array(await audio.arrayBuffer())).toEqual(bytes);
+  });
+
+  it('reports stable problem codes and request IDs', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json(
+            { title: 'insufficient_credits', detail: 'This wording may change.' },
+            { status: 402, headers: { 'x-request-id': 'request-123' } }
+          )
+        )
+    );
+
+    await expect(synthesizeSpeech(paxaOptions)).rejects.toThrow(
+      'Paxa: insufficient_credits (request request-123)'
+    );
+  });
+
+  it('reports non-JSON failures and empty audio', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response(null));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(synthesizeSpeech(paxaOptions)).rejects.toThrow('Paxa: HTTP 503');
+    await expect(synthesizeSpeech(paxaOptions)).rejects.toThrow('Paxa returned no audio content.');
+  });
+
+  it('identifies a successful response with zero bytes and preserves its request ID', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(null, {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/wav',
+            'Content-Length': '0',
+            'x-request-id': 'empty-audio-123'
+          }
+        })
+      )
+    );
+
+    await expect(synthesizeSpeech(paxaOptions)).rejects.toThrow(
+      'Paxa returned no audio content. HTTP 200, 0 bytes (request empty-audio-123)'
+    );
+  });
+
+  it('passes cancellation to Paxa', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url, request) => Promise.reject(request.signal.reason))
+    );
+
+    await expect(
+      synthesizeSpeech({ ...paxaOptions, signal: controller.signal })
+    ).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('separates providers in the cache and ignores Paxa speaking style', () => {
+    const key = getSpeechCacheKey(paxaOptions);
+
+    expect(getSpeechCacheKey({ ...paxaOptions, provider: 'gemini' })).not.toBe(key);
+    expect(getSpeechCacheKey({ ...paxaOptions, style: 'ignored style' })).toBe(key);
   });
 });
