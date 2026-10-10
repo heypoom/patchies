@@ -28,7 +28,7 @@ export const aiTtsMessages = {
 export const aiTtsSchema: ObjectSchema = {
   type: 'ai.tts',
   category: 'ai',
-  description: 'Convert text to speech using Gemini TTS',
+  description: 'Convert text to speech using Gemini or Paxa TTS',
   inlets: [
     {
       id: 'message',
@@ -41,8 +41,14 @@ export const aiTtsSchema: ObjectSchema = {
         { schema: Play, description: 'Play cached audio' },
         { schema: Bang, description: 'Play cached audio' },
         { schema: Stop, description: 'Stop playback' },
-        { schema: SetVoice, description: 'Set Gemini voice (e.g., "Kore" or "Puck")' },
-        { schema: SetStyle, description: 'Set speaking style (e.g., "cheerful and friendly")' }
+        {
+          schema: SetVoice,
+          description: 'Set voice for the selected provider (e.g., "Kore" or "khanomkrok")'
+        },
+        {
+          schema: SetStyle,
+          description: 'Set Gemini speaking style (e.g., "cheerful and friendly")'
+        }
       ]
     }
   ],
@@ -54,6 +60,6 @@ export const aiTtsSchema: ObjectSchema = {
       handle: { handleType: 'audio', handleId: 0 }
     }
   ],
-  tags: ['ai', 'tts', 'speech', 'voice', 'audio', 'google'],
+  tags: ['ai', 'tts', 'speech', 'voice', 'audio', 'google', 'paxa'],
   hasDynamicOutlets: true
 };

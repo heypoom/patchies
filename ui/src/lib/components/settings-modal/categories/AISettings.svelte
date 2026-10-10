@@ -1,4 +1,5 @@
 <script lang="ts">
+  import TTSSettings from './TTSSettings.svelte';
   import SettingRow from '../SettingRow.svelte';
   import SettingToggle from '../SettingToggle.svelte';
   import SettingDropdown from '../SettingDropdown.svelte';
@@ -82,13 +83,16 @@
     />
   </SettingRow>
 
-  <SettingRow title="API key" description="Your API key for the selected provider">
+  <SettingRow
+    title={currentProvider === 'gemini' ? 'Google API key' : 'OpenRouter API key'}
+    description="Your API key for the selected provider"
+  >
     <input
       type="password"
       value={currentApiKey}
       oninput={handleApiKeyInput}
       placeholder="Enter API key"
-      aria-label="API key"
+      aria-label={currentProvider === 'gemini' ? 'Google API key' : 'OpenRouter API key'}
       class="w-48 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none placeholder:text-zinc-700 hover:border-white/20 focus:border-orange-500/40"
     />
   </SettingRow>
@@ -113,19 +117,7 @@
     />
   </SettingRow>
 
-  <SettingRow
-    title="Gemini speech model"
-    description="Default model for ai.tts. Uses your Gemini API key."
-  >
-    <input
-      type="text"
-      value={$aiSettings.geminiSpeechModel}
-      oninput={(event) =>
-        aiSettings.updateSettings({ geminiSpeechModel: event.currentTarget.value })}
-      aria-label="Gemini speech model"
-      class="w-48 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-zinc-300 transition-colors outline-none hover:border-white/20 focus:border-orange-500/40"
-    />
-  </SettingRow>
+  <TTSSettings />
 
   <SettingRow title="Expand thinking" description="Show AI reasoning steps in chat">
     <SettingToggle

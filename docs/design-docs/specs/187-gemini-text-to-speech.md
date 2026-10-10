@@ -28,3 +28,14 @@ Poom explicitly chose replacement without migration. Do not translate Cloud voic
 ## Reference
 
 [Gemini speech generation](https://ai.google.dev/gemini-api/docs/speech-generation)
+
+## Paxa provider
+
+- Settings → AI adds a separate TTS provider default (`gemini` or `paxa`). Keep Google and Paxa API keys editable and stored independently, even when OpenRouter is the text/image provider. Default TTS to Gemini.
+- The collapsed model settings section is available for both Gemini and Paxa. Its last control selects Default (the global TTS provider), Gemini, or Paxa. Explicit overrides allow both providers in the same patch. Track provider edits with undo/redo.
+- Keep each provider's voice and model overrides independently in node data: Gemini uses `voiceName`/`model`, Paxa uses `paxaVoiceName`/`paxaModel`. Provider changes preserve both sets. Reset clears both sets and restores global provider inheritance.
+- Paxa defaults to `paxa-tts-flash-v1` and `khanomkrok`. Use the served voice catalog locally, including searchable names, IDs, language, and descriptions. No catalog requests on node mount.
+- Paxa uses `POST https://api.paxalabs.com/v1/tts`, Bearer authentication, text/model/voice, and complete WAV audio for the existing preload/cache/playback flow. No free-text speaking style for Paxa; hide that Gemini-only control. Emotion tags can be written in text for Khanom Chan and Kaprao.
+- Resolve the provider, key, voice, model, text, and effective style before each request. Include the provider in the cache key, and exclude ignored Paxa style. `setVoice` edits the effective provider's voice. Existing cancellation and preload behavior apply to both providers.
+- Display Paxa problem `title` codes and request IDs with errors. Never log keys. Keep keys in per-user settings, never patch data.
+- Verify provider resolution, separate key persistence, Paxa binary responses/errors/cancellation, provider cache separation, and Gemini regressions with mocked requests; report live synthesis separately.

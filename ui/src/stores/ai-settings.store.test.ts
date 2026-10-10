@@ -54,3 +54,41 @@ describe('Gemini speech model settings', () => {
     expect(get(aiSettings).geminiSpeechModel).toBe(DEFAULT_GEMINI_SPEECH_MODEL);
   });
 });
+
+describe('TTS provider settings', () => {
+  it('defaults to Gemini independently of the text provider', async () => {
+    localStorage.setItem('ai-settings', JSON.stringify({ provider: 'openrouter' }));
+
+    const { aiSettings } = await import('./ai-settings.store');
+
+    expect(get(aiSettings).ttsProvider).toBe('gemini');
+    expect(get(aiSettings).paxaApiKey).toBe('');
+  });
+
+  it('keeps both speech keys when switching providers and reloading', async () => {
+    const { aiSettings } = await import('./ai-settings.store');
+
+    aiSettings.updateSettings({
+      provider: 'openrouter',
+      openRouterApiKey: 'openrouter-key',
+      geminiApiKey: 'google-key',
+      paxaApiKey: 'paxa-key',
+      ttsProvider: 'paxa'
+    });
+    aiSettings.updateSettings({ ttsProvider: 'gemini' });
+
+    expect(get(aiSettings).paxaApiKey).toBe('paxa-key');
+
+    aiSettings.updateSettings({ ttsProvider: 'paxa' });
+    vi.resetModules();
+
+    const { aiSettings: reloaded } = await import('./ai-settings.store');
+
+    expect(get(reloaded)).toMatchObject({
+      ttsProvider: 'paxa',
+      geminiApiKey: 'google-key',
+      paxaApiKey: 'paxa-key'
+    });
+    expect(reloaded.getActiveApiKey()).toBe('openrouter-key');
+  });
+});

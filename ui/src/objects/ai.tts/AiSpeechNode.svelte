@@ -25,16 +25,18 @@
   import { audioUrlCache } from '$lib/stores/audioCache';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useNodeDataTracker } from '$lib/history';
-  import { aiSettings } from '../../stores/ai-settings.store';
-  import { getSpeechCacheKey, synthesizeSpeech, type SpeechOptions } from './speech';
-  import { DEFAULT_GEMINI_VOICE, GEMINI_VOICES } from './voices';
-
-  export type AiTtsNodeData = {
-    text?: string;
-    voiceName?: string;
-    style?: string;
-    model?: string;
-  };
+  import { aiSettings, type TTSProviderType } from '../../stores/ai-settings.store';
+  import { getSpeechCacheKey, synthesizeSpeech } from './speech';
+  import { GEMINI_VOICES, PAXA_VOICES } from './voices';
+  import {
+    getSpeechProvider,
+    getVoiceField,
+    getModelField,
+    getDefaultSpeechModel,
+    getSpeechApiKey,
+    resolveSpeechOptions,
+    type AiTtsNodeData
+  } from './settings';
 
   let {
     id: nodeId,
@@ -50,7 +52,7 @@
   const audioService = AudioService.getInstance();
   const tracker = $derived.by(() => useNodeDataTracker(nodeId));
   const styleTracker = $derived.by(() => tracker.track('style', () => data.style ?? ''));
-  const modelTracker = $derived.by(() => tracker.track('model', () => data.model ?? ''));
+  const modelTracker = $derived.by(() => tracker.track(modelField, () => data[modelField] ?? ''));
 
   let messageContext: MessageContext;
   let pendingRequest: AbortController | null = null;
@@ -62,11 +64,24 @@
   let errorMessage = $state<string | null>(null);
 
   const containerClass = $derived(selected ? 'object-container-selected' : 'object-container');
-  const voiceName = $derived(data.voiceName || DEFAULT_GEMINI_VOICE);
+  const provider = $derived(getSpeechProvider(data, $aiSettings));
+  const providerLabel = $derived(provider === 'paxa' ? 'Paxa' : 'Gemini');
+  const voiceField = $derived(getVoiceField(provider));
+  const modelField = $derived(getModelField(provider));
+  const defaultModel = $derived(getDefaultSpeechModel(provider, $aiSettings));
+  const voiceName = $derived(resolveSpeechOptions(data, $aiSettings).voiceName);
+  const voices = $derived.by(() => {
+    if (provider === 'paxa') return PAXA_VOICES;
+
+    return GEMINI_VOICES.map((voice) => ({ ...voice, label: voice.name }));
+  });
+  const voiceLabel = $derived(voices.find((voice) => voice.name === voiceName)?.label ?? voiceName);
   const style = $derived(data.style ?? '');
   const filteredVoices = $derived(
-    GEMINI_VOICES.filter((voice) =>
-      `${voice.name} ${voice.description}`.toLowerCase().includes(voiceSearchValue.toLowerCase())
+    voices.filter((voice) =>
+      `${voice.name} ${voice.label} ${voice.description}`
+        .toLowerCase()
+        .includes(voiceSearchValue.toLowerCase())
     )
   );
 
@@ -91,12 +106,10 @@
     // Capture settings and cache key before awaiting the request.
     // Read current node data so consecutive control messages do not wait for a view update.
     const currentData = (getNode(nodeId)?.data as AiTtsNodeData | undefined) ?? data;
-    const options: SpeechOptions = {
-      model: currentData.model?.trim() || $aiSettings.geminiSpeechModel,
-      text: text ?? currentData.text ?? '',
-      voiceName: currentData.voiceName || DEFAULT_GEMINI_VOICE,
-      style: currentData.style ?? ''
-    };
+    const options = resolveSpeechOptions(
+      { ...currentData, text: text ?? currentData.text },
+      $aiSettings
+    );
     const cacheKey = getSpeechCacheKey(options);
     const cachedUrl = $audioUrlCache[cacheKey];
 
@@ -106,10 +119,12 @@
       return;
     }
 
-    const apiKey = aiSettings.getGeminiApiKey();
+    const apiKey = getSpeechApiKey(options.provider, $aiSettings);
 
     if (!apiKey) {
-      showError('Please set your Gemini API key in Settings → AI.');
+      const keyLabel = options.provider === 'paxa' ? 'Paxa TTS' : 'Google';
+
+      showError(`Please set your ${keyLabel} API key in Settings → AI.`);
       return;
     }
 
@@ -160,7 +175,10 @@
       .with(aiTtsMessages.load, (message) => speakText(message.text, false))
       .with(aiTtsMessages.play, aiTtsMessages.bang, () => void generateSpeech())
       .with(aiTtsMessages.setVoice, (message) => {
-        updateNodeData(nodeId, { voiceName: message.value });
+        const currentData = (getNode(nodeId)?.data as AiTtsNodeData | undefined) ?? data;
+        const field = getVoiceField(getSpeechProvider(currentData, $aiSettings));
+
+        updateNodeData(nodeId, { [field]: message.value });
       })
       .with(aiTtsMessages.setStyle, (message) => {
         updateNodeData(nodeId, { style: message.value });
@@ -175,23 +193,49 @@
   };
 
   function selectVoice(name: string) {
-    const oldVoiceName = data.voiceName;
+    const oldVoiceName = data[voiceField];
 
-    updateNodeData(nodeId, { voiceName: name });
-    tracker.commit('voiceName', oldVoiceName, name);
+    updateNodeData(nodeId, { [voiceField]: name });
+    tracker.commit(voiceField, oldVoiceName, name);
     voiceSearchOpen = false;
     voiceSearchValue = '';
   }
 
-  function resetSettings() {
-    const oldVoiceName = data.voiceName;
-    const oldStyle = data.style;
-    const oldModel = data.model;
+  function selectProvider(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    const nextProvider = value === '' ? undefined : (value as TTSProviderType);
+    const oldProvider = data.provider;
 
-    updateNodeData(nodeId, { voiceName: DEFAULT_GEMINI_VOICE, style: '', model: '' });
-    tracker.commit('voiceName', oldVoiceName, DEFAULT_GEMINI_VOICE);
-    tracker.commit('style', oldStyle, '');
-    tracker.commit('model', oldModel, '');
+    cancelGeneration();
+    updateNodeData(nodeId, { provider: nextProvider });
+    tracker.commit('provider', oldProvider, nextProvider);
+    voiceSearchOpen = false;
+    voiceSearchValue = '';
+    errorMessage = null;
+  }
+
+  function resetSettings() {
+    const defaults = {
+      voiceName: '',
+      paxaVoiceName: '',
+      style: '',
+      model: '',
+      paxaModel: '',
+      provider: undefined
+    };
+
+    const oldData = { ...data };
+
+    cancelGeneration();
+    updateNodeData(nodeId, defaults);
+
+    const changes = (Object.keys(defaults) as (keyof typeof defaults)[]).map((field) => ({
+      dataKey: field,
+      oldValue: oldData[field],
+      newValue: defaults[field]
+    }));
+
+    tracker.commitMany('Reset speech settings', changes);
   }
 
   onMount(() => {
@@ -243,7 +287,7 @@
 
         <button
           class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}
-          title={errorMessage ?? 'AI Text-to-Speech (Gemini)'}
+          title={errorMessage ?? `AI Text-to-Speech (${providerLabel})`}
           onclick={() => (showSettings = !showSettings)}
         >
           <div class="flex items-center justify-center gap-2">
@@ -305,9 +349,9 @@
               <Popover.Trigger class="w-full">
                 <button
                   class="flex w-full cursor-pointer items-center justify-between rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 hover:bg-zinc-700"
-                  aria-label="Choose Gemini voice"
+                  aria-label={`Choose ${providerLabel} voice`}
                 >
-                  <span class="truncate">{voiceName}</span>
+                  <span class="truncate">{voiceLabel}</span>
                   <ChevronsUpDown class="ml-2 h-3 w-3 shrink-0 opacity-50" />
                 </button>
               </Popover.Trigger>
@@ -324,7 +368,7 @@
                             voiceName === voice.name ? 'opacity-100' : 'opacity-0'
                           ]}
                         />
-                        <span class="text-xs">{voice.name} · {voice.description}</span>
+                        <span class="text-xs">{voice.label} · {voice.description}</span>
                       </Command.Item>
                     {/each}
                   </Command.List>
@@ -333,24 +377,26 @@
             </Popover.Root>
           </div>
 
-          <div>
-            <label for={`${nodeId}-speech-style`} class="mb-1.5 block text-xs text-zinc-400"
-              >Speaking style</label
-            >
-            <textarea
-              id={`${nodeId}-speech-style`}
-              value={style}
-              oninput={(event) => updateNodeData(nodeId, { style: event.currentTarget.value })}
-              onfocus={styleTracker.onFocus}
-              onblur={styleTracker.onBlur}
-              placeholder="Cheerful and friendly, with a relaxed pace"
-              rows={3}
-              class="nowheel w-full resize-y rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-orange-500/60"
-            ></textarea>
-            <p class="mt-1 text-xs text-zinc-500">
-              Describe the tone, accent, and pace. Language is detected automatically.
-            </p>
-          </div>
+          {#if provider === 'gemini'}
+            <div>
+              <label for={`${nodeId}-speech-style`} class="mb-1.5 block text-xs text-zinc-400"
+                >Speaking style</label
+              >
+              <textarea
+                id={`${nodeId}-speech-style`}
+                value={style}
+                oninput={(event) => updateNodeData(nodeId, { style: event.currentTarget.value })}
+                onfocus={styleTracker.onFocus}
+                onblur={styleTracker.onBlur}
+                placeholder="Cheerful and friendly, with a relaxed pace"
+                rows={3}
+                class="nowheel w-full resize-y rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-orange-500/60"
+              ></textarea>
+              <p class="mt-1 text-xs text-zinc-500">
+                Describe the tone, accent, and pace. Language is detected automatically.
+              </p>
+            </div>
+          {/if}
 
           <button
             class="nodrag flex w-full cursor-pointer items-center justify-between border-t border-zinc-700/50 px-2 pt-1.5 text-zinc-600 transition-colors hover:text-zinc-400 focus-visible:outline-2 focus-visible:outline-orange-500/60"
@@ -370,20 +416,39 @@
           </button>
 
           {#if showModelSettings}
-            <div id={`${nodeId}-model-settings`} class="px-2">
+            <div id={`${nodeId}-model-settings`} class="space-y-3 px-2">
               <div class="flex items-center gap-1.5">
                 <Bot class="h-3 w-3 shrink-0 text-zinc-600" />
 
                 <input
                   type="text"
-                  value={data.model ?? ''}
-                  oninput={(event) => updateNodeData(nodeId, { model: event.currentTarget.value })}
+                  value={data[modelField] ?? ''}
+                  oninput={(event) =>
+                    updateNodeData(nodeId, { [modelField]: event.currentTarget.value })}
                   onfocus={modelTracker.onFocus}
                   onblur={modelTracker.onBlur}
-                  placeholder={$aiSettings.geminiSpeechModel}
+                  placeholder={defaultModel}
                   aria-label="Speech model override"
                   class="nodrag min-w-0 flex-1 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus-visible:outline-1 focus-visible:outline-orange-500/30"
                 />
+              </div>
+
+              <div>
+                <label for={`${nodeId}-provider`} class="mb-1.5 block text-xs text-zinc-400">
+                  Provider
+                </label>
+                <select
+                  id={`${nodeId}-provider`}
+                  value={data.provider ?? ''}
+                  onchange={selectProvider}
+                  class="w-full cursor-pointer rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 focus-visible:outline-2 focus-visible:outline-orange-500/60"
+                >
+                  <option value=""
+                    >Default ({$aiSettings.ttsProvider === 'paxa' ? 'Paxa' : 'Gemini'})</option
+                  >
+                  <option value="gemini">Gemini</option>
+                  <option value="paxa">Paxa</option>
+                </select>
               </div>
             </div>
           {/if}

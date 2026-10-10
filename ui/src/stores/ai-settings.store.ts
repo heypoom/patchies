@@ -1,6 +1,9 @@
 import { writable, derived, get } from 'svelte/store';
 
 export type AIProviderType = 'gemini' | 'openrouter';
+export type TTSProviderType = 'gemini' | 'paxa';
+
+export const DEFAULT_PAXA_SPEECH_MODEL = 'paxa-tts-flash-v1';
 
 export const DEFAULT_GEMINI_TEXT_MODEL = 'gemini-3.8-flash';
 export const DEFAULT_GEMINI_IMAGE_MODEL = 'gemini-3.1-flash-lite-image';
@@ -11,6 +14,8 @@ export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'black-forest-labs/flux-3-image';
 
 export interface AISettings {
   provider: AIProviderType;
+  ttsProvider: TTSProviderType;
+  paxaApiKey: string;
   geminiApiKey: string;
   geminiTextModel: string;
   geminiImageModel: string;
@@ -25,6 +30,8 @@ const LEGACY_GEMINI_KEY = 'gemini-api-key';
 
 const DEFAULT_SETTINGS: AISettings = {
   provider: 'gemini',
+  ttsProvider: 'gemini',
+  paxaApiKey: '',
   geminiApiKey: '',
   geminiTextModel: DEFAULT_GEMINI_TEXT_MODEL,
   geminiImageModel: DEFAULT_GEMINI_IMAGE_MODEL,
