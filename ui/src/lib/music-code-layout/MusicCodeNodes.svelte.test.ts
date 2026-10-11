@@ -189,7 +189,7 @@ it.each(['csound~', 'chuck~'] as const)(
       const menu = document.querySelector('[data-slot="popover-content"]')!;
       expect(
         Array.from(menu.querySelectorAll('button'), (button) => button.textContent?.trim())
-      ).toEqual(['Sync to transport', 'Expand Editor', 'Show Editor in Patch', 'Disable Resizing']);
+      ).toEqual(['Sync to transport', 'Expand Editor', 'Show Editor in Patch']);
 
       await page.getByRole('button', { name: 'Show Editor in Patch', exact: true }).click();
     }
@@ -231,7 +231,7 @@ it.each([false, true])(
         'Sync to transport',
         'Expand Editor',
         editorCollapsed ? 'Show Editor in Patch' : 'Hide Code',
-        'Disable Resizing'
+        ...(editorCollapsed ? [] : ['Disable Resizing'])
       ]);
       await page.getByRole('button', { name: 'Sync to transport', exact: true }).click();
 
@@ -907,3 +907,34 @@ it('opens ChucK settings on Shreds and supports keyboard navigation to Styles', 
   await page.getByLabelText('Remove shred 1', { exact: true }).click();
   expect(send).toHaveBeenCalledWith('music-1', 'removeShred', 1);
 });
+
+it.each(['strudel', 'chuck~'] as const)(
+  'hides %s resizing settings while compact',
+  async (kind) => {
+    data.set({ expr: 'initial', code: 'initial', editorCollapsed: true });
+    component = mount(MusicNodeHarness, {
+      target: document.body,
+      props: {
+        kind,
+        get data() {
+          return dataSource.current;
+        }
+      }
+    });
+
+    await page.getByRole('button', { name: 'Editor options', exact: true }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+
+    if (kind === 'chuck~') {
+      await page.getByRole('tab', { name: 'Styles', exact: true }).click();
+    }
+
+    expect(document.querySelector('input[aria-label="Font size"]')).not.toBeNull();
+    expect(
+      Array.from(document.querySelectorAll('button[role="checkbox"]'), (button) =>
+        button.textContent?.trim()
+      )
+    ).not.toContain('Resizable');
+    expect(dataSource.current.editorResizingEnabled).toBeUndefined();
+  }
+);

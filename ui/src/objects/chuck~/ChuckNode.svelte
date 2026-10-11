@@ -240,29 +240,33 @@
 {/snippet}
 
 {#snippet appearanceFields(expanded: boolean)}
-  <button
-    role="checkbox"
-    aria-checked={data.editorResizingEnabled ?? true}
-    class="flex cursor-pointer items-center gap-1.5 transition-colors"
-    onclick={() => {
-      const oldValue = data.editorResizingEnabled;
-      const nextValue = !(oldValue ?? true);
+  {#if !data.editorCollapsed || expanded}
+    <button
+      role="checkbox"
+      aria-checked={data.editorResizingEnabled ?? true}
+      class="flex cursor-pointer items-center gap-1.5 transition-colors"
+      onclick={() => {
+        const oldValue = data.editorResizingEnabled;
+        const nextValue = !(oldValue ?? true);
 
-      updateNodeData(nodeId, { editorResizingEnabled: nextValue });
-      tracker.commit('editorResizingEnabled', oldValue, nextValue);
-    }}
-  >
-    <span
-      class={[
-        'h-3 w-3 shrink-0 rounded-sm border transition-colors',
-        (data.editorResizingEnabled ?? true) ? 'border-zinc-500 bg-zinc-500' : 'border-zinc-600'
-      ]}
-    ></span>
-    <span
-      class={['text-xs', (data.editorResizingEnabled ?? true) ? 'text-zinc-400' : 'text-zinc-500']}
-      >Resizable</span
+        updateNodeData(nodeId, { editorResizingEnabled: nextValue });
+        tracker.commit('editorResizingEnabled', oldValue, nextValue);
+      }}
     >
-  </button>
+      <span
+        class={[
+          'h-3 w-3 shrink-0 rounded-sm border transition-colors',
+          (data.editorResizingEnabled ?? true) ? 'border-zinc-500 bg-zinc-500' : 'border-zinc-600'
+        ]}
+      ></span>
+      <span
+        class={[
+          'text-xs',
+          (data.editorResizingEnabled ?? true) ? 'text-zinc-400' : 'text-zinc-500'
+        ]}>Resizable</span
+      >
+    </button>
+  {/if}
   <EditorAppearanceFields
     {nodeId}
     {data}

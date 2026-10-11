@@ -166,11 +166,11 @@ it('toggles the standard resizer while retaining the chosen editor size', async 
   button('Edit code').click();
   await tick();
   button('Floating editor options').click();
-  await page.getByRole('button', { name: 'Disable Resizing', exact: true }).click();
-  await vi.waitFor(() =>
-    expect(document.querySelector('[data-slot="popover-content"]')).toBeNull()
+  await tick();
+  expect(document.querySelector('[data-slot="popover-content"]')?.textContent).not.toContain(
+    'Resizing'
   );
-  expect(dataSource.current.editorResizingEnabled).toBe(false);
+  expect(dataSource.current.editorResizingEnabled).toBe(true);
 });
 
 it('returns from expansion to the previous compact layout and size', async () => {
