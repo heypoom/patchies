@@ -95,6 +95,10 @@ it('keeps its editor mounted through compact inspection and restores the saved s
   expect(container().getBoundingClientRect().height).toBeLessThan(60);
   expect(onDestroy).not.toHaveBeenCalled();
 
+  await vi.waitFor(() =>
+    expect(document.querySelector('[data-slot="popover-content"]')).toBeNull()
+  );
+
   value.set('updated while compact');
   button('Edit code').click();
   await tick();
@@ -108,7 +112,7 @@ it('keeps its editor mounted through compact inspection and restores the saved s
 
   expect(document.querySelector('button[aria-label="Keep editor in patch"]')).toBeNull();
   button('Floating editor options').click();
-  await page.getByRole('button', { name: 'Keep Editor in Patch', exact: true }).click();
+  await page.getByRole('button', { name: 'Show Editor in Patch', exact: true }).click();
   await tick();
 
   expect(container().getBoundingClientRect().width).toBe(520);
@@ -151,6 +155,22 @@ it('toggles the standard resizer while retaining the chosen editor size', async 
   await page.getByRole('button', { name: 'Enable Resizing' }).click();
   await vi.waitFor(() => expect(document.querySelector('.mock-node-resizer')).not.toBeNull());
   expect(dataSource.current.editorSize).toEqual({ width: 320, height: 130 });
+
+  button('Editor options').click();
+  await page.getByRole('button', { name: 'Hide Code', exact: true }).click();
+  await tick();
+  await vi.waitFor(() =>
+    expect(document.querySelector('[data-slot="popover-content"]')).toBeNull()
+  );
+
+  button('Edit code').click();
+  await tick();
+  button('Floating editor options').click();
+  await page.getByRole('button', { name: 'Disable Resizing', exact: true }).click();
+  await vi.waitFor(() =>
+    expect(document.querySelector('[data-slot="popover-content"]')).toBeNull()
+  );
+  expect(dataSource.current.editorResizingEnabled).toBe(false);
 });
 
 it('returns from expansion to the previous compact layout and size', async () => {

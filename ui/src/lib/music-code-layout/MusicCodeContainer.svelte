@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Ellipsis, Expand, Lock, Maximize2, MoveUpRight, X } from '@lucide/svelte/icons';
+  import { Code, Ellipsis, Expand, Lock, Maximize2, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { tick, type Snippet } from 'svelte';
   import { useNodeDataTracker } from '$lib/history';
@@ -47,7 +47,7 @@
     actions?: Snippet;
     controls?: Snippet;
     editorControls?: Snippet;
-    menu?: Snippet;
+    menu?: Snippet<[closeMenu: () => void]>;
     showResizingMenuItem?: boolean;
     handles?: Snippet;
     outlets?: Snippet;
@@ -92,13 +92,18 @@
 
   export const setEditorCollapsed = (value: boolean) => setCollapsed(value);
 
+  function closeMenus() {
+    menuOpen = false;
+    inspectionMenuOpen = false;
+  }
+
   function toggleResizing() {
     const oldValue = data.editorResizingEnabled;
     const nextValue = !resizingEnabled;
 
     updateNodeData(nodeId, { editorResizingEnabled: nextValue });
     tracker.commit('editorResizingEnabled', oldValue, nextValue);
-    menuOpen = false;
+    closeMenus();
   }
 
   function openCode(event: MouseEvent) {
@@ -166,6 +171,32 @@
 
   {@render handles?.()}
 
+  {#snippet menuItems()}
+    {@render menu?.(closeMenus)}
+    <button
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+      onclick={() => {
+        menuOpen = false;
+        inspectionMenuOpen = false;
+        onExpand();
+      }}><Expand class="h-4 w-4" />Expand Editor</button
+    >
+    <button
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+      onclick={() => setCollapsed(!collapsed)}
+      ><Code class="h-4 w-4" />{collapsed ? 'Show Editor in Patch' : 'Hide Code'}</button
+    >
+    {#if showResizingMenuItem}
+      <button
+        class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+        onclick={toggleResizing}
+      >
+        {#if resizingEnabled}<Lock class="h-4 w-4" />{:else}<Maximize2 class="h-4 w-4" />{/if}
+        {resizingEnabled ? 'Disable Resizing' : 'Enable Resizing'}
+      </button>
+    {/if}
+  {/snippet}
+
   {#snippet layoutControls()}
     <Popover.Root bind:open={menuOpen}>
       <Popover.Trigger
@@ -178,28 +209,7 @@
         align="start"
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
-        {@render menu?.()}
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-          onclick={() => {
-            menuOpen = false;
-            onExpand();
-          }}><Expand class="h-4 w-4" />Expand Editor</button
-        >
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-          onclick={() => setCollapsed(!collapsed)}
-          ><Code class="h-4 w-4" />{collapsed ? 'Show Editor in Patch' : 'Hide Code'}</button
-        >
-        {#if showResizingMenuItem}
-          <button
-            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-            onclick={toggleResizing}
-          >
-            {#if resizingEnabled}<Lock class="h-4 w-4" />{:else}<Maximize2 class="h-4 w-4" />{/if}
-            {resizingEnabled ? 'Disable Resizing' : 'Enable Resizing'}
-          </button>
-        {/if}
+        {@render menuItems()}
       </Popover.Content>
     </Popover.Root>
   {/snippet}
@@ -263,18 +273,7 @@
               align="end"
               onCloseAutoFocus={(event) => event.preventDefault()}
             >
-              <button
-                class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-                onclick={() => setCollapsed(false)}
-                ><MoveUpRight class="h-4 w-4" />Keep Editor in Patch</button
-              >
-              <button
-                class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-                onclick={() => {
-                  inspectionMenuOpen = false;
-                  onExpand();
-                }}><Expand class="h-4 w-4" />Expand Editor</button
-              >
+              {@render menuItems()}
             </Popover.Content>
           </Popover.Root>
           <button

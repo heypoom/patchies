@@ -168,7 +168,31 @@ it.each(['csound~', 'chuck~'] as const)(
 
     await vi.waitFor(expectHighlighting);
     await page.getByRole('button', { name: 'Floating editor options', exact: true }).click();
-    await page.getByRole('button', { name: 'Keep Editor in Patch', exact: true }).click();
+    if (kind === 'chuck~') {
+      const menu = document.querySelector('[data-slot="popover-content"]')!;
+      expect(
+        Array.from(menu.querySelectorAll('button'), (button) => button.textContent?.trim())
+      ).toEqual(['Settings', 'Expand Editor', 'Show Editor in Patch']);
+
+      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      await vi.waitFor(() => {
+        expect(document.querySelector('[data-slot="popover-content"]')).toBeNull();
+        expect(
+          document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()
+        ).toBe('Shreds');
+      });
+
+      await page.getByLabelText('Close settings', { exact: true }).click();
+      await page.getByRole('button', { name: 'Floating editor options', exact: true }).click();
+      await page.getByRole('button', { name: 'Show Editor in Patch', exact: true }).click();
+    } else {
+      const menu = document.querySelector('[data-slot="popover-content"]')!;
+      expect(
+        Array.from(menu.querySelectorAll('button'), (button) => button.textContent?.trim())
+      ).toEqual(['Sync to transport', 'Expand Editor', 'Show Editor in Patch', 'Disable Resizing']);
+
+      await page.getByRole('button', { name: 'Show Editor in Patch', exact: true }).click();
+    }
     await vi.waitFor(expectHighlighting);
     await page.getByRole('button', { name: 'Editor options', exact: true }).click();
     await page.getByRole('button', { name: 'Expand Editor', exact: true }).click();

@@ -47,7 +47,7 @@
     placeholder?: string;
     status?: string;
     actions?: Snippet;
-    menu?: Snippet;
+    menu?: Snippet<[closeMenu: () => void]>;
     showResizingMenuItem?: boolean;
     handles?: Snippet;
     outlets?: Snippet;
