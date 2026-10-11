@@ -36,9 +36,7 @@ export const DEFAULT_JS_CODE = `console.log(1 + 1)`;
 
 export const DEFAULT_STRUDEL_CODE = `setcpm(60)
 
-n("<0 -3>, 2 4 <[6,8] [7,9]>")
-.scale("<C:major D:mixolydian>/4")
-.sound("piano")`;
+s("bd sd hh*4").gain(0.1)`;
 
 export const DEFAULT_AI_IMAGE_PROMPT = `little rainicorn, high quality, 16:9 aspect ratio`;
 
