@@ -42,6 +42,19 @@ The experimental Khanom Chan (`khanomchan`) and Kaprao (`kaprao`) voices support
 Paxa accepts up to 5,000 characters per request. Split longer text into shorter
 `speak` or `load` requests.
 
+## Streaming
+
+With Paxa selected, **model settings → Stream audio** starts playback as audio
+arrives. It is enabled by default. Turn it off to wait for the complete response.
+Gemini uses buffered playback.
+
+Streaming follows the same audio outlet and effects as buffered speech. A browser
+with MP3 MediaSource support is required; if streaming is unavailable, disable the
+option. Stop cancels both generation and playback.
+
+Completed speech is cached for replay. `load` always prepares complete audio
+silently. Failed or cancelled streams are not cached.
+
 ## Messages
 
 Send a string to generate and play speech:

@@ -39,3 +39,12 @@ Poom explicitly chose replacement without migration. Do not translate Cloud voic
 - Resolve the provider, key, voice, model, text, and effective style before each request. Include the provider in the cache key, and exclude ignored Paxa style. `setVoice` edits the effective provider's voice. Existing cancellation and preload behavior apply to both providers.
 - Display Paxa problem `title` codes and request IDs with errors. Never log keys. Keep keys in per-user settings, never patch data.
 - Verify provider resolution, separate key persistence, Paxa binary responses/errors/cancellation, provider cache separation, and Gemini regressions with mocked requests; report live synthesis separately.
+
+## Paxa streaming playback
+
+- Add a persistent per-object `streaming` checkbox to model settings, enabled by default for Paxa and shown only for Paxa. Track edits with undo/redo; reset enables it. Gemini keeps its buffered Interactions API path.
+- With streaming enabled, request MP3 with `stream: true`, consume the response reader, and append each chunk to an `audio/mpeg` MediaSource SourceBuffer. Attach the MediaSource URL to the existing soundfile audio node so playback begins before the response finishes and follows graph connections/effects.
+- Cache the complete MP3 only after successful completion, without restarting playback. Delivery mode is not part of the synthesis cache key. `load` remains silent and buffers a complete response; cached playback uses the existing audio path.
+- Stop, superseding requests, provider changes, reset, and destruction abort the reader and stop/release the active MediaSource. Network or append errors stop partial playback and do not cache incomplete audio. Keep the MediaSource alive after response completion until stopped or replaced, allowing queued audio to finish.
+- Browsers without MPEG MediaSource support show an actionable error; users can disable streaming. Do not silently make another billed request as fallback.
+- Test chunk delivery before EOF, stream errors/cancellation, MIME/request selection, MediaSource ordering/cleanup, and effective settings. Live provider playback requires a key and is verified separately.

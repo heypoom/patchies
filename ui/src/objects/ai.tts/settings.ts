@@ -8,6 +8,7 @@ import type { SpeechOptions } from './speech';
 
 export interface AiTtsNodeData {
   text?: string;
+  streaming?: boolean;
   provider?: TTSProviderType;
   voiceName?: string;
   style?: string;
@@ -37,6 +38,7 @@ export function resolveSpeechOptions(data: AiTtsNodeData, settings: AISettings):
 
   return {
     provider,
+    streaming: provider === 'paxa' && (data.streaming ?? true),
     model: data[getModelField(provider)]?.trim() || getDefaultSpeechModel(provider, settings),
     text: data.text ?? '',
     voiceName: data[getVoiceField(provider)] || defaultVoice,

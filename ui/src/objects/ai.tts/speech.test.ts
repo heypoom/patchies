@@ -242,3 +242,84 @@ describe('Paxa speech synthesis', () => {
     expect(getSpeechCacheKey({ ...paxaOptions, style: 'ignored style' })).toBe(key);
   });
 });
+
+describe('Paxa streaming delivery', () => {
+  const options = {
+    provider: 'paxa' as const,
+    model: 'paxa-tts-flash-v1',
+    voiceName: 'khanomkrok',
+    text: 'สวัสดีครับ',
+    style: '',
+    apiKey: 'test-key',
+    streaming: true
+  };
+
+  it('delivers chunks before EOF and retains complete audio for cached playback', async () => {
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start: (value) => {
+        controller = value;
+      }
+    });
+    const fetchMock = vi.fn().mockResolvedValue(new Response(body));
+    vi.stubGlobal('fetch', fetchMock);
+    const onChunk = vi.fn().mockResolvedValue(undefined);
+    let finished = false;
+
+    const result = synthesizeSpeech({ ...options, onChunk }).then((audio) => {
+      finished = true;
+      return audio;
+    });
+    controller.enqueue(new Uint8Array([1, 2]));
+    await vi.waitFor(() => expect(onChunk).toHaveBeenCalledWith(new Uint8Array([1, 2])));
+
+    expect(finished).toBe(false);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+      stream: true,
+      format: 'mp3'
+    });
+
+    controller.enqueue(new Uint8Array([3, 4]));
+    controller.close();
+    const audio = await result;
+
+    expect(audio.type).toBe('audio/mpeg');
+    expect(new Uint8Array(await audio.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3, 4]));
+  });
+
+  it('cancels a reader waiting for the next chunk', async () => {
+    const cancel = vi.fn();
+    const body = new ReadableStream({ cancel });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
+    const controller = new AbortController();
+    const result = synthesizeSpeech({ ...options, signal: controller.signal });
+    const assertion = expect(result).rejects.toMatchObject({ name: 'AbortError' });
+
+    await vi.waitFor(() => expect(body.locked).toBe(true));
+    controller.abort();
+    await assertion;
+
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(body.locked).toBe(false);
+  });
+
+  it('rejects a broken stream instead of returning partial audio', async () => {
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start: (value) => {
+        controller = value;
+      }
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
+    const onChunk = vi.fn().mockResolvedValue(undefined);
+    const result = synthesizeSpeech({ ...options, onChunk });
+    const assertion = expect(result).rejects.toThrow('stream disconnected');
+
+    controller.enqueue(new Uint8Array([1]));
+    await vi.waitFor(() => expect(onChunk).toHaveBeenCalledOnce());
+    controller.error(new Error('stream disconnected'));
+    await assertion;
+
+    expect(body.locked).toBe(false);
+  });
+});

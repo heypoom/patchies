@@ -15,6 +15,7 @@ describe('speech settings resolution', () => {
 
     expect(options).toEqual({
       provider: 'paxa',
+      streaming: true,
       model: DEFAULT_PAXA_SPEECH_MODEL,
       voiceName: 'khanomkrok',
       text: '',
@@ -51,6 +52,15 @@ describe('speech settings resolution', () => {
       style: ''
     });
     expect(getSpeechApiKey(paxa.provider, globalSettings)).toBe('paxa-key');
+  });
+
+  it('allows disabling Paxa streaming and keeps Gemini buffered', () => {
+    expect(resolveSpeechOptions({ provider: 'paxa', streaming: false }, settings).streaming).toBe(
+      false
+    );
+    expect(resolveSpeechOptions({ provider: 'gemini', streaming: true }, settings).streaming).toBe(
+      false
+    );
   });
 
   it('uses provider defaults for blank model overrides', () => {

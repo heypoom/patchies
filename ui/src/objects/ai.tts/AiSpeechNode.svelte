@@ -7,10 +7,7 @@
     Check,
     ChevronsUpDown,
     RotateCcw,
-    LoaderCircle,
-    Bot,
-    SlidersHorizontal,
-    ChevronDown
+    LoaderCircle
   } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -26,6 +23,8 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useNodeDataTracker } from '$lib/history';
   import { aiSettings, type TTSProviderType } from '../../stores/ai-settings.store';
+  import SpeechModelSettings from './SpeechModelSettings.svelte';
+  import { SpeechStreamPlayer } from './stream-player';
   import { getSpeechCacheKey, synthesizeSpeech } from './speech';
   import { GEMINI_VOICES, PAXA_VOICES } from './voices';
   import {
@@ -56,8 +55,8 @@
 
   let messageContext: MessageContext;
   let pendingRequest: AbortController | null = null;
+  let streamPlayer: SpeechStreamPlayer | null = null;
   let showSettings = $state(false);
-  let showModelSettings = $state(false);
   let voiceSearchOpen = $state(false);
   let voiceSearchValue = $state('');
   let isLoading = $state(false);
@@ -93,6 +92,13 @@
   function cancelGeneration() {
     pendingRequest?.abort();
     pendingRequest = null;
+
+    if (streamPlayer) {
+      audioService.send(nodeId, 'message', { type: 'stop' });
+      streamPlayer.stop();
+      streamPlayer = null;
+    }
+
     isLoading = false;
   }
 
@@ -133,21 +139,45 @@
       return;
     }
 
+    const streamPlayback = options.streaming && playback;
+
+    if (streamPlayback && !SpeechStreamPlayer.isSupported()) {
+      showError(
+        'Streaming audio is unavailable in this browser. Disable Stream audio in model settings.'
+      );
+      return;
+    }
+
     const request = new AbortController();
     pendingRequest = request;
     isLoading = true;
 
     try {
-      const audio = await synthesizeSpeech({ ...options, apiKey, signal: request.signal });
+      const audio = await synthesizeSpeech({
+        ...options,
+        streaming: streamPlayback,
+        apiKey,
+        signal: request.signal,
+        onChunk: async (chunk) => {
+          if (request.signal.aborted) return;
 
+          streamPlayer ??= new SpeechStreamPlayer(playAudio);
+          await streamPlayer.append(chunk);
+        }
+      });
+
+      if (request.signal.aborted) return;
+
+      if (streamPlayback) await streamPlayer?.finish();
       if (request.signal.aborted) return;
 
       const audioUrl = URL.createObjectURL(audio);
       $audioUrlCache[cacheKey] = audioUrl;
 
-      if (playback) playAudio(audioUrl);
+      if (playback && !streamPlayback) playAudio(audioUrl);
     } catch (error) {
       if (!request.signal.aborted) {
+        cancelGeneration();
         showError(error instanceof Error ? error.message : 'Speech generation failed.');
       }
     } finally {
@@ -221,6 +251,7 @@
       style: '',
       model: '',
       paxaModel: '',
+      streaming: true,
       provider: undefined
     };
 
@@ -398,60 +429,23 @@
             </div>
           {/if}
 
-          <button
-            class="nodrag flex w-full cursor-pointer items-center justify-between border-t border-zinc-700/50 px-2 pt-1.5 text-zinc-600 transition-colors hover:text-zinc-400 focus-visible:outline-2 focus-visible:outline-orange-500/60"
-            onclick={() => (showModelSettings = !showModelSettings)}
-            aria-expanded={showModelSettings}
-            aria-controls={`${nodeId}-model-settings`}
-          >
-            <div class="flex items-center gap-1.5">
-              <SlidersHorizontal class="h-3 w-3" />
-
-              <span class="font-mono text-[11px]">model settings</span>
-            </div>
-
-            <ChevronDown
-              class={['h-3 w-3 transition-transform', showModelSettings && 'rotate-180']}
-            />
-          </button>
-
-          {#if showModelSettings}
-            <div id={`${nodeId}-model-settings`} class="space-y-3 px-2">
-              <div class="flex items-center gap-1.5">
-                <Bot class="h-3 w-3 shrink-0 text-zinc-600" />
-
-                <input
-                  type="text"
-                  value={data[modelField] ?? ''}
-                  oninput={(event) =>
-                    updateNodeData(nodeId, { [modelField]: event.currentTarget.value })}
-                  onfocus={modelTracker.onFocus}
-                  onblur={modelTracker.onBlur}
-                  placeholder={defaultModel}
-                  aria-label="Speech model override"
-                  class="nodrag min-w-0 flex-1 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus-visible:outline-1 focus-visible:outline-orange-500/30"
-                />
-              </div>
-
-              <div>
-                <label for={`${nodeId}-provider`} class="mb-1.5 block text-xs text-zinc-400">
-                  Provider
-                </label>
-                <select
-                  id={`${nodeId}-provider`}
-                  value={data.provider ?? ''}
-                  onchange={selectProvider}
-                  class="w-full cursor-pointer rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 focus-visible:outline-2 focus-visible:outline-orange-500/60"
-                >
-                  <option value=""
-                    >Default ({$aiSettings.ttsProvider === 'paxa' ? 'Paxa' : 'Gemini'})</option
-                  >
-                  <option value="gemini">Gemini</option>
-                  <option value="paxa">Paxa</option>
-                </select>
-              </div>
-            </div>
-          {/if}
+          <SpeechModelSettings
+            {nodeId}
+            {data}
+            {provider}
+            defaultProvider={$aiSettings.ttsProvider}
+            {modelField}
+            {defaultModel}
+            {modelTracker}
+            onModelChange={(value) => updateNodeData(nodeId, { [modelField]: value })}
+            onProviderChange={selectProvider}
+            onStreamingChange={(streaming) => {
+              const oldValue = data.streaming;
+              cancelGeneration();
+              updateNodeData(nodeId, { streaming });
+              tracker.commit('streaming', oldValue, streaming);
+            }}
+          />
 
           {#if errorMessage}
             <p role="alert" class="text-xs break-words text-red-400">{errorMessage}</p>
