@@ -307,7 +307,8 @@
   <Popover.Content
     data-strudel-panel
     class="nodrag nopan nowheel z-[70] w-52 max-w-[calc(100vw-2rem)] border-zinc-700 bg-zinc-900 p-1 text-zinc-200"
-    align="end"
+    side="right"
+    align="start"
     onCloseAutoFocus={(event) => event.preventDefault()}
   >
     <button
