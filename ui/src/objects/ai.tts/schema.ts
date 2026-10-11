@@ -8,6 +8,9 @@ import { Bang, Stop, messages } from '$lib/objects/schemas/common';
 const Speak = msg('speak', { text: Type.String() });
 const Load = msg('load', { text: Type.String() });
 const Play = sym('play');
+const Append = msg('append', { text: Type.String() });
+const Flush = sym('flush');
+const End = sym('end');
 const SetVoice = msg('setVoice', { value: Type.String() });
 const SetStyle = msg('setStyle', { value: Type.String() });
 
@@ -17,6 +20,9 @@ export const aiTtsMessages = {
   speak: schema(Speak),
   load: schema(Load),
   play: schema(Play),
+  append: schema(Append),
+  flush: schema(Flush),
+  end: schema(End),
   setVoice: schema(SetVoice),
   setStyle: schema(SetStyle),
   string: schema(Type.String())
@@ -48,6 +54,18 @@ export const aiTtsSchema: ObjectSchema = {
         {
           schema: SetStyle,
           description: 'Set Gemini speaking style (e.g., "cheerful and friendly")'
+        },
+        {
+          schema: Append,
+          description: 'Append a text fragment to a Paxa live session (opens on first append)'
+        },
+        {
+          schema: Flush,
+          description: 'Synthesize buffered Paxa live text without ending the session'
+        },
+        {
+          schema: End,
+          description: 'Finish Paxa live input and play remaining audio'
         }
       ]
     }

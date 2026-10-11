@@ -33,6 +33,10 @@ func main() {
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		se.Router.GET("/api/healthz", healthz)
+		se.Router.GET("/api/ai/tts/paxa/live", func(e *core.RequestEvent) error {
+			paxaLiveRelay(paxaLiveURL).ServeHTTP(e.Response, e.Request)
+			return nil
+		})
 		se.Router.GET("/{path...}", serveFrontend(frontend))
 
 		return se.Next()

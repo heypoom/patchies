@@ -90,6 +90,32 @@ Send `{ type: 'stop' }` to stop playback and cancel pending generation.
 
 API failures appear as toasts. Paxa errors include the problem code and request ID when available.
 
+## Incremental Text
+
+Choose **Paxa** in model settings to send text fragments as they become available,
+such as new text deltas from an LLM. The first `append` opens a live connection.
+Further fragments join that session and audio plays as it arrives.
+
+```javascript
+send({ type: 'append', text: 'สวัสดีครับ ' });
+send({ type: 'append', text: 'ยินดีต้อนรับสู่ Patchies' });
+
+// End automatically flushes any remaining text.
+send({ type: 'end' });
+```
+
+Paxa can begin speaking at sentence boundaries while you continue sending text.
+
+- Optionally, use `flush` to speak buffered text while keeping the session open
+  for more fragments, particularly for Thai text without sentence-ending punctuation.
+- Send `end` when no more text is coming. It flushes remaining text, drains the audio,
+  and closes the session - no preceding `flush` is needed.
+- `stop` discards the session and its pending audio.
+
+Forward only new fragments and preserve spaces, as sending the growing transcript
+repeatedly repeats speech. Use `append` for fragments so each fragment does not
+cancel the previous request.
+
 ## See Also
 
 - [tts](/docs/objects/tts) - browser-native text-to-speech

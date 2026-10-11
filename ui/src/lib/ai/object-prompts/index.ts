@@ -3,6 +3,7 @@
  * Each object type has its own file containing detailed instructions.
  */
 
+import { aiTtsPrompt } from '$objects/ai.tts/prompt';
 import { asmPrompt } from '$objects/asm/prompt';
 import { bgOutPrompt } from '$objects/bg.out/prompt';
 import { buttonPrompt } from '$objects/button/prompt';
@@ -87,6 +88,7 @@ import { ngeaPrompt } from '$objects/ngea/prompts';
  * Mapping of object types to their instruction prompts.
  */
 export const objectPrompts: Record<string, string> = {
+  'ai.tts': aiTtsPrompt,
   'tone~': tonePrompt,
   'dsp~': dspPrompt,
   p5: p5Prompt,
