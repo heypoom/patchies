@@ -3,7 +3,11 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import MusicCodeContainer from '$lib/music-code-layout/MusicCodeContainer.svelte';
-  import { resolveStrudelFontSizes, type StrudelNodeData } from './strudel-settings';
+  import type { StrudelNodeData } from './strudel-settings';
+  import {
+    resolveEditorFontSizes,
+    getEditorAppearanceUpdate
+  } from '$lib/editor-appearance/editor-appearance';
   import StrudelControls from './StrudelControls.svelte';
   import { portal } from '$lib/dom/portal';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -75,7 +79,7 @@
   const code = $derived(data.code || '');
   const fontFamily = $derived(data.fontFamily ?? $editorFontFamily);
   const fontSizes = $derived(
-    resolveStrudelFontSizes(data, $editorFontSize, $editorFullscreenFontSize)
+    resolveEditorFontSizes(data, $editorFontSize, $editorFullscreenFontSize)
   );
   const fontSize = $derived(isDetached ? fontSizes.expanded : fontSizes.normal);
   const dismissShortcutLabel = $derived(getExpandedDismissShortcutLabel($isNativeFullscreen));
@@ -100,6 +104,13 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     try {
+      const appearance = getEditorAppearanceUpdate(message);
+
+      if (appearance) {
+        updateNodeData(nodeId, { ...appearance });
+        return;
+      }
+
       match(message)
         .with(strudelMessages.string, (code) => {
           setCode(code);
@@ -111,19 +122,6 @@
         .with(strudelMessages.run, evaluate)
         .with(strudelMessages.expand, openExpandedEditor)
         .with(strudelMessages.collapse, closeExpandedEditor)
-        .with(strudelMessages.setStyles, ({ value }) => {
-          updateNodeData(nodeId, { styles: value as Record<string, string> });
-        })
-        .with(strudelMessages.setFontFamily, ({ value }) => {
-          strudelEditor?.editor?.setFontFamily(value);
-          updateNodeData(nodeId, { fontFamily: value });
-        })
-        .with(strudelMessages.setFontSize, ({ value }) => {
-          updateNodeData(nodeId, { fontSize: value });
-        })
-        .with(strudelMessages.setExpandedFontSize, ({ value }) => {
-          updateNodeData(nodeId, { expandedFontSize: value });
-        })
         .with(strudelMessages.stop, stop)
         .with(strudelMessages.mute, () => setMuted(true))
         .with(strudelMessages.unmute, () => setMuted(false));
@@ -304,7 +302,12 @@
     const handleKeydown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
       if (!isExpandedDismissKey(event)) return;
-      if (document.querySelector('[data-strudel-panel][data-state="open"]')) return;
+      if (
+        document.querySelector(
+          '[data-strudel-panel][data-state="open"], [data-editor-appearance-dialog][data-state="open"]'
+        )
+      )
+        return;
 
       event.preventDefault();
       event.stopPropagation();

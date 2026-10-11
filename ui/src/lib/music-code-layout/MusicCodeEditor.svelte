@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    resolveEditorFontSizes,
+    type EditorAppearanceData
+  } from '$lib/editor-appearance/editor-appearance';
+  import { editorFontSize, editorFullscreenFontSize } from '../../stores/editor.store';
   import type { Snippet } from 'svelte';
   import type { Extension } from '@codemirror/state';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -16,12 +21,14 @@
     nodeId,
     data,
     selected,
+    appearance,
     value,
     label,
     placeholder = '',
     status,
     actions,
     menu,
+    showResizingMenuItem = true,
     handles,
     outlets,
     sidePanel,
@@ -34,12 +41,14 @@
     nodeId: string;
     data: MusicCodeLayoutData;
     selected: boolean;
+    appearance?: EditorAppearanceData;
     value: string;
     label: string;
     placeholder?: string;
     status?: string;
     actions?: Snippet;
     menu?: Snippet;
+    showResizingMenuItem?: boolean;
     handles?: Snippet;
     outlets?: Snippet;
     sidePanel?: Snippet;
@@ -68,8 +77,13 @@
     onrun,
     extraExtensions,
     customActions: detachedActions,
-    customSettings: detachedSettings
+    customSettings: detachedSettings,
+    getAppearance: appearance ? () => appearance : undefined
   });
+
+  const fontSizes = $derived(
+    resolveEditorFontSizes(appearance ?? {}, $editorFontSize, $editorFullscreenFontSize)
+  );
 
   useCodeSidebarTarget(getTarget);
 
@@ -89,9 +103,11 @@
   {status}
   {actions}
   {menu}
+  {showResizingMenuItem}
   {handles}
   {outlets}
   {sidePanel}
+  viewportStyle={appearance?.styles?.container}
   expanded={overlay.isOpen}
   onExpand={openExpandedEditor}
   onOpenSidebar={openSidebar}
@@ -99,6 +115,8 @@
   {#if !overlay.isOpen}
     <CodeEditor
       {value}
+      fontSize={`${fontSizes.normal}px`}
+      fontFamily={appearance?.fontFamily}
       {onchange}
       {onrun}
       {placeholder}

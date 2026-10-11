@@ -1,3 +1,4 @@
+import type { EditorAppearanceData } from '$lib/editor-appearance/editor-appearance';
 import { get, writable } from 'svelte/store';
 import type { Extension } from '@codemirror/state';
 import type { Snippet } from 'svelte';
@@ -39,6 +40,8 @@ export interface CodeEditorTarget {
   console?: Snippet;
   customActions?: Snippet;
   customSettings?: Snippet;
+  /** Read live node appearance while the expanded editor is open. */
+  getAppearance?: () => EditorAppearanceData | undefined;
   mode: 'overlay' | 'sidebar';
 }
 

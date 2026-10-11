@@ -1,27 +1,22 @@
+import {
+  editorAppearanceMessages,
+  editorAppearanceMessageSchemas
+} from '$lib/editor-appearance/editor-appearance';
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from '$lib/objects/schemas/types';
 import { schema } from '$lib/objects/schemas/types';
-import { msg, sym } from '$lib/objects/schemas/helpers';
+import { sym } from '$lib/objects/schemas/helpers';
 import { Bang, Collapse, Expand, Run, messages, SetCode } from '$lib/objects/schemas/common';
 
 // Strudel-specific message schemas
-const SetFontSize = msg('setFontSize', { value: Type.Number() });
-const SetExpandedFontSize = msg('setExpandedFontSize', { value: Type.Number() });
-const SetFontFamily = msg('setFontFamily', { value: Type.String() });
-const SetStyles = msg('setStyles', {
-  value: Type.Object({ container: Type.Optional(Type.String()) })
-});
 const Mute = sym('mute');
 const Unmute = sym('unmute');
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const strudelMessages = {
   ...messages,
+  ...editorAppearanceMessages,
   string: schema(Type.String()),
-  setFontSize: schema(SetFontSize),
-  setExpandedFontSize: schema(SetExpandedFontSize),
-  setFontFamily: schema(SetFontFamily),
-  setStyles: schema(SetStyles),
   mute: schema(Mute),
   unmute: schema(Unmute)
 };
@@ -45,10 +40,7 @@ export const strudelSchema: ObjectSchema = {
         { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Type.String(), description: 'Set the code in the editor' },
         { schema: SetCode, description: 'Set the code in the editor' },
-        { schema: SetFontSize, description: 'Set normal editor font size' },
-        { schema: SetExpandedFontSize, description: 'Set expanded editor font size' },
-        { schema: SetFontFamily, description: 'Set editor font family' },
-        { schema: SetStyles, description: 'Set custom styles for editor container' },
+        ...editorAppearanceMessageSchemas,
         { schema: Mute, description: 'Silence audio output' },
         { schema: Unmute, description: 'Restore audio output after mute' }
       ]

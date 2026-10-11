@@ -5,11 +5,13 @@
 
   let {
     open = $bindable(false),
+    editorLabel,
     styles,
     onchange,
     oncommit
   }: {
     open: boolean;
+    editorLabel: string;
     styles: Record<string, string>;
     onchange: (styles: Record<string, string>) => void;
     oncommit: (oldValue: Record<string, string>, newValue: Record<string, string>) => void;
@@ -19,11 +21,15 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content data-strudel-panel class="nodrag nopan z-[80] sm:max-w-lg" overlayClass="z-[75]">
+  <Dialog.Content
+    data-editor-appearance-dialog
+    class="nodrag nopan z-[80] sm:max-w-lg"
+    overlayClass="z-[75]"
+  >
     <Dialog.Header>
       <Dialog.Title>Custom Styles</Dialog.Title>
       <Dialog.Description
-        >CSS declarations for the Strudel editor container. Changes apply live.</Dialog.Description
+        >CSS declarations for the {editorLabel} editor container. Changes apply live.</Dialog.Description
       >
     </Dialog.Header>
     <div class="h-48 overflow-hidden rounded-md border border-zinc-700 bg-zinc-950">

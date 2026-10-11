@@ -16,14 +16,10 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
-  import {
-    editorFontFamily,
-    editorFontSize,
-    editorFullscreenFontSize
-  } from '../../stores/editor.store';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
-  import StrudelStylesDialog from './StrudelStylesDialog.svelte';
-  import { resolveStrudelFontSizes, type StrudelNodeData } from './strudel-settings';
+  import EditorStylesDialog from '$lib/editor-appearance/EditorStylesDialog.svelte';
+  import EditorAppearanceFields from '$lib/editor-appearance/EditorAppearanceFields.svelte';
+  import { type StrudelNodeData } from './strudel-settings';
 
   let {
     nodeId,
@@ -46,15 +42,6 @@
   const { updateNodeData } = useSvelteFlow();
   const initialNodeId = () => nodeId;
   const tracker = useNodeDataTracker(initialNodeId());
-  const fontSizeTracker = tracker.track('fontSize', () => data.fontSize);
-  const expandedFontSizeTracker = tracker.track('expandedFontSize', () => data.expandedFontSize);
-  const activeFontSizeTracker = $derived(expanded ? expandedFontSizeTracker : fontSizeTracker);
-  const fontSizeKey = $derived(expanded ? 'expandedFontSize' : 'fontSize');
-  const fontSizeLabel = $derived(expanded ? 'Expanded font size' : 'Font size');
-  const fontSizes = $derived(
-    resolveStrudelFontSizes(data, $editorFontSize, $editorFullscreenFontSize)
-  );
-  const fontFamilyTracker = tracker.track('fontFamily', () => data.fontFamily);
 
   let settingsOpen = $state(false);
   let menuOpen = $state(false);
@@ -179,49 +166,19 @@
         class={[
           'text-xs',
           (data.editorResizingEnabled ?? true) ? 'text-zinc-400' : 'text-zinc-500'
-        ]}>Resizing</span
+        ]}>Resizable</span
       >
     </button>
   {/if}
-  <label class="block">
-    <span class="mb-1 block text-xs font-medium text-zinc-300">{fontSizeLabel}</span>
-    <input
-      type="number"
-      min={expanded ? fontSizes.normal + 1 : 1}
-      aria-label={fontSizeLabel}
-      class="nodrag w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-500"
-      value={expanded ? fontSizes.expanded : fontSizes.normal}
-      onfocus={activeFontSizeTracker.onFocus}
-      onblur={activeFontSizeTracker.onBlur}
-      oninput={(event) => {
-        const value = event.currentTarget.valueAsNumber;
-        if (Number.isFinite(value) && value > 0) {
-          const nextValue = expanded ? Math.max(fontSizes.normal + 1, value) : value;
-
-          updateNodeData(nodeId, { [fontSizeKey]: nextValue });
-        }
-      }}
-    />
-  </label>
-  <label class="block">
-    <span class="mb-1 block text-xs font-medium text-zinc-300">Font family</span>
-    <input
-      type="text"
-      aria-label="Font family"
-      class="nodrag w-full min-w-0 rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-xs text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-500"
-      value={data.fontFamily ?? $editorFontFamily}
-      onfocus={fontFamilyTracker.onFocus}
-      onblur={fontFamilyTracker.onBlur}
-      oninput={(event) => updateNodeData(nodeId, { fontFamily: event.currentTarget.value })}
-    />
-  </label>
-  <button
-    class="w-full cursor-pointer rounded border border-zinc-600 px-2 py-1 text-left text-xs text-zinc-300 hover:bg-zinc-800"
-    onclick={() => {
+  <EditorAppearanceFields
+    {nodeId}
+    {data}
+    {expanded}
+    onOpenStyles={() => {
       stylesOpen = true;
       settingsOpen = false;
-    }}>Custom Styles…</button
-  >
+    }}
+  />
 {/snippet}
 
 {#snippet settingsPanel()}
@@ -358,7 +315,8 @@
   </Popover.Content>
 </Popover.Root>
 
-<StrudelStylesDialog
+<EditorStylesDialog
+  editorLabel="Strudel"
   bind:open={stylesOpen}
   styles={data.styles ?? {}}
   onchange={(styles) => updateNodeData(nodeId, { styles })}

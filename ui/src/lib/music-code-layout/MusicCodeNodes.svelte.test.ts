@@ -264,7 +264,7 @@ it('keeps ChucK actions visible and restores the inline editor after fullscreen'
       document.querySelector('[data-slot="popover-content"]')!.querySelectorAll('button'),
       (button) => button.textContent?.trim()
     )
-  ).toEqual(['Expand Editor', 'Hide Code', 'Disable Resizing']);
+  ).toEqual(['Expand Editor', 'Hide Code']);
   await page.getByRole('button', { name: 'Expand Editor', exact: true }).click();
   await tick();
 
@@ -430,7 +430,7 @@ it('shares Strudel settings with messages, tracks edits, and switches between se
     expect(document.querySelector('section[aria-label="Strudel settings"]')).not.toBeNull();
 
     await page.getByRole('checkbox', { name: 'Sync to transport', exact: true }).click();
-    await page.getByRole('checkbox', { name: 'Resizing', exact: true }).click();
+    await page.getByRole('checkbox', { name: 'Resizable', exact: true }).click();
     expect(dataSource.current).toMatchObject({
       muted: true,
       syncTransport: true,
@@ -684,4 +684,202 @@ it('applies Strudel container styles to the outer chrome within fixed editor bou
   });
   await page.getByRole('button', { name: 'Close expanded Strudel editor', exact: true }).click();
   await vi.waitFor(expectStyledViewport);
+});
+
+it('shares ChucK appearance settings with messages and tracks font and style edits', async () => {
+  const onCommit = vi.fn();
+  const bus = PatchiesEventBus.getInstance();
+  bus.addEventListener('nodeDataCommit', onCommit);
+
+  component = mount(MusicNodeHarness, {
+    target: document.body,
+    props: {
+      kind: 'chuck~',
+      get data() {
+        return dataSource.current;
+      }
+    }
+  });
+
+  try {
+    await vi.waitFor(() => expect(callbacks.has('music-1')).toBe(true));
+    const message = (value: unknown) => callbacks.get('music-1')!(value, { inlet: 1 });
+
+    message({ type: 'setFontSize', value: 20 });
+    message({ type: 'setFontFamily', value: 'Monaco, monospace' });
+    message({ type: 'setStyles', value: { container: 'padding: 16px;' } });
+
+    await vi.waitFor(() => {
+      const editor = document.querySelector('.cm-editor')!;
+      expect(getComputedStyle(editor).fontSize).toBe('20px');
+      expect(getComputedStyle(editor).fontFamily).toBe('Monaco, monospace');
+      expect(getComputedStyle(document.querySelector('.music-code-viewport')!).paddingLeft).toBe(
+        '16px'
+      );
+    });
+    expect(send).not.toHaveBeenCalled();
+
+    await page.getByRole('button', { name: 'ChucK settings', exact: true }).click();
+    expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe(
+      'Shreds'
+    );
+    expect(document.querySelector('[role="tabpanel"][hidden]')?.textContent).toContain('Font size');
+    await page.getByRole('tab', { name: 'Styles', exact: true }).click();
+    await page.getByRole('checkbox', { name: 'Resizable', exact: true }).click();
+    expect(dataSource.current.editorResizingEnabled).toBe(false);
+    expect(document.querySelector('.mock-node-resizer')).toBeNull();
+    expect(onCommit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataKey: 'editorResizingEnabled',
+        oldValue: undefined,
+        newValue: false
+      })
+    );
+    const input = document.querySelector<HTMLInputElement>('input[aria-label="Font size"]')!;
+    expect(input.value).toBe('20');
+    input.focus();
+    input.value = '24';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await tick();
+    input.blur();
+
+    expect(dataSource.current.fontSize).toBe(24);
+    expect(onCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ dataKey: 'fontSize', oldValue: 20, newValue: 24 })
+    );
+
+    const family = document.querySelector<HTMLInputElement>('input[aria-label="Font family"]')!;
+    family.focus();
+    family.value = 'monospace';
+    family.dispatchEvent(new Event('input', { bubbles: true }));
+    await tick();
+    family.blur();
+
+    expect(onCommit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataKey: 'fontFamily',
+        oldValue: 'Monaco, monospace',
+        newValue: 'monospace'
+      })
+    );
+
+    await page.getByRole('button', { name: 'Custom Styles…', exact: true }).click();
+    const cssEditor = () =>
+      document.querySelector<HTMLElement>('[data-editor-appearance-dialog] .cm-content')!;
+    await vi.waitFor(() => expect(cssEditor()?.textContent).toBe('padding: 16px;'));
+    cssEditor().focus();
+    await userEvent.keyboard('{ControlOrMeta>}a{/ControlOrMeta}');
+    await userEvent.keyboard('opacity: 0.8;');
+    await vi.waitFor(() => expect(dataSource.current.styles?.container).toBe('opacity: 0.8;'));
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    expect(onCommit.mock.calls.some(([event]) => event.dataKey === 'styles')).toBe(true);
+  } finally {
+    bus.removeEventListener('nodeDataCommit', onCommit);
+  }
+});
+
+it('updates expanded ChucK appearance live and dismisses the styles dialog before the editor', async () => {
+  data.update((value) => ({ ...value, fontSize: 14 }));
+  component = mount(MusicNodeHarness, {
+    target: document.body,
+    props: {
+      kind: 'chuck~',
+      renderOverlay: true,
+      get data() {
+        return dataSource.current;
+      }
+    }
+  });
+
+  const editorFont = () => getComputedStyle(document.querySelector('.cm-editor')!).fontSize;
+  await vi.waitFor(() => expect(editorFont()).toBe('14px'));
+  callbacks.get('music-1')!({ type: 'expand' }, { inlet: 1 });
+  await vi.waitFor(() => expect(editorFont()).toBe('28px'));
+  await page.getByLabelText('Object settings', { exact: true }).click();
+  await page.getByRole('tab', { name: 'Styles', exact: true }).click();
+
+  const input = document.querySelector<HTMLInputElement>('input[aria-label="Expanded font size"]')!;
+  input.focus();
+  input.value = '36';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  await tick();
+  input.blur();
+  expect(editorFont()).toBe('36px');
+  expect(dataSource.current.fontSize).toBe(14);
+  expect(dataSource.current.expandedFontSize).toBe(36);
+
+  callbacks.get('music-1')!({ type: 'setFontSize', value: 50 }, { inlet: 1 });
+  callbacks.get('music-1')!({ type: 'setFontFamily', value: 'Monaco, monospace' }, { inlet: 1 });
+  callbacks.get('music-1')!(
+    { type: 'setStyles', value: { container: 'background: rgb(12, 34, 56); padding: 16px;' } },
+    { inlet: 1 }
+  );
+  await vi.waitFor(() => {
+    expect(editorFont()).toBe('51px');
+    expect(input.value).toBe('51');
+    expect(getComputedStyle(document.querySelector('.cm-editor')!).fontFamily).toBe(
+      'Monaco, monospace'
+    );
+    const style = getComputedStyle(document.querySelector('.detached-code-editor-overlay')!);
+    expect(style.backgroundColor).toBe('rgb(12, 34, 56)');
+    expect(style.paddingLeft).toBe('16px');
+  });
+  callbacks.get('music-1')!({ type: 'setExpandedFontSize', value: 60 }, { inlet: 1 });
+  await vi.waitFor(() => expect(editorFont()).toBe('60px'));
+  expect(send).not.toHaveBeenCalled();
+
+  await page.getByRole('button', { name: 'Custom Styles…', exact: true }).click();
+  await vi.waitFor(() =>
+    expect(document.querySelector('[data-editor-appearance-dialog]')).not.toBeNull()
+  );
+  await userEvent.keyboard('{Escape}');
+  await vi.waitFor(() =>
+    expect(document.querySelector('[data-editor-appearance-dialog]')).toBeNull()
+  );
+  expect(document.querySelector('.detached-code-editor-overlay')).not.toBeNull();
+
+  callbacks.get('music-1')!({ type: 'collapse' }, { inlet: 1 });
+  await vi.waitFor(() =>
+    expect(document.querySelector('.detached-code-editor-overlay')).toBeNull()
+  );
+  expect(editorFont()).toBe('50px');
+});
+
+it('opens ChucK settings on Shreds and supports keyboard navigation to Styles', async () => {
+  component = mount(MusicNodeHarness, {
+    target: document.body,
+    props: {
+      kind: 'chuck~',
+      get data() {
+        return dataSource.current;
+      }
+    }
+  });
+
+  await page.getByRole('button', { name: 'ChucK settings', exact: true }).click();
+  expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe(
+    'Shreds'
+  );
+  expect(document.querySelector('[role="tabpanel"]:not([hidden])')?.textContent).toContain('ID: 1');
+
+  await page.getByRole('tab', { name: 'Shreds', exact: true }).click();
+  await userEvent.keyboard('{ArrowRight}');
+  expect(document.activeElement?.textContent?.trim()).toBe('Styles');
+  expect(document.querySelector('[role="tabpanel"]:not([hidden])')?.textContent).toContain(
+    'Font size'
+  );
+
+  await userEvent.keyboard('{Home}');
+  expect(document.activeElement?.textContent?.trim()).toBe('Shreds');
+  await userEvent.keyboard('{End}');
+  expect(document.activeElement?.textContent?.trim()).toBe('Styles');
+
+  await page.getByRole('button', { name: 'ChucK settings', exact: true }).click();
+  await page.getByRole('button', { name: 'ChucK settings', exact: true }).click();
+  expect(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe(
+    'Shreds'
+  );
+
+  await page.getByLabelText('Remove shred 1', { exact: true }).click();
+  expect(send).toHaveBeenCalledWith('music-1', 'removeShred', 1);
 });

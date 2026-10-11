@@ -20,7 +20,7 @@ Create expressive, dynamic music pieces and complex audio patterns.
 The code editor is placed inline in the patch.
 
 - Select the object and drag the resize handles to change the container size. Code scrolls inside its container.
-- Toggle **Resizing** to "off" in settings to lock that size.
+- Toggle **Resizable** to "off" in settings to lock that size.
 - Use **Hide Code** for a compact object that keeps running headlessly. Clicking
   on the code button opens the code in the preferred editor (e.g. inline, sidebar).
 - **Keep Editor in Patch** restores the inline editor.

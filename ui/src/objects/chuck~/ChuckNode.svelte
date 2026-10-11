@@ -1,4 +1,11 @@
 <script lang="ts">
+  import {
+    getEditorAppearanceUpdate,
+    type EditorAppearanceData
+  } from '$lib/editor-appearance/editor-appearance';
+  import EditorAppearanceFields from '$lib/editor-appearance/EditorAppearanceFields.svelte';
+  import EditorStylesDialog from '$lib/editor-appearance/EditorStylesDialog.svelte';
+  import { useNodeDataTracker } from '$lib/history';
   import { CirclePlus, Delete, Replace, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -25,7 +32,7 @@
     selected
   }: {
     id: string;
-    data: MusicCodeLayoutData & { expr: string };
+    data: MusicCodeLayoutData & EditorAppearanceData & { expr: string };
     selected: boolean;
   } = $props();
 
@@ -35,6 +42,8 @@
 
   let layoutRef: MusicCodeEditor | undefined = $state();
   let showSettings = $state(false);
+  let stylesOpen = $state(false);
+  const tracker = useNodeDataTracker(getInitialNodeId());
   let expressionInternalsTimeout: ReturnType<typeof setTimeout> | undefined;
 
   let messageContext: MessageContext;
@@ -45,6 +54,13 @@
   const { warnIfNoOutletConnection } = useAudioOutletWarning(getInitialNodeId());
 
   const handleMessage: MessageCallbackFn = (message) => {
+    const appearance = getEditorAppearanceUpdate(message);
+
+    if (appearance) {
+      updateNodeData(nodeId, { ...appearance });
+      return;
+    }
+
     match(message)
       .with(chuckMessages.setCode, ({ value }) => {
         handleExpressionChange(value);
@@ -223,8 +239,52 @@
   />
 {/snippet}
 
+{#snippet appearanceFields(expanded: boolean)}
+  <button
+    role="checkbox"
+    aria-checked={data.editorResizingEnabled ?? true}
+    class="flex cursor-pointer items-center gap-1.5 transition-colors"
+    onclick={() => {
+      const oldValue = data.editorResizingEnabled;
+      const nextValue = !(oldValue ?? true);
+
+      updateNodeData(nodeId, { editorResizingEnabled: nextValue });
+      tracker.commit('editorResizingEnabled', oldValue, nextValue);
+    }}
+  >
+    <span
+      class={[
+        'h-3 w-3 shrink-0 rounded-sm border transition-colors',
+        (data.editorResizingEnabled ?? true) ? 'border-zinc-500 bg-zinc-500' : 'border-zinc-600'
+      ]}
+    ></span>
+    <span
+      class={['text-xs', (data.editorResizingEnabled ?? true) ? 'text-zinc-400' : 'text-zinc-500']}
+      >Resizable</span
+    >
+  </button>
+  <EditorAppearanceFields
+    {nodeId}
+    {data}
+    {expanded}
+    onOpenStyles={() => {
+      stylesOpen = true;
+      showSettings = false;
+    }}
+  />
+{/snippet}
+
+{#snippet normalAppearance()}
+  {@render appearanceFields(false)}
+{/snippet}
+
+{#snippet expandedAppearance()}
+  {@render appearanceFields(true)}
+{/snippet}
+
 {#snippet detachedChuckSettings()}
   <ChuckSettings
+    appearance={expandedAppearance}
     {shreds}
     onRemoveShred={removeShred}
     onStopAll={stopChuck}
@@ -319,6 +379,7 @@
 {#snippet chuckSidePanel()}
   {#if showSettings}
     <ChuckSettings
+      appearance={normalAppearance}
       {shreds}
       onRemoveShred={removeShred}
       onStopAll={stopChuck}
@@ -334,6 +395,7 @@
     {data}
     {selected}
     sidePanel={chuckSidePanel}
+    appearance={data}
     value={data.expr}
     label="chuck~"
     status={`${shreds.length} ${shreds.length === 1 ? 'shred' : 'shreds'}`}
@@ -343,9 +405,18 @@
     extraExtensions={chuckKeymaps}
     actions={chuckActions}
     menu={chuckMenu}
+    showResizingMenuItem={false}
     handles={chuckHandles}
     outlets={chuckOutlets}
     detachedActions={detachedChuckActions}
     detachedSettings={detachedChuckSettings}
   />
 </div>
+
+<EditorStylesDialog
+  bind:open={stylesOpen}
+  editorLabel="ChucK"
+  styles={data.styles ?? {}}
+  onchange={(styles) => updateNodeData(nodeId, { styles })}
+  oncommit={(oldValue, newValue) => tracker.commit('styles', oldValue, newValue)}
+/>

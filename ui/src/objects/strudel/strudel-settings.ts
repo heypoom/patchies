@@ -1,23 +1,9 @@
 import type { MusicCodeLayoutData } from '$lib/music-code-layout/music-code-layout';
+import type { EditorAppearanceData } from '$lib/editor-appearance/editor-appearance';
 
-export interface StrudelNodeData extends MusicCodeLayoutData {
+export interface StrudelNodeData extends MusicCodeLayoutData, EditorAppearanceData {
   code: string;
-  fontFamily?: string;
-  fontSize?: number;
-  expandedFontSize?: number;
   showConsole?: boolean;
   syncTransport?: boolean;
   muted?: boolean;
-  styles?: Record<string, string>;
-}
-
-export function resolveStrudelFontSizes(
-  data: StrudelNodeData,
-  defaultFontSize: number,
-  defaultExpandedFontSize: number
-) {
-  const normal = data.fontSize ?? defaultFontSize;
-  const expanded = Math.max(normal + 1, data.expandedFontSize ?? defaultExpandedFontSize);
-
-  return { normal, expanded };
 }

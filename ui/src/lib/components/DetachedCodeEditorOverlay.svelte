@@ -22,6 +22,7 @@
 
   let {
     onClose,
+    containerStyle,
     onrun,
     nodeId,
     settings,
@@ -32,6 +33,7 @@
     class: className = ''
   }: {
     onClose: () => void;
+    containerStyle?: string;
     onrun?: (code?: string) => void;
     nodeId?: string;
     settings?: CodeEditorTargetSettings;
@@ -68,7 +70,16 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (!isExpandedDismissKey(event)) return;
+    if (event.defaultPrevented || !isExpandedDismissKey(event)) return;
+    if (document.querySelector('[data-editor-appearance-dialog][data-state="open"]')) return;
+
+    if (showSettings || showConsole) {
+      event.preventDefault();
+      event.stopPropagation();
+      showSettings = false;
+      showConsole = false;
+      return;
+    }
 
     event.preventDefault();
     event.stopPropagation();
@@ -89,7 +100,7 @@
 
 <div
   class={['detached-code-editor-overlay fixed inset-0 z-[60]', className]}
-  style:background-color={panelBackground}
+  style={`background-color: ${panelBackground}; ${containerStyle ?? ''}`}
   style:--fullscreen-text-background={textBackground}
 >
   <div class="overlay-actions absolute z-10 flex gap-1">

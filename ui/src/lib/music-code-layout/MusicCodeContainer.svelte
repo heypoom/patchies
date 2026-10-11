@@ -27,6 +27,7 @@
     controls,
     editorControls,
     menu,
+    showResizingMenuItem = true,
     handles,
     outlets,
     sidePanel,
@@ -47,6 +48,7 @@
     controls?: Snippet;
     editorControls?: Snippet;
     menu?: Snippet;
+    showResizingMenuItem?: boolean;
     handles?: Snippet;
     outlets?: Snippet;
     sidePanel?: Snippet;
@@ -189,13 +191,15 @@
           onclick={() => setCollapsed(!collapsed)}
           ><Code class="h-4 w-4" />{collapsed ? 'Show Editor in Patch' : 'Hide Code'}</button
         >
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
-          onclick={toggleResizing}
-        >
-          {#if resizingEnabled}<Lock class="h-4 w-4" />{:else}<Maximize2 class="h-4 w-4" />{/if}
-          {resizingEnabled ? 'Disable Resizing' : 'Enable Resizing'}
-        </button>
+        {#if showResizingMenuItem}
+          <button
+            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700"
+            onclick={toggleResizing}
+          >
+            {#if resizingEnabled}<Lock class="h-4 w-4" />{:else}<Maximize2 class="h-4 w-4" />{/if}
+            {resizingEnabled ? 'Disable Resizing' : 'Enable Resizing'}
+          </button>
+        {/if}
       </Popover.Content>
     </Popover.Root>
   {/snippet}

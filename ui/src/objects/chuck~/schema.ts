@@ -1,3 +1,7 @@
+import {
+  editorAppearanceMessages,
+  editorAppearanceMessageSchemas
+} from '$lib/editor-appearance/editor-appearance';
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from '$lib/objects/schemas/types';
 import { schema } from '$lib/objects/schemas/types';
@@ -41,6 +45,7 @@ const AnyTypeMessage = Type.Object({ type: Type.String() }, { additionalProperti
 /** Pre-wrapped matchers for use with ts-pattern */
 export const chuckMessages = {
   ...messages,
+  ...editorAppearanceMessages,
   string: schema(Type.String()),
   anyTypeMessage: schema(AnyTypeMessage),
   replace: schema(Replace),
@@ -86,6 +91,7 @@ export const chuckSchema: ObjectSchema = {
       description: 'Control messages',
       handle: { handleType: 'message', handleId: 1 },
       messages: [
+        ...editorAppearanceMessageSchemas,
         { schema: SetCode, description: 'Set code without running it' },
         { schema: Type.String(), description: 'Add string expression as new shred' },
         { schema: Bang, description: 'Replace most recent shred with current expression' },

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { resolveEditorFontSizes } from '$lib/editor-appearance/editor-appearance';
+  import { editorFontSize } from '../../stores/editor.store';
   import CodeEditor from './CodeEditor.svelte';
   import DetachedCodeEditorOverlay from './DetachedCodeEditorOverlay.svelte';
   import type { CodeEditorTarget } from '../../stores/code-editor-layout.store';
@@ -22,6 +24,10 @@
 
 <!-- Keep the outgoing target available when CodeMirror blurs during teardown. -->
 {#each target?.mode === 'overlay' && hasNode ? [target] : [] as editorTarget (`${editorTarget.nodeId}:${editorTarget.dataKey}`)}
+  {@const appearance = editorTarget.getAppearance?.()}
+  {@const fontSizes = appearance
+    ? resolveEditorFontSizes(appearance, $editorFontSize, fontSize)
+    : undefined}
   {#snippet detachedCodeEditorSnippet()}
     <CodeEditor
       {value}
@@ -38,12 +44,14 @@
       extraExtensions={editorTarget.extraExtensions}
       onaltdecorationclick={editorTarget.onAltDecorationClick}
       lineWrap={editorTarget.lineWrap}
-      fontSize={`${fontSize}px`}
+      fontSize={`${fontSizes?.expanded ?? fontSize}px`}
+      fontFamily={appearance?.fontFamily}
     />
   {/snippet}
 
   <DetachedCodeEditorOverlay
     {onClose}
+    containerStyle={appearance?.styles?.container}
     onrun={editorTarget.onrun}
     nodeId={editorTarget.nodeId}
     settings={editorTarget.settings}
