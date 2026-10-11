@@ -23,6 +23,7 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useNodeDataTracker } from '$lib/history';
   import { aiSettings, type TTSProviderType } from '../../stores/ai-settings.store';
+  import { useLiveSpeech } from './useLiveSpeech.svelte';
   import SpeechModelSettings from './SpeechModelSettings.svelte';
   import { SpeechStreamPlayer } from './stream-player';
   import { getSpeechCacheKey, synthesizeSpeech } from './speech';
@@ -89,7 +90,24 @@
     toast.error('ai.tts: Speech generation failed', { description: message });
   }
 
+  const liveSpeech = useLiveSpeech({
+    getOptions: () =>
+      resolveSpeechOptions(
+        (getNode(nodeId)?.data as AiTtsNodeData | undefined) ?? data,
+        $aiSettings
+      ),
+    getApiKey: () => $aiSettings.paxaApiKey,
+    beforeStart: () => {
+      cancelGeneration();
+      errorMessage = null;
+    },
+    playAudio,
+    stopAudio: () => audioService.send(nodeId, 'message', { type: 'stop' }),
+    showError
+  });
+
   function cancelGeneration() {
+    liveSpeech.stop();
     pendingRequest?.abort();
     pendingRequest = null;
 
@@ -202,6 +220,9 @@
     match(message)
       .with(aiTtsMessages.string, (text) => speakText(text, true))
       .with(aiTtsMessages.speak, (message) => speakText(message.text, true))
+      .with(aiTtsMessages.append, (message) => liveSpeech.append(message.text))
+      .with(aiTtsMessages.flush, () => liveSpeech.flush())
+      .with(aiTtsMessages.end, () => liveSpeech.end())
       .with(aiTtsMessages.load, (message) => speakText(message.text, false))
       .with(aiTtsMessages.play, aiTtsMessages.bang, () => void generateSpeech())
       .with(aiTtsMessages.setVoice, (message) => {
@@ -309,7 +330,7 @@
         <TypedHandle
           port="inlet"
           spec={{ handleType: 'message', handleId: 0 }}
-          title="text, speak, load, play, setVoice, setStyle, stop"
+          title="text, speak, append, flush, end, load, play, setVoice, setStyle, stop"
           total={1}
           index={0}
           class="top-0"
@@ -322,7 +343,7 @@
           onclick={() => (showSettings = !showSettings)}
         >
           <div class="flex items-center justify-center gap-2">
-            {#if isLoading}
+            {#if isLoading || liveSpeech.isLoading}
               <LoaderCircle
                 class="h-4 w-4 animate-spin text-orange-400 motion-reduce:animate-none"
               />

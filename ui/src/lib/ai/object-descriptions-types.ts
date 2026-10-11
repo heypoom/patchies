@@ -138,6 +138,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - iframe: Embed web content
 
 ## AI Objects
+- ai.tts: Gemini or Paxa text-to-speech; Paxa supports incremental text input via append/flush/end and streamed audio output
 - ai.stt: Transcribe speech to text using Gemini AI (send listen to start, stop to finish)
 - stt: Transcribe speech to text using browser Web Speech API (no API key, send listen to start, stop to finish)
 
@@ -272,5 +273,6 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - iframe: Embed any web page or tool
 
 ## AI & Speech
+- ai.tts: Text-to-speech with Gemini/Paxa; append/flush/end for incremental Paxa text and live audio
 - ai.stt: Speech-to-text via Gemini AI — send listen/stop to control
 - stt: Speech-to-text via browser Web Speech API — no API key needed`;
