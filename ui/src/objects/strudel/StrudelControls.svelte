@@ -176,7 +176,6 @@
     {expanded}
     onOpenStyles={() => {
       stylesOpen = true;
-      settingsOpen = false;
     }}
   />
 {/snippet}

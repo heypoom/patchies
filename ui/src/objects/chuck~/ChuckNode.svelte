@@ -273,7 +273,6 @@
     {expanded}
     onOpenStyles={() => {
       stylesOpen = true;
-      showSettings = false;
     }}
   />
 {/snippet}

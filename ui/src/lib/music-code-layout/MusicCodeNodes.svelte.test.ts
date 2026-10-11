@@ -502,6 +502,7 @@ it('shares Strudel settings with messages, tracks edits, and switches between se
     await userEvent.keyboard('opacity: 0.8;');
     await vi.waitFor(() => expect(dataSource.current.styles?.container).toBe('opacity: 0.8;'));
     await page.getByRole('button', { name: 'Done', exact: true }).click();
+    expect(document.querySelector('input[aria-label="Font size"]')).not.toBeNull();
     expect(onCommit.mock.calls.some(([event]) => event.dataKey === 'styles')).toBe(true);
 
     await page.getByRole('button', { name: 'Editor options', exact: true }).click();
@@ -579,6 +580,7 @@ it('exposes Strudel settings and overflow in fullscreen and dismisses panels bef
   await userEvent.keyboard('{Escape}');
   await vi.waitFor(() => expect(document.querySelector('[data-slot="dialog-content"]')).toBeNull());
   expect(document.querySelector('.strudel-detached-editor')).not.toBeNull();
+  expect(document.querySelector('input[aria-label="Expanded font size"]')).not.toBeNull();
 
   await page.getByRole('button', { name: 'Close expanded Strudel editor', exact: true }).click();
   await vi.waitFor(() => expect(document.querySelector('.strudel-detached-editor')).toBeNull());
@@ -796,6 +798,7 @@ it('shares ChucK appearance settings with messages and tracks font and style edi
     await userEvent.keyboard('opacity: 0.8;');
     await vi.waitFor(() => expect(dataSource.current.styles?.container).toBe('opacity: 0.8;'));
     await page.getByRole('button', { name: 'Done', exact: true }).click();
+    expect(document.querySelector('input[aria-label="Font size"]')).not.toBeNull();
     expect(onCommit.mock.calls.some(([event]) => event.dataKey === 'styles')).toBe(true);
   } finally {
     bus.removeEventListener('nodeDataCommit', onCommit);
@@ -861,6 +864,7 @@ it('updates expanded ChucK appearance live and dismisses the styles dialog befor
     expect(document.querySelector('[data-editor-appearance-dialog]')).toBeNull()
   );
   expect(document.querySelector('.detached-code-editor-overlay')).not.toBeNull();
+  expect(document.querySelector('input[aria-label="Expanded font size"]')).not.toBeNull();
 
   callbacks.get('music-1')!({ type: 'collapse' }, { inlet: 1 });
   await vi.waitFor(() =>
@@ -936,5 +940,13 @@ it.each(['strudel', 'chuck~'] as const)(
       )
     ).not.toContain('Resizable');
     expect(dataSource.current.editorResizingEnabled).toBeUndefined();
+
+    await page.getByRole('button', { name: 'Custom Styles…', exact: true }).click();
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-editor-appearance-dialog]')).not.toBeNull()
+    );
+    expect(document.querySelector('input[aria-label="Font size"]')).not.toBeNull();
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    expect(document.querySelector('input[aria-label="Font size"]')).not.toBeNull();
   }
 );
