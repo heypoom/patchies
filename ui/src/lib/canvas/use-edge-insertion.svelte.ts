@@ -60,6 +60,16 @@ export function useEdgeInsertion(canvasContext: CanvasContext, nodeOps: NodeOper
     createQuickInsertNode(position ?? fallbackPosition, edge);
   }
 
+  function insertIntoEdge(edgeId: string) {
+    const edge = getSingleSelectedEdge([edgeId]);
+    if (!edge) return;
+
+    const position = getEdgeInsertionPosition(edge, canvasContext.nodes);
+    if (!position) return;
+
+    createQuickInsertNode(position, edge);
+  }
+
   async function selectObject(name: string, fallbackPosition: { x: number; y: number }) {
     const edge = pendingEdgeInsertion?.edge;
 
@@ -241,6 +251,7 @@ export function useEdgeInsertion(canvasContext: CanvasContext, nodeOps: NodeOper
     clearPendingInsertion,
     confirmQuickAdd,
     quickAdd,
+    insertIntoEdge,
     selectObject
   };
 }

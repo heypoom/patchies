@@ -65,6 +65,8 @@
   } from '../../stores/canvas.store';
 
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
+  import EdgeContextMenu from './edges/EdgeContextMenu.svelte';
+  import { recordCanvasDeletion } from '$lib/canvas/record-canvas-deletion';
   import { useEdgeInsertion } from '$lib/canvas/use-edge-insertion.svelte';
   import { deleteSearchParam } from '$lib/utils/search-params';
 
@@ -132,14 +134,11 @@
 
   import {
     HistoryManager,
-    DeleteNodesCommand,
     ReplaceNodesCommand,
     UpdateNodeDataCommand,
     UpdateObjectDataCommand,
     AddEdgeCommand,
-    DeleteEdgesCommand,
-    BatchCommand,
-    type Command
+    BatchCommand
   } from '$lib/history';
 
   import { CanvasContext } from '$lib/services/CanvasContext';
@@ -1622,107 +1621,84 @@
       onclick={resumeAudio}
       tabindex="0"
     >
-      <SvelteFlow
-        bind:nodes
-        bind:edges
-        {nodeTypes}
-        {edgeTypes}
-        fitView
-        deleteKey={CANVAS_DELETE_KEYS}
-        multiSelectionKey={CANVAS_MULTIPLE_SELECT_KEYS}
-        class="bg-zinc-900"
-        snapGrid={$snapGridSize > 0 ? [$snapGridSize, $snapGridSize] : undefined}
-        proOptions={{ hideAttribution: true }}
-        onlyRenderVisibleElements={$cullObjects}
-        clickConnect={$isConnectionMode}
-        {isValidConnection}
-        onnodedragstart={() => {
-          dragStartNodes = structuredClone(nodes);
-        }}
-        onnodedragstop={(event) => {
-          if (!dragStartNodes) return;
+      <EdgeContextMenu oninsert={edgeInsertion.insertIntoEdge}>
+        <SvelteFlow
+          bind:nodes
+          bind:edges
+          {nodeTypes}
+          {edgeTypes}
+          fitView
+          deleteKey={CANVAS_DELETE_KEYS}
+          multiSelectionKey={CANVAS_MULTIPLE_SELECT_KEYS}
+          class="bg-zinc-900"
+          snapGrid={$snapGridSize > 0 ? [$snapGridSize, $snapGridSize] : undefined}
+          proOptions={{ hideAttribution: true }}
+          onlyRenderVisibleElements={$cullObjects}
+          clickConnect={$isConnectionMode}
+          {isValidConnection}
+          onnodedragstart={() => {
+            dragStartNodes = structuredClone(nodes);
+          }}
+          onnodedragstop={(event) => {
+            if (!dragStartNodes) return;
 
-          const draggedNodeIds = event.nodes.map((node) => node.id);
-          const result = syncVisualGroupMembership(nodes, { activeNodeIds: draggedNodeIds });
-          const nextNodes = result.changed ? result.nodes : nodes;
+            const draggedNodeIds = event.nodes.map((node) => node.id);
+            const result = syncVisualGroupMembership(nodes, { activeNodeIds: draggedNodeIds });
+            const nextNodes = result.changed ? result.nodes : nodes;
 
-          if (result.changed) {
-            nodes = nextNodes;
-          }
-
-          const nextSnapshot = structuredClone(nextNodes);
-
-          if (haveNodesChangedForHistory(dragStartNodes, nextSnapshot)) {
-            historyManager.record(
-              new ReplaceNodesCommand(
-                dragStartNodes,
-                nextSnapshot,
-                canvasAccessors,
-                result.changed ? 'Move and group objects' : 'Move nodes'
-              )
-            );
-          }
-
-          dragStartNodes = null;
-        }}
-        onconnect={(connection) => {
-          // XYFlow already added the edge, we just need to record it for undo
-          const newEdge = edges.find(
-            (e) =>
-              e.source === connection.source &&
-              e.target === connection.target &&
-              e.sourceHandle === connection.sourceHandle &&
-              e.targetHandle === connection.targetHandle
-          );
-          if (newEdge) {
-            historyManager.record(new AddEdgeCommand(newEdge, canvasAccessors));
-          }
-        }}
-        onconnectstart={(event, params) => handleConnectStart(params)}
-        onconnectend={handleConnectEnd}
-        onselectionstart={handleSelectionStart}
-        onselectionend={handleSelectionEnd}
-        onclickconnectstart={(event, params) => handleConnectStart(params)}
-        onclickconnectend={(event, connectionState) => {
-          handleConnectEnd();
-
-          if (connectionState?.isValid) {
-            toast.success('Objects connected by tap.');
-          }
-        }}
-        onbeforedelete={async ({ nodes: nodesToDelete, edges: edgesToDelete }) => {
-          // Record deletions to history before SvelteFlow performs them
-          const commands: Command[] = [];
-
-          if (nodesToDelete.length > 0) {
-            commands.push(new DeleteNodesCommand(nodesToDelete, canvasAccessors));
-          }
-
-          if (edgesToDelete.length > 0) {
-            // Only record edges not already handled by DeleteNodesCommand
-            const nodeIds = new Set(nodesToDelete.map((n) => n.id));
-            const standaloneEdges = edgesToDelete.filter(
-              (e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)
-            );
-            if (standaloneEdges.length > 0) {
-              commands.push(new DeleteEdgesCommand(standaloneEdges, canvasAccessors));
+            if (result.changed) {
+              nodes = nextNodes;
             }
-          }
 
-          if (commands.length === 1) {
-            historyManager.record(commands[0]);
-          } else if (commands.length > 1) {
-            historyManager.record(new BatchCommand(commands, 'Delete selection'));
-          }
+            const nextSnapshot = structuredClone(nextNodes);
 
-          return true; // Allow the deletion to proceed
-        }}
-      >
-        <ArrowKeyMoveGuard />
-        <BackgroundPattern />
+            if (haveNodesChangedForHistory(dragStartNodes, nextSnapshot)) {
+              historyManager.record(
+                new ReplaceNodesCommand(
+                  dragStartNodes,
+                  nextSnapshot,
+                  canvasAccessors,
+                  result.changed ? 'Move and group objects' : 'Move nodes'
+                )
+              );
+            }
 
-        <Controls class={$isBottomBarVisible && !$isMobile ? '' : '!hidden'} />
-      </SvelteFlow>
+            dragStartNodes = null;
+          }}
+          onconnect={(connection) => {
+            // XYFlow already added the edge, we just need to record it for undo
+            const newEdge = edges.find(
+              (e) =>
+                e.source === connection.source &&
+                e.target === connection.target &&
+                e.sourceHandle === connection.sourceHandle &&
+                e.targetHandle === connection.targetHandle
+            );
+            if (newEdge) {
+              historyManager.record(new AddEdgeCommand(newEdge, canvasAccessors));
+            }
+          }}
+          onconnectstart={(event, params) => handleConnectStart(params)}
+          onconnectend={handleConnectEnd}
+          onselectionstart={handleSelectionStart}
+          onselectionend={handleSelectionEnd}
+          onclickconnectstart={(event, params) => handleConnectStart(params)}
+          onclickconnectend={(event, connectionState) => {
+            handleConnectEnd();
+
+            if (connectionState?.isValid) {
+              toast.success('Objects connected by tap.');
+            }
+          }}
+          onbeforedelete={async ({ nodes, edges }) =>
+            recordCanvasDeletion(canvasContext, nodes, edges)}
+        >
+          <ArrowKeyMoveGuard />
+          <BackgroundPattern />
+
+          <Controls class={$isBottomBarVisible && !$isMobile ? '' : '!hidden'} />
+        </SvelteFlow>
+      </EdgeContextMenu>
 
       {#if showCommandPalette}
         <CommandPalette

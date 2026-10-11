@@ -8,6 +8,16 @@ slow.
 
 ## Behavior
 
+Right-clicking an edge opens a context menu with:
+
+- **Insert object**: opens Quick Insert at that edge's midpoint, using the same compatibility,
+  preview, cancellation, and undo behavior as keyboard insertion. It targets the clicked edge
+  regardless of the current selection.
+- **Delete edge**: uses a red foreground and deletes only the clicked edge as an undoable action.
+
+Temporary insertion preview edges do not offer these actions. Dismissing the menu leaves the patch
+unchanged.
+
 When exactly one edge is selected, insertion is contextual:
 
 - Pressing Enter opens the normal Quick Insert `ObjectNode` at the midpoint of the selected edge.
