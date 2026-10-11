@@ -38,7 +38,7 @@ export const DEFAULT_STRUDEL_CODE = `setcpm(60)
 
 s("bd sd hh*4").gain(0.1)`;
 
-export const DEFAULT_AI_IMAGE_PROMPT = `little rainicorn, high quality, 16:9 aspect ratio`;
+export const DEFAULT_AI_IMAGE_PROMPT = `a beautiful landscape with mountains, rivers, and a sunset in the background, highly detailed, vibrant colors, cinematic lighting`;
 
 export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
 
