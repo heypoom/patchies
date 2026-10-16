@@ -10,6 +10,7 @@
   import { X } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
   import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
+  import { hasAIApiKey } from '../../../stores/ai-settings.store';
   import { sparksMoodTheme, DEFAULT_THEME } from '../../../stores/sparks.store';
 
   let {
@@ -76,8 +77,10 @@
     if (modalBody) modalBody.scrollTop = 0;
   }
 
+  const isAiActive = $derived($isAiFeaturesVisible && $hasAIApiKey);
+
   const tabs = $derived<Tab[]>(
-    ($isAiFeaturesVisible
+    (isAiActive
       ? ['about', 'demos', 'sparks', 'shortcuts', 'thanks']
       : ['about', 'demos', 'shortcuts', 'thanks']
     ).filter((tab) => !isTouchFirst || tab !== 'shortcuts') as Tab[]
@@ -160,7 +163,7 @@
           />
         {:else if activeTab === 'demos'}
           <ExamplesTab {onLoadPatch} />
-        {:else if activeTab === 'sparks' && $isAiFeaturesVisible}
+        {:else if activeTab === 'sparks' && isAiActive}
           <SparksTab closeModal={handleClose} />
         {:else if activeTab === 'thanks'}
           <ThanksTab />
