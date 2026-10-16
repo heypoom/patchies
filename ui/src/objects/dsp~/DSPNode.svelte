@@ -19,7 +19,6 @@
 
   let contentContainer: HTMLDivElement | null = null;
 
-  // Get node data from XY Flow - nodes receive their data as props
   let {
     id: nodeId,
     data,
@@ -39,12 +38,10 @@
     selected: boolean;
   } = $props();
 
-  // Console and error tracking
   let consoleRef: VirtualConsole | null = $state(null);
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
   let showConsole = $state(false);
 
-  // Get flow utilities to update node data
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -55,7 +52,6 @@
   let contentWidth = $state(100);
   let previousExecuteCode = $state<number | undefined>(undefined);
 
-  // Watch for executeCode timestamp changes and re-run when it changes
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
@@ -168,7 +164,6 @@
   }
 
   function runDSP() {
-    // Clear console and error highlighting on re-run
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
@@ -187,11 +182,16 @@
     messageContext.queue.addCallback(handleMessage);
 
     inletValues = new Array(valueInletCount).fill(0);
-    // Pass saved port counts so worklet is created with correct configuration on load
-    audioService.createNode(nodeId, 'dsp~', [null, code, audioInletCount, audioOutletCount]);
-    updateAudioInletValues(inletValues);
+    audioService
+      .createNode(nodeId, 'dsp~', [null, code, audioInletCount, audioOutletCount])
+      .then((node) => {
+        if (!node) return;
+
+        updateAudioInletValues(inletValues);
+        setupWorkletEventHandler();
+      });
+
     updateContentWidth();
-    setupWorkletEventHandler();
   });
 
   async function setupWorkletEventHandler() {
