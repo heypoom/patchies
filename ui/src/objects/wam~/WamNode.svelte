@@ -1,16 +1,14 @@
 <script lang="ts">
-  import {
-    Check,
-    Copy,
-    LibraryBig,
-    Link,
-    Pencil,
-    RefreshCw,
-    RotateCcw,
-    Save,
-    Settings,
-    X
-  } from '@lucide/svelte/icons';
+  import Check from '@lucide/svelte/icons/check';
+  import Copy from '@lucide/svelte/icons/copy';
+  import LibraryBig from '@lucide/svelte/icons/library-big';
+  import Link from '@lucide/svelte/icons/link';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import Save from '@lucide/svelte/icons/save';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import { onDestroy, tick } from 'svelte';
   import { toast } from 'svelte-sonner';
   import { NodeResizer, useSvelteFlow, type NodeProps } from '@xyflow/svelte';

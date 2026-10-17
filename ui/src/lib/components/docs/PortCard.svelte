@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDown } from '@lucide/svelte/icons';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import type { InletSchema, OutletSchema } from '$lib/objects/schemas/types';
   import MessageTable from './MessageTable.svelte';
 

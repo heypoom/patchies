@@ -2,7 +2,10 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
   import { Slider } from '$lib/components/ui/slider';
-  import { VolumeX, Volume, Volume1, Volume2 } from '@lucide/svelte/icons';
+  import VolumeX from '@lucide/svelte/icons/volume-x';
+  import Volume from '@lucide/svelte/icons/volume';
+  import Volume1 from '@lucide/svelte/icons/volume-1';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
   import { onMount } from 'svelte';
 
   const audioService = AudioService.getInstance();

@@ -1,13 +1,11 @@
 <script lang="ts">
-  import {
-    Code,
-    EllipsisVertical,
-    FolderOpen,
-    Monitor,
-    Pause,
-    Play,
-    Terminal
-  } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import EllipsisVertical from '@lucide/svelte/icons/ellipsis-vertical';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import Monitor from '@lucide/svelte/icons/monitor';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import Terminal from '@lucide/svelte/icons/terminal';
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

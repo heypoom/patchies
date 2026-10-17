@@ -1,6 +1,12 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Settings, X, Radio, Plus, Trash2, Dice5, Info } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
+  import Radio from '@lucide/svelte/icons/radio';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Dice5 from '@lucide/svelte/icons/dice-5';
+  import Info from '@lucide/svelte/icons/info';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';

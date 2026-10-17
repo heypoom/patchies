@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { CircleX } from '@lucide/svelte/icons';
+  import CircleX from '@lucide/svelte/icons/circle-x';
 </script>
 
 <svelte:head>

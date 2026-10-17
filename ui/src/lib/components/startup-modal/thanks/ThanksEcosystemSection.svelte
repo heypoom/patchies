@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ExternalLink } from '@lucide/svelte/icons';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
 
   import { supportLinks } from '$lib/data/license-data';
 

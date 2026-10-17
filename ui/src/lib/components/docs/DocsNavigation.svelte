@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { ChevronLeft, ChevronRight } from '@lucide/svelte/icons';
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import { categoryOrder, topicOrder } from '../../../routes/docs/docs-nav';
 
   interface DocItem {

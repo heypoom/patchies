@@ -1,6 +1,9 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Mic, Settings, Circle, Square } from '@lucide/svelte/icons';
+  import Mic from '@lucide/svelte/icons/mic';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Circle from '@lucide/svelte/icons/circle';
+  import Square from '@lucide/svelte/icons/square';
   import SttSettings from '$lib/components/settings/SttSettings.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

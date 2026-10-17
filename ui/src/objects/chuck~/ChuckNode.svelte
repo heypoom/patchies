@@ -6,7 +6,10 @@
   import EditorAppearanceFields from '$lib/editor-appearance/EditorAppearanceFields.svelte';
   import EditorStylesDialog from '$lib/editor-appearance/EditorStylesDialog.svelte';
   import { useNodeDataTracker } from '$lib/history';
-  import { CirclePlus, Delete, Replace, Settings } from '@lucide/svelte/icons';
+  import CirclePlus from '@lucide/svelte/icons/circle-plus';
+  import Delete from '@lucide/svelte/icons/delete';
+  import Replace from '@lucide/svelte/icons/replace';
+  import Settings from '@lucide/svelte/icons/settings';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -18,8 +21,6 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import MusicCodeEditor from '$lib/music-code-layout/MusicCodeEditor.svelte';
   import type { MusicCodeLayoutData } from '$lib/music-code-layout/music-code-layout';
-  import { keymap } from '@codemirror/view';
-  import { Prec } from '@codemirror/state';
   import type { ChuckShred, ChuckNode } from '$objects/chuck~/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$objects/chuck~/ChuckSettings.svelte';
@@ -111,27 +112,34 @@
   let shreds = $state<ChuckShred[]>([]);
 
   // Custom keybinds for ChucK operations
-  const chuckKeymaps = [
-    Prec.high(
-      keymap.of([
-        {
-          // Cmd + \ = add new shred
-          key: 'Mod-\\',
-          run: () => {
-            handleAddShred();
-            return true;
+  const loadChuckKeymaps = async () => {
+    const [{ keymap }, { Prec }] = await Promise.all([
+      import('@codemirror/view'),
+      import('@codemirror/state')
+    ]);
+
+    return [
+      Prec.high(
+        keymap.of([
+          {
+            // Cmd + \ = add new shred
+            key: 'Mod-\\',
+            run: () => {
+              handleAddShred();
+              return true;
+            }
+          },
+          {
+            key: 'Mod-Backspace',
+            run: () => {
+              removeChuckCode();
+              return true;
+            }
           }
-        },
-        {
-          key: 'Mod-Backspace',
-          run: () => {
-            removeChuckCode();
-            return true;
-          }
-        }
-      ])
-    )
-  ];
+        ])
+      )
+    ];
+  };
 
   const handleExpressionChange = (newExpr: string) => {
     updateNodeData(nodeId, { expr: newExpr });
@@ -408,7 +416,7 @@
     placeholder="SinOsc osc => dac; 1::second => now;"
     onchange={handleExpressionChange}
     onrun={handleReplace}
-    extraExtensions={chuckKeymaps}
+    loadExtensions={loadChuckKeymaps}
     actions={chuckActions}
     menu={chuckMenu}
     showResizingMenuItem={false}

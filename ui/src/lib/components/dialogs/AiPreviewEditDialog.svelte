@@ -1,15 +1,13 @@
 <script lang="ts">
   import { appendThinking } from '$lib/ai/thinking-log';
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import {
-    Loader2,
-    Sparkles,
-    ChevronDown,
-    ChevronUp,
-    Maximize2,
-    Minus,
-    X
-  } from '@lucide/svelte/icons';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import Maximize2 from '@lucide/svelte/icons/maximize-2';
+  import Minus from '@lucide/svelte/icons/minus';
+  import X from '@lucide/svelte/icons/x';
   import { toast } from 'svelte-sonner';
   import { editCode, hasGeminiApiKey } from '$lib/ai/patch-to-prompt';
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';

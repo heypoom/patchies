@@ -98,7 +98,9 @@
 </script>
 
 <script lang="ts">
-  import { AlertTriangle, ChevronRight, CircleHelp } from '@lucide/svelte/icons';
+  import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import CircleHelp from '@lucide/svelte/icons/circle-help';
   import * as Collapsible from '$lib/components/ui/collapsible';
 
   let {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X } from '@lucide/svelte/icons';
+  import X from '@lucide/svelte/icons/x';
 
   let {
     syncTransport,

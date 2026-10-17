@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { Settings, RotateCcw, Lock, LockOpen } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import Lock from '@lucide/svelte/icons/lock';
+  import LockOpen from '@lucide/svelte/icons/lock-open';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';

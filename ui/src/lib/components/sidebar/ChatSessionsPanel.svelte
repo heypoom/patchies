@@ -1,6 +1,7 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Plus, X } from '@lucide/svelte/icons';
+  import Plus from '@lucide/svelte/icons/plus';
+  import X from '@lucide/svelte/icons/x';
   import ChatView from './ChatView.svelte';
   import { chatSessionsStore } from '../../../stores/chat-sessions.store';
   import { chatStreamStore } from '../../../stores/chat-streaming.store.svelte';

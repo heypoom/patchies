@@ -6,17 +6,15 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { Slider } from '$lib/components/ui/slider';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import {
-    Play,
-    Pause,
-    Square,
-    Volume2,
-    VolumeX,
-    Volume,
-    Volume1,
-    ChartNoAxesGantt,
-    Wifi
-  } from '@lucide/svelte/icons';
+  import Play from '@lucide/svelte/icons/play';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Square from '@lucide/svelte/icons/square';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
+  import VolumeX from '@lucide/svelte/icons/volume-x';
+  import Volume from '@lucide/svelte/icons/volume';
+  import Volume1 from '@lucide/svelte/icons/volume-1';
+  import ChartNoAxesGantt from '@lucide/svelte/icons/chart-no-axes-gantt';
+  import Wifi from '@lucide/svelte/icons/wifi';
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
   import TimelineRuler from './TimelineRuler.svelte';

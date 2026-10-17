@@ -1,6 +1,9 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
-  import { Loader, Minus, ChevronDown, ChevronUp } from '@lucide/svelte/icons';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Minus from '@lucide/svelte/icons/minus';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
   import { match } from 'ts-pattern';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import { isMobile, isSidebarOpen, sidebarWidth } from '../../stores/ui.store';

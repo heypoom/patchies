@@ -1,15 +1,13 @@
 <script lang="ts">
-  import {
-    ExternalLink,
-    ArrowLeft,
-    CircleQuestionMark,
-    Play,
-    Lock,
-    LockOpen,
-    BookOpen,
-    ChevronDown,
-    ChevronRight
-  } from '@lucide/svelte/icons';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+  import Play from '@lucide/svelte/icons/play';
+  import Lock from '@lucide/svelte/icons/lock';
+  import LockOpen from '@lucide/svelte/icons/lock-open';
+  import BookOpen from '@lucide/svelte/icons/book-open';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import SearchBar from './SearchBar.svelte';
   import { objectSchemas, type ObjectSchema } from '$lib/objects/schemas';
   import TriggerTypeSpecifiers from './TriggerTypeSpecifiers.svelte';

@@ -2,12 +2,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Drawer from '$lib/components/ui/drawer';
   import { isMobile } from '../../../stores/ui.store';
-  import '@spectrum-web-components/color-area/sp-color-area.js';
-  import '@spectrum-web-components/color-field/sp-color-field.js';
-  import '@spectrum-web-components/color-slider/sp-color-slider.js';
-  import '@spectrum-web-components/theme/sp-theme.js';
-  import '@spectrum-web-components/theme/theme-dark.js';
-  import '@spectrum-web-components/theme/scale-medium.js';
+  import { loadSpectrumColorPicker } from '$lib/utils/spectrumColorPicker';
 
   let {
     value,
@@ -32,6 +27,7 @@
   } = $props();
 
   let open = $state(false);
+  let pickerReady = $state<Promise<void> | null>(null);
   type SpectrumColorControl = HTMLElement & { color: string; value: string; valid?: boolean };
 
   function handleColorInput(event: Event) {
@@ -49,54 +45,67 @@
   function handleOpenChange(nextOpen: boolean) {
     open = nextOpen;
     if (open) {
+      pickerReady = loadSpectrumColorPicker();
       onOpen?.();
     }
   }
 
   function handleMobileOpen() {
-    onOpen?.();
-    open = true;
+    handleOpenChange(true);
   }
 </script>
 
 {#snippet pickerContent(mobile = false)}
-  <sp-theme color="dark" scale="medium" class="block">
-    <div class={mobile ? 'space-y-5' : 'space-y-3'}>
-      {#if mobile}
-        <div class="flex items-center justify-between">
-          <Drawer.Title class="text-sm font-medium text-zinc-100">{ariaLabel}</Drawer.Title>
-          <span class="font-mono text-xs text-zinc-400">{value}</span>
+  {#if open && pickerReady}
+    {#await pickerReady}
+      <p role="status" class="text-sm text-zinc-400">Loading color picker…</p>
+    {:then}
+      <sp-theme color="dark" scale="medium" class="block">
+        <div class={mobile ? 'space-y-5' : 'space-y-3'}>
+          {#if mobile}
+            <div class="flex items-center justify-between">
+              <Drawer.Title class="text-sm font-medium text-zinc-100">{ariaLabel}</Drawer.Title>
+              <span class="font-mono text-xs text-zinc-400">{value}</span>
+            </div>
+          {/if}
+          <sp-color-area
+            color={value}
+            label-x="Saturation"
+            label-y="Brightness"
+            data-vaul-no-drag
+            class={['block w-full', mobile ? 'h-64' : 'h-32']}
+            oninput={handleColorInput}
+            onchange={handleColorChange}
+          ></sp-color-area>
+
+          <sp-color-slider
+            color={value}
+            label="Hue"
+            data-vaul-no-drag
+            class={['block w-full', mobile ? 'h-11' : 'h-6']}
+            oninput={handleColorInput}
+            onchange={handleColorChange}
+          ></sp-color-slider>
+
+          <sp-color-field
+            {value}
+            view-color
+            aria-label="Hex color"
+            class={['block w-full', mobile ? 'text-base' : 'text-xs']}
+            oninput={handleColorInput}
+            onchange={handleColorChange}
+          ></sp-color-field>
         </div>
-      {/if}
-      <sp-color-area
-        color={value}
-        label-x="Saturation"
-        label-y="Brightness"
-        data-vaul-no-drag
-        class={['block w-full', mobile ? 'h-64' : 'h-32']}
-        oninput={handleColorInput}
-        onchange={handleColorChange}
-      ></sp-color-area>
-
-      <sp-color-slider
-        color={value}
-        label="Hue"
-        data-vaul-no-drag
-        class={['block w-full', mobile ? 'h-11' : 'h-6']}
-        oninput={handleColorInput}
-        onchange={handleColorChange}
-      ></sp-color-slider>
-
-      <sp-color-field
-        {value}
-        view-color
-        aria-label="Hex color"
-        class={['block w-full', mobile ? 'text-base' : 'text-xs']}
-        oninput={handleColorInput}
-        onchange={handleColorChange}
-      ></sp-color-field>
-    </div>
-  </sp-theme>
+      </sp-theme>
+    {:catch}
+      <p role="alert" class="text-sm text-zinc-400">Could not load color picker.</p>
+      <button
+        type="button"
+        class="mt-2 cursor-pointer text-sm text-zinc-100 underline"
+        onclick={() => (pickerReady = loadSpectrumColorPicker())}>Retry</button
+      >
+    {/await}
+  {/if}
 {/snippet}
 
 {#if $isMobile}

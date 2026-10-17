@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Bot, SlidersHorizontal, ChevronDown } from '@lucide/svelte/icons';
+  import Bot from '@lucide/svelte/icons/bot';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import type { TTSProviderType } from '../../stores/ai-settings.store';
   import type { AiTtsNodeData } from './settings';
 

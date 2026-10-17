@@ -1,5 +1,6 @@
 <script lang="ts">
   import DetachedCodeEditorHost from '$lib/components/DetachedCodeEditorHost.svelte';
+  import SidebarCodeEditorView from '$lib/components/sidebar/SidebarCodeEditorView.svelte';
   import {
     activeCodeEditorTarget,
     closeCodeEditorOverlay
@@ -15,9 +16,11 @@
   let {
     kind,
     renderOverlay = false,
+    renderSidebar = false,
     data
   }: {
     renderOverlay?: boolean;
+    renderSidebar?: boolean;
     kind: 'csound~' | 'chuck~' | 'strudel';
     data: MusicCodeLayoutData & { expr: string; code: string };
   } = $props();
@@ -25,6 +28,9 @@
 
 <div class="dark min-h-screen bg-black p-12">
   <Tooltip.Provider>
+    {#if renderSidebar}
+      <SidebarCodeEditorView />
+    {/if}
     {#if renderOverlay}
       <DetachedCodeEditorHost
         target={$activeCodeEditorTarget}

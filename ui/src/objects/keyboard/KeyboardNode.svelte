@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { AlertCircle, Keyboard, KeyboardOff, Settings, X } from '@lucide/svelte/icons';
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import Keyboard from '@lucide/svelte/icons/keyboard';
+  import KeyboardOff from '@lucide/svelte/icons/keyboard-off';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { keyboardSchema } from '$objects/keyboard/schema';

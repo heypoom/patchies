@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest';
 import { getPresetPackPresetNames } from '$lib/presets/preset-pack-index';
 import { BUILT_IN_PRESET_PACKS } from '$lib/presets/preset-packs';
 
-import { GREGGMAN_BYTEBEAT_PRESET_KEYS, GREGGMAN_BYTEBEAT_PRESETS } from './greggman';
+import { GREGGMAN_BYTEBEAT_PRESETS } from './greggman';
+import { GREGGMAN_BYTEBEAT_PRESET_KEYS } from './greggman-metadata';
 
 describe('Greggman HTML5 bytebeat archive presets', () => {
   test('exposes every song from the Greggman songs list as a bytebeat preset', () => {

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Settings, X, Rss } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
+  import Rss from '@lucide/svelte/icons/rss';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { sseSchema } from '$objects/sse/schema';
   import { onMount, onDestroy } from 'svelte';

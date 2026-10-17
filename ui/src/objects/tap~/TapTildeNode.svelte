@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { Settings, X, RotateCcw } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import TapSettings from '$lib/components/settings/TapSettings.svelte';

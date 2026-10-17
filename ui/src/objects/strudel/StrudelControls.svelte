@@ -1,14 +1,12 @@
 <script lang="ts">
-  import {
-    Code,
-    Ellipsis,
-    Expand,
-    Settings,
-    Terminal,
-    Volume2,
-    VolumeX,
-    X
-  } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Terminal from '@lucide/svelte/icons/terminal';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
+  import VolumeX from '@lucide/svelte/icons/volume-x';
+  import X from '@lucide/svelte/icons/x';
   import { onMount } from 'svelte';
   import { Portal } from 'bits-ui';
   import { isExpandedDismissKey } from '$lib/keyboard/dismiss';

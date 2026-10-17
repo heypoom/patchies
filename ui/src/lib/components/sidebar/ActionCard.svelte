@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { AlertCircle, Check, ChevronLeft, ChevronRight, X } from '@lucide/svelte/icons';
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import Check from '@lucide/svelte/icons/check';
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import X from '@lucide/svelte/icons/x';
   import { match } from 'ts-pattern';
   import { toast } from 'svelte-sonner';
   import { diffLines } from 'diff';

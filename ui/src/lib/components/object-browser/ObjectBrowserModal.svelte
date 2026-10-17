@@ -1,17 +1,15 @@
 <script lang="ts">
-  import {
-    ArrowLeft,
-    ArrowRight,
-    Bookmark,
-    Boxes,
-    Check,
-    ChevronDown,
-    CircleQuestionMark,
-    Package,
-    Search,
-    SearchX,
-    X
-  } from '@lucide/svelte/icons';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import Bookmark from '@lucide/svelte/icons/bookmark';
+  import Boxes from '@lucide/svelte/icons/boxes';
+  import Check from '@lucide/svelte/icons/check';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+  import Package from '@lucide/svelte/icons/package';
+  import Search from '@lucide/svelte/icons/search';
+  import SearchX from '@lucide/svelte/icons/search-x';
+  import X from '@lucide/svelte/icons/x';
   import Fuse from 'fuse.js';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import {
@@ -60,6 +58,7 @@
     getPresetPackPresetNames
   } from '$lib/presets/preset-pack-index';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
+  import { useEnabledPresetPacks } from '$lib/presets/use-enabled-preset-packs.svelte';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
   import PackCollectionsTree from '../sidebar/PackCollectionsTree.svelte';
   import ExtensionPackCard from '../sidebar/ExtensionPackCard.svelte';
@@ -471,6 +470,8 @@
         ? 'Explore object help'
         : 'Add to patch'
   );
+
+  useEnabledPresetPacks(() => open);
 
   const searchPlaceholder = $derived(
     $objectBrowserMode === 'packs'

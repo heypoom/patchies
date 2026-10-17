@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { RefreshCcw, X } from '@lucide/svelte/icons';
+  import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
+  import X from '@lucide/svelte/icons/x';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import type { NodeDataTracker, ContinuousTracker } from '$lib/history';
 

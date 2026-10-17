@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const outputPath = new URL('../src/presets/bytebeat/greggman.ts', import.meta.url);
+const metadataPath = new URL('../src/presets/bytebeat/greggman-metadata.ts', import.meta.url);
 const SOURCE_URL = 'https://greggman.github.io/html5bytebeat/editor/songs.json';
 
 const BUCKETS = [
@@ -177,6 +178,10 @@ async function main() {
 
 export const GREGGMAN_BYTEBEAT_PRESETS = ${serialize(presets)} as const;
 
+`;
+
+  const metadata = `/** Generated pack metadata. Regenerate with scripts/generate-greggman-bytebeat-presets.js. */
+
 export const GREGGMAN_BYTEBEAT_PRESET_FOLDERS = ${serialize(folders)} as const;
 
 export const GREGGMAN_BYTEBEAT_PRESET_KEYS = Object.values(
@@ -185,9 +190,14 @@ export const GREGGMAN_BYTEBEAT_PRESET_KEYS = Object.values(
 `;
 
   writeFileSync(outputPath, file);
-  execFileSync('./node_modules/.bin/prettier', ['--write', fileURLToPath(outputPath)], {
-    stdio: 'ignore'
-  });
+  writeFileSync(metadataPath, metadata);
+  execFileSync(
+    './node_modules/.bin/prettier',
+    ['--write', fileURLToPath(outputPath), fileURLToPath(metadataPath)],
+    {
+      stdio: 'ignore'
+    }
+  );
   console.log(
     `Generated ${Object.keys(presets).length} Greggman bytebeat presets -> ${outputPath.pathname}`
   );

@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Code, Ellipsis, Expand, Lock, Maximize2, X } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Lock from '@lucide/svelte/icons/lock';
+  import Maximize2 from '@lucide/svelte/icons/maximize-2';
+  import X from '@lucide/svelte/icons/x';
   import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { tick, type Snippet } from 'svelte';
   import { useNodeDataTracker } from '$lib/history';

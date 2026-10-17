@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Expand, Pause, Play, Settings, X } from '@lucide/svelte/icons';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import OrcaSettings from '$lib/components/settings/OrcaSettings.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useViewport } from '@xyflow/svelte';

@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { ChevronDown, KeyRound, X } from '@lucide/svelte/icons';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import KeyRound from '@lucide/svelte/icons/key-round';
+  import X from '@lucide/svelte/icons/x';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
   import {
     aiSettings,

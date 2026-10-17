@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { ChevronRight, Folder, Library } from '@lucide/svelte/icons';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import Folder from '@lucide/svelte/icons/folder';
+  import Library from '@lucide/svelte/icons/library';
   import * as Dialog from '$lib/components/ui/dialog';
   import { presetLibraryStore, editableLibraries } from '../../../stores/preset-library.store';
   import type { PresetFolder, PresetPath } from '$lib/presets/types';
