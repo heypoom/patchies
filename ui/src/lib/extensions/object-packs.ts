@@ -235,7 +235,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'vdo.ninja.pull',
       'serial',
       'serial.term',
-      'serial.dmx'
+      'serial.dmx',
+      'joycon'
     ]
   },
   {

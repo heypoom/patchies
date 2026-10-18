@@ -132,6 +132,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - serial: WebSerial port — send/receive strings, Uint8Array, or number[] to hardware devices (Arduino, etc.)
 - serial.term: Interactive serial terminal with scrollback, ANSI colors, and command history
 - serial.dmx: DMX-512 lighting output over serial (250kbaud/8N2, hardcoded) — send number[] or Uint8Array of up to 512 channel values
+- joycon: Nintendo Switch Joy-Con over WebHID — three-axis angles, accel, gyro, joystick, and buttons (outlet 0); motion, button, and connection events (outlet 1)
 
 ## Documentation & Content
 - markdown: Markdown renderer
@@ -233,6 +234,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - serial: WebSerial — communicate with Arduino, sensors, any serial device
 - serial.term: Interactive serial terminal — scrollback, ANSI colors, command history
 - serial.dmx: DMX-512 lighting output — send up to 512 channel values to DMX fixtures
+- joycon: Joy-Con controller — three-axis angles, raw IMU data, joystick, and buttons
 
 ## Network & Streaming
 - netsend, netrecv: WebRTC message send/receive between peers
