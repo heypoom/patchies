@@ -13,7 +13,11 @@ export const textmodeSchema: ObjectSchema = {
   hasDynamicOutlets: true,
   handlePatterns: {
     inlet: { template: 'in-{index}' },
-    outlet: { template: 'out-{index}' }
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video output at index 0, message outlets use out-{index}'
+    }
   }
 };
 
@@ -30,6 +34,10 @@ export const textmodeDomSchema: ObjectSchema = {
   hasDynamicOutlets: true,
   handlePatterns: {
     inlet: { template: 'in-{index}' },
-    outlet: { template: 'out-{index}' }
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video output at index 0, message outlets use out-{index}'
+    }
   }
 };

@@ -15,7 +15,14 @@ export const pixiSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'video',
+      type: 'video',
+      description: 'Video output',
+      handle: { handleType: 'video', handleId: '0' }
+    }
+  ],
   tags: ['2d', 'webgl', 'graphics', 'animation']
 };
 
@@ -24,6 +31,7 @@ export const pixiDomSchema: ObjectSchema = {
   type: 'pixi.dom',
   description: 'Creates interactive Pixi.js graphics on the main thread',
   inlets: [],
+  outlets: [],
   hasDynamicOutlets: true,
   handlePatterns: {
     inlet: { template: 'in-{index}', description: 'Message inlets (0-indexed)' },

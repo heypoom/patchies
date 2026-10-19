@@ -32,7 +32,14 @@ export const imgSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'video',
+      type: 'video',
+      description: 'Image texture output',
+      handle: { handleType: 'video', handleId: '0' }
+    }
+  ],
   tags: ['image', 'picture', 'texture', 'visual'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: false
 };

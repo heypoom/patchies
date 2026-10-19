@@ -24,7 +24,7 @@ export const aiImgSchema: ObjectSchema = {
   inlets: [
     {
       id: 'video',
-      type: 'signal',
+      type: 'video',
       description: 'Image input (optional, for image editing)',
       handle: { handleType: 'video', handleId: '0' }
     },
@@ -43,7 +43,7 @@ export const aiImgSchema: ObjectSchema = {
   outlets: [
     {
       id: 'video',
-      type: 'signal',
+      type: 'video',
       description: 'Generated image output',
       handle: { handleType: 'video', handleId: '0' }
     },
