@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Link, Pause, Play, RotateCw, Unlink } from '@lucide/svelte/icons';
+  import Link from '@lucide/svelte/icons/link';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import RotateCw from '@lucide/svelte/icons/rotate-cw';
+  import Unlink from '@lucide/svelte/icons/unlink';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

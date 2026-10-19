@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Play, Square, X } from '@lucide/svelte/icons';
+  import Play from '@lucide/svelte/icons/play';
+  import Square from '@lucide/svelte/icons/square';
+  import X from '@lucide/svelte/icons/x';
   import type { Snippet } from 'svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { portal } from '$lib/dom/portal';

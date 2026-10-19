@@ -1,6 +1,10 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Settings, X, Video, Info, ExternalLink } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
+  import Video from '@lucide/svelte/icons/video';
+  import Info from '@lucide/svelte/icons/info';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';

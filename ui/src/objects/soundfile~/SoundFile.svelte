@@ -1,6 +1,11 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import { Mic, Play, Square, Table, Upload, Volume2 } from '@lucide/svelte/icons';
+  import Mic from '@lucide/svelte/icons/mic';
+  import Play from '@lucide/svelte/icons/play';
+  import Square from '@lucide/svelte/icons/square';
+  import Table from '@lucide/svelte/icons/table';
+  import Upload from '@lucide/svelte/icons/upload';
+  import Volume2 from '@lucide/svelte/icons/volume-2';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

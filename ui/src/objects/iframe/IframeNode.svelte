@@ -1,13 +1,11 @@
 <script lang="ts">
   import { isDismissKey } from '$lib/keyboard/dismiss';
-  import {
-    Check,
-    SquarePen,
-    Globe,
-    X,
-    TriangleAlert,
-    CircleQuestionMark
-  } from '@lucide/svelte/icons';
+  import Check from '@lucide/svelte/icons/check';
+  import SquarePen from '@lucide/svelte/icons/square-pen';
+  import Globe from '@lucide/svelte/icons/globe';
+  import X from '@lucide/svelte/icons/x';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
   import { NodeResizer } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';

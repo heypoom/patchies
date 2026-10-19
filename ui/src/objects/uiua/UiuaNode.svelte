@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { Settings, Eye, EllipsisVertical, Play, Grid3x3 } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Eye from '@lucide/svelte/icons/eye';
+  import EllipsisVertical from '@lucide/svelte/icons/ellipsis-vertical';
+  import Play from '@lucide/svelte/icons/play';
+  import Grid3x3 from '@lucide/svelte/icons/grid-3x3';
   import * as Popover from '$lib/components/ui/popover';
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
   import UiuaPreview from '$lib/components/settings/UiuaPreview.svelte';

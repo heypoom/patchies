@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Loader, OctagonX, SkipBack, Upload, Video } from '@lucide/svelte/icons';
+  import Loader from '@lucide/svelte/icons/loader';
+  import OctagonX from '@lucide/svelte/icons/octagon-x';
+  import SkipBack from '@lucide/svelte/icons/skip-back';
+  import Upload from '@lucide/svelte/icons/upload';
+  import Video from '@lucide/svelte/icons/video';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { get } from 'svelte/store';

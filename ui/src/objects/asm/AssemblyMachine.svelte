@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { Binary, Pause, Play, RotateCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
+  import Binary from '@lucide/svelte/icons/binary';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import Settings from '@lucide/svelte/icons/settings';
+  import StepForward from '@lucide/svelte/icons/step-forward';
+  import X from '@lucide/svelte/icons/x';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { useUpdateNodeData } from '$lib/composables/useUpdateNodeData.svelte';

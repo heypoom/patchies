@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ScreenShare } from '@lucide/svelte/icons';
+  import ScreenShare from '@lucide/svelte/icons/screen-share';
   import { Position } from '@xyflow/svelte';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';

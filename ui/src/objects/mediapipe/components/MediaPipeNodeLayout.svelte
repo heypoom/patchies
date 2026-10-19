@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Settings, Play, Pause, X } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Play from '@lucide/svelte/icons/play';
+  import Pause from '@lucide/svelte/icons/pause';
+  import X from '@lucide/svelte/icons/x';
   import { match } from 'ts-pattern';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';

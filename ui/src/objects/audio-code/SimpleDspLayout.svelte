@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Code, Expand, Play, Settings, Terminal, X } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Play from '@lucide/svelte/icons/play';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Terminal from '@lucide/svelte/icons/terminal';
+  import X from '@lucide/svelte/icons/x';
   import { useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { type Snippet } from 'svelte';

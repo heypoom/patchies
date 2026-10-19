@@ -2,23 +2,21 @@
   import { appendThinking } from '$lib/ai/thinking-log';
   import { isDismissKey } from '$lib/keyboard/dismiss';
   import * as Popover from '$lib/components/ui/popover';
-  import {
-    Dices,
-    Copy,
-    Download,
-    Pencil,
-    Lock,
-    Sparkles,
-    Loader2,
-    Code,
-    ChevronDown,
-    ChevronUp,
-    Check,
-    Square,
-    Maximize2,
-    Minus,
-    X
-  } from '@lucide/svelte/icons';
+  import Dices from '@lucide/svelte/icons/dices';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Download from '@lucide/svelte/icons/download';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import Lock from '@lucide/svelte/icons/lock';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import Code from '@lucide/svelte/icons/code';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import Check from '@lucide/svelte/icons/check';
+  import Square from '@lucide/svelte/icons/square';
+  import Maximize2 from '@lucide/svelte/icons/maximize-2';
+  import Minus from '@lucide/svelte/icons/minus';
+  import X from '@lucide/svelte/icons/x';
   import { toast } from 'svelte-sonner';
   import type { Node, Edge } from '@xyflow/svelte';
   import {

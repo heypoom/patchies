@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RotateCcw } from '@lucide/svelte/icons';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import type { NodeDataTracker } from '$lib/history';
   import { getControlStep } from '$lib/utils/stepped-control';
 

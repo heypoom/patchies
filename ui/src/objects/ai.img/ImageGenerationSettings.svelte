@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ChevronDown, SlidersHorizontal } from '@lucide/svelte/icons';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { useNodeDataTracker } from '$lib/history';
   import {

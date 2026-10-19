@@ -1,12 +1,10 @@
 <script lang="ts">
-  import {
-    Check,
-    ChevronsUpDown,
-    Pin,
-    PinOff,
-    RotateCcw,
-    SlidersHorizontal
-  } from '@lucide/svelte/icons';
+  import Check from '@lucide/svelte/icons/check';
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+  import Pin from '@lucide/svelte/icons/pin';
+  import PinOff from '@lucide/svelte/icons/pin-off';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import * as Command from '$lib/components/ui/command';
   import * as Popover from '$lib/components/ui/popover';

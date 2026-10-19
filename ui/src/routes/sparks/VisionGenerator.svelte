@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { ArrowLeft, RotateCcw, Sparkles, Square } from '@lucide/svelte/icons';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Square from '@lucide/svelte/icons/square';
   import { SvelteSet } from 'svelte/reactivity';
   import { getTextProvider } from '$lib/ai/providers';
   import { extractJson } from '$lib/ai/extract-json';

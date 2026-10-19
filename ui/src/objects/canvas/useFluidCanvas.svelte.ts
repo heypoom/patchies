@@ -1,4 +1,5 @@
-import { Maximize2, Minimize2 } from '@lucide/svelte/icons';
+import Maximize2 from '@lucide/svelte/icons/maximize-2';
+import Minimize2 from '@lucide/svelte/icons/minimize-2';
 import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
 import { stripJavaScriptComments, stripJavaScriptStrings } from '$lib/utils/javascript-comments';
 import { createDynamicCanvasDimension } from './dynamic-canvas-dimension';

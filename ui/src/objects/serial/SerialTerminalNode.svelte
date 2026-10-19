@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Settings, Trash2, Usb, Unplug } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Usb from '@lucide/svelte/icons/usb';
+  import Unplug from '@lucide/svelte/icons/unplug';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy, tick } from 'svelte';

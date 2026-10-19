@@ -1,25 +1,23 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
-  import {
-    Layers,
-    Box,
-    AudioLines,
-    Music,
-    Hand,
-    Code,
-    Cpu,
-    Activity,
-    Lightbulb,
-    Projector,
-    Piano,
-    Usb,
-    Sparkles,
-    Disc3,
-    Globe,
-    SlidersHorizontal,
-    X,
-    type Icon as LucideIcon
-  } from '@lucide/svelte';
+  import Layers from '@lucide/svelte/icons/layers';
+  import Box from '@lucide/svelte/icons/box';
+  import AudioLines from '@lucide/svelte/icons/audio-lines';
+  import Music from '@lucide/svelte/icons/music';
+  import Hand from '@lucide/svelte/icons/hand';
+  import Code from '@lucide/svelte/icons/code';
+  import Cpu from '@lucide/svelte/icons/cpu';
+  import Activity from '@lucide/svelte/icons/activity';
+  import Lightbulb from '@lucide/svelte/icons/lightbulb';
+  import Projector from '@lucide/svelte/icons/projector';
+  import Piano from '@lucide/svelte/icons/piano';
+  import Usb from '@lucide/svelte/icons/usb';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Disc3 from '@lucide/svelte/icons/disc-3';
+  import Globe from '@lucide/svelte/icons/globe';
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import X from '@lucide/svelte/icons/x';
+  import type { Icon as LucideIcon } from '@lucide/svelte';
   import type { Output } from './types';
 
   type LucideComponent = typeof LucideIcon;

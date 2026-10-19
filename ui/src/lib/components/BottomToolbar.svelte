@@ -1,23 +1,21 @@
 <script lang="ts">
-  import {
-    Bookmark,
-    CirclePlus,
-    CircleHelp,
-    Command,
-    Copy,
-    FilePlusCorner,
-    FolderOpen,
-    PanelLeftOpen,
-    PanelLeftClose,
-    Link,
-    Save,
-    Sparkles,
-    Trash2,
-    Cable,
-    ClipboardPaste,
-    Ellipsis,
-    Settings
-  } from '@lucide/svelte/icons';
+  import Bookmark from '@lucide/svelte/icons/bookmark';
+  import CirclePlus from '@lucide/svelte/icons/circle-plus';
+  import CircleHelp from '@lucide/svelte/icons/circle-help';
+  import Command from '@lucide/svelte/icons/command';
+  import Copy from '@lucide/svelte/icons/copy';
+  import FilePlusCorner from '@lucide/svelte/icons/file-plus-corner';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open';
+  import PanelLeftClose from '@lucide/svelte/icons/panel-left-close';
+  import Link from '@lucide/svelte/icons/link';
+  import Save from '@lucide/svelte/icons/save';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Cable from '@lucide/svelte/icons/cable';
+  import ClipboardPaste from '@lucide/svelte/icons/clipboard-paste';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Settings from '@lucide/svelte/icons/settings';
   import type { Node, Edge } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import {
@@ -33,7 +31,8 @@
   import { TransportPanel } from './transport';
   import { transportStore } from '../../stores/transport.store';
   import { Transport } from '$lib/transport';
-  import { Play, Pause } from '@lucide/svelte/icons';
+  import Play from '@lucide/svelte/icons/play';
+  import Pause from '@lucide/svelte/icons/pause';
   import StartupModal from './startup-modal/StartupModal.svelte';
   import * as Popover from '$lib/components/ui/popover';
   import * as Drawer from '$lib/components/ui/drawer';

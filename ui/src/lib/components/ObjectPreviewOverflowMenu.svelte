@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Ellipsis } from '@lucide/svelte/icons';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
   import * as Popover from './ui/popover';
   import Separator from './ui/separator/separator.svelte';
   import {

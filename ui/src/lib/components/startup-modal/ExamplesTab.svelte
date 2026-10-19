@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { FolderOpen, Loader2, Search, SearchX, X } from '@lucide/svelte/icons';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import Search from '@lucide/svelte/icons/search';
+  import SearchX from '@lucide/svelte/icons/search-x';
+  import X from '@lucide/svelte/icons/x';
   import Fuse from 'fuse.js';
   import { onMount } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';

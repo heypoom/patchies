@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Pause, Play } from '@lucide/svelte/icons';
+  import Pause from '@lucide/svelte/icons/pause';
+  import Play from '@lucide/svelte/icons/play';
   import type { OutputItem } from '$lib/uiua/UiuaService';
 
   let {

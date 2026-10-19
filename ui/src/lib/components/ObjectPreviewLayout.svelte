@@ -1,13 +1,11 @@
 <script lang="ts">
-  import {
-    Code,
-    Expand,
-    Loader,
-    Play,
-    Settings as SettingsIcon,
-    Terminal,
-    X
-  } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Expand from '@lucide/svelte/icons/expand';
+  import Loader from '@lucide/svelte/icons/loader';
+  import Play from '@lucide/svelte/icons/play';
+  import SettingsIcon from '@lucide/svelte/icons/settings';
+  import Terminal from '@lucide/svelte/icons/terminal';
+  import X from '@lucide/svelte/icons/x';
   import { onMount, type Snippet } from 'svelte';
   import { get } from 'svelte/store';
   import * as Tooltip from './ui/tooltip';

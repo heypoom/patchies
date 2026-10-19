@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Save } from '@lucide/svelte/icons';
+  import Save from '@lucide/svelte/icons/save';
   import * as Dialog from '$lib/components/ui/dialog';
   import { toast } from 'svelte-sonner';
   import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';

@@ -7,7 +7,8 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import ProjectionMapOverflowMenu from './ProjectionMapOverflowMenu.svelte';
-  import { MousePointer2, Pen } from '@lucide/svelte/icons';
+  import MousePointer2 from '@lucide/svelte/icons/mouse-pointer-2';
+  import Pen from '@lucide/svelte/icons/pen';
   import ProjectionMapExpandedEditor from './ProjectionMapExpandedEditor.svelte';
   import ProjectionMapContextMenu from './ProjectionMapContextMenu.svelte';
   import { overrideOutputNodeId } from '../../stores/renderer.store';

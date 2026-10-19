@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Settings, X } from '@lucide/svelte/icons';
+  import Settings from '@lucide/svelte/icons/settings';
+  import X from '@lucide/svelte/icons/x';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import { useNodeDataTracker } from '$lib/history';

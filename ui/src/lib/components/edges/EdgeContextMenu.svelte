@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { Plus, Trash2 } from '@lucide/svelte/icons';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import { isEdgeInsertionPreview } from '$lib/canvas/edge-insertion';
 

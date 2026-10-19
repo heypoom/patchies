@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Code, Ellipsis, Settings, Terminal } from '@lucide/svelte/icons';
+  import Code from '@lucide/svelte/icons/code';
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Terminal from '@lucide/svelte/icons/terminal';
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import type { SettingsSchema } from '$lib/settings';

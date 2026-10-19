@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Heart } from '@lucide/svelte/icons';
+  import Heart from '@lucide/svelte/icons/heart';
 
   import { dependenciesSection, portedCode, supportLinks } from '$lib/data/license-data';
 
