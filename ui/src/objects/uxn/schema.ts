@@ -49,6 +49,12 @@ export const uxnSchema: ObjectSchema = {
       description: 'Console output',
       handle: { handleType: 'message' },
       messages: [{ schema: Type.String(), description: 'String messages from console device' }]
+    },
+    {
+      id: 'video',
+      type: 'video',
+      description: 'Screen video output (full layout)',
+      handle: { handleType: 'video', handleId: '0' }
     }
   ],
   tags: ['programming', 'uxn', 'uxntal', 'assembly', 'virtual-machine'],

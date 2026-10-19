@@ -57,8 +57,14 @@ export const videoSchema: ObjectSchema = {
       type: 'signal',
       description: 'Audio track output',
       handle: { handleType: 'audio' }
+    },
+    {
+      id: 'video',
+      type: 'video',
+      description: 'Video output',
+      handle: { handleType: 'video', handleId: '0' }
     }
   ],
   tags: ['video', 'movie', 'texture', 'visual', 'audio'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: false
 };

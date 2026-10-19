@@ -21,15 +21,7 @@ export const surfaceSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [
-    {
-      id: 'video',
-      description: 'Video output',
-      handle: {
-        handleType: 'video'
-      }
-    }
-  ],
+  outlets: [],
   tags: ['graphics', 'interaction', 'touch', 'pointer', 'mouse', 'fullscreen', 'overlay', '2d'],
   hasDynamicOutlets: true,
   handlePatterns: {

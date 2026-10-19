@@ -21,16 +21,23 @@ export const swglSchema: ObjectSchema = {
   ],
   outlets: [
     {
-      id: 'video',
-      type: 'video',
-      description: 'Video output',
-      handle: { handleType: 'video', handleId: '0' }
-    },
-    {
       id: 'message',
       description: 'Message output',
       handle: { handleType: 'message', handleId: '0' }
     }
   ],
-  tags: ['shader', 'webgl', 'graphics', 'gpu', '3d', 'mesh']
+  tags: ['shader', 'webgl', 'graphics', 'gpu', '3d', 'mesh'],
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: {
+      template: 'video-in-{index}',
+      handleType: 'video',
+      description: 'Video inlets (0-indexed), message inlets use message-in-{index}'
+    },
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video outlets (0-indexed), message outlets use message-out-{index}'
+    }
+  }
 };

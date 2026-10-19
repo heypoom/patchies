@@ -95,7 +95,6 @@ const SCHEMA_DERIVABLE_TYPES = [
   'orca',
 
   // Visual
-  'swgl',
   'bg.out',
   'iframe',
   'webcam',
@@ -158,6 +157,18 @@ function buildSchemaDerivedSpecs(): Record<string, NodeHandleSpec> {
  * Reasons: no schema, incomplete schema, dynamic ports, or schema mismatch with component.
  */
 const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
+  swgl: {
+    inlets: {
+      kind: 'dynamic',
+      patterns: ['video-in-{N}', 'message-in-{N}'],
+      note: 'video inlets first, then message inlets'
+    },
+    outlets: {
+      kind: 'dynamic',
+      patterns: ['video-out-{N}', 'message-out-{N}'],
+      note: 'video outlets first, then message outlets'
+    }
+  },
   // No schema exists
   label: {
     inlets: { kind: 'fixed', handles: [] },
