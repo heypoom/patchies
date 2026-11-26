@@ -20,6 +20,8 @@ Move Patchies toward a small, headless core that can:
 - [168. Runtime Object And Editor Representations](168-runtime-object-editor-representations.md)
 - [169. Build Your Own Patcher Vision](169-build-your-own-patcher-vision.md)
 - [170. Agent-Extensible Patchies Vision](170-agent-extensible-patchies-vision.md)
+- [200. Patchies V2 Primitives](200-patchies-v2-primitives.md)
+- [203. Patchies V2 Roadmap](203-patchies-v2-roadmap.md)
 - [Visual Object Headless Migration](../visual-object-headless-migration.md)
 
 ## End State
