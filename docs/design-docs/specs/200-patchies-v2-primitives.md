@@ -92,6 +92,12 @@ becomes a renderer node. Its box becomes a canvas node.
 This keeps each primitive useful without the patcher. A website can embed only a
 shader pipeline, or only a fast node canvas.
 
+Invariant 14 in [207](207-v2-architecture-invariants.md) extends this rule to every
+V2 system, including the native host, multiplayer, agent integration, and testing:
+each has a generic core and a thin Patchies adapter. Generic graph vocabulary, such
+as canvas nodes and render graph nodes and edges, is allowed. Patchies object types,
+port kinds, message routing, and the patch document schema are not.
+
 ## `@patchies/renderer`
 
 A WebGPU render graph, described in [198. WebGPU Render Core](198-webgpu-render-core.md).

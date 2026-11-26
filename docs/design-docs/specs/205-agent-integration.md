@@ -150,16 +150,21 @@ machine, like any other peer.
 
 ## The Operations Protocol
 
-The protocol is pull request 272's command set, versioned, plus what spec 182
-deferred:
+The protocol has two layers, following invariant 14 in
+[207](207-v2-architecture-invariants.md):
 
-- **Commands:** graph query, create and delete nodes, connect and disconnect wires,
-  and read and write object files, each as a versioned, idempotent operation with an
-  outcome.
-- **A capability catalog:** generated from the object registry and schemas, so
-  agents discover which objects exist, their ports, their settings, and which host
-  can run them ([201](201-rust-native-host.md) capability tags).
-- **References:** object docs and prompts, as the mount already provides.
+- **A generic protocol:** versioned, idempotent operations with outcomes, a
+  filesystem mount of a document tree, the CLI, and an MCP bridge. It knows nothing
+  about patches and could drive any document-based tool.
+- **The Patchies command set on top:** pull request 272's commands plus what spec 182
+  deferred:
+  - **Commands:** graph query, create and delete nodes, connect and disconnect
+    wires, and read and write object files, each as a versioned, idempotent
+    operation with an outcome.
+  - **A capability catalog:** generated from the object registry and schemas, so
+    agents discover which objects exist, their ports, their settings, and which
+    host can run them ([201](201-rust-native-host.md) capability tags).
+  - **References:** object docs and prompts, as the mount already provides.
 
 Every front-end, whether files, CLI, or MCP, uses this protocol.
 

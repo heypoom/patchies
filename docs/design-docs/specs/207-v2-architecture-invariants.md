@@ -186,6 +186,43 @@ people use. Every object ships conformance tests. Time and randomness are
 controllable, and rendering can happen offscreen and be read back. The testing
 strategy is [208. V2 Testing Strategy](208-v2-testing-strategy.md).
 
+### 14. Generic Cores, Patchies Adapters
+
+Each system has a generic core that is reusable outside Patchies, and a thin
+Patchies adapter that hooks it into the patch model. Zed and GPUI are the model:
+GPUI is a general UI framework, and Zed is one app built on it.
+
+Generic cores may use generic graph and canvas vocabulary. An infinite canvas has
+nodes, as tldraw, Excalidraw, and Figma do, and a render graph has nodes and edges.
+What a generic core must not know is the Patchies model: object types, the object
+registry, port kinds such as message, audio, and video, message routing, and the
+patch document schema.
+
+| System              | Generic core                                                                                               | Patchies adapter                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Canvas and painters | display list, controller, Canvas 2D and WebGPU painters, DOM islands, hit-testing, camera, canvas nodes    | turns objects into canvas nodes, cables into curves, ports into hit regions |
+| Render core         | a WebGPU render graph of nodes and edges, plus the shader library                                          | turns video objects into render nodes                                       |
+| Native host         | a JavaScript runtime with WebGPU windows, audio, input, and host services                                  | loads `@patchies/core` and the patch                                        |
+| Multiplayer         | CRDT document sync, presence, rooms, relay transport, and the clock timeline, over any document            | the patch document's schema                                                 |
+| Agent integration   | an operations protocol, a filesystem mount of a document tree, the CLI, and an MCP bridge                  | the Patchies command set and the object capability catalog                  |
+| Testing             | deterministic clocks, offscreen snapshots with tolerances, offline audio comparison, semantic tree queries | patch builders, the object conformance runner, golden message traces        |
+| Presentation views  | anchored screen-space layouts of canvas nodes                                                              | placing widget objects into named views                                     |
+
+`@patchies/core`, with the patch graph, objects, and message routing, is the
+patch-aware layer between the Patchies model and the generic systems.
+
+- Keep adapters thin. Logic in an adapter that is not about mapping belongs in the
+  generic core or in `@patchies/core`.
+- Make the boundary generic from day one, so no Patchies types cross it, but add
+  generality only when Patchies or a real second user needs it. This guards against
+  over-abstraction.
+- Name the layers so the boundary is visible, with adapters clearly labeled as
+  Patchies-specific.
+
+Precedent: Zed and GPUI, tldraw's editor and its shapes, ProseMirror's generic
+model, state, and view with app-specific schemas, and Yjs as a generic CRDT that apps
+give a schema.
+
 ## Collisions and the Invariants That Resolve Them
 
 | Collision                           | Resolved by                                                                                        |
@@ -209,6 +246,9 @@ strategy is [208. V2 Testing Strategy](208-v2-testing-strategy.md).
 - Tests that run every primitive on two hosts in CI (spec 203).
 - Object conformance tests, snapshots, and end-to-end tests on both hosts as part of
   the definition of done (invariant 13, spec 208).
+- dependency-cruiser rules that stop generic cores from importing Patchies types,
+  such as object types, the object registry, or the patch document, and from
+  importing `@patchies/core` (invariant 14).
 
 ## Related Specs
 

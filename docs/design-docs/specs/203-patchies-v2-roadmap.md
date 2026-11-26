@@ -28,8 +28,9 @@ agents vibe-coding on top. Spec 207 sets the day-one object set and the rules th
 keep the systems from colliding: no singletons, short random IDs, path addressing,
 definitions and instances, three kinds of state, commands from actors,
 capabilities, one clock per runtime tree, host services, owned resources, a
-lossless document, one trust rule, and black-box testability on both hosts
-([208](208-v2-testing-strategy.md)).
+lossless document, one trust rule, black-box testability on both hosts
+([208](208-v2-testing-strategy.md)), and generic cores with thin Patchies
+adapters.
 
 ## North Stars
 
@@ -42,7 +43,7 @@ WebGPU particles and geometry. Where they conflict, and what gives first, is in
 
 | Spec                                                                       | Covers                                                                                                                                     |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| [207. V2 Architecture Invariants](207-v2-architecture-invariants.md)       | Read first: core and shell, the day-one object set, and thirteen invariants that keep the systems coherent                                 |
+| [207. V2 Architecture Invariants](207-v2-architecture-invariants.md)       | Read first: core and shell, the day-one object set, and fourteen invariants that keep the systems coherent                                 |
 | [197. Canvas Editor and DOM Islands](197-canvas-editor-and-dom-islands.md) | One WebGPU canvas, DOM islands, update rate, Canvas 2D and WebGPU painters, lines, today's XYFlow fixes                                    |
 | [198. WebGPU Render Core](198-webgpu-render-core.md)                       | Render graph on WebGPU, threads and frame budgets, GLSL to WGSL translation, q5.js, POPs, WebGL2 islands                                   |
 | [199. Portable Patchies Runtime](199-portable-patchies-runtime.md)         | Running patches outside the browser: host adapters, capability tags, native WebGPU engines, native audio                                   |
