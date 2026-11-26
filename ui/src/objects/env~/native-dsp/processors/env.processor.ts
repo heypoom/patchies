@@ -36,12 +36,16 @@ defineDSP({
       state.sumOfSquares += sample * sample - oldSample * oldSample;
       state.buffer[state.writeIndex] = sample;
       state.writeIndex = (state.writeIndex + 1) % state.windowSize;
+    }
 
-      if (--state.samplesUntilOutput <= 0) {
-        const rms = Math.sqrt(Math.max(0, state.sumOfSquares) / state.windowSize);
-        send(rms, 0);
-        state.samplesUntilOutput = state.windowSize;
-      }
+    state.samplesUntilOutput -= input.length;
+
+    if (state.samplesUntilOutput <= 0) {
+      const rms = Math.sqrt(Math.max(0, state.sumOfSquares) / state.windowSize);
+      send(rms, 0);
+
+      // Align reporting to audio blocks so tiny windows cannot flood the main thread.
+      state.samplesUntilOutput = Math.ceil(state.windowSize / input.length) * input.length;
     }
   }
 });

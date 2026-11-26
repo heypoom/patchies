@@ -299,12 +299,22 @@ Node inlets: `trigger` (message: 0/1), `attack` (float, ms, default 10), `decay`
 
 ### `env~` — RMS Envelope Follower
 
-Takes audio input, outputs RMS amplitude as messages. Window size controllable.
+Takes audio input, outputs linear RMS amplitude as messages. Window size controllable.
+
+Output scheduling follows Pure Data's block-alignment rule: round the window-sized
+reporting interval up to a whole audio block and emit at the end of that block.
+Never emit more than one message per block, even with `env~ 1`. The analysis window
+itself is not enlarged; each output describes the latest window of samples.
+Changing the window resets analysis history and the reporting countdown.
+
+This is a scheduling-only change. Keep the rectangular RMS window, linear output,
+and existing inlet/creation arguments. Do not add Pure Data's half-window default
+period, separate period argument, Hann weighting, or dB scale.
 
 ```typescript
 // processors/env.processor.ts
 defineDSP({
-  name: 'env~',
+  name: "env~",
   audioInlets: 1,
   audioOutlets: 0,
 
@@ -313,7 +323,7 @@ defineDSP({
     buffer: new Float32Array(1024),
     writeIndex: 0,
     sumOfSquares: 0,
-    samplesUntilOutput: 1024
+    samplesUntilOutput: 1024,
   }),
 
   recv(state, data, inlet) {
@@ -340,14 +350,17 @@ defineDSP({
       state.sumOfSquares += sample * sample - oldSample * oldSample;
       state.buffer[state.writeIndex] = sample;
       state.writeIndex = (state.writeIndex + 1) % state.windowSize;
-
-      if (--state.samplesUntilOutput <= 0) {
-        const rms = Math.sqrt(Math.max(0, state.sumOfSquares) / state.windowSize);
-        send(rms, 0);
-        state.samplesUntilOutput = state.windowSize;
-      }
     }
-  }
+
+    state.samplesUntilOutput -= input.length;
+
+    if (state.samplesUntilOutput <= 0) {
+      const rms = Math.sqrt(Math.max(0, state.sumOfSquares) / state.windowSize);
+      send(rms, 0);
+      state.samplesUntilOutput =
+        Math.ceil(state.windowSize / input.length) * input.length;
+    }
+  },
 });
 ```
 

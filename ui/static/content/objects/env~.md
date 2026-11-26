@@ -12,6 +12,13 @@ The default analysis window is 1024 samples. Set a smaller window for faster res
 256 → inlet 2 (window size in samples)
 ```
 
+The reporting interval is the window size rounded up to a whole audio block
+(normally 128 samples). Even `env~ 1` sends at most one message per block, not
+one per sample. The analysis window stays at the size you choose; only the
+reporting interval is rounded.
+
+Output is linear RMS amplitude, not Pure Data's dB scale.
+
 Useful for amplitude-following effects, ducking, or visualizing signal levels.
 
 _Inspired by [Pure Data](https://pd.iem.sh/objects/env~)._
