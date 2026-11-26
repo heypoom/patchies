@@ -144,12 +144,40 @@ loads as a placeholder that keeps its data and connections intact
 - a mixed browser and native multiplayer room;
 - an embed on a page without `SharedArrayBuffer`.
 
-### 8. One Clock per Runtime Tree
+### 8. A Clock Tree
 
-- Subpatches share their root runtime's clock.
-- Embeds on one page share a page clock.
-- Multiplayer shares a room timeline (spec 204).
-- Randomness is seeded from the clock wherever peers need matching output.
+Clocks form a tree that follows the runtime tree. Each runtime instance owns its
+clock tree, so there is no global transport singleton (invariant 1).
+
+- The root clock is the patch's transport. Embeds on one page share a page clock,
+  and multiplayer shares a room timeline (spec 204).
+- Each subpatch or abstraction instance has a clock in one of three modes:
+
+| Mode              | Behavior                                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| Inherit (default) | uses its parent's clock                                                                  |
+| Derived           | follows its parent's play and pause, with its own offset, rate, and a loop or hold range |
+| Independent       | its own transport: play, stop, and BPM, unaffected by its parents                        |
+
+- Objects read local and absolute time. `clock.time` and `clock.beat` are local to
+  the object's patch, and an absolute time such as `clock.absTime` is the root's.
+  GLSL's `iTime` follows the local clock.
+- Look-ahead audio scheduling maps local time to root time to audio-context time,
+  so beat callbacks stay sample-accurate. A rate other than 1 changes when things are
+  scheduled, not how audio is rendered.
+- Clock settings, such as mode, offset, rate, and range, are document data and sync
+  in multiplayer. Each clock's running position is runtime state, per instance.
+- Randomness is seeded from the local clock wherever peers need matching output, so
+  a looping section repeats the same random values.
+- The transport panel shows the clock of the patch you are in, with a breadcrumb up
+  to the root. This is how multiple clocks reach the transport docs
+  (`ui/static/content/topics/transport-control.md`).
+
+Precedent: TouchDesigner's Time COMP gives each component its own timeline, with
+play, rate, start and end, a range that loops or holds, signature, and tempo, and a
+"Run Independently" option. Objects there read both component time and absolute
+time. Max has named transports, and Ableton's clips loop their own length against
+one global transport.
 
 ### 9. Host Services, Never Globals
 
@@ -230,7 +258,7 @@ give a schema.
 | Multiplayer inside subpatches       | 4: definitions sync, instances stay local. 3: paths address the patch.                             |
 | Subpatches in the native host       | 7: placeholders inside abstractions. 9: host services.                                             |
 | Agent integration inside subpatches | 3: every command names its patch. 6: agents are actors.                                            |
-| Embeds alongside multiplayer        | 1: no singletons. 3: scoped names. 8: a page clock and a room timeline.                            |
+| Embeds alongside multiplayer        | 1: no singletons. 3: scoped names. 8: a page clock, a room timeline, and a clock tree under them.  |
 | Subpatches in presentation views    | 4 and 5: an instance's controls can appear in a view, with graph-on-parent as model 2 in spec 206. |
 | UUIDs too long for agents           | 2: short Crockford IDs, unique per patch, validated with suggestions.                              |
 | `s` and `r` with five patches alive | 3: scoped by default, with explicit prefixes.                                                      |

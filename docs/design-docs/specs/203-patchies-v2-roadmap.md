@@ -27,7 +27,7 @@ V2 grows by primitives, not objects: a small core of coherent systems, with codi
 agents vibe-coding on top. Spec 207 sets the day-one object set and the rules that
 keep the systems from colliding: no singletons, short random IDs, path addressing,
 definitions and instances, three kinds of state, commands from actors,
-capabilities, one clock per runtime tree, host services, owned resources, a
+capabilities, a clock tree, host services, owned resources, a
 lossless document, one trust rule, black-box testability on both hosts
 ([208](208-v2-testing-strategy.md)), and generic cores with thin Patchies
 adapters.
@@ -227,16 +227,17 @@ testing on both hosts from day one ([208](208-v2-testing-strategy.md)).
 
 Still open, with the current lean where there is one:
 
-| Decision                                                 | Lean                                                                                 | Spec     |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- |
-| Native host: Rust embedding V8, or Node with Rust addons | Node with a patched `dawn.node`, from the V2 prototype                               | 201, 202 |
-| Dawn or wgpu                                             | Dawn: matches Chrome and worked in the prototype                                     | 201      |
-| JavaScript engine after October 2027                     | keep `deno_core` behind a swappable interface; revisit as Deno's future clears       | 201      |
-| GLSL translator                                          | the tiny TypeScript library once it reaches parity, with WASM as a possible fallback | 198, 200 |
-| CRDT library: Yjs, Automerge, or Loro                    | Yjs. A CRDT with simultaneous editing from the first implementation is decided       | 204      |
-| Interface model                                          | none yet: presentation views, graph-on-parent, and windows are all proposed          | 206      |
-| Where MCP lives                                          | none yet: Go server, `patchies_core`, or both                                        | 205      |
-| Painter switch threshold                                 | about 10,000–20,000 visible nodes at 120 Hz, to tune                                 | 197      |
+| Decision                                                                                  | Lean                                                                                 | Spec     |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- |
+| Native host: Rust embedding V8, or Node with Rust addons                                  | Node with a patched `dawn.node`, from the V2 prototype                               | 201, 202 |
+| Dawn or wgpu                                                                              | Dawn: matches Chrome and worked in the prototype                                     | 201      |
+| JavaScript engine after October 2027                                                      | keep `deno_core` behind a swappable interface; revisit as Deno's future clears       | 201      |
+| GLSL translator                                                                           | the tiny TypeScript library once it reaches parity, with WASM as a possible fallback | 198, 200 |
+| CRDT library: Yjs, Automerge, or Loro                                                     | Yjs. A CRDT with simultaneous editing from the first implementation is decided       | 204      |
+| Interface model                                                                           | none yet: presentation views, graph-on-parent, and windows are all proposed          | 206      |
+| Where MCP lives                                                                           | none yet: Go server, `patchies_core`, or both                                        | 205      |
+| Painter switch threshold                                                                  | about 10,000–20,000 visible nodes at 120 Hz, to tune                                 | 197      |
+| Clock tree details: how derived rates combine, and local versus absolute time in each API | three clock modes per subpatch: inherit, derived, independent                        | 207      |
 
 ## Work in Progress Elsewhere
 
