@@ -32,6 +32,11 @@ lossless document, one trust rule, black-box testability on both hosts
 ([208](208-v2-testing-strategy.md)), and generic cores with thin Patchies
 adapters.
 
+**Every iteration is live-performance-stable.** A performer must not be afraid of
+crashes in front of a crowd, from the very first version. V2 moves slowly to get
+there: primitives first, 4 or 5 core objects until they are proven stable, and the
+core never vibe-coded ([207](207-v2-architecture-invariants.md#live-performance-stable)).
+
 ## North Stars
 
 Low resource use, embeddable on websites, very large patches, usable without a
@@ -222,7 +227,9 @@ What the prototype showed about the strategy:
 ## Phases
 
 The phases overlap. Each links to where the work is described. Milestone 0 comes
-first, before phase 2.
+first, before phase 2. No phase is rushed: a phase adds a system or object to core
+only once it meets the core bar in [208](208-v2-testing-strategy.md#definition-of-done),
+and every release must be stable enough for a live performance.
 
 1. **Headless core.** Harvest the message system, transport, scheduler, and
    JavaScript runner into `@patchies/core`, finishing the headless runtime
@@ -258,7 +265,8 @@ first, before phase 2.
 
 ## Open Decisions
 
-Decided so far: `main` is frozen until V2 is finished; the browser is the home
+Decided so far: every iteration is live-performance-stable, moving slowly with 4 or
+5 core objects first; `main` is frozen until V2 is finished; the browser is the home
 platform and every host needs a JavaScript runtime; one canvas with painters chosen
 per patch; multiplayer is CRDT-based with simultaneous editing from the first
 implementation, and joining a room means trusting everyone in it; the

@@ -4,6 +4,32 @@ Status: Exploration. These are design rules for Patchies V2, written before any 
 the systems they protect exist. They decide the shape of data and APIs from day
 one. They do not require implementing every system on day one.
 
+## Live-Performance-Stable
+
+The main goal of every V2 iteration is to be stable enough for a live performance,
+from the very first version. A performer in front of a crowd must not be afraid of
+crashes. V2 moves slowly to get there, on purpose:
+
+- **Primitives first.** Build and prove the core systems before adding objects.
+- **Few objects at a time.** Start with 4 or 5 objects and add more only once
+  they are proven stable.
+- **Never vibe-code the core.** Core systems, core primitives, and core objects are
+  built slowly, with tests, care, and review by hand. Don't rush systems
+  or objects into V2.
+- **Shell objects are experimental.** Vibe-coded objects build on the stable
+  primitives, are marked experimental, and are not recommended for live
+  performance.
+
+Consequences for the design:
+
+- An object definition declares its stability, `stable` or `experimental`, and the
+  editor shows it. A patch can tell the performer when it uses experimental
+  objects.
+- A failing experimental object must not take down the patch. Its errors, hangs,
+  and resource use are contained to its instance (invariants 10 and 12), so one bad
+  shell object cannot stop the stable parts of a performance.
+- An object moves from shell to core only by meeting the core bar in spec 208.
+
 ## Core and Shell
 
 Patchies V1 grew by adding objects. [patchies.app/docs](https://patchies.app/docs)
@@ -11,9 +37,14 @@ lists about 200 of them. That was useful: V1 shows which objects people need.
 
 Patchies V2 grows by building primitives:
 
-- **Core:** Patchies provides a small set of coherent primitive systems and libraries.
+- **Core:** Patchies provides a small set of coherent primitive systems, libraries,
+  and objects. Core must be production-ready, and is never vibe-coded.
 - **Shell:** coding agents vibe-code on top of them: new objects, GLSL, WGSL, and
-  q5.js code, unusual interfaces such as Septabee-style instruments, and whole patches.
+  q5.js code, unusual interfaces such as Septabee-style instruments, and whole
+  patches. Shell objects are experimental until they meet the core bar. Shader and
+  q5.js code that people write inside core objects, such as `glsl` and `wgsl`, is
+  user content, not shell: the object running it must stay stable whatever the code
+  does.
 
 The primitive systems:
 
@@ -40,7 +71,9 @@ are settled before the systems are built.
 
 ## Day-One Object Set
 
-V2 starts with very few objects:
+The first version ships 4 or 5 core objects, such as `button`, `slider`, `glsl`, and
+`wgsl`, and adds the rest of the set below one at a time, each only once it is proven
+stable (Live-Performance-Stable above). The full day-one set:
 
 - `button` and `slider`;
 - `js`;

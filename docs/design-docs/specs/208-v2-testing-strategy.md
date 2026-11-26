@@ -78,8 +78,22 @@ the goal, because Chrome's own Canvas 2D raster paths differ from each other.
 
 ## Definition of Done
 
-- A feature or object is not done without its conformance cases and at least one
-  end-to-end test on both hosts.
+V2's goal is stability for live performance from the first version
+([207](207-v2-architecture-invariants.md#live-performance-stable)), so core and shell
+have different bars.
+
+- **Any feature or object:** conformance cases and at least one end-to-end test on
+  both hosts.
+- **Core systems and core objects** also need:
+  - soak tests: the object or system running for hours under load on both hosts, with
+    no crashes, leaks, growing memory, or dropped audio;
+  - fault tests: bad input, malformed messages, and broken user code, such as a GLSL
+    shader that fails to compile or a `js` loop that throws, recover without taking
+    down the patch;
+  - review by hand. Core code is never vibe-coded.
+- **Shell objects** are marked experimental. They need conformance cases, and they
+  must be contained: a failing shell object cannot take down the patch.
+- An object moves from shell to core only by meeting the core bar.
 - The slowdown is accepted deliberately.
 
 ## Starting Points
