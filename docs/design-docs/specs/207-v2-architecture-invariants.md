@@ -70,6 +70,7 @@ instances, or a test harness.
 - A lint rule bans module-level mutable state, `getInstance()`, and `static instance`.
 - The V2 prototype already turned `MessageSystem` and `MessageChannelRegistry`
   singletons into constructor injection ([203](203-patchies-v2-roadmap.md)).
+- How services are wired and scoped is in [Wiring and Scopes](#wiring-and-scopes).
 
 ### 2. Short, Stable, Unique IDs
 
@@ -251,6 +252,54 @@ Precedent: Zed and GPUI, tldraw's editor and its shapes, ProseMirror's generic
 model, state, and view with app-specific schemas, and Yjs as a generic CRDT that apps
 give a schema.
 
+## Wiring and Scopes
+
+Invariants 1, 7, 9, and 10 need one wiring style. V2 uses dependency injection by
+hand, with no container or framework.
+
+### Why Not a Container
+
+- Containers such as InversifyJS or tsyringe move missing bindings from compile
+  errors to runtime errors. Wiring by hand is type-checked.
+- They hide the dependency graph, which `getInstance()` already hides in V1.
+- Their decorators and `reflect-metadata` do not fit an embeddable core, nor a
+  Rust `patchies_core` ([202](202-patchies-core.md)), where wiring by hand is the
+  normal style.
+- Precedent: VS Code's instantiation service works at its scale, at the cost of
+  ceremony. Zed and GPUI pass an explicit context (`cx`) and scope global state to
+  the `App`, not the process, which is closer to what Patchies needs.
+
+### Rules
+
+1. **Constructor injection of narrow interfaces**, such as `Clock`, `Timers`,
+   `FileSystem`, `Fetch`, `Rng`, and `Logger`. A class asks for exactly what it
+   uses. More than four or five dependencies means the class does too much.
+2. **One composition root per host.** `createRuntime(hostServices)`, about 100 to
+   150 lines, builds everything ([203](203-patchies-v2-roadmap.md)). Tests call the
+   same function with test services, so both hosts and tests share one wiring path.
+3. **Scopes that follow the document:**
+
+   | Scope    | One per                                | Owns                                        |
+   | -------- | -------------------------------------- | ------------------------------------------- |
+   | Host     | process, or page                       | the GPU device, the audio context           |
+   | Runtime  | patch, so several per page for embeds  | message routing, the clock tree, scheduling |
+   | Subpatch | subpatch instance, child of its parent | its scoped names and its clock              |
+   | Instance | object                                 | its textures, audio nodes, and timers       |
+
+   A scope owns what it creates and disposes of it when it closes, so invariant 10
+   is the mechanism rather than a rule to remember.
+
+4. **Capabilities are injection for objects.** An object definition never imports
+   a service. It receives a `ctx` with only the capabilities it declared, such as
+   audio, video, the filesystem, or timers. One mechanism covers dependencies,
+   trust (invariant 12), the two kinds of `js`, and placeholders when a host lacks
+   a capability (invariant 7). Tests hand objects a fake `ctx`.
+5. **Fakes over mocks.** A shared test host provides a stepped clock, an in-memory
+   filesystem, a recording message sink, and a seeded random number generator,
+   used by both hosts' test suites ([208](208-v2-testing-strategy.md)).
+6. **Svelte context only in the shell.** The editor adapter's root puts the runtime
+   into Svelte context. Core never sees it.
+
 ## Collisions and the Invariants That Resolve Them
 
 | Collision                           | Resolved by                                                                                        |
@@ -267,6 +316,8 @@ give a schema.
 
 - Lint rules: no module-level mutable state, no `getInstance()` or
   `static instance` (invariant 1).
+- No reading `window` or `globalThis` outside host adapters (invariant 9, Wiring and
+  Scopes).
 - Core and primitive packages compile without DOM types (invariant 9).
 - dependency-cruiser rules for cycles and wrong-direction imports (spec 203).
 - Tests that run two runtimes side by side in one process, such as two embeds or two
