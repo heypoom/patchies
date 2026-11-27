@@ -465,6 +465,9 @@ Caveats:
 - Cook time drawn on each node as a number or heat color, through a display list
   overlay on the canvas editor ([197](197-canvas-editor-and-dom-islands.md)).
 - A profiler panel that sorts nodes by cost.
+- How people see these numbers, the cost view, the frame budget bar, the show
+  check, and cost tiers per object, is in
+  [210. Performance Transparency](210-performance-transparency.md).
 
 ### One Profiler per Runtime Instance
 

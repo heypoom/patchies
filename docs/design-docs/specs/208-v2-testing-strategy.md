@@ -122,3 +122,5 @@ tests against a reference ([198](198-webgpu-render-core.md)).
   golden traces.
 - [205. Agent Integration](205-agent-integration.md): the operations protocol.
 - [207. V2 Architecture Invariants](207-v2-architecture-invariants.md): invariant 13.
+- [210. Performance Transparency](210-performance-transparency.md): cost tiers per
+  object, measured by the performance budget benchmarks.

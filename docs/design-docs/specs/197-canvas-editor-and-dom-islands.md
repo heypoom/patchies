@@ -637,6 +637,8 @@ O(N) effects on `nodes`, which matter once culling makes `nodes` change often.
   editor becomes the `@patchies/canvas` primitive.
 - [201. Rust Native Host](201-rust-native-host.md): the canvas runs natively
   with the WebGPU painter only.
+- [210. Performance Transparency](210-performance-transparency.md): the cost view
+  and frame budget bar drawn on the canvas.
 
 ## Suggested Order
 

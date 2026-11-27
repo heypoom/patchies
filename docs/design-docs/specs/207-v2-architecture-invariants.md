@@ -376,3 +376,5 @@ hand, with no container or framework.
 - [203. Patchies V2 Roadmap](203-patchies-v2-roadmap.md).
 - [209. Routing Beyond Wires](209-routing-beyond-wires.md): routing as an interface
   and optional message metadata.
+- [210. Performance Transparency](210-performance-transparency.md): one object per
+  purpose, with where it runs chosen from its capabilities (invariant 7).

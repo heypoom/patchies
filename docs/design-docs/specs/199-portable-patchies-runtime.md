@@ -81,7 +81,7 @@ Each object declares the capabilities it needs, such as `requires: ['dom']` or
 
 | Probably portable                             | Needs work                               | Browser-only                                |
 | --------------------------------------------- | ---------------------------------------- | ------------------------------------------- |
-| Messages, `expr`, metro, sequencer, transport | `glsl` (WASM translator)                 | `dom`, `vue`, `markdown`, `iframe`          |
+| Messages, `expr`, metro, sequencer, transport | `glsl` (`glsl-to-wgsl`)                  | `dom`, `vue`, `markdown`, `iframe`          |
 | `wgsl`, POPs, `q5` in worker mode             | Audio objects                            | `p5`, `canvas.dom`, `three.dom`             |
 | AI nodes (they call `fetch`)                  | Video files (no WebCodecs; needs ffmpeg) | Webcam and screen capture                   |
 | Serial and DMX, with native adapters          | Strudel and Tone (built on Web Audio)    | MediaPipe (WASM and WebGL), P2P over WebRTC |
@@ -105,7 +105,8 @@ DOM. Anything designed to run there is most of the way to running in Deno or Nod
   are browser-only, which is another reason for a Hydra WGSL backend.
 - q5's worker mode and native mode are the same work: a q5 with no DOM that renders
   to a provided device and texture. `q5` is portable and `q5.dom` is browser-only.
-- The GLSL translator is WASM, which runs in Deno and Node too.
+- The GLSL translator, `glsl-to-wgsl`, is plain TypeScript, so it runs in Deno and
+  Node too.
 - The canvas editor ([197](197-canvas-editor-and-dom-islands.md)) runs in both
   hosts. Natively it uses the WebGPU painter only, and DOM islands are browser-only
   ([201](201-rust-native-host.md)).

@@ -282,7 +282,7 @@ renders every patch and presents each output to its canvas.
 | --------------------------------------------------------- | -------------------------------------------------- |
 | GPU device and render worker                              | the patch graph, objects, and their state          |
 | compiled shaders and pipelines                            | output resolution and render targets               |
-| GLSL translator WASM                                      | message routing                                    |
+| the GLSL translator                                       | message routing                                    |
 | shared resource pool ([117](117-shared-resource-pool.md)) | transport and BPM, on top of a shared page clock   |
 | frame loop and frame budget                               | errors: one patch failing must not stop the others |
 | one `AudioContext`, with a gain bus per patch             | storage, scoped by patch ID                        |
@@ -500,8 +500,8 @@ Csound, and libpd each register through their plugin.
 - How do renderer node types and canvas node types share a definition for one
   object, such as a `glsl` object's preview and box?
 - Which thread runs user JavaScript for message objects in an embed with no editor?
-- Should `@patchies/shader` ship the TypeScript translator alone, or keep glslang
-  and Tint or Naga as a fallback behind the same API?
+- Answered: `@patchies/shader` ships `glsl-to-wgsl` alone, with no WASM fallback
+  ([198](198-webgpu-render-core.md)).
 
 ## Related Specs
 

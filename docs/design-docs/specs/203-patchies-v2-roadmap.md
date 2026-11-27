@@ -46,20 +46,21 @@ WebGPU particles and geometry. Where they conflict, and what gives first, is in
 
 ## Specs
 
-| Spec                                                                       | Covers                                                                                                                                     |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| [207. V2 Architecture Invariants](207-v2-architecture-invariants.md)       | Read first: core and shell, the day-one object set, and fourteen invariants that keep the systems coherent                                 |
-| [197. Canvas Editor and DOM Islands](197-canvas-editor-and-dom-islands.md) | One WebGPU canvas, DOM islands, update rate, Canvas 2D and WebGPU painters, lines, today's XYFlow fixes                                    |
-| [198. WebGPU Render Core](198-webgpu-render-core.md)                       | Render graph on WebGPU, threads and frame budgets, GLSL to WGSL translation, q5.js, POPs, WebGL2 islands                                   |
-| [199. Portable Patchies Runtime](199-portable-patchies-runtime.md)         | Running patches outside the browser: host adapters, capability tags, native WebGPU engines, native audio                                   |
-| [200. Patchies V2 Primitives](200-patchies-v2-primitives.md)               | `@patchies/renderer`, `@patchies/canvas`, `@patchies/shader`, north stars, embedding, licensing                                            |
-| [201. Rust Native Host](201-rust-native-host.md)                           | The native host: engine choice, Node or Rust host, audio, shared Patchies API, object support, native editor                               |
-| [202. patchies_core](202-patchies-core.md)                                 | The embeddable Rust crate the native host is built on, libpd-style                                                                         |
-| [204. Multiplayer](204-multiplayer.md)                                     | Shared patch documents with a CRDT, collaborative code, presence, Link-style clock, and join equals trust                                  |
-| [205. Agent Integration](205-agent-integration.md)                         | Coding agents driving Patchies: one operations protocol with mount, CLI, and MCP front-ends, building on PR 272                            |
-| [206. Presentation Views](206-presentation-views.md)                       | Interfaces beyond the infinite canvas: presentation views, graph-on-parent, and windows, not yet chosen                                    |
-| [208. V2 Testing Strategy](208-v2-testing-strategy.md)                     | Black-box tests from day one on both hosts: object conformance, golden traces, audio and visual snapshots, end-to-end, performance budgets |
-| [209. Routing Beyond Wires](209-routing-beyond-wires.md)                   | Messages without visible wires: proximity, adjacency, gravity, and slots as routers, with routing as an interface in core                  |
+| Spec                                                                       | Covers                                                                                                                                               |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [207. V2 Architecture Invariants](207-v2-architecture-invariants.md)       | Read first: core and shell, the day-one object set, and fourteen invariants that keep the systems coherent                                           |
+| [197. Canvas Editor and DOM Islands](197-canvas-editor-and-dom-islands.md) | One WebGPU canvas, DOM islands, update rate, Canvas 2D and WebGPU painters, lines, today's XYFlow fixes                                              |
+| [198. WebGPU Render Core](198-webgpu-render-core.md)                       | Render graph on WebGPU, threads and frame budgets, GLSL to WGSL translation, q5.js, POPs, WebGL2 islands                                             |
+| [199. Portable Patchies Runtime](199-portable-patchies-runtime.md)         | Running patches outside the browser: host adapters, capability tags, native WebGPU engines, native audio                                             |
+| [200. Patchies V2 Primitives](200-patchies-v2-primitives.md)               | `@patchies/renderer`, `@patchies/canvas`, `@patchies/shader`, north stars, embedding, licensing                                                      |
+| [201. Rust Native Host](201-rust-native-host.md)                           | The native host: engine choice, Node or Rust host, audio, shared Patchies API, object support, native editor                                         |
+| [202. patchies_core](202-patchies-core.md)                                 | The embeddable Rust crate the native host is built on, libpd-style                                                                                   |
+| [204. Multiplayer](204-multiplayer.md)                                     | Shared patch documents with a CRDT, collaborative code, presence, Link-style clock, and join equals trust                                            |
+| [205. Agent Integration](205-agent-integration.md)                         | Coding agents driving Patchies: one operations protocol with mount, CLI, and MCP front-ends, building on PR 272                                      |
+| [206. Presentation Views](206-presentation-views.md)                       | Interfaces beyond the infinite canvas: presentation views, graph-on-parent, and windows, not yet chosen                                              |
+| [208. V2 Testing Strategy](208-v2-testing-strategy.md)                     | Black-box tests from day one on both hosts: object conformance, golden traces, audio and visual snapshots, end-to-end, performance budgets           |
+| [209. Routing Beyond Wires](209-routing-beyond-wires.md)                   | Messages without visible wires: proximity, adjacency, gravity, and slots as routers, with routing as an interface in core                            |
+| [210. Performance Transparency](210-performance-transparency.md)           | Showing what each node costs: a cost view, a frame budget bar, a show check, cost tiers from benchmarks, and one `canvas` placed by its capabilities |
 
 ## Earlier Specs This Builds On
 
@@ -263,6 +264,11 @@ and every release must be stable enough for a live performance.
    [206](206-presentation-views.md).
 10. **Presentation views.** Choose among presentation views, graph-on-parent, and
     windows ([206](206-presentation-views.md)).
+11. **Behaviors beyond wires.** Extensible object behaviors, such as proximity and
+    grid adjacency, and later gravity or slots, as routers next to wires
+    ([209](209-routing-beyond-wires.md)). The routing interface, optional message
+    metadata, and the delivery guard go into core during phase 1. The worlds stay
+    experimental until they meet the core bar, starting with the grid.
 
 ## Open Decisions
 
@@ -302,12 +308,13 @@ Still open, with the current lean where there is one:
 
 All uncommitted in their worktrees:
 
-| Spike                    | Branch                              | Recorded in   |
-| ------------------------ | ----------------------------------- | ------------- |
-| Canvas editor and WebGPU | `claude/canvas-webgpu-spike-1ebcec` | 197           |
-| XYFlow stress test       | `claude/xyflow-stress-test-32545b`  | 197           |
-| Today's editor at scale  | `claude/nice-volhard-303b5b`        | 197           |
-| Pixel-identical painters | `claude/dual-painter-spike-59da6f`  | 197           |
-| Shadertoy GLSL on WebGPU | `claude/glsl-webgpu-spike-36d5a4`   | 198           |
-| Minimal Rust native host | `claude/native-host-spike-c0d660`   | 201, 202      |
-| V2 prototype, both hosts | `claude/native-host-spike-c0d660`   | 201, 202, 203 |
+| Spike                    | Branch                               | Recorded in   |
+| ------------------------ | ------------------------------------ | ------------- |
+| Canvas editor and WebGPU | `claude/canvas-webgpu-spike-1ebcec`  | 197           |
+| XYFlow stress test       | `claude/xyflow-stress-test-32545b`   | 197           |
+| Today's editor at scale  | `claude/nice-volhard-303b5b`         | 197           |
+| Pixel-identical painters | `claude/dual-painter-spike-59da6f`   | 197           |
+| Shadertoy GLSL on WebGPU | `claude/glsl-webgpu-spike-36d5a4`    | 198           |
+| Minimal Rust native host | `claude/native-host-spike-c0d660`    | 201, 202      |
+| V2 prototype, both hosts | `claude/native-host-spike-c0d660`    | 201, 202, 203 |
+| Routing beyond wires     | `claude/routing-worlds-spike-e24404` | 209           |
