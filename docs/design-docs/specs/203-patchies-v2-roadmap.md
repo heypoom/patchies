@@ -9,8 +9,8 @@ Patchies V2 is a set of small, embeddable pieces that the patchies.app editor
 composes:
 
 - an editor drawn on one canvas, with DOM only where it is needed, scaling to
-  very large patches: Canvas 2D for small patches without video, WebGPU for video
-  and very large patches, and WebGPU always on the native host;
+  very large patches: WebGPU as the main painter, with Canvas 2D as a fallback for
+  small embeds, browsers without WebGPU, and device loss;
 - a WebGPU render core in place of WebGL2, with GLSL and WGSL as peers, q5.js,
   and particles;
 - primitive libraries that other websites can embed on their own;
@@ -243,8 +243,8 @@ and every release must be stable enough for a live performance.
    ([200](200-patchies-v2-primitives.md)).
 3. **WebGPU render core.** Move the render graph to WebGPU, with GLSL translation,
    q5.js, and WebGL2 islands, then POPs ([198](198-webgpu-render-core.md)).
-4. **Canvas editor.** Move the editor onto one canvas with DOM islands and
-   painters chosen per patch ([197](197-canvas-editor-and-dom-islands.md)).
+4. **Canvas editor.** Move the editor onto one canvas with DOM islands, the WebGPU
+   painter, and a Canvas 2D fallback ([197](197-canvas-editor-and-dom-islands.md)).
 5. **Embedding.** Ship `<patchies-output>` and a shared runtime per page
    ([200](200-patchies-v2-primitives.md#embedding)).
 6. **`patchies_core` and the native host.** Turn the native host spike into the
@@ -274,8 +274,8 @@ and every release must be stable enough for a live performance.
 
 Decided so far: every iteration is live-performance-stable, moving slowly with 4 or
 5 core objects first; `main` is frozen until V2 is finished; the browser is the home
-platform and every host needs a JavaScript runtime; one canvas with painters chosen
-per patch; multiplayer is CRDT-based with simultaneous editing from the first
+platform and every host needs a JavaScript runtime; one canvas, with WebGPU as the main painter and
+Canvas 2D as a fallback; multiplayer is CRDT-based with simultaneous editing from the first
 implementation, and joining a room means trusting everyone in it; other apps embed
 Patchies out of process behind a stable C ABI ([202](202-patchies-core.md)); GLSL
 translates with `glsl-to-wgsl`, a TypeScript library with no WASM
@@ -293,7 +293,7 @@ Still open, with the current lean where there is one:
 | CRDT library: Yjs, Automerge, or Loro                                                     | Yjs. A CRDT with simultaneous editing from the first implementation is decided    | 204      |
 | Interface model                                                                           | none yet: presentation views, graph-on-parent, and windows are all proposed       | 206      |
 | Where MCP lives                                                                           | none yet: Go server, `patchies_core`, or both                                     | 205      |
-| Painter switch threshold                                                                  | about 10,000–20,000 visible nodes at 120 Hz, to tune                              | 197      |
+| When to use the Canvas 2D fallback for embeds                                             | below a memory or node-count threshold, to measure                                | 197, 200 |
 | Clock tree details: how derived rates combine, and local versus absolute time in each API | three clock modes per subpatch: inherit, derived, independent                     | 207      |
 
 ## Work in Progress Elsewhere

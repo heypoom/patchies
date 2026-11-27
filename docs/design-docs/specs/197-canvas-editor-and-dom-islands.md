@@ -42,8 +42,8 @@ frame draws the output first, then the editor passes on top.
 
 This is about merging the editor and the output into one canvas instead of
 stacking two. It is separate from which painter draws the editor (see Choosing a
-Painter): a small patch without video uses one Canvas 2D canvas, because it has no
-output to merge, and the native host always uses WebGPU.
+Painter): WebGPU is the main painter, and the Canvas 2D fallback, when it is used,
+draws one Canvas 2D canvas with no output merged in.
 
 ### Why One Canvas
 
@@ -274,9 +274,9 @@ into pixels. This is the same split Flutter uses: widgets produce a display list
 and a backend such as Skia or Impeller draws it.
 
 ```
-node type ──► display list ──┬──► Canvas 2D painter  (small patches)
+node type ──► display list ──┬──► WebGPU painter     (main)
  (bang,        circles, rects, │
-  slider,      lines, text,    └──► WebGPU painter     (large or video patches)
+  slider,      lines, text,    └──► Canvas 2D painter  (fallback)
   toggle)      textures, hit regions
 ```
 
@@ -287,9 +287,10 @@ node type ──► display list ──┬──► Canvas 2D painter  (small pa
   frame, which is the bottleneck that limits the Canvas 2D painter.
 - Hit regions come from the same display list. The controller hit-tests the same
   way whichever painter draws.
-- The vocabulary stays small: circle, rect, rounded rect, line, polyline, cubic
-  bezier, text, and texture. Two painters for a few commands is a small library,
-  not a rendering engine.
+- The vocabulary starts small: circle, rect, rounded rect, line, polyline, cubic
+  bezier, text, and texture. It can grow where the WebGPU painter can afford a
+  command, because the fallback no longer has to match it pixel for pixel (see
+  Choosing a Painter).
 - Arbitrary paths are not in the vocabulary. A Canvas 2D-like API would force the
   WebGPU painter to tessellate arbitrary paths with correct joins, caps, and
   antialiasing, which is what Skia and CanvasKit exist for.
@@ -298,14 +299,58 @@ node type ──► display list ──┬──► Canvas 2D painter  (small pa
 
 ### Choosing a Painter
 
-The painter is chosen per patch:
+**WebGPU is the main painter. Canvas 2D is a fallback, not a peer.**
 
-- **Canvas 2D** for patches with no video and up to about 20,000 visible nodes:
-  lower memory, browser text through `fillText`, and memory that returns when idle.
-- **WebGPU** once a patch has a video node or more visible nodes: previews with no
-  copies and flat cost up to 1,000,000 nodes.
+An earlier version chose the painter per patch: Canvas 2D for patches with no video
+and up to about 20,000 visible nodes, and WebGPU once a patch had a video node or
+more visible nodes. The dual-painter spike (below) showed the cost of keeping two
+equal painters:
 
-The switch point is about 20,000 visible nodes at 120 Hz and about 40,000 at 60 Hz.
+- **The drawing vocabulary shrank to what both could match.** Every command needed
+  a WebGPU implementation that matched Skia within the tolerance, plus a diff case
+  across DPR, zoom, and subpixel offsets. That ruled out shadows, clipping,
+  transforms, radial gradients, miter and bevel joins, and per-command opacity.
+- **Matching Skia is where the work went:** rounded-rect corners, stroked arcs,
+  polyline joins, bezier cables, and text each needed special work.
+- **Every node type is tested on both painters,** across the whole matrix, on top of
+  the two hosts.
+- **The switch shows.** Adding the first video node, or growing past about 20,000
+  visible nodes, changed painter mid-session: a small visual shift, a jump in
+  memory, and WebGPU start-up time while someone is editing.
+- **Canvas 2D only helps in the browser.** The native host has no Canvas 2D, so the
+  WebGPU painter is needed anyway.
+
+What only WebGPU can do:
+
+- **Video previews without copies.** Video textures live on the render worker's
+  device, and GPU textures cannot cross threads. A Canvas 2D editor needs copies or
+  readback, which is V1's `PreviewRenderer` problem.
+- **One canvas for the editor and the output,** because the output is a GPU texture.
+- **Very large patches.** Canvas 2D pays a JavaScript call per shape per frame: 27
+  fps at about 80,000 visible nodes and 1 fps at 1,000,000, where WebGPU holds about
+  120 fps.
+- **The native host.**
+- **Shader effects in editor chrome at scale,** such as glow halos for proximity
+  worlds ([209](209-routing-beyond-wires.md)).
+- **Depth-tested overlap** of nodes over live previews.
+
+What Canvas 2D still does better: memory for tiny patches, about 13 MB for one
+button against 28–40 MB plus a 16 MB text atlas, and memory that returns when idle.
+
+So the Canvas 2D painter is used only as a fallback:
+
+- **small embeds** where memory matters more than video or scale
+  ([200](200-patchies-v2-primitives.md#embedding));
+- **no WebGPU,** on browsers, devices, or virtual machines without it;
+- **device loss,** while video recovers on a new device
+  ([198](198-webgpu-render-core.md#device-loss)).
+
+The fallback's contract is looser than the old one. It must draw every node
+legibly, with the same geometry positions, text layout, and hit regions, so input
+and tests behave the same. It need not match WebGPU's pixels. A command the
+fallback cannot draw well, such as a shader effect, draws a plain version instead.
+Canvas 2D has clipping, transforms, shadows, and radial gradients built in, so most
+new commands cost the fallback little.
 
 Text is the hardest command to match. The WebGPU painter rasterizes labels with
 Canvas 2D `fillText` into an atlas, so both painters use the browser's text engine.
@@ -354,7 +399,10 @@ on-screen 2D output as the two 2D paths are to each other. Chrome can switch a 2
 canvas from GPU to CPU raster after repeated `getImageData` calls, so the reference
 itself moves.
 
-The painter contract is visual equivalence within a measured tolerance:
+The spike's painter contract was visual equivalence within a measured tolerance.
+With WebGPU as the main painter, the fallback no longer has to meet it (Choosing a
+Painter), but the same tolerance still applies to snapshot baselines and between
+the browser and native hosts:
 
 - per node type, a mean per-pixel difference under 1.5, and under 4% of pixels
   differing by more than 16, averaged over the DPR, zoom, and offset matrix;
@@ -418,9 +466,8 @@ Performance, mixed node grid, JavaScript time per frame:
 - WebGPU's advantage is static geometry. With every visible `scope~` animating,
   both painters cost the same, because the cost is generating display lists in
   JavaScript, about 5 µs per scope.
-- Choose the painter by visible node count and how much of the screen is static,
-  not by total node count. The 2D limit is about 10,000 visible nodes per frame at
-  120 fps with these node types.
+- The Canvas 2D limit is about 10,000 visible nodes per frame at 120 fps with these
+  node types, which bounds where the fallback works well.
 - Hit-testing took 1.2–1.4 µs at 1,000,000 nodes. Input-to-render latency was
   about one frame for both painters.
 - A slider drag in WebGPU re-encodes its whole chunk, about 300 KB. A fixed
@@ -435,9 +482,12 @@ Performance, mixed node grid, JavaScript time per frame:
 A one-button patch is the worst case for a WebGPU editor canvas. It does almost
 nothing but pays for a full-screen surface pool. Ways to shrink the fixed cost:
 
-- Use the Canvas 2D painter, as above.
+- Unconfigure the WebGPU canvas after a few idle seconds, which frees the swapchain
+  pool.
+- Grow the text atlas on demand instead of allocating 16 MB up front.
 - Size the canvas to the content instead of the screen, growing it as the patch grows.
 - Use an opaque canvas and fewer frames in flight.
+- For small embeds where memory matters most, use the Canvas 2D fallback.
 
 The gap matters on phones and 8 GB laptops, where the GPU shares system memory.
 

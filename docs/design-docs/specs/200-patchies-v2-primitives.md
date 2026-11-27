@@ -30,14 +30,14 @@ Patchies V2 aims for all of these. Some will have to give.
 
 ### Where They Conflict
 
-| Conflict                                     | Why it is hard                                                                               | What reconciles it                                                                        |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Low resources and 1M nodes                   | The WebGPU canvas that makes 1M nodes possible has a fixed memory cost, even for one button. | Choose the painter per patch, and size the canvas to the content (spec 197).              |
-| Low resources and video, particles, geometry | GPU work is expensive.                                                                       | Frame budgets, culling, capped preview rates, and rendering only what is used (spec 198). |
-| Embeddable and low resources                 | Five embeds could mean five workers, devices, and canvases.                                  | One shared runtime per page, and pausing off-screen embeds. See Embedding.                |
-| Off-thread rendering and simplicity          | A worker costs memory and startup time, which a small embed may not need.                    | `Renderer` and `OffthreadRenderer` share one interface.                                   |
-| Without browsers and DOM islands             | Islands exist only where there is a DOM.                                                     | Capability tags: islands are a browser-host feature (spec 199).                           |
-| Without browsers and audio                   | Real-time audio needs a real-time thread that Node and Deno do not provide.                  | A native-backed audio engine. Unsolved (spec 199).                                        |
+| Conflict                                     | Why it is hard                                                                               | What reconciles it                                                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Low resources and 1M nodes                   | The WebGPU canvas that makes 1M nodes possible has a fixed memory cost, even for one button. | Free the canvas when idle, size it to the content, and use the Canvas 2D fallback for small embeds (spec 197). |
+| Low resources and video, particles, geometry | GPU work is expensive.                                                                       | Frame budgets, culling, capped preview rates, and rendering only what is used (spec 198).                      |
+| Embeddable and low resources                 | Five embeds could mean five workers, devices, and canvases.                                  | One shared runtime per page, and pausing off-screen embeds. See Embedding.                                     |
+| Off-thread rendering and simplicity          | A worker costs memory and startup time, which a small embed may not need.                    | `Renderer` and `OffthreadRenderer` share one interface.                                                        |
+| Without browsers and DOM islands             | Islands exist only where there is a DOM.                                                     | Capability tags: islands are a browser-host feature (spec 199).                                                |
+| Without browsers and audio                   | Real-time audio needs a real-time thread that Node and Deno do not provide.                  | A native-backed audio engine. Unsolved (spec 199).                                                             |
 
 ### Where They Reinforce Each Other
 

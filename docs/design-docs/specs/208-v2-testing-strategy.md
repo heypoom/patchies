@@ -50,11 +50,15 @@ and drag like a person on both hosts.
 
 ### Visual Snapshots
 
-Snapshots use the visual equivalence contract measured by the dual-painter spike
+Snapshots use the visual equivalence tolerance measured by the dual-painter spike
 ([197](197-canvas-editor-and-dom-islands.md)): per node type, a mean per-pixel
 difference under 1.5, and under 4% of pixels differing by more than 16. Geometry
 positions, text layout, and hit regions must match exactly. Pixel identity is not
 the goal, because Chrome's own Canvas 2D raster paths differ from each other.
+
+Baselines come from the WebGPU painter, the main painter. The Canvas 2D fallback is
+checked separately: geometry, text layout, and hit regions must match the WebGPU
+painter exactly, and its pixels are compared against its own baselines.
 
 ## Determinism
 
