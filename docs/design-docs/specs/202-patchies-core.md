@@ -34,8 +34,77 @@ Node host with Rust addons, and the V2 prototype found the Node host with a patc
 | Node host with Rust addons | The `@patchies/core` package running in Node, plus Rust addons through napi-rs for windows, audio, and Dawn's surface |
 
 The embedding API, the libpd-style shape, and the host-driven modes apply either
-way. Non-JavaScript hosts, such as Swift or Unity apps, still need a library with an
-embedded engine, so a Rust crate stays useful even if the standalone app uses Node.
+way. Out-of-process embedding (below) means non-JavaScript hosts, such as Swift or
+Unity apps, do not need an engine in their own process, so embedding no longer
+forces the Rust shape. An in-process Rust crate with an embedded engine stays a
+later option.
+
+## Decided: Out-of-Process Embedding Behind a Stable C ABI
+
+Poom chose this for the first version:
+
+- **The C ABI is the stable surface.** Every non-JavaScript host, such as a Swift
+  app, links a small C client library. Whatever runs behind it, the ABI is the
+  promise.
+- **Embedding is out of process.** The client library launches the Patchies host as
+  a headless child process with no window and no editor. A crashing patch kills the
+  child, not the host app, which can restart it. That isolation follows the
+  live-performance rule
+  ([207](207-v2-architecture-invariants.md#live-performance-stable)).
+- **One engine.** The child is the same native host the standalone app uses, so
+  there is no second JavaScript engine to maintain for embedding.
+
+```
+Swift app ── libpatchies (C ABI) ──IPC── patchies host (headless child process)
+   │                                         │ TypeScript core, Dawn, audio
+   ├── MTLTexture ◄──── shared IOSurface ────┤
+   └── audio callback ◄── shared ring buffer ┘
+```
+
+| Channel   | How it crosses the process boundary                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Messages  | IPC, such as XPC or a Unix socket. Outgoing messages queue in the client until the host calls `pt_poll`, like libpd's queued mode                                             |
+| Video     | The child renders into an IOSurface-backed texture through Dawn's shared texture memory. The host wraps the same IOSurface as an `MTLTexture`, with no copies, as Syphon does |
+| Audio     | A shared-memory ring buffer the host reads from its own audio callback, and writes input into. It costs a block or two of latency                                             |
+| Lifecycle | The client starts, watches, and restarts the child, then reloads the patch and its state                                                                                      |
+
+### C ABI Rules
+
+Rust's own ABI is not stable, but `extern "C"` with `#[repr(C)]` types is:
+
+- Opaque handles, such as `pt_runtime*` and `pt_patch*`, with explicit `_new` and
+  `_free`. No Rust types cross the boundary.
+- Status codes and a last-error string. Every entry point catches panics, so none
+  unwinds across the boundary.
+- Callbacks are a function pointer and a `void* user_data`.
+- A version function, and only additions within a major version.
+- The header is generated with cbindgen. For Swift, ship an XCFramework through
+  Swift Package Manager with a module map, and a small Swift wrapper on top.
+- Precedents: libpd, and wgpu-native, which exposes Rust's wgpu as the C
+  `webgpu.h`.
+
+```c
+pt_runtime* rt = pt_runtime_new(&(pt_config){ .audio = PT_AUDIO_HOST_DRIVEN, .sample_rate = 48000 });
+pt_patch*   p  = pt_patch_open(rt, "synth.patchies.json");
+
+pt_send_float(rt, p, "freq", 440.0f);          // r freq inside that patch
+pt_bind(rt, p, "level", on_level, user_data);  // s level → host callback
+
+pt_audio_process(rt, in, out, frames);         // on the host's audio thread, reads the ring buffer
+pt_video_render(rt, p, "main", iosurface);     // into the host's IOSurface
+pt_poll(rt);                                   // delivers queued messages
+```
+
+Messages name their patch because `s` and `r` are scoped per patch (invariant 3 in
+spec 207). The names are a sketch.
+
+### Threads
+
+- The client library never runs JavaScript. `pt_audio_process` only copies from the
+  ring buffer, so it is safe on a real-time audio thread: no allocation, no locks,
+  no IPC.
+- Every other call is queued and returns at once. Results and outgoing messages
+  arrive through `pt_poll` or callbacks on a queue the host chooses.
 
 ## Founding Principle: Always a JavaScript Runtime
 
@@ -78,7 +147,9 @@ Hosts written in other languages get bindings over the Rust crate:
 - a thin C interface, generated with cbindgen, for C, C++, Unity, and Godot;
 - UniFFI-generated bindings for Swift, Kotlin, and Python.
 
-The Rust API is primary. The C interface is a thin, later layer over it.
+The C ABI is the stable surface that hosts in other languages embed. The Rust
+crate behind the standalone host and the child process can change freely, as long
+as the ABI holds.
 
 ## Packaging Per Host Type
 
@@ -86,7 +157,7 @@ The Rust API is primary. The C interface is a thin, later layer over it.
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A JavaScript host: Node, Deno, Electron, a browser   | Imports the TypeScript core as a package, `@patchies/core`, with native addons for audio and GPU where needed. No second V8: it uses the host's own. |
 | A Rust host                                          | Depends on the `patchies_core` crate, which embeds its own JavaScript engine.                                                                        |
-| A host in another language: Swift, C++, Unity, Godot | Uses `patchies_core` through the C interface or UniFFI bindings.                                                                                     |
+| A host in another language: Swift, C++, Unity, Godot | Links the C client library, which runs Patchies in a headless child process. UniFFI or hand-written wrappers can sit on top of the C ABI.            |
 
 Two V8 instances rarely coexist in one process. Packaging per host type avoids the
 clash: `patchies_core` embeds V8 only where the host has no JavaScript engine.
@@ -204,8 +275,13 @@ The native host spike (spec 201) built the same stack: `deno_core` 0.413 with V8
   makes this possible. Desktops, Android, and a Raspberry Pi are fine.
 - **The JavaScript engine's future.** `deno_core` is in maintenance mode (spec 201).
   The engine interface keeps it replaceable.
-- **API stability.** The Rust API, and later the C interface, become a promise as
-  soon as other apps embed them.
+- **API stability.** The C ABI becomes a promise as soon as other apps embed it.
+- **Out-of-process costs.** Audio through a ring buffer adds a block or two of
+  latency. A crashed child loses in-flight messages and runtime state, so the
+  client restores the patch and its persisted state on restart.
+- **Packaging the child on macOS.** The host app ships the child as a bundled
+  helper. V8's JIT needs the `com.apple.security.cs.allow-jit` entitlement under
+  the hardened runtime, and sandboxed apps need the helper to inherit the sandbox.
 
 ## Open Questions
 
@@ -214,7 +290,12 @@ The native host spike (spec 201) built the same stack: `deno_core` 0.413 with V8
 - Which WebGPU implementation does `GpuMode::Shared` accept: wgpu devices, Dawn
   devices, or both through `webgpu.h`?
 - How small can the TypeScript core and its startup snapshot get for embedding?
-- Does the C interface ship in the first version, or only the Rust crate?
+- Which IPC: XPC, a Unix socket, or shared memory for everything?
+- How much audio latency is acceptable through the ring buffer, and does the child
+  run its audio graph ahead of the host's callback?
+- How is an IOSurface handed across processes: an XPC object or a Mach port?
+- Answered: the C interface ships in the first version, as the client library for
+  out-of-process embedding.
 
 ## Related Specs
 
@@ -234,7 +315,11 @@ The native host spike (spec 201) built the same stack: `deno_core` 0.413 with V8
    `PatchiesCore` type: load a patch, send and receive messages, and run in the
    "Patchies owns the loop" mode.
 2. Rebuild the standalone native host as a thin client of the crate.
-3. Add host-driven audio and video, and test them from a small example host.
+3. Add a headless mode to the native host, then the C client library: launch and
+   restart the child, messages over IPC, video through a shared IOSurface, and
+   audio through a ring buffer. Test it from a small Swift example host.
 4. Ask Claude to build a domain-specific host, such as a custom controller app,
-   from the crate's documentation alone, to test whether the API is small enough.
-5. Add the C interface and UniFFI bindings.
+   from the client library's documentation alone, to test whether the API is
+   small enough.
+5. Later, if latency or packaging demands it: an in-process Rust crate with an
+   embedded engine behind the same C ABI.

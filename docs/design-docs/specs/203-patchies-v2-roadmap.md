@@ -269,7 +269,8 @@ Decided so far: every iteration is live-performance-stable, moving slowly with 4
 5 core objects first; `main` is frozen until V2 is finished; the browser is the home
 platform and every host needs a JavaScript runtime; one canvas with painters chosen
 per patch; multiplayer is CRDT-based with simultaneous editing from the first
-implementation, and joining a room means trusting everyone in it; the
+implementation, and joining a room means trusting everyone in it; other apps embed
+Patchies out of process behind a stable C ABI ([202](202-patchies-core.md)); the
 invariants in [207](207-v2-architecture-invariants.md); and serious black-box
 testing on both hosts from day one ([208](208-v2-testing-strategy.md)).
 
