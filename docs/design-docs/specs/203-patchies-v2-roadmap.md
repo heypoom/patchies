@@ -270,29 +270,30 @@ Decided so far: every iteration is live-performance-stable, moving slowly with 4
 platform and every host needs a JavaScript runtime; one canvas with painters chosen
 per patch; multiplayer is CRDT-based with simultaneous editing from the first
 implementation, and joining a room means trusting everyone in it; other apps embed
-Patchies out of process behind a stable C ABI ([202](202-patchies-core.md)); the
+Patchies out of process behind a stable C ABI ([202](202-patchies-core.md)); GLSL
+translates with `glsl-to-wgsl`, a TypeScript library with no WASM
+([198](198-webgpu-render-core.md)); the
 invariants in [207](207-v2-architecture-invariants.md); and serious black-box
 testing on both hosts from day one ([208](208-v2-testing-strategy.md)).
 
 Still open, with the current lean where there is one:
 
-| Decision                                                                                  | Lean                                                                                 | Spec     |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- |
-| Native host: Rust embedding V8, or Node with Rust addons                                  | Node with a source-built, patched `dawn.node` (tier B only, no prebuilt fallback)    | 201, 202 |
-| Dawn or wgpu                                                                              | Dawn: matches Chrome and worked in the prototype                                     | 201      |
-| JavaScript engine after October 2027                                                      | keep `deno_core` behind a swappable interface; revisit as Deno's future clears       | 201      |
-| GLSL translator                                                                           | the tiny TypeScript library once it reaches parity, with WASM as a possible fallback | 198, 200 |
-| CRDT library: Yjs, Automerge, or Loro                                                     | Yjs. A CRDT with simultaneous editing from the first implementation is decided       | 204      |
-| Interface model                                                                           | none yet: presentation views, graph-on-parent, and windows are all proposed          | 206      |
-| Where MCP lives                                                                           | none yet: Go server, `patchies_core`, or both                                        | 205      |
-| Painter switch threshold                                                                  | about 10,000–20,000 visible nodes at 120 Hz, to tune                                 | 197      |
-| Clock tree details: how derived rates combine, and local versus absolute time in each API | three clock modes per subpatch: inherit, derived, independent                        | 207      |
+| Decision                                                                                  | Lean                                                                              | Spec     |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------- |
+| Native host: Rust embedding V8, or Node with Rust addons                                  | Node with a source-built, patched `dawn.node` (tier B only, no prebuilt fallback) | 201, 202 |
+| Dawn or wgpu                                                                              | Dawn: matches Chrome and worked in the prototype                                  | 201      |
+| JavaScript engine after October 2027                                                      | keep `deno_core` behind a swappable interface; revisit as Deno's future clears    | 201      |
+| CRDT library: Yjs, Automerge, or Loro                                                     | Yjs. A CRDT with simultaneous editing from the first implementation is decided    | 204      |
+| Interface model                                                                           | none yet: presentation views, graph-on-parent, and windows are all proposed       | 206      |
+| Where MCP lives                                                                           | none yet: Go server, `patchies_core`, or both                                     | 205      |
+| Painter switch threshold                                                                  | about 10,000–20,000 visible nodes at 120 Hz, to tune                              | 197      |
+| Clock tree details: how derived rates combine, and local versus absolute time in each API | three clock modes per subpatch: inherit, derived, independent                     | 207      |
 
 ## Work in Progress Elsewhere
 
-- A separate session on the user's devbox is building the tiny TypeScript GLSL to
-  WGSL library. The GLSL spike's 42-shader corpus and harness sources were copied to
-  `~/glsl-webgpu-corpus/` on the devbox as its acceptance tests.
+- `glsl-to-wgsl`, the TypeScript GLSL to WGSL library, is published on npm and at
+  [heypoom/glsl-to-wgsl](https://github.com/heypoom/glsl-to-wgsl). Next: custom
+  uniforms, named textures, and reflection for Patchies' `glsl` object (spec 198).
 - An interactive overview of this roadmap is published as a Claude artifact:
   [Patchies V2 Roadmap](https://claude.ai/artifact/3TQ6whjs8686cV6ds4JHpu).
 

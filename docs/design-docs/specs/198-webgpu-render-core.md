@@ -146,8 +146,10 @@ buffers, and atomics.
 
 ### GLSL Translation
 
-The translator runs in the browser with no server. Babylon.js does the same with
-glslang and Tint compiled to WASM: GLSL to SPIR-V to WGSL. Naga is an alternative.
+The translator runs in the browser with no server. V2 uses
+[`glsl-to-wgsl`](https://github.com/heypoom/glsl-to-wgsl), a small TypeScript
+library (see Chosen Translator below). Babylon.js uses glslang and Tint compiled to
+WASM instead: GLSL to SPIR-V to WGSL. Naga is another WASM option.
 
 A Shadertoy-aware preprocessor runs before translation:
 
@@ -161,7 +163,7 @@ A Shadertoy-aware preprocessor runs before translation:
 
 Expect very high Shadertoy compatibility but not 100%. Failures come from shaders
 that rely on precision tricks, odd integer division, or driver leniency.
-Translation adds latency to every recompile. The WASM loads lazily on first use.
+Translation adds latency to every recompile, so it runs off the UI thread.
 
 GLSL compute shaders can use the same toolchain, so POP authors can skip WGSL.
 
@@ -204,43 +206,56 @@ A spike translated a self-written corpus of 36 Shadertoy-style shaders, includin
 - The corpus was self-written because shadertoy.com could not be fetched. The
   pass rate on real Shadertoy code is still unmeasured.
 
-### Third Option: A Tiny TypeScript Translator
+### Chosen Translator: glsl-to-wgsl
 
-A separate session, on the user's devbox, is building a small TypeScript library
-that translates GLSL to WGSL directly, with no WASM and no other targets. The goal
-is about 10 KB, fast, with output that closely matches Naga's and Tint's.
+[`glsl-to-wgsl`](https://github.com/heypoom/glsl-to-wgsl) is a TypeScript library
+Poom built for this, published on npm as `glsl-to-wgsl@0.1.0` and MIT-licensed. It
+translates a Shadertoy pass, GLSL ES 3.00 with `mainImage`, into a WGSL fragment
+module, with no WASM and no dependencies. Its README reports:
 
-| Option                  | Download                  | Needs WASM |
-| ----------------------- | ------------------------- | ---------- |
-| glslang + Tint          | 2,738 KB raw, 925 KB gzip | yes        |
-| Naga                    | 1,071 KB raw, 364 KB gzip | yes        |
-| Tiny TypeScript library | about 10 KB (goal)        | no         |
+| Measure                                     | glsl-to-wgsl                     | Tint                 | Naga       |
+| ------------------------------------------- | -------------------------------- | -------------------- | ---------- |
+| Real Shadertoy Image passes that translate  | 19,969 of 19,994                 |                      |            |
+| Renders matching WebGL2, of 800             | 752                              | 727                  | 662        |
+| Download, gzip                              | 16 KB                            | 925 KB, with glslang | 290–364 KB |
+| Translation time                            | about 1 ms, up to 250 ms         |                      |            |
+| GPU compile and draw time, relative to Tint | median 0.99×, p90 1.2×, max 2.4× | 1×                   |            |
+
+Its output validates in both Tint and Naga. The comparison renders in headless
+Chromium on SwiftShader, with WebGL2 as the ground truth, which matches the
+baselines in spec 208.
 
 What it gains:
 
-- No lazy-loaded WASM. It ships inside `@patchies/shader`, so the first GLSL compile
-  does not wait for a download or a slow first call.
+- No lazy-loaded WASM. It ships inside `@patchies/shader`, so the first compile does
+  not wait for a download.
 - It runs wherever JavaScript runs: browsers, the native host, workers, and build
-  tools, matching spec 202's principle that every host has a JavaScript runtime.
-- It fits the primitives' goal of importing almost nothing (spec 200).
+  tools (spec 202).
+- It type-checks GLSL and throws a `GLSLError` with a GLSL line number, so editors
+  show errors on the right line without a WGSL-to-GLSL map.
+- It keeps GLSL behavior that Naga and Tint get wrong in places: `switch`
+  fallthrough, `out` and `inout` copies, short-circuiting with side effects,
+  left-to-right evaluation, and constant expressions that WGSL would reject at
+  creation.
 
-What it must get right:
+What Patchies still needs from it, because `glsl` in Patchies is a superset of
+Shadertoy (`ui/static/content/objects/glsl.md`):
 
-- Type inference, because WGSL has no implicit conversions: `float` and `int`
-  literals, constructors such as `vec3(1)`, built-in overloads, swizzles, and `out`
-  and `inout` parameters.
-- The preprocessor, including function-like macros and line continuations.
-- The Shadertoy rewrites in Preprocessor Rewrites below.
-- Error lines. glslang validates GLSL and reports good line numbers. A small
-  translator catches fewer errors itself, so many surface from `createShaderModule`
-  with WGSL line numbers. It needs its own WGSL-to-GLSL line map.
-- The cases Naga fails: `switch` fallthrough, implicitly sized `const` arrays,
-  `outerProduct`, and `highp` on function parameters.
+- **Custom uniforms as inlets,** such as `uniform float iMix;`. The library's
+  uniform buffer has a fixed 144-byte Shadertoy layout.
+- **Named textures as video inlets,** such as `uniform sampler2D image;`. The
+  library maps an unbound sampler to `iChannel0`, as WebGL does.
+- **Reflection:** the name, type, and offset of each custom uniform, and the binding
+  of each named texture, so the object can create its inlets. Figma's translator
+  extracts the same layouts. A result such as `{ wgsl, uniforms, textures }`, with
+  the extra resources in a second bind group, keeps the Shadertoy layout unchanged.
+- **Patchies' `uv`,** which V1 shaders use without declaring it: a preamble or an
+  option.
+- **Off the UI thread.** The largest macro-heavy shaders take up to 250 ms, so
+  translation runs in the render worker or another worker.
 
-The GLSL spike's 42-shader corpus and a description of its pixel-diff harness were
-copied to the devbox as acceptance tests. Rendering both outputs and diffing pixels
-against WebGL2 is a stronger check than comparing WGSL text with Naga or Tint,
-because different WGSL can be equally correct.
+It does not support sound shaders, shadow, array, or integer samplers, or Hydra,
+which has its own path below.
 
 ### Preprocessor Rewrites
 

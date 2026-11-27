@@ -205,14 +205,13 @@ owns the GPU device, and textures cannot cross threads.
 
 ## `@patchies/shader`
 
-A GLSL to WGSL translator with a Shadertoy-aware preprocessor. A separate
-session is building it as a minimal TypeScript library: about 10 KB, with no WASM
-and no targets other than WGSL. If it reaches parity with glslang + Tint on the
-GLSL spike's corpus, it is the preferred option over the WASM translators. Spec
-198 compares the three options.
+A GLSL to WGSL translator with a Shadertoy-aware preprocessor, built on
+[`glsl-to-wgsl`](https://github.com/heypoom/glsl-to-wgsl): a TypeScript library,
+16 KB gzipped, with no WASM. It matches WebGL2 more often than glslang + Tint or
+Naga. Spec 198 has its results and what Patchies still needs from it.
 
-- The renderer depends on it for `glsl` nodes. The WASM translators would be
-  lazy-loaded on first use; the TypeScript library is small enough to ship inline.
+- The renderer depends on it for `glsl` nodes. It is small enough to ship inline,
+  with no lazy-loaded WASM.
 - It stays usable on its own: in other WebGPU apps, in build tools that
   pre-translate presets, and on a server.
 - The GLSL on WebGPU spike translated 36 of 36 self-written Shadertoy-style test
