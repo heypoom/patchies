@@ -36,7 +36,7 @@ and drag like a person on both hosts.
 | 3. Audio snapshots          | DSP changes                            | Offline renders through `OfflineAudioContext` in the browser and web-audio-api-rs natively, compared with tolerances and spectral comparison where implementations differ ([201](201-rust-native-host.md)). |
 | 4. Visual snapshots         | rendering and painter regressions      | Offscreen renders at a fixed size, DPR, and time, read back and compared with a tolerance.                                                                                                                  |
 | 5. End-to-end on both hosts | features breaking from the user's side | Playwright in the browser. A Node test runner drives the native host through the same protocol.                                                                                                             |
-| 6. Performance budgets      | slow regressions                       | The 1,000,000-button benchmark, CPU at 120 Hz, idle cost, and startup, tracked over time and failing over budget.                                                                                           |
+| 6. Performance budgets      | slow regressions                       | The 1,000,000-button benchmark, CPU at 120 Hz, idle cost, and startup, tracked over time and failing over budget. Gates and thresholds in [212](212-quality-gates.md).                                      |
 | 7. Two hosts per primitive  | host-specific bugs                     | Every primitive runs on both hosts in CI. The V2 prototype's second host caught a real bug.                                                                                                                 |
 
 ### Object Conformance
@@ -110,7 +110,7 @@ tests against a reference ([198](198-webgpu-render-core.md)).
 
 ## Open Questions
 
-- Which CI runners have a GPU for performance budgets, and which run SwiftShader for
+- Which CI runners have a GPU for performance budgets ([212](212-quality-gates.md#open-questions)), and which run SwiftShader for
   baselines?
 - Where do baseline images live: in the repository, Git LFS, or an artifact store?
 - How are object conformance cases written: in the object definition, in its docs,
@@ -128,3 +128,5 @@ tests against a reference ([198](198-webgpu-render-core.md)).
 - [207. V2 Architecture Invariants](207-v2-architecture-invariants.md): invariant 13.
 - [210. Performance Transparency](210-performance-transparency.md): cost tiers per
   object, measured by the performance budget benchmarks.
+- [212. Quality Gates](212-quality-gates.md): the hard criteria behind the
+  performance budgets layer.

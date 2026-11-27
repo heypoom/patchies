@@ -98,7 +98,7 @@ Before a performance, a report for this machine:
 
 Every object type gets a cost tier, such as fast, moderate, or slow, measured by a
 benchmark in CI as part of the performance budgets in
-[208](208-v2-testing-strategy.md). A tier is a measurement, so it changes when the
+[208](208-v2-testing-strategy.md) and [212](212-quality-gates.md). A tier is a measurement, so it changes when the
 object gets faster or slower, and a regression fails the build.
 
 The benchmark measures a typical use of the object, such as one `glsl` pass at a
@@ -173,3 +173,5 @@ and `textmode.dom`, as they come back to V2.
   1, 7, and 10, and the live-performance rule.
 - [208. V2 Testing Strategy](208-v2-testing-strategy.md): performance budgets.
 - [209. Routing Beyond Wires](209-routing-beyond-wires.md): the per-node rate guard.
+- [212. Quality Gates](212-quality-gates.md): the budgets behind cost tiers, and
+  where the show check runs.

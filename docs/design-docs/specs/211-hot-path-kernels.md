@@ -107,7 +107,7 @@ these points:
   pattern from [203](203-patchies-v2-roadmap.md), and the reference stays as the
   test oracle.
 - **Both hosts,** as for any primitive ([208](208-v2-testing-strategy.md)).
-- **Performance budgets** show whether the kernel earned its place. If it is not
+- **Performance budgets** ([212](212-quality-gates.md)) show whether the kernel earned its place. If it is not
   measurably faster, it goes back to TypeScript.
 
 ## Process
@@ -145,3 +145,4 @@ these points:
 - [209. Routing Beyond Wires](209-routing-beyond-wires.md): the spatial index.
 - [210. Performance Transparency](210-performance-transparency.md): finding hot
   paths.
+- [212. Quality Gates](212-quality-gates.md): the budgets a kernel must beat.
