@@ -376,6 +376,9 @@ Two modes, following the `canvas` / `canvas.dom` naming:
 - q5 runs its own rAF loop. Engine-driven frames need `noLoop()` and `redraw()`.
 - q5 does not run in a worker. Its WebGPU core does not need the DOM, but its
   canvas, display, and input modules do.
+- q5's own submit and its `onSubmittedWorkDone` promise cost far more than its
+  drawing. A device facade fixes both
+  ([Libraries That Share the Device](#libraries-that-share-the-device)).
 
 ### What Worker Mode Needs
 
@@ -528,6 +531,39 @@ Patchies has no WebGL fallback for the whole render graph, so the plan is recove
 - Device loss is tested on purpose with `device.destroy()`, as a fault test in the
   core bar ([208](208-v2-testing-strategy.md#definition-of-done)).
 - Startup checks never block loading. They run after the first frame.
+
+## Libraries That Share the Device
+
+**One submit per frame, including libraries that share the device,** such as q5.
+A library gets a device facade instead of the bare device:
+
+- **`queue.submit` holds its command buffers.** The frame's own submit sends them
+  first, in the same call, so they run before the pass that samples the library's
+  texture. Latency is unchanged, because that pass already showed the library's
+  previous frame.
+- **`onSubmittedWorkDone` resolves once that submit is made,** not when the GPU
+  finishes. WebGPU allows destroying a buffer once the submit that uses it has been
+  made, which is all q5 waits for.
+- **No GPU promise stays pending every frame on the native host.** In `dawn.node`,
+  each pending promise keeps a `setImmediate` poll loop spinning until the GPU
+  finishes.
+
+Neither the library nor Dawn changes; the facade lives in Patchies' adapter.
+
+Measured in the V2 prototype with the variants running side by side, since
+back-to-back runs drift by up to 15 points of CPU:
+
+| q5 in the demo                        | Native, 120 Hz   | Chrome, 60 fps |
+| ------------------------------------- | ---------------- | -------------- |
+| Its own submit and Dawn's promise     | about 11 points  | 1.4–5.3 points |
+| Merged submit, Dawn's promise kept    | about 7–9 points | —              |
+| Merged submit, promise resolved early | about 2.5 points | under 1 point  |
+
+The poll loop was the larger part natively, about 5–6 points, against about 3 for
+the extra submit. q5's own JavaScript is about 1% of a core.
+
+The limit: if frames stop while a library has commands held, those commands wait
+for the next frame. Removing the library's node flushes them.
 
 ## Extras
 
