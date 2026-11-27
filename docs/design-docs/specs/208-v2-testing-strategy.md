@@ -36,7 +36,7 @@ and drag like a person on both hosts.
 | 3. Audio snapshots          | DSP changes                            | Offline renders through `OfflineAudioContext` in the browser and web-audio-api-rs natively, compared with tolerances and spectral comparison where implementations differ ([201](201-rust-native-host.md)). |
 | 4. Visual snapshots         | rendering and painter regressions      | Offscreen renders at a fixed size, DPR, and time, read back and compared with a tolerance.                                                                                                                  |
 | 5. End-to-end on both hosts | features breaking from the user's side | Playwright in the browser. A Node test runner drives the native host through the same protocol.                                                                                                             |
-| 6. Performance budgets      | slow regressions                       | The 1,000,000-button benchmark, CPU at 120 Hz, idle cost, and startup, tracked over time and failing over budget. Gates and thresholds in [212](212-quality-gates.md).                                      |
+| 6. Performance budgets      | slow regressions                       | Load size, time to interactive, frame time, idle cost, GPU counters, memory, and audio, failing over budget. Gates, thresholds, and schedule in [212](212-quality-gates.md).                                |
 | 7. Two hosts per primitive  | host-specific bugs                     | Every primitive runs on both hosts in CI. The V2 prototype's second host caught a real bug.                                                                                                                 |
 
 ### Object Conformance
@@ -67,7 +67,8 @@ painter exactly, and its pixels are compared against its own baselines.
 - **Randomness:** seeded.
 - **GPU:** baselines in CI render on SwiftShader, a software renderer that Dawn
   supports, in both Chrome and the native host. That gives the same pixels on any CI
-  machine. Real-GPU runs on macOS check performance separately. Verify that headless
+  machine. Performance runs on a real GPU instead
+  ([212](212-quality-gates.md#when-each-gate-runs)). Verify that headless
   Chrome's WebGPU works with SwiftShader on the chosen CI runners.
 - **Windows:** native end-to-end tests use hidden or offscreen windows and never
   take over the screen or keyboard focus. The V2 prototype found that a focused host
@@ -89,8 +90,9 @@ have different bars.
 - **Any feature or object:** conformance cases and at least one end-to-end test on
   both hosts.
 - **Core systems and core objects** also need:
-  - soak tests: the object or system running for hours under load on both hosts, with
-    no crashes, leaks, growing memory, or dropped audio;
+  - soak tests: the object or system running for hours under load on both hosts,
+    with no crashes, and passing the memory and audio gates in
+    [212](212-quality-gates.md#memory);
   - fault tests: bad input, malformed messages, and broken user code, such as a GLSL
     shader that fails to compile or a `js` loop that throws, recover without taking
     down the patch. So does a lost GPU device, forced with `device.destroy()`
@@ -110,8 +112,8 @@ tests against a reference ([198](198-webgpu-render-core.md)).
 
 ## Open Questions
 
-- Which CI runners have a GPU for performance budgets ([212](212-quality-gates.md#open-questions)), and which run SwiftShader for
-  baselines?
+- Which CI runners render SwiftShader baselines? Where performance runs is an open
+  question in [212](212-quality-gates.md#open-questions).
 - Where do baseline images live: in the repository, Git LFS, or an artifact store?
 - How are object conformance cases written: in the object definition, in its docs,
   or both?

@@ -30,8 +30,8 @@ hard gates, not judgment calls.
 - **Fixed reference patches,** checked into the repository: empty, Milestone 0, the
   V2 demo (abstractions, `glsl`, `wgsl`, q5), 1,000,000 buttons, an audio patch, and
   a video-heavy patch.
-- **Both hosts,** the browser and the native host
-  ([201](201-rust-native-host.md)).
+- **Both hosts,** as for every test layer
+  ([208](208-v2-testing-strategy.md#test-layers)).
 
 ## The Gates
 
@@ -118,9 +118,9 @@ dropped only once.
 
 ### Correctness
 
-Conformance cases, golden traces, snapshots on both hosts, fault tests including
-device loss, and soak tests stay gates, as the definition of done in
-[208](208-v2-testing-strategy.md#definition-of-done) sets out.
+The test layers and the definition of done in
+[208](208-v2-testing-strategy.md#definition-of-done) are gates too, run on the
+schedule below.
 
 ## When Each Gate Runs
 
@@ -142,8 +142,7 @@ device loss, and soak tests stay gates, as the definition of done in
 
 ## Open Questions
 
-- Where does the performance runner live? A dedicated Mac mini is likely. This is
-  also 208's open question about GPU runners.
+- Where does the performance runner live? A dedicated Mac mini is likely.
 - What is the empty-patch size cap? It needs a real V2 build, not a guess.
 - How many side-by-side rounds make a timing gate reliable without making pull
   requests slow?
