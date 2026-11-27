@@ -139,7 +139,8 @@ Compared with the Rust host:
     network unless the host restricts it. In a Rust host, only exposed functions exist.
 
 Given Deno's maintenance status, the Node host is probably the safer native path.
-The V2 prototype confirmed it: a Node host with a patched `dawn.node` beat Chrome on
+The V2 prototype confirmed it: a Node host with a source-built, patched `dawn.node`
+beat Chrome on
 CPU and memory (see V2 Prototype under Spike Results). The Rust host embedding V8
 remains an option if Node's overhead, size, or sandboxing becomes the problem.
 
@@ -672,7 +673,7 @@ of them brings Patchies' existing completions and metadata support.
 ## Open Questions
 
 - Rust host embedding V8, or Node host with Rust addons? The V2 prototype favors
-  the Node host with a patched `dawn.node`.
+  the Node host with a source-built, patched `dawn.node` (tier B only).
 - Dawn or wgpu for the first version? Dawn is favored: it matches Chrome, brings
   Chrome's driver workarounds, and worked in the V2 prototype.
 - Which JavaScript engine after October 2027, if Deno's foundation or fork plans
@@ -763,7 +764,7 @@ branch `claude/native-host-spike-c0d660`, uncommitted. It ran on an M3 Max at
 
 Native tiers:
 
-- **Tier B worked and is recommended:** `dawn.node` built from source
+- **Tier B is the native host:** `dawn.node` built from source
   (`dawn-gpu/node-webgpu` v0.6.2) with a small patch of about 100 lines adding
   `createSurfaceContext(device, metalLayer, w, h)`. It hands JavaScript real
   `GPUTexture`s from Dawn's swapchain on the window's `CAMetalLayer`, so the
@@ -771,9 +772,13 @@ Native tiers:
   about 1.5 minutes, with 6.3 GB of source. The patch was written from scratch,
   because avTools has no license file. It looks upstreamable as an opt-in native
   surface entry point.
-- **Tier A works as a fallback:** stock `dawn.node` from npm exposes no
-  presentation API, so frames are copied through the CPU into a second device each
-  frame, about 12.6 MB per frame with 5–12 ms of latency.
+- **Tier A was removed:** stock `dawn.node` from npm exposes no presentation API,
+  so frames were copied through the CPU into a second device each frame, about
+  12.6 MB per frame with 5–12 ms of latency, at almost three times tier B's CPU.
+  Poom chose tier B only, so there is no prebuilt fallback. Its code was removed
+  from the prototype (commit `765b36189`), along with the wgpu presenter, which
+  shrank the window addon from 6.7 MB to 1.5 MB. Its numbers below are kept as
+  history.
 
 | At 120 Hz, patch playing, window visible | Native tier B                         | Native tier A  | Google Chrome 157          |
 | ---------------------------------------- | ------------------------------------- | -------------- | -------------------------- |
@@ -816,7 +821,8 @@ Node and winit on the macOS main thread:
 Conclusion: a Node host with a source-built, lightly patched `dawn.node` is viable
 now. It beats Chrome on CPU, memory, and swapchain memory while running the exact
 browser TypeScript with real WebGPU and Web Audio APIs. Its cost is size, about
-130 MB against 48 MB for the Rust host. Stock `dawn.node` is not enough. Next steps:
+130 MB against 48 MB for the Rust host. Stock `dawn.node` is not enough, so the host
+depends on building and maintaining its own `dawn.node`. Next steps:
 upstream or maintain the surface patch, replace event polling with an event-driven
 wake, and add a display-link frame clock.
 

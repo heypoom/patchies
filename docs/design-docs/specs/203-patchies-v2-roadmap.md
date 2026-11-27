@@ -277,7 +277,7 @@ Still open, with the current lean where there is one:
 
 | Decision                                                                                  | Lean                                                                                 | Spec     |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- |
-| Native host: Rust embedding V8, or Node with Rust addons                                  | Node with a patched `dawn.node`, from the V2 prototype                               | 201, 202 |
+| Native host: Rust embedding V8, or Node with Rust addons                                  | Node with a source-built, patched `dawn.node` (tier B only, no prebuilt fallback)    | 201, 202 |
 | Dawn or wgpu                                                                              | Dawn: matches Chrome and worked in the prototype                                     | 201      |
 | JavaScript engine after October 2027                                                      | keep `deno_core` behind a swappable interface; revisit as Deno's future clears       | 201      |
 | GLSL translator                                                                           | the tiny TypeScript library once it reaches parity, with WASM as a possible fallback | 198, 200 |
