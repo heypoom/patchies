@@ -50,7 +50,9 @@ Fit with V2:
   in the patch and in a view with no new rendering code. The controller hit-tests
   both the same way ([197](197-canvas-editor-and-dom-islands.md)).
 - Perform mode is the one canvas drawn in the usual order: the output first, then
-  the view's widgets as a heads-up display, with the editor passes skipped.
+  the view's widgets as a heads-up display, with the editor passes skipped. It may
+  be run mode with the editor passes hidden
+  ([197](197-canvas-editor-and-dom-islands.md#edit-mode-and-run-mode)).
 - DOM islands work in views too, such as a markdown note or a text field.
 
 ## Model 2: Graph-on-Parent (Pure Data-Style)

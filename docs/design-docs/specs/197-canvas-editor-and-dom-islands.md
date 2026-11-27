@@ -120,6 +120,53 @@ schema-driven button declares its shape, state, and hit regions. This builds on
 [100. Schema-Driven Handles](100-schema-driven-handles.md) and
 [168. Runtime Object Editor Representations](168-runtime-object-editor-representations.md).
 
+### Edit Mode and Run Mode
+
+Feedback from a core Patchies user: Pure Data's edit and run modes make patching
+much faster, and Patchies should consider them.
+
+- **Edit mode:** clicks select, move, and connect. Clicking a bang or number box
+  does not trigger it.
+- **Run mode:** nothing moves or connects. Clicks trigger widgets, change values,
+  and enter numbers.
+- **Temporary switch:** holding a modifier, such as Option on macOS or Ctrl on
+  Linux, flips the mode while it is held: operate a widget in edit mode, or drag
+  something once in run mode. Max does the first with Cmd-click on an unlocked
+  patcher.
+
+Why it fits V2:
+
+- The controller owns input and hit-testing, so a mode only changes where a
+  pointer event goes: to selection, dragging, and connections, or to the widget's
+  hit regions. No object knows about modes.
+- It replaces V1's per-object escape hatches, `noDrag`, `noPan`, `noWheel`,
+  `noArrowKeyMove`, and `noInteract`, which exist because widgets and the editor
+  fight over the pointer.
+- Run mode locks structure during a show, so a performer cannot move, disconnect,
+  or delete something by accident
+  ([207](207-v2-architecture-invariants.md#live-performance-stable)).
+- Touch has no hover or right-click, so an explicit mode separates operating a
+  control from moving it.
+
+Where Patchies differs from Pure Data:
+
+- Run mode locks structure only: moving, connecting, adding, and deleting. Editing
+  code inside `js`, `glsl`, or `wgsl` stays available, because live coding is
+  central to Patchies.
+- The mode is per person view state, not document data (invariant 5 in
+  [207](207-v2-architecture-invariants.md)). In multiplayer, one person can perform
+  in run mode while another patches in edit mode.
+- Commands from actors ignore the mode (invariant 6). It routes pointer input only,
+  so agents and tests behave the same in both modes.
+
+Open questions:
+
+- Which mode a patch opens in. Pure Data opens patches in run mode. One option:
+  new patches open in edit mode and saved patches in run mode, with a per-person
+  override.
+- Whether perform mode in [206](206-presentation-views.md) is run mode with the
+  editor passes hidden.
+
 ### Text Editing
 
 Text editing in an object box works like Figma. Double-clicking mounts one real
