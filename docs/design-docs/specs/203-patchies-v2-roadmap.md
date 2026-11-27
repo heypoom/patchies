@@ -61,6 +61,7 @@ WebGPU particles and geometry. Where they conflict, and what gives first, is in
 | [208. V2 Testing Strategy](208-v2-testing-strategy.md)                     | Black-box tests from day one on both hosts: object conformance, golden traces, audio and visual snapshots, end-to-end, performance budgets           |
 | [209. Routing Beyond Wires](209-routing-beyond-wires.md)                   | Messages without visible wires: proximity, adjacency, gravity, and slots as routers, with routing as an interface in core                            |
 | [210. Performance Transparency](210-performance-transparency.md)           | Showing what each node costs: a cost view, a frame budget bar, a show check, cost tiers from benchmarks, and one `canvas` placed by its capabilities |
+| [211. Hot Path Kernels](211-hot-path-kernels.md)                           | The core stays TypeScript; only measured hot paths move to Rust, compiled to WebAssembly and run on both hosts behind batched calls                  |
 
 ## Earlier Specs This Builds On
 

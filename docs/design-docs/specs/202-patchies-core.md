@@ -126,6 +126,8 @@ Consequences:
 
 - The core stays TypeScript. `patchies_core` is a Rust shell, a JavaScript engine,
   and the same TypeScript core the browser runs, so the hosts cannot drift apart.
+  Only measured hot paths move to Rust, compiled to WebAssembly and run on both
+  hosts ([211. Hot Path Kernels](211-hot-path-kernels.md)).
 - JavaScript is not optional. There is no reduced core without user `js`.
 
 ## Rust, Not C

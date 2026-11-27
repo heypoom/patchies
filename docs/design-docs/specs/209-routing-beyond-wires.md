@@ -171,7 +171,8 @@ through `in` and `out`, so modes mix without one global rule.
 - **Scale.** Proximity between every pair of nodes grows with the square of the node
   count. It needs a spatial index, which the canvas controller already has for
   hit-testing, and recomputing only around nodes that moved keeps very large
-  patches workable.
+  patches workable. If that is still too slow, the spatial index is a candidate
+  WebAssembly kernel ([211](211-hot-path-kernels.md)).
 - **Tests.** A fixed tick and seeded randomness keep derived routing deterministic,
   so golden message traces still work ([208](208-v2-testing-strategy.md)).
 - **Node extents.** Core does not know node sizes, but spatial worlds need a node's

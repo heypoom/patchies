@@ -689,6 +689,8 @@ O(N) effects on `nodes`, which matter once culling makes `nodes` change often.
   with the WebGPU painter only.
 - [210. Performance Transparency](210-performance-transparency.md): the cost view
   and frame budget bar drawn on the canvas.
+- [211. Hot Path Kernels](211-hot-path-kernels.md): instance-buffer packing as a
+  candidate WebAssembly kernel.
 
 ## Suggested Order
 
