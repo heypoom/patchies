@@ -89,7 +89,8 @@ have different bars.
     no crashes, leaks, growing memory, or dropped audio;
   - fault tests: bad input, malformed messages, and broken user code, such as a GLSL
     shader that fails to compile or a `js` loop that throws, recover without taking
-    down the patch;
+    down the patch. So does a lost GPU device, forced with `device.destroy()`
+    ([198](198-webgpu-render-core.md#device-loss));
   - review by hand. Core code is never vibe-coded.
 - **Shell objects** are marked experimental. They need conformance cases, and they
   must be contained: a failing shell object cannot take down the patch.

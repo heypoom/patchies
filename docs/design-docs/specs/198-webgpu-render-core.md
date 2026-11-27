@@ -458,6 +458,59 @@ inject it instead. Under the no-singletons invariant
 ([207](207-v2-architecture-invariants.md)), each runtime instance has its own
 profiler, so every embed and subpatch instance reports its own costs.
 
+## Lessons From Figma's WebGPU Renderer
+
+Figma moved its C++ renderer from WebGL to WebGPU in 2025
+([Figma rendering, powered by WebGPU](https://www.figma.com/blog/figma-rendering-powered-by-webgpu)).
+It published no benchmark numbers, but its patterns apply here:
+
+- **Explicit draw state.** Its old interface bound vertex buffers, textures,
+  materials, and framebuffers, then called `draw()`, and leftover bound state caused
+  bugs. Each draw now names everything it uses:
+  `draw(vertexBuffer, framebuffer, textures, material)`. The render graph and the
+  painters take this shape from the start, and WebGL2 islands translate it to bound
+  state lazily.
+- **One uniform buffer per submit.** Writing a buffer for every uniform update is
+  slow. Figma records draws with their uniform data, then uploads all of it into one
+  buffer at submit, and each draw reads at its own offset. The render core uses a
+  per-frame uniform arena with dynamic offsets. It also prevents the V2 prototype's
+  bug, where two render passes shared one uniform buffer and cropped the preview.
+- **Cache bind groups and merge render passes.** Those were Figma's largest
+  remaining wins after the uniform arena.
+- **The same GLSL to WGSL route.** Figma rewrites its old GLSL into newer GLSL with
+  uniform blocks, then runs Naga, as the preprocessor rewrites above do. Its
+  processor also extracts input types and data layouts for the app. Patchies needs
+  the same reflection to turn a shader's uniforms into inlets and controls.
+- **No synchronous readback, and errors arrive later.** WebGL readback and error
+  checks are synchronous. WebGPU's are asynchronous, so captures, exports, and AI
+  frame grabs are asynchronous too. Figma rejected blocking compatibility tests at
+  startup because they added hundreds of milliseconds.
+- **Render bundles,** which Figma lists as future work to cut the CPU cost of
+  submitting draws. For Patchies, they fit the editor's cached passes and long
+  shader chains (open question below).
+- **One renderer, two builds.** Figma builds the same C++ for the browser through
+  WebAssembly and natively with Dawn, for server-side rendering, tests, and
+  debugging. That matches the two hosts here.
+
+### Device Loss
+
+Figma found that load-time tests cannot catch everything: on Windows, devices were
+lost mid-session. Its answer is a fallback that swaps from WebGPU to WebGL during a
+session, plus a blocklist by device based on how often the fallback fires.
+
+Patchies has no WebGL fallback for the whole render graph, so the plan is recovery:
+
+- Every GPU resource can be rebuilt from runtime state. Resources belong to their
+  instance (invariant 10 in [207](207-v2-architecture-invariants.md)), so a lost
+  device means each instance recreates its pipelines and textures on a new device.
+  GPU-only state, such as feedback buffers, starts empty again.
+- Audio and messages keep running while video recovers, and the editor switches to
+  the Canvas 2D painter until the new device is ready
+  ([197](197-canvas-editor-and-dom-islands.md#painters)).
+- Device loss is tested on purpose with `device.destroy()`, as a fault test in the
+  core bar ([208](208-v2-testing-strategy.md#definition-of-done)).
+- Startup checks never block loading. They run after the first frame.
+
 ## Extras
 
 - Async GPU-to-message readback with `mapAsync`, such as particle count or average
@@ -484,7 +537,10 @@ Verify browser support before committing. It may have changed:
 - Keep a WebGL2 fallback for the whole render graph, or require WebGPU and keep
   WebGL2 only as islands?
 - Can Three's WebGPU renderer and Pixi share the device without internals?
-- How much do render bundles cut recording cost for long chains?
+- How much do render bundles cut recording cost for long chains and for the
+  editor's cached passes?
+- How long does recovery from device loss take with a large patch, and is it fast
+  enough during a live performance?
 
 ## Related Specs
 
