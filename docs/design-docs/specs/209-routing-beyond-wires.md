@@ -1,8 +1,8 @@
 # 209. Routing Beyond Wires
 
 Status: Exploration. This spec records an idea for Patchies V2 beyond nodes and
-edges. Nothing here is decided, except the two small core decisions in What V2
-Needs Now.
+edges. Nothing here is decided, except the small core decisions in What V2 Needs
+Now. A playable prototype tested it (Prototype Results below).
 
 ## Problem
 
@@ -47,12 +47,39 @@ Pure Data's `s` and `r` already deliver messages without a wire. Proximity and
 adjacency are the same idea, where space decides who is connected instead of a
 name.
 
+### The Router Interface
+
+The prototype's interface is `routes(send, out)`:
+
+- `send` holds the sender, the outlet, the incoming metadata, and the wave.
+- `incoming` is the metadata of the message the sender was handling, so a relay
+  carries strength onward.
+- The wave is an ID shared by everything one root send causes synchronously, used to
+  guard against loops.
+- The router appends routes to `out`.
+
+Delivery owns the depth guard and the wave counter. Routers own decay and the
+per-wave rule (Loops below).
+
+A route's target should be a path, such as `doc/p-…/node`, not a node ID, so a
+router can reach other runtimes (invariant 3). Names, including `doc:` and `host:`
+names, then become a router, and `meta.source` can cross subpatch boundaries. Until
+targets are paths, names stay a separate delivery path: in the prototype they cross
+subpatches and documents and deliver to callbacks, while a router lives inside one
+runtime and delivers to inlets.
+
 ## Stored and Derived Links
 
 - **Wires are stored.** Someone drew a wire, so it is document data.
 - **Spatial links are derived.** A router computes proximity and adjacency links
   from positions on each tick. Only the rules are stored, such as a signal range or
   which faces count.
+- **Re-derive only around what moved.** Precomputed links cost memory in proportion
+  to sources times density, so prefer lazy links: a move marks nearby sources stale,
+  and a source re-derives its links when it next sends.
+- **Positions are document state,** changed through a `move` command (invariant 6).
+  Before the prototype, dragging changed positions without going through the
+  document.
 
 This fits the three kinds of state in invariant 5 of
 [207](207-v2-architecture-invariants.md): a derived link is runtime state and is
@@ -63,17 +90,37 @@ links from them.
 
 A message carries its value and optional routing metadata:
 
-- strength, such as Redstone's 0 to 16, or a proximity falloff;
+- `strength`, always from 0 to 1 in every world;
+- `level`, a whole number for integer worlds, such as Redstone's 0 to 16;
 - distance;
 - direction, or the face it arrived on;
-- the source node.
+- the source node;
+- the router that delivered it;
+- the number of hops so far.
 
 An object that does not care reads only the value, so a button works unchanged. A
-light that fades with distance reads the strength.
+light reads `strength` the same way in every world. `router` tells apart the same
+message arriving twice, once by cable and once by field.
 
-A signal that loses strength with each hop dies out, so it cannot loop forever.
-Redstone's limited range is that rule. Feedback loops that never stop are the risk
-of message-driven updates that the behavior examples note.
+## Loops
+
+Feedback loops that never stop are the risk of message-driven updates that the
+behavior examples note.
+
+- **Decay bounds depth.** A signal that loses strength with each hop dies out.
+  Redstone's limited range is that rule.
+- **Decay does not bound fan-out.** The per-wave rule does: within one wave, a node
+  hears a signal again only if it is stronger.
+- **Decay only ends synchronous loops.** A relay inherits strength only while
+  delivery knows what it was handling. Timers, `await`, workers, subpatch boundaries,
+  and remote peers break that link, so a loop through any of them sends at full
+  strength again and never decays. Scoped timers could carry the context, but user
+  promises in `js` cannot be tracked: JavaScript has no standard async context yet
+  (the TC39 AsyncContext proposal).
+
+So decay cannot be the live-performance safety net. Delivery needs a guard that does
+not depend on causality, for every router, wires included: a per-node message rate
+limit, or a per-node budget of messages per tick.
 
 ## Spatial Ports
 
@@ -127,6 +174,27 @@ through `in` and `out`, so modes mix without one global rule.
   patches workable.
 - **Tests.** A fixed tick and seeded randomness keep derived routing deterministic,
   so golden message traces still work ([208](208-v2-testing-strategy.md)).
+- **Node extents.** Core does not know node sizes, but spatial worlds need a node's
+  size or center. Without it, the prototype's proximity measured between top-left
+  corners while halos drew from centers, and a node wider than a grid cell landed in
+  the wrong cell.
+- **Loop safety.** See Loops: delivery enforces a rate or budget guard for every
+  router. Router calls are also contained like experimental objects, with a try and
+  catch plus a time budget per tick and per send, because an exception in an
+  experimental router would otherwise break wires too.
+- **Events and levels.** Messages are events, but Redstone power and Gro signals are
+  state: a level that persists, and a concentration that objects sample. Bursts of
+  messages only approximate them. A lamp flashes on each bang instead of staying lit
+  near a source, and the depth-first send order leaks into results. Those worlds need
+  a second primitive next to routing: levels or fields evaluated on the tick, which
+  objects read as a value.
+- **Determinism.** Derived links depend on exact positions, tick timing, and
+  floating-point math. During a drag, peers see positions at different moments, and
+  a Rust `patchies_core` could disagree with JavaScript in the last bits of `sqrt` or
+  `atan2`, so deliveries near a range edge flip. Spatial worlds that must agree use
+  quantized positions, as integers or fixed point, and whole-number strength math.
+  Grid worlds get this for free. This constrains the document format, so decide it
+  before positions sync in multiplayer.
 
 ## What V2 Needs Now
 
@@ -137,24 +205,71 @@ decisions belong in core from the first version, because they are hard to add
 later:
 
 1. **Routing is an interface in `@patchies/core`,** with wires as the first
-   implementation and names (`s` and `r`) as the second. Spatial routers get their
-   positions and neighbors from a generic spatial index, so the generic canvas core
-   still knows nothing about messages (invariant 14).
+   implementation. Names (`s` and `r`) join once route targets are paths. Spatial
+   routers get their positions and neighbors from a generic spatial index, so the
+   generic canvas core still knows nothing about messages (invariant 14).
 2. **The message envelope has room for optional metadata** from the first version.
+3. **Delivery guards every router.** A per-node rate or budget guard, and contained
+   router calls, apply to wires too, so a loop or a broken experimental router cannot
+   take down a performance.
 
 Without these, every world would later have to fake wires.
 
+Decide before multiplayer syncs positions: whether positions are quantized.
+
+## Prototype Results
+
+A playable prototype added wires, proximity, and a Redstone-style grid as routers
+to the V2 prototype, on both hosts. Its write-up is
+`spikes/v2-prototype/FINDINGS-routing.md` on branch
+`claude/routing-worlds-spike-e24404`, local only.
+
+- Moving wires into a router kept the original 78-message golden trace identical,
+  and no existing object changed. `button`, `toggle`, and `metro` know nothing about
+  worlds.
+- A new generic package, `@patchies/spatial`, holds a spatial hash with no knowledge
+  of messages. The dependency checks enforce that.
+- Each world has a golden trace in both hosts' test suites.
+- Dragging one node costs under 3.5 ms per tick at 100,000 nodes. Dense sources are
+  costly: with 100,000 nodes that are all sources there are 5 million links, the
+  first derive takes 2 s, and moving 100 nodes takes about 70 ms. That is the case
+  for lazy links.
+- Proximity has to be opt-out. Every node in range listened, so a metro toggled its
+  own toggle, and nodes gained `route.listen: false`.
+- Switching worlds exposed leaks in the app's disposal code, which were fixed.
+
 ## Open Questions
 
-- Which world comes first as an experiment: proximity, a Redstone-style grid, or
-  gravity?
-- How does a world handle a node with no spatial meaning, such as a `js` node with
-  three inlets?
-- Can one patch mix routers without subpatches, such as wires plus proximity on the
-  same canvas?
-- Does Scratch-style control flow belong here, or in its own spec?
-- How do agents work in spatial worlds: by moving nodes, or through router-aware
-  commands?
+Answered by the prototype:
+
+- **Which world first?** The grid. It is discrete, deterministic without
+  floating-point rounding, and cheap: about 2 links per node. Proximity is more fun
+  to play, but it brings floats, dense-source costs, and listening by default.
+- **Nodes with no spatial meaning,** such as a `js` with three inlets:
+  - spatial messages arrive at inlet 0 by default, and `route.inlet` picks another;
+  - in a grid, `route.faceInlets` maps faces to inlets, such as left to 0, up to 1,
+    and right to 2;
+  - `js` gets the metadata as `recv((data, inlet, meta) => …)`;
+  - `route.listen: false` opts a node out;
+  - a node with no outlet, such as a lamp, shows no face markers and sends nothing.
+- **Mixing routers without subpatches:** yes, for wires plus one spatial router,
+  because wires always run. A node can receive the same message twice, and
+  `meta.router` tells the routes apart. Duplicates are not removed. Two spatial
+  routers on one canvas would need each node to say which world it belongs to,
+  which is untested.
+- **Scratch-style control flow:** untested. The wave, everything one send causes
+  synchronously, is close to what an ordered stack of blocks needs, so it gets its
+  own spec.
+- **Agents:** `move` and `route` commands change positions and rules, and a
+  router-aware `query` returns a node's derived links and the last level it heard. An
+  agent never measures distances itself, and links appear on the next tick.
+
+Still open:
+
+- A `near` query, "who would hear me from here", without moving the node.
+- Where node extents live: in core, or in each world.
+- What the levels or fields primitive looks like, and how it sits on the tick.
+- Rate limit or per-tick budget, and its defaults for live performance.
 
 ## Related Specs
 
