@@ -271,7 +271,11 @@ patch document schema.
 | Presentation views  | anchored screen-space layouts of canvas nodes                                                              | placing widget objects into named views                                     |
 
 `@patchies/core`, with the patch graph, objects, and message routing, is the
-patch-aware layer between the Patchies model and the generic systems.
+patch-aware layer between the Patchies model and the generic systems. Routing is an
+interface there, with wires as one router among several, and the message envelope
+has room for optional metadata, so later worlds such as proximity or Redstone-style
+grids do not have to fake wires
+([209](209-routing-beyond-wires.md#what-v2-needs-now)).
 
 - Keep adapters thin. Logic in an adapter that is not about mapping belongs in the
   generic core or in `@patchies/core`.
@@ -370,3 +374,5 @@ hand, with no container or framework.
 - [197](197-canvas-editor-and-dom-islands.md) through
   [206](206-presentation-views.md): the primitive systems.
 - [203. Patchies V2 Roadmap](203-patchies-v2-roadmap.md).
+- [209. Routing Beyond Wires](209-routing-beyond-wires.md): routing as an interface
+  and optional message metadata.

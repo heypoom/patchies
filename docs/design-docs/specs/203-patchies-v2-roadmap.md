@@ -59,6 +59,7 @@ WebGPU particles and geometry. Where they conflict, and what gives first, is in
 | [205. Agent Integration](205-agent-integration.md)                         | Coding agents driving Patchies: one operations protocol with mount, CLI, and MCP front-ends, building on PR 272                            |
 | [206. Presentation Views](206-presentation-views.md)                       | Interfaces beyond the infinite canvas: presentation views, graph-on-parent, and windows, not yet chosen                                    |
 | [208. V2 Testing Strategy](208-v2-testing-strategy.md)                     | Black-box tests from day one on both hosts: object conformance, golden traces, audio and visual snapshots, end-to-end, performance budgets |
+| [209. Routing Beyond Wires](209-routing-beyond-wires.md)                   | Messages without visible wires: proximity, adjacency, gravity, and slots as routers, with routing as an interface in core                  |
 
 ## Earlier Specs This Builds On
 
