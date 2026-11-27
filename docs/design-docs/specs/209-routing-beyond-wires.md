@@ -200,7 +200,7 @@ through `in` and `out`, so modes mix without one global rule.
 
 Worlds are shell work: experimental, and not for live performance until they meet
 the core bar
-([207](207-v2-architecture-invariants.md#live-performance-stable)). Two small
+([207](207-v2-architecture-invariants.md#live-performance-stable)). Three small
 decisions belong in core from the first version, because they are hard to add
 later:
 
@@ -216,6 +216,80 @@ later:
 Without these, every world would later have to fake wires.
 
 Decide before multiplayer syncs positions: whether positions are quantized.
+
+### First Version: Wires Only, Behind the Interface
+
+The first version ships one router, wires, but the routing concept is explicit in
+code, and wires are an implementation of an interface. The shape comes from the
+prototype:
+
+```ts
+// @patchies/core/routing/router.ts
+/** Decides who receives a message. Delivery stays in the message system. */
+export interface Router {
+  readonly id: string; // 'wire'
+  routes(send: Send, out: Route[]): void;
+}
+
+export interface Send {
+  from: NodePath;
+  outlet: number;
+  incoming?: MessageMeta; // metadata of the message the sender was handling
+  wave: WaveId; // shared by everything one root send causes synchronously
+}
+
+export interface Route {
+  to: NodePath; // a path, not a node ID (invariant 3)
+  inlet: number;
+  meta?: MessageMeta;
+}
+
+// @patchies/core/routing/wire-router.ts
+export class WireRouter implements Router {
+  readonly id = "wire";
+
+  constructor(private readonly connections: ConnectionIndex) {}
+
+  routes(send: Send, out: Route[]) {
+    for (const c of this.connections.from(send.from, send.outlet)) {
+      out.push({ to: c.to, inlet: c.inlet });
+    }
+  }
+}
+```
+
+The names are a sketch.
+
+- **Delivery owns the rules for every router:** the wave counter, the depth guard,
+  and the per-node rate or budget guard. They apply to wires from day one.
+- **The composition root passes routers in,** such as
+  `createRuntime({ routers: [new WireRouter(connections)] })`. There is no router
+  registry singleton (invariant 1).
+- **The message envelope has an optional `meta` field.** Wires leave it empty, and
+  objects ignore it.
+
+Deferred until a world needs it:
+
+- the spatial index, the tick, derived links, worlds, and world chrome;
+- metadata fields beyond the empty `meta` slot, such as `strength` and `level`;
+- names (`s` and `r`) as a router, once route targets are paths everywhere.
+
+Invariant 14 warns against generality before it is needed, and an interface with
+one implementation can quietly take the shape of that implementation. Three guards
+keep it honest:
+
+1. **The interface comes from the prototype, not from guesses.** `routes(send,
+out)`, `incoming`, and `wave` are what proximity and the grid needed. Nothing
+   more goes in until a real second router needs it.
+2. **A second router in tests.** A small fake router, such as one that routes to a
+   fixed list of nodes, tests delivery's guards and the per-wave rule. If the
+   interface starts assuming wires, those tests break.
+3. **Routing is its own folder in core,** so the concept is visible, and
+   dependency-cruiser checks that `WireRouter` is the only router core ships.
+
+Naming: **router** in code, for what decides who receives a message. **World**
+later, for a router plus its tick and editor chrome. **Behavior** stays the word
+for people, in docs and in the editor.
 
 ## Prototype Results
 
